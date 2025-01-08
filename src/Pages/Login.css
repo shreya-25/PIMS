@@ -1,0 +1,159 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    box-sizing: border-box;
+}
+
+.background {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.bg-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.3);
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.main-box{
+    background-color: #1B1C1C;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.img-container {
+    background-color: #1B1C1C;
+    padding: 30px 20px;
+    text-align: center;
+    z-index: 3;
+    max-width: 400px;
+    width: 90%;
+    min-height: 500px;
+    /* border-radius: 10px; */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.form-container {
+    background-color: #1B1C1C;
+    padding: 30px 20px;
+    text-align: center;
+    z-index: 3;
+    max-width: 500px;
+    width: 90%;
+    min-height: 500px;
+    /* border-radius: 10px; */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.logo img {
+    width: 200px;
+    height: auto;
+    margin-bottom: -20px;
+    margin-top: 80px;
+}
+
+.main_heading {
+    font-size: 80px;
+    margin-bottom: 20px;
+    color: #ffffff ;
+    z-index: 10;
+}
+
+form input {
+    width: 80%;
+    padding: 12px 15px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    
+}
+
+.divider {
+    margin: 15px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.google-signup {
+    background-color: #ffffff;
+    color: #333;
+    border: 1px solid #ccc;
+    padding: 10px;
+    width: 80%;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-bottom: 8px;
+    display: inline-flex; /* Use inline-flex to align content inside */
+    align-items: center; /* Aligns icon and text vertically */
+    justify-content: center; /* Aligns content horizontally */
+    gap: 8px; /* Space between text and icon */
+    transition: all 0.3s ease;
+}
+.google-icon{
+    width: 25px;
+    height: 25px;
+    margin-top: 1px;
+}
+
+.register {
+    background-color: #165357;
+    color: white;
+    padding: 10px;
+    width: 80%;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    border: none;
+}
+
+.register:hover, .google-signup:hover {
+    opacity: 0.9;
+}
+
+form p {
+    font-size: 14px;
+    color: #666;
+}
+
+form a {
+    color: #165357;
+    text-decoration: none;
+}
+
+form a:hover {
+    text-decoration: underline;
+}
+
+.forgot-pass{
+    color: #165357;
+    text-decoration: none;
+    text-align: right;
+    font-size: 14px;
+    margin-right: 50px;
+
+}
+.login-form
+{
+    margin-top:90px;
+}

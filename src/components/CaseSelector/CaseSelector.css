@@ -1,0 +1,71 @@
+/* Card Container with Overlay */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5); /* Dim background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Higher z-index to overlay above sidebar */
+}
+
+.card {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  width: 400px;
+  position: relative;
+}
+
+.card h3 {
+  font-size: 20px;
+  margin-bottom: 15px;
+}
+
+.select-container {
+  margin-bottom: 20px;
+}
+
+.case-select {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.button-group {
+  display: flex;
+  justify-content: center; /* Align buttons in the center */
+  gap: 15px; /* Add space between the buttons */
+  margin-top: 15px;
+}
+
+.done-btn,
+.close-btnsb {
+  background-color: #007bff;
+  color: #fff;
+  padding: 10px 15px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.done-btn:hover {
+  background-color: #0056b3;
+}
+
+.close-btnsb {
+  background-color: rgba(155, 8, 8, 0.692);
+}
+
+.close-btnsb:hover {
+  background-color: darkred;
+}

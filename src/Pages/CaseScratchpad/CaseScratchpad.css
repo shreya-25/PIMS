@@ -1,0 +1,112 @@
+.scratchpad-container {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.scratchpad-main {
+    flex: 1;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.scratchpad-title {
+    text-align: center;
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #034752;
+    text-transform: uppercase;
+}
+
+.entries-list {
+    margin-bottom: 30px;
+}
+
+.entry-item {
+    display: flex;
+    justify-content: space-between;
+    background-color: #f9f9f9;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.entry-text {
+    flex: 1;
+}
+
+.entry-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-edit,
+.btn-delete {
+    padding: 5px 10px;
+    font-size: 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-edit {
+    background-color: #ffc107;
+    color: white;
+}
+
+.btn-delete {
+    background-color: #a33;
+    color: white;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.input-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.input-label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.input-field,
+.textarea-field-cs {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    font-size: 14px;
+    width: 100%;
+}
+
+.textarea-field-cs {
+    height: 100px;
+    resize: none;
+}
+
+.button-group {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.btn-save {
+    background-color: #a33;
+    color: white;
+}
+
+.btn-cancel {
+    background-color: #a33;
+    color: white;
+}

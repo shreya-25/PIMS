@@ -1,0 +1,77 @@
+.lrscratchpad-container {
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+  }
+  
+  .main-contentLRS {
+    margin-top: 20px;
+    padding: 20px;
+  }
+  
+  .title {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .scratchpad-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+  
+  .scratchpad-table th,
+  .scratchpad-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+  }
+  
+  .scratchpad-form {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+  }
+  
+  textarea {
+    width: 100%;
+    height: 100px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    resize: vertical;
+  }
+  
+  .form-buttons-scratchpad {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  
+  button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .add-btn {
+    background-color: #8b0000;
+    color: white;
+  }
+  
+  .back-btn,
+  .next-btn {
+    background-color: #8b0000;
+    color: white;
+  }
+  
+  .save-btn {
+    background-color: #8b0000;
+    color: white;
+  }
+  
+  .cancel-btn {
+    background-color: #8b0000;
+    color: white;
+  }
+  
