@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/PIMS_Project/static/css/main.b5789caf.css",
+    "main.js": "/PIMS_Project/static/js/main.46aea202.js",
+    "index.html": "/PIMS_Project/index.html",
+    "main.b5789caf.css.map": "/PIMS_Project/static/css/main.b5789caf.css.map",
+    "main.46aea202.js.map": "/PIMS_Project/static/js/main.46aea202.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.b5789caf.css",
+    "static/js/main.46aea202.js"
+  ]
+}
