@@ -1,0 +1,229 @@
+body{
+  background-color: #f9f9f9;
+  font-size:20px;
+}
+
+/* Overall Page Layout */
+.lead-instructions-page {
+    display: flex;
+    flex-direction: column;
+    padding: 0px;
+    background-color: #f9f9f9;
+  }
+  
+  /* Main Content */
+  .main-content {
+    display: flex;
+    grid-template-columns: 1fr auto 1fr; 
+    gap: 20px;
+    align-items: center;
+    margin: 10px 20px;
+    /* padding: 0 20px; */
+  }
+  
+  /* Left Section */
+  .left-section
+  {
+    width: 20%;
+  }
+   .police-logo {
+    width: 550px;
+    height: auto;
+    margin-right: 20px;
+  }
+  
+  /* Center Section */
+  .center-section { 
+    padding-left: 20px;
+    width: 90%;
+  }
+  
+  .title {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+  }
+  
+  .right-section
+  {
+    width: 50%;
+  }
+  /* Right Section */
+  .right-section .info-table {
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
+    margin-left: auto;
+  }
+
+  .info-table td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    font-size: 20px;
+    text-align: left; /* Align text to the left */
+    width: 100%; /* Ensure each column takes up half of the table */
+    word-wrap: break-word; /* Prevents content overflow */
+  }
+  
+  /* Bottom Content */
+  .bottom-content {
+    margin-top: 20px;
+    width: 95%;
+    display: flex;
+    flex-direction: column; /* Stack elements vertically */
+    justify-content: center; /* Center vertically */
+    align-items: center; /* Center horizontally */
+    height: 50vh; /* Use a height to ensure the content is positioned in the center */
+    margin: 0 auto; /* Center horizontally within the parent container */
+  }
+  
+  .details-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .details-table td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    font-size: 20px;
+  }
+  
+  .input-field {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 20px;
+  }
+  .input-field1
+  {
+    font-size: 20px;
+  }
+
+  .textarea-field {
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 20px;
+  }
+
+  .dropdown {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .signature-button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #555;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  /* Action Buttons */
+  .action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+    margin-right: 30px;
+    align-items: last baseline;
+  }
+  
+  .action-buttons button {
+    margin-left: 10px;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+  }
+  
+  .donelead-btn {
+    background-color: #a33;
+    height: 40px;
+    width: 120px;
+    padding:0;
+  }
+
+  .donelead-btn:hover {
+    background-color: #a33;
+  }
+  
+  .download-pdf-btn {
+    background-color: #a33;
+    height: 40px;
+    width: 120px;
+  }
+  
+  .print-pdf-btn {
+    background-color: #a33;
+    height: 40px;
+    width: 120px;
+  }
+  
+  /* Input Fields - Regular Placeholder */
+.input-field::placeholder,
+.textarea-field::placeholder,.dropdown {
+  color: #333; /* Match this color with your input text color */
+  font-style: normal; /* Ensure placeholder is not italic */
+  font-size: 14px; /* Match the font size with the input text */
+}
+
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  background-color: white;
+  flex-shrink: 0; /* Prevent checkbox from shrinking */
+}
+
+.dropdown-icon {
+  font-size: 12px;
+  color: #333;
+}
+
+.dropdown-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  max-height: 150px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 8px;
+}
+
+.dropdown-item:hover {
+  background-color: #f0f0f0;
+}
+
+.dropdown-item input[type="checkbox"] {
+  width: 2%;
+}
+
+.checkbox-label input[type="checkbox"] {
+  flex-shrink: 0; /* Prevent checkbox from shrinking */
+}
+

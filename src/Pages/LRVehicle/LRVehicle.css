@@ -1,0 +1,105 @@
+.lrvehicle-container {
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+  }
+  
+  .menu-bar {
+    display: flex;
+    justify-content: space-around;
+    background-color: #fff;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .menu-item {
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .menu-item.active {
+    color: #13756d;
+    text-decoration: underline;
+  }
+  
+  .title {
+    text-align: center;
+    margin-bottom: 15px;
+  }
+
+  .main-contentLRV
+  {
+    width: 90%;
+    align-items:center;
+    margin: 40px;
+  }
+  
+  .vehicle-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+  
+  .vehicle-table th,
+  .vehicle-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+  }
+  
+  .vehicle-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .form-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  
+  .form-row label {
+    width: 20%;
+    font-weight: bold;
+    font-size: 20px;
+  }
+  
+  input,
+  textarea {
+    width: 70%;
+    padding: 5px;
+    box-sizing: border-box;
+  }
+  
+  .form-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+  }
+  
+  button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 20px;
+  }
+  
+  .back-btn,
+  .cancel-btn, .add-btnvh {
+    background-color: #8b0000;
+    font-size: 20px;
+  }
+  
+  .next-btn,
+  .save-btn {
+    background-color: #8b0000;
+    font-size: 20px;
+  }
+  
+  button:hover {
+    opacity: 0.9;
+  }
+  

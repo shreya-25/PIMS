@@ -1,0 +1,133 @@
+/* Top Navigation Styling */
+.top-navigation {
+    display: flex;
+    background-color: #ffffff;
+    padding: 15px 20px;
+    border-bottom: 2px solid #ccc;
+    box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .top-navigation a {
+    text-decoration: none;
+    color: #333;
+    font-size: 16px;
+    font-weight: bold;
+    margin-right: 30px;
+    padding: 10px 15px;
+    transition: all 0.3s ease;
+  }
+  
+  .top-navigation a:hover {
+    background-color: #f0f0f0;
+    color: #000;
+  }
+  
+  .top-navigation a.active {
+    background-color: #a45c5c;
+    color: white;
+    border-radius: 5px;
+  }
+  
+  /* Main Page Styling */
+  .container {
+    padding: 20px;
+    background-color: #f9f9f9;
+  }
+  
+  .assignment-section {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+  
+  .not-assigned, .assignedlr {
+    background-color: #e8e8e8;
+    padding: 15px;
+    width: 35%;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  h4 {
+    margin-bottom: 10px;
+    color: #333;
+    font-size: 16px;
+  }
+  
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  ul li {
+    margin: 10px 0;
+    font-size: 14px;
+  }
+  
+  label {
+    display: flex;
+    align-items: center;
+  }
+  
+  input[type="checkbox"] {
+    margin-right: 10px;
+  }
+  
+  .buttonslr {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .buttonslr button {
+    margin: 10px 0;
+    padding: 10px 15px;
+    background-color: #a45c5c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+  
+  .buttonslr button:hover {
+    background-color: #833a3a;
+  }
+  
+  .buttonslr button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  
+  /* Footer Buttons */
+  .footer-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px;
+  }
+  
+  .footer-buttons button {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .back, .cancel {
+    background-color: #a45c5c;
+    color: white;
+  }
+  
+  .finish, .done {
+    background-color: #666666;
+    color: white;
+  }
+  
+  .footer-buttons button:hover {
+    background-color: #4d4d4d;
+  }
+  

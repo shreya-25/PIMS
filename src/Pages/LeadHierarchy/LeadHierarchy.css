@@ -1,0 +1,211 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  /* background-color: #f4f4f4; */
+}
+
+
+.hierarchy-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  transform-origin: top center;  /* Scale from the top center */
+  width: 100%;
+
+}
+
+/* Parent Node */
+.lead-node {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  flex-direction: column;
+  align-items: center;
+  margin: 4% auto;
+}
+
+.children {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  position: relative;
+  margin-top: 40px;
+}
+
+
+/* Vertical line from parent to children */
+.children::before {
+  content: "";
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  width: 2px;
+  height: 22px;
+  background-color: #918d8d;
+  transform: translateX(-50%);
+}
+
+/* Horizontal line connecting sibling nodes */
+.children::after {
+  content: "";
+  position: absolute;
+  top: -20px;
+  height: 2px;
+  background-color: #918d8d;
+  left: 0px;
+  right: 0;
+  margin: 0 auto;
+  z-index: 1;
+}
+
+/* .lead-node:first-child::before{
+  display: none;
+} 
+
+.lead-node:last-child::before{
+  display: none;
+}  */
+
+
+
+/* ####################### */
+
+/* Space between sibling nodes */
+.children .lead-node {
+  margin: 0 20px;
+  position: relative;
+  flex: none;
+}
+
+/* Vertical line from each child to the horizontal line */
+.children .lead-node::before {
+  content: "";
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  width: 2px;
+  height: 20px;
+  background-color: #918d8d;
+  transform: translateX(-50%);
+}
+
+/* Remove lines for single children */
+.children:only-child::before,
+.children:only-child::after {
+  display: none;
+}
+
+
+
+/* ##################################################### */
+
+/* Node Styling */
+.lead {
+  padding: 12px 40px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  width: 200px;
+  position: relative;
+  text-align: center;
+}
+
+.lead:hover {
+  background-color: #e0e0e0;
+  transform: scale(1.05);
+}
+/* Remove connecting lines for leaf nodes (nodes without children) */
+.children:empty::before,
+.children:empty::after,
+.lead-node:only-child .lead::before {
+  display: none;
+}
+
+/* Styling for selected node */
+.selected-lead {
+  background-color: #5a5a5a;
+  color: white;
+}
+
+/* Darken disabled nodes */
+.disabled .lead {
+  background-color: #a9a9a9;
+  color: #ffffff;
+  border-color: #7a7a7a;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+
+
+
+/* Sidebar Style */
+
+.details-sidebar {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 500px;
+  height: 100%;
+  background-color: #fff;
+  border-left: 2px solid #ddd;
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.1);
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  z-index: 1000;
+  padding: 2%;
+}
+
+.details-sidebar.open {
+  transform: translateX(0);
+}
+
+.details-sidebar h3 {
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+.details-sidebar p {
+  margin: 10px 0;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.close-sidebar-btn {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  background-color: #d9534f;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
+}
+
+.close-sidebar-btn:hover {
+  background-color: #c9302c;
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
+  .hierarchy-container {
+      width: 100%;
+      padding: 10px;
+  }
+
+  .details-sidebar {
+      width: 100%;
+  }
+}
+
+.disable-btn-hierarchy
+{background-color:#2f8f62}

@@ -1,0 +1,989 @@
+/* Flex container for the layout */
+.main-container {
+  display: flex;
+  height: 100vh; /* Full viewport height */
+  width: 100%; /* Full width */
+}
+
+/* Sidebar styling */
+.SideBar {
+  background-color: #2c3e50; /* Example background color */
+  color: white;
+  padding: 20px;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  height: 100%; /* Full height */
+  width: 100%;
+  overflow-y: auto; /* Scrollable if content overflows */
+}
+
+/* Content container styling */
+.content-container {
+  flex: 1; /* Take up remaining width */
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto; /* Scrollable content if necessary */
+}
+.main-page {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.above-sec {
+  height: 20%;
+  min-height: 150px;
+}
+
+.top-controls {
+  margin-top: -30px;
+}
+
+.police-logo {
+  width: 250px; /* Increased size for a larger logo */
+  height: auto; /* Maintain aspect ratio */
+  margin-bottom: 10px; /* Add some spacing below the logo */
+}
+
+.pims-heading {
+  font-size: 70px;
+  font-weight: bold;
+}
+
+.main-page .left-section .police-logo {
+  width: 150px;
+  height: auto;
+  margin-bottom: 10px;
+}
+
+.content-area {
+  width: 80%;
+  padding: 20px;
+}
+
+/* Header bar styling */
+.stats-bar {
+  display: flex;
+  justify-content: space-around;
+  background-color: rgba(22, 83, 87, 0.88); /* Green background */
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  font-size: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  width: 80%;
+  align-items: center;
+  margin: 0 auto; /* Centers horizontally */
+  margin-top: 20px;
+}
+
+/* Header items (tabs) */
+.stats-bar .hoverable {
+  cursor: pointer;
+  font-weight: bold;
+  color: white; /* White text for contrast */
+  text-align: center;
+  padding: 5px 10px;
+  border-radius: 5px;
+  transition: all 0.3s ease-in-out; /* Smooth hover and active transitions */
+  font-size: 20px;
+}
+
+/* Hover effect for header items */
+.stats-bar .hoverable:hover {
+  background-color: #54575873; /* Darker grey for hover effect */
+}
+
+/* Active tab styling */
+.stats-bar .active {
+  background-color: #46494bbe; /* Grey for active state */
+  color: white; /* Consistent white text */
+  text-decoration: none; /* Remove underline */
+  font-weight: bold;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+/* Avoid layout shifting */
+.stats-bar span {
+  flex: 1 1 30%; /* Ensures equal spacing for all tabs */
+  text-align: center; /* Center-align text */
+}
+
+@media (max-width: 768px) {
+  .stats-bar {
+    flex-direction: column;
+  }
+
+  .stats-bar span {
+    flex: 1 1 100%;
+    margin-bottom: 10px;
+  }
+}
+
+/* Content sections container */
+.content-section {
+  padding: 20px;
+  margin-top: 10%;
+  width: 80%;
+  margin: 0 auto; /* Centers horizontally */
+}
+
+@media (max-width: 600px) {
+  .case-item,
+  .lead-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .case-actions,
+  .lead-item button {
+    display: flex; /* Flexbox for horizontal alignment */
+  gap: 10px; /* Space between buttons */
+  justify-content: flex-start; /* Align buttons to the start */
+    /* width: 100%;
+    justify-content: space-around;
+    margin-top: 10px; */
+  }
+}
+/* Case and lead items */
+.lead-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #ddd; /* Light grey border */
+  border-radius: 5px;
+  margin-bottom: 10px;
+  background-color: #fff; /* White background */
+  transition: background-color 0.2s ease-in-out; /* Smooth hover transition */
+  font-size: 20px;
+}
+
+
+
+/* Hover effect for case and lead items */
+.lead-item:hover {
+  background-color: rgba(22, 83, 87, 0.03); /* Light greenish tint for hover */
+}
+
+@media (max-width: 768px) {
+  .leads-table {
+    font-size: 0.8rem;
+  }
+}
+
+/* General Table Styling */
+.leads-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.leads-table th,
+.leads-table td {
+  padding: 10px;
+  text-align: left;
+  border: 1px solid #ddd;
+  font-size: 20px;
+}
+
+.leads-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.leads-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+/* Horizontal Scroll for Smaller Screens */
+@media (max-width: 768px) {
+  .leads-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .leads-table th,
+  .leads-table td {
+    font-size: 14px; /* Reduce font size */
+  }
+}
+
+/* Card Layout for Extra Small Screens */
+@media (max-width: 480px) {
+  .leads-table {
+    display: none; /* Hide table on small screens */
+  }
+
+  .lead-cards {
+    display: block;
+  }
+
+  .lead-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #fff;
+  }
+
+  .lead-card div {
+    margin-bottom: 5px;
+  }
+
+  .lead-card .card-title {
+    font-weight: bold;
+    font-size: 16px;
+  }
+
+  .lead-card .card-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+
+  .lead-card button {
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .view-btn {
+    background-color: #007bff;
+    color: white;
+  }
+
+  .accept-btn {
+    background-color: #28a745;
+    color: white;
+  }
+}
+
+
+/* Buttons for actions */
+.accept-lead-button,
+.continue-lead-button {
+  margin-right: 10px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out; /* Smooth hover effect */
+}
+
+/* Close button */
+ .close-button {
+  background-color: #4e8543; /* Orange */
+  color: white;
+  font-size: 20px;
+}
+
+/* Delete button */
+ .delete-button {
+  background-color: #f44336; /* Red */
+  color: white;
+}
+
+.delete-button:hover {
+  background-color: #d32f2f; /* Darker red for hover */
+}
+
+/* Accept button */
+.accept-lead-button {
+  background-color: #4caf50; /* Green */
+  color: white;
+  font-size: 20px;
+}
+
+.accept-lead-button:hover {
+  background-color: #388e3c; /* Darker green for hover */
+  font-size: 20px;
+}
+
+/* Continue button */
+.continue-lead-button {
+  background-color: #4e8543;
+  color: white;
+  font-size: 20px;
+}
+
+.continue-lead-button:hover {
+  background-color: #4e8543;
+}
+
+/* Filter and Sort Controls */
+.filter-sort-controls {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 10px;
+}
+
+.filter-rule {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.filter-rule input,
+.filter-rule select {
+  padding: 5px;
+  font-size: 20px;
+}
+
+.filter-rule button {
+  padding: 5px 10px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.filter-rule button:hover {
+  background-color: #d32f2f;
+}
+
+/* Leads Table */
+.leads-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.leads-table th,
+.leads-table td {
+  border: 1px solid #bbb;
+  padding: 10px;
+  text-align: left;
+  font-size: 20px;
+}
+
+.leads-table th {
+  background-color: #00000000; /* Darker grey */
+  color: rgb(39, 36, 36); /* Keep text visible on dark background */
+}
+
+
+.leads-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.leads-table tr:hover {
+  background-color: rgba(87, 95, 95, 0.1);
+}
+
+/* Buttons */
+.accept-lead-button,
+.delete-button,
+.close-button,
+.view-lead-button {
+  margin: 5px;
+  padding: 8px 12px;
+  font-size: 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.view-lead-button {
+  background-color: #2196f3;
+  color: white;
+}
+
+.view-lead-button:hover {
+  background-color: #1976d2;
+}
+
+.lead-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.lead-item {
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.lead-list .lead-item span {
+  font-size: 20px; /* Adjust the size as needed */
+}
+
+.lead-item:hover {
+  background-color: rgba(52, 57, 58, 0.03);
+  cursor: pointer;
+}
+
+.filter-sort-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 5px;
+}
+
+.filter-container,
+.sort-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.filter-popup {
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  padding: 15px;
+  border-radius: 5px;
+  margin-top: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.filter-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.filter-button,
+.clear-filter-button,
+.clear-sort-button,
+.close-filter-button {
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.filter-button:hover,
+.clear-filter-button:hover,
+.clear-sort-button:hover,
+.close-filter-button:hover {
+  background-color: #1976d2;
+}
+
+.leads-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.leads-table th,
+.leads-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.leads-table th {
+  background-color: #f2f2f2;
+}
+
+/* Popup Overlay */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6); /* Slightly darker overlay */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Close button styling */
+.close-popup-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background-color: transparent;
+  border: none;
+  font-size: 30px;
+  font-weight: bold;
+  color: #555;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.close-popup-btn:hover {
+  color: #323638; /* Red color on hover */
+}
+
+/* Flex behavior for the table */
+.leads-table th,
+.leads-table td {
+  flex: 1 1 100%; /* Allow full width by default */
+  max-width: 100%; /* Prevent overflow */
+}
+
+/* Popup Content */
+.popup-content {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  width: 70%;
+  height:90%;
+  max-width: 900px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+  font-family: Arial, sans-serif;
+  position: relative;
+  overflow-y: auto; /* Enables vertical scrolling */
+  overflow-x: hidden; /* Hides horizontal scrolling */
+}
+
+.filter-sort-section {
+  display: flex;
+  flex-wrap: wrap; /* Allow wrapping for smaller screens */
+  justify-content: space-evenly;
+  gap: 5px;
+}
+
+/* Filters and Sorting Containers */
+.filters,
+.sorting {
+  margin-bottom: 20px;
+  width: 50%;
+}
+
+.filters:hover,
+.sorting:hover {
+  transform: scale(1.02); /* Slight zoom on hover */
+}
+
+.sorting select {
+  width: 100%; /* Full width for dropdown */
+  padding: 10px;
+  font-size: 20px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+.filter-item button {
+  margin-top: 5px;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column; /* Stack label and input/dropdown */
+  width: 100%; /* Ensure the container is full width */
+  max-width: 500px; /* Ensure a consistent max width for all items */
+  gap: 10px;
+  margin-bottom: 10px;
+
+}
+
+.filter-dropdown {
+  appearance: none; /* Removes default styling */
+  -webkit-appearance: none; /* For Safari */
+  -moz-appearance: none; /* For Firefox */
+}
+
+
+.filter-item label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.filter-input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Add space between the input/dropdown and the button */
+  width: 100%; /* Ensure it takes the full width */
+}
+
+.filter-input,
+.filter-dropdown,
+.sort-dropdown {
+  display: block; /* Ensure consistent block display */
+  width: 100%; /* Use the full width of the container */
+  max-width: 600px; /* Increased maximum width */
+  padding: 12px; /* Add uniform padding */
+  font-size: 20px; /* Increase font size for better readability */
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-sizing: border-box; /* Include padding and border in the width */
+}
+
+/* Placeholder Text Styling */
+.filter-input::placeholder,
+.filter-dropdown::placeholder,
+.sort-dropdown::placeholder {
+  color: rgb(8, 8, 8, 0.575);
+}
+
+
+.clear-button {
+  background-color: #5c5f5c;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width:100%;
+  font-size: 20px;
+}
+
+.clear-button:hover {
+  background-color: #b9beb9;
+}
+
+.apply-button {
+  background-color: #5c5f5c;
+  color: white;
+  width: 60%;
+  padding: 15px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 20px;
+  margin-left: 20%;
+}
+
+.apply-button:hover {
+  background-color: #b9beb9;
+}
+
+.filter-sort-button {
+  margin-bottom: 20px;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.filter-sort-button:hover {
+  background-color: #1976d2;
+}
+.filter-label
+{
+  font-size: 20px;
+}
+
+/* General styling for the lead list */
+.lead-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.lead-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  margin: 5px 0;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  transition: box-shadow 0.3s ease;
+}
+
+.lead-item:hover {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Styling for the buttons */
+.view-btn,
+.accept-btn {
+  margin-left: 10px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  font-size: 20px;
+}
+
+.view-btn {
+  background-color: #007bffde;
+  color: #fff;
+}
+
+.view-btn:hover {
+  background-color: #0056b3;
+}
+
+.accept-btn {
+  background-color: #28a745;
+  color: #fff;
+}
+
+.accept-btn:hover {
+  background-color: #218838;
+}
+
+/* Adding some spacing and alignment */
+.lead-item span {
+  flex-grow: 1;
+}
+
+
+
+
+/* General button styles */
+.button {
+  display: inline-block;
+  padding: 10px 20px;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  color: #fff;
+  background-color: #007bff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+/* Button hover state */
+.button:hover {
+  background-color: #0056b3;
+}
+
+/* Button active state */
+.button:active {
+  transform: scale(0.98);
+}
+
+/* Secondary button styles */
+.button-secondary {
+  background-color: #6c757d;
+}
+
+.button-secondary:hover {
+  background-color: #5a6268;
+}
+
+/* Disabled button styles */
+.button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+.done-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 20px;
+  transition: background-color 0.3s ease;
+}
+
+.done-btn:hover {
+  background-color: #0056b3;
+}
+
+.continue-btn {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 20px;
+  transition: background-color 0.3s ease;
+}
+
+.continue-btn:hover {
+  background-color: #388e3c;
+}
+
+/* Delete Button Specific Styling */
+.delete-btn {
+  background-color: #dc3545; /* Red */
+}
+
+.delete-btn:hover {
+  background-color: #c82333; /* Darker Red */
+}
+
+/* General Styling for Navbar Buttons */
+.navbar-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Add spacing between icons and buttons */
+}
+
+
+
+/* Prevent Button Overlapping Icons */
+.navbar-icons {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 10px; /* Add margin between icons */
+}
+
+/* Case details take up remaining space */
+.case-details {
+  flex-grow: 1;
+  font-size: 20px;
+}
+
+.case-item {
+  display: flex; /* Horizontal alignment for case details and actions */
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  background-color: #f9f9f9;
+}
+
+
+/* Buttons container for case actions */
+.case-actions {
+  display: flex; /* Arrange buttons horizontally */
+  gap: 10px; /* Space between buttons */
+  align-items: center; /* Ensure vertical alignment */
+  justify-content: flex-end; /* Align buttons to the end of the container */
+}
+
+.case-actions button {
+  padding: 8px 12px;
+  font-size: 20px;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+
+/* Close Button */
+.close-btn {
+  background-color: #28a745; /* Green */
+}
+
+.close-btn:hover {
+  background-color: #218838; /* Darker green */
+}
+
+/* Delete Button */
+.delete-btn {
+  background-color: #dc3545; /* Red */
+}
+
+.delete-btn:hover {
+  background-color: #c82333; /* Darker red */
+}
+
+@media (max-width: 600px) {
+  .popup-content {
+    width: 95%;
+  }
+
+  .filter-item {
+    width: 100%;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 992px) {
+  .SideBar {
+    width: 25%;
+  }
+}
+
+@media (max-width: 600px) {
+  .SideBar {
+    width: 100%;
+    height: auto;
+  }
+
+  .case-item,
+  .lead-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .case-actions,
+  .lead-item button {
+    width: 100%;
+    margin-top: 10px;
+  }
+}
+
+/* Add horizontal scrolling for small screens */
+@media (max-width: 768px) {
+  .leads-table {
+    display: block; /* Enable block display */
+    overflow-x: auto; /* Horizontal scroll for smaller screens */
+    white-space: nowrap; /* Prevent text from wrapping inside cells */
+  }
+
+  .leads-table th,
+  .leads-table td {
+    font-size: 14px; /* Adjust font size for smaller screens */
+  }
+}
+
+/* Card layout for very small screens */
+@media (max-width: 480px) {
+  .leads-table {
+    display: none; /* Hide table on extra small screens */
+  }
+
+  .lead-cards {
+    display: block;
+  }
+
+  .lead-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #fff;
+  }
+
+  .lead-card div {
+    margin-bottom: 5px;
+  }
+
+  .lead-card .card-title {
+    font-weight: bold;
+    font-size: 16px;
+  }
+
+  .lead-card .card-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+
+  .lead-card button {
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .view-btn {
+    background-color: #007bff;
+    color: white;
+  }
+
+  .accept-btn {
+    background-color: #28a745;
+    color: white;
+  }
+}
