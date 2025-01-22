@@ -8,6 +8,28 @@ export function Login() {
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
 
+  // const handleLogin = (e) => {
+  //   e.preventDefault();
+
+  //   // Retrieve all registered users from localStorage
+  //   const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+
+  //   // Find a matching user
+  //   const matchingUser = registeredUsers.find(
+  //     (user) => user.username === username && user.password === password
+  //   );
+
+  //   if (matchingUser) {
+  //     // Save logged-in username to localStorage
+  //     localStorage.setItem('loggedInUser', username);
+
+  //     // Redirect to the main page
+  //     navigate('/MainPage');
+  //   } else {
+  //     setErrorMessage('Invalid username or password. Please try again.');
+  //   }
+  // };
+
   const handleLogin = (e) => {
     e.preventDefault();
 
