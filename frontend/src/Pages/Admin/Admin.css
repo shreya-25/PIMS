@@ -1,0 +1,169 @@
+.admin-container {
+    display: flex;
+    flex-direction: column;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin-top: 0px;
+  }
+  
+  /* logo section */
+  .logo-sec
+  {
+    display: flex;
+    align-items: center; /* Vertically centers content */
+    justify-content: center; /* Horizontally centers content */
+    gap: 10px; /* Add space between the logo and heading */
+    height: 25%;
+    width: 20%;
+    margin-left: 2%;
+  }
+  .police-logo-main-page
+  {
+    height: 200px;
+    margin: 2%;
+  }
+  .main-page-heading
+  {
+    margin: 5%;
+    font-size: 60px;
+  }
+  
+  .admin-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+  }
+  
+  .main-section-admin
+  {
+    margin-top: -130px;
+  }
+  
+  .select-case-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .case-dropdown {
+    flex: 1;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  
+  .add-case-btn {
+    padding: 10px 20px;
+    background-color: #a05252;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  /* .officer-section {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+    width: 30%;
+    margin-left: 38%;
+    border-radius: 6px;
+  }
+  
+  .officer-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .officer-table th,
+  .officer-table td {
+    padding: 10px;
+    text-align: left;
+    border: 1px solid #ccc;
+    color: #333;
+  }
+  
+  .officer-table thead tr {
+    background-color:  rgba(22, 83, 87, 0.88);
+    color: white;
+  } */
+  
+  .officer-table {
+    width: 30%;
+    /* Use separate border model so radius can be applied easily */
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 6px; /* Rounded corners */
+    overflow: hidden; /* Ensures corners are clipped */
+    margin-left: 38%;
+  }
+  
+  /* Header row styling: entire row is green, text is white */
+  .officer-table thead tr {
+    background-color: rgba(22, 83, 87, 0.88);
+  }
+  .officer-table thead tr th {
+    color: #fff;
+    padding: 10px;
+    text-align: left;
+    border: 1px solid #ccc; /* Optional: keep or remove as desired */
+  }
+  
+  /* Normal cells */
+  .officer-table td {
+    padding: 10px;
+    text-align: left;
+    border: 1px solid #ccc;
+    color: #333;
+  }
+  
+  
+  .ongoing-cases-section {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .cases-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .cases-table td {
+    padding: 10px;
+    border: 1px solid #ccc;
+    color: #333;
+  }
+  
+  .close-btn,
+  .delete-btn {
+    padding: 5px 10px;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .close-btn {
+    background-color: #4caf50;
+  }
+  
+  .delete-btn {
+    background-color: #f44336;
+  }
+  
+  .view-all-cases-btn-admin {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background-color: #a05252;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-left: 87%;
+  }
+  

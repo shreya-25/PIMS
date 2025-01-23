@@ -30,6 +30,7 @@ import { LRFinish } from './Pages/LRFinish/LRFinish';
 import { FlaggedLead } from './Pages/FlaggedLead/FlaggedLead';
 import { SearchLead } from './Pages/SearchLead/SearchLead';
 import { ViewTimeline } from './Pages/ViewTimeline/ViewTimeline';
+import { Admin } from './Pages/Admin/Admin';
 
 function App() {
   return (
@@ -65,6 +66,7 @@ function App() {
         <Route path="/SearchLead" element={<SearchLead />} />
         <Route path="/LRTimeline" element={<LRTimeline />} />
         <Route path="/ViewTimeline" element={<ViewTimeline />} />
+        <Route path="/Admin" element={<Admin />} />
       </Routes>
     </Router>
   );
