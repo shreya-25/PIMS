@@ -284,20 +284,28 @@ const addCase = (newCase) => {
     <Navbar />
     <div className="main-container">
         {/* Pass down props for leads, cases, and modal visibility */}
-        <SideBar
+        {/* <SideBar
           leads={leads} // Pass leads if needed
           cases={cases}
           setActiveTab={setActiveTab}
           onShowCaseSelector={handleShowCaseSelector} // Pass handler
-        />
+        /> */}
+        <div className="logo-sec">
+          <img
+            src="/Materials/newpolicelogo.png" // Replace with the actual path to your logo
+            alt="Police Department Logo"
+            className="police-logo-main-page"
+          />
+          <h1 className="main-page-heading"> PIMS</h1>
+        </div>
         <div className="content-container">
-          {showCaseSelector && (
+          {/* {showCaseSelector && (
             <CaseSelector
               cases={cases}
               navigateTo={navigateTo}
               onClose={handleCloseCaseSelector} // Pass close functionality
             />
-          )}
+          )} */}
       <div className="main-page">
         <div className="above-sec">
           <div className="top-controls">
@@ -305,9 +313,9 @@ const addCase = (newCase) => {
               placeholder="Search Cases"
               onSearch={(query) => console.log("Search query:", query)}
             />
-            <SlideBar
-  onAddCase={(newCase) => addCase(newCase)} // Pass addCase function with confirmation
-/>
+            {/* <SlideBar
+                onAddCase={(newCase) => addCase(newCase)} // Pass addCase function with confirmation
+            /> */}
           </div>
         </div>
         <div className="stats-bar">

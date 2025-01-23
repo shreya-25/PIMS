@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import '../Login.css';
+import axios from "axios";
 import { Link, useNavigate } from 'react-router-dom';
 
 export function Login() {
@@ -30,27 +31,41 @@ export function Login() {
   //   }
   // };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    // Retrieve all registered users from localStorage
-    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
+    try {
+        const response = await axios.post("http://localhost:5000/api/auth/login", {
+            username,
+            password,
+        });
 
-    // Find a matching user
-    const matchingUser = registeredUsers.find(
-      (user) => user.username === username && user.password === password
-    );
+        // If login is successful, save the token and redirect
+        const { token, username: loggedInUser, role } = response.data;
 
-    if (matchingUser) {
-      // Save logged-in username to localStorage
-      localStorage.setItem('loggedInUser', username);
+        // Save token to localStorage
+        localStorage.setItem("token", token);
+        localStorage.setItem("loggedInUser", loggedInUser);
+        localStorage.setItem("role", role);
 
-      // Redirect to the main page
-      navigate('/MainPage');
-    } else {
-      setErrorMessage('Invalid username or password. Please try again.');
+
+        if (role === "Investigator") {
+          navigate("/MainPage");
+      } else if (role === "CaseManager") {
+          navigate("/MainPage");
+      } else {
+          setErrorMessage("Role not authorized");
+      }
+        // navigate("/MainPage");
+    } catch (error) {
+        if (error.response) {
+            // If backend sends a specific error message
+            setErrorMessage(error.response.data.message || "Login failed");
+        } else {
+            setErrorMessage("An unexpected error occurred.");
+        }
     }
-  };
+};
 
   return (
     <div className="background">
