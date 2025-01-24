@@ -79,15 +79,15 @@ export const CasePageManager = () => {
       
       const [leads, setLeads] = useState({
         assignedLeads: [
-          { id: 1, description: "Lead45: Collect Audio Records from Dispatcher",dueDate: "12/25/2024",
+          { id: 1, description: "Lead 45: Collect Audio Records from Dispatcher",dueDate: "12/25/2024",
             priority: "High",
             flags: ["Important"],
             assignedOfficers: ["Officer 1", "Officer 3"], },
-          { id: 2, description: "Lead20: Interview Mr. John",dueDate: "12/31/2024",
+          { id: 2, description: "Lead 20: Interview Mr. John",dueDate: "12/31/2024",
             priority: "Medium",
             flags: [],
             assignedOfficers: ["Officer 2"] },
-          { id: 3, description: "Lead84: Collect Evidence from 63 Mudray Street",dueDate: "12/29/2024",
+          { id: 3, description: "Lead 84: Collect Evidence from 63 Mudray Street",dueDate: "12/29/2024",
             priority: "Low",
             flags: [],
             assignedOfficers: ["Officer 4"] },
@@ -95,7 +95,7 @@ export const CasePageManager = () => {
         pendingLeads: [
           {
             id: 4,
-            description: "Lead21: Interview Witness",
+            description: "Lead 21: Interview Witness",
             dueDate: "12/26/2024",
             priority: "High",
             flags: ["Important"],
@@ -103,7 +103,7 @@ export const CasePageManager = () => {
           },
           {
             id: 6,
-            description: "Lead30: Interview Neighbours",
+            description: "Lead 30: Interview Neighbours",
             dueDate: "12/23/2024",
             priority: "Medium",
             flags: [],
@@ -111,7 +111,7 @@ export const CasePageManager = () => {
           },
           {
             id: 7,
-            description: "Lead32: Collect Evidence",
+            description: "Lead 32: Collect Evidence",
             dueDate: "12/22/2024",
             priority: "Low",
             flags: [],
@@ -119,16 +119,16 @@ export const CasePageManager = () => {
           },
         ],
         pendingLeadReturns: [
-            { id: 5, description: "Lead33: Submit Crime Scene Photos" },
-            { id: 8, description: "Lead32: Collect Evidence", dueDate: "12/30/2024" },
-            { id: 9, description: "Lead21: Interview Witness", dueDate: "12/31/2024" },
+            { id: 5, description: "Lead 33: Submit Crime Scene Photos" },
+            { id: 8, description: "Lead 32: Collect Evidence", dueDate: "12/30/2024" },
+            { id: 9, description: "Lead 21: Interview Witness", dueDate: "12/31/2024" },
         ],
         allLeads: [
-            { id: 1, description: "Lead45: Collect Audio Records from Dispatcher", status: "Assigned" },
-            { id: 2, description: "Lead20: Interview Mr. John", status: "Assigned" },
-            { id: 3, description: "Lead84: Collect Evidence from 63 Mudray Street", status: "Completed" },
-            { id: 4, description: "Lead21: Interview Witness", status: "Pending" },
-            { id: 5, description: "Lead33: Submit Crime Scene Photos", status: "Completed" },
+            { id: 1, description: "Lead 45: Collect Audio Records from Dispatcher", status: "Assigned" },
+            { id: 2, description: "Lead 20: Interview Mr. John", status: "Assigned" },
+            { id: 3, description: "Lead 84: Collect Evidence from 63 Mudray Street", status: "Completed" },
+            { id: 4, description: "Lead 21: Interview Witness", status: "Pending" },
+            { id: 5, description: "Lead 33: Submit Crime Scene Photos", status: "Completed" },
         ],
     });
 
