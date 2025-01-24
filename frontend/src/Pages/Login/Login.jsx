@@ -35,6 +35,10 @@ export function Login() {
     e.preventDefault();
 
     try {
+        // Clear any stale data in localStorage
+        localStorage.removeItem("token");
+        localStorage.removeItem("loggedInUser");
+        localStorage.removeItem("role"); 
         const response = await axios.post("http://localhost:5000/api/auth/login", {
             username,
             password,
@@ -42,6 +46,15 @@ export function Login() {
 
         // If login is successful, save the token and redirect
         const { token, username: loggedInUser, role } = response.data;
+
+        // Debug log for the token
+        console.log("Token received from backend:", token);
+
+        // Handle missing token
+        if (!token) {
+            setErrorMessage("Token not provided by the server.");
+            return;
+        }
 
         // Save token to localStorage
         localStorage.setItem("token", token);

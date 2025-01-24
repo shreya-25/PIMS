@@ -1,152 +1,151 @@
 /* Slide bar styling */
 .slide-bar {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 500px; /* Increased width */
-    height: 100%;
-    background-color: #f4f4f4; /* Light grey */
-    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
-    padding: 20px;
-    overflow-y: auto;
-    z-index: 1000;
-    transition: transform 0.3s ease-in-out;
-  }
-  
-  /* Close button styling */
-  .close-btnAC {
-    background: none;
-    border: none;
-    font-size: 30px;
-    font-weight: bold;
-    color: #333;
-    cursor: pointer;
-    position: absolute;
-    top: 15px;
-    right: 15px;
-  }
-  
-  /* Form group styling */
-  .form-group {
-    margin-bottom: 15px;
-  }
-  
-  .form-group label {
-    display: block;
-    font-size: 20px;
-    font-weight: normal;
-    margin-bottom: 5px;
-  }
-  
-  .input-field,
-  .textarea-field {
-    width: 100%; /* Ensure all inputs take full width */
-    padding: 10px;
-    font-size: 20px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-sizing: border-box; /* Include padding and border in width */
-  }
-  
-  .textarea-field {
-    height: 120px; /* Adjusted height for better usability */
-  }
-  
-  select.input-field {
-    appearance: none; /* Remove default arrow styling */
-    background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23999' d='M2 0L0 2h4z'/%3E%3C/svg%3E") no-repeat right 10px top 50%;
-    background-size: 8px 10px;
-    padding-right: 30px; /* Space for dropdown arrow */
-  }
-  
-  /* Done button styling */
-  .done-button {
-    background-color: #4caf50; /* Green */
-    color: white;
-    border: none;
-    padding: 15px; /* Increased padding for better appearance */
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 20px;
-    font-weight: bold;
-    display: block;
-    width: 100%; /* Full-width button */
-    margin-top: 20px;
-  }
-  
-  .done-button:hover {
-    background-color: #388e3c; 
-  }
-  
-  /* Improved spacing and alignment */
-  .slide-bar h3 {
-    margin-top: 10px;
-    margin-bottom: 20px;
-    font-size: 24px; /* Increased font size for the heading */
-    color: #333;
-    text-align: center;
-  }
-  
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 500px; /* Increased width */
+  height: 100%;
+  background-color: #f4f4f4; /* Light grey */
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  overflow-y: auto;
+  z-index: 1000;
+  transition: transform 0.3s ease-in-out;
+}
 
-  .add-case-button {
-    background-color: rgba(137, 51, 51, 1); /* Red color */
-    color: white; /* White text */
-    border: none;
-    padding: 10px 20px; /* Increased padding for better visibility */
-    border-radius: 5px; /* Rounded corners */
-    font-size: 20px; /* Adjusted font size */
-    font-weight: bold; /* Bold text */
-    cursor: pointer;
-    transition: background-color 0.3s ease; /* Smooth hover transition */
-    position: absolute;
-    width: 10%;
-    margin-left: 60%;
-    margin-top: -2.5%;
-  }
-  
-  .add-case-button:hover {
-    background-color: rgba(137, 51, 51, 0.705); /* Darker red on hover */
-  }
+/* Close button styling */
+.close-btnAC {
+  background: none;
+  border: none;
+  font-size: 30px;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+  position: absolute;
+  top: 15px;
+  right: 15px;
+}
 
-  .custom-dropdown {
-    position: relative;
-    width: 100%;
-  }
-  
-  .dropdown-input {
-    cursor: pointer;
-  }
-  
-  .dropdown-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    max-height: 150px;
-    overflow-y: auto;
-    border: 1px solid #ccc;
-    background-color: #fff;
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
-    padding: 10px;
-    border-radius: 5px;
-  }
-  
-  .checkbox-label {
-    padding: 5px 0;
-    cursor: pointer;
-    font-size: 20px;
+/* Form group styling */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 20px;
+  font-weight: normal;
+  margin-bottom: 5px;
+}
+
+.input-field,
+.textarea-field {
+  width: 100%; /* Ensure all inputs take full width */
+  padding: 10px;
+  font-size: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-sizing: border-box; /* Include padding and border in width */
+}
+
+.textarea-field {
+  height: 120px; /* Adjusted height for better usability */
+}
+
+select.input-field {
+  appearance: none; /* Remove default arrow styling */
+  background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23999' d='M2 0L0 2h4z'/%3E%3C/svg%3E") no-repeat right 10px top 50%;
+  background-size: 8px 10px;
+  padding-right: 30px; /* Space for dropdown arrow */
+}
+
+/* Done button styling */
+.done-button {
+  background-color: #4caf50; /* Green */
+  color: white;
+  border: none;
+  padding: 15px; /* Increased padding for better appearance */
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: bold;
+  display: block;
+  width: 100%; /* Full-width button */
+  margin-top: 20px;
+}
+
+.done-button:hover {
+  background-color: #388e3c; 
+}
+
+/* Improved spacing and alignment */
+.slide-bar h3 {
+  margin-top: 10px;
+  margin-bottom: 20px;
+  font-size: 24px; /* Increased font size for the heading */
+  color: #333;
+  text-align: center;
+}
+
+
+.add-case-button {
+  background-color: rgba(137, 51, 51, 1); /* Red color */
+  color: white; /* White text */
+  border: none;
+  padding: 10px 20px; /* Increased padding for better visibility */
+  border-radius: 5px; /* Rounded corners */
+  font-size: 20px; /* Adjusted font size */
+  font-weight: bold; /* Bold text */
+  cursor: pointer;
+  transition: background-color 0.3s ease; /* Smooth hover transition */
+  position: absolute;
+  width: 10%;
+  margin-left: 76%;
+  margin-top: -3.5%;
+}
+
+.add-case-button:hover {
+  background-color: rgba(137, 51, 51, 0.705); /* Darker red on hover */
+}
+
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown-input {
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 150px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.checkbox-label {
+  padding: 5px 0;
+  cursor: pointer;
+  font-size: 20px;
 }
 
 .checkbox-label input[type="checkbox"] {
-  width: 2%;
-  flex-shrink: 0; /* Prevent checkbox from shrinking */
-  height: 15px;
-  width: 15px;
+width: 2%;
+flex-shrink: 0; /* Prevent checkbox from shrinking */
+height: 15px;
+width: 15px;
 }
 
 .custom-dropdown .input-field::placeholder {
-  font-size: 18px; /* Adjust the size as needed */
+font-size: 18px; /* Adjust the size as needed */
 }
 
-  
