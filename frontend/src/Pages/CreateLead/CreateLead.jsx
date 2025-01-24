@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import axios from "axios";
 import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 import Navbar from '../../components/Navbar/Navbar'; // Import your Navbar component
 import './CreateLead.css'; // Create this CSS file for styling
@@ -64,42 +65,90 @@ export const CreateLead = () => {
     setLeadData({ ...leadData, [field]: value });
   };
 
-  const handleGenerateLead = () => {
-    const { leadNumber, leadSummary, assignedDate, assignedOfficer, assignedBy } = leadData;
+  // const handleGenerateLead = () => {
+  //   const { leadNumber, leadSummary, assignedDate, assignedOfficer, assignedBy } = leadData;
   
-    // Check if mandatory fields are filled
-    if (!leadNumber || !leadSummary || !assignedDate || !assignedOfficer || !assignedBy) {
-      alert("Please fill in all the required fields before generating a lead.");
-      return;
-    }
+  //   // Check if mandatory fields are filled
+  //   if (!leadNumber || !leadSummary || !assignedDate || !assignedOfficer || !assignedBy) {
+  //     alert("Please fill in all the required fields before generating a lead.");
+  //     return;
+  //   }
   
-    // Show confirmation alert before proceeding
-    if (window.confirm("Are you sure you want to generate this lead?")) {
-      const newLead = {
-        leadNumber,
-        leadSummary,
+  //   // Show confirmation alert before proceeding
+  //   if (window.confirm("Are you sure you want to generate this lead?")) {
+  //     const newLead = {
+  //       leadNumber,
+  //       leadSummary,
+  //       assignedDate,
+  //       assignedOfficer: Array.isArray(assignedOfficer)
+  //         ? assignedOfficer
+  //         : [assignedOfficer], // Ensure assignedOfficer is an array
+  //       assignedBy,
+  //       leadDescription: leadData.leadDescription,
+  //       caseName: leadData.caseName,
+  //     };
+  
+  //     // Save the new lead to localStorage
+  //     const existingLeads = JSON.parse(localStorage.getItem("leads")) || [];
+  //     localStorage.setItem("leads", JSON.stringify([...existingLeads, newLead]));
+  
+  //     // Navigate back to the Lead Log page and pass the new lead
+  //     navigate("/LeadLog", { state: { newLead } });
+  
+  //     // Show success message
+  //     alert("Lead successfully added!");
+  //   }
+  // };
+
+const handleGenerateLead = async () => {
+  const {
+    leadNumber,
+    leadOrigin,
+    incidentNumber,
+    subNumber,
+    assignedDate,
+    assignedOfficer,
+    assignedBy,
+    leadSummary,
+    leadDescription,
+  } = leadData;
+
+  try {
+    const response = await axios.post(
+      "http://localhost:5000/api/lead/create", // Replace with your backend endpoint
+      {
+        leadNo: leadNumber,
+        parentLeadNo: leadOrigin,
+        incidentNo: incidentNumber,
+        subNumber: subNumber,
+        // associatedSubNumbers: [102, 103],
         assignedDate,
-        assignedOfficer: Array.isArray(assignedOfficer)
-          ? assignedOfficer
-          : [assignedOfficer], // Ensure assignedOfficer is an array
+        assignedTo: assignedOfficer,
         assignedBy,
-        leadDescription: leadData.leadDescription,
-        caseName: leadData.caseName,
-      };
-  
-      // Save the new lead to localStorage
-      const existingLeads = JSON.parse(localStorage.getItem("leads")) || [];
-      localStorage.setItem("leads", JSON.stringify([...existingLeads, newLead]));
-  
-      // Navigate back to the Lead Log page and pass the new lead
-      navigate("/LeadLog", { state: { newLead } });
-  
-      // Show success message
+        summary: leadSummary,
+        description: leadDescription,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    if (response.status === 201) {
       alert("Lead successfully added!");
+      navigate("/LeadLog"); // Navigate to Lead Log page
     }
-  };
-  
-  
+  } catch (error) {
+    if (error.response) {
+      // Handle known error messages from backend
+      alert(`Error: ${error.response.data.message}`);
+    } else {
+      // Handle unexpected errors
+      alert("An unexpected error occurred. Please try again.");
+    }
+  }
+};  
 
   return (
     <div className="lead-instructions-page">
@@ -132,7 +181,8 @@ export const CreateLead = () => {
                     type="text"
                     className="input-field1"
                     value={leadData.leadNumber}
-                    readOnly // Make it read-only
+                     onChange={(e) => handleInputChange('leadNumber', e.target.value)}
+                    placeholder="5"
                   />
                 </td>
               </tr>
