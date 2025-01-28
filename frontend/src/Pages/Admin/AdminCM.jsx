@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./Admin.css";
+import "./AdminCM.css";
 import Navbar from "../../components/Navbar/Navbar";
 import Searchbar from "../../components/Searchbar/Searchbar";
 import { SlideBar } from "../../components/Slidebar/Slidebar";
@@ -293,12 +293,12 @@ import { useNavigate } from "react-router-dom";
 //   );
 // };
 
-export const Admin = () => {
+export const AdminCM = () => {
   const [cases, setCases] = useState([
-    { id: 12345, name: "Main Street Murder", role: "Investigator" },
-    { id: 45607, name: "Cook Street Stolen Truck", role: "Case Manager" },
-    { id: 23789, name: "216 Endicott Burglary", role: "Investigator" },
-    { id: 65741, name: "Murray Street Stolen Gold", role: "Investigator" },
+    { id: 12345, name: "Main Street Murder" },
+    { id: 45607, name: "Cook Street Stolen Truck" },
+    { id: 23789, name: "216 Endicott Burglary" },
+    { id: 65741, name: "Murray Street Stolen Gold" },
   ]);
 
     const navigate = useNavigate();
@@ -329,9 +329,39 @@ export const Admin = () => {
     console.log(`Case ${id} closed.`);
   };
 
+  const editCase = (caseDetails) => {
+    navigate("/CasePageManager", { state: { caseDetails } });
+  };
+
+  const handleNavigation = (route) => {
+    navigate(route); // Navigate to the respective page
+  };
+
+
   return (
     <div className="admin-container">
       <Navbar />
+
+      <div className="top-menu">
+        <div className="menu-items">
+        <span className="menu-item" onClick={() => handleNavigation('/AdminUR')}>
+            User Registration
+          </span>
+          <span className="menu-item active" onClick={() => handleNavigation('/AdminCM')}>
+           Case Management
+          </span>
+          <span className="menu-item"onClick={() => handleNavigation('/AdminSC')} >
+            Search Cases
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
+            Search People
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/AdminDB')} >
+           Database Backup
+          </span>
+         </div>
+       </div>
+
       <div className="logo-sec">
         <img
           src="/Materials/newpolicelogo.png" // Replace with the actual path to your logo
@@ -385,10 +415,20 @@ export const Admin = () => {
                   className="case-details"
                   onClick={() => handleCaseClick(c)} // Handle case click
                 >
-                  <strong>Case Number:</strong> {c.id} | {c.name} | <strong>Role:</strong> {c.role}
+                  <strong>Case Number:</strong> {c.id} | {c.name} 
                 </span>
                
                 <div className="case-actions">
+                <button
+                    className="edit-button"
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to edit case ${c.id}?`)) {
+                        editCase(c.id);
+                      }
+                    }}
+                  >
+                    Edit
+                  </button>
 
                   <button
                     className="close-button"
@@ -416,7 +456,7 @@ export const Admin = () => {
           </div>
           
 )}
-          <button className="view-all-cases-btn-admin">View All Cases</button>
+          <button className="view-all-cases-btn-admin" onClick={() => handleNavigation('/AdminCM1')}>View All Cases</button>
         </div>
       </div>
     </div>
