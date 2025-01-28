@@ -227,6 +227,7 @@ export const CasePageManager = () => {
                         <li className="sidebar-item" onClick={() => handleTabClick("allLeads")}>Total Generated Leads: {leads.allLeads.length}</li>
                         <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
                         <li className="sidebar-item" onClick={() => navigate("/leadlog")}>View Lead Log</li>
+                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
                         <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
                         <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
                         <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy')}>View Lead Hierarchy</li>

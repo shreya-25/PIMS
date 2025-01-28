@@ -30,7 +30,13 @@ import { LRFinish } from './Pages/LRFinish/LRFinish';
 import { FlaggedLead } from './Pages/FlaggedLead/FlaggedLead';
 import { SearchLead } from './Pages/SearchLead/SearchLead';
 import { ViewTimeline } from './Pages/ViewTimeline/ViewTimeline';
-import { Admin } from './Pages/Admin/Admin';
+import { AdminCM } from './Pages/Admin/AdminCM';
+import { AdminCM1 } from './Pages/Admin/AdminCM1';
+import { AdminUR } from './Pages/Admin/AdminUR';
+import { AdminSC } from './Pages/Admin/AdminSC';
+import { AdminSP } from './Pages/Admin/AdminSP';
+import { AdminDB } from './Pages/Admin/AdminDB';
+import { OfficerManagement } from './Pages/OfficerManagement/OfficerManagement';
 
 function App() {
   return (
@@ -66,7 +72,13 @@ function App() {
         <Route path="/SearchLead" element={<SearchLead />} />
         <Route path="/LRTimeline" element={<LRTimeline />} />
         <Route path="/ViewTimeline" element={<ViewTimeline />} />
-        <Route path="/Admin" element={<Admin />} />
+        <Route path="/AdminCM" element={<AdminCM />} />
+        <Route path="/AdminCM1" element={<AdminCM1 />} />
+        <Route path="/AdminUR" element={<AdminUR />} />
+        <Route path="/AdminSC" element={<AdminSC />} />
+        <Route path="/AdminSP" element={<AdminSP />} />
+        <Route path="/AdminDB" element={<AdminDB />} />
+        <Route path="/OfficerManagement" element={<OfficerManagement />} />
       </Routes>
     </Router>
   );
