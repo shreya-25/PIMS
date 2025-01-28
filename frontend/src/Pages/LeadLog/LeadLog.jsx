@@ -4,62 +4,123 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar/Navbar';
 import './LeadLog.css';
 
+
 export const LeadLog = () => {
   const location = useLocation();
   const newLead = location.state?.newLead || null; // Retrieve new lead data passed from CreateLead
   const { updateLeadLogCount } = location.state || {}; // Callback function to update lead count in the sidebar
   const [leadLogData, setLeadLogData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
 
   const navigate = useNavigate(); // Initialize the navigate function
+
+  const loggedInOfficer = "Officer 912";
+
+  useEffect(() => {
+    const fetchLeads = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/lead/assigned-leads", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`, // Assuming token-based authentication
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch leads");
+        }
+
+        const data = await response.json();
+        setLeadLogData(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeads();
+  }, []);
+
 
   const handleBackClick = () => {
     navigate("/casepagemanager"); // Navigate to the Case Page Manager
   };
 
+
   const handleLeadClick = (lead) => {
-    navigate("#", { state: { lead } }); // Navigate to lead details page with lead data
+    navigate("/LRInstruction", { state: { lead } }); // Navigate to lead details page with lead data
   };
+
 
   const defaultEntries = [
     {
-      leadNumber: "1",
-      leadSummary: "Investigate missing person case on 5th Avenue",
-      assignedDate: "12/15/24",
-      status: "Pending",
-      assignedOfficer: ["Officer 1", "Officer 5"], // Assigned officers
-      dateReturned: "",
+      leadNumber: "7",
+      leadSummary: "Investigate Mr.John",
+      dateCreated: "12/15/24",
+      status: "Created",
+      assignedOfficer: [], // Assigned officers
+      dateSubmitted: "",
+      dateApproved: "",
     },
     {
-      leadNumber: "2",
-      leadSummary: "Check surveillance footage for recent robbery",
-      assignedDate: "12/10/24",
-      status: "Completed",
-      assignedOfficer: ["Officer 2"], // Assigned officers
-      dateReturned: "12/18/24",
+      leadNumber: "1",
+      leadSummary: "Investigate missing person case on 5th Avenue",
+      dateCreated: "12/15/24",
+      status: "Pending",
+      assignedOfficer: ["Officer 1", "Officer 5"], // Assigned officers
+      dateSubmitted: "",
+      dateApproved: "",
     },
     {
       leadNumber: "3",
       leadSummary: "Interview witnesses for car accident on Main Street",
-      assignedDate: "12/12/24",
-      status: "Pending",
+      dateCreated: "12/12/24",
+      status: "Submitted",
       assignedOfficer: ["Officer 4", "Officer 8"], // Assigned officers
-      dateReturned: "",
+      dateSubmitted: "12/14/24",
+      dateApproved: "",
+    },
+    {
+      leadNumber: "9",
+      leadSummary: "Interview witnesses for theft on Scubert Street",
+      dateCreated: "12/12/24",
+      status: "Returned",
+      assignedOfficer: ["Officer 4", "Officer 8"], // Assigned officers
+      dateSubmitted: "12/14/24",
+      dateApproved: "",
+    },
+    {
+      leadNumber: "2",
+      leadSummary: "Check surveillance footage for recent robbery",
+      dateCreated: "12/10/24",
+      status: "Completed",
+      assignedOfficer: ["Officer 2"], // Assigned officers
+      dateSubmitted: "12/16/24",
+      dateApproved: "12/18/24",
     },
   ];
+
 
   const [dateRange, setDateRange] = useState({ startDate: "", endDate: "" });
   const [filterCategory, setFilterCategory] = useState("");
   const [filterValue, setFilterValue] = useState("");
   const [filteredEntries, setFilteredEntries] = useState(defaultEntries);
 
-  useEffect(() => {
-    if (newLead && newLead.leadNumber) {
-      setLeadEntries((prevEntries) => [...prevEntries, newLead]);
-    }
-  }, [newLead]);
+
+  // useEffect(() => {
+  //   if (newLead && newLead.leadNumber) {
+  //     setLeadEntries((prevEntries) => [...prevEntries, newLead]);
+  //   }
+  // }, [newLead]);
+
 
   const handleApplyFilter = () => {
     let filtered = leadEntries;
+
 
     if (filterCategory === "status" && filterValue) {
       filtered = filtered.filter((entry) => entry.status === filterValue);
@@ -67,16 +128,18 @@ export const LeadLog = () => {
       filtered = filtered.filter((entry) => entry.assignedOfficer.includes(filterValue));
     } else if (filterCategory === "leadNumber" && filterValue) {
       filtered = filtered.filter((entry) => entry.leadNumber === filterValue);
-    } else if (filterCategory === "assignedDate" && dateRange.startDate && dateRange.endDate) {
+    } else if (filterCategory === "dateCreated" && dateRange.startDate && dateRange.endDate) {
       filtered = filtered.filter(
         (entry) =>
-          new Date(entry.assignedDate) >= new Date(dateRange.startDate) &&
-          new Date(entry.assignedDate) <= new Date(dateRange.endDate)
+          new Date(entry.dateCreated) >= new Date(dateRange.startDate) &&
+          new Date(entry.dateCreated) <= new Date(dateRange.endDate)
       );
     }
 
+
     setFilteredEntries(filtered);
   };
+
 
   const resetFilters = () => {
     setFilteredEntries(leadEntries);
@@ -84,6 +147,8 @@ export const LeadLog = () => {
     setFilterValue([]);
     setDateRange({ startDate: "", endDate: "" });
   };
+
+
 
 
   // State to maintain a list of lead entries
@@ -102,8 +167,11 @@ export const LeadLog = () => {
     return combinedEntries;
   });
 
+
   const [filterStatus, setFilterStatus] = useState("all"); // State for status filter
   const [sortOption, setSortOption] = useState(""); // State for sort option
+
+
 
 
   // Effect to handle new lead data
@@ -115,16 +183,19 @@ export const LeadLog = () => {
           (entry) => entry.leadNumber === newLead.leadNumber
         );
 
+
         if (!isDuplicate) {
           const updatedEntries = [...prevEntries, { ...newLead, status: 'Pending' }];
           localStorage.setItem('leadEntries', JSON.stringify(updatedEntries)); // Save to local storage
           return updatedEntries;
         }
 
+
         return prevEntries;
       });
     }
   }, [newLead]);
+
 
    // Effect to save entries to local storage whenever they change
    useEffect(() => {
@@ -134,15 +205,18 @@ export const LeadLog = () => {
     }
   }, [leadEntries, updateLeadLogCount]);
 
+
   const [sortOrder, setSortOrder] = useState("asc"); // Default sort order is ascending
   const [appliedSortOption, setAppliedSortOption] = useState(""); // Applied sort option
 const [appliedSortOrder, setAppliedSortOrder] = useState("asc"); // Applied sort order
+
 
 // Apply sort functionality
 const handleApplySort = () => {
   setAppliedSortOption(sortOption);
   setAppliedSortOrder(sortOrder);
 };
+
 
 // Reset sort functionality
 const handleResetSort = () => {
@@ -152,12 +226,13 @@ const handleResetSort = () => {
   setAppliedSortOrder("asc");
 };
 
+
   // Sort entries based on selected option and order
   const sortedEntries = [...filteredEntries].sort((a, b) => {
     const compareValue = sortOrder === "asc" ? 1 : -1; // Determine sort direction
-  
+ 
     if (sortOption === "date") {
-      return (new Date(a.assignedDate) - new Date(b.assignedDate)) * compareValue;
+      return (new Date(a.dateCreated) - new Date(b.dateCreated)) * compareValue;
     }
     if (sortOption === "status") {
       return a.status.localeCompare(b.status) * compareValue;
@@ -171,9 +246,11 @@ const handleResetSort = () => {
     return 0;
   });
 
+
   return (
     <div className="lead-log-page">
       <Navbar />
+
 
       <div className="main-content">
         <div className="left-section">
@@ -184,10 +261,12 @@ const handleResetSort = () => {
           />
         </div>
 
+
         <div className="center-section">
           <h2 className="title">LEAD LOG</h2>
         </div>
       </div>
+
 
       <div className="filters-section">
         <table className="filter-table">
@@ -209,7 +288,7 @@ const handleResetSort = () => {
                   <option value="status">Status</option>
                   <option value="assignedOfficer">Assigned Officer</option>
                   <option value="leadNumber">Lead Number</option>
-                  <option value="assignedDate">Assigned Date</option>
+                  <option value="dateCreated">Assigned Date</option>
                 </select>
               </td>
               <td>
@@ -236,7 +315,7 @@ const handleResetSort = () => {
                     <option value="Officer 5">Officer 5</option>
                     <option value="Officer 8">Officer 8</option>
                   </select>
-                ) : filterCategory === "assignedDate" ? (
+                ) : filterCategory === "dateCreated" ? (
                   <div>
                     <input
                       type="date"
@@ -291,6 +370,7 @@ const handleResetSort = () => {
         <option value="lead number">Lead Number</option>
       </select>
 
+
       {/* Sort order (asc/desc) selection */}
       <label>Order: </label>
       <select
@@ -312,37 +392,36 @@ const handleResetSort = () => {
     </div>
       </div>
 
+
       <div className="table-section">
         <table className="leadlog-table">
           <thead>
             <tr>
               <th>LEAD #</th>
               <th>LEAD SUMMARY</th>
-              <th>DATE SUBMITTED</th>
+              <th>DATE CREATED</th>
               <th>STATUS</th>
               <th>ASSIGNED TO</th>
-              <th>DATE RETURNED</th>
+              <th>DATE SUBMITTED</th>
+              <th>DATE APPROVED</th>
             </tr>
           </thead>
           <tbody>
-          {sortedEntries.length > 0 ? (
-              sortedEntries.map((entry, index) => (
-                <tr key={index}>
-                  <td>{entry.leadNumber}</td>
-                  <td className="timeline-lead-horizontal"
-                    onClick={() => handleLeadClick(entry)}
-                  >
-                    {entry.leadSummary}
-                 </td>
+          {leadLogData.length > 0 ? (
+              leadLogData.map((entry, index) => (
+                <tr key={index} onClick={() => handleLeadClick(entry)}>
+                  <td>{entry.leadNo}</td>
+                  <td>{entry.summary}</td>
                   <td>{entry.assignedDate}</td>
                   <td>{entry.status || 'Pending'}</td>
-                  <td>{(entry.assignedOfficer || []).join(", ")}</td> {/* Assigned Officers */}
-                  <td>{entry.dateReturned || ''}</td>
+                  <td>{entry.assignedTo?.join(", ")}</td>
+                  <td>{entry.dateSubmitted || ''}</td>
+                  <td>{entry.dateApproved || ''}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="6" style={{ textAlign: 'center' }}>
+                <td colSpan="7" style={{ textAlign: 'center' }}>
                   No Leads Available
                 </td>
               </tr>
@@ -350,6 +429,7 @@ const handleResetSort = () => {
           </tbody>
         </table>
       </div>
+
 
       <div className="report-section">
         <label>Select Report Type: </label>
@@ -359,6 +439,7 @@ const handleResetSort = () => {
         </select>
       </div>
 
+
       <div className="action-buttons">
       <button className="download-pdf-btn1" onClick={handleBackClick}>Back</button>
         <button className="download-pdf-btn1">Download PDF</button>
@@ -367,3 +448,6 @@ const handleResetSort = () => {
     </div>
   );
 };
+
+
+

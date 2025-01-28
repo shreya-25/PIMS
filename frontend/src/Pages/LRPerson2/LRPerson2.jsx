@@ -87,7 +87,7 @@ export const LRPerson2 = () => {
             <tr>
               <td>SSN</td>
               <td><input type="text" /></td>
-              <td>Occupation</td>
+              <td>Age</td>
               <td><input type="text" /></td>
             </tr>
 
@@ -99,7 +99,7 @@ export const LRPerson2 = () => {
 
             {/* Third Row */}
             <tr>
-              <td>Pager</td>
+              <td>Occupation</td>
               <td colSpan="3"><input type="text" /></td>
             </tr>
 

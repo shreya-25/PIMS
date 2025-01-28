@@ -113,7 +113,7 @@ export const LRFinish = () => {
         <div className="form-buttons-finish">
           <button className="run-report-btn">Run Report</button>
           <button className="back-btn" onClick={() => handleNavigation("/LRScratchpad")}>Back</button>
-          <button className="finish-btn"onClick={() => handleNavigation("/casepagemanager")}>Finish</button>
+          <button className="finish-btn"onClick={() => handleNavigation("/casepagemanager")}>Submit</button>
           <button className="cancel-btn"onClick={() => handleNavigation("/casepagemanager")}>Cancel</button>
          
         </div>

@@ -1,0 +1,81 @@
+.officer-management-container {
+    padding: 50px;
+  }
+  
+  .title {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .table-container {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .voucher-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    table-layout: auto; /* Change from fixed to auto */
+  }
+  
+  .voucher-table th, .voucher-table td {
+    border: 1px solid #ddd;
+    padding: 6px;
+    text-align: left;
+  }
+  
+  .voucher-table th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+  }
+  
+  .dropdown {
+    position: relative;
+    display: inline-block;
+    width: 90%; /* Ensure dropdown matches the column width */
+    height: 80%;
+  }
+  .dropdown-btn
+  {
+    width: 90%;
+    height: 80%;
+    background-color:rgba(207, 205, 205, 0.705)
+  }
+  
+  .dropdown-menu {
+    display: none;
+    position: absolute;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+    min-width: 150px; /* Set a minimum width for dropdown */
+    max-width: 300px; /* Set a maximum width */
+    overflow-wrap: break-word; /* Handle long text wrapping */
+  }
+  
+  .dropdown:hover .dropdown-menu {
+    display: block;
+  }
+  
+  .dropdown-menu button {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    color: rgb(59, 59, 59);
+  }
+  
+  .dropdown-menu button:hover {
+    background-color: #f4f4f4;
+  }
+  
+  /* Last column specific handling */
+  .voucher-table td:last-child {
+    width: 15%; /* Set a flexible width for the last column */
+    white-space: nowrap; /* Prevent text wrapping in the last column */
+  }

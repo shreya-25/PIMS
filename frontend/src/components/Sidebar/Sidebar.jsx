@@ -47,6 +47,7 @@ export const SideBar = ({ leads = {}, cases = [], setActiveTab, onShowCaseSelect
           >
             My Ongoing Cases: {cases.length}
           </li>
+          <li className="sidebar-item"onClick={() => onShowCaseSelector("/OfficerManagement")}>Officer Management</li>
           <li className="sidebar-item"onClick={() => onShowCaseSelector("/CreateLead")}>Create Lead</li>
           <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
             View Lead Log
