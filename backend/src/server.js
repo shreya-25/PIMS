@@ -4,6 +4,7 @@ const dotenv = require("dotenv").config();
 const authRoutes = require("./routes/authRoutes.js");
 const userRoutes = require("./routes/userRoutes.js");
 const leadRoutes = require("./routes/leadRoutes.js"); // Import lead routes
+const caseRoutes = require("./routes/caseRoutes.js");
 const dbConnect = require("./config/dbConnect.js");
 
 dbConnect();
@@ -18,6 +19,8 @@ app.use(cors({ origin: "http://localhost:3000" })); // Replace with your fronten
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/lead", leadRoutes); // Mount lead routes
+app.use("/api/cases", caseRoutes); // ✅ FIXED: Correct route mounting
+
 
 // Start Server
 const PORT = process.env.PORT || 7002;
