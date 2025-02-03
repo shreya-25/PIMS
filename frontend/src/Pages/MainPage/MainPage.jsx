@@ -54,7 +54,8 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
     // { id: 65734, title: "Murray Street Stolen Gold", status: "ongoing", role: "Investigator" },
   ]);
 
-  const loggedInOfficer = localStorage.getItem("loggedInUser")?.trim();
+  // const loggedInOfficer = localStorage.getItem("loggedInUser")?.trim();
+  const loggedInOfficer = "Officer 916";
   console.log("Logged-in officer from localStorage:", loggedInOfficer);
 
 
@@ -97,7 +98,7 @@ const handleViewAssignedLead = (lead) => {
 const handleCaseClick = (caseDetails) => {
   if (caseDetails.role === "Investigator") {
     navigate("/Investigator", { state: { caseDetails } });
-  } else if (caseDetails.role === "Case Manager") {
+  } else if (caseDetails.role === "CaseManager") {
     navigate("/CasePageManager", { state: { caseDetails } });
   }
 };

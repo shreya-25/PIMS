@@ -5,11 +5,11 @@
 /* Sidebar styling */
 
 .sideitem {
-    width: 30%; /* Sidebar width */
+    width: 20%; /* Sidebar width */
     background-color: rgba(0, 0, 0, 0.4);
     padding: 10px;
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-    overflow-y: auto; /* Scroll for long content */
+    overflow-y: auto; 
     margin-top: 0px;
     margin-right: 10px;
     height: 100%;
