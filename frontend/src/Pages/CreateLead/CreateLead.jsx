@@ -185,7 +185,7 @@ const handleGenerateLead = async () => {
         {/* Left Section */}
         <div className="left-section">
           <img
-            src="/Materials/newpolicelogo.png" // Replace with the actual path to your logo
+            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
             alt="Police Department Logo"
             className="police-logo"
           />

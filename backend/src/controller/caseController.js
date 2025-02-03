@@ -4,17 +4,28 @@ const Case = require("../models/case");
 // Create a new case with validation
 exports.createCase = async (req, res) => {
     try {
-        const { caseNo, caseName, assignedOfficers } = req.body;
+        const { caseNo, caseName, assignedOfficers, caseStatus } = req.body;
 
         // Validate required fields
-        if (!caseNo || !caseName || !Array.isArray(assignedOfficers) || assignedOfficers.length === 0) {
-            return res.status(400).json({ message: "caseNo, caseName, and at least one assigned officer are required" });
+        if (!caseNo || !caseName || !Array.isArray(assignedOfficers) || assignedOfficers.length === 0 || !caseStatus) {
+            return res.status(400).json({ message: "caseNo, caseName, assignedOfficers, and caseStatus are required" });
         }
 
-        const newCase = new Case({ caseNo, caseName, assignedOfficers });
+        // Validate caseStatus against allowed values
+        if (!['Ongoing', 'Completed'].includes(caseStatus)) {
+            return res.status(400).json({ message: "Invalid caseStatus value. Allowed values: 'Ongoing', 'Completed'" });
+        }
+
+        // Ensure unique case number
+        const existingCase = await Case.findOne({ caseNo });
+        if (existingCase) {
+            return res.status(400).json({ message: "Case number already exists. Please use a unique caseNo." });
+        }
+
+        const newCase = new Case({ caseNo, caseName, assignedOfficers, caseStatus });
         await newCase.save();
 
-        res.status(201).json(newCase);
+        res.status(201).json({ message: "Case created successfully", data: newCase });
     } catch (err) {
         console.error("Error creating case:", err);
         res.status(500).json({ message: "Error creating case", error: err.message });
@@ -24,7 +35,7 @@ exports.createCase = async (req, res) => {
 // Get all cases
 exports.getAllCases = async (req, res) => {
     try {
-        const cases = await Case.find().populate("assignedOfficers"); // ✅ Populating officers if referenced
+        const cases = await Case.find();
         if (!cases || cases.length === 0) {
             return res.status(404).json({ message: "No cases found" });
         }
@@ -42,7 +53,7 @@ exports.getCaseById = async (req, res) => {
             return res.status(400).json({ message: "Invalid case ID format" });
         }
 
-        const caseData = await Case.findById(req.params.id).populate("assignedOfficers");
+        const caseData = await Case.findById(req.params.id);
         if (!caseData) {
             return res.status(404).json({ message: "Case not found" });
         }
@@ -53,26 +64,39 @@ exports.getCaseById = async (req, res) => {
     }
 };
 
-// Get cases assigned to the logged-in officer (if authentication is used)
+// Get cases assigned to a specific officer and return their role
 exports.getCasesByOfficer = async (req, res) => {
     try {
-        if (!req.user || !req.user.name) {
-            return res.status(403).json({ message: "Unauthorized: Officer name missing from request" });
+        const officerName = req.query.officerName; // Fetch officer's name from request query
+
+        if (!officerName) {
+            return res.status(400).json({ message: "Officer name is required in the query parameter" });
         }
 
-        const officerName = req.user.name;
         const cases = await Case.find({ "assignedOfficers.name": officerName });
 
         if (!cases || cases.length === 0) {
             return res.status(404).json({ message: "No cases assigned to this officer" });
         }
 
-        res.status(200).json(cases);
+        // Extract officer's role for each case
+        const formattedCases = cases.map((c) => {
+            const officer = c.assignedOfficers.find(o => o.name === officerName);
+            return {
+                caseNo: c.caseNo,
+                caseName: c.caseName,
+                caseStatus: c.caseStatus,
+                role: officer ? officer.role : "Unknown", // Ensure role is included
+            };
+        });
+
+        res.status(200).json(formattedCases);
     } catch (err) {
         console.error("Error fetching cases for officer:", err);
         res.status(500).json({ message: "Error fetching cases", error: err.message });
     }
 };
+
 
 // Update case details
 exports.updateCase = async (req, res) => {
@@ -89,7 +113,7 @@ exports.updateCase = async (req, res) => {
         if (!updatedCase) {
             return res.status(404).json({ message: "Case not found" });
         }
-        res.status(200).json(updatedCase);
+        res.status(200).json({ message: "Case updated successfully", data: updatedCase });
     } catch (err) {
         console.error("Error updating case:", err);
         res.status(500).json({ message: "Error updating case", error: err.message });

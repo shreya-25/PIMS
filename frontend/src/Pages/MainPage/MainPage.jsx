@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import "./MainPage.css";
 import Navbar from "../../components/Navbar/Navbar";
 import Searchbar from "../../components/Searchbar/Searchbar";
@@ -46,13 +47,50 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
   };
 
 
-
   const [cases, setCases] = useState([
-    { id: 12345, title: "Main Street Murder", status: "ongoing", role: "Investigator" },
-    { id: 45637, title: "Cook Street School Threat", status: "ongoing", role: "Case Manager" },
-    { id: 23789, title: "216 Endicott Suicide", status: "ongoing", role: "Investigator" },
-    { id: 65734, title: "Murray Street Stolen Gold", status: "ongoing", role: "Investigator" },
+    // { id: 12345, title: "Main Street Murder", status: "ongoing", role: "Investigator" },
+    // { id: 45637, title: "Cook Street School Threat", status: "ongoing", role: "Case Manager" },
+    // { id: 23789, title: "216 Endicott Suicide", status: "ongoing", role: "Investigator" },
+    // { id: 65734, title: "Murray Street Stolen Gold", status: "ongoing", role: "Investigator" },
   ]);
+
+  const loggedInOfficer = localStorage.getItem("loggedInUser")?.trim();
+  console.log("Logged-in officer from localStorage:", loggedInOfficer);
+
+
+
+  useEffect(() => {
+
+    if (!loggedInOfficer) {
+      navigate("/"); // Redirect to login if not authenticated
+      return;
+  }
+
+    const fetchCases = async () => {
+      try {
+        const response = await axios.get("http://localhost:5000/api/cases", {
+          params: { officerName: loggedInOfficer },
+        });
+
+        setCases(response.data);
+
+        const formattedCases = response.data.map((c) => ({
+          id: c.caseNo,
+          title: c.caseName,
+          status: c.caseStatus,
+          role: c.assignedOfficers.find((o) => o.name === loggedInOfficer)?.role || "Unknown",
+        }));
+
+        setCases(formattedCases);
+      } catch (error) {
+        console.error("Error fetching cases:", error);
+      }
+    };
+
+    fetchCases();
+  }, [loggedInOfficer]);
+
+
   // Handler to view the assigned lead details (can be updated to show a modal or navigate)
 const handleViewAssignedLead = (lead) => {
 };
@@ -292,7 +330,7 @@ const addCase = (newCase) => {
         /> */}
         <div className="logo-sec">
           <img
-            src="/Materials/newpolicelogo.png" // Replace with the actual path to your logo
+            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
             alt="Police Department Logo"
             className="police-logo-main-page"
           />
