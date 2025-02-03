@@ -30,44 +30,63 @@ export const CreateLead = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
 
-  useEffect(() => {
-    // Default highestLeadNumber to 3 so that it starts from 4 if nothing is found
-    let highestLeadNumber = 3;
+//   useEffect(() => {
+//     // Default highestLeadNumber to 3 so that it starts from 4 if nothing is found
+//     let highestLeadNumber = 3;
  
-    if (leadEntries?.length > 0) {
-      // Calculate the highest lead number from the passed leadEntries
-      highestLeadNumber = leadEntries.reduce(
-        (max, lead) => Math.max(max, parseInt(lead.leadNumber || '0', 10)),
-        highestLeadNumber
-      );
-    } else {
-      // Check if anything is in localStorage
-      const savedEntries = JSON.parse(localStorage.getItem('leadEntries')) || [];
+//     if (leadEntries?.length > 0) {
+//       // Calculate the highest lead number from the passed leadEntries
+//       highestLeadNumber = leadEntries.reduce(
+//         (max, lead) => Math.max(max, parseInt(lead.leadNumber || '0', 10)),
+//         highestLeadNumber
+//       );
+//     } else {
+//       // Check if anything is in localStorage
+//       const savedEntries = JSON.parse(localStorage.getItem('leadEntries')) || [];
  
-      if (savedEntries.length > 0) {
-        highestLeadNumber = savedEntries.reduce(
-          (max, lead) => Math.max(max, parseInt(lead.leadNumber || '0', 10)),
-          highestLeadNumber
-        );
-      }
+//       if (savedEntries.length > 0) {
+//         highestLeadNumber = savedEntries.reduce(
+//           (max, lead) => Math.max(max, parseInt(lead.leadNumber || '0', 10)),
+//           highestLeadNumber
+//         );
+//       }
+//     }
+ 
+//     // Increment the highest lead number by 1
+//     const newLeadNumber = highestLeadNumber + 1;
+ 
+//      // Set leadNumber only if it hasn't been manually changed
+//   setLeadData((prevData) => {
+//     if (prevData.leadNumber) {
+//       return prevData; // Prevent overwriting manual edits
+//     }
+//     return {
+//       ...prevData,
+//       leadNumber: newLeadNumber.toString(),
+//       subNumber: `SUB-${newLeadNumber.toString().padStart(6, '0')}`,
+//     };
+//   });
+// }, [leadEntries]);
+ 
+useEffect(() => {
+  const fetchMaxLeadNumber = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/api/lead/maxLeadNumber");
+      const maxLeadNo = response.data.maxLeadNo || 0; // Default to 0 if no leads exist
+      const newLeadNumber = maxLeadNo + 1;
+
+      setLeadData((prevData) => ({
+        ...prevData,
+        leadNumber: newLeadNumber.toString(),
+        subNumber: `SUB-${newLeadNumber.toString().padStart(6, '0')}`, // Auto-generate sub-number
+      }));
+    } catch (error) {
+      console.error("Error fetching max lead number:", error);
     }
- 
-    // Increment the highest lead number by 1
-    const newLeadNumber = highestLeadNumber + 1;
- 
-     // Set leadNumber only if it hasn't been manually changed
-  setLeadData((prevData) => {
-    if (prevData.leadNumber) {
-      return prevData; // Prevent overwriting manual edits
-    }
-    return {
-      ...prevData,
-      leadNumber: newLeadNumber.toString(),
-      subNumber: `SUB-${newLeadNumber.toString().padStart(6, '0')}`,
-    };
-  });
-}, [leadEntries]);
- 
+  };
+
+  fetchMaxLeadNumber();
+}, []);
  
 
   const handleInputChange = (field, value) => {
@@ -205,13 +224,15 @@ const handleGenerateLead = async () => {
               <tr>
                 <td>LEAD NUMBER:</td>
                 <td>
-                <input
+                {/* <input
                     type="text"
                     className="input-field1"
                     value={leadData.leadNumber}
                     onChange={(e) => handleInputChange('leadNumber', e.target.value)} // Allow manual edits
                     placeholder="Enter Lead Number"
-                  />
+                  /> */}
+                        <input type="text" value={leadData.leadNumber} readOnly /> {/* Read-only auto-generated */}
+
                 </td>
               </tr>
               <tr>
