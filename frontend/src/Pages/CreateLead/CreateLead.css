@@ -227,3 +227,92 @@ body{
   flex-shrink: 0; /* Prevent checkbox from shrinking */
 }
 
+
+/* Dropdown Container */
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+  max-width: 300px;
+  font-family: Arial, sans-serif;
+}
+
+/* Dropdown Header */
+.dropdown-header {
+  background-color: #f4f4f4;
+  border: 1px solid #ccc;
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  color: #4d4c4c;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dropdown-header:hover {
+  background-color: #e2e2e2;
+}
+
+/* Dropdown Options */
+.dropdown-options {
+  position: absolute;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  max-height: 150px;
+  overflow-y: auto;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+/* Each Dropdown Item */
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.3s ease-in-out;
+}
+
+/* Hover Effect */
+.dropdown-item:hover {
+  background-color: #f0f0f0;
+}
+
+/* Square Checkboxes */
+.dropdown-item input[type="checkbox"] {
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  border: 2px solid #666;
+  background: white;
+  cursor: pointer;
+  margin-right: 10px;
+  position: relative;
+}
+
+.dropdown-item input[type="checkbox"]:checked {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+/* Checkmark for Square Checkbox */
+.dropdown-item input[type="checkbox"]:checked::before {
+  content: "✔";
+  color: white;
+  font-size: 14px;
+  font-weight: normal;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Lighter Placeholder */
+.input-field::placeholder {
+  color: #575555;
+}
+
