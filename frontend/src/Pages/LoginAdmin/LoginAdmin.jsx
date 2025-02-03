@@ -6,13 +6,13 @@ export function LoginAdmin() {
   return (
     <>
       <div className="background">
-        <img src="/Materials/forensic.jpg" alt="Forensic Background" className="bg-image" />
+        <img src={`${process.env.PUBLIC_URL}/Materials/forensic.jpg`} alt="Forensic Background" className="bg-image" />
         <div className="overlay">
           <div className="img-container">
             <div className="logo">
               {/* Use Link for internal navigation */}
               <Link to="/LoginAdmin">
-                <img src="/Materials/newpolicelogo.png" alt="Endicott Police Logo" />
+                <img src= {`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} alt="Endicott Police Logo" />
               </Link>
             </div>
             <h1 className="main_heading">PIMS</h1>

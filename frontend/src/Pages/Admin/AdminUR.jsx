@@ -73,7 +73,7 @@ export const AdminUR = () => {
 
       <div className="logo-sec">
         <img
-          src="/Materials/newpolicelogo.png" 
+          src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
           alt="Police Department Logo"
           className="police-logo-main-page"
         />

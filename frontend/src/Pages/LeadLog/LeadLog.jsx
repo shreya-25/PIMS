@@ -255,7 +255,7 @@ const handleResetSort = () => {
       <div className="main-content">
         <div className="left-section">
           <img
-            src="/Materials/newpolicelogo.png"
+            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
             alt="Police Department Logo"
             className="police-logo"
           />

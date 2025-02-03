@@ -35,59 +35,70 @@ export function Login() {
     e.preventDefault();
 
     try {
-        // Clear any stale data in localStorage
-        localStorage.removeItem("token");
-        localStorage.removeItem("loggedInUser");
-        localStorage.removeItem("role"); 
+        // Debug log before making the request
+        console.log("Attempting login for:", username);
+
         const response = await axios.post("http://localhost:5000/api/auth/login", {
             username,
             password,
         });
 
-        // If login is successful, save the token and redirect
+        // Extract required data from response
         const { token, username: loggedInUser, role } = response.data;
 
-        // Debug log for the token
-        console.log("Token received from backend:", token);
+        // Debug logs
+        console.log("Login successful!");
+        console.log("Received from backend:", response.data);
 
         // Handle missing token
         if (!token) {
-            setErrorMessage("Token not provided by the server.");
+            setErrorMessage("Authentication failed: Token not provided by the server.");
             return;
         }
 
-        // Save token to localStorage
+        // Clear any stale data in localStorage after successful login
+        localStorage.clear();
+
+        // Save token and user details to localStorage
         localStorage.setItem("token", token);
-        localStorage.setItem("loggedInUser", loggedInUser);
-        localStorage.setItem("role", role);
+        localStorage.setItem("loggedInUser", loggedInUser);  // Trim to avoid space issues
+        // localStorage.setItem("role", role);
 
+        console.log("Stored in localStorage:", {
+            token: localStorage.getItem("token"),
+            loggedInUser: localStorage.getItem("loggedInUser"),
+            // role: localStorage.getItem("role"),
+        });
 
-        if (role === "Investigator") {
-          navigate("/MainPage");
-      } else if (role === "CaseManager") {
-          navigate("/MainPage");
-      } else {
-          setErrorMessage("Role not authorized");
-      }
-        // navigate("/MainPage");
+        navigate("/MainPage");
+
+        // // Navigate based on role
+        // if (role === "Investigator" || role === "CaseManager") {
+        //     navigate("/MainPage");
+        // } else {
+        //     setErrorMessage("Unauthorized role. Please contact admin.");
+        // }
     } catch (error) {
+        console.error("Login error:", error);
+        
+        // Check if the backend provided an error response
         if (error.response) {
-            // If backend sends a specific error message
-            setErrorMessage(error.response.data.message || "Login failed");
+            setErrorMessage(error.response.data.message || "Invalid username or password.");
         } else {
-            setErrorMessage("An unexpected error occurred.");
+            setErrorMessage("An unexpected network error occurred. Please try again.");
         }
     }
 };
 
+
   return (
     <div className="background">
-      <img src="/Materials/forensic.jpg" alt="Forensic Background" className="bg-image" />
+      <img src={`${process.env.PUBLIC_URL}/Materials/forensic.jpg`} alt="Forensic Background" className="bg-image" />
       <div className="overlay">
         <div className="img-container">
           <div className="logo">
             <Link to="/LoginAdmin">
-              <img src="/Materials/newpolicelogo.png" alt="Endicott Police Logo" />
+              <img src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} alt="Endicott Police Logo" />
             </Link>
           </div>
           <h1 className="main_heading">PIMS</h1>
