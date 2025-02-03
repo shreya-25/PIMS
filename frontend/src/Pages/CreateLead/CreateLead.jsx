@@ -29,6 +29,13 @@ export const CreateLead = () => {
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  const [availableSubNumbers, setAvailableSubNumbers] = useState([
+    "SUB-000001", "SUB-000002", "SUB-000003", "SUB-000004", "SUB-000005"
+  ]); // Static List of Subnumbers
+  
+  const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]); // Selected Subnumbers
+  const [subDropdownOpen, setSubDropdownOpen] = useState(false);
+
 
 //   useEffect(() => {
 //     // Default highestLeadNumber to 3 so that it starts from 4 if nothing is found
@@ -270,7 +277,7 @@ const handleGenerateLead = async () => {
                   />
                 </td>
               </tr>
-              <tr>
+              {/* <tr>
                 <td>ASSOCIATED SUBNUMBERS:</td>
                 <td>
                 <input
@@ -280,7 +287,45 @@ const handleGenerateLead = async () => {
                     readOnly // Make it read-only
                   />
                 </td>
-              </tr>
+              </tr> */}
+              <tr>
+  <td>ASSOCIATED SUBNUMBERS:</td>
+  <td>
+    <div className="custom-dropdown">
+      <div
+        className="dropdown-header"
+        onClick={() => setSubDropdownOpen(!subDropdownOpen)}
+      >
+        {associatedSubNumbers.length > 0
+          ? associatedSubNumbers.join(", ")
+          : "Select Subnumbers"}
+        <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
+      </div>
+      {subDropdownOpen && (
+        <div className="dropdown-options">
+          {availableSubNumbers.map((subNum) => (
+            <div key={subNum} className="dropdown-item">
+              <input
+                type="checkbox"
+                id={subNum}
+                value={subNum}
+                checked={associatedSubNumbers.includes(subNum)}
+                onChange={(e) => {
+                  const updatedSubNumbers = e.target.checked
+                    ? [...associatedSubNumbers, e.target.value]
+                    : associatedSubNumbers.filter((num) => num !== e.target.value);
+                  setAssociatedSubNumbers(updatedSubNumbers);
+                }}
+              />
+              <label htmlFor={subNum}>{subNum}</label>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </td>
+</tr>
+
               <tr>
                 <td>ASSIGNED DATE:</td>
                 <td>
