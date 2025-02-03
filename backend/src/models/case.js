@@ -11,7 +11,7 @@ const caseSchema = new mongoose.Schema(
                 role: { type: String, enum: ['CaseManager', 'Investigator'], required: true }
             }
         ],
-        CaseStatus: { type: String, enum: ['Ongoing', 'Completed'], required: true }
+        caseStatus: { type: String, enum: ['Ongoing', 'Completed'], required: true }
         // allLeads: [{
         //     name: { type: String, required: true },
         //     number: { type: Number, required: true },
