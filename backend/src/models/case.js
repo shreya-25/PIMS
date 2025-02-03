@@ -4,19 +4,28 @@ const caseSchema = new mongoose.Schema(
     {
         caseNo: { type: Number, required: true, unique: true },
         caseName: { type: String, required: true },
-        // assignedOfficers: [{ type: String }], // Array of strings for officer names
-        // caseManager: { type: String, required: true },
         assignedOfficers: [
             {
-                officerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Officer', required: true },
+                name: { type: String, required: true },
+                // badgeNumber: { type: String, required: true },
                 role: { type: String, enum: ['CaseManager', 'Investigator'], required: true }
             }
         ],
-        allLeads: [{ name: String, number: Number }], // Array of objects with lead name and number
-        allLeadReturns: [{ name: String, number: Number }], // Array of objects with return details
-        leadStatus: { type: String, required: true },
-        statusLeadReturn: { type: String },
-        scratchpadEntry: { type: String }, // Optional notes or scratchpad entries
+        // allLeads: [{
+        //     name: { type: String, required: true },
+        //     number: { type: Number, required: true },
+        //     status: { type: String, enum: ['Assigned', 'Pending', 'Completed'], required: true }
+        // }
+
+        // ], 
+        // allLeadReturns: [
+        //     {
+        //         name: { type: String, required: true },
+        //         number: { type: Number, required: true },
+        //         status: { type: String, enum: ['Assigned', 'Pending', 'Completed'], required: true }
+        //     }
+        // ],
+        // scratchpadEntry: { type: String }, 
     },
     { timestamps: true }
 );
