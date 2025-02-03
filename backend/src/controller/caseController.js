@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const Case = require("../models/case"); // ✅ Ensure correct import
+const Case = require("../models/case");
 
 // Create a new case with validation
 exports.createCase = async (req, res) => {
