@@ -1,0 +1,121 @@
+/* General Styles */
+.leads-container {
+    font-family: "Poppins", sans-serif;
+    background-color: #f4f4f4;
+    padding: 20px;
+  }
+  
+  /* Lead Info */
+  .lead-info {
+    max-width: 1200px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  }
+  
+  h2 {
+    text-align: center;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  h3 {
+    text-align: center;
+    font-size: 18px;
+    color: #555;
+  }
+  
+  /* Lead Details Table */
+  .lead-details table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 16px;
+    margin-top: 10px;
+  }
+  
+  .lead-details td {
+    padding: 10px;
+    border: 1px solid #ddd;
+  }
+  
+  .lead-details tr:nth-child(even) {
+    background: #f9f9f9;
+  }
+  
+  /* Assigned Officers */
+  .assigned-officers {
+    background: #e9f5ff;
+    padding: 15px;
+    border-radius: 8px;
+  }
+  
+  .add-officer {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .add-btn,
+  .remove-btn {
+    padding: 5px 10px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 4px;
+  }
+  
+  .add-btn {
+    background: #28a745;
+    color: white;
+  }
+  
+  .remove-btn {
+    background: #dc3545;
+    color: white;
+  }
+  
+  /* Status Tracker */
+  .lead-tracker-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .lead-tracker-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  /* Status Circle */
+  .status-circle {
+    width: 40px;
+    height: 40px;
+    background: #ccc;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    transition: all 0.3s ease-in-out;
+  }
+  
+  .status-circle.active {
+    background: #007bff;
+    color: white;
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.6);
+  }
+  
+  /* Status Text Box */
+  .status-text-box {
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: #f4f4f4;
+  }
+  
+  .status-text-box.highlighted {
+    background: #cce5ff;
+    border-left: 5px solid #007bff;
+  }
+  
