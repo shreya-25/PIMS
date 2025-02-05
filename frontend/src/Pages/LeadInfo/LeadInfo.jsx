@@ -10,6 +10,19 @@ export const LeadInfo = () => {
     "Officer 22"
   ]); 
   const allOfficers = ["Officer 1", "Officer 2", "Officer 3", "Officer 4"]; 
+  const statuses = [
+    "Lead Created",
+    "Lead Assigned",
+    "Lead Accepted",
+    "Lead Return Submitted",
+    "Lead Approved",
+    "Lead Returned",
+    "Lead Completed",
+  ];
+  
+  // Change this index to highlight the current status dynamically
+  const currentStatusIndex = 3; // Example: Highlighting "Lead Return Submitted"
+  
 
   const handleAddOfficer = () => {
     if (selectedOfficer && !assignedOfficers.includes(selectedOfficer)) {
@@ -72,19 +85,34 @@ export const LeadInfo = () => {
           </div>
           </div>
           <div className="lead-content-right">
-          <div className="status-updates">
-            {["Lead Created, 02/10/2025", "Lead Assigned 02/10/2025", "Lead Accepted 02/10/2025", "Lead Return Submitted 02/10/2025", "Lead Approved 02/10/2025", "Lead Returned 02/10/2025", "Lead Completed 02/10/2025"].map((status, index) => (
-              <div key={index} className="status-item">
-                <div className="status-circle"></div>
-                <div className="status-text-box">
-                {status}
+             <div className="lead-tracker-container">
+                  {statuses.map((status, index) => (
+                       <div key={index} className="lead-tracker-row">
+                          {/* Circle Indicator */}
+                          <div
+                            className={`status-circle ${index <= currentStatusIndex ? "active" : ""}`}
+                          >
+                            {index <= currentStatusIndex && <span className="status-number">{index + 1}</span>}
+                         </div>
+
+                            {/* Connector Line (Except Last Item) */}
+                            {index < statuses.length && (
+                              <div className={`status-line ${index < currentStatusIndex ? "active" : ""}`}></div>
+                            )}
+
+                            {/* Status Box */}
+                            <div
+                              className={`status-text-box ${index === currentStatusIndex ? "highlighted" : ""}`}
+                            >
+                              {status}
+                            </div>
+                        </div>
+                      ))}
                 </div>
-              </div>
-            ))}
-          </div>
           </div>
         </div>
       </div>
     </div>
   );
 };
+
