@@ -43,20 +43,18 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 20px;
+  padding: 10px;
 }
 
-/* Remove column borders for the first row */
 .lead-details tr:first-child td {
-  background-color: #a7a3a3;
+  background-color: #e5e2e2;
   font-weight: bold;
 }
 
-/* Remove left border of the second td in the first row */
 .lead-details tr:first-child td:nth-child(1) {
   border-right: none !important;
 }
 
-/* Remove left border of the second td in the first row */
 .lead-details tr:first-child td:nth-child(2) {
   border-left: none !important;
 }
@@ -66,18 +64,16 @@
   padding: 8px;
 }
 
-/* Alternating row colors */
 .lead-details tr:nth-child(odd) {
-  background-color: #d6d6d6; /* Dark row */
+  background-color: #f2f2f2; 
 }
 
 .lead-details tr:nth-child(even) {
-  background-color: #f2f2f2; /* Light row */
+  background-color: #f9f9f9;
 }
 
-/* Multi-line text formatting for larger values */
 .lead-details td.long-text {
-  white-space: pre-line; /* Forces text to appear in multiple lines */
+  white-space: pre-line; 
   word-wrap: break-word;
 }
 
@@ -155,7 +151,7 @@
 
 /* ############################### */
 
-.lead-content-right
+/* .lead-content-right
   {
     display: flex;
     flex-direction: column;
@@ -167,7 +163,7 @@
 
  /* Styling for Status Tracker */
   
-  .status-updates {
+  /* .status-updates {
     flex: 1;
   }
   
@@ -178,14 +174,116 @@
     padding: 8px;
     border-radius: 5px;
     margin-bottom: 30px;
-  }
+  } */
 
 /* Properly Styled Status Text Box with Border */
-.status-text-box {
+/* .status-text-box {
   background: #d6d6d6;
   min-width: 250px; /* Allows the box to expand as needed */
-  padding: 10px 15px;
+  /* padding: 10px 15px;
   border: 2px solid rgb(120, 120, 120); /* Adds a visible border */
+  /* border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px; Adjust height properly
+} */ */
+
+  /* Circle with Border */
+/* .status-circle {
+  width: 50px;
+  height: 50px;
+  background: rgb(82, 75, 75);
+  border-radius: 50%;
+  border: 5px solid rgb(150, 144, 144); 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+} */
+
+/* Outer Diameter Border Effect */
+/* .status-circle::before {
+  content: "";
+  position: absolute;
+  width: 60px; 
+  height: 60px;
+  border-radius: 50%;
+  border: 3px solid rgb(200, 200, 200); 
+  top: -5px;
+  left: -5px;
+} */ 
+
+/* Lead Tracker Container */
+.lead-tracker-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 20px;
+}
+
+/* Each Row */
+.lead-tracker-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 500px;
+  margin-bottom: 20px;
+}
+
+/* Status Circle */
+.status-circle {
+  width: 60px;
+  height: 60px;
+  background: #b0b0b0;
+  border-radius: 50%;
+  border: 4px solid #d0d0d0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Active (Current and Completed) Status */
+.status-circle.active {
+  background: #2e6472; /* Blue */
+  border-color: #9f9f9f;
+  box-shadow: 0 0 10px rgba(153, 197, 205, 0.584);
+  color: white;
+  font-weight: 100;
+}
+
+.status-number {
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* Connector Line */
+.status-line {
+  width: 50px;
+  height: 4px;
+  background: #d0d0d0;
+  margin: 0 10px;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Active Line */
+.status-line.active {
+  background: #6a7172;
+}
+
+/* Status Text Box */
+.status-text-box {
+  background: #e5e7eb;
+  min-width: 200px;
+  padding: 10px 15px;
+  border: 2px solid #9ca3af;
   border-radius: 8px;
   font-size: 16px;
   font-weight: bold;
@@ -193,30 +291,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 50px; /* Adjust height properly */
+  transition: all 0.3s ease-in-out;
 }
 
-  /* Circle with Border */
-.status-circle {
-  width: 50px;
-  height: 50px;
-  background: rgb(82, 75, 75);
-  border-radius: 50%;
-  border: 5px solid rgb(150, 144, 144); /* Creates the outer border */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
+/* Highlighted Current Status */
+.status-text-box.highlighted {
+  background: #dbeafe;
+  border-color: #2e6472;
+  color: #518d97;
+  box-shadow: 0 0 10px rgba(153, 197, 205, 0.584);
 }
 
-/* Outer Diameter Border Effect */
-.status-circle::before {
-  content: "";
-  position: absolute;
-  width: 60px; /* Slightly larger than the main circle */
-  height: 60px;
-  border-radius: 50%;
-  border: 3px solid rgb(200, 200, 200); /* Outer border color */
-  top: -5px;
-  left: -5px;
-}
+
+
