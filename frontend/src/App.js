@@ -37,6 +37,7 @@ import { AdminSC } from './Pages/Admin/AdminSC';
 import { AdminSP } from './Pages/Admin/AdminSP';
 import { AdminDB } from './Pages/Admin/AdminDB';
 import { OfficerManagement } from './Pages/OfficerManagement/OfficerManagement';
+import { LeadInfo } from './Pages/LeadInfo/LeadInfo';
 
 function App() {
   return (
@@ -79,6 +80,7 @@ function App() {
         <Route path="/AdminSP" element={<AdminSP />} />
         <Route path="/AdminDB" element={<AdminDB />} />
         <Route path="/OfficerManagement" element={<OfficerManagement />} />
+        <Route path="/LeadInfo" element={<LeadInfo />} />
       </Routes>
     </Router>
   );
