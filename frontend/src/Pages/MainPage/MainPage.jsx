@@ -8,6 +8,7 @@ import { SideBar } from "../../components/Sidebar/Sidebar";
 import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 import { useNavigate } from "react-router-dom";
 
+
 export const MainPage = () => {
   const [activeTab, setActiveTab] = useState("cases"); // Default tab
   const [sortField, setSortField] = useState(""); // Sorting field
@@ -21,19 +22,23 @@ const [flagsFilter, setFlagsFilter] = useState("");
 const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
 const [newInvestigator, setNewInvestigator] = useState("");
 
+
 const [showCaseSelector, setShowCaseSelector] = useState(false);
   const [navigateTo, setNavigateTo] = useState(""); // Target page
+
 
   const handleShowCaseSelector = (targetPage) => {
     setNavigateTo(targetPage);
     setShowCaseSelector(true);
   };
 
+
   // Function to close CaseSelector
   const handleCloseCaseSelector = () => {
     setShowCaseSelector(false);
     setNavigateTo(""); // Reset navigation target
   };
+
 
   const handleAssignRole = (caseId) => {
     const role = prompt("Assign role (Investigator/Case Manager):");
@@ -47,6 +52,8 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
   };
 
 
+
+
   const [cases, setCases] = useState([
     // { id: 12345, title: "Main Street Murder", status: "ongoing", role: "Investigator" },
     // { id: 45637, title: "Cook Street School Threat", status: "ongoing", role: "Case Manager" },
@@ -54,18 +61,24 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
     // { id: 65734, title: "Murray Street Stolen Gold", status: "ongoing", role: "Investigator" },
   ]);
 
+
   // const loggedInOfficer = localStorage.getItem("loggedInUser")?.trim();
   const loggedInOfficer = "Officer 916";
   console.log("Logged-in officer from localStorage:", loggedInOfficer);
 
 
 
+
+
+
   useEffect(() => {
+
 
     if (!loggedInOfficer) {
       navigate("/"); // Redirect to login if not authenticated
       return;
   }
+
 
     const fetchCases = async () => {
       try {
@@ -73,7 +86,9 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
           params: { officerName: loggedInOfficer },
         });
 
+
         setCases(response.data);
+
 
         const formattedCases = response.data.map((c) => ({
           id: c.caseNo,
@@ -82,14 +97,18 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
           role: c.assignedOfficers.find((o) => o.name === loggedInOfficer)?.role || "Unknown",
         }));
 
+
         setCases(formattedCases);
       } catch (error) {
         console.error("Error fetching cases:", error);
       }
     };
 
+
     fetchCases();
   }, [loggedInOfficer]);
+
+
 
 
   // Handler to view the assigned lead details (can be updated to show a modal or navigate)
@@ -102,6 +121,7 @@ const handleCaseClick = (caseDetails) => {
     navigate("/CasePageManager", { state: { caseDetails } });
   }
 };
+
 
 const handleLRClick = (lead) => {
   navigate("/LRInstruction", { state: { leadDetails: lead } });
@@ -116,6 +136,7 @@ const handleAssignInvestigator = (caseId) => {
     );
   }
 };
+
 
 // Handler to accept the assigned lead
 const handleAcceptAssignedLead = (lead) => {
@@ -138,9 +159,11 @@ const handleAcceptAssignedLead = (lead) => {
   }
 };
 
+
 const acceptLead = (leadId) => {
   const leadToAccept = leads.assignedLeads.find((lead) => lead.id === leadId);
   if (!leadToAccept) return;
+
 
   // Add lead to pending leads with default fields if not present
   const newPendingLead = {
@@ -151,6 +174,7 @@ const acceptLead = (leadId) => {
     assignedOfficers: leadToAccept.assignedOfficers || ["Unassigned"],
   };
 
+
   setLeads((prevLeads) => ({
     ...prevLeads,
     assignedLeads: prevLeads.assignedLeads.filter((lead) => lead.id !== leadId),
@@ -159,7 +183,9 @@ const acceptLead = (leadId) => {
 };
 
 
-  
+
+
+ 
   const [leads, setLeads] = useState({
     assignedLeads: [
       { id: 1, description: "Lead 45: Collect Audio Records from Dispatcher",dueDate: "12/28/2024",
@@ -208,7 +234,10 @@ const acceptLead = (leadId) => {
     ],
   });
 
+
   const navigate = useNavigate();
+
+
 
 
   const addPendingLead = (newLead) => {
@@ -226,7 +255,8 @@ const acceptLead = (leadId) => {
       ],
     }));
   };
-  
+ 
+
 
   // Calculate remaining days from the due date
   const calculateRemainingDays = (dueDate) => {
@@ -235,7 +265,8 @@ const acceptLead = (leadId) => {
     const timeDifference = targetDate - currentDate;
     return Math.max(0, Math.ceil(timeDifference / (1000 * 60 * 60 * 24))); // Return 0 if negative
   };
-  
+ 
+
 
   // Sort leads
   const handleSort = (field, order) => {
@@ -244,7 +275,7 @@ const acceptLead = (leadId) => {
       ...prevLeads,
       pendingLeads: [...prevLeads.pendingLeads].sort((a, b) => {
         let comparison = 0;
-  
+ 
         if (field === "remainingDays") {
           const remainingDaysA = Math.max(0, calculateRemainingDays(a.dueDate));
           const remainingDaysB = Math.max(0, calculateRemainingDays(b.dueDate));
@@ -255,12 +286,13 @@ const acceptLead = (leadId) => {
         } else {
           comparison = a[field]?.localeCompare(b[field]);
         }
-  
+ 
         return order === "asc" ? comparison : -comparison;
       }),
     }));
   };
-  
+ 
+
 
   // Adding a case to the list
  // Adding a case to the list
@@ -269,12 +301,14 @@ const addCase = (newCase) => {
     alert("Case must have an ID, title, and status.");
     return;
   }
-  
+ 
   if (window.confirm(`Are you sure you want to add the case "${newCase.title}" with ID ${newCase.id}?`)) {
     setCases((prevCases) => [...prevCases, newCase]);
     alert(`Case "${newCase.title}" added successfully!`);
   }
 };
+
+
 
 
   // Close an ongoing case
@@ -286,6 +320,7 @@ const addCase = (newCase) => {
     }
   };
 
+
   // Delete an ongoing case
   const deleteCase = (caseId) => {
     if (window.confirm("Are you sure you want to delete this case?")) {
@@ -294,6 +329,7 @@ const addCase = (newCase) => {
       );
     }
   };
+
 
   // Continue a pending lead return
   const continueLead = (leadId) => {
@@ -309,14 +345,17 @@ const addCase = (newCase) => {
       pendingLeads: [...prevLeads.pendingLeads, leadToContinue],
     }));
   };
-  
+ 
 
-  
+
+ 
+
 
   // Filter leads
   const handleFilter = (e) => {
     setFilterText(e.target.value);
   };
+
 
   return (
     <div>
@@ -384,6 +423,7 @@ const addCase = (newCase) => {
           </span>
         </div>
 
+
         <div className="content-section">
         {activeTab === "cases" && (
             <div className="case-list">
@@ -397,6 +437,7 @@ const addCase = (newCase) => {
                 </span>
                
                 <div className="case-actions">
+
 
                   <button
                     className="close-button"
@@ -422,8 +463,11 @@ const addCase = (newCase) => {
               </div>
             ))}
           </div>
-          
+         
 )}
+
+
+
 
 
 
@@ -435,6 +479,7 @@ const addCase = (newCase) => {
     >
       Open Filter & Sort
     </button>
+
 
     {filterSortPopupVisible && (
       <div className="popup-overlay">
@@ -535,6 +580,7 @@ const addCase = (newCase) => {
               </div>
             </div>
 
+
             <div className="sorting">
               <h4 className="filter-label">Sorting</h4>
               <select
@@ -574,6 +620,7 @@ const addCase = (newCase) => {
         </div>
       </div>
     )}
+
 
     <table className="leads-table">
       <thead>
@@ -648,7 +695,9 @@ const addCase = (newCase) => {
 )}
 
 
-          
+
+
+         
 {activeTab === "pendingLeads" && (
   <div className="pending-leads">
     <button
@@ -657,6 +706,7 @@ const addCase = (newCase) => {
     >
       Open Filter & Sort
     </button>
+
 
     {filterSortPopupVisible && (
       <div className="popup-overlay">
@@ -706,6 +756,7 @@ const addCase = (newCase) => {
                 </button>
               </div>
 
+
             {/* Filter by Remaining Days */}
         <div className="filter-item">
           <label>Remaining Days:</label>
@@ -723,6 +774,7 @@ const addCase = (newCase) => {
           </button>
         </div>
 
+
         {/* Filter by Flags */}
         <div className="filter-item">
           <label>Flags:</label>
@@ -736,6 +788,7 @@ const addCase = (newCase) => {
             Clear Flags Filter
           </button>
         </div>
+
 
         {/* Filter by Assigned Officers */}
         <div className="filter-item">
@@ -754,6 +807,7 @@ const addCase = (newCase) => {
           </button>
         </div>
         </div>
+
 
             <div className="sorting">
               <h4>Sorting</h4>
@@ -794,6 +848,7 @@ const addCase = (newCase) => {
         </div>
       </div>
     )}
+
 
     <table className="leads-table">
       <thead>
@@ -858,6 +913,11 @@ const addCase = (newCase) => {
 
 
 
+
+
+
+
+
 {activeTab === "pendingLeadReturns" && (
   <div className="pending-lead-returns">
     <ul className="lead-list">
@@ -878,6 +938,7 @@ const addCase = (newCase) => {
   </div>
 )}  
 
+
         </div>
       </div>
     </div>
@@ -885,3 +946,4 @@ const addCase = (newCase) => {
     </div>
   );
 };
+
