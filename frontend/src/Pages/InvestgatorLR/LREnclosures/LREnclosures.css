@@ -1,0 +1,93 @@
+.lrenclosures-container {
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+  }
+  
+  .main-contentLRE {
+    margin-top: 20px;
+    padding:10px;
+  }
+  
+  .title {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .enclosures-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+  
+  .enclosures-table th,
+  .enclosures-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+  }
+  
+  .enclosure-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+  
+  .form-row-enc {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  label {
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  
+  input,
+  textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  textarea {
+    resize: vertical;
+    height: 80px;
+  }
+  
+  .form-buttons-enc {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  
+  button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .add-btn {
+    background-color:#8b0000;
+    color: white;
+    font-size: 20px;
+  }
+  
+  .back-btn,
+  .next-btn {
+    background-color: #8b0000;
+    color: white;
+  }
+  
+  .save-btn {
+    background-color: #8b0000;
+    color: white;
+  }
+  
+  .cancel-btn {
+    background-color: #8b0000;
+    color: white;
+  }
+  
