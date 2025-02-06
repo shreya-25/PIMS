@@ -1,0 +1,200 @@
+
+body{
+  background-color: #f9f9f9;
+}
+.timeline-container {
+  font-family: 'Arial', sans-serif;
+  background-color: #f9f9f9; /* Light gray background */
+  margin: 0;
+  padding: 0;
+  width: 100vw; /* Full width of the viewport */
+  height: 100vh; /* Full height of the viewport */
+  display: flex;
+  flex-direction: column; /* Ensures vertical layout */
+  box-sizing: border-box; /* Include padding and border in width/height */
+  overflow-y: auto; /* Allows scrolling for overflowing content */
+}
+
+
+.timeline-section {
+  display: block; /* Use block layout */
+  gap: 20px; /* Not applicable for block, can use margin instead */
+  width: 40%; /* Restrict the width to 40% of the container */
+  box-sizing: border-box; /* Include padding and borders in the width */
+  max-height: 6200px; /* Restrict the maximum width */
+  max-width: 6200px; /* Restrict the maximum width */
+
+}
+
+.timeline-table {
+ width: 90%;
+ margin-left: 5%;
+ background-color: #f9f9f9;
+}
+
+.timeline-form-sec{
+    width: 60%;
+    margin-left: 20%;
+    margin-top: 1%;
+    font-size: 20px;
+    background-color:#f9f9f9;
+}
+
+.timeline-table .title {
+  margin-bottom: 10px;
+  font-size: 20px;
+  color: #343a40;
+}
+
+.timeline-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.timeline-table th, .timeline-table td {
+  border: 1px solid #dee2e6;
+  padding: 15px;
+  text-align: left;
+  font-size: 20px;
+}
+
+.timeline-table th {
+  background-color: #343a40;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.timeline-table tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.timeline-table tr:hover {
+  background-color: #e9ecef;
+}
+
+.timeline-table .btn-edit, .timeline-table .btn-delete {
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 20px;
+  transition: background-color 0.3s ease;
+  margin-right: 10px;
+}
+
+.timeline-table .btn-edit {
+  background-color: #ffc107;
+  color: #343a40;
+}
+
+.timeline-table .btn-edit:hover {
+  background-color: #e0a800;
+}
+
+.timeline-table .btn-delete {
+  background-color: #dc3545;
+  color: #ffffff;
+}
+
+.timeline-table .btn-delete:hover {
+  background-color: #c82333;
+}
+
+.no-timeline {
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.timeline-form-sec {
+  flex: 1;
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 15px;
+}
+
+.timeline-form-sec h3 {
+  margin-bottom: 15px;
+  font-size: 20px;
+  color: #343a40;
+}
+
+.timeline-form-sec label {
+  font-size: 20px;
+  color: #495057;
+  margin-top: 10px;
+}
+
+.timeline-form-sec input, .timeline-form-sec textarea, .timeline-form-sec select {
+  width: 100%;
+  padding: 8px 10px;
+  margin-top: 5px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 20px;
+  color: #495057;
+  background-color: #ffffff;
+  transition: border-color 0.3s ease;
+}
+
+.timeline-form-sec input:focus, .timeline-form-sec textarea:focus, .timeline-form-sec select:focus {
+  border-color: #80bdff;
+  outline: none;
+  box-shadow: 0px 0px 5px rgba(0, 123, 255, 0.5);
+}
+
+.timeline-form-sec .add-flag {
+  display: flex;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.timeline-form-sec .add-flag input {
+  flex: 1;
+  margin-right: 10px;
+}
+
+.timeline-form-sec .add-flag button {
+  background-color: #007bff;
+  color: #ffffff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 20px;
+  transition: background-color 0.3s ease;
+}
+
+.timeline-form-sec .add-flag button:hover {
+  background-color: #0056b3;
+}
+
+.timeline-form-sec .btn-add {
+  background-color: #28a745;
+  color: #ffffff;
+  border: none;
+  padding: 10px 15px;
+  margin-top: 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 20px;
+  transition: background-color 0.3s ease;
+}
+
+.timeline-form-sec .btn-add:hover {
+  background-color: #218838;
+}
+
+.form-buttons-timeline {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom : 10px;
+}

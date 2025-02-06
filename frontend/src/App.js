@@ -13,20 +13,34 @@ import { LeadLog } from './Pages/LeadLog/LeadLog';
 import { LeadHierarchy } from './Pages/LeadHierarchy/LeadHierarchy';
 import { CaseScratchpad } from './Pages/CaseScratchpad/CaseScratchpad';
 import { LeadReturn } from './Pages/LeadReturn/LeadReturn';
-import { LRInstruction } from './Pages/LRInstruction/LRInstruction';
-import { LRReturn } from './Pages/LRReturn/LRReturn';
-import { LRPerson } from './Pages/LRPerson/LRPerson';
-import { LRPerson1 } from './Pages/LRPerson1/LRPerson1';
-import { LRPerson2 } from './Pages/LRPerson2/LRPerson2';
-import { LRVehicle } from './Pages/LRVehicle/LRVehicle';
-import { LREnclosures } from './Pages/LREnclosures/LREnclosures';
-import { LREvidence } from './Pages/LREvidence/LREvidence';
-import { LRPictures } from './Pages/LRPictures/LRPictures';
-import { LRAudio } from './Pages/LRAudio/LRAudio';
-import { LRVideo } from './Pages/LRVideo/LRVideo';
-import { LRScratchpad } from './Pages/LRScratchpad/LRScratchpad';
-import { LRTimeline } from './Pages/LRTimeline/LRTimeline';
-import { LRFinish } from './Pages/LRFinish/LRFinish';
+import { LRInstruction } from './Pages/InvestgatorLR/LRInstruction/LRInstruction';
+import { LRReturn } from './Pages/InvestgatorLR/LRReturn/LRReturn';
+import { LRPerson } from './Pages/InvestgatorLR/LRPerson/LRPerson';
+import { LRPerson1 } from './Pages/InvestgatorLR/LRPerson1/LRPerson1';
+import { LRPerson2 } from './Pages/InvestgatorLR/LRPerson2/LRPerson2';
+import { LRVehicle } from './Pages/InvestgatorLR/LRVehicle/LRVehicle';
+import { LREnclosures } from './Pages/InvestgatorLR/LREnclosures/LREnclosures';
+import { LREvidence } from './Pages/InvestgatorLR/LREvidence/LREvidence';
+import { LRPictures } from './Pages/InvestgatorLR/LRPictures/LRPictures';
+import { LRAudio } from './Pages/InvestgatorLR/LRAudio/LRAudio';
+import { LRVideo } from './Pages/InvestgatorLR/LRVideo/LRVideo';
+import { LRScratchpad } from './Pages/InvestgatorLR/LRScratchpad/LRScratchpad';
+import { LRTimeline } from './Pages/InvestgatorLR/LRTimeline/LRTimeline';
+import { LRFinish } from './Pages/InvestgatorLR/LRFinish/LRFinish';
+import { CMInstruction } from './Pages/CaseManagerLR/CMInstruction/CMInstruction';
+import { CMReturn } from './Pages/CaseManagerLR/CMReturn/CMReturn';
+import { CMPerson } from './Pages/CaseManagerLR/CMPerson/CMPerson';
+import { CMPerson1 } from './Pages/CaseManagerLR/CMPerson1/CMPerson1';
+import { CMPerson2 } from './Pages/CaseManagerLR/CMPerson2/CMPerson2';
+import { CMVehicle } from './Pages/CaseManagerLR/CMVehicle/CMVehicle';
+import { CMEnclosures } from './Pages/CaseManagerLR/CMEnclosures/CMEnclosures';
+import { CMEvidence } from './Pages/CaseManagerLR/CMEvidence/CMEvidence';
+import { CMPictures } from './Pages/CaseManagerLR/CMPictures/CMPictures';
+import { CMAudio } from './Pages/CaseManagerLR/CMAudio/CMAudio';
+import { CMVideo } from './Pages/CaseManagerLR/CMVideo/CMVideo';
+import { CMScratchpad } from './Pages/CaseManagerLR/CMScratchpad/CMScratchpad';
+import { CMTimeline } from './Pages/CaseManagerLR/CMTimeline/CMTimeline';
+import { CMFinish } from './Pages/CaseManagerLR/CMFinish/CMFinish';
 import { FlaggedLead } from './Pages/FlaggedLead/FlaggedLead';
 import { SearchLead } from './Pages/SearchLead/SearchLead';
 import { ViewTimeline } from './Pages/ViewTimeline/ViewTimeline';
@@ -81,6 +95,20 @@ function App() {
         <Route path="/AdminDB" element={<AdminDB />} />
         <Route path="/OfficerManagement" element={<OfficerManagement />} />
         <Route path="/LeadInfo" element={<LeadInfo />} />
+        <Route path="/CMInstruction" element={<CMInstruction />} />
+        <Route path="/CMReturn" element={<CMReturn />} />
+        <Route path="/CMPerson" element={<CMPerson />} />
+        <Route path="/CMPerson1" element={<CMPerson1 />} />
+        <Route path="/CMPerson2" element={<CMPerson2 />} />
+        <Route path="/CMVehicle" element={<CMVehicle />} />
+        <Route path="/CMEnclosures" element={<CMEnclosures />} />
+        <Route path="/CMEvidence" element={<CMEvidence />} />
+        <Route path="/CMPictures" element={<CMPictures />} />
+        <Route path="/CMAudio" element={<CMAudio />} />
+        <Route path="/CMVideo" element={<CMVideo />} />
+        <Route path="/CMFinish" element={<CMFinish />} />
+        <Route path="/CMScratchpad" element={<CMScratchpad />} />
+        <Route path="/CMTimeline" element={<CMTimeline />} />
       </Routes>
     </Router>
   );
