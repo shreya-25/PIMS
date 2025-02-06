@@ -1,0 +1,90 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f9f9f9;
+  color: #333;
+  font-size: 20px;
+}
+
+/* Top Menu */
+.top-menu {
+  background-color: #ffffff;
+  display: flex;
+  justify-content: center;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 10px 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.menu-items {
+  display: flex;
+  gap: 20px;
+}
+
+.menu-item {
+  color: #333;
+  cursor: pointer;
+  font-weight: bold;
+  transition: color 0.3s ease;
+}
+
+.menu-item:hover {
+  color: #0b504a;
+}
+
+.menu-item.active {
+  color: #0b504a;
+}
+
+.details-table th , .details-table td{
+  font-size: 20px;
+  color: #333;
+}
+
+.input-field{
+  font-size: 20px;
+  color: #333;
+}
+
+.textarea-field
+{
+  font-size: 20px;
+  color: #333;
+}
+
+.form-buttons-inst {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 5px;
+  margin-bottom: 10px;
+}
+
+button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.add-btn, .edit-btn {
+  background-color: #8b0000;
+  color: white;
+}
+
+.back-btn,
+.next-btn {
+  background-color: #8b0000;
+  color: white;
+}
+
+.save-btn {
+  background-color: #8b0000;
+  color: white;
+}
+
+.cancel-btn {
+  background-color: #8b0000;
+  color: white;
+}

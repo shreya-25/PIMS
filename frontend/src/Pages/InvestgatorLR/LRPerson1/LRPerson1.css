@@ -1,0 +1,89 @@
+.lrperson1-container {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  background-color: #f9f9f9; /* Light background color */
+}
+.form-container1 {
+  margin: 20px auto;
+  background-color: #fff; /* White background for the form container */
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  padding: 20px;
+  width: 80%
+}
+
+.person-table2 {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 20px;
+}
+
+.person-table2 td {
+  padding: 10px;
+  border: 1px solid #ccc;
+  font-size: 20px;
+}
+
+input {
+  width: 100%;
+  padding: 5px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 20px;
+}
+
+.details-btn {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #13756d; /* Updated to match active menu color */
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 5px;
+  font-size: 20px;
+}
+
+.form-buttons {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  font-size: 20px;
+}
+
+button {
+  padding: 8px 15px;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.back-btn {
+  background-color: #a33; /* Gray for back */
+  font-size: 20px;
+}
+
+.cancel-btn {
+  background-color: #a33; /* Gray for cancel */
+  font-size: 20px;
+}
+
+.next-btn {
+  background-color: #a33; /* Green for next */
+  font-size: 20px;
+}
+
+.save-btn {
+  background-color: #a33; 
+  font-size: 20px;
+}
+
+button:hover {
+  opacity: 0.9;
+}

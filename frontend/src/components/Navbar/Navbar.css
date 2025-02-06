@@ -1,3 +1,8 @@
+.NavbarItems
+{
+  min-height: 50px;
+}
+
 /* Profile section */
 .profile {
   display: flex;
