@@ -737,7 +737,7 @@ export const CasePageManager = () => {
 )}
 
              {activeTab === "allLeads" && (
-                            <div className="lead-list">
+                            <div className="lead-list" onClick={() => handleNavigation("/LeadInfo")}>
                                 {leads.allLeads.map((lead) => (
                                     <div key={lead.id} className="lead-item">
                                         <span>{lead.description}</span>
