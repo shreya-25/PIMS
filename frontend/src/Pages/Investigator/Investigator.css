@@ -34,15 +34,15 @@
   
  
   /* Sidebar styling */
-  .sideitem {
-    width: 20%; /* Sidebar width */
+  /* .sideitem {
+    width: 20%; 
     background-color: rgba(0, 0, 0, 0.4);
     padding: 10px;
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-    overflow-y: auto; /* Scroll for long content */
+    overflow-y: auto; 
     margin-top: 0px;
     margin-right: 10px;
-  }
+  } */
   
   .sidebar-list {
     list-style: none;
@@ -50,7 +50,7 @@
     margin: 0;
   }
   
-  .sidebar-item {
+  /* .sidebar-item {
     padding: 15px;
     margin: 10px 0;
     background-color: rgba(22, 83, 87, 0.52);
@@ -62,7 +62,7 @@
   
   .sidebar-item:hover {
     background-color: rgba(22, 83, 87, 0.2);
-  }
+  } */
   
   /* Content area styling */
   .content {

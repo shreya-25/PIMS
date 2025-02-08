@@ -431,7 +431,7 @@ const addCase = (newCase) => {
               <div key={c.id} className="case-item">
                 <span
                   className="case-details"
-                  onClick={() => handleCaseClick(c)} // Handle case click
+                  // onClick={() => handleCaseClick(c)} 
                 >
                   <strong>Case Number:</strong> {c.id} | {c.title} | <strong>Role:</strong> {c.role}
                 </span>
@@ -441,15 +441,16 @@ const addCase = (newCase) => {
 
                   <button
                     className="close-button"
-                    onClick={() => {
-                      if (window.confirm(`Are you sure you want to close case ${c.id}?`)) {
-                        closeCase(c.id);
-                      }
-                    }}
+                    // onClick={() => {
+                    //   if (window.confirm(`Are you sure you want to close case ${c.id}?`)) {
+                    //     closeCase(c.id);
+                    //   }
+                    // }}
+                    onClick={() => handleCaseClick(c)}
                   >
-                    Close
+                    View
                   </button>
-                  <button
+                  {/* <button
                     className="delete-btn"
                     onClick={() => {
                       if (window.confirm(`Are you sure you want to delete case ${c.id}?`)) {
@@ -458,7 +459,7 @@ const addCase = (newCase) => {
                     }}
                   >
                     Delete
-                  </button>
+                  </button> */}
                 </div>
               </div>
             ))}
