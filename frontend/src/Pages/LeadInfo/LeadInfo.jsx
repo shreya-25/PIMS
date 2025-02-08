@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import "./LeadInfo.css";
 import Navbar from '../../components/Navbar/Navbar';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export const LeadInfo = () => {
+  const navigate = useNavigate();
   const [selectedOfficer, setSelectedOfficer] = useState("");
   const [assignedOfficers, setAssignedOfficers] = useState([
     "Officer 20", 
@@ -22,7 +24,10 @@ export const LeadInfo = () => {
   
   // Change this index to highlight the current status dynamically
   const currentStatusIndex = 3; // Example: Highlighting "Lead Return Submitted"
-  
+
+  const handleNavigation = (route) => {
+    navigate(route); // Navigate to respective page
+  };
 
   const handleAddOfficer = () => {
     if (selectedOfficer && !assignedOfficers.includes(selectedOfficer)) {
@@ -73,7 +78,7 @@ export const LeadInfo = () => {
                   <option key={index} value={officer}>{officer}</option>
                 ))}
               </select>
-              <button className="add-btn" onClick={handleAddOfficer}>Add</button>
+              <button className="add-officer-btn" onClick={handleAddOfficer}>Add</button>
             </div>
             <div className="officer-list">
               {assignedOfficers.map((officer, index) => (
@@ -87,7 +92,13 @@ export const LeadInfo = () => {
           <div className="lead-content-right">
              <div className="lead-tracker-container">
                   {statuses.map((status, index) => (
-                       <div key={index} className="lead-tracker-row">
+                       <div key={index} className="lead-tracker-row" onClick={() => {
+                        if (status === "Lead Return Submitted") {
+                          handleNavigation("/CMInstruction");
+                        }
+                      }}
+                      style={{ cursor: status === "Lead Return Submitted" ? "pointer" : "default" }}
+                    >
                           {/* Circle Indicator */}
                           <div
                             className={`status-circle ${index <= currentStatusIndex ? "active" : ""}`}
