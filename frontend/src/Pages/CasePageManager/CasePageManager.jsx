@@ -297,6 +297,7 @@ export const CasePageManager = () => {
       Open Filter & Sort
     </button>
 
+
     {filterSortPopupVisible && (
       <div className="popup-overlay">
         <div className="popup-content">
@@ -309,7 +310,7 @@ export const CasePageManager = () => {
           <h3>Filter & Sort Leads</h3>
           <div className="filter-sort-section">
             <div className="filters">
-              <h4>Filters</h4>
+              <h4 className="filter-label">Filters</h4>
               <div className="filter-item">
                 <input
                   type="text"
@@ -326,7 +327,7 @@ export const CasePageManager = () => {
                 </button>
               </div>
               <div className="filter-item">
-                <label>Priority:</label>
+                <label className="filter-label">Priority:</label>
                 <select
                   value={selectedPriority}
                   onChange={(e) => setSelectedPriority(e.target.value)}
@@ -345,7 +346,7 @@ export const CasePageManager = () => {
                 </button>
               </div>
               <div className="filter-item">
-                <label>Remaining Days:</label>
+                <label className="filter-label">Remaining Days:</label>
                 <input
                   type="number"
                   placeholder="Enter Remaining Days"
@@ -361,7 +362,7 @@ export const CasePageManager = () => {
                 </button>
               </div>
               <div className="filter-item">
-                <label>Flags:</label>
+                <label className="filter-label">Flags:</label>
                 <input
                   type="text"
                   placeholder="Filter by Flags"
@@ -377,7 +378,7 @@ export const CasePageManager = () => {
                 </button>
               </div>
               <div className="filter-item">
-                <label>Assigned Officers:</label>
+                <label className="filter-label">Assigned Officers:</label>
                 <input
                   type="text"
                   placeholder="Filter by Assigned Officers"
@@ -396,8 +397,9 @@ export const CasePageManager = () => {
               </div>
             </div>
 
+
             <div className="sorting">
-              <h4>Sorting</h4>
+              <h4 className="filter-label">Sorting</h4>
               <select
                 value={`${sortField}-${sortOrder}`}
                 onChange={(e) => {
@@ -436,13 +438,15 @@ export const CasePageManager = () => {
       </div>
     )}
 
+
     <table className="leads-table">
       <thead>
         <tr>
-          <th>Lead Number and Name</th>
+          <th>Lead No.</th>
+          <th>Lead Name</th>
           <th>Due Date</th>
           <th>Priority</th>
-          <th>Remaining Days</th>
+          <th>Days Left</th>
           <th>Flags</th>
           <th>Assigned Officers</th>
           <th></th>
@@ -474,6 +478,7 @@ export const CasePageManager = () => {
           })
           .map((lead) => (
             <tr key={lead.id}>
+              <td>{lead.id}</td>
               <td>{lead.description}</td>
               <td>{lead.dueDate || "N/A"}</td>
               <td>{lead.priority || "N/A"}</td>
@@ -482,10 +487,9 @@ export const CasePageManager = () => {
               <td>{lead.assignedOfficers?.join(", ") || "Unassigned"}</td>
               <td>
                 <button
-                  className="view-btn"
-                  onClick={() =>
-                    alert(`Viewing details for: ${lead.description}`)
-                  }
+                  className="view-btn1"
+                  // onClick={() =>
+                  // }
                 >
                   View
                 </button>
@@ -509,7 +513,6 @@ export const CasePageManager = () => {
   </div>
 )}
 
-
           
 {activeTab === "pendingLeads" && (
   <div className="pending-leads">
@@ -519,6 +522,7 @@ export const CasePageManager = () => {
     >
       Open Filter & Sort
     </button>
+
 
     {filterSortPopupVisible && (
       <div className="popup-overlay">
@@ -568,6 +572,7 @@ export const CasePageManager = () => {
                 </button>
               </div>
 
+
             {/* Filter by Remaining Days */}
         <div className="filter-item">
           <label>Remaining Days:</label>
@@ -585,6 +590,7 @@ export const CasePageManager = () => {
           </button>
         </div>
 
+
         {/* Filter by Flags */}
         <div className="filter-item">
           <label>Flags:</label>
@@ -598,6 +604,7 @@ export const CasePageManager = () => {
             Clear Flags Filter
           </button>
         </div>
+
 
         {/* Filter by Assigned Officers */}
         <div className="filter-item">
@@ -616,6 +623,7 @@ export const CasePageManager = () => {
           </button>
         </div>
         </div>
+
 
             <div className="sorting">
               <h4>Sorting</h4>
@@ -657,13 +665,15 @@ export const CasePageManager = () => {
       </div>
     )}
 
+
     <table className="leads-table">
       <thead>
         <tr>
-          <th>Lead Number and Name</th>
+          <th>Lead No.</th>
+          <th>Lead Name</th>
           <th>Due Date</th>
           <th>Priority</th>
-          <th>Remaining Days</th>
+          <th>Days Left</th>
           <th>Flags</th>
           <th>Assigned Officers</th>
           <th></th>
@@ -695,6 +705,7 @@ export const CasePageManager = () => {
           })
           .map((lead) => (
             <tr key={lead.id}>
+              <td>{lead.id}</td>
               <td>{lead.description}</td>
               <td>{lead.dueDate}</td>
               <td>{lead.priority}</td>
@@ -716,27 +727,40 @@ export const CasePageManager = () => {
   </div>
 )}
 
+
 {activeTab === "pendingLeadReturns" && (
   <div className="pending-lead-returns">
-    <ul className="lead-list">
-      {leads.pendingLeadReturns.map((lead) => (
-        <li key={lead.id} className="lead-item">
-          <span>{lead.description}</span>
-          <button
-            className="continue-btn"
-            onClick={() => {
-              handleLRClick(lead)
-            }}
-          >
-            Continue
-          </button>
-        </li>
-      ))}
-    </ul>
+    <table className="pending-lr-table">
+              <thead>
+                <tr>
+                  <th>Lead No.</th>
+                  <th>Lead Name</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {leads.pendingLeadReturns.map((lead) => (
+                    <tr key={lead.id}>
+                      <td>{lead.id}</td>
+                      <td>{lead.description}</td>
+                      <td>
+                        <button
+                              className="continue-btn"
+                              onClick={() => {
+                                handleLRClick(lead)
+                              }}
+                            >
+                              Continue
+                            </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
   </div>
-)}
+)}  
 
-             {activeTab === "allLeads" && (
+             {/* {activeTab === "allLeads" && (
                             <div className="lead-list" onClick={() => handleNavigation("/LeadInfo")}>
                                 {leads.allLeads.map((lead) => (
                                     <div key={lead.id} className="lead-item">
@@ -747,7 +771,40 @@ export const CasePageManager = () => {
                                     </div>
                                 ))}
                             </div>
-                        )}
+                        )} */}
+
+{activeTab === "allLeads" && (
+  <div className="all-leads">
+    <table className="pending-lr-table">
+      <thead>
+        <tr>
+          <th>Lead No.</th>
+          <th>Lead Name</th>
+          <th>Lead Status</th>
+          <th></th> {/* Empty header for buttons column */}
+        </tr>
+      </thead>
+      <tbody>
+        {leads.allLeads.map((lead) => (
+          <tr key={lead.id}>
+            <td>{lead.id}</td>
+            <td>{lead.description}</td>
+            <td>{lead.status}</td>
+            <td>
+              <button
+                className= "view-btn1"
+                onClick={() => handleNavigation("/LeadInfo")}
+              >
+                View
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
+
                     </div>
                 </div>
                 <div className="gotomainpagebtn">

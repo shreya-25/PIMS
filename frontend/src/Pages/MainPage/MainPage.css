@@ -201,6 +201,7 @@
   width: 100%;
   border-collapse: collapse;
   margin-top: 20px;
+  table-layout: fixed; 
 }
 
 .leads-table th,
@@ -267,12 +268,72 @@
 
 .leads-table th:last-child,
 .leads-table td:last-child {
-  /* min-width: 90px; 
-  max-width: 90px; */
+  width: auto;
   text-align: center;
 }
 
-.leads-table td:last-child {
+/* .leads-table td:last-child {
+  text-align: center;
+  display: flex;
+  flex-direction: column; 
+  align-items: center; 
+  gap: 10px;
+  padding: 10px;
+} */
+
+/*  Ongoing case table  */
+/* General Table Styling */
+.ongoing-case-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  table-layout: fixed; 
+}
+
+.ongoing-case-table th,
+.ongoing-case-table td {
+  padding: 10px;
+  text-align: left;
+  border: 1px solid #ddd;
+  font-size: 20px;
+  word-wrap: break-word; /* Ensures text wraps inside the cell */
+  overflow-wrap: break-word; /* Helps break long words */
+  white-space: normal; /* Allows text to wrap */
+}
+
+.ongoing-case-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.ongoing-case-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.ongoing-case-table th:nth-child(1), 
+.ongoing-case-table td:nth-child(1) {
+  min-width: 30px; /* Lead Name */
+  max-width: 30px;
+}
+
+.ongoing-case-table th:nth-child(2), 
+.ongoing-case-table td:nth-child(2) {
+  min-width: 250px; /* Lead Name */
+  max-width: 250px;
+}
+
+.ongoing-case-table th:nth-child(3), 
+.ongoing-case-table td:nth-child(3) {
+  min-width: 50px; /* Due Date */
+  max-width: 50px;
+}
+.ongoing-case-table th:last-child,
+.ongoing-case-table td:last-child {
+  width: auto;
+  text-align: center;
+}
+
+.ongoing-case-table td:last-child {
   text-align: center;
   display: flex;
   flex-direction: column; /* Stack buttons vertically */
@@ -280,6 +341,78 @@
   gap: 10px; /* Adds spacing between buttons */
   padding: 10px;
 }
+
+
+/* ############################## */
+
+
+/*  Pending lr table  */
+/* General Table Styling */
+.pending-lr-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  table-layout: fixed; 
+}
+
+.pending-lr-table th,
+.pending-lr-table td {
+  padding: 10px;
+  text-align: left;
+  border: 1px solid #ddd;
+  font-size: 20px;
+  word-wrap: break-word; /* Ensures text wraps inside the cell */
+  overflow-wrap: break-word; /* Helps break long words */
+  white-space: normal; /* Allows text to wrap */
+}
+
+.pending-lr-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.pending-lr-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+/* .pending-lr-table th:nth-child(1), 
+.pending-lr-table td:nth-child(1) {
+  min-width: 10%; 
+  max-width: 10%;
+}
+
+.pending-lr-table th:nth-child(2), 
+.pending-lr-table td:nth-child(2) {
+  min-width: 300px; 
+  max-width: 300px;
+} */
+
+/* .pending-lr-table th:nth-child(3), 
+.pending-lr-table td:nth-child(3) {
+  min-width: 40px; 
+  max-width: 40px;
+} */
+.pending-lr-table th:last-child,
+.pending-lr-table td:last-child {
+  width: auto;
+  text-align: center;
+}
+
+.pending-lr-table td:last-child {
+  text-align: center;
+  display: flex;
+  flex-direction: column; /* Stack buttons vertically */
+  align-items: center; /* Center align buttons */
+  gap: 10px; /* Adds spacing between buttons */
+  padding: 10px;
+}
+
+
+/* ############################## */
+
+
+
+
 
 /* Horizontal Scroll for Smaller Screens */
 @media (max-width: 768px) {
@@ -337,10 +470,11 @@
     cursor: pointer;
   }
 
-  .view-btn {
+  .view-btn1 {
     background-color: #007bff;
     color: white;
     min-width: 150px;
+    margin-bottom: 10px;
   }
 
   .accept-btn {
@@ -785,7 +919,7 @@
 }
 
 /* Styling for the buttons */
-.view-btn,
+.view-btn1,
 .accept-btn {
   margin-left: 10px;
   padding: 5px 10px;
@@ -793,15 +927,16 @@
   border-radius: 3px;
   cursor: pointer;
   transition: background-color 0.3s ease, color 0.3s ease;
-  font-size: 20px;
+  font-size: 20px;margin-bottom: 10px;
+  width: 100px;
 }
 
-.view-btn {
+.view-btn1 {
   background-color: #007bffde;
   color: #fff;
 }
 
-.view-btn:hover {
+.view-btn1:hover {
   background-color: #0056b3;
 }
 
@@ -1065,7 +1200,7 @@
     cursor: pointer;
   }
 
-  .view-btn {
+  .view-btn1 {
     background-color: #007bff;
     color: white;
   }

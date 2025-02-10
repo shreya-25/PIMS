@@ -119,7 +119,7 @@ export const LRPictures = () => {
       </div>
 
         {/* Pictures Table */}
-        <table className="pictures-table">
+        <table className="timeline-table">
           <thead>
             <tr>
               <th>Date Entered</th>
@@ -139,37 +139,39 @@ export const LRPictures = () => {
         </table>
 
         {/* Picture Form */}
-        <h4>Enter Picture Details</h4>
+        <h4 className="evidence-form-h4">Enter Picture Details</h4>
         <div className="picture-form">
           <div className="form-row-pic">
-            <label>Date Picture Taken:</label>
+            <label  className="evidence-head">Date Picture Taken:</label>
             <input
               type="date"
               value={pictureData.datePictureTaken}
+               className="evidence-head"
               onChange={(e) => handleInputChange("datePictureTaken", e.target.value)}
             />
           </div>
           <div className="form-row-pic">
-            <label>Description:</label>
+            <label  className="evidence-head">Description:</label>
             <textarea
               value={pictureData.description}
+               className="evidence-head"
               onChange={(e) => handleInputChange("description", e.target.value)}
             ></textarea>
           </div>
           <div className="form-row-pic">
-            <label>Upload Image:</label>
-            <input type="file" accept="image/*" onChange={handleFileChange} />
+            <label  className="evidence-head">Upload Image:</label>
+            <input type="file" accept="image/*"  className="evidence-head" onChange={handleFileChange} />
           </div>
         </div>
 
         {/* Uploaded Pictures Preview */}
         <div className="uploaded-pictures">
-          <h4>Uploaded Pictures</h4>
+          <h4 className="evidence-head">Uploaded Pictures</h4>
           <div className="pictures-gallery">
             {pictures.map((picture, index) => (
               <div key={index} className="picture-card">
                 <img src={picture.image} alt={`Uploaded ${index + 1}`} className="uploaded-image" />
-                <p>{picture.description}</p>
+                <p className="evidence-head">{picture.description}</p>
               </div>
             ))}
           </div>

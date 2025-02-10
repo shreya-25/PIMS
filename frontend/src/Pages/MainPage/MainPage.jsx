@@ -429,7 +429,7 @@ const addCase = (newCase) => {
             <div className="case-list">
 
 
-        <table className="leads-table">
+        <table className="ongoing-case-table">
               <thead>
                 <tr>
                   <th>Case No.</th>
@@ -700,7 +700,7 @@ const addCase = (newCase) => {
               <td>{lead.assignedOfficers?.join(", ") || "Unassigned"}</td>
               <td>
                 <button
-                  className="view-btn"
+                  className="view-btn1"
                   // onClick={() =>
                   // }
                 >
@@ -954,7 +954,7 @@ const addCase = (newCase) => {
 
 {activeTab === "pendingLeadReturns" && (
   <div className="pending-lead-returns">
-    <table className="leads-table">
+    <table className="pending-lr-table">
               <thead>
                 <tr>
                   <th>Lead No.</th>

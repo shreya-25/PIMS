@@ -110,7 +110,7 @@ export const LREvidence = () => {
       </div>
 
         {/* Evidence Table */}
-        <table className="evidence-table">
+        <table className="timeline-table">
           <thead>
             <tr>
               <th>Date Entered</th>
@@ -134,32 +134,35 @@ export const LREvidence = () => {
         </table>
 
         {/* Evidence Form */}
-        <h4>Enter Evidence Details</h4>
+        <h4 className="evidence-form-h4">Enter Evidence Details</h4>
         <div className="evidence-form">
           <div className="form-row-evidence">
-            <label>Collection Date:</label>
+            <label  className="evidence-head">Collection Date:</label>
             <input
               type="date"
               value={evidenceData.collectionDate}
+             
               onChange={(e) => handleInputChange("collectionDate", e.target.value)}
             />
-            <label>Disposed Date:</label>
+            <label className="evidence-head">Disposed Date:</label>
             <input
               type="date"
               value={evidenceData.disposedDate}
+            
               onChange={(e) => handleInputChange("disposedDate", e.target.value)}
             />
           </div>
           <div className="form-row-evidence">
-            <label>Type:</label>
+            <label className="evidence-head">Type:</label>
             <input
               type="text"
               value={evidenceData.type}
+            
               onChange={(e) => handleInputChange("type", e.target.value)}
             />
           </div>
           <div className="form-row-evidence">
-            <label>Disposition:</label>
+            <label className="evidence-head">Disposition:</label>
             <textarea
               value={evidenceData.disposition}
               onChange={(e) => handleInputChange("disposition", e.target.value)}

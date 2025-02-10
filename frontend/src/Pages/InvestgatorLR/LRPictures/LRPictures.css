@@ -43,7 +43,7 @@
     display: flex;
     flex-direction: column;
     gap: 15px;
-    margin-bottom: 20px;
+    margin: 20px 130px;
   }
   
   .form-row-pic {
@@ -101,5 +101,10 @@
   .cancel-btn {
     background-color: #8b0000;
     color: white;
+  }
+
+  .uploaded-pictures
+  {
+    margin: 20px 130px;
   }
   

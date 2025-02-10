@@ -29,7 +29,7 @@
   .scratchpad-form {
     display: flex;
     flex-direction: column;
-    margin-bottom: 20px;
+    margin: 20px 130px;
   }
   
   textarea {
