@@ -191,7 +191,7 @@
   background-color: rgba(22, 83, 87, 0.03); /* Light greenish tint for hover */
 }
 
-@media (max-width: 768px) {
+@media (max-width: 930px) {
   .leads-table {
     font-size: 0.8rem;
   }
@@ -227,8 +227,8 @@
 
 .leads-table th:nth-child(1), 
 .leads-table td:nth-child(1) {
-  min-width: 90px; /* Lead Name */
-  max-width: 90px;
+  min-width: 20px; /* Lead Name */
+  max-width: 20px;
 }
 
 .leads-table th:nth-child(2), 
@@ -245,14 +245,14 @@
 
 .leads-table th:nth-child(4), 
 .leads-table td:nth-child(4) {
-  min-width: 70px; /* Priority */
-  max-width: 70px;
+  min-width: 50px; /* Priority */
+  max-width: 50px;
 }
 
 .leads-table th:nth-child(5), 
 .leads-table td:nth-child(5) {
-  min-width: 90px; /* Remaining Days */
-  max-width: 90px;
+  min-width: 50px; /* Remaining Days */
+  max-width: 50px;
 }
 
 .leads-table th:nth-child(6), 
@@ -263,8 +263,8 @@
 
 .leads-table th:nth-child(7), 
 .leads-table td:nth-child(7) {
-  min-width: 150px; /* Assigned Officers */
-  max-width: 150px;
+  min-width: 190px; /* Assigned Officers */
+  max-width: 190px;
 }
 
 .leads-table th:last-child,
@@ -383,8 +383,8 @@
 
  .pending-lr-table th:nth-child(3), 
 .pending-lr-table td:nth-child(3) {
-  min-width: 20px; 
-  max-width: 20px;
+  min-width: 50px; 
+  max-width: 50px;
 }
 
 
@@ -431,8 +431,8 @@
 
 .all-lead-table th:nth-child(4), 
 .all-lead-table td:nth-child(4) {
-  min-width: 50px; 
-  max-width: 50px;
+  min-width: 70px; 
+  max-width: 70px;
 }
 
 
@@ -1144,8 +1144,8 @@
 
 /* Responsive Design */
 @media (max-width: 992px) {
-  .SideBar {
-    width: 25%;
+  .sideitem {
+    width: 40%;
   }
 }
 
