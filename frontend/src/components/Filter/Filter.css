@@ -1,0 +1,73 @@
+/* Container styling */
+.filter-container {
+    display: flex;
+    flex-direction: row; /* Ensures horizontal layout */
+    gap: 10px; /* Space between elements */
+    background-color: #f3f4f6; /* Light gray background */
+    padding: 12px;
+    border-radius: 6px;
+    align-items: center;
+    justify-content: flex-start;
+    width: fit-content; /* Ensures it takes only the required space */
+    margin: auto; /* Centers the component */
+}
+
+/* Individual filter item */
+.item {
+    min-width: 150px; /* Ensures dropdowns are equal in width */
+}
+
+/* Dropdown styling */
+.filter-dropdown {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 14px;
+    cursor: pointer;
+    width: 150px; /* Adjusted width to match the image */
+    appearance: none; /* Removes default dropdown styling */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    text-align: left;
+}
+
+/* Apply Filters Button */
+.filter-button {
+    background-color: #a3082c; /* Dark red from the image */
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
+    font-weight: bold;
+    font-size: 14px;
+    transition: background-color 0.2s ease-in-out;
+    text-align: center;
+    white-space: nowrap; /* Prevents text from wrapping */
+}
+
+.filter-button:hover {
+    background-color: #870826;
+}
+
+/* Ensure elements don't shrink */
+.filter-container > * {
+    flex-shrink: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .filter-container {
+        flex-wrap: wrap; /* Allows wrapping if needed on smaller screens */
+        justify-content: center;
+    }
+
+    .filter-dropdown {
+        width: 130px; /* Slightly reduce width for small screens */
+    }
+
+    .filter-button {
+        width: auto;
+    }
+}

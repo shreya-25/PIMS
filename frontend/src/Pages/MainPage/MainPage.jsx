@@ -3,6 +3,7 @@ import axios from "axios";
 import "./MainPage.css";
 import Navbar from "../../components/Navbar/Navbar";
 import Searchbar from "../../components/Searchbar/Searchbar";
+import Filter from "../../components/Filter/Filter";
 import { SlideBar } from "../../components/Slidebar/Slidebar";
 import { SideBar } from "../../components/Sidebar/Sidebar";
 import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
@@ -446,7 +447,7 @@ const addCase = (newCase) => {
                       <td>{c.role}</td>
                       <td>
                         <button
-                          className="view-btn"
+                          className="view-btn1"
                           onClick={() => handleCaseClick(c)}
                         >
                           View
@@ -503,12 +504,13 @@ const addCase = (newCase) => {
 
 {activeTab === "assignedLeads" && (
   <div className="assigned-leads">
-    <button
+    <Filter />
+    {/* <button
       onClick={() => setFilterSortPopupVisible(true)}
       className="filter-sort-button"
     >
       Open Filter & Sort
-    </button>
+    </button> */}
 
 
     {filterSortPopupVisible && (
@@ -930,7 +932,7 @@ const addCase = (newCase) => {
               <td>{lead.assignedOfficers.join(", ")}</td>
               <td>
                 <button
-                  className="view-btn"
+                  className="view-btn1"
                   onClick={() => alert(`Viewing lead: ${lead.description}`)}
                 >
                   View

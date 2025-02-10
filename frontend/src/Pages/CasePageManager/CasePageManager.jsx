@@ -279,7 +279,7 @@ export const CasePageManager = () => {
                     <Button
                         label="Generate Lead"
                         color="#a33"
-                        className="generate-lead-btn"
+                        className="generate-lead-btn1"
                         onClick={handleGenerateLead}
                     />
                     {/* Tab Navigation */}
@@ -738,7 +738,7 @@ export const CasePageManager = () => {
               <td>{lead.assignedOfficers.join(", ")}</td>
               <td>
                 <button
-                  className="view-btn"
+                  className="view-btn1"
                   onClick={() => alert(`Viewing lead: ${lead.description}`)}
                 >
                   View
