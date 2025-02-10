@@ -1,3 +1,13 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f9f9f9;
+  color: #333;
+  font-size: 20px;
+}
+
+
 /* body {
   margin: 0;
   padding: 0;
@@ -34,6 +44,43 @@
 .menu-item.active {
   color: #13756d;
 } */
+.main-content-lr
+{
+  display: flex;
+  grid-template-columns: 1fr auto 1fr; 
+  gap: 20px;
+  align-items: flex-start;
+  margin: 0px 20px 12px 20px;
+}
+
+ /* Left Section */
+ .left-section
+ {
+   width: 20%;
+ }
+  .police-logo-lr {
+   /* width: 550px; */
+   height: 200px;
+   /* margin: 2%; */
+ }
+ 
+ /* Center Section */
+ .center-section { 
+   padding-left: 50px;
+   margin-top: 4%;
+   width: 60%;
+ }
+ 
+ .title {
+   font-size: 24px;
+   font-weight: bold;
+   text-align: center;
+ }
+
+
+
+
+
 
 /* General Layout */
 .lrreturn-container {
@@ -56,7 +103,7 @@
 
 /* Returns Table */
 .returns-table {
-  width: 100%;
+  width: 80%;
   border-collapse: collapse;
   background-color: white;
   margin-bottom: 20px;
@@ -73,6 +120,40 @@
   background-color: #e6e6e6;
 }
 
+  /* Alternate row colors */
+  .returns-table tr:nth-child(odd) {
+    background-color: #f9f9f9; /* Light gray */
+  }
+  
+  .returns-table tr:nth-child(even) {
+    background-color: #eaeaea; /* Slightly darker gray */
+  }
+
+  .returns-table th:nth-child(1), 
+.returns-table td:nth-child(1) {
+  min-width: 10px; /* Lead Name */
+  max-width: 10px;
+}
+
+.returns-table th:nth-child(2), 
+.returns-table td:nth-child(2) {
+  min-width: 10px; /* Lead Name */
+  max-width: 10px;
+}
+
+.returns-table th:nth-child(3), 
+.returns-table td:nth-child(3) {
+  min-width: 100px; /* Due Date */
+  max-width: 100px;
+}
+
+.returns-table th:nth-child(4), 
+.returns-table td:nth-child(4) {
+  min-width: 20px; /* Priority */
+  max-width: 20px;
+}
+
+
 /* Action Buttons Below Table */
 .table-action-buttons {
   display: flex;
@@ -82,7 +163,7 @@
 
 .action-btn {
   padding: 10px 20px;
-  font-size: 14px;
+  font-size: 20px;
   background-color: #a04f4f;
   color: white;
   border: none;
@@ -94,9 +175,16 @@
 }
 
 /* Form Section */
+
+.return-form-h4
+{
+ font-size: 20px;
+ margin: 20px 0;
+}
 .return-form {
   margin-bottom: 20px;
   position: relative;
+  font-size: 20px;
 }
 
 .return-form textarea {
@@ -105,6 +193,7 @@
   border: 1px solid #ccc;
   padding: 10px;
   resize: none;
+  font-size: 20px;
 }
 
 .signature-btn {
@@ -135,7 +224,7 @@
 .save-btn,
 .cancel-btn {
   padding: 10px 20px;
-  font-size: 14px;
+  font-size: 20px;
   border: none;
   cursor: pointer;
 }
@@ -151,15 +240,6 @@
   background-color: #802c2c;
 }
 
-.save-btn {
-  background-color: #007bff;
-  color: white;
-}
-
-.save-btn:hover {
-  background-color: #0056b3;
-}
-
 .cancel-btn {
   background-color: #d9534f;
   color: white;
@@ -169,26 +249,40 @@
   background-color: #c9302c;
 }
 
+.lr-table-btn
+{
+  display: flex;
+  gap: 4px;
+}
+
+
+.btn-edit, .btn-delete
+{
+  min-height: 30px;
+  min-width: 100px;
+  font-size: 20px;
+  margin: 6px;
+}
 /* Responsive Design */
 @media (max-width: 768px) {
   .returns-table th,
   .returns-table td {
-    font-size: 12px;
+    font-size: 20px;
     padding: 6px;
   }
 
   .menu-item {
-    font-size: 12px;
+    font-size: 20px;
     padding: 8px 10px;
   }
 
   .action-btn {
-    font-size: 12px;
+    font-size: 20px;
     padding: 8px 10px;
   }
 
   .form-buttons-return button {
-    font-size: 12px;
+    font-size: 20px;
     padding: 8px 10px;
   }
 }

@@ -15,12 +15,12 @@ export const CreateLead = () => {
   // State for all input fields
   const [leadData, setLeadData] = useState({
     leadNumber: '',
-    leadOrigin: '1',
+    leadOrigin: '',
     incidentNumber: 'C000000',
     subNumber: '',
     associatedSubNumbers: [],
     assignedDate: '08/25/24',
-    leadSummary: 'Default Summary',
+    leadSummary: '',
     assignedBy: '',
     leadDescription: '',
     assignedOfficer: '',
@@ -207,13 +207,13 @@ const handleGenerateLead = async () => {
       <Navbar />
 
 
-      <div className="main-content">
+      <div className="main-content-cl">
         {/* Left Section */}
         <div className="left-section">
           <img
             src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
             alt="Police Department Logo"
-            className="police-logo"
+            className="police-logo-cl"
           />
         </div>
 
@@ -238,20 +238,8 @@ const handleGenerateLead = async () => {
                     onChange={(e) => handleInputChange('leadNumber', e.target.value)} // Allow manual edits
                     placeholder="Enter Lead Number"
                   /> */}
-                        <input type="text" value={leadData.leadNumber} readOnly /> {/* Read-only auto-generated */}
+                        <input type="text" value={leadData.leadNumber} className="input-field" readOnly /> {/* Read-only auto-generated */}
 
-                </td>
-              </tr>
-              <tr>
-                <td>LEAD ORIGIN:</td>
-                <td>
-                  <input
-                    type="text"
-                    className="input-field1"
-                    value={leadData.leadOrigin}
-                    onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
-                    placeholder="5"
-                  />
                 </td>
               </tr>
               <tr>
@@ -259,7 +247,7 @@ const handleGenerateLead = async () => {
                 <td>
                   <input
                     type="text"
-                    className="input-field1"
+                    className="input-field"
                     value={leadData.incidentNumber}
                     onChange={(e) => handleInputChange('incidentNumber', e.target.value)}
                     placeholder="C000000"
@@ -271,7 +259,7 @@ const handleGenerateLead = async () => {
                 <td>
                 <input
                     type="text"
-                    className="input-field1"
+                    className="input-field"
                     value={leadData.subNumber}
                     readOnly // Make it read-only
                   />
@@ -288,12 +276,71 @@ const handleGenerateLead = async () => {
                   />
                 </td>
               </tr> */}
-              <tr>
-  <td>ASSOCIATED SUBNUMBERS:</td>
+             
+                           <tr>
+                <td>ASSIGNED DATE:</td>
+                <td>
+                  <input
+                    type="text"
+                    className="input-field"
+                    value={leadData.assignedDate}
+                    onChange={(e) => handleInputChange('assignedDate', e.target.value)}
+                    placeholder="08/25/24"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+
+      {/* Bottom Content */}
+      <div className="bottom-content">
+        <table className="details-table">
+          <tbody>
+          <tr>
+              <td>Case Name:</td>
+              <td>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={leadData.caseName || 'Main Street Murder'} // Display selected case name or an empty string
+                  onChange={(e) => handleInputChange('caseName', e.target.value)} // Update 'caseName' in leadData
+                  placeholder="Enter Case Name"
+    />
+              </td>
+            </tr>
+            <tr>
+              <td>Lead Summary:</td>
+              <td>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={leadData.leadSummary}
+                  onChange={(e) => handleInputChange('leadSummary', e.target.value)}
+                  placeholder="Enter Lead Summary"
+                />
+              </td>
+            </tr>
+            <tr>
+                <td>Lead Origin:</td>
+                <td>
+                  <input
+                    type="text"
+                    className="input-field"
+                    value={leadData.leadOrigin}
+                    onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
+                    placeholder="Enter Lead Origin"
+                  />
+                </td>
+              </tr>
+            <tr>
+  <td>Associated Subnumbers:</td>
   <td>
-    <div className="custom-dropdown">
+    <div className="custom-dropdown-cl">
       <div
-        className="dropdown-header"
+        className="dropdown-header-cl"
         onClick={() => setSubDropdownOpen(!subDropdownOpen)}
       >
         {associatedSubNumbers.length > 0
@@ -325,60 +372,12 @@ const handleGenerateLead = async () => {
     </div>
   </td>
 </tr>
-
-              <tr>
-                <td>ASSIGNED DATE:</td>
-                <td>
-                  <input
-                    type="text"
-                    className="input-field1"
-                    value={leadData.assignedDate}
-                    onChange={(e) => handleInputChange('assignedDate', e.target.value)}
-                    placeholder="08/25/24"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-
-      {/* Bottom Content */}
-      <div className="bottom-content">
-        <table className="details-table">
-          <tbody>
-          <tr>
-              <td>Case Name:</td>
-              <td>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={leadData.caseName || 'Default Case'} // Display selected case name or an empty string
-      onChange={(e) => handleInputChange('caseName', e.target.value)} // Update 'caseName' in leadData
-    />
-
-
-              </td>
-            </tr>
-            <tr>
-              <td>Lead Summary:</td>
-              <td>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={leadData.leadSummary}
-                  onChange={(e) => handleInputChange('leadSummary', e.target.value)}
-                  placeholder="Summary"
-                />
-              </td>
-            </tr>
             <tr>
   <td>Assign Officers:</td>
   <td>
-    <div className="custom-dropdown">
+    <div className="custom-dropdown-cl">
       <div
-        className="dropdown-header"
+        className="dropdown-header-cl"
         onClick={() => setDropdownOpen(!dropdownOpen)}
       >
         {leadData.assignedOfficer.length > 0
@@ -430,10 +429,10 @@ const handleGenerateLead = async () => {
               <td>Lead Description:</td>
               <td>
                 <textarea
-                  className="textarea-field"
+                  className="textarea-field-cl"
                   value={leadData.leadDescription}
                   onChange={(e) => handleInputChange('leadDescription', e.target.value)}
-                  placeholder="Enter Description"
+                  placeholder="Enter Lead Description"
                 ></textarea>
               </td>
             </tr>
