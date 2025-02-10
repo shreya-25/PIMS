@@ -243,6 +243,15 @@ body{
   font-style: normal; 
   font-size: 20px;
 }
+input[readonly]
+{
+  font-size: 20px;
+}
+
+.input-field[readonly]
+{
+  font-size: 20px;
+}
 
 .custom-dropdown-cl {
   position: relative;

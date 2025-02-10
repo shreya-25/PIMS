@@ -16,10 +16,10 @@ export const CreateLead = () => {
   const [leadData, setLeadData] = useState({
     leadNumber: '',
     leadOrigin: '',
-    incidentNumber: 'C000000',
+    incidentNumber: '',
     subNumber: '',
     associatedSubNumbers: [],
-    assignedDate: '08/25/24',
+    assignedDate: '',
     leadSummary: '',
     assignedBy: '',
     leadDescription: '',
@@ -250,7 +250,7 @@ const handleGenerateLead = async () => {
                     className="input-field"
                     value={leadData.incidentNumber}
                     onChange={(e) => handleInputChange('incidentNumber', e.target.value)}
-                    placeholder="C000000"
+                    placeholder=""
                   />
                 </td>
               </tr>
@@ -285,7 +285,7 @@ const handleGenerateLead = async () => {
                     className="input-field"
                     value={leadData.assignedDate}
                     onChange={(e) => handleInputChange('assignedDate', e.target.value)}
-                    placeholder="08/25/24"
+                    placeholder=""
                   />
                 </td>
               </tr>

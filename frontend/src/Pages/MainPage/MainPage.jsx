@@ -504,7 +504,7 @@ const addCase = (newCase) => {
 
 {activeTab === "assignedLeads" && (
   <div className="assigned-leads">
-    <Filter />
+    {/* <Filter /> */}
     {/* <button
       onClick={() => setFilterSortPopupVisible(true)}
       className="filter-sort-button"
