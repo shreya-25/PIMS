@@ -76,7 +76,26 @@ export const CMScratchpad = () => {
 
       {/* Main Content */}
       <div className="main-contentLRS">
-        <h2 className="title">Scratchpad Information</h2>
+      <div className="main-content-cl">
+        {/* Left Section */}
+        <div className="left-section">
+          <img
+            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
+            alt="Police Department Logo"
+            className="police-logo-lr"
+          />
+        </div>
+
+
+        {/* Center Section */}
+        <div className="center-section">
+          <h2 className="title">SCRATCHPAD INFORMATION</h2>
+        </div>
+
+         {/* Right Section */}
+         <div className="right-section">
+        </div>
+      </div>
 
         {/* Scratchpad Table */}
         <table className="scratchpad-table">

@@ -116,7 +116,26 @@ export const LRTimeline = () => {
       </div>
 
       {/* <div className="timeline-section"> */}
-      <h1 className="searchlead-title">Timeline Entries</h1>
+      <div className="main-content-cl">
+        {/* Left Section */}
+        <div className="left-section">
+          <img
+            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
+            alt="Police Department Logo"
+            className="police-logo-lr"
+          />
+        </div>
+
+
+        {/* Center Section */}
+        <div className="center-section">
+          <h2 className="title">TIMELINE INFORMATION</h2>
+        </div>
+
+         {/* Right Section */}
+         <div className="right-section">
+        </div>
+      </div>
         <div className="timeline-table">
           <table>
             <thead>

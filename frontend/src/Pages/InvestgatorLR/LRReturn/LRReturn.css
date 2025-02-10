@@ -121,13 +121,13 @@ body {
 }
 
   /* Alternate row colors */
-  .returns-table tr:nth-child(odd) {
-    background-color: #f9f9f9; /* Light gray */
+  /* .returns-table tr:nth-child(odd) {
+    background-color: #f9f9f9; 
   }
   
   .returns-table tr:nth-child(even) {
-    background-color: #eaeaea; /* Slightly darker gray */
-  }
+    background-color: #eaeaea; 
+  } */
 
   .returns-table th:nth-child(1), 
 .returns-table td:nth-child(1) {

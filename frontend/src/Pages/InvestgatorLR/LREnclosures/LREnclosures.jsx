@@ -70,7 +70,26 @@ export const LREnclosures = () => {
 
       {/* Main Content */}
       <div className="main-contentLRE">
-        <h2 className="title">Enclosure Information</h2>
+      <div className="main-content-cl">
+        {/* Left Section */}
+        <div className="left-section">
+          <img
+            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
+            alt="Police Department Logo"
+            className="police-logo-lr"
+          />
+        </div>
+
+
+        {/* Center Section */}
+        <div className="center-section">
+          <h2 className="title">ENCLOSURES INFORMATION</h2>
+        </div>
+
+         {/* Right Section */}
+         <div className="right-section">
+        </div>
+      </div>
 
         {/* Enclosures Table */}
         <table className="enclosures-table">
