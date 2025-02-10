@@ -143,7 +143,7 @@ export const CMVehicle = () => {
       </div>
 
         {/* Vehicle Table */}
-        <table className="vehicle-table">
+        <table className="timeline-table">
           <thead>
             <tr>
               <th>Date Entered</th>

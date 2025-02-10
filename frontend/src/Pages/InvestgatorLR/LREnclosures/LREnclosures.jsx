@@ -92,7 +92,7 @@ export const LREnclosures = () => {
       </div>
 
         {/* Enclosures Table */}
-        <table className="enclosures-table">
+        <table className="timeline-table">
           <thead>
             <tr>
               <th>Date Entered</th>

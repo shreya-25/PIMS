@@ -166,7 +166,7 @@ export const LRPerson = () => {
 
      {/* Main Table */}
      <div className="table-container1">
-        <table className="person-table">
+        <table className="timeline-table">
           <thead>
             <tr>
               <th>Date Entered</th>

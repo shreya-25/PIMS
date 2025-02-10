@@ -106,7 +106,7 @@ export const LRReturn = () => {
         </div>
       </div>
 
-        <table className="returns-table">
+        <table className="timeline-table">
           <thead>
             <tr>
               <th>Date Entered</th>
