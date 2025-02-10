@@ -314,12 +314,12 @@ export const CasePageManager = () => {
                     <div className="content-section">
                     {activeTab === "assignedLeads" && (
   <div className="assigned-leads">
-    <button
+    {/* <button
       onClick={() => setFilterSortPopupVisible(true)}
       className="filter-sort-button"
     >
       Open Filter & Sort
-    </button>
+    </button> */}
 
 
     {filterSortPopupVisible && (
@@ -452,12 +452,12 @@ export const CasePageManager = () => {
               </button>
             </div>
           </div>
-          <button
+          {/* <button
             onClick={() => setFilterSortPopupVisible(false)}
             className="apply-button"
           >
             Apply Filters & Sorting
-          </button>
+          </button> */}
         </div>
       </div>
     )}
@@ -540,12 +540,12 @@ export const CasePageManager = () => {
           
 {activeTab === "pendingLeads" && (
   <div className="pending-leads">
-    <button
+    {/* <button
       onClick={() => setFilterSortPopupVisible(true)}
       className="filter-sort-button"
     >
       Open Filter & Sort
-    </button>
+    </button> */}
 
 
     {filterSortPopupVisible && (
