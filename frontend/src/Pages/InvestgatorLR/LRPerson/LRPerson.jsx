@@ -143,6 +143,27 @@ export const LRPerson = () => {
          </div>
        </div>
 
+       <div className="main-content-cl">
+        {/* Left Section */}
+        <div className="left-section">
+          <img
+            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
+            alt="Police Department Logo"
+            className="police-logo-lr"
+          />
+        </div>
+
+
+        {/* Center Section */}
+        <div className="center-section">
+          <h2 className="title">LEAD PERSONS DETAILS</h2>
+        </div>
+
+         {/* Right Section */}
+         <div className="right-section">
+        </div>
+      </div>
+
      {/* Main Table */}
      <div className="table-container1">
         <table className="person-table">

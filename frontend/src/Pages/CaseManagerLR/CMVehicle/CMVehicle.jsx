@@ -121,7 +121,26 @@ export const CMVehicle = () => {
 
       {/* Main Content */}
       <div className="main-contentLRV">
-        <h2 className="title">Vehicle Information</h2>
+      <div className="main-content-cl">
+        {/* Left Section */}
+        <div className="left-section">
+          <img
+            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
+            alt="Police Department Logo"
+            className="police-logo-lr"
+          />
+        </div>
+
+
+        {/* Center Section */}
+        <div className="center-section">
+          <h2 className="title">VEHICLE INFORMATION</h2>
+        </div>
+
+         {/* Right Section */}
+         <div className="right-section">
+        </div>
+      </div>
 
         {/* Vehicle Table */}
         <table className="vehicle-table">
