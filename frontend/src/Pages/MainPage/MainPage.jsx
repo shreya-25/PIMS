@@ -55,58 +55,58 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
 
 
   const [cases, setCases] = useState([
-    // { id: 12345, title: "Main Street Murder", status: "ongoing", role: "Investigator" },
-    // { id: 45637, title: "Cook Street School Threat", status: "ongoing", role: "Case Manager" },
-    // { id: 23789, title: "216 Endicott Suicide", status: "ongoing", role: "Investigator" },
-    // { id: 65734, title: "Murray Street Stolen Gold", status: "ongoing", role: "Investigator" },
+    { id: 12345, title: "Main Street Murder", status: "ongoing", role: "Investigator" },
+    { id: 45637, title: "Cook Street School Threat", status: "ongoing", role: "Case Manager" },
+    { id: 23789, title: "216 Endicott Suicide", status: "ongoing", role: "Investigator" },
+    { id: 65734, title: "Murray Street Stolen Gold", status: "ongoing", role: "Investigator" },
   ]);
 
 
   // const loggedInOfficer = localStorage.getItem("loggedInUser")?.trim();
-  const loggedInOfficer = "Officer 916";
-  console.log("Logged-in officer from localStorage:", loggedInOfficer);
+  // const loggedInOfficer = "Officer 916";
+  // console.log("Logged-in officer from localStorage:", loggedInOfficer);
 
 
 
 
 
 
-  useEffect(() => {
+  // useEffect(() => {
 
 
-    if (!loggedInOfficer) {
-      navigate("/"); // Redirect to login if not authenticated
-      return;
-  }
+  //   if (!loggedInOfficer) {
+  //     navigate("/"); // Redirect to login if not authenticated
+  //     return;
+  // }
 
 
-    const fetchCases = async () => {
-      try {
-        const response = await axios.get("http://localhost:5000/api/cases", {
-          params: { officerName: loggedInOfficer },
-        });
+  //   const fetchCases = async () => {
+  //     try {
+  //       const response = await axios.get("http://localhost:5000/api/cases", {
+  //         params: { officerName: loggedInOfficer },
+  //       });
 
 
-        setCases(response.data);
+  //       setCases(response.data);
 
 
-        const formattedCases = response.data.map((c) => ({
-          id: c.caseNo,
-          title: c.caseName,
-          status: c.caseStatus,
-          role: c.assignedOfficers.find((o) => o.name === loggedInOfficer)?.role || "Unknown",
-        }));
+  //       const formattedCases = response.data.map((c) => ({
+  //         id: c.caseNo,
+  //         title: c.caseName,
+  //         status: c.caseStatus,
+  //         role: c.assignedOfficers.find((o) => o.name === loggedInOfficer)?.role || "Unknown",
+  //       }));
 
 
-        setCases(formattedCases);
-      } catch (error) {
-        console.error("Error fetching cases:", error);
-      }
-    };
+  //       setCases(formattedCases);
+  //     } catch (error) {
+  //       console.error("Error fetching cases:", error);
+  //     }
+  //   };
 
 
-    fetchCases();
-  }, [loggedInOfficer]);
+  //   fetchCases();
+  // }, [loggedInOfficer]);
 
 
 
@@ -117,7 +117,7 @@ const handleViewAssignedLead = (lead) => {
 const handleCaseClick = (caseDetails) => {
   if (caseDetails.role === "Investigator") {
     navigate("/Investigator", { state: { caseDetails } });
-  } else if (caseDetails.role === "CaseManager") {
+  } else if (caseDetails.role === "Case Manager") {
     navigate("/CasePageManager", { state: { caseDetails } });
   }
 };
@@ -188,39 +188,39 @@ const acceptLead = (leadId) => {
  
   const [leads, setLeads] = useState({
     assignedLeads: [
-      { id: 1, description: "Lead 45: Collect Audio Records from Dispatcher",dueDate: "12/28/2024",
+      { id: 45, description: "Collect Audio Records from Dispatcher",dueDate: "12/28/2024",
         priority: "High",
         flags: ["Important"],
         assignedOfficers: ["Officer 1", "Officer 3"], },
-      { id: 2, description: "Lead 20: Interview Mr. John",dueDate: "12/31/2024",
+      { id: 20, description: "Interview Mr. John",dueDate: "12/31/2024",
         priority: "Medium",
         flags: [],
         assignedOfficers: ["Officer 2"] },
-      { id: 3, description: "Lead 84: Collect Evidence from 63 Mudray Street",dueDate: "12/20/2024",
+      { id: 84, description: "Collect Evidence from 63 Mudray Street",dueDate: "12/20/2024",
         priority: "Low",
         flags: [],
         assignedOfficers: ["Officer 4"] },
     ],
     pendingLeads: [
       {
-        id: 4,
-        description: "Lead 21: Interview Witness",
+        id: 21,
+        description: "Interview Witness",
         dueDate: "12/28/2024",
         priority: "High",
         flags: ["Important"],
-        assignedOfficers: ["Officer 1", "Officer 3"],
+        assignedOfficers: ["Officer 1", "Officer 3", "Officer 8"],
       },
       {
-        id: 6,
-        description: "Lead 30: Interview Neighbours",
+        id: 30,
+        description: "Interview Neighbours",
         dueDate: "12/30/2024",
         priority: "Medium",
         flags: [],
         assignedOfficers: ["Officer 2"],
       },
       {
-        id: 7,
-        description: "Lead 32: Collect Evidence",
+        id: 32,
+        description: "Collect Evidence",
         dueDate: "12/31/2024",
         priority: "Low",
         flags: [],
@@ -228,9 +228,9 @@ const acceptLead = (leadId) => {
       },
     ],
     pendingLeadReturns: [
-      { id: 5, description: "Lead 33: Submit Crime Scene Photos" },
-      { id: 8, description: "Lead 32: Collect Evidence", dueDate: "12/25/2024" },
-      { id: 9, description: "Lead 21: Interview Witness", dueDate: "12/24/2024" },
+      { id: 33, description: "Submit Crime Scene Photos" },
+      { id: 32, description: "Collect Evidence", dueDate: "12/25/2024" },
+      { id: 21, description: "Interview Witness", dueDate: "12/24/2024" },
     ],
   });
 
@@ -427,7 +427,36 @@ const addCase = (newCase) => {
         <div className="content-section">
         {activeTab === "cases" && (
             <div className="case-list">
-            {cases.map((c) => (
+
+
+        <table className="leads-table">
+              <thead>
+                <tr>
+                  <th>Case No.</th>
+                  <th>Case Name</th>
+                  <th>Role</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {cases.map((c) => (
+                    <tr key={c.id}>
+                      <td>{c.id}</td>
+                      <td>{c.title}</td>
+                      <td>{c.role}</td>
+                      <td>
+                        <button
+                          className="view-btn"
+                          onClick={() => handleCaseClick(c)}
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+            {/* {cases.map((c) => (
               <div key={c.id} className="case-item">
                 <span
                   className="case-details"
@@ -450,7 +479,7 @@ const addCase = (newCase) => {
                   >
                     View
                   </button>
-                  {/* <button
+                  <button
                     className="delete-btn"
                     onClick={() => {
                       if (window.confirm(`Are you sure you want to delete case ${c.id}?`)) {
@@ -459,10 +488,10 @@ const addCase = (newCase) => {
                     }}
                   >
                     Delete
-                  </button> */}
+                  </button>
                 </div>
               </div>
-            ))}
+            ))} */}
           </div>
          
 )}
@@ -626,10 +655,11 @@ const addCase = (newCase) => {
     <table className="leads-table">
       <thead>
         <tr>
-          <th>Lead Number and Name</th>
+          <th>Lead No.</th>
+          <th>Lead Name</th>
           <th>Due Date</th>
           <th>Priority</th>
-          <th>Remaining Days</th>
+          <th>Days Left</th>
           <th>Flags</th>
           <th>Assigned Officers</th>
           <th></th>
@@ -661,6 +691,7 @@ const addCase = (newCase) => {
           })
           .map((lead) => (
             <tr key={lead.id}>
+              <td>{lead.id}</td>
               <td>{lead.description}</td>
               <td>{lead.dueDate || "N/A"}</td>
               <td>{lead.priority || "N/A"}</td>
@@ -854,10 +885,11 @@ const addCase = (newCase) => {
     <table className="leads-table">
       <thead>
         <tr>
-          <th>Lead Number and Name</th>
+          <th>Lead No.</th>
+          <th>Lead Name</th>
           <th>Due Date</th>
           <th>Priority</th>
-          <th>Remaining Days</th>
+          <th>Days Left</th>
           <th>Flags</th>
           <th>Assigned Officers</th>
           <th></th>
@@ -889,6 +921,7 @@ const addCase = (newCase) => {
           })
           .map((lead) => (
             <tr key={lead.id}>
+              <td>{lead.id}</td>
               <td>{lead.description}</td>
               <td>{lead.dueDate}</td>
               <td>{lead.priority}</td>
@@ -921,7 +954,34 @@ const addCase = (newCase) => {
 
 {activeTab === "pendingLeadReturns" && (
   <div className="pending-lead-returns">
-    <ul className="lead-list">
+    <table className="leads-table">
+              <thead>
+                <tr>
+                  <th>Lead No.</th>
+                  <th>Lead Name</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {leads.pendingLeadReturns.map((lead) => (
+                    <tr key={lead.id}>
+                      <td>{lead.id}</td>
+                      <td>{lead.description}</td>
+                      <td>
+                        <button
+                              className="continue-btn"
+                              onClick={() => {
+                                handleLRClick(lead)
+                              }}
+                            >
+                              Continue
+                            </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+    {/* <ul className="lead-list">
       {leads.pendingLeadReturns.map((lead) => (
         <li key={lead.id} className="lead-item">
           <span>{lead.description}</span>
@@ -935,7 +995,7 @@ const addCase = (newCase) => {
           </button>
         </li>
       ))}
-    </ul>
+    </ul> */}
   </div>
 )}  
 

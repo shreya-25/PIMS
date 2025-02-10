@@ -12,6 +12,7 @@ export const CMInstruction = () => {
     leadOrigin: '7',
     incidentNumber: 'C000006',
     subNumber: 'C0000045',
+    associatedSubNumbers: [],
     assignedDate: '09/29/24',
     leadSummary: 'Interview Mr. John',
     assignedBy: 'Officer 5',
@@ -19,6 +20,13 @@ export const CMInstruction = () => {
     assignedOfficer: ['Officer 1','Officer 2'],
   });
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const [availableSubNumbers, setAvailableSubNumbers] = useState([
+      "SUB-000001", "SUB-000002", "SUB-000003", "SUB-000004", "SUB-000005"
+    ]); // Static List of Subnumbers
+    
+    const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]); // Selected Subnumbers
+    const [subDropdownOpen, setSubDropdownOpen] = useState(false);
 
   const handleInputChange = (field, value) => {
     setLeadData({ ...leadData, [field]: value });
@@ -100,7 +108,7 @@ export const CMInstruction = () => {
          </div>
        </div>
 
-      <div className="main-content">
+      <div className="main-content-cl">
         {/* Left Section */}
         <div className="left-section">
           <img
@@ -124,22 +132,10 @@ export const CMInstruction = () => {
                 <td>
                   <input
                     type="text"
-                    className="input-field1"
+                    className="input-field"
                     value={leadData.leadNumber}
                     onChange={(e) => handleInputChange('leadNumber', e.target.value)}
                     placeholder="12"
-                  />
-                </td>
-              </tr>
-              <tr>
-                <td>LEAD ORIGIN:</td>
-                <td>
-                  <input
-                    type="text"
-                    className="input-field1"
-                    value={leadData.leadOrigin}
-                    onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
-                    placeholder="5"
                   />
                 </td>
               </tr>
@@ -148,7 +144,7 @@ export const CMInstruction = () => {
                 <td>
                   <input
                     type="text"
-                    className="input-field1"
+                    className="input-field"
                     value={leadData.incidentNumber}
                     onChange={(e) => handleInputChange('incidentNumber', e.target.value)}
                     placeholder="C000000"
@@ -160,7 +156,7 @@ export const CMInstruction = () => {
                 <td>
                   <input
                     type="text"
-                    className="input-field1"
+                    className="input-field"
                     value={leadData.subNumber}
                     onChange={(e) => handleInputChange('subNumber', e.target.value)}
                     placeholder="C0000000"
@@ -172,7 +168,7 @@ export const CMInstruction = () => {
                 <td>
                   <input
                     type="text"
-                    className="input-field1"
+                    className="input-field"
                     value={leadData.assignedDate}
                     onChange={(e) => handleInputChange('assignedDate', e.target.value)}
                     placeholder="08/25/24"
@@ -184,28 +180,89 @@ export const CMInstruction = () => {
         </div>
       </div>
 
-      {/* Bottom Content */}
-      <div className="bottom-content">
+       {/* Bottom Content */}
+       <div className="bottom-content">
         <table className="details-table">
           <tbody>
+          <tr>
+              <td>Case Name:</td>
+              <td>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={leadData.caseName || 'Main Street Murder'} // Display selected case name or an empty string
+                  onChange={(e) => handleInputChange('caseName', e.target.value)} // Update 'caseName' in leadData
+                  placeholder="Enter Case Name"
+    />
+              </td>
+            </tr>
             <tr>
-              <td>Lead Description:</td>
+              <td>Lead Summary:</td>
               <td>
                 <input
                   type="text"
                   className="input-field"
                   value={leadData.leadSummary}
                   onChange={(e) => handleInputChange('leadSummary', e.target.value)}
-                  placeholder="Summary"
+                  placeholder="Enter Lead Summary"
                 />
               </td>
             </tr>
             <tr>
+                <td>Lead Origin:</td>
+                <td>
+                  <input
+                    type="text"
+                    className="input-field"
+                    value={leadData.leadOrigin}
+                    onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
+                    placeholder="Enter Lead Origin"
+                  />
+                </td>
+              </tr>
+            <tr>
+  <td>Associated Subnumbers:</td>
+  <td>
+    <div className="custom-dropdown-cl">
+      <div
+        className="dropdown-header-cl"
+        onClick={() => setSubDropdownOpen(!subDropdownOpen)}
+      >
+        {associatedSubNumbers.length > 0
+          ? associatedSubNumbers.join(", ")
+          : "Select Subnumbers"}
+        <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
+      </div>
+      {subDropdownOpen && (
+        <div className="dropdown-options">
+          {availableSubNumbers.map((subNum) => (
+            <div key={subNum} className="dropdown-item">
+              <input
+                type="checkbox"
+                id={subNum}
+                value={subNum}
+                checked={associatedSubNumbers.includes(subNum)}
+                onChange={(e) => {
+                  const updatedSubNumbers = e.target.checked
+                    ? [...associatedSubNumbers, e.target.value]
+                    : associatedSubNumbers.filter((num) => num !== e.target.value);
+                  setAssociatedSubNumbers(updatedSubNumbers);
+                }}
+              />
+              <label htmlFor={subNum}>{subNum}</label>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </td>
+</tr>
+            <tr>
   <td>Assign Officers:</td>
   <td>
-    <div className="custom-dropdown">
+    <div className="custom-dropdown-cl">
       <div
-        className="dropdown-header"
+        className="dropdown-header-cl"
         onClick={() => setDropdownOpen(!dropdownOpen)}
       >
         {leadData.assignedOfficer.length > 0
@@ -237,8 +294,6 @@ export const CMInstruction = () => {
     </div>
   </td>
 </tr>
-
-
             <tr>
               <td>Assigned By:</td>
               <td>
@@ -252,13 +307,13 @@ export const CMInstruction = () => {
               </td>
             </tr>
             <tr>
-              <td>Lead Summary:</td>
+              <td>Lead Description:</td>
               <td>
                 <textarea
-                  className="textarea-field"
+                  className="textarea-field-cl"
                   value={leadData.leadDescription}
                   onChange={(e) => handleInputChange('leadDescription', e.target.value)}
-                  placeholder="Enter Description"
+                  placeholder="Enter Lead Description"
                 ></textarea>
               </td>
             </tr>

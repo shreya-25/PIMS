@@ -37,28 +37,14 @@ body {
   color: #0b504a;
 }
 
-.details-table th , .details-table td{
-  font-size: 20px;
-  color: #333;
-}
-
-.input-field{
-  font-size: 20px;
-  color: #333;
-}
-
-.textarea-field
-{
-  font-size: 20px;
-  color: #333;
-}
-
 .form-buttons-inst {
   display: flex;
   gap: 10px;
   justify-content: center;
-  margin-top: 5px;
+  margin-top: 20px;
   margin-bottom: 10px;
+  min-height: 30px;
+  min-width: 100px;
 }
 
 button {
