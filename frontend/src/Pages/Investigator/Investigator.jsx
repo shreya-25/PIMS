@@ -724,7 +724,7 @@ export const Investigator = () => {
               <td>{lead.assignedOfficers.join(", ")}</td>
               <td>
                 <button
-                  className="view-btn"
+                  className="view-btn1"
                   onClick={() => alert(`Viewing lead: ${lead.description}`)}
                 >
                   View

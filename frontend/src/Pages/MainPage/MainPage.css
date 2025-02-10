@@ -495,14 +495,13 @@
   }
 
   .view-btn1 {
-    background-color: #007bff;
     color: white;
     min-width: 150px;
     margin-bottom: 10px;
   }
 
   .accept-btn {
-    background-color: #28a745;
+    background-color: #0D8790;
     color: white;
   }
 }
@@ -538,13 +537,13 @@
 
 /* Accept button */
 .accept-lead-button {
-  background-color: #4caf50; /* Green */
+  background-color: #0D8790;
   color: white;
   font-size: 20px;
 }
 
 .accept-lead-button:hover {
-  background-color: #388e3c; /* Darker green for hover */
+  background-color: #728d8f;
   font-size: 20px;
 }
 
@@ -946,31 +945,32 @@
 .view-btn1,
 .accept-btn {
   margin-left: 10px;
-  padding: 5px 10px;
+  padding: 10px;
   border: none;
   border-radius: 3px;
   cursor: pointer;
   transition: background-color 0.3s ease, color 0.3s ease;
   font-size: 20px;margin-bottom: 10px;
-  width: 100px;
+  width: 120px;
 }
 
 .view-btn1 {
-  background-color: #007bffde;
+  /* background-color: #007bffde; */
+  background-color: #404142de;
   color: #fff;
 }
 
 .view-btn1:hover {
-  background-color: #0056b3;
+  background-color: #787a7c;
 }
 
 .accept-btn {
-  background-color: #28a745;
+  background-color: #0D8790;
   color: #fff;
 }
 
 .accept-btn:hover {
-  background-color: #218838;
+  background-color: #2e5f63;
 }
 
 /* Adding some spacing and alignment */
@@ -1038,11 +1038,11 @@
   background-color: #0056b3;
 }
 
+
 .continue-btn {
-  background-color: #4caf50;
+  background-color: #0D8790;
   color: white;
   border: none;
-  border-radius: 5px;
   padding: 8px 16px;
   cursor: pointer;
   font-size: 20px;
@@ -1050,16 +1050,16 @@
 }
 
 .continue-btn:hover {
-  background-color: #388e3c;
+  background-color: #2e5f63;
 }
 
 /* Delete Button Specific Styling */
 .delete-btn {
-  background-color: #dc3545; /* Red */
+  background-color: #7a262f; /* Red */
 }
 
 .delete-btn:hover {
-  background-color: #c82333; /* Darker Red */
+  background-color: #794046; /* Darker Red */
 }
 
 /* General Styling for Navbar Buttons */
@@ -1225,12 +1225,11 @@
   }
 
   .view-btn1 {
-    background-color: #007bff;
     color: white;
   }
 
   .accept-btn {
-    background-color: #28a745;
+    background-color: #0D8790;
     color: white;
   }
 }
