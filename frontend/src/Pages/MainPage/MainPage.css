@@ -88,7 +88,8 @@
 .stats-bar {
   display: flex;
   justify-content: space-around;
-  background-color: rgba(22, 83, 87, 0.88); /* Green background */
+  /* background-color: rgba(22, 83, 87, 0.88);  */
+  background-color: #0D8790;
   padding: 10px;
   border-radius: 5px;
   margin-bottom: 20px;
@@ -352,7 +353,6 @@
   width: 100%;
   border-collapse: collapse;
   margin-top: 20px;
-  table-layout: fixed; 
 }
 
 .pending-lr-table th,
@@ -375,41 +375,65 @@
   background-color: #f9f9f9;
 }
 
-/* .pending-lr-table th:nth-child(1), 
+.pending-lr-table th:nth-child(1), 
 .pending-lr-table td:nth-child(1) {
-  min-width: 10%; 
-  max-width: 10%;
+  min-width: 10px; 
+  max-width: 10px;
 }
 
-.pending-lr-table th:nth-child(2), 
-.pending-lr-table td:nth-child(2) {
-  min-width: 300px; 
-  max-width: 300px;
-} */
-
-/* .pending-lr-table th:nth-child(3), 
+ .pending-lr-table th:nth-child(3), 
 .pending-lr-table td:nth-child(3) {
-  min-width: 40px; 
-  max-width: 40px;
-} */
-.pending-lr-table th:last-child,
-.pending-lr-table td:last-child {
-  width: auto;
-  text-align: center;
-}
-
-.pending-lr-table td:last-child {
-  text-align: center;
-  display: flex;
-  flex-direction: column; /* Stack buttons vertically */
-  align-items: center; /* Center align buttons */
-  gap: 10px; /* Adds spacing between buttons */
-  padding: 10px;
+  min-width: 20px; 
+  max-width: 20px;
 }
 
 
 /* ############################## */
 
+/* General Table Styling */
+.all-lead-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.all-lead-table th,
+.all-lead-table td {
+  padding: 10px;
+  text-align: left;
+  border: 1px solid #ddd;
+  font-size: 20px;
+  word-wrap: break-word; /* Ensures text wraps inside the cell */
+  overflow-wrap: break-word; /* Helps break long words */
+  white-space: normal; /* Allows text to wrap */
+}
+
+.all-lead-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.all-lead-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.all-lead-table th:nth-child(1), 
+.all-lead-table td:nth-child(1) {
+  min-width: 40px; 
+  max-width: 40px;
+}
+
+ .all-lead-table th:nth-child(3), 
+.all-lead-tabletd:nth-child(3) {
+  min-width: 20px; 
+  max-width: 20px;
+}
+
+.all-lead-table th:nth-child(4), 
+.all-lead-table td:nth-child(4) {
+  min-width: 50px; 
+  max-width: 50px;
+}
 
 
 
