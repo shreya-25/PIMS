@@ -97,7 +97,26 @@ export const LRPictures = () => {
 
       {/* Main Content */}
       <div className="main-contentLRP">
-        <h2 className="title">Picture Information</h2>
+      <div className="main-content-cl">
+        {/* Left Section */}
+        <div className="left-section">
+          <img
+            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
+            alt="Police Department Logo"
+            className="police-logo-lr"
+          />
+        </div>
+
+
+        {/* Center Section */}
+        <div className="center-section">
+          <h2 className="title">PICTURES INFORMATION</h2>
+        </div>
+
+         {/* Right Section */}
+         <div className="right-section">
+        </div>
+      </div>
 
         {/* Pictures Table */}
         <table className="pictures-table">

@@ -36,7 +36,26 @@ export const LRFinish = () => {
 
       {/* Main Content */}
       <div className="main-contentLRF">
-        <h2 className="title">Finish</h2>
+      <div className="main-content-cl">
+        {/* Left Section */}
+        <div className="left-section">
+          <img
+            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
+            alt="Police Department Logo"
+            className="police-logo-lr"
+          />
+        </div>
+
+
+        {/* Center Section */}
+        <div className="center-section">
+          <h2 className="title">FINISH </h2>
+        </div>
+
+         {/* Right Section */}
+         <div className="right-section">
+        </div>
+      </div>
 
         {/* Logged Information */}
         <div className="logged-info">
@@ -68,33 +87,39 @@ export const LRFinish = () => {
             <h4>Reports:</h4>
             <div className="report-column">
               <label>
-                <input type="radio" name="report" /> Lead Instruction Sheet
+                <input type="checkbox" name="report" /> Lead Instruction
               </label>
               <label>
-                <input type="radio" name="report" /> Lead Worksheet
+                <input type="checkbox" name="report" /> Lead Returns
               </label>
               <label>
-                <input type="radio" name="report" /> Lead Instruction Worksheet
+                <input type="checkbox" name="report" /> Lead Persons
               </label>
               <label>
-                <input type="radio" name="report" /> Entered Results
+                <input type="checkbox" name="report" /> Lead Vehicles
+              </label>
+              <label>
+                <input type="checkbox" name="report" /> Lead Enclosures
+              </label>
+              <label>
+                <input type="checkbox" name="report" /> Lead Evidences
               </label>
             </div>
             <div className="report-column">
               <label>
-                <input type="radio" name="report" /> Lead Persons
+                <input type="checkbox" name="report" /> Lead Pictures
               </label>
               <label>
-                <input type="radio" name="report" /> Lead Pictures
+                <input type="checkbox" name="report" /> Lead Audio Description
               </label>
               <label>
-                <input type="radio" name="report" /> Lead Results
+                <input type="checkbox" name="report" /> Lead Videos Description
               </label>
               <label>
-                <input type="radio" name="report" /> Lead Scratchpad Entries
+                <input type="checkbox" name="report" /> Lead Scratchpad Entries
               </label>
               <label>
-                <input type="radio" name="report" /> Lead Vehicles
+                <input type="checkbox" name="report" /> Lead Timeline Entries
               </label>
             </div>
           </div>

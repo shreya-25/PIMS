@@ -57,10 +57,10 @@
   justify-content: space-evenly;
   width: 60%;
   }
-  input[type="radio"] {
+  input[type="checkbox"] {
     margin-right: 10px; /* Remove default margin to avoid alignment issues */
-    width: 10%;
-    width: 10%;
+    width: 50px;
+    width: 50px;
   }
   
   .report-column {
@@ -69,12 +69,13 @@
     gap: 10px;
     align-items: flex-start;
     width: 40%;
+    height: 50%;
   }
   
   .report-column label {
     font-size: 20px;
     text-align: left;
-    height: 20%;
+    height: 80px;
     width: 100%
   }
   
