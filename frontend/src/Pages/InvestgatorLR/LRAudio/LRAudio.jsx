@@ -113,7 +113,7 @@ export const LRAudio = () => {
       </div>
 
         {/* Audio Files Table */}
-        <table className="audio-table">
+        <table className="timeline-table">
           <thead>
             <tr>
               <th>Date Entered</th>
@@ -133,32 +133,35 @@ export const LRAudio = () => {
         </table>
 
         {/* Audio Form */}
-        <h4>Enter Audio Details</h4>
+        <h4 className="evidence-form-h4">Enter Audio Details</h4>
         <div className="audio-form">
           <div className="form-row-audio">
-            <label>Date Audio Recorded:</label>
+            <label className="evidence-head">Date Audio Recorded:</label>
             <input
               type="date"
               value={audioData.dateAudioRecorded}
+              className="evidence-head"
               onChange={(e) => handleInputChange("dateAudioRecorded", e.target.value)}
             />
           </div>
           <div className="form-row-audio">
-            <label>Description:</label>
+            <label className="evidence-head">Description:</label>
             <textarea
               value={audioData.description}
+              className="evidence-head"
               onChange={(e) => handleInputChange("description", e.target.value)}
             ></textarea>
           </div>
           <div className="form-row-audio">
-            <label>Upload Audio:</label>
-            <input type="file" accept="audio/*" onChange={handleFileChange} />
+            <label className="evidence-head">Upload Audio:</label>
+            
+            <input type="file" accept="audio/*" className="evidence-head" onChange={handleFileChange} />
           </div>
         </div>
 
         {/* Uploaded Audio Preview */}
         <div className="uploaded-audio">
-          <h4>Uploaded Audio</h4>
+          <h4 className="evidence-head">Uploaded Audio</h4>
           <div className="audio-gallery">
             {audioFiles.map((audio, index) => (
               <div key={index} className="audio-card">

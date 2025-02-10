@@ -27,10 +27,10 @@ body{
   {
     width: 40%;
   }
-   /* .police-logo-cl {
-    height: 500px;
+   .police-logo-cl {
+    height: 200px;
     margin: 2%;
-  } */
+  }
   
   /* Center Section */
   .center-section { 
@@ -98,7 +98,7 @@ body{
     justify-content: center; /* Center vertically */
     align-items: center; /* Center horizontally */
     height: 50vh; /* Use a height to ensure the content is positioned in the center */
-    /* margin-bottom: 5px; */
+    margin: 5px 130px;
     margin-left: 50px;
   }
   
@@ -246,7 +246,7 @@ body{
 
 .custom-dropdown-cl {
   position: relative;
-  width: 98.5%;
+  width: 99%;
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;

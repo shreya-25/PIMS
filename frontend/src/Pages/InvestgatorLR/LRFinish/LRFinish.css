@@ -19,7 +19,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
-    margin-bottom: 20px;
+    margin: 20px 130px;
   }
   
   .info-item {
@@ -45,7 +45,7 @@
     justify-content: flex-start;
   align-items: flex-start;
   gap: 20px; /* Adjust spacing between sections */
-  margin-bottom: 20px;
+  margin: 20px 130px;
   width: 90%;
   }
   

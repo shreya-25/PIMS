@@ -98,7 +98,7 @@ export const LRScratchpad = () => {
       </div>
 
         {/* Scratchpad Table */}
-        <table className="scratchpad-table">
+        <table className="timeline-table">
           <thead>
             <tr>
               <th>Date Entered</th>
@@ -118,7 +118,7 @@ export const LRScratchpad = () => {
         </table>
 
         {/* Scratchpad Form */}
-        <h4>Add New Note</h4>
+        <h4 className="evidence-form-h4">Add New Note</h4>
         <div className="scratchpad-form">
           <textarea
             value={noteData.text}

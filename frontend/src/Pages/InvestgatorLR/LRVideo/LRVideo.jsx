@@ -114,7 +114,7 @@ export const LRVideo = () => {
       </div>
 
         {/* Videos Table */}
-        <table className="videos-table">
+        <table className="timeline-table">
           <thead>
             <tr>
               <th>Date Entered</th>
@@ -134,40 +134,42 @@ export const LRVideo = () => {
         </table>
 
         {/* Video Form */}
-        <h4>Enter Video Details</h4>
+        <h4 className="evidence-form-h4">Enter Video Details</h4>
         <div className="video-form">
           <div className="form-row-video">
-            <label>Date Video Recorded:</label>
+            <label className="evidence-head">Date Video Recorded:</label>
             <input
               type="date"
               value={videoData.dateVideoRecorded}
+              className="evidence-head"
               onChange={(e) => handleInputChange("dateVideoRecorded", e.target.value)}
             />
           </div>
           <div className="form-row-video">
-            <label>Description:</label>
+            <label className="evidence-head">Description:</label>
             <textarea
               value={videoData.description}
+              className="evidence-head"
               onChange={(e) => handleInputChange("description", e.target.value)}
             ></textarea>
           </div>
           <div className="form-row-video">
-            <label>Upload Video:</label>
-            <input type="file" accept="video/*" onChange={handleFileChange} />
+            <label className="evidence-head">Upload Video:</label>
+            <input type="file" accept="video/*" className="evidence-head" onChange={handleFileChange} />
           </div>
         </div>
 
         {/* Uploaded Video Preview */}
         <div className="uploaded-video">
-          <h4>Uploaded Videos</h4>
+          <h4 className="evidence-head">Uploaded Videos</h4>
           <div className="video-gallery">
             {videos.map((video, index) => (
               <div key={index} className="video-card">
                 <video controls>
-                  <source src={video.videoSrc} type="video/mp4" />
+                  <source src={video.videoSrc} type="video/mp4"className="evidence-head" />
                   Your browser does not support the video tag.
                 </video>
-                <p>{video.description}</p>
+                <p className="evidence-head">{video.description}</p>
               </div>
             ))}
           </div>
