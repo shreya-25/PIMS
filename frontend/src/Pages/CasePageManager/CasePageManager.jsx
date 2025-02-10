@@ -221,10 +221,34 @@ export const CasePageManager = () => {
                 {/* Sidebar */}
                 <div className="sideitem">
                     <ul className="sidebar-list">
-                        <li className="sidebar-item" onClick={() => handleTabClick("assignedLeads")}>My Assigned Leads: {leads.assignedLeads.length}</li>
-                        <li className="sidebar-item" onClick={() => handleTabClick("pendingLeads")}>My Pending Leads: {leads.pendingLeads.length}</li>
-                        <li className="sidebar-item"onClick={() => handleTabClick("pendingLeadReturns")}>My Pending Lead Returns: {leads.pendingLeadReturns.length}</li>
-                        <li className="sidebar-item" onClick={() => handleTabClick("allLeads")}>Total Generated Leads: {leads.allLeads.length}</li>
+
+                    {["assignedLeads", "pendingLeads", "pendingLeadReturns", "allLeads"].map((tab) => (
+  <li
+    key={tab}
+    className={`sidebar-item ${activeTab === tab ? "active" : ""}`}
+    onClick={() => handleTabClick(tab)}
+  >
+    <div className="sidebar-content">
+            <span className="sidebar-text">
+              {tab === "assignedLeads" && "My Assigned Leads"}
+              {tab === "pendingLeads" && "My Pending Leads"}
+              {tab === "pendingLeadReturns" && "My Pending Lead Returns"}
+              {tab === "allLeads" && "Total Generated Leads"}
+            </span>
+            <span className="sidebar-number">
+              {tab === "assignedLeads" && leads.assignedLeads.length}
+              {tab === "pendingLeads" && leads.pendingLeads.length}
+              {tab === "pendingLeadReturns" && leads.pendingLeadReturns.length}
+              {tab === "allLeads" && leads.allLeads.length}
+            </span>
+          </div>
+  </li>
+))}
+
+                        {/* <li className="sidebar-item" onClick={() => handleTabClick("assignedLeads")}>My Assigned Leads {leads.assignedLeads.length}</li>
+                        <li className="sidebar-item" onClick={() => handleTabClick("pendingLeads")}>My Pending Leads {leads.pendingLeads.length}</li>
+                        <li className="sidebar-item"onClick={() => handleTabClick("pendingLeadReturns")}>My Pending Lead Returns {leads.pendingLeadReturns.length}</li>
+                        <li className="sidebar-item" onClick={() => handleTabClick("allLeads")}>Total Generated Leads {leads.allLeads.length}</li> */}
                         <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
                         <li className="sidebar-item" onClick={() => navigate("/leadlog")}>View Lead Log</li>
                         <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
@@ -775,7 +799,7 @@ export const CasePageManager = () => {
 
 {activeTab === "allLeads" && (
   <div className="all-leads">
-    <table className="pending-lr-table">
+    <table className="all-lead-table">
       <thead>
         <tr>
           <th>Lead No.</th>

@@ -220,10 +220,34 @@ export const Investigator = () => {
                 {/* Sidebar */}
                 <div className="sideitem">
                     <ul className="sidebar-list">
-                        <li className="sidebar-item" onClick={() => handleTabClick("assignedLeads")}>My Assigned Leads: {leads.assignedLeads.length}</li>
+
+                      
+                    {["assignedLeads", "pendingLeads", "pendingLeadReturns", "allLeads"].map((tab) => (
+  <li
+    key={tab}
+    className={`sidebar-item ${activeTab === tab ? "active" : ""}`}
+    onClick={() => handleTabClick(tab)}
+  >
+    <div className="sidebar-content">
+            <span className="sidebar-text">
+              {tab === "assignedLeads" && "My Assigned Leads"}
+              {tab === "pendingLeads" && "My Pending Leads"}
+              {tab === "pendingLeadReturns" && "My Pending Lead Returns"}
+              {tab === "allLeads" && "Total Generated Leads"}
+            </span>
+            <span className="sidebar-number">
+              {tab === "assignedLeads" && leads.assignedLeads.length}
+              {tab === "pendingLeads" && leads.pendingLeads.length}
+              {tab === "pendingLeadReturns" && leads.pendingLeadReturns.length}
+              {tab === "allLeads" && leads.allLeads.length}
+            </span>
+          </div>
+  </li>
+))}
+                        {/* <li className="sidebar-item" onClick={() => handleTabClick("assignedLeads")}>My Assigned Leads: {leads.assignedLeads.length}</li>
                         <li className="sidebar-item" onClick={() => handleTabClick("pendingLeads")}>My Pending Leads: {leads.pendingLeads.length}</li>
                         <li className="sidebar-item"onClick={() => handleTabClick("pendingLeadReturns")}>My Pending Lead Returns: {leads.pendingLeadReturns.length}</li>
-                        <li className="sidebar-item" onClick={() => handleTabClick("allLeads")}>My Total Leads: {leads.allLeads.length}</li>
+                        <li className="sidebar-item" onClick={() => handleTabClick("allLeads")}>My Total Leads: {leads.allLeads.length}</li> */}
                         <li className="sidebar-item"onClick={() => navigate('/leadlog')}>View Lead Log</li>
                         <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
                         <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
@@ -272,8 +296,8 @@ export const Investigator = () => {
                         </span>
                     </div>
 
-                    {/* Tab Content */}
-                    <div className="content-section">
+                       {/* Tab Content */}
+                       <div className="content-section">
                     {activeTab === "assignedLeads" && (
   <div className="assigned-leads">
     <button
@@ -282,6 +306,7 @@ export const Investigator = () => {
     >
       Open Filter & Sort
     </button>
+
 
     {filterSortPopupVisible && (
       <div className="popup-overlay">
@@ -295,7 +320,7 @@ export const Investigator = () => {
           <h3>Filter & Sort Leads</h3>
           <div className="filter-sort-section">
             <div className="filters">
-              <h4>Filters</h4>
+              <h4 className="filter-label">Filters</h4>
               <div className="filter-item">
                 <input
                   type="text"
@@ -312,7 +337,7 @@ export const Investigator = () => {
                 </button>
               </div>
               <div className="filter-item">
-                <label>Priority:</label>
+                <label className="filter-label">Priority:</label>
                 <select
                   value={selectedPriority}
                   onChange={(e) => setSelectedPriority(e.target.value)}
@@ -331,7 +356,7 @@ export const Investigator = () => {
                 </button>
               </div>
               <div className="filter-item">
-                <label>Remaining Days:</label>
+                <label className="filter-label">Remaining Days:</label>
                 <input
                   type="number"
                   placeholder="Enter Remaining Days"
@@ -347,7 +372,7 @@ export const Investigator = () => {
                 </button>
               </div>
               <div className="filter-item">
-                <label>Flags:</label>
+                <label className="filter-label">Flags:</label>
                 <input
                   type="text"
                   placeholder="Filter by Flags"
@@ -363,7 +388,7 @@ export const Investigator = () => {
                 </button>
               </div>
               <div className="filter-item">
-                <label>Assigned Officers:</label>
+                <label className="filter-label">Assigned Officers:</label>
                 <input
                   type="text"
                   placeholder="Filter by Assigned Officers"
@@ -382,8 +407,9 @@ export const Investigator = () => {
               </div>
             </div>
 
+
             <div className="sorting">
-              <h4>Sorting</h4>
+              <h4 className="filter-label">Sorting</h4>
               <select
                 value={`${sortField}-${sortOrder}`}
                 onChange={(e) => {
@@ -422,13 +448,15 @@ export const Investigator = () => {
       </div>
     )}
 
+
     <table className="leads-table">
       <thead>
         <tr>
-          <th>Lead Number and Name</th>
+          <th>Lead No.</th>
+          <th>Lead Name</th>
           <th>Due Date</th>
           <th>Priority</th>
-          <th>Remaining Days</th>
+          <th>Days Left</th>
           <th>Flags</th>
           <th>Assigned Officers</th>
           <th></th>
@@ -460,6 +488,7 @@ export const Investigator = () => {
           })
           .map((lead) => (
             <tr key={lead.id}>
+              <td>{lead.id}</td>
               <td>{lead.description}</td>
               <td>{lead.dueDate || "N/A"}</td>
               <td>{lead.priority || "N/A"}</td>
@@ -468,10 +497,9 @@ export const Investigator = () => {
               <td>{lead.assignedOfficers?.join(", ") || "Unassigned"}</td>
               <td>
                 <button
-                  className="view-btn"
-                  onClick={() =>
-                    alert(`Viewing details for: ${lead.description}`)
-                  }
+                  className="view-btn1"
+                  // onClick={() =>
+                  // }
                 >
                   View
                 </button>
@@ -495,7 +523,6 @@ export const Investigator = () => {
   </div>
 )}
 
-
           
 {activeTab === "pendingLeads" && (
   <div className="pending-leads">
@@ -505,6 +532,7 @@ export const Investigator = () => {
     >
       Open Filter & Sort
     </button>
+
 
     {filterSortPopupVisible && (
       <div className="popup-overlay">
@@ -554,6 +582,7 @@ export const Investigator = () => {
                 </button>
               </div>
 
+
             {/* Filter by Remaining Days */}
         <div className="filter-item">
           <label>Remaining Days:</label>
@@ -571,6 +600,7 @@ export const Investigator = () => {
           </button>
         </div>
 
+
         {/* Filter by Flags */}
         <div className="filter-item">
           <label>Flags:</label>
@@ -584,6 +614,7 @@ export const Investigator = () => {
             Clear Flags Filter
           </button>
         </div>
+
 
         {/* Filter by Assigned Officers */}
         <div className="filter-item">
@@ -602,6 +633,7 @@ export const Investigator = () => {
           </button>
         </div>
         </div>
+
 
             <div className="sorting">
               <h4>Sorting</h4>
@@ -643,13 +675,15 @@ export const Investigator = () => {
       </div>
     )}
 
+
     <table className="leads-table">
       <thead>
         <tr>
-          <th>Lead Number and Name</th>
+          <th>Lead No.</th>
+          <th>Lead Name</th>
           <th>Due Date</th>
           <th>Priority</th>
-          <th>Remaining Days</th>
+          <th>Days Left</th>
           <th>Flags</th>
           <th>Assigned Officers</th>
           <th></th>
@@ -681,6 +715,7 @@ export const Investigator = () => {
           })
           .map((lead) => (
             <tr key={lead.id}>
+              <td>{lead.id}</td>
               <td>{lead.description}</td>
               <td>{lead.dueDate}</td>
               <td>{lead.priority}</td>
@@ -702,28 +737,41 @@ export const Investigator = () => {
   </div>
 )}
 
+
 {activeTab === "pendingLeadReturns" && (
   <div className="pending-lead-returns">
-    <ul className="lead-list">
-      {leads.pendingLeadReturns.map((lead) => (
-        <li key={lead.id} className="lead-item">
-          <span>{lead.description}</span>
-          <button
-            className="continue-btn"
-            onClick={() => {
-              handleLRClick(lead)
-            }}
-          >
-            Continue
-          </button>
-        </li>
-      ))}
-    </ul>
+    <table className="pending-lr-table">
+              <thead>
+                <tr>
+                  <th>Lead No.</th>
+                  <th>Lead Name</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {leads.pendingLeadReturns.map((lead) => (
+                    <tr key={lead.id}>
+                      <td>{lead.id}</td>
+                      <td>{lead.description}</td>
+                      <td>
+                        <button
+                              className="continue-btn"
+                              onClick={() => {
+                                handleLRClick(lead)
+                              }}
+                            >
+                              Continue
+                            </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
   </div>
-)}
+)}  
 
-             {activeTab === "allLeads" && (
-                            <div className="lead-list">
+             {/* {activeTab === "allLeads" && (
+                            <div className="lead-list" onClick={() => handleNavigation("/LeadInfo")}>
                                 {leads.allLeads.map((lead) => (
                                     <div key={lead.id} className="lead-item">
                                         <span>{lead.description}</span>
@@ -733,7 +781,40 @@ export const Investigator = () => {
                                     </div>
                                 ))}
                             </div>
-                        )}
+                        )} */}
+
+{activeTab === "allLeads" && (
+  <div className="all-leads">
+    <table className="all-lead-table">
+      <thead>
+        <tr>
+          <th>Lead No.</th>
+          <th>Lead Name</th>
+          <th>Lead Status</th>
+          <th></th> {/* Empty header for buttons column */}
+        </tr>
+      </thead>
+      <tbody>
+        {leads.allLeads.map((lead) => (
+          <tr key={lead.id}>
+            <td>{lead.id}</td>
+            <td>{lead.description}</td>
+            <td>{lead.status}</td>
+            <td>
+              <button
+                className= "view-btn1"
+                onClick={() => handleNavigation("/LeadInfo")}
+              >
+                View
+              </button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
+
                     </div>
                 </div>
                 <div className="gotomainpagebtn">
