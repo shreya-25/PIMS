@@ -1242,20 +1242,20 @@
 
 /* Close Button */
 .close-btn {
-  background-color: #28a745; /* Green */
+  background-color: #0D8790; /* Green */
 }
 
 .close-btn:hover {
-  background-color: #218838; /* Darker green */
+  background-color: #0D8790; /* Darker green */
 }
 
 /* Delete Button */
 .delete-btn {
-  background-color: #dc3545; /* Red */
+  background-color: #a05252; /* Red */
 }
 
 .delete-btn:hover {
-  background-color: #c82333; /* Darker red */
+  background-color: #a05252; /* Darker red */
 }
 
 /* @media (max-width: 600px) {

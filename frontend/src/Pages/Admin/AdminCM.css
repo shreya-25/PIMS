@@ -149,17 +149,17 @@
     cursor: pointer;
   }
   
-  .close-btn {
-    background-color: #4caf50;
+  .close-button {
+    background-color: #0D8790;
   }
   
   .delete-btn {
-    background-color: #f44336;
+    background-color: #a05252;
   }
 
   .edit-button
   {
-    background-color: #caba26;
+    background-color: #6c757d;
   }
   
   .view-all-cases-btn-admin {
@@ -171,6 +171,8 @@
     border-radius: 5px;
     cursor: pointer;
     margin-left: 87%;
+    width: 16%;
+
   }
 
   .block {

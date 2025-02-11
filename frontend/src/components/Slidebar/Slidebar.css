@@ -89,7 +89,7 @@ select.input-field {
 
 
 .add-case-button {
-  background-color: rgba(137, 51, 51, 1); /* Red color */
+  background-color: #a05252; /* Red color */
   color: white; /* White text */
   border: none;
   padding: 10px 20px; /* Increased padding for better visibility */
