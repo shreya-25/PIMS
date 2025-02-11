@@ -20,8 +20,8 @@ const Filter = () => {
   };
 
   return (
-    <div className="filter-container">
-      <div className="item">
+    <div className="filter-container-tailwind">
+      <div className="filter-cat">
         {/* Country Dropdown */}
         <select
           name="Case Number"
@@ -36,7 +36,7 @@ const Filter = () => {
         </select>
       </div>
 
-      <div className="item">
+      <div className="filter-cat">
         {/* Brand Dropdown */}
         <select
           name="Case Name"
@@ -51,8 +51,7 @@ const Filter = () => {
         </select>
       </div>
 
-      <div className="item">
-        {/* ABV Dropdown */}
+      <div className="filter-cat">
         <select
           name="Case Manager"
           value={filters.abv}
