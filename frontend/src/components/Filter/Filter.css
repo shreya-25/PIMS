@@ -1,5 +1,4 @@
-
-.filter-container {
+.filter-container-tailwind {
     display: flex;
     flex-direction: row; 
     gap: 10px; 
@@ -10,21 +9,25 @@
     justify-content: center;
     width: 90%; 
     margin: 10px; 
+    min-width: 1500px;
+    flex-wrap: nowrap; /* Ensures items stay in one row */
+    overflow-x: auto; /* Allows horizontal scrolling if needed */
 }
 
 
-.item {
+.filter-cat {
     min-width: 200px;
     min-height: 50px; 
     display:flex;
-    align-items: center;;
+    align-items: center;
+    flex: 0 0 auto; /* Prevents items from growing or shrinking */
 }
 
-.item select{
+.filter-cat select{
     min-width: 200px;
     min-height: 50px; 
     display:flex;
-    align-items: center;;
+    align-items: center;
 }
 
 .filter-dropdown {
@@ -61,11 +64,11 @@
 }
 
 
-.filter-container > * {
+/* .filter-container > * {
     flex-shrink: 0;
-}
+} */
 
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
     .filter-container {
         flex-wrap: wrap; 
         justify-content: center;
@@ -78,4 +81,4 @@
     .filter-button {
         width: auto;
     }
-}
+} */
