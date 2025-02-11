@@ -99,3 +99,19 @@
     text-decoration: underline;
   }
   
+  .checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 150px;
+}
+
+.checkbox-container input {
+    width: 16px;
+    height: 16px;
+}
+
+.checkbox-container label {
+    font-size: 20px;
+    color: #333;
+}
