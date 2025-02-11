@@ -147,6 +147,10 @@ export const SlideBar = ({ onAddCase }) => {
               className="input-field textarea-field"
             />
           </div>
+          <div className="form-group">
+            <h4>Upload any relevant document to the case</h4>
+            <input type="file" className="input-field" />
+          </div>
           <button className="done-button" onClick={handleDone}>
             Done
           </button>

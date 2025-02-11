@@ -295,10 +295,10 @@ import { useNavigate } from "react-router-dom";
 
 export const AdminCM = () => {
   const [cases, setCases] = useState([
-    { id: 12345, name: "Main Street Murder" },
-    { id: 45607, name: "Cook Street Stolen Truck" },
-    { id: 23789, name: "216 Endicott Burglary" },
-    { id: 65741, name: "Murray Street Stolen Gold" },
+    { id: 12345, name: "Main Street Murder", dateCreated:"04/25/25" , caseManager:"Officer 1", officers:['Officer 2 ', 'Officer 3']  },
+    { id: 45607, name: "Cook Street Stolen Truck",dateCreated:"04/25/25"  , caseManager:"Officer 1", officers:['Officer 2 ', 'Officer 3'] },
+    { id: 23789, name: "216 Endicott Burglary",dateCreated:"04/25/25"  , caseManager:"Officer 1", officers:['Officer 2 ', 'Officer 3']  },
+    { id: 65741, name: "Murray Street Stolen Gold", dateCreated:"04/25/25"  , caseManager:"Officer 1", officers:['Officer 2 ', 'Officer 3'] },
   ]);
 
     const navigate = useNavigate();
@@ -364,7 +364,7 @@ export const AdminCM = () => {
 
       <div className="logo-sec">
         <img
-          src="/Materials/newpolicelogo.png" // Replace with the actual path to your logo
+          src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}  // Replace with the actual path to your logo
           alt="Police Department Logo"
           className="police-logo-main-page"
         />
@@ -379,7 +379,7 @@ export const AdminCM = () => {
           <SlideBar
                 onAddCase={(newCase) => addCase(newCase)} // Pass addCase function with confirmation
             />
-          <div className="officer-section">
+          {/* <div className="officer-section">
             <table className="officer-table">
               <thead>
                 <tr>
@@ -396,7 +396,7 @@ export const AdminCM = () => {
                 ))}
               </tbody>
             </table>
-          </div>
+          </div> */}
           <div className="stats-bar">
           <span
             className={`hoverable ${activeTab === "cases" ? "active" : ""}`}
@@ -415,7 +415,12 @@ export const AdminCM = () => {
                   className="case-details"
                   onClick={() => handleCaseClick(c)} // Handle case click
                 >
-                  <strong>Case Number:</strong> {c.id} | {c.name} 
+                  <div className="case-details">
+                        <span><strong>Case Number:</strong> {c.id} | {c.name} | <strong>Date Created:</strong> {c.dateCreated}</span>
+                        <span className="block"><strong>Case Manager:</strong> {c.caseManager}</span>
+                        <span className="block"><strong>Assigned Officers:</strong> {c.officers}</span>
+                      </div>
+
                 </span>
                
                 <div className="case-actions">
@@ -427,7 +432,7 @@ export const AdminCM = () => {
                       }
                     }}
                   >
-                    Edit
+                    View
                   </button>
 
                   <button
