@@ -276,8 +276,8 @@
 
 .leads-table th:nth-child(1), 
 .leads-table td:nth-child(1) {
-  min-width: 20px; /* Lead Name */
-  max-width: 20px;
+  min-width: 5px; /* Lead Name */
+  max-width: 5px;
 }
 
 .leads-table th:nth-child(2), 
@@ -288,26 +288,26 @@
 
 .leads-table th:nth-child(3), 
 .leads-table td:nth-child(3) {
-  min-width: 100px; /* Due Date */
-  max-width: 100px;
+  min-width: 70px; /* Due Date */
+  max-width: 70px;
 }
 
 .leads-table th:nth-child(4), 
 .leads-table td:nth-child(4) {
-  min-width: 50px; /* Priority */
-  max-width: 50px;
+  min-width: 40px; /* Priority */
+  max-width: 40px;
 }
 
 .leads-table th:nth-child(5), 
 .leads-table td:nth-child(5) {
-  min-width: 50px; /* Remaining Days */
-  max-width: 50px;
+  min-width: 40px; /* Remaining Days */
+  max-width: 40px;
 }
 
 .leads-table th:nth-child(6), 
 .leads-table td:nth-child(6) {
-  min-width: 80px; /* Flags */
-  max-width: 80px;
+  min-width: 50px; /* Flags */
+  max-width: 50px;
 }
 
 .leads-table th:nth-child(7), 
@@ -318,7 +318,9 @@
 
 .leads-table th:last-child,
 .leads-table td:last-child {
-  width: auto;
+  /* width: auto; */
+  min-width: 50px; /* Flags */
+  max-width: 50px;
   text-align: center;
 }
 
@@ -426,8 +428,8 @@
 
 .pending-lr-table th:nth-child(1), 
 .pending-lr-table td:nth-child(1) {
-  min-width: 10px; 
-  max-width: 10px;
+  min-width: 40px; 
+  max-width: 40px;
 }
 
  .pending-lr-table th:nth-child(3), 
@@ -468,8 +470,8 @@
 
 .all-lead-table th:nth-child(1), 
 .all-lead-table td:nth-child(1) {
-  min-width: 40px; 
-  max-width: 40px;
+  min-width: 60px; 
+  max-width: 60px;
 }
 
  .all-lead-table th:nth-child(3), 
@@ -480,8 +482,8 @@
 
 .all-lead-table th:nth-child(4), 
 .all-lead-table td:nth-child(4) {
-  min-width: 70px; 
-  max-width: 70px;
+  min-width: 90px; 
+  max-width: 90px;
 }
 
 
@@ -1283,6 +1285,8 @@
   .lead-item {
     flex-direction: column;
     align-items: flex-start;
+
+
   }
 
   .case-actions,
