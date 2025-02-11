@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "./AdminCM.css";
 import Navbar from "../../components/Navbar/Navbar";
+import Filter from "../../components/Filter/Filter";
 import Searchbar from "../../components/Searchbar/Searchbar";
 import { SlideBar } from "../../components/Slidebar/Slidebar";
 import { SideBar } from "../../components/Sidebar/Sidebar";
@@ -662,6 +663,7 @@ export const AdminCM = () => {
         </div>
 
         <div className="content-section">
+        <Filter/>
         {activeTab === "cases" && (
             <div className="case-list">
             {cases.map((c) => (
