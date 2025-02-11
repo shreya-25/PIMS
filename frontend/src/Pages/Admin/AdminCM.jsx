@@ -663,9 +663,9 @@ export const AdminCM = () => {
         </div>
 
         <div className="content-section">
-        <Filter/>
         {activeTab === "cases" && (
             <div className="case-list">
+              <Filter/>
             {cases.map((c) => (
               <div key={c.id} className="case-item">
                 <span
@@ -945,12 +945,12 @@ export const AdminCM = () => {
 
           {activeTab === "pendingLeads" && (
   <div className="pending-leads">
-    <button
+    {/* <button
       onClick={() => setFilterSortPopupVisible(true)}
       className="filter-sort-button"
     >
       Open Filter & Sort
-    </button>
+    </button> */}
 
 
     {filterSortPopupVisible && (
