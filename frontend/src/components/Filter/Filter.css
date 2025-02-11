@@ -1,70 +1,78 @@
-/* Container styling */
+
 .filter-container {
     display: flex;
-    flex-direction: row; /* Ensures horizontal layout */
-    gap: 10px; /* Space between elements */
-    background-color: #f3f4f6; /* Light gray background */
+    flex-direction: row; 
+    gap: 10px; 
+    background-color: #f3f4f6;
     padding: 12px;
     border-radius: 6px;
     align-items: center;
-    justify-content: flex-start;
-    width: fit-content; /* Ensures it takes only the required space */
-    margin: auto; /* Centers the component */
+    justify-content: center;
+    width: 90%; 
+    margin: 10px; 
 }
 
-/* Individual filter item */
+
 .item {
-    min-width: 150px; /* Ensures dropdowns are equal in width */
+    min-width: 200px;
+    min-height: 50px; 
+    display:flex;
+    align-items: center;;
 }
 
-/* Dropdown styling */
+.item select{
+    min-width: 200px;
+    min-height: 50px; 
+    display:flex;
+    align-items: center;;
+}
+
 .filter-dropdown {
     padding: 8px 12px;
     border: 1px solid #d1d5db;
     border-radius: 4px;
     background-color: white;
-    font-size: 14px;
+    font-size: 20px;
     cursor: pointer;
-    width: 150px; /* Adjusted width to match the image */
-    appearance: none; /* Removes default dropdown styling */
+    width: 150px; 
+    appearance: none; 
     -webkit-appearance: none;
     -moz-appearance: none;
     text-align: left;
 }
 
-/* Apply Filters Button */
+
 .filter-button {
-    background-color: #a3082c; /* Dark red from the image */
+    background-color: #a3082c; 
     color: white;
     padding: 8px 16px;
     border-radius: 4px;
     cursor: pointer;
     border: none;
     font-weight: bold;
-    font-size: 14px;
+    font-size: 20px;
     transition: background-color 0.2s ease-in-out;
     text-align: center;
-    white-space: nowrap; /* Prevents text from wrapping */
+    white-space: nowrap; 
 }
 
 .filter-button:hover {
     background-color: #870826;
 }
 
-/* Ensure elements don't shrink */
+
 .filter-container > * {
     flex-shrink: 0;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
     .filter-container {
-        flex-wrap: wrap; /* Allows wrapping if needed on smaller screens */
+        flex-wrap: wrap; 
         justify-content: center;
     }
 
     .filter-dropdown {
-        width: 130px; /* Slightly reduce width for small screens */
+        width: 130px; 
     }
 
     .filter-button {
