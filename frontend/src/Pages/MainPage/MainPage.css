@@ -134,7 +134,7 @@
   text-align: center; /* Center-align text */
 }
 
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
   .stats-bar {
     flex-direction: column;
   }
@@ -143,7 +143,7 @@
     flex: 1 1 100%;
     margin-bottom: 10px;
   }
-}
+} */
 
 /* Content sections container */
 .content-section {
@@ -153,7 +153,7 @@
   margin: 0 auto; /* Centers horizontally */
 }
 
-@media (max-width: 600px) {
+/* @media (max-width: 600px) {
   .case-item,
   .lead-item {
     flex-direction: column;
@@ -162,14 +162,11 @@
 
   .case-actions,
   .lead-item button {
-    display: flex; /* Flexbox for horizontal alignment */
-  gap: 10px; /* Space between buttons */
-  justify-content: flex-start; /* Align buttons to the start */
-    /* width: 100%;
-    justify-content: space-around;
-    margin-top: 10px; */
+    display: flex; 
+  gap: 10px; 
+  justify-content: flex-start; 
   }
-}
+} */
 /* Case and lead items */
 .lead-item {
   display: flex;
@@ -191,11 +188,63 @@
   background-color: rgba(22, 83, 87, 0.03); /* Light greenish tint for hover */
 }
 
-@media (max-width: 930px) {
+/* @media (max-width: 930px) {
   .leads-table {
     font-size: 0.8rem;
   }
-}
+  .stats-bar
+  {
+    width: 90%;
+  }
+} */
+
+/* Mobile View - Stack Data */
+/* @media (max-width: 870px) {
+  .leads-table thead {
+    display: none; 
+  }
+
+  .leads-table tr {
+    display: block;
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
+    padding: 10px;
+  }
+
+  .leads-table td {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px;
+    font-size: 12px;
+  }
+
+  .leads-table td::before {
+    content: attr(data-label);
+    font-weight: bold;
+  }
+
+  .btn-view, .btn-accept {
+    width: 100%;
+  }
+
+  .pending-lr-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  
+  .pending-lr-table th:nth-child(1), 
+  .pending-lr-table td:nth-child(1) {
+    min-width: 50px; 
+    max-width: 50px;
+  }
+  
+   .pending-lr-table th:nth-child(3), 
+  .pending-lr-table td:nth-child(3) {
+    min-width: 50px; 
+    max-width: 50px;
+  }
+  
+} */
+
 
 /* General Table Styling */
 .leads-table {
@@ -439,7 +488,7 @@
 
 
 /* Horizontal Scroll for Smaller Screens */
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
   .leads-table {
     display: block;
     overflow-x: auto;
@@ -448,14 +497,89 @@
 
   .leads-table th,
   .leads-table td {
-    font-size: 14px; /* Reduce font size */
+    font-size: 14px; 
   }
+
+.leads-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  table-layout: fixed; 
 }
 
+.leads-table th,
+.leads-table td {
+  padding: 10px;
+  text-align: left;
+  border: 1px solid #ddd;
+  font-size: 20px;
+  word-wrap: break-word; 
+  overflow-wrap: break-word; 
+  white-space: normal; 
+}
+
+.leads-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.leads-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.leads-table th:nth-child(1), 
+.leads-table td:nth-child(1) {
+  min-width: 10px; 
+  max-width: 10px;
+}
+
+.leads-table th:nth-child(2), 
+.leads-table td:nth-child(2) {
+  min-width: 250px; 
+  max-width: 250px;
+}
+
+.leads-table th:nth-child(3), 
+.leads-table td:nth-child(3) {
+  min-width: 100px;
+  max-width: 100px;
+}
+
+.leads-table th:nth-child(4), 
+.leads-table td:nth-child(4) {
+  min-width: 50px; 
+  max-width: 50px;
+}
+
+.leads-table th:nth-child(5), 
+.leads-table td:nth-child(5) {
+  min-width: 50px; 
+  max-width: 50px;
+}
+
+.leads-table th:nth-child(6), 
+.leads-table td:nth-child(6) {
+  min-width: 80px;
+  max-width: 80px;
+}
+
+.leads-table th:nth-child(7), 
+.leads-table td:nth-child(7) {
+  min-width: 190px; 
+  max-width: 190px;
+}
+
+.leads-table th:last-child,
+.leads-table td:last-child {
+  width: auto;
+  text-align: center;
+}
+} */
+
 /* Card Layout for Extra Small Screens */
-@media (max-width: 480px) {
+/* @media (max-width: 480px) {
   .leads-table {
-    display: none; /* Hide table on small screens */
+    display: none; 
   }
 
   .lead-cards {
@@ -504,7 +628,7 @@
     background-color: #0D8790;
     color: white;
   }
-}
+} */
 
 
 /* Buttons for actions */
@@ -1132,7 +1256,7 @@
   background-color: #c82333; /* Darker red */
 }
 
-@media (max-width: 600px) {
+/* @media (max-width: 600px) {
   .popup-content {
     width: 95%;
   }
@@ -1140,16 +1264,16 @@
   .filter-item {
     width: 100%;
   }
-}
+} */
 
 /* Responsive Design */
-@media (max-width: 992px) {
+/* @media (max-width: 992px) {
   .sideitem {
     width: 40%;
   }
-}
+} */
 
-@media (max-width: 600px) {
+/* @media (max-width: 600px) {
   .SideBar {
     width: 100%;
     height: auto;
@@ -1166,26 +1290,26 @@
     width: 100%;
     margin-top: 10px;
   }
-}
+} */
 
 /* Add horizontal scrolling for small screens */
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
   .leads-table {
-    display: block; /* Enable block display */
-    overflow-x: auto; /* Horizontal scroll for smaller screens */
-    white-space: nowrap; /* Prevent text from wrapping inside cells */
+    display: block;
+    overflow-x: auto; 
+    white-space: nowrap; 
   }
 
   .leads-table th,
   .leads-table td {
-    font-size: 14px; /* Adjust font size for smaller screens */
+    font-size: 14px; 
   }
 }
 
-/* Card layout for very small screens */
+
 @media (max-width: 480px) {
   .leads-table {
-    display: none; /* Hide table on extra small screens */
+    display: none; 
   }
 
   .lead-cards {
@@ -1232,4 +1356,4 @@
     background-color: #0D8790;
     color: white;
   }
-}
+} */
