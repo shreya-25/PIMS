@@ -12,6 +12,12 @@ export const OfficerManagement = () => {
     { voucher: "Officer 3", status: "Assigned", email: "Officer3@epd.com", date: "08/30/24" },
     { voucher: "Officer 4", status: "Unassigned", email: "Officer4@epd.com", date: "" },
   ]);
+  const officers = [
+    { name: "Officer 1", casesAssigned: "2" },
+    { name: "Officer 2", casesAssigned: "1" },
+    { name: "Officer 3", casesAssigned: "3" },
+  ];
+
 
   const handleAction = (action, voucher) => {
     console.log(`${action} action on ${voucher}`);
@@ -23,6 +29,25 @@ export const OfficerManagement = () => {
       <Navbar />
       <div className="officer-management-container">
       <h2 className="title">OFFICER MANAGEMENT</h2>
+
+      <div className="officer-section">
+            <table className="officer-table">
+              <thead>
+                <tr>
+                  <th>View Team</th>
+                  <th>Cases Assigned</th>
+                </tr>
+              </thead>
+              <tbody>
+                {officers.map((officer, index) => (
+                  <tr key={index}>
+                    <td>{officer.name}</td>
+                    <td>{officer.casesAssigned}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
       <div className="table-container">
         <table className="voucher-table">
