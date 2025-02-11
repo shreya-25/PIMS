@@ -139,6 +139,16 @@ export const AdminUR = () => {
             onChange={handleInputChange}
             required
           />
+          {/* Allow User to Create Case Checkbox */}
+          <div className="checkbox-container">
+            <input
+              type="checkbox"
+              name="canCreateCase"
+              checked={formData.canCreateCase}
+              onChange={handleInputChange}
+            />
+            <label>Allow user to create a case</label>
+          </div>
           <button type="submit">Add User</button>
         </form>
       </div>
