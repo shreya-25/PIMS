@@ -209,6 +209,28 @@ export const CasePageManager = () => {
   const handleFilter = (e) => {
     setFilterText(e.target.value);
   };
+
+   // Define a constant with some predefined notes
+   const defaultCaseSummary = "Initial findings indicate that the suspect was last seen near the crime scene at 9:45 PM. Witness statements collected. Awaiting forensic reports and CCTV footage analysis.";
+
+   const [caseSummary, setCaseSummary] = useState(caseDetails?.summary || defaultCaseSummary);
+   const [isEditing, setIsEditing] = useState(false); // Controls whether the textarea is editable
+
+
+   const handleCaseSummaryChange = (e) => {
+       setCaseSummary(e.target.value);
+   };
+
+   // Toggle edit mode
+   const handleEditClick = () => {
+    setIsEditing(true);
+   };
+
+    // Save the edited text and disable editing
+    const handleSaveClick = () => {
+        setIsEditing(false);
+        // You can add logic here to update the backend with the new summary if needed
+    };
       
 
     return (
@@ -275,14 +297,19 @@ export const CasePageManager = () => {
                     )}
                 </div>
                 <div className = "case-summary">
-                <label className="input-label">Casse Summary</label>
-              <textarea
-                className="textarea-field"
-                placeholder="Enter your notes here..."
-                // value={newEntry.notes}
-                // onChange={(e) => handleInputChange("notes", e.target.value)}
-              ></textarea>
-                  
+                <label className="input-label">Case Summary</label>
+                        <textarea
+                            className="textarea-field"
+                            value={caseSummary}
+                            onChange={handleCaseSummaryChange}
+                            readOnly={!isEditing} // Read-only when not in edit mode
+                        ></textarea>
+                 {/* Buttons: Show "Edit" when not editing, "Save" when editing */}
+                 {!isEditing ? (
+                            <button className="edit-btn1" onClick={handleEditClick}>Edit</button>
+                        ) : (
+                            <button className="save-btn1" onClick={handleSaveClick}>Save</button>
+                        )}
                 </div>
                 {/* Content Area */}
                 <div className="content">
@@ -814,6 +841,7 @@ export const CasePageManager = () => {
       <thead>
         <tr>
           <th>Lead No.</th>
+          <th>Lead Origin </th>
           <th>Lead Name</th>
           <th>Lead Status</th>
           <th></th> {/* Empty header for buttons column */}
