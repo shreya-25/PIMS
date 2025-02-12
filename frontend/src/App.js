@@ -50,6 +50,7 @@ import { AdminUR } from './Pages/Admin/AdminUR';
 import { AdminSC } from './Pages/Admin/AdminSC';
 import { AdminSP } from './Pages/Admin/AdminSP';
 import { AdminDB } from './Pages/Admin/AdminDB';
+import { AdminDashboard } from './Pages/Admin/Dashboard/AdminDashboard';
 import { OfficerManagement } from './Pages/OfficerManagement/OfficerManagement';
 import { LeadInfo } from './Pages/LeadInfo/LeadInfo';
 
@@ -109,6 +110,7 @@ function App() {
         <Route path="/CMFinish" element={<CMFinish />} />
         <Route path="/CMScratchpad" element={<CMScratchpad />} />
         <Route path="/CMTimeline" element={<CMTimeline />} />
+        <Route path="/AdminDashboard" element={<AdminDashboard />} />
       </Routes>
     </Router>
   );
