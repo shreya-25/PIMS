@@ -258,6 +258,7 @@ export const CasePageManager = () => {
                         <li className="sidebar-item">Generate Report</li>
                         <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
                         <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
                         <li className="sidebar-item">View Lead Chain of Custody</li>
                     </ul>
                 </div>
@@ -272,6 +273,16 @@ export const CasePageManager = () => {
                     ) : (
                         <h1>Case: 12345 | Main Street Murder </h1>
                     )}
+                </div>
+                <div className = "case-summary">
+                <label className="input-label">Casse Summary</label>
+              <textarea
+                className="textarea-field"
+                placeholder="Enter your notes here..."
+                // value={newEntry.notes}
+                // onChange={(e) => handleInputChange("notes", e.target.value)}
+              ></textarea>
+                  
                 </div>
                 {/* Content Area */}
                 <div className="content">

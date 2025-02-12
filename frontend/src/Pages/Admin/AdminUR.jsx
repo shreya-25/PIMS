@@ -65,6 +65,15 @@ export const AdminUR = () => {
           <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
             Search People
           </span>
+          <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
+            Calendar
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
+            Dashboard
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
+            Discussion
+          </span>
           <span className="menu-item" onClick={() => handleNavigation('/AdminDB')} >
            Database Backup
           </span>
