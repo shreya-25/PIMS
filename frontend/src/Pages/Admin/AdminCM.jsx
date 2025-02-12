@@ -580,6 +580,7 @@ export const AdminCM = () => {
     <div className="admin-container">
       <Navbar />
 
+
       <div className="top-menu">
         <div className="menu-items">
         <span className="menu-item" onClick={() => handleNavigation('/AdminUR')}>
@@ -593,6 +594,15 @@ export const AdminCM = () => {
           </span>
           <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
             Search People
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
+            Calendar
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
+            Dashboard
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
+            Discussion
           </span>
           <span className="menu-item" onClick={() => handleNavigation('/AdminDB')} >
            Database Backup
