@@ -78,7 +78,7 @@ export const CreateLead = () => {
 useEffect(() => {
   const fetchMaxLeadNumber = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/lead/maxLeadNumber");
+      const response = await axios.get("https://pims-backend.onrender.com/api/lead/maxLeadNumber");
       const maxLeadNo = response.data.maxLeadNo || 0; // Default to 0 if no leads exist
       const newLeadNumber = maxLeadNo + 1;
 
