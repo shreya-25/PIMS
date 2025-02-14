@@ -63,6 +63,7 @@ const NotificationCard = () => {
             <i className="fa-solid fa-user"></i>
             </div>
             <div className="notification-content">
+            <div className="notification-text">
               <p>
                 <strong>{notification.name}</strong> {notification.action1}{" "}
                 {notification.post1 && <strong>{notification.post1}</strong>}
@@ -75,6 +76,9 @@ const NotificationCard = () => {
               )}
               <span className="time">{notification.time}</span>
             </div>
+            <button className="view-btnNC">View</button>
+          </div>
+
           </div>
         ))}
       </div>
