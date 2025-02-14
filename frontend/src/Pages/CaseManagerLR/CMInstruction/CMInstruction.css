@@ -30,11 +30,11 @@ body {
 }
 
 .menu-item:hover {
-  color: #0b504a;
+  color: rgb(41, 41, 139);
 }
 
 .menu-item.active {
-  color: #0b504a;
+  color: rgb(41, 41, 139);
 }
 
 .form-buttons-inst {
