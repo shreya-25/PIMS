@@ -3,6 +3,7 @@ import axios from "axios";
 import "./MainPage.css";
 import Navbar from "../../components/Navbar/Navbar";
 import Searchbar from "../../components/Searchbar/Searchbar";
+import NotificationCard from "../../components/NotificationCard/NotificationCard";
 import Filter from "../../components/Filter/Filter";
 import { SlideBar } from "../../components/Slidebar/Slidebar";
 import { SideBar } from "../../components/Sidebar/Sidebar";
@@ -369,6 +370,7 @@ const addCase = (newCase) => {
           setActiveTab={setActiveTab}
           onShowCaseSelector={handleShowCaseSelector} // Pass handler
         /> */}
+         <div className="above-sec">
         <div className="logo-sec">
           <img
             src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
@@ -376,6 +378,16 @@ const addCase = (newCase) => {
             className="police-logo-main-page"
           />
           <h1 className="main-page-heading"> PIMS</h1>
+        </div>
+        <div className="top-controlsMP">
+            <Searchbar
+              placeholder="Search Cases"
+              onSearch={(query) => console.log("Search query:", query)}
+            />
+            {/* <SlideBar
+                onAddCase={(newCase) => addCase(newCase)} // Pass addCase function with confirmation
+            /> */}
+          </div>
         </div>
         <div className="content-container">
           {/* {showCaseSelector && (
@@ -386,17 +398,7 @@ const addCase = (newCase) => {
             />
           )} */}
       <div className="main-page">
-        <div className="above-sec">
-          <div className="top-controls">
-            <Searchbar
-              placeholder="Search Cases"
-              onSearch={(query) => console.log("Search query:", query)}
-            />
-            {/* <SlideBar
-                onAddCase={(newCase) => addCase(newCase)} // Pass addCase function with confirmation
-            /> */}
-          </div>
-        </div>
+      <NotificationCard />
         <div className="stats-bar">
           <span
             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
@@ -944,15 +946,6 @@ const addCase = (newCase) => {
     </table>
   </div>
 )}
-
-
-
-
-
-
-
-
-
 
 {activeTab === "pendingLeadReturns" && (
   <div className="pending-lead-returns">

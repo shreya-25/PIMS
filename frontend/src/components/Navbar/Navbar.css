@@ -95,7 +95,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #0D8790;
+  /* background-color: #0D8790; */
+  background: rgb(23, 23, 145);
   padding: 10px 10px;
   font-family: Arial, sans-serif;
   color: white;
