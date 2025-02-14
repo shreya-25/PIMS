@@ -31,9 +31,6 @@
     background: #ffffff;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    /* width: 100%;
-    height: 100%; */
-    max-width: 600px;
     margin-left: 35%;
   }
   
@@ -108,11 +105,13 @@
 }
 
 .checkbox-container input {
-    width: 16px;
+    width: 5px;
     height: 16px;
 }
 
 .checkbox-container label {
     font-size: 20px;
+    width: 90%;
+    height: 100%;
     color: #333;
 }

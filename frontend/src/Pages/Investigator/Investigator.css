@@ -98,7 +98,7 @@
   border-radius: 5px;
   margin-bottom: 20px;
   font-size: 14px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
   width: 80%;
   align-items: center;
   margin: 0 auto; /* Centers horizontally */
@@ -118,7 +118,7 @@
 
 /* Active Tab */
 .stats-bar .active {
-  background-color: #46494bbe;
+  /* background-color: #46494bbe; */
   color: white;
   font-weight: bold;
   padding: 5px 10px;

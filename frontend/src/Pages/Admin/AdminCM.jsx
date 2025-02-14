@@ -620,10 +620,12 @@ export const AdminCM = () => {
       </div>
       <div className="admin-content">
         <div className="main-section-admin">
-          <Searchbar
+        <div className='searchContainer'>
+        <Searchbar
               placeholder="Search Cases"
               onSearch={(query) => console.log("Search query:", query)}
             />
+                    </div>
           <SlideBar
                 onAddCase={(newCase) => addCase(newCase)} // Pass addCase function with confirmation
             />

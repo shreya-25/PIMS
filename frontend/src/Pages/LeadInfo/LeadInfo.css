@@ -251,9 +251,10 @@
 
 /* Active (Current and Completed) Status */
 .status-circle.active {
-  background: #2e6472; /* Blue */
-  border-color: #9f9f9f;
-  box-shadow: 0 0 10px rgba(153, 197, 205, 0.584);
+  background: rgb(41, 41, 139); /* Blue */
+  /* border-color: #7a7a7a; */
+  /* box-shadow: 0 0 10px rgba(153, 197, 205, 0.584); */
+  /* box-shadow: 0 0 10px rgba(86, 86, 148, 0.932); */
   color: white;
   font-weight: 100;
 }
@@ -297,9 +298,12 @@
 /* Highlighted Current Status */
 .status-text-box.highlighted {
   background: #dbeafe;
-  border-color: #2e6472;
-  color: #518d97;
-  box-shadow: 0 0 10px rgba(153, 197, 205, 0.584);
+  /* border-color: #2e6472; */
+  border-color: rgb(41, 41, 139);
+  /* color: #518d97; */
+  color: rgb(41, 41, 139);
+  /* box-shadow: 0 0 10px rgba(153, 197, 205, 0.584); */
+  box-shadow: 0 0 10px rgb(80, 80, 189);
 }
 
 

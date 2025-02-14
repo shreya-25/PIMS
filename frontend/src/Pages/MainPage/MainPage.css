@@ -108,7 +108,7 @@
   border-radius: 5px;
   margin-bottom: 20px;
   font-size: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);  */
   width: 80%;
   align-items: center;
   margin: 0 auto; /* Centers horizontally */
@@ -129,12 +129,14 @@
 
 /* Hover effect for header items */
 .stats-bar .hoverable:hover {
-  background-color: #54575873; /* Darker grey for hover effect */
+  background-color: rgb(96, 96, 179); /* Darker grey for hover effect */
+  /* background-color: #54575873; */
 }
 
 /* Active tab styling */
 .stats-bar .active {
-  background-color: #46494bbe; /* Grey for active state */
+  background-color: rgb(96, 96, 179);
+  /* background-color: #46494bbe;  */
   color: white; /* Consistent white text */
   text-decoration: none; /* Remove underline */
   font-weight: bold;

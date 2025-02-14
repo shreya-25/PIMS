@@ -1,6 +1,6 @@
 .notification-bar {
     width: 60%;
-    height: 50%;
+    height: 450px;
     background: white;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -84,6 +84,49 @@
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     margin-top: 5px;
+    margin-right: 50px;
     font-size: 20px;
+    width: 90%
   }
   
+  .view-btnNC
+  {
+    margin-left: 90%;
+  }
+
+  .view-btnNC {
+    /* background-color: #007bffde; */
+    background-color: #404142de;
+    color: #fff;
+  }
+  
+  .view-btnNC:hover {
+    background-color: #787a7c;
+  }
+  
+  .notification-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.notification-text {
+    flex-grow: 1;
+}
+
+.view-btnNC {
+    background-color: #404142de;
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 20px;
+    border-radius: 5px;
+    margin-left: auto; /* Ensures the button is always pushed to the right */
+    width: 90px
+}
+
+.view-btnNC:hover {
+    background-color: #787a7c;
+}
