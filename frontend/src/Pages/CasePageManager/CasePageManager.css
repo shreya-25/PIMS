@@ -31,6 +31,11 @@
     color: #333333;
     font-size: 20px;
   }
+  .searchContainer
+  {
+    width: 60%;
+    margin-left: 18%;
+  }
   
  
   /* Sidebar styling */
@@ -207,8 +212,8 @@
 .stats-bar {
   display: flex;
   justify-content: space-around;
-  /* background-color: rgba(22, 83, 87, 0.88);  */
-  background-color: #0D8790;
+  background-color: rgb(41, 41, 139); 
+  /* background-color: #0D8790; */
   padding: 10px;
   border-radius: 5px;
   margin-bottom: 20px;

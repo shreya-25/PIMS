@@ -79,7 +79,7 @@ export const CasePageManager = () => {
       
       const [leads, setLeads] = useState({
         assignedLeads: [
-          { id: 1, description: "Lead 45: Collect Audio Records from Dispatcher",dueDate: "12/25/2024",
+          { id: 1, description: "Collect Audio Records from Dispatcher",dueDate: "12/25/2024",
             priority: "High",
             flags: ["Important"],
             assignedOfficers: ["Officer 1", "Officer 3"], },
@@ -87,7 +87,7 @@ export const CasePageManager = () => {
             priority: "Medium",
             flags: [],
             assignedOfficers: ["Officer 2"] },
-          { id: 3, description: "Lead 84: Collect Evidence from 63 Mudray Street",dueDate: "12/29/2024",
+          { id: 3, description: "Collect Evidence from 63 Mudray Street",dueDate: "12/29/2024",
             priority: "Low",
             flags: [],
             assignedOfficers: ["Officer 4"] },
@@ -95,7 +95,7 @@ export const CasePageManager = () => {
         pendingLeads: [
           {
             id: 4,
-            description: "Lead 21: Interview Witness",
+            description: "Interview Witness",
             dueDate: "12/26/2024",
             priority: "High",
             flags: ["Important"],
@@ -103,7 +103,7 @@ export const CasePageManager = () => {
           },
           {
             id: 6,
-            description: "Lead 30: Interview Neighbours",
+            description: "Interview Neighbours",
             dueDate: "12/23/2024",
             priority: "Medium",
             flags: [],
@@ -111,7 +111,7 @@ export const CasePageManager = () => {
           },
           {
             id: 7,
-            description: "Lead 32: Collect Evidence",
+            description: "Collect Evidence",
             dueDate: "12/22/2024",
             priority: "Low",
             flags: [],
@@ -119,16 +119,16 @@ export const CasePageManager = () => {
           },
         ],
         pendingLeadReturns: [
-            { id: 5, description: "Lead 33: Submit Crime Scene Photos" },
-            { id: 8, description: "Lead 32: Collect Evidence", dueDate: "12/30/2024" },
-            { id: 9, description: "Lead 21: Interview Witness", dueDate: "12/31/2024" },
+            { id: 5, description: "Submit Crime Scene Photos" },
+            { id: 8, description: "Collect Evidence", dueDate: "12/30/2024" },
+            { id: 9, description: "Interview Witness", dueDate: "12/31/2024" },
         ],
         allLeads: [
-            { id: 1, description: "Lead 45: Collect Audio Records from Dispatcher", status: "Assigned" },
-            { id: 2, description: "Lead 20: Interview Mr. John", status: "Assigned" },
-            { id: 3, description: "Lead 84: Collect Evidence from 63 Mudray Street", status: "Completed" },
-            { id: 4, description: "Lead 21: Interview Witness", status: "Pending" },
-            { id: 5, description: "Lead 33: Submit Crime Scene Photos", status: "Completed" },
+            { id: 1, description: "Collect Audio Records from Dispatcher", status: "Assigned" },
+            { id: 2, description: "Interview Mr. John", status: "Assigned" },
+            { id: 3, description: "Collect Evidence from 63 Mudray Street", status: "Completed" },
+            { id: 4, description: "Interview Witness", status: "Pending" },
+            { id: 5, description: "Submit Crime Scene Photos", status: "Completed" },
         ],
     });
 
@@ -313,13 +313,16 @@ export const CasePageManager = () => {
                 </div>
                 {/* Content Area */}
                 <div className="content">
+                  <div className='searchContainer'>
                     <Searchbar placeholder="Search Lead" />
+                    </div>
                     <Button
                         label="Generate Lead"
                         color="#a33"
                         className="generate-lead-btn1"
                         onClick={handleGenerateLead}
                     />
+                   
                     {/* Tab Navigation */}
                     <div className="stats-bar">
                         <span
@@ -841,7 +844,6 @@ export const CasePageManager = () => {
       <thead>
         <tr>
           <th>Lead No.</th>
-          <th>Lead Origin </th>
           <th>Lead Name</th>
           <th>Lead Status</th>
           <th></th> {/* Empty header for buttons column */}
