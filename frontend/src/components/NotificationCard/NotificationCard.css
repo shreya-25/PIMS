@@ -1,11 +1,15 @@
 .notification-bar {
-    width: 60%;
+    width: 70%;
     height: 450px;
     background: white;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     padding: 15px;
     font-family: Arial, sans-serif;
+    overflow: hidden;
+    margin: 20px;
+    overflow-y: auto; /* Makes it scrollable */
+
   }
   
   .headerNC {
@@ -13,7 +17,17 @@
     justify-content: space-between;
     align-items: center;
     font-weight: bold;
-  }
+}
+
+.clickable-header {
+    cursor: pointer;
+    color: rgb(41, 41, 139);
+    font-size: 20px;
+}
+
+.clickable-header:hover {
+    text-decoration: underline;
+}
   
   .count {
     /* background: blue; */
@@ -34,14 +48,15 @@
   }
   
   .notifications-list {
-    margin-top: 10px;
+    margin: 10px 0px;
+    overflow-y: auto; /* Makes it scrollable */
+    padding: 10px;
   }
   
   .notification-card {
     display: flex;
     align-items: center;
     padding: 10px;
-    border-radius: 8px;
     margin-bottom: 5px;
     background: #f7f7f7;
     transition: 0.3s;
@@ -112,7 +127,9 @@
 }
 
 .notification-text {
-    flex-grow: 1;
+    /* flex-grow: 1; */
+    width: 75%;
+    margin-right: 10px;
 }
 
 .view-btnNC {
@@ -122,11 +139,28 @@
     padding: 8px 12px;
     cursor: pointer;
     font-size: 20px;
-    border-radius: 5px;
     margin-left: auto; /* Ensures the button is always pushed to the right */
-    width: 90px
+    width: 100px;
+    height: 45px;
+    /* margin: 10px; */
 }
 
 .view-btnNC:hover {
     background-color: #787a7c;
+}
+
+.accept-btnNC {
+  background-color: #0D8790;
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 20px;
+  margin-left: 10px; 
+  width: 100px;
+  height: 45px;
+}
+
+.accept-btnNC:hover {
+  background-color: #2e5f63;
 }
