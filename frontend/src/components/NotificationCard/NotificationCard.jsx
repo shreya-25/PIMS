@@ -597,70 +597,102 @@ const NotificationCard = ({ acceptLead, signedInOfficer }) => {
     fetchUnreadNotifications();
   }, [signedInOfficer]);
 
-  // ✅ Handle when a notification is viewed (Mark as Read)
-  const handleView = async (notification) => {
+  const handleView = async (_id) => {
     try {
-        // ✅ Debugging: Log the full notification object
-        console.log("🔹 Viewing Notification:", notification);
+        // ✅ Debugging: Log the received _id
+        console.log("🔹 Received _id in handleView:", _id);
 
-        // ✅ Ensure notification has an ID
-        const id = notification?.notificationId || notification?._id;
-
-        if (!id) {
-            console.error("❌ Error: `notificationId` and `_id` are both undefined. Notification object:", notification);
+        if (!_id) {
+            console.error("❌ Error: `_id` is undefined. Cannot determine `notificationId`.");
             return;
         }
 
+        // ✅ Find the full notification object in the current state
+        const notification = unreadNotifications.find(n => n._id === _id);
+
+        if (!notification) {
+            console.error("❌ Error: No matching notification found for _id:", _id);
+            return;
+        }
+
+        const notificationId = notification.notificationId;
+
+        if (!notificationId) {
+            console.error("❌ Error: `notificationId` is undefined in the found notification object:", notification);
+            return;
+        }
+
+        console.log("🔹 Sending request to mark notification as read with notificationId:", notificationId);
+
         // ✅ Make API request to mark as read
-        await axios.put(`http://localhost:5000/api/notifications/mark-read/${id}`, { unread: false });
+        await axios.put(`http://localhost:5000/api/notifications/mark-read/${notificationId}`, { unread: false });
 
-        console.log("✅ Notification marked as read:", id);
+        console.log("✅ Notification marked as read:", notificationId);
 
-        // ✅ Update state to remove from "New Notifications" and move to "View All Notifications"
+        // ✅ Remove from "New Notifications"
         setUnreadNotifications((prevNotifications) =>
-            prevNotifications.filter((n) => n.notificationId !== id)
+            prevNotifications.filter((n) => n._id !== _id)
         );
 
-        // ✅ Update Open Case Notifications (to show gray)
-        fetchOpenCaseNotifications();
+        // ✅ Add to "View All Notifications" with updated status (read)
+        setOpenCaseNotifications((prevNotifications) => [
+            ...prevNotifications,
+            { ...notification, unread: false }, // Ensure it's marked as read
+        ]);
+
     } catch (error) {
         console.error("❌ Error marking notification as read:", error.response ? error.response.data : error);
     }
 };
 
 
-  const handleAccept = async (notification) => {
-    try {
-        if (!window.confirm("Do you want to accept this lead?")) return;
 
-        // ✅ Debugging: Log the full notification object
-        console.log("🔹 Full Notification Data Received in handleAccept:", notification);
 
-        // ✅ Ensure `notificationId` is read correctly
-        const id = notification?.notificationId || notification?._id;
+const handleAccept = async (_id) => {
+  try {
+      if (!window.confirm("Do you want to accept this lead?")) return;
 
-        if (!id) {
-            console.error("❌ Error: `notificationId` and `_id` are both undefined. Notification object:", notification);
-            return;
-        }
+      // ✅ Debugging: Log the received _id
+      console.log("🔹 Received _id in handleAccept:", _id);
 
-        console.log("🔹 Accepting lead with ID:", id);
+      if (!_id) {
+          console.error("❌ Error: `_id` is undefined. Cannot determine `notificationId`.");
+          return;
+      }
 
-        // ✅ Make API request
-        const response = await axios.put(`http://localhost:5000/api/notifications/accept/${id}`, {});
+      // ✅ Find the full notification object in the current state
+      const notification = unreadNotifications.find(n => n._id === _id);
 
-        console.log("✅ Lead accepted successfully", response.data);
+      if (!notification) {
+          console.error("❌ Error: No matching notification found for _id:", _id);
+          return;
+      }
 
-        // ✅ Remove from "New Notifications"
-        setUnreadNotifications((prevNotifications) =>
-            prevNotifications.filter((n) => n.notificationId !== id)
-        );
+      const notificationId = notification.notificationId;
 
-        fetchOpenCaseNotifications();
-    } catch (error) {
-        console.error("❌ Error accepting lead:", error.response ? error.response.data : error);
-    }
+      if (!notificationId) {
+          console.error("❌ Error: `notificationId` is undefined in the found notification object:", notification);
+          return;
+      }
+
+      console.log("🔹 Sending request with notificationId:", notificationId);
+
+      // ✅ Make API request
+      const response = await axios.put(`http://localhost:5000/api/notifications/accept/${notificationId}`, {});
+
+      console.log("✅ Lead accepted successfully", response.data);
+
+      // ✅ Remove from "New Notifications"
+      setUnreadNotifications((prevNotifications) =>
+          prevNotifications.filter((n) => n._id !== _id)
+      );
+
+      fetchOpenCaseNotifications();
+  } catch (error) {
+      console.error("❌ Error accepting lead:", error.response ? error.response.data : error);
+  }
 };
+
 
   if (loading) {
     return <p>Loading notifications...</p>;
@@ -689,9 +721,12 @@ const NotificationCard = ({ acceptLead, signedInOfficer }) => {
         </h3>
       </div>
 
-      {showSearchBar && <SearchBar />}
+       {/* SearchBar inside a div */}
+       <div className="searchbar-container">
+        {showSearchBar && <SearchBar />}
+      </div>
 
-      {/* ✅ New Notifications Section (Exclude Accepted Leads) */}
+      {/* New Notifications Section (Exclude Accepted Leads) */}
       {!showAllNotifications && (
         <div className="notifications-list">
           {unreadNotifications.map(notification => (
@@ -711,7 +746,7 @@ const NotificationCard = ({ acceptLead, signedInOfficer }) => {
                   <span className="time">{new Date(notification.time).toLocaleString()}</span>
                 </div>
                 <div className="buttons-container">
-                  <button className="view-btnNC" onClick={() => handleView(notification.notificationId)}>
+                  <button className="view-btnNC" onClick={() => handleView(notification._id)}>
                       View
                   </button>
 

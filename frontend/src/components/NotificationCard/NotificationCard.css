@@ -19,6 +19,12 @@
     font-weight: bold;
 }
 
+.searchbar-container {
+  width: 100%;
+  margin-top: -70px;
+}
+
+
 .clickable-header {
     cursor: pointer;
     color: rgb(41, 41, 139);
@@ -150,7 +156,7 @@
 }
 
 .accept-btnNC {
-  background-color: #0D8790;
+  background-color: rgba(25, 58, 73, 0.795);
   color: #fff;
   border: none;
   padding: 8px 12px;
@@ -162,7 +168,7 @@
 }
 
 .accept-btnNC:hover {
-  background-color: #2e5f63;
+  background-color: rgba(25, 58, 73, 0.459);
 }
 
 .accepted-btnNC {

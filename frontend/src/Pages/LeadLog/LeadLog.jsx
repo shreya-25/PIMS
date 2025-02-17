@@ -3,6 +3,8 @@ import { useLocation } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar/Navbar';
 import './LeadLog.css';
+import Filter from "../../components/Filter/Filter";
+import Sort from "../../components/Sort/Sort";
 
 
 export const LeadLog = () => {
@@ -18,32 +20,61 @@ export const LeadLog = () => {
 
   const loggedInOfficer = "Officer 912";
 
+  // useEffect(() => {
+  //   const fetchLeads = async () => {
+  //     try {
+  //       const response = await fetch("http://localhost:5000/api/lead/assigned-leads", {
+  //         method: "GET",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           Authorization: `Bearer ${localStorage.getItem("token")}`, // Assuming token-based authentication
+  //         },
+  //       });
+
+  //       if (!response.ok) {
+  //         throw new Error("Failed to fetch leads");
+  //       }
+
+  //       const data = await response.json();
+  //       setLeadLogData(data);
+  //     } catch (err) {
+  //       setError(err.message);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchLeads();
+  // }, []);
+
   useEffect(() => {
     const fetchLeads = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/lead/assigned-leads", {
+        setLoading(true);
+        const response = await fetch("http://localhost:5000/api/lead/assigned-leads", { // ✅ Updated endpoint
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`, // Assuming token-based authentication
+            Authorization: `Bearer ${localStorage.getItem("token")}`, // Ensure token is present
           },
         });
-
+  
         if (!response.ok) {
           throw new Error("Failed to fetch leads");
         }
-
+  
         const data = await response.json();
-        setLeadLogData(data);
+        setLeadLogData(data); // ✅ Store all leads in state
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchLeads();
   }, []);
+  
 
 
   const handleBackClick = () => {
@@ -246,6 +277,61 @@ const handleResetSort = () => {
     return 0;
   });
 
+  const filtersConfig = [
+    {
+      name: "leadNumber",
+      label: "Lead Number",
+      options: ["45", "23", "14"],
+    },
+    {
+      name: "leadName",
+      label: "Lead Name",
+      options: [
+        "Collect Audio from Dispatcher",
+        "Interview Mr. John",
+        "Collect evidence from 63 Mudray Street",
+      ],
+    },
+    {
+      name: "DateCreated",
+      label: "Date Created",
+      options: ["01/06/25", "08/20/25", "02/06/25"],
+    },
+    {
+      name: "Status",
+      label: "Status",
+      options: ["Assigned", "Pending", "Submitted", "Rejected", "Completed"],
+    },
+    {
+      name: "assignedOfficers",
+      label: "Assigned Officers",
+      options: ["Officer 1", "Officer 2", "Officer 3"],
+    },
+    {
+      name: "DateSubmitted",
+      label: "Date Submitted",
+      options: ["01/06/25", "08/20/25", "02/06/25"],
+    },
+    {
+      name: "DateApproved",
+      label: "Date Approved",
+      options: ["01/06/25", "08/20/25", "02/06/25"],
+    },
+  ];
+
+  const handleFilterApply = (filters) => {
+    console.log("Applied Filters:", filters);
+    // Perform filtering logic here (e.g., API call, state update)
+  };
+
+    const [sortField, setSortField] = useState(""); // Sorting field
+  
+
+   // Sort leads
+   const handleSort = (field, order) => {
+   
+  };
+
 
   return (
     <div className="lead-log-page">
@@ -257,19 +343,20 @@ const handleResetSort = () => {
           <img
             src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
             alt="Police Department Logo"
-            className="police-logo"
+            className="police-logo-cl"
           />
         </div>
 
 
-        <div className="center-section">
+        <div className="center-sectionll">
           <h2 className="title">LEAD LOG</h2>
         </div>
       </div>
 
-
       <div className="filters-section">
-        <table className="filter-table">
+      <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+      <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+        {/* <table className="filter-table">
           <thead>
             <tr>
               <th>Filter By:</th>
@@ -370,8 +457,6 @@ const handleResetSort = () => {
         <option value="lead number">Lead Number</option>
       </select>
 
-
-      {/* Sort order (asc/desc) selection */}
       <label>Order: </label>
       <select
         className="dropdown"
@@ -382,14 +467,14 @@ const handleResetSort = () => {
         <option value="desc">Descending</option>
       </select>
       <div className="sort-buttons">
-        {/* <button className="apply-sort-btn" onClick={handleApplySort}>
+       <button className="apply-sort-btn" onClick={handleApplySort}>
           Apply
-        </button> */}
+        </button> 
         <button className="reset-sort-btn" onClick={handleResetSort}>
           Reset
         </button>
       </div>
-    </div>
+    </div> */}
       </div>
 
 
@@ -440,10 +525,10 @@ const handleResetSort = () => {
       </div>
 
 
-      <div className="action-buttons">
-      <button className="download-pdf-btn1" onClick={handleBackClick}>Back</button>
-        <button className="download-pdf-btn1">Download PDF</button>
-        <button className="print-pdf-btn1">Print PDF</button>
+      <div className="btn-sec-cl">
+      <button className="next-btncl" onClick={handleBackClick}>Back</button>
+        <button className="next-btncl">Download</button>
+        <button className="next-btncl">Print</button>
       </div>
     </div>
   );
