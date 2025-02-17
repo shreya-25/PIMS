@@ -19,17 +19,12 @@
     margin-bottom: 20px;
   }
   
-  /* Logo */
-  .left-section .police-logo {
-    width: 150px;
-    height: auto;
-  }
-  
   /* Title */
-  .center-section .title {
+  .center-sectionll .title {
     font-size: 30px;
     font-weight: bold;
     text-align: center;
+    margin-left: -1500%;
   }
   
   /* Filters Section */
@@ -37,7 +32,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
-  background-color: #ffffff;
+  /* background-color: #ffffff; */
   padding: 20px;
   border-radius: 10px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
@@ -204,7 +199,7 @@
   
   /* Report Section */
   .report-section {
-    width: 40%;
+    width: 60%;
     display: flex;
     justify-content: flex-start;
     align-items: center;
@@ -213,8 +208,8 @@
   }
   
   .report-section label {
-    margin-right: 10px;
-    width: 200px;
+    min-width: 20%;
+    font-size: 20px;
   }
   
   /* Action Buttons */

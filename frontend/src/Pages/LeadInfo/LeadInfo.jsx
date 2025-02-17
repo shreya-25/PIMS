@@ -59,7 +59,9 @@ export const LeadInfo = () => {
                 <tr><td>Incident Number</td><td>C000008</td></tr>
                 <tr><td>Subnumber</td><td>SUB-000001</td></tr>
                 <tr><td>Associated Subnumber</td><td>SUB-000001, SUB-000001, SUB-000001</td></tr>
+                <tr><td>Due Date</td><td>02/25/25</td></tr>
                 <tr><td>Last Updated</td><td>02/20/25</td></tr>
+                <tr><td>Priority</td><td>High</td></tr>
                 <tr><td>Lead Instruction</td><td>Interview Mr. John</td></tr>
               </tbody>
             </table>

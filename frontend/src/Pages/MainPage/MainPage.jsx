@@ -5,6 +5,7 @@ import Navbar from "../../components/Navbar/Navbar";
 import Searchbar from "../../components/Searchbar/Searchbar";
 import NotificationCard from "../../components/NotificationCard/NotificationCard";
 import Filter from "../../components/Filter/Filter";
+import Sort from "../../components/Sort/Sort";
 import { SlideBar } from "../../components/Slidebar/Slidebar";
 import { SideBar } from "../../components/Sidebar/Sidebar";
 import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
@@ -397,10 +398,83 @@ const addCase = (newCase) => {
     },
   ];
 
+  const filtersConfigPLR = [
+    {
+      name: "leadNumber",
+      label: "Lead Number",
+      options: ["45", "23", "14"],
+    },
+    {
+      name: "leadName",
+      label: "Lead Name",
+      options: [
+        "Collect Audio from Dispatcher",
+        "Interview Mr. John",
+        "Collect evidence from 63 Mudray Street",
+      ],
+    },
+    {
+      name: "Priority",
+      label: "Priority",
+      options: ["High", "Medium", "Low"],
+    },
+    {
+      name: "Flag",
+      label: "Flag",
+      options: ["Important"],
+    },
+  ];
+
+  const filtersConfigOC = [
+    {
+      name: "CaseNumber",
+      label: "Case Number",
+      options: ["12345", "45637", "23789"],
+    },
+    {
+      name: "CaseName",
+      label: "Case Name",
+      options: [
+        "Main Street Murder",
+        "Cook Streat School Threat",
+        "216 Endicott Suicide",
+      ],
+    },
+    {
+      name: "Role",
+      label: "Role",
+      options: ["Case Manager", "Investigator"],
+    },
+  ];
+
   const handleFilterApply = (filters) => {
     console.log("Applied Filters:", filters);
     // Perform filtering logic here (e.g., API call, state update)
   };
+
+  const [sortedData, setSortedData] = useState([]);
+  const data = [
+    { category: "Electronics", price: 100 },
+    { category: "Clothing", price: 50 },
+    { category: "Electronics", price: 200 },
+    { category: "Home", price: 150 },
+  ];
+
+  // Function to apply sorting
+  // const handleSort = (sortConfig) => {
+  //   const { category, order } = sortConfig;
+
+  //   if (!category) return; // If no column selected, do nothing
+
+  //   const sorted = [...data].sort((a, b) => {
+  //     if (a[category] < b[category]) return order === "asc" ? -1 : 1;
+  //     if (a[category] > b[category]) return order === "asc" ? 1 : -1;
+  //     return 0;
+  //   });
+
+  //   setSortedData(sorted);
+  // };
+
 
 
   return (
@@ -444,12 +518,12 @@ const addCase = (newCase) => {
       <div className="main-page">
       <NotificationCard acceptLead={acceptLead} signedInOfficer={signedInOfficer} />
         <div className="stats-bar">
-          <span
+          {/* <span
             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
             onClick={() => setActiveTab("assignedLeads")}
           >
             Assigned Leads: {leads.assignedLeads.length}
-          </span>
+          </span> */}
           <span
             className={`hoverable ${activeTab === "pendingLeads" ? "active" : ""}`}
             onClick={() => setActiveTab("pendingLeads")}
@@ -474,6 +548,9 @@ const addCase = (newCase) => {
         <div className="content-section">
         {activeTab === "cases" && (
             <div className="case-list">
+
+<Filter filtersConfig={filtersConfigOC} onApply={handleFilterApply} />
+<Sort columns={["Lead Number", "Lead Name","Priority", "Flag"]} onApplySort={handleSort} />
 
 
         <table className="ongoing-case-table">
@@ -548,17 +625,10 @@ const addCase = (newCase) => {
 
 
 
-{activeTab === "assignedLeads" && (
+{/* {activeTab === "assignedLeads" && (
   <div className="assigned-leads">
           <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
-
-    {/* <Filter /> */}
-    {/* <button
-      onClick={() => setFilterSortPopupVisible(true)}
-      className="filter-sort-button"
-    >
-      Open Filter & Sort
-    </button> */}
+          <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
 
 
     {filterSortPopupVisible && (
@@ -774,7 +844,7 @@ const addCase = (newCase) => {
       </tbody>
     </table>
   </div>
-)}
+)} */}
 
 
 
@@ -782,12 +852,15 @@ const addCase = (newCase) => {
          
 {activeTab === "pendingLeads" && (
   <div className="pending-leads">
-    <button
+
+    <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+          <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+    {/* <button
       onClick={() => setFilterSortPopupVisible(true)}
       className="filter-sort-button"
     >
       Open Filter & Sort
-    </button>
+    </button> */}
 
 
     {filterSortPopupVisible && (
@@ -995,6 +1068,8 @@ const addCase = (newCase) => {
 
 {activeTab === "pendingLeadReturns" && (
   <div className="pending-lead-returns">
+    <Filter filtersConfig={filtersConfigPLR} onApply={handleFilterApply} />
+    <Sort columns={["Lead Number", "Lead Name","Priority", "Flag"]} onApplySort={handleSort} />
     <table className="pending-lr-table">
               <thead>
                 <tr>
