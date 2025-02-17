@@ -5,7 +5,7 @@ const leadSchema = new mongoose.Schema(
         // leadNo: { type: Number, required: true, unique: true },
         leadNo: { type: Number, required: true },
         parentLeadNo: { type: Number }, // Reference to parent lead
-        incidentNo: { type: String, required: true },
+        incidentNo: { type: String },
         subNumber: { type: Number },
         // associatedSubNumbers: [{ type: Number }], // List of sub-numbers
         assignedDate: { type: Date, required: true },
