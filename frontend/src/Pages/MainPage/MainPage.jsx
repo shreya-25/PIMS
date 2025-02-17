@@ -398,7 +398,7 @@ const addCase = (newCase) => {
             />
           )} */}
       <div className="main-page">
-      <NotificationCard />
+      <NotificationCard acceptLead={acceptLead} />
         <div className="stats-bar">
           <span
             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
