@@ -119,7 +119,7 @@ const Filter = ({ filtersConfig, onApply }) => {
       ))}
 
       {/* Apply Filters Button */}
-      <button onClick={applyFilters} className="filter-button">
+      <button onClick={applyFilters} className="filter-buttonNC">
         Apply Filters
       </button>
     </div>
