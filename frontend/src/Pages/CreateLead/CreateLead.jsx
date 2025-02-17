@@ -10,6 +10,9 @@ export const CreateLead = () => {
   const navigate = useNavigate(); // Initialize useNavigate hook
   const location = useLocation();
   const leadEntries = location.state?.leadEntries || [];
+const caseDetails = location.state?.caseDetails || {}; // Get case details
+const { id: caseID, title: caseName } = caseDetails;  // Extract Case ID & Case Title
+
 
 
   // State for all input fields
@@ -75,17 +78,57 @@ export const CreateLead = () => {
 //   });
 // }, [leadEntries]);
  
+// useEffect(() => {
+//   const fetchMaxLeadNumber = async () => {
+//     try {
+
+//       if (leadData.caseName === "Main Street Theft") {
+//         setLeadData((prevData) => ({
+//           ...prevData,
+//           leadNumber: "1",
+//           subNumber: `SUB-${"1".padStart(6, '0')}`, // Generate sub-number for first lead
+//         }));
+//         return; // Exit function to prevent API call
+//       }
+
+//       const response = await axios.get("https://pims-backend.onrender.com/api/lead/maxLeadNumber");
+//       const maxLeadNo = response.data.maxLeadNo || 0; // Default to 0 if no leads exist
+//       const newLeadNumber = maxLeadNo + 1;
+
+//       setLeadData((prevData) => ({
+//         ...prevData,
+//         leadNumber: newLeadNumber.toString(),
+//         subNumber: `SUB-${newLeadNumber.toString().padStart(6, '0')}`, // Auto-generate sub-number
+//       }));
+//     } catch (error) {
+//       console.error("Error fetching max lead number:", error);
+//     }
+//   };
+
+//   fetchMaxLeadNumber();
+// }, []);
+
 useEffect(() => {
   const fetchMaxLeadNumber = async () => {
     try {
+      if (caseName === "Main Street Theft") {
+        setLeadData((prevData) => ({
+          ...prevData,
+          leadNumber: "1",
+          subNumber: `SUB-${"1".padStart(6, '0')}`,
+        }));
+        return; // Prevent API call
+      }
+
+      // Otherwise, fetch max lead number
       const response = await axios.get("https://pims-backend.onrender.com/api/lead/maxLeadNumber");
-      const maxLeadNo = response.data.maxLeadNo || 0; // Default to 0 if no leads exist
+      const maxLeadNo = response.data.maxLeadNo || 0;
       const newLeadNumber = maxLeadNo + 1;
 
       setLeadData((prevData) => ({
         ...prevData,
         leadNumber: newLeadNumber.toString(),
-        subNumber: `SUB-${newLeadNumber.toString().padStart(6, '0')}`, // Auto-generate sub-number
+        subNumber: `SUB-${newLeadNumber.toString().padStart(6, '0')}`,
       }));
     } catch (error) {
       console.error("Error fetching max lead number:", error);
@@ -93,7 +136,8 @@ useEffect(() => {
   };
 
   fetchMaxLeadNumber();
-}, []);
+}, [caseName]); // Runs when caseName changes
+
  
 
   const handleInputChange = (field, value) => {
@@ -305,7 +349,7 @@ const handleGenerateLead = async () => {
                 <input
                   type="text"
                   className="input-field"
-                  value={leadData.caseName || 'Main Street Murder'} // Display selected case name or an empty string
+                  value={leadData.caseName || 'Main Street Theft'} // Display selected case name or an empty string
                   onChange={(e) => handleInputChange('caseName', e.target.value)} // Update 'caseName' in leadData
                   placeholder="Enter Case Name"
     />

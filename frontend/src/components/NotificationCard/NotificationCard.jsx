@@ -543,6 +543,7 @@ import React, { useState, useEffect } from "react";
 import "./NotificationCard.css";
 import SearchBar from "../Searchbar/Searchbar";
 import axios from "axios"; // Import axios for API calls
+import { useNavigate } from "react-router-dom";
 
 const NotificationCard = ({ acceptLead, signedInOfficer }) => {
   const [unreadNotifications, setUnreadNotifications] = useState([]);
@@ -551,6 +552,9 @@ const NotificationCard = ({ acceptLead, signedInOfficer }) => {
   const [showSearchBar, setShowSearchBar] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+   const [navigateTo, setNavigateTo] = useState(""); // Target page
+   const navigate = useNavigate(); // ✅ Initialize navigate hook
+
 
   // ✅ Fetch unread/unaccepted notifications (Exclude Accepted Leads)
   const fetchUnreadNotifications = async () => {
@@ -615,7 +619,9 @@ const NotificationCard = ({ acceptLead, signedInOfficer }) => {
             return;
         }
 
-        const notificationId = notification.notificationId;
+        // const notificationId = notification.notificationId;
+        const { notificationId, caseName, message } = notification;
+        
 
         if (!notificationId) {
             console.error("❌ Error: `notificationId` is undefined in the found notification object:", notification);
@@ -639,6 +645,10 @@ const NotificationCard = ({ acceptLead, signedInOfficer }) => {
             ...prevNotifications,
             { ...notification, unread: false }, // Ensure it's marked as read
         ]);
+
+        if (notification && notification.action1.includes("assigned a new case") ) {
+          navigate(`/CasePageManager`); // Navigate to Case Manager Page with Case ID
+      }
 
     } catch (error) {
         console.error("❌ Error marking notification as read:", error.response ? error.response.data : error);

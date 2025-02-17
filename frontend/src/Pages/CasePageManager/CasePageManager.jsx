@@ -77,66 +77,50 @@ export const CasePageManager = () => {
       }));
     };
     
+    const isMainStreetThreat = caseDetails?.title === "Main Street Theft";
     
       
-      const [leads, setLeads] = useState({
-        assignedLeads: [
-          { id: 1, description: "Collect Audio Records from Dispatcher",dueDate: "12/25/2024",
-            priority: "High",
-            flags: ["Important"],
-            assignedOfficers: ["Officer 1", "Officer 3"], },
-          { id: 2, description: "Lead 20: Interview Mr. John",dueDate: "12/31/2024",
-            priority: "Medium",
-            flags: [],
-            assignedOfficers: ["Officer 2"] },
-          { id: 3, description: "Collect Evidence from 63 Mudray Street",dueDate: "12/29/2024",
-            priority: "Low",
-            flags: [],
-            assignedOfficers: ["Officer 4"] },
-        ],
-        pendingLeads: [
-          {
-            id: 4,
-            description: "Interview Witness",
-            dueDate: "12/26/2024",
-            priority: "High",
-            flags: ["Important"],
-            assignedOfficers: ["Officer 1", "Officer 3"],
-          },
-          {
-            id: 6,
-            description: "Interview Neighbours",
-            dueDate: "12/23/2024",
-            priority: "Medium",
-            flags: [],
-            assignedOfficers: ["Officer 2"],
-          },
-          {
-            id: 7,
-            description: "Collect Evidence",
-            dueDate: "12/22/2024",
-            priority: "Low",
-            flags: [],
-            assignedOfficers: ["Officer 4"],
-          },
-        ],
-        pendingLeadReturns: [
-            { id: 5, description: "Submit Crime Scene Photos" },
-            { id: 8, description: "Collect Evidence", dueDate: "12/30/2024" },
-            { id: 9, description: "Interview Witness", dueDate: "12/31/2024" },
-        ],
-        allLeads: [
-            { id: 1, description: "Collect Audio Records from Dispatcher", status: "Assigned" },
-            { id: 2, description: "Interview Mr. John", status: "Assigned" },
-            { id: 3, description: "Collect Evidence from 63 Mudray Street", status: "Completed" },
-            { id: 4, description: "Interview Witness", status: "Pending" },
-            { id: 5, description: "Submit Crime Scene Photos", status: "Completed" },
-        ],
-    });
+    const [leads, setLeads] = useState(isMainStreetThreat ? {
+      assignedLeads: [],
+      pendingLeads: [],
+      pendingLeadReturns: [],
+      allLeads: [],
+  } : {
+      assignedLeads: [
+          { id: 1, description: "Collect Audio Records from Dispatcher", dueDate: "12/25/2024",
+            priority: "High", flags: ["Important"], assignedOfficers: ["Officer 1", "Officer 3"] },
+          { id: 2, description: "Lead 20: Interview Mr. John", dueDate: "12/31/2024",
+            priority: "Medium", flags: [], assignedOfficers: ["Officer 2"] },
+          { id: 3, description: "Collect Evidence from 63 Mudray Street", dueDate: "12/29/2024",
+            priority: "Low", flags: [], assignedOfficers: ["Officer 4"] },
+      ],
+      pendingLeads: [
+          { id: 4, description: "Interview Witness", dueDate: "12/26/2024",
+            priority: "High", flags: ["Important"], assignedOfficers: ["Officer 1", "Officer 3"] },
+          { id: 6, description: "Interview Neighbours", dueDate: "12/23/2024",
+            priority: "Medium", flags: [], assignedOfficers: ["Officer 2"] },
+          { id: 7, description: "Collect Evidence", dueDate: "12/22/2024",
+            priority: "Low", flags: [], assignedOfficers: ["Officer 4"] },
+      ],
+      pendingLeadReturns: [
+          { id: 5, description: "Submit Crime Scene Photos" },
+          { id: 8, description: "Collect Evidence", dueDate: "12/30/2024" },
+          { id: 9, description: "Interview Witness", dueDate: "12/31/2024" },
+      ],
+      allLeads: [
+          { id: 1, description: "Collect Audio Records from Dispatcher", status: "Assigned" },
+          { id: 2, description: "Interview Mr. John", status: "Assigned" },
+          { id: 3, description: "Collect Evidence from 63 Mudray Street", status: "Completed" },
+          { id: 4, description: "Interview Witness", status: "Pending" },
+          { id: 5, description: "Submit Crime Scene Photos", status: "Completed" },
+      ],
+  });
 
     const handleTabClick = (tab) => {
-        setActiveTab(tab);
-    };
+      if (!isMainStreetThreat) {
+          setActiveTab(tab);
+      }
+  };
 
     const handleGenerateLead = () => {
         navigate('/createlead', { state: { caseDetails } }); // Pass caseDetails as state
@@ -395,7 +379,7 @@ export const CasePageManager = () => {
                 <div className="case-header">
                     {caseDetails ? (
                         <h1>
-                            Case: {caseDetails.id} |  {caseDetails.title}
+                          Case: {caseDetails?.id || "N/A"} | {caseDetails?.title || "Unknown Case"}
                         </h1>
                     ) : (
                         <h1>Case: 12345 | Main Street Murder </h1>
@@ -429,34 +413,37 @@ export const CasePageManager = () => {
                     />
                    
                     {/* Tab Navigation */}
+
                     <div className="stats-bar">
                         <span
                             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("assignedLeads")}
                         >
-                            Assigned Leads: {leads.assignedLeads.length}
+                            Assigned Leads: {isMainStreetThreat ? 0 : leads.assignedLeads.length}
                         </span>
                         <span
                             className={`hoverable ${activeTab === "pendingLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("pendingLeads")}
                           >
-                            Pending Leads: {leads.pendingLeads.length}
+                            Pending Leads: {isMainStreetThreat ? 0 : leads.pendingLeads.length}
                           </span>
                         <span
                             className={`hoverable ${activeTab === "pendingLeadReturns" ? "active" : ""}`}
                             onClick={() => handleTabClick("pendingLeadReturns")}
                         >
-                            Pending Lead Returns: {leads.pendingLeadReturns.length}
+                            Pending Lead Returns: {isMainStreetThreat ? 0 : leads.pendingLeadReturns.length}
                         </span>
                         <span
                             className={`hoverable ${activeTab === "allLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("allLeads")}
                         >
-                            All Leads: {leads.allLeads.length}
+                            All Leads: {isMainStreetThreat ? 0 : leads.allLeads.length}
                         </span>
                     </div>
+                  
 
                     {/* Tab Content */}
+                    {!isMainStreetThreat ? (
                     <div className="content-section">
                     {activeTab === "assignedLeads" && (
   <div className="assigned-leads">
@@ -985,7 +972,10 @@ export const CasePageManager = () => {
   </div>
 )}
 
-                    </div>
+                    </div> ): (
+                        <div className="no-leads-message">
+                        </div>
+                    )}
                 </div>
                 <div className="gotomainpagebtn">
                    <button className="cancel-btn"onClick={() => handleNavigation("/MainPage")}>Go to Main Page</button>
