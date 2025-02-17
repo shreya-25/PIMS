@@ -29,6 +29,7 @@
     cursor: pointer;
     color: rgb(41, 41, 139);
     font-size: 20px;
+    margin-bottom: 20px;
 }
 
 .clickable-header:hover {
@@ -54,7 +55,7 @@
   }
   
   .notifications-list {
-    margin: 10px 0px;
+    margin: 60px 0px;
     overflow-y: auto; /* Makes it scrollable */
     padding: 10px;
   }
