@@ -187,7 +187,7 @@ const handleGenerateLead = async () => {
 
     if (response.status === 201) {
       alert("Lead successfully added!");
-      navigate("/LeadLog"); // Navigate to Lead Log page
+      navigate(-1); // Navigate to Lead Log page
     }
   } catch (error) {
     if (error.response) {
@@ -373,7 +373,7 @@ const handleGenerateLead = async () => {
   </td>
 </tr>
             <tr>
-  <td>Assign Officers:</td>
+  {/* <td>Assign Officers:</td>
   <td>
     <div className="custom-dropdown-cl">
       <div
@@ -387,7 +387,7 @@ const handleGenerateLead = async () => {
       </div>
       {dropdownOpen && (
         <div className="dropdown-options">
-          {['Officer 1', 'Officer 2', 'Officer 3'].map((officer) => (
+          {['Officer 1 [5] [4]', 'Officer 2 [3] [3]', 'Officer 3 [2] [1]'].map((officer) => (
             <div key={officer} className="dropdown-item">
               <input
                 type="checkbox"
@@ -407,7 +407,47 @@ const handleGenerateLead = async () => {
         </div>
       )}
     </div>
-  </td>
+  </td> */}
+  <td>Assign Officers:</td>
+<td>
+  <div className="custom-dropdown-cl">
+    <div
+      className="dropdown-header-cl"
+      onClick={() => setDropdownOpen(!dropdownOpen)}
+    >
+      {leadData.assignedOfficer.length > 0
+        ? leadData.assignedOfficer.join(', ')
+        : 'Select Officers'}
+      <span className="dropdown-icon">{dropdownOpen ? '▲' : '▼'}</span>
+    </div>
+    {dropdownOpen && (
+      <div className="dropdown-options">
+        {['Officer 1 [5] [4]', 'Officer 2 [3] [3]', 'Officer 3 [2] [1]'].map((officer) => {
+          const officerName = officer.split(' [')[0]; // Extract only the name
+
+          return (
+            <div key={officer} className="dropdown-item">
+              <input
+                type="checkbox"
+                id={officer}
+                value={officerName} // Store only the officer's name
+                checked={leadData.assignedOfficer.includes(officerName)}
+                onChange={(e) => {
+                  const newAssignedOfficers = e.target.checked
+                    ? [...leadData.assignedOfficer, e.target.value]
+                    : leadData.assignedOfficer.filter((o) => o !== e.target.value);
+                  handleInputChange('assignedOfficer', newAssignedOfficers);
+                }}
+              />
+              <label htmlFor={officer}>{officer}</label>
+            </div>
+          );
+        })}
+      </div>
+    )}
+  </div>
+</td>
+
 </tr>
 
 
@@ -442,12 +482,12 @@ const handleGenerateLead = async () => {
 
 
       {/* Action Buttons */}
-      <div className="action-buttons">
-        <button className="next-btnlri" onClick={handleGenerateLead}>
+      <div className="btn-sec-cl">
+        <button className="next-btncl" onClick={handleGenerateLead}>
           Create Lead
         </button>
-        <button className="next-btnlri">Download PDF</button>
-        <button className="next-btnlri">Print PDF</button>
+        <button className="next-btncl">Download</button>
+        <button className="next-btncl">Print</button>
       </div>
     </div>
   );
