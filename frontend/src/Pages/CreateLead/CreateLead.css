@@ -196,7 +196,7 @@ body{
   }
   
   /* Action Buttons */
-  .action-buttons {
+  .btn-sec-cl {
     display: flex;
     justify-content: flex-end;
     margin-top: 20px;
@@ -204,36 +204,14 @@ body{
     align-items: last baseline;
   }
   
-  .action-buttons button {
+  .btn-sec-cl button {
     margin-left: 10px;
     padding: 10px 15px;
     border: none;
     border-radius: 5px;
     color: white;
     cursor: pointer;
-  }
-  
-  .donelead-btn {
-    background-color: #a33;
-    height: 40px;
-    width: 120px;
-    padding:0;
-  }
-
-  .donelead-btn:hover {
-    background-color: #a33;
-  }
-  
-  .download-pdf-btn {
-    background-color: #a33;
-    height: 40px;
-    width: 120px;
-  }
-  
-  .print-pdf-btn {
-    background-color: #a33;
-    height: 40px;
-    width: 120px;
+    background-color: #0c1d9a;
   }
   
   /* Input Fields - Regular Placeholder */

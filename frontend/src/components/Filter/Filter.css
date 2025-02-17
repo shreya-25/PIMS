@@ -3,14 +3,13 @@
     flex-direction: row; 
     gap: 10px; 
     background-color: #f3f4f6;
-    padding: 12px;
+    padding: 10px;
     border-radius: 6px;
     align-items: center;
     justify-content: center;
-    width: 90%; 
     margin: 10px; 
-    min-width: 1500px;
-    flex-wrap: nowrap; /* Ensures items stay in one row */
+    min-width: 90%;
+    flex-wrap: wrap; /* Ensures items stay in one row */
     overflow-x: auto; /* Allows horizontal scrolling if needed */
 }
 
