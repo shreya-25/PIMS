@@ -164,3 +164,16 @@
 .accept-btnNC:hover {
   background-color: #2e5f63;
 }
+
+.accepted-btnNC {
+  background-color: #787a7c !important;
+  color: white !important;
+  cursor: default !important;
+  pointer-events: none; /* Prevent hover effects and clicks */
+  border: none;
+}
+
+.accepted-btnNC:hover {
+  background-color: #787a7c !important;
+  color: white !important;
+}

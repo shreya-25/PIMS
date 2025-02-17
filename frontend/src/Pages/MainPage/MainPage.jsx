@@ -348,14 +348,58 @@ const addCase = (newCase) => {
     }));
   };
  
-
-
- 
-
+  const signedInOfficer = "Officer 916";
 
   // Filter leads
   const handleFilter = (e) => {
     setFilterText(e.target.value);
+  };
+
+  const filtersConfig = [
+    {
+      name: "leadNumber",
+      label: "Lead Number",
+      options: ["45", "23", "14"],
+    },
+    {
+      name: "leadName",
+      label: "Lead Name",
+      options: [
+        "Collect Audio from Dispatcher",
+        "Interview Mr. John",
+        "Collect evidence from 63 Mudray Street",
+      ],
+    },
+    {
+      name: "dueDate",
+      label: "Due Date",
+      options: ["Officer 1", "Officer 2", "Officer 3"],
+    },
+    {
+      name: "Priority",
+      label: "Priority",
+      options: ["High", "Medium", "Low"],
+    },
+    {
+      name: "Flag",
+      label: "Flag",
+      options: ["Important"],
+    },
+    {
+      name: "assignedOfficers",
+      label: "Assigned Officers",
+      options: ["Officer 1", "Officer 2", "Officer 3"],
+    },
+    {
+      name: "daysLeft",
+      label: "Days Left",
+      options: ["1", "2", "3"],
+    },
+  ];
+
+  const handleFilterApply = (filters) => {
+    console.log("Applied Filters:", filters);
+    // Perform filtering logic here (e.g., API call, state update)
   };
 
 
@@ -398,7 +442,7 @@ const addCase = (newCase) => {
             />
           )} */}
       <div className="main-page">
-      <NotificationCard acceptLead={acceptLead} />
+      <NotificationCard acceptLead={acceptLead} signedInOfficer={signedInOfficer} />
         <div className="stats-bar">
           <span
             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
@@ -506,6 +550,8 @@ const addCase = (newCase) => {
 
 {activeTab === "assignedLeads" && (
   <div className="assigned-leads">
+          <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+
     {/* <Filter /> */}
     {/* <button
       onClick={() => setFilterSortPopupVisible(true)}
