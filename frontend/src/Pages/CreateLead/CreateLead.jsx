@@ -312,6 +312,17 @@ const handleGenerateLead = async () => {
               </td>
             </tr>
             <tr>
+              <td>Case Summary:</td>
+              <td>
+                <input
+                  type="text"
+                  // className="input-field"
+                  value={leadData.caseSummary || 'Initial findings indicate that the suspect was last seen near the crime scene at 9:45 PM. Witness statements collected. Awaiting forensic reports and CCTV footage analysis.'} 
+                  // onChange={(e) => handleInputChange('caseName', e.target.value)} 
+    />
+              </td>
+            </tr>
+            <tr>
               <td>Lead Summary:</td>
               <td>
                 <input
@@ -372,6 +383,50 @@ const handleGenerateLead = async () => {
     </div>
   </td>
 </tr>
+<tr>
+              <td>Due Date:</td>
+              <td>
+                <input
+                  type="text"
+                  className="input-field"
+                  // value={leadData.leadSummary}
+                  // onChange={(e) => handleInputChange('leadSummary', e.target.value)}
+                  placeholder="MM/DD/YY"
+                />
+              </td>
+            </tr>
+
+          {/* <tr>
+            <td>Priority:</td>
+              <td>
+              <div className="custom-dropdown-cl">
+                    <div
+                      className="dropdown-header-cl"
+                      onClick={() => setDropdownOpen(!dropdownOpen)}
+                    >
+                      {leadData.assignedOfficer.length > 0
+                        ? leadData.assignedOfficer.join(', ')
+                        : 'Select Priority'}
+                      <span className="dropdown-icon">{dropdownOpen ? '▲' : '▼'}</span>
+                    </div>
+                    {dropdownOpen && (
+                      <div className="dropdown-options">
+                        {['High', 'Medium', 'Low'].map((priority) => {
+                          return (
+                            <div key={officer} className="dropdown-item">
+                              <input
+                                type="checkbox"
+                              />
+                              <label htmlFor={priority}>{priority}</label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+              </td>
+            </tr> */}
+
             <tr>
   {/* <td>Assign Officers:</td>
   <td>
@@ -422,16 +477,25 @@ const handleGenerateLead = async () => {
     </div>
     {dropdownOpen && (
       <div className="dropdown-options">
-        {['Officer 1 [5] [4]', 'Officer 2 [3] [3]', 'Officer 3 [2] [1]'].map((officer) => {
-          const officerName = officer.split(' [')[0]; // Extract only the name
+        {[
+            { name: "Officer 1", assignedLeads: 2, totalAssignedLeads: 1, assignedDays: 5, unavailableDays: 4 },
+            { name: "Officer 2", assignedLeads: 3, totalAssignedLeads: 3, assignedDays: 3, unavailableDays: 3 },
+            { name: "Officer 3", assignedLeads: 3, totalAssignedLeads: 3, assignedDays: 2, unavailableDays: 1 },
+          ].map((officer) => {
+            const isAvailable =
+              officer.unavailableDays === 0
+                ? "Available"
+                : `Unavailable for ${officer.unavailableDays} days`;
+        // {['Officer 1 [2] [1]', 'Officer 2 [3] [3]', 'Officer 3 [5] [4]'].map((officer) => {
+          // const officerName = officer.split(' [')[0]; // Extract only the name
 
           return (
             <div key={officer} className="dropdown-item">
               <input
                 type="checkbox"
-                id={officer}
-                value={officerName} // Store only the officer's name
-                checked={leadData.assignedOfficer.includes(officerName)}
+                id={officer.name}
+                value={officer.name} // Store only the officer's name
+                checked={leadData.assignedOfficer.includes(officer.name)}
                 onChange={(e) => {
                   const newAssignedOfficers = e.target.checked
                     ? [...leadData.assignedOfficer, e.target.value]
@@ -439,7 +503,12 @@ const handleGenerateLead = async () => {
                   handleInputChange('assignedOfficer', newAssignedOfficers);
                 }}
               />
-              <label htmlFor={officer}>{officer}</label>
+              <label htmlFor={officer.name}>
+                  {officer.name}{" "}[{officer.assignedLeads}] {" "} [{officer.totalAssignedLeads}] {" "}
+                  <em style={{ fontSize: "14px", color: "gray" }}>
+                    ({isAvailable})
+                  </em>
+                </label>
             </div>
           );
         })}

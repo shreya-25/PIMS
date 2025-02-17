@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import Searchbar from '../../components/Searchbar/Searchbar';
 import Button from '../../components/Button/Button';
+import Filter from "../../components/Filter/Filter";
+import Sort from "../../components/Sort/Sort";
 import './Investigator.css'; // Custom CSS file for styling
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -208,6 +210,111 @@ export const Investigator = () => {
   const handleFilter = (e) => {
     setFilterText(e.target.value);
   };
+
+  // Filter leads
+    const filtersConfig = [
+      {
+        name: "leadNumber",
+        label: "Lead Number",
+        options: ["45", "23", "14"],
+      },
+      {
+        name: "leadName",
+        label: "Lead Name",
+        options: [
+          "Collect Audio from Dispatcher",
+          "Interview Mr. John",
+          "Collect evidence from 63 Mudray Street",
+        ],
+      },
+      {
+        name: "dueDate",
+        label: "Due Date",
+        options: ["Officer 1", "Officer 2", "Officer 3"],
+      },
+      {
+        name: "Priority",
+        label: "Priority",
+        options: ["High", "Medium", "Low"],
+      },
+      {
+        name: "Flag",
+        label: "Flag",
+        options: ["Important"],
+      },
+      {
+        name: "assignedOfficers",
+        label: "Assigned Officers",
+        options: ["Officer 1", "Officer 2", "Officer 3"],
+      },
+      {
+        name: "daysLeft",
+        label: "Days Left",
+        options: ["1", "2", "3"],
+      },
+    ];
+  
+    const filtersConfigPLR = [
+      {
+        name: "leadNumber",
+        label: "Lead Number",
+        options: ["45", "23", "14"],
+      },
+      {
+        name: "leadName",
+        label: "Lead Name",
+        options: [
+          "Collect Audio from Dispatcher",
+          "Interview Mr. John",
+          "Collect evidence from 63 Mudray Street",
+        ],
+      },
+      {
+        name: "Priority",
+        label: "Priority",
+        options: ["High", "Medium", "Low"],
+      },
+      {
+        name: "Flag",
+        label: "Flag",
+        options: ["Important"],
+      },
+    ];
+  
+    const filtersConfigOC = [
+      {
+        name: "CaseNumber",
+        label: "Case Number",
+        options: ["12345", "45637", "23789"],
+      },
+      {
+        name: "CaseName",
+        label: "Case Name",
+        options: [
+          "Main Street Murder",
+          "Cook Streat School Threat",
+          "216 Endicott Suicide",
+        ],
+      },
+      {
+        name: "Role",
+        label: "Role",
+        options: ["Case Manager", "Investigator"],
+      },
+    ];
+  
+    const handleFilterApply = (filters) => {
+      console.log("Applied Filters:", filters);
+      // Perform filtering logic here (e.g., API call, state update)
+    };
+  
+    const [sortedData, setSortedData] = useState([]);
+    const data = [
+      { category: "Electronics", price: 100 },
+      { category: "Clothing", price: 50 },
+      { category: "Electronics", price: 200 },
+      { category: "Home", price: 150 },
+    ];
       
 
     return (
@@ -302,12 +409,16 @@ export const Investigator = () => {
                        <div className="content-section">
                     {activeTab === "assignedLeads" && (
   <div className="assigned-leads">
-    <button
+    {/* <button
       onClick={() => setFilterSortPopupVisible(true)}
       className="filter-sort-button"
     >
       Open Filter & Sort
-    </button>
+    </button> */}
+
+<Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+<Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+
 
 
     {filterSortPopupVisible && (
@@ -528,12 +639,15 @@ export const Investigator = () => {
           
 {activeTab === "pendingLeads" && (
   <div className="pending-leads">
-    <button
+    {/* <button
       onClick={() => setFilterSortPopupVisible(true)}
       className="filter-sort-button"
     >
       Open Filter & Sort
-    </button>
+    </button> */}
+
+<Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+<Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
 
 
     {filterSortPopupVisible && (
@@ -742,6 +856,8 @@ export const Investigator = () => {
 
 {activeTab === "pendingLeadReturns" && (
   <div className="pending-lead-returns">
+     <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+     <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
     <table className="pending-lr-table">
               <thead>
                 <tr>
@@ -787,6 +903,8 @@ export const Investigator = () => {
 
 {activeTab === "allLeads" && (
   <div className="all-leads">
+    <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+    <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
     <table className="all-lead-table">
       <thead>
         <tr>
