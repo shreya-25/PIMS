@@ -75,7 +75,7 @@ const Navbar = () => {
           <Link to="#">
             <i className="fa-solid fa-user"></i>
           </Link>
-          <span className="username">{username || "Guest"}</span>
+          <span className="username">{"Officer 916"}</span>
         </div>
         <ul>
           {/* Emails */}
@@ -83,9 +83,9 @@ const Navbar = () => {
             <i
               className="fa-solid fa-envelope"
               onClick={() => {
-                setShowEmails(!showEmails);
-                setShowChats(false);
-                setShowNotifications(false);
+                // setShowEmails(!showEmails);
+                // setShowChats(false);
+                // setShowNotifications(false);
               }}
             ></i>
             {emails > 0 && <span className="badge">{emails}</span>}

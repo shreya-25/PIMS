@@ -58,10 +58,11 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
 
 
   const [cases, setCases] = useState([
-    { id: 12345, title: "Main Street Murder", status: "ongoing", role: "Investigator" },
+    { id: 82659, title: "Main Street Theft", status: "ongoing", role: "Case Manager" },
+    { id: 65734, title: "Murray Street Stolen Gold", status: "ongoing", role: "Investigator" },
     { id: 45637, title: "Cook Street School Threat", status: "ongoing", role: "Case Manager" },
     { id: 23789, title: "216 Endicott Suicide", status: "ongoing", role: "Investigator" },
-    { id: 65734, title: "Murray Street Stolen Gold", status: "ongoing", role: "Investigator" },
+    { id: 12345, title: "Main Street Murder", status: "ongoing", role: "Investigator" },
   ]);
 
 
@@ -1054,7 +1055,6 @@ const addCase = (newCase) => {
               <td>
                 <button
                   className="view-btn1"
-                  onClick={() => alert(`Viewing lead: ${lead.description}`)}
                 >
                   View
                 </button>

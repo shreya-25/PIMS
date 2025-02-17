@@ -750,8 +750,8 @@ const handleAccept = async (_id) => {
                       View
                   </button>
 
-                  {(notification.action1.includes("assigned you a new lead") ||
-                    notification.action1.includes("assigned you a new case")) && (
+                  {(notification.action1.includes("assigned a new lead") ||
+                    notification.action1.includes("assigned a new case")) && (
                     <button
                       className={`accept-btnNC ${notification.accepted ? "accepted-btnNC" : ""}`}
                       onClick={() => handleAccept(notification._id)}
@@ -791,8 +791,8 @@ const handleAccept = async (_id) => {
                       View
                   </button>
 
-                  {(notification.action1.includes("assigned you a new lead") ||
-                    notification.action1.includes("assigned you a new case")) && (
+                  {(notification.action1.includes("assigned a new lead") ||
+                    notification.action1.includes("assigned a new case")) && (
                     <button
                       className={`accept-btnNC accepted-btnNC`}
                       disabled

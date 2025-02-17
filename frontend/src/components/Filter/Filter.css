@@ -44,7 +44,7 @@
 }
 
 
-.filter-button {
+.filter-buttonNC {
     background-color: rgba(41, 41, 139, 0.795); 
     color: white;
     padding: 8px 16px;
@@ -58,7 +58,7 @@
     white-space: nowrap; 
 }
 
-.filter-button:hover {
+.filter-buttonNC:hover {
     background-color: rgb(96, 96, 179);
 }
 

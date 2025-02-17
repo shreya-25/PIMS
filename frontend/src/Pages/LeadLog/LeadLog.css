@@ -24,7 +24,7 @@
     font-size: 30px;
     font-weight: bold;
     text-align: center;
-    margin-left: -1500%;
+    margin-left: -1000%;
   }
   
   /* Filters Section */
@@ -208,7 +208,7 @@
   }
   
   .report-section label {
-    min-width: 20%;
+    min-width: 40%;
     font-size: 20px;
   }
   
