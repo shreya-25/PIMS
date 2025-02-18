@@ -3,7 +3,7 @@ import axios from "axios";
 import "./MainPage.css";
 import Navbar from "../../components/Navbar/Navbar";
 import Searchbar from "../../components/Searchbar/Searchbar";
-import NotificationCard from "../../components/NotificationCard/NotificationCard";
+import NotificationCard from "../../components/NotificationCard/NotificationCard1";
 import Filter from "../../components/Filter/Filter";
 import Sort from "../../components/Sort/Sort";
 import { SlideBar } from "../../components/Slidebar/Slidebar";
@@ -55,15 +55,60 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
   };
 
 
+  const signedInOfficer = "Officer 916";
+
+  const [cases, setCases] = useState([]);
+
+  useEffect(() => {
+    const fetchCases = async () => {
+      try {
+        const token = localStorage.getItem("token"); // Get JWT token
+
+        if (!token) {
+          console.error("❌ No token found. User is not authenticated.");
+          return;
+        }
+
+        const response = await axios.get("http://localhost:5000/api/cases", {
+          headers: {
+            Authorization: `Bearer ${token}`, // ✅ Pass token in Authorization header
+            "Content-Type": "application/json",
+          },
+          params: { officerName: signedInOfficer }, // ✅ Send officerName as query param
+        });
+
+        console.log("✅ API Response:", response.data); // Debugging log
+
+        // ✅ Filter cases where the signed-in officer is assigned
+        const assignedCases = response.data
+          .filter(c => c.assignedOfficers.some(o => o.name === signedInOfficer)) // ✅ Remove cases where officer is not assigned
+          .map((c) => {
+            const officerInfo = c.assignedOfficers.find(o => o.name === signedInOfficer);
+            return {
+              id: c.caseNo,
+              title: c.caseName,
+              status: c.caseStatus,
+              role: officerInfo ? officerInfo.role : "Unknown", // ✅ Ensure correct role is displayed
+            };
+          });
+
+        setCases(assignedCases); // ✅ Set filtered cases in state
+      } catch (error) {
+        console.error("❌ Error fetching cases:", error.response?.data || error);
+      }
+    };
+
+    fetchCases();
+  }, [signedInOfficer]);
 
 
-  const [cases, setCases] = useState([
-    { id: 82659, title: "Main Street Theft", status: "ongoing", role: "Case Manager" },
-    { id: 65734, title: "Murray Street Stolen Gold", status: "ongoing", role: "Investigator" },
-    { id: 45637, title: "Cook Street School Threat", status: "ongoing", role: "Case Manager" },
-    { id: 23789, title: "216 Endicott Suicide", status: "ongoing", role: "Investigator" },
-    { id: 12345, title: "Main Street Murder", status: "ongoing", role: "Investigator" },
-  ]);
+  // const [cases, setCases] = useState([
+  //   { id: 82659, title: "Main Street Theft", status: "ongoing", role: "Case Manager" },
+  //   { id: 65734, title: "Murray Street Stolen Gold", status: "ongoing", role: "Investigator" },
+  //   { id: 45637, title: "Cook Street School Threat", status: "ongoing", role: "Case Manager" },
+  //   { id: 23789, title: "216 Endicott Suicide", status: "ongoing", role: "Investigator" },
+  //   { id: 12345, title: "Main Street Murder", status: "ongoing", role: "Investigator" },
+  // ]);
 
 
   // const loggedInOfficer = localStorage.getItem("loggedInUser")?.trim();
@@ -349,8 +394,7 @@ const addCase = (newCase) => {
       pendingLeads: [...prevLeads.pendingLeads, leadToContinue],
     }));
   };
- 
-  const signedInOfficer = "Officer 916";
+
 
   // Filter leads
   const handleFilter = (e) => {

@@ -578,6 +578,16 @@ const NotificationCard = ({ acceptLead, signedInOfficer }) => {
     }
 };
 
+const getNotificationType = (notification) => {
+  if (notification.action1.includes("assigned a new case")) {
+    return { letter: "C", color: "blue" }; // Case: Blue Circle
+  }
+  if (notification.action1.includes("assigned a new lead")) {
+    return { letter: "L", color: "green" }; // Lead: Green Circle
+  }
+  return { letter: "?", color: "gray" }; // Unknown Type: Gray Circle
+};
+
 
   //  Fetch all notifications for open cases
   const fetchOpenCaseNotifications = async () => {
@@ -740,6 +750,7 @@ const handleAccept = async (_id) => {
       {!showAllNotifications && (
         <div className="notifications-list">
           {unreadNotifications.map(notification => (
+            
             <div key={notification._id} className={`notification-card ${notification.unread ? "unread" : "read"}`}>
               <div className="profile-pic">
                 <i className="fa-solid fa-user"></i>
@@ -783,7 +794,7 @@ const handleAccept = async (_id) => {
           {openCaseNotifications.map(notification => (
             <div key={notification._id} className={`notification-card ${notification.unread ? "unread" : "read"} gray-background`}>
               <div className="profile-pic">
-                <i className="fa-solid fa-user"></i>
+                {/* <i className="fa-solid fa-user"></i> */}
               </div>
               <div className="notification-content">
                 <div className="notification-text">
@@ -821,3 +832,5 @@ const handleAccept = async (_id) => {
 };
 
 export default NotificationCard;
+
+
