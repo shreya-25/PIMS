@@ -302,7 +302,7 @@ const acceptLead = (leadId) => {
  // Adding a case to the list
 const addCase = (newCase) => {
   if (!newCase.id || !newCase.title || !newCase.status) {
-    alert("Case must have an ID, title, and status.");
+    // alert("Case must have an ID, title, and status.");
     return;
   }
  
@@ -503,9 +503,9 @@ const addCase = (newCase) => {
               placeholder="Search Cases"
               onSearch={(query) => console.log("Search query:", query)}
             />
-            {/* <SlideBar
+            <SlideBar
                 onAddCase={(newCase) => addCase(newCase)} // Pass addCase function with confirmation
-            /> */}
+            />
           </div>
         </div>
         <div className="content-container">

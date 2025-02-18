@@ -2,32 +2,87 @@ const mongoose = require("mongoose");
 const Case = require("../models/case");
 
 // Create a new case with validation
+// exports.createCase = async (req, res) => {
+//     try {
+//         const { caseNo, caseName, caseSummary, selectedOfficers } = req.body;
+
+//         // Ensure the user is authenticated and available in request
+//         if (!req.user || !req.user.name) {
+//             return res.status(401).json({ message: "Unauthorized: User details not found" });
+//         }
+//         // Validate required fields
+//         if (!caseNo || !caseName || !Array.isArray(assignedOfficers) || assignedOfficers.length === 0 || !caseStatus) {
+//             return res.status(400).json({ message: "caseNo, caseName, assignedOfficers, and caseStatus are required" });
+//         }
+
+//         // Validate caseStatus against allowed values
+//         if (!['Ongoing', 'Completed'].includes(caseStatus)) {
+//             return res.status(400).json({ message: "Invalid caseStatus value. Allowed values: 'Ongoing', 'Completed'" });
+//         }
+
+//         // Ensure unique case number
+//         const existingCase = await Case.findOne({ caseNo });
+//         if (existingCase) {
+//             return res.status(400).json({ message: "Case number already exists. Please use a unique caseNo." });
+//         }
+
+//         // Construct assignedOfficers array
+//         const assignedOfficers = [
+//             {
+//                 name: req.user.name, // Current signed-in officer
+//                 role: "Case Manager",
+//             },
+//             ...(selectedOfficers || []).map(officer => ({
+//                 name: officer.name,
+//                 role: "Investigator"
+//             }))
+//         ];
+
+//         const newCase = new Case({ caseNo, caseName, assignedOfficers, caseStatus: "Ongoing", caseSummary });
+//         await newCase.save();
+
+//         res.status(201).json({ message: "Case created successfully", data: newCase });
+//     } catch (err) {
+//         console.error("Error creating case:", err);
+//         res.status(500).json({ message: "Error creating case", error: err.message });
+//     }
+// };
+
 exports.createCase = async (req, res) => {
     try {
-        const { caseNo, caseName, assignedOfficers, caseStatus } = req.body;
+        const { caseNo, caseName, caseSummary, selectedOfficers, username } = req.body;
 
-        // Validate required fields
-        if (!caseNo || !caseName || !Array.isArray(assignedOfficers) || assignedOfficers.length === 0 || !caseStatus) {
-            return res.status(400).json({ message: "caseNo, caseName, assignedOfficers, and caseStatus are required" });
+        // ✅ Ensure `username` is provided
+        if (!username) {
+            return res.status(400).json({ message: "Username is required to assign Case Manager" });
         }
 
-        // Validate caseStatus against allowed values
-        if (!['Ongoing', 'Completed'].includes(caseStatus)) {
-            return res.status(400).json({ message: "Invalid caseStatus value. Allowed values: 'Ongoing', 'Completed'" });
-        }
+        // ✅ Automatically assign the given `username` as `Case Manager`
+        const assignedOfficers = [
+            {
+                name: username,  // User from request body
+                role: "Case Manager"
+            },
+            ...selectedOfficers.map(officer => ({
+                name: officer.name,
+                role: "Investigator"
+            }))
+        ];
 
-        // Ensure unique case number
-        const existingCase = await Case.findOne({ caseNo });
-        if (existingCase) {
-            return res.status(400).json({ message: "Case number already exists. Please use a unique caseNo." });
-        }
+        // ✅ Create a new case
+        const newCase = new Case({
+            caseNo,
+            caseName,
+            caseSummary,
+            assignedOfficers,  // Now contains Case Manager + Investigators
+            caseStatus: "Ongoing" // Default status
+        });
 
-        const newCase = new Case({ caseNo, caseName, assignedOfficers, caseStatus });
         await newCase.save();
 
         res.status(201).json({ message: "Case created successfully", data: newCase });
     } catch (err) {
-        console.error("Error creating case:", err);
+        console.error("❌ Error creating case:", err);
         res.status(500).json({ message: "Error creating case", error: err.message });
     }
 };

@@ -8,10 +8,11 @@ const caseSchema = new mongoose.Schema(
             {
                 name: { type: String, required: true },
                 // badgeNumber: { type: String, required: true },
-                role: { type: String, enum: ['CaseManager', 'Investigator'], required: true }
+                role: { type: String, enum: ['Case Manager', 'Investigator'], required: true }
             }
         ],
-        caseStatus: { type: String, enum: ['Ongoing', 'Completed'], required: true }
+        caseStatus: { type: String, enum: ['Ongoing', 'Completed'], required: true },
+        caseSummary: {type: String}
         // allLeads: [{
         //     name: { type: String, required: true },
         //     number: { type: Number, required: true },
