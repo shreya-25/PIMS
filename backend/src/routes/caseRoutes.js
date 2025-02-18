@@ -1,9 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const caseController = require("../controller/caseController");
+const verifyToken = require("../middleware/authMiddleware"); // Import the middleware
 
 // Case Routes
-router.post("/", async (req, res) => {
+
+// Create a new case (Authenticated)
+router.post("/", verifyToken, async (req, res) => {
     try {
         await caseController.createCase(req, res);
     } catch (error) {
@@ -11,7 +14,8 @@ router.post("/", async (req, res) => {
     }
 });
 
-router.get("/", async (req, res) => {
+// Get all cases (Authenticated)
+router.get("/", verifyToken, async (req, res) => {
     try {
         await caseController.getAllCases(req, res);
     } catch (error) {
@@ -19,7 +23,8 @@ router.get("/", async (req, res) => {
     }
 });
 
-router.get("/:id", async (req, res) => {
+// Get a specific case by ID (Authenticated)
+router.get("/:id", verifyToken, async (req, res) => {
     try {
         await caseController.getCaseById(req, res);
     } catch (error) {
@@ -27,7 +32,17 @@ router.get("/:id", async (req, res) => {
     }
 });
 
-router.put("/:id", async (req, res) => {
+// Get cases assigned to a specific officer (Authenticated)
+router.get("/cases-by-officer", verifyToken, async (req, res) => {
+    try {
+        await caseController.getCasesByOfficer(req, res);
+    } catch (error) {
+        res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+});
+
+// Update a case (Authenticated)
+router.put("/:id", verifyToken, async (req, res) => {
     try {
         await caseController.updateCase(req, res);
     } catch (error) {
@@ -35,7 +50,8 @@ router.put("/:id", async (req, res) => {
     }
 });
 
-router.delete("/:id", async (req, res) => {
+// Delete a case (Authenticated)
+router.delete("/:id", verifyToken, async (req, res) => {
     try {
         await caseController.deleteCase(req, res);
     } catch (error) {
