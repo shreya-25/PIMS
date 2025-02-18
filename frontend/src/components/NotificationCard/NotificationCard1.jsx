@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 
 const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
   const [unreadNotifications, setUnreadNotifications] = useState([]);
+  const [unacceptedNotifications,  setUnacceptedNotifications ] = useState([]);
   const [openCaseNotifications, setOpenCaseNotifications] = useState([]);
   const [showAllNotifications, setShowAllNotifications] = useState(false);
   const [showSearchBar, setShowSearchBar] = useState(false);
@@ -18,7 +19,23 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
         setLoading(true);
         const response = await axios.get(`http://localhost:5000/api/notifications/user/${signedInOfficer}`);
 
-        const newUnread = response.data.filter(notification => notification.unread && !notification.accepted);
+        // const newUnread = response.data.filter(notification => notification.unread ||  !notification.accepted);
+        const allNotifications = response.data;
+    
+        const newUnread = allNotifications.filter((notification) => {
+          // Check if `action1` mentions a new case or lead
+          const isNewCaseOrLead =
+            notification.action1.includes("assigned a new case") ||
+            notification.action1.includes("assigned a new lead");
+          
+          // If it's a new case or lead: return notifications that are unread OR not accepted
+          // Otherwise: return notifications that are unread
+          if (isNewCaseOrLead) {
+            return notification.unread || !notification.accepted;
+          } else {
+            return notification.unread;
+          }
+        });
         const sortedUnread = newUnread.sort((a, b) => new Date(b.time) - new Date(a.time));
 
         setUnreadNotifications(sortedUnread); 
@@ -60,35 +77,6 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
     return { letter: "LR", color: "gray" }; // Unknown Type: Gray Circle
   };
 
-  // const handleView = async (_id) => {
-  //   try {
-  //       console.log("🔹 Received _id in handleView:", _id);
-
-  //       if (!_id) return console.error("❌ Error: `_id` is undefined.");
-
-  //       const notification = unreadNotifications.find(n => n._id === _id);
-
-  //       if (!notification) return console.error("❌ Error: No matching notification found.");
-
-  //       const { notificationId } = notification;
-
-  //       if (!notificationId) return console.error("❌ Error: `notificationId` is undefined.");
-
-  //       console.log("🔹 Sending request to mark notification as read:", notificationId);
-
-  //       await axios.put(`http://localhost:5000/api/notifications/mark-read/${notificationId}`, { unread: false });
-
-  //       setUnreadNotifications((prev) => prev.filter((n) => n._id !== _id));
-  //       setOpenCaseNotifications((prev) => [...prev, { ...notification, unread: false }]);
-
-  //       if (notification.action1.includes("assigned a new case")) {
-  //         navigate(`/CasePageManager`);
-  //       }
-  //   } catch (error) {
-  //       console.error("❌ Error marking notification as read:", error.response ? error.response.data : error);
-  //   }
-  // };
-
   const handleView = async (_id) => {
     try {
         console.log("🔹 Received _id in handleView:", _id);
@@ -110,14 +98,30 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
         await axios.put(`http://localhost:5000/api/notifications/mark-read/${notificationId}`, { unread: false });
 
         // ✅ Remove from "New Notifications"
-        setUnreadNotifications((prev) => prev.filter((n) => n._id !== _id));
+        if(notification.action1.includes("assigned a new case") || notification.action1.includes("assigned a new lead"))
+        {
+          if (notification.accepted) {
+            setUnreadNotifications((prev) => prev.filter((n) => n._id !== _id));
+          }
+      }
+      else
+          {
+          setUnreadNotifications((prev) => prev.filter((n) => n._id !== _id));
+          }
 
         // ✅ Do NOT add to "View All Notifications" yet
         // Only redirect based on type
         if (notification.action1.includes("assigned a new case")) {
-            navigate(`/CasePageManager`);
+          navigate(`/CaseInformation`, {
+            state: {
+              caseDetails: {
+                id: notification.caseNo,
+                title: notification.caseName
+              }
+            },
+          });
         } else if (notification.action1.includes("assigned a new lead")) {
-            navigate(`/LeadPage`);
+            // navigate(`/LeadPage`);
         } else {
             navigate(`/NotificationDetails/${notificationId}`);
         }
@@ -281,11 +285,11 @@ const handleAccept = async (_id) => {
 
                   {(notification.action1.includes("assigned a new lead") ||
                     notification.action1.includes("assigned a new case")) && (
-                    <button
-                      className={`accept-btnNC accepted-btnNC`}
-                      disabled
+                      <button
+                      className={`accept-btnNC ${notification.accepted ? 'accepted-btnNC' : ''}`}
+                      disabled={notification.accepted}
                     >
-                      Accept
+                      {notification.accepted ? 'Accept' : 'Accept'}
                     </button>
                   )}
                 </div>

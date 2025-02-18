@@ -53,6 +53,7 @@ import { AdminDB } from './Pages/Admin/AdminDB';
 import { AdminDashboard } from './Pages/Admin/Dashboard/AdminDashboard';
 import { OfficerManagement } from './Pages/OfficerManagement/OfficerManagement';
 import { LeadInfo } from './Pages/LeadInfo/LeadInfo';
+import { CaseInformation } from './Pages/CaseInformation/CaseInformation';
 
 function App() {
   return (
@@ -111,6 +112,7 @@ function App() {
         <Route path="/CMScratchpad" element={<CMScratchpad />} />
         <Route path="/CMTimeline" element={<CMTimeline />} />
         <Route path="/AdminDashboard" element={<AdminDashboard />} />
+        <Route path="/CaseInformation" element={<CaseInformation />} />
       </Routes>
     </Router>
   );

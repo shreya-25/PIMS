@@ -332,6 +332,7 @@ export const CasePageManager = () => {
                 {/* Sidebar */}
                 <div className="sideitem">
                     <ul className="sidebar-list">
+                    <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
 
                     {["assignedLeads", "pendingLeads", "pendingLeadReturns", "allLeads"].map((tab) => (
   <li
