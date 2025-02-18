@@ -10,6 +10,7 @@ const NotificationSchema = new mongoose.Schema({
   post2: { type: String, required: false },
   leadNo: { type: String, required: false },
   leadName: { type: String, required: false },
+  caseNo:{ type: String, required: true },
   caseName: { type: String, required: true },
   caseStatus: { 
     type: String, 
