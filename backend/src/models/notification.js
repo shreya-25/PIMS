@@ -17,6 +17,7 @@ const NotificationSchema = new mongoose.Schema({
     enum: ["Open", "Close"], // Restrict values to "Open" or "Close"
     default: "Open" // Default case status
   },
+  // notifyType: {type: String, enum:["CaseAssign","LeadAssign","LeadReturnApprove","LeadReturnReject"], required: true},
   unread: { type: Boolean, default: true },
   accepted: { type: Boolean, default: false },
   comment: { type: String, required: false },
