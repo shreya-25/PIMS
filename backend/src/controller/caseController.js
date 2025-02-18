@@ -120,9 +120,41 @@ exports.getCaseById = async (req, res) => {
 };
 
 // Get cases assigned to a specific officer and return their role
+// exports.getCasesByOfficer = async (req, res) => {
+//     try {
+//         const officerName = req.query.officerName; // Fetch officer's name from request query
+
+//         if (!officerName) {
+//             return res.status(400).json({ message: "Officer name is required in the query parameter" });
+//         }
+
+//         const cases = await Case.find({ "assignedOfficers.name": officerName });
+
+//         if (!cases || cases.length === 0) {
+//             return res.status(404).json({ message: "No cases assigned to this officer" });
+//         }
+
+//         // Extract officer's role for each case
+//         const formattedCases = cases.map((c) => {
+//             const officer = c.assignedOfficers.find(o => o.name === officerName);
+//             return {
+//                 caseNo: c.caseNo,
+//                 caseName: c.caseName,
+//                 caseStatus: c.caseStatus,
+//                 role: officer ? officer.role : "Unknown", // Ensure role is included
+//             };
+//         });
+
+//         res.status(200).json(formattedCases);
+//     } catch (err) {
+//         console.error("Error fetching cases for officer:", err);
+//         res.status(500).json({ message: "Error fetching cases", error: err.message });
+//     }
+// };
+
 exports.getCasesByOfficer = async (req, res) => {
     try {
-        const officerName = req.query.officerName; // Fetch officer's name from request query
+        const officerName = req.query.officerName; // Get officer name from request query
 
         if (!officerName) {
             return res.status(400).json({ message: "Officer name is required in the query parameter" });
@@ -134,23 +166,24 @@ exports.getCasesByOfficer = async (req, res) => {
             return res.status(404).json({ message: "No cases assigned to this officer" });
         }
 
-        // Extract officer's role for each case
+        // ✅ Extract officer's role for each case
         const formattedCases = cases.map((c) => {
             const officer = c.assignedOfficers.find(o => o.name === officerName);
             return {
                 caseNo: c.caseNo,
                 caseName: c.caseName,
                 caseStatus: c.caseStatus,
-                role: officer ? officer.role : "Unknown", // Ensure role is included
+                role: officer ? officer.role : "Unknown", // ✅ Ensure correct role extraction
             };
         });
 
         res.status(200).json(formattedCases);
     } catch (err) {
-        console.error("Error fetching cases for officer:", err);
+        console.error("❌ Error fetching cases for officer:", err);
         res.status(500).json({ message: "Error fetching cases", error: err.message });
     }
 };
+
 
 
 // Update case details
