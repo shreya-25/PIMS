@@ -10,12 +10,18 @@ export const SlideBar = ({ onAddCase }) => {
     investigators: [], // Store selected investigators
     summary: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const caseManagers = ["Officer 1", "Officer 2", "Officer 3"];
-  const investigators = ["Officer 1", "Officer 2", "Officer 3", "Officer 4"];
-
+  const investigators = [
+    { name: "Officer 1", assignedLeads: 2, totalAssignedLeads: 1, assignedDays: 5, unavailableDays: 4 },
+    { name: "Officer 2", assignedLeads: 3, totalAssignedLeads: 3, assignedDays: 3, unavailableDays: 3 },
+    { name: "Officer 3", assignedLeads: 3, totalAssignedLeads: 3, assignedDays: 2, unavailableDays: 1 },
+    { name: "Officer 4", assignedLeads: 4, totalAssignedLeads: 2, assignedDays: 6, unavailableDays: 2 },
+  ];
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setCaseDetails({ ...caseDetails, [name]: value });
@@ -25,43 +31,101 @@ export const SlideBar = ({ onAddCase }) => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  // const toggleDropdown = () => {
+  //   setDropdownOpen(!dropdownOpen);
+  // };
+
   const toggleDropdown = () => {
-    setDropdownOpen(!dropdownOpen);
+    setDropdownOpen((prev) => !prev);
   };
+  
 
   const handleCheckboxChange = (e) => {
     const { value, checked } = e.target;
-    if (checked) {
-      setCaseDetails((prevDetails) => ({
-        ...prevDetails,
-        investigators: [...prevDetails.investigators, value],
-      }));
-    } else {
-      setCaseDetails((prevDetails) => ({
-        ...prevDetails,
-        investigators: prevDetails.investigators.filter((inv) => inv !== value),
-      }));
-    }
+    setCaseDetails((prevDetails) => ({
+      ...prevDetails,
+      investigators: checked
+        ? [...prevDetails.investigators, value]
+        : prevDetails.investigators.filter((inv) => inv !== value),
+    }));
   };
+  
 
-  const handleDone = () => {
-    if (caseDetails.title && caseDetails.number) {
-      onAddCase({
-        id: caseDetails.number,
-        title: caseDetails.title,
-        status: "ongoing",
-        investigators: caseDetails.investigators,
-      });
+  // const handleDone = () => {
+  //   if (caseDetails.title && caseDetails.number) {
+  //     onAddCase({
+  //       id: caseDetails.number,
+  //       title: caseDetails.title,
+  //       status: "ongoing",
+  //       investigators: caseDetails.investigators,
+  //     });
+  //   }
+  //   setCaseDetails({
+  //     title: "",
+  //     number: "",
+  //     managerName: "",
+  //     investigators: [],
+  //     summary: "",
+  //   });
+  //   setIsSidebarOpen(false);
+  // };
+  const handleDone = async () => {
+    if (!caseDetails.title || !caseDetails.number || !caseDetails.managerName) {
+      alert("❌ Please fill all required fields: Case Title, Number, Manager");
+      return;
     }
-    setCaseDetails({
-      title: "",
-      number: "",
-      managerName: "",
-      investigators: [],
-      summary: "",
-    });
-    setIsSidebarOpen(false);
+  
+    setLoading(true);
+    setError(null);
+  
+    const newCase = {
+      caseNo: caseDetails.number,
+      caseName: caseDetails.title,
+      caseSummary: caseDetails.summary,
+      username: caseDetails.managerName,
+      selectedOfficers: caseDetails.investigators.map((name) => ({ name })),
+    };
+  
+    // Retrieve token from localStorage or context
+    const token = localStorage.getItem("token"); // Ensure this is where your token is stored
+  
+    try {
+      const response = await fetch("http://localhost:5000/api/cases", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`, // Add Authorization Header
+        },
+        body: JSON.stringify(newCase),
+      });
+  
+      const data = await response.json();
+  
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create case");
+      }
+  
+      alert("✅ Case Created Successfully!");
+  
+      onAddCase(newCase); // Update UI
+      setCaseDetails({
+        title: "",
+        number: "",
+        managerName: "",
+        investigators: [],
+        summary: "",
+        status: "Ongoing"
+      });
+  
+      setIsSidebarOpen(false);
+    } catch (err) {
+      setError(err.message);
+      console.error("❌ Error creating case:", err);
+    } finally {
+      setLoading(false);
+    }
   };
+  
 
   return (
     <div>
@@ -113,31 +177,39 @@ export const SlideBar = ({ onAddCase }) => {
           <div className="form-group">
             <label>Investigators Assigned:</label>
             <div className="custom-dropdown">
-              <input
-                type="text"
-                readOnly
-                value={caseDetails.investigators.join(", ")}
-                className="input-field dropdown-input"
-                onClick={toggleDropdown}
-                placeholder="Select Investigators"
-              />
+              <div className="input-field" onClick={toggleDropdown}>
+                {caseDetails.investigators.length > 0 ? caseDetails.investigators.join(", ") : "Select Officers"}
+                <span className="dropdown-icon"></span>
+              </div>
               {dropdownOpen && (
-                <div className="dropdown-menu">
-                  {investigators.map((investigator, index) => (
-                    <label key={index} className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        value={investigator}
-                        checked={caseDetails.investigators.includes(investigator)}
-                        onChange={handleCheckboxChange}
-                      />
-                      {investigator}
-                    </label>
-                  ))}
+                <div className="dropdown-options">
+                  {investigators.map((officer) => {
+                    const isAvailable =
+                      officer.unavailableDays === 0
+                        ? "Available"
+                        : `Unavailable for ${officer.unavailableDays} days`;
+
+                    return (
+                      <div key={officer.name} className="dropdown-item">
+                        <input
+                          type="checkbox"
+                          id={officer.name}
+                          value={officer.name}
+                          checked={caseDetails.investigators.includes(officer.name)}
+                          onChange={handleCheckboxChange}
+                        />
+                        <label htmlFor={officer.name}>
+                          {officer.name} [{officer.assignedLeads}] [{officer.totalAssignedLeads}] 
+                          <em style={{ fontSize: "14px", color: "gray" }}>({isAvailable})</em>
+                        </label>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
           </div>
+
           <div className="form-group">
             <label>Summary:</label>
             <textarea

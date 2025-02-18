@@ -36,6 +36,15 @@
   font-size: 20px;
   font-weight: normal;
   margin-bottom: 5px;
+  height: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 20px;
+  font-weight: normal;
+  margin-bottom: 5px;
+  height: 20px;
 }
 
 .input-field,
@@ -100,8 +109,8 @@ select.input-field {
   transition: background-color 0.3s ease; /* Smooth hover transition */
   position: absolute;
   width: 10%;
-  margin-left: 76%;
-  margin-top: -3.5%;
+  margin-left: 18%;
+  margin-top: 0;
 }
 
 .add-case-button:hover {
@@ -111,6 +120,7 @@ select.input-field {
 .custom-dropdown {
   position: relative;
   width: 100%;
+  height: 30px;
 }
 
 .dropdown-input {
@@ -132,6 +142,11 @@ select.input-field {
   border-radius: 5px;
 }
 
+.dropdown-header-sb
+{
+ height: 30px;
+}
+
 .checkbox-label {
   padding: 5px 0;
   cursor: pointer;
@@ -141,11 +156,11 @@ select.input-field {
 .checkbox-label input[type="checkbox"] {
 width: 2%;
 flex-shrink: 0; /* Prevent checkbox from shrinking */
-height: 15px;
+height: 30px;
 width: 15px;
 }
 
 .custom-dropdown .input-field::placeholder {
-font-size: 18px; /* Adjust the size as needed */
+font-size: 20px; /* Adjust the size as needed */
 }
 
