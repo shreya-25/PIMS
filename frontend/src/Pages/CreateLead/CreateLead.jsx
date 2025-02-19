@@ -15,8 +15,11 @@ const { id: caseID, title: caseName } = caseDetails;  // Extract Case ID & Case 
 
 
 
+
   // State for all input fields
   const [leadData, setLeadData] = useState({
+    CaseName: 'Bank Robbery Investigation',
+    CaseNo: '65734',
     leadNumber: '',
     leadOrigin: '',
     incidentNumber: '',
@@ -344,12 +347,28 @@ const handleGenerateLead = async () => {
         <table className="details-table">
           <tbody>
           <tr>
+              <td>Case No:
+
+              </td>
+              <td>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={caseDetails?.id
+                     || '65734'} // Display selected case name or an empty string
+                  onChange={(e) => handleInputChange('caseName', e.target.value)} // Update 'caseName' in leadData
+                  placeholder="Enter Case No"
+    />
+              </td>
+            </tr>
+            <tr>
               <td>Case Name:</td>
               <td>
                 <input
                   type="text"
                   className="input-field"
-                  value={leadData.caseName || 'Main Street Theft'} // Display selected case name or an empty string
+                  value={caseDetails?.title
+                     || 'Bank Robbery Investigation'} // Display selected case name or an empty string
                   onChange={(e) => handleInputChange('caseName', e.target.value)} // Update 'caseName' in leadData
                   placeholder="Enter Case Name"
     />
