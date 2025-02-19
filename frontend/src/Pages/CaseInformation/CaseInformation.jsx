@@ -98,6 +98,7 @@ export const CaseInformation = () => {
   const [isOffensesOpen, setIsOffensesOpen] = useState(false);
   const [isSubjectsOpen, setIsSubjectsOpen] = useState(false);
   const [isCaseDetailOpen, setIsCaseDetailOpen] = useState(false);
+  const [isDOpen, setIsDOpen] = useState(false);
 
   // New: Reject click handler that calls your backend endpoint with token
   const handleRejectClick = async () => {
@@ -559,6 +560,37 @@ export const CaseInformation = () => {
               </>
               )}
             </div>
+
+            <div className="detail-sec">
+              <h2 onClick={() => setIsDOpen(!isDOpen)} style={{ cursor: 'pointer' }} className = "collapsible-header">
+               <span>  Property Vehicles Details </span>
+              <span> {isDOpen ? '▲' : '▼'} </span>
+              </h2>
+              </div>
+
+              <div className="detail-sec">
+              <h2 onClick={() => setIsDOpen(!isDOpen)} style={{ cursor: 'pointer' }} className = "collapsible-header">
+               <span>  Case Vehicles Details </span>
+              <span> {isDOpen ? '▲' : '▼'} </span>
+              </h2>
+              </div>
+
+              <div className="detail-sec">
+              <h2 onClick={() => setIsDOpen(!isDOpen)} style={{ cursor: 'pointer' }} className = "collapsible-header">
+               <span>  General Items
+                 </span>
+              <span> {isDOpen ? '▲' : '▼'} </span>
+              </h2>
+              </div>
+
+              <div className="detail-sec">
+              <h2 onClick={() => setIsDOpen(!isDOpen)} style={{ cursor: 'pointer' }} className = "collapsible-header">
+               <span>  Fire Alarms
+                 </span>
+              <span> {isDOpen ? '▲' : '▼'} </span>
+              </h2>
+              </div>
+      
           </div>
 
           <div className="comment-sec">
