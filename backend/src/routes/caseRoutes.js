@@ -59,4 +59,13 @@ router.delete("/:id", verifyToken, async (req, res) => {
     }
 });
 
+// Reject a case => sets Case Manager to "Admin"
+router.put("/:id/reject", verifyToken, async (req, res) => {
+    try {
+      await caseController.rejectCase(req, res);
+    } catch (error) {
+      res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+  });
+
 module.exports = router;

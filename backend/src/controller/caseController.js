@@ -225,3 +225,48 @@ exports.deleteCase = async (req, res) => {
         res.status(500).json({ message: "Error deleting case", error: err.message });
     }
 };
+
+// Reject a case by setting its Case Manager to "Admin"
+exports.rejectCase = async (req, res) => {
+    try {
+      // Extract case number from route parameters
+      const { id } = req.params;
+      console.log("Fetched caseNo from URL:", id);
+      
+      // Convert caseNo to a number
+      const parsedCaseNo = parseInt(id, 10);
+      if (isNaN(parsedCaseNo)) {
+        return res.status(400).json({ message: "Invalid case number format" });
+      }
+      
+      // Find the case by its numeric caseNo field
+      const existingCase = await Case.findOne({ caseNo: parsedCaseNo });
+      if (!existingCase) {
+        return res.status(404).json({ message: "Case not found" });
+      }
+      
+      // Option B: Preserve existing investigators and replace the Case Manager with "Admin"
+      const investigators = existingCase.assignedOfficers.filter(
+        (officer) => officer.role === "Investigator"
+      );
+      existingCase.assignedOfficers = [
+        { name: "Admin", role: "Case Manager" },
+        ...investigators,
+      ];
+      
+      // Save the updated case
+      const updatedCase = await existingCase.save();
+      
+      return res.status(200).json({
+        message: "Case rejected. Case Manager changed to 'Admin'.",
+        data: updatedCase,
+      });
+    } catch (error) {
+      console.error("Error rejecting case:", error);
+      return res.status(500).json({
+        message: "Error rejecting case",
+        error: error.message,
+      });
+    }
+  };
+  
