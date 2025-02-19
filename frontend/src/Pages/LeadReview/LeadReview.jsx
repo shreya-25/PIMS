@@ -70,8 +70,8 @@ export const LeadReview = () => {
 
       {/* Main Container */}
       <div className="lead-review-container">
-        {/* Sidebar */}
-        <div className="sideitem">
+
+      <div className="sideitem">
           <ul className="sidebar-list">
             <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
             <li className="sidebar-item" onClick={() => navigate('/LeadReview')}>Lead Information</li>

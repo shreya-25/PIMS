@@ -99,6 +99,44 @@ export const CaseInformation = () => {
   const [isSubjectsOpen, setIsSubjectsOpen] = useState(false);
   const [isCaseDetailOpen, setIsCaseDetailOpen] = useState(false);
 
+  // New: Reject click handler that calls your backend endpoint with token
+  const handleRejectClick = async () => {
+    // Ensure that we have a valid case number from caseDetails
+    // if (!caseDetails || !caseDetails.caseNo) {
+    //   alert("Case number not found!");
+    //   return;
+    // }
+    
+    try {
+      // Retrieve token from localStorage (or any other storage method you're using)
+      const token = localStorage.getItem('token');
+
+      // Call the backend endpoint using the case number and include the token in the headers.
+      const response = await fetch(`http://localhost:5000/api/cases/1001/reject`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error("Error rejecting case:", result);
+        alert("Error rejecting case: " + result.message);
+      } else {
+        alert("Case rejected. Case Manager changed to 'Admin'.");
+        console.log("Updated case details:", result.data);
+        // Optionally update local state or navigate to a different page
+      }
+    } catch (error) {
+      console.error("Error in handleRejectClick:", error);
+      alert("An error occurred while rejecting the case.");
+    }
+  };
+
+
 
     return (
       <div className="case-page-manager">
@@ -535,7 +573,7 @@ export const CaseInformation = () => {
              Accept
             </button>
 
-            <button className="save-btn1" onClick={handleSaveClick}>
+            <button className="save-btn1" onClick={handleRejectClick}>
               Reject
             </button>
               </div>
