@@ -1,17 +1,50 @@
-/* Container for the entire lead review page */
-
-/* Main container to hold sidebar + content */
-.lead-review-container {
-  display: flex;
-  padding: 20px;
+/* Remove default browser margins and ensure full height */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%; /* or 100vh */
 }
-/* Content area styling */
+
+.lead-review-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; 
+}
+
+
+/* .lead-review-container {
+  display: flex;
+}
 .lead-main-content {
   flex: 1;
   align-items:center;
   justify-content: center;
   margin-left: 10%;
 }
+
+.sideitem
+{
+  min-height: 100%;
+} */
+
+.lead-review-container {
+  display: flex;
+  flex: 1;  /* allows container to fill remaining vertical space */
+}
+
+/* Sidebar */
+.sideitem {
+  min-height: 100vh; /* forces the sidebar to stretch the full viewport height */
+}
+
+/* Content area */
+.lead-main-content {
+  flex: 1;           /* the main content grows to fill remaining width */
+  margin-left: 10%;  /* or remove if you don't need extra spacing */
+  padding: 20px;
+  box-sizing: border-box;
+}
+
 
 /* Form Section container (groups fields) */
 .form-section {
