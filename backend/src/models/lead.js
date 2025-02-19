@@ -16,11 +16,13 @@ const leadSchema = new mongoose.Schema(
         assignedBy: { type: String, required: true },
         summary: { type: String, required: true },
         description: { type: String, required: true },
-        leadStatus: { type: String, required: true },
+        leadStatus: { type: String, required: true, default: "Assigned"},
         dueDate: { type: Date },
         priority:  { type: String },
-        caseName: { type: String, required: true },
-        caseNo: { type: String, required: true },
+        caseName: { type: String, required: true,  default: "Bank Robbery Investigation"  },
+        caseNo: { type: String, required: true,  default: "65734"
+
+         },
     },
     { timestamps: true }
 );

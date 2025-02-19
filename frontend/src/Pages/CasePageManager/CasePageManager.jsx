@@ -77,7 +77,7 @@ export const CasePageManager = () => {
       }));
     };
     
-    const isMainStreetThreat = caseDetails?.title === "Main Street Theft";
+    const isMainStreetThreat = caseDetails?.title === "Main Street Murder";
     
       
     const [leads, setLeads] = useState(isMainStreetThreat ? {
@@ -87,25 +87,25 @@ export const CasePageManager = () => {
       allLeads: [],
   } : {
       assignedLeads: [
-          { id: 1, description: "Collect Audio Records from Dispatcher", dueDate: "12/25/2024",
+          { id: 1, description: "Some details about the theft incident ", dueDate: "12/25/2024",
             priority: "High", flags: ["Important"], assignedOfficers: ["Officer 1", "Officer 3"] },
-          { id: 2, description: "Lead 20: Interview Mr. John", dueDate: "12/31/2024",
+          { id: 2, description: "Collect Audio Recording from Dispatcher", dueDate: "12/31/2024",
             priority: "Medium", flags: [], assignedOfficers: ["Officer 2"] },
-          { id: 3, description: "Collect Evidence from 63 Mudray Street", dueDate: "12/29/2024",
+          { id: 3, description: "Interview John", dueDate: "12/29/2024",
             priority: "Low", flags: [], assignedOfficers: ["Officer 4"] },
       ],
       pendingLeads: [
-          { id: 4, description: "Interview Witness", dueDate: "12/26/2024",
-            priority: "High", flags: ["Important"], assignedOfficers: ["Officer 1", "Officer 3"] },
-          { id: 6, description: "Interview Neighbours", dueDate: "12/23/2024",
-            priority: "Medium", flags: [], assignedOfficers: ["Officer 2"] },
-          { id: 7, description: "Collect Evidence", dueDate: "12/22/2024",
-            priority: "Low", flags: [], assignedOfficers: ["Officer 4"] },
+          // { id: 4, description: "Interview Witness", dueDate: "12/26/2024",
+          //   priority: "High", flags: ["Important"], assignedOfficers: ["Officer 1", "Officer 3"] },
+          // { id: 6, description: "Interview Neighbours", dueDate: "12/23/2024",
+          //   priority: "Medium", flags: [], assignedOfficers: ["Officer 2"] },
+          // { id: 7, description: "Collect Evidence", dueDate: "12/22/2024",
+          //   priority: "Low", flags: [], assignedOfficers: ["Officer 4"] },
       ],
       pendingLeadReturns: [
-          { id: 5, description: "Submit Crime Scene Photos" },
-          { id: 8, description: "Collect Evidence", dueDate: "12/30/2024" },
-          { id: 9, description: "Interview Witness", dueDate: "12/31/2024" },
+          // { id: 5, description: "Submit Crime Scene Photos" },
+          // { id: 8, description: "Collect Evidence", dueDate: "12/30/2024" },
+          // { id: 9, description: "Interview Witness", dueDate: "12/31/2024" },
       ],
       allLeads: [
           // { id: 1, description: "Collect Audio Records from Dispatcher", status: "Assigned" },

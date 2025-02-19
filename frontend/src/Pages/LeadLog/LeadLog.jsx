@@ -498,7 +498,7 @@ const handleResetSort = () => {
                   <td>{entry.leadNo}</td>
                   <td>{entry.summary}</td>
                   <td>{entry.assignedDate}</td>
-                  <td>{entry.status || 'Pending'}</td>
+                  <td>{entry.status || 'Assigned'}</td>
                   <td>{entry.assignedTo?.join(", ")}</td>
                   <td>{entry.dateSubmitted || ''}</td>
                   <td>{entry.dateApproved || ''}</td>

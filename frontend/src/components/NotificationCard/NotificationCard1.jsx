@@ -129,20 +129,24 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
           //     }
           //   },
           // });
-          navigate(`/CaseInformation`, {
+          navigate(`/LeadReview`, {
             state: {
               caseDetails: {
                 id: notification.caseNo,
-                title: notification.caseName
+                title: notification.caseName,
+                leadNo: notification.leadNo,
+                leadName: notification.leadName
               }
             },
           });
         } else {
-          navigate(`/CaseInformation`, {
+          navigate(`/LRInstructions`, {
             state: {
               caseDetails: {
                 id: notification.caseNo,
-                title: notification.caseName
+                title: notification.caseName,
+                leadNo: notification.leadNo,
+                leadName: notification.leadName
               }
             },
           });
