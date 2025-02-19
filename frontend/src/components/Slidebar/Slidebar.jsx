@@ -15,7 +15,7 @@ export const SlideBar = ({ onAddCase }) => {
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const caseManagers = ["Officer 1", "Officer 2", "Officer 3"];
+  const caseManagers = ["Officer 1", "Officer 2", "Officer 3", "Officer 916"];
   const investigators = [
     { name: "Officer 1", assignedLeads: 2, totalAssignedLeads: 1, assignedDays: 5, unavailableDays: 4 },
     { name: "Officer 2", assignedLeads: 3, totalAssignedLeads: 3, assignedDays: 3, unavailableDays: 3 },
