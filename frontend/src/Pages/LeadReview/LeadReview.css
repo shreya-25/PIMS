@@ -1,0 +1,18 @@
+.content
+{
+  display: flex;
+  flex-direction: column;
+  width: 80%;
+  align-items: center;
+  margin-left: 10%;
+}
+
+.inst-table-sec
+{
+  width: 100%;
+}
+
+.case-summarylr
+{
+  width: 100%;
+}

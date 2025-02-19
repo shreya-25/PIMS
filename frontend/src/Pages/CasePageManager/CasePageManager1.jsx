@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from 'react';
+import React, { useState } from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import Searchbar from '../../components/Searchbar/Searchbar';
 import Filter from "../../components/Filter/Filter";
@@ -7,7 +7,7 @@ import Button from '../../components/Button/Button';
 import './CasePageManager.css'; // Custom CSS file for styling
 import { useLocation, useNavigate } from 'react-router-dom';
 
-export const CasePageManager = () => {
+export const CasePageManager1= () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { caseDetails } = location.state || {};
@@ -108,44 +108,13 @@ export const CasePageManager = () => {
           { id: 9, description: "Interview Witness", dueDate: "12/31/2024" },
       ],
       allLeads: [
-          // { id: 1, description: "Collect Audio Records from Dispatcher", status: "Assigned" },
-          // { id: 2, description: "Interview Mr. John", status: "Assigned" },
-          // { id: 3, description: "Collect Evidence from 63 Mudray Street", status: "Completed" },
-          // { id: 4, description: "Interview Witness", status: "Pending" },
-          // { id: 5, description: "Submit Crime Scene Photos", status: "Completed" },
+          { id: 1, description: "Collect Audio Records from Dispatcher", status: "Assigned" },
+          { id: 2, description: "Interview Mr. John", status: "Assigned" },
+          { id: 3, description: "Collect Evidence from 63 Mudray Street", status: "Completed" },
+          { id: 4, description: "Interview Witness", status: "Pending" },
+          { id: 5, description: "Submit Crime Scene Photos", status: "Completed" },
       ],
   });
-
-  const token = localStorage.getItem('token') || '';
-
-  // 2) useEffect to fetch leads once the component mounts or caseDetails changes
-  useEffect(() => {
-    if (caseDetails?.id && caseDetails?.title) {
-      fetch(`http://localhost:5000/api/lead/case/${caseDetails.id}/${caseDetails.title}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-      })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then((data) => {
-          // data is the array of leads for that case
-          // Store in leads.allLeads or wherever you want
-          setLeads((prev) => ({
-            ...prev,
-            allLeads: data,
-          }));
-        })
-        .catch((error) => {
-          console.error("Error fetching leads:", error.message);
-        });
-    }
-  }, [caseDetails, token]);
 
     const handleTabClick = (tab) => {
       if (!isMainStreetThreat) {
@@ -986,9 +955,9 @@ export const CasePageManager = () => {
       <tbody>
         {leads.allLeads.map((lead) => (
           <tr key={lead.id}>
-            <td>{lead.leadNo} </td>
+            <td>{lead.id}</td>
             <td>{lead.description}</td>
-            <td>{lead.leadStatus}</td>
+            <td>{lead.status}</td>
             <td>
               <button
                 className= "view-btn1"

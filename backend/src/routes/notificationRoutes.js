@@ -21,6 +21,7 @@ router.post("/", async (req, res) => {
       post2: req.body.post2,
       leadNo: req.body.leadNo,
       leadName: req.body.leadName,
+      caseNo: req.body.caseNo,
       caseName: req.body.caseName,
       caseStatus: req.body.caseStatus || "Open",
       unread: true,

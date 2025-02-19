@@ -121,9 +121,31 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
             },
           });
         } else if (notification.action1.includes("assigned a new lead")) {
-            // navigate(`/LeadPage`);
+          // navigate(`/Investigator`), {
+          //   state: {
+          //     caseDetails: {
+          //       id: notification.caseNo,
+          //       title: notification.caseName
+          //     }
+          //   },
+          // });
+          navigate(`/CaseInformation`, {
+            state: {
+              caseDetails: {
+                id: notification.caseNo,
+                title: notification.caseName
+              }
+            },
+          });
         } else {
-            navigate(`/NotificationDetails/${notificationId}`);
+          navigate(`/CaseInformation`, {
+            state: {
+              caseDetails: {
+                id: notification.caseNo,
+                title: notification.caseName
+              }
+            },
+          });
         }
 
     } catch (error) {
