@@ -10,12 +10,14 @@ export const LRAudio = () => {
   const [audioFiles, setAudioFiles] = useState([
     {
       dateEntered: "12/01/2024",
+      returnId: 1,
       dateAudioRecorded: "12/01/2024",
       description: "Audio recording of the witness interview.",
       audioSrc: "/assets/sample-audio.mp3", // Replace with actual audio path
     },
     {
       dateEntered: "12/02/2024",
+      returnId: 2,
       dateAudioRecorded: "12/02/2024",
       description: "Recording from the crime scene.",
       audioSrc: "/assets/sample-audio2.mp3", // Replace with actual audio path
@@ -117,6 +119,7 @@ export const LRAudio = () => {
           <thead>
             <tr>
               <th>Date Entered</th>
+              <th> Associated Return Id </th>
               <th>Date Audio Recorded</th>
               <th>Description</th>
             </tr>
@@ -125,6 +128,7 @@ export const LRAudio = () => {
             {audioFiles.map((audio, index) => (
               <tr key={index}>
                 <td>{audio.dateEntered}</td>
+                <td>{audio.returnId}</td>
                 <td>{audio.dateAudioRecorded}</td>
                 <td>{audio.description}</td>
               </tr>

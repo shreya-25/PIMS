@@ -10,6 +10,7 @@ export const LRVideo = () => {
   const [videos, setVideos] = useState([
     {
       dateEntered: "12/01/2024",
+      returnId: 1,
       dateVideoRecorded: "12/01/2024",
       description: "Surveillance video of the incident.",
       videoSrc: `${process.env.PUBLIC_URL}/Materials/video1.mp4`
@@ -17,6 +18,7 @@ export const LRVideo = () => {
     },
     {
       dateEntered: "12/02/2024",
+      returnId: 2,
       dateVideoRecorded: "12/02/2024",
       description: "Witness interview recording.",
       videoSrc: `${process.env.PUBLIC_URL}/Materials/video2.mp4`
@@ -118,6 +120,7 @@ export const LRVideo = () => {
           <thead>
             <tr>
               <th>Date Entered</th>
+              <th> Associated Return Id </th>
               <th>Date Video Recorded</th>
               <th>Description</th>
             </tr>
@@ -126,6 +129,7 @@ export const LRVideo = () => {
             {videos.map((video, index) => (
               <tr key={index}>
                 <td>{video.dateEntered}</td>
+                <td>{video.returnId} </td>
                 <td>{video.dateVideoRecorded}</td>
                 <td>{video.description}</td>
               </tr>

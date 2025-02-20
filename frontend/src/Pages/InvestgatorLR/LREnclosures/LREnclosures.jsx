@@ -8,8 +8,8 @@ export const LREnclosures = () => {
 
   // Sample enclosures data
   const [enclosures, setEnclosures] = useState([
-    { dateEntered: "12/01/2024", type: "Report", enclosure: "Incident Report" },
-    { dateEntered: "12/03/2024", type: "Evidence", enclosure: "Photo Evidence" },
+    { returnId:1,dateEntered: "12/01/2024", type: "Report", enclosure: "Incident Report" },
+    { returnId:2, dateEntered: "12/03/2024", type: "Evidence", enclosure: "Photo Evidence" },
   ]);
 
   // State to manage form data
@@ -96,6 +96,7 @@ export const LREnclosures = () => {
           <thead>
             <tr>
               <th>Date Entered</th>
+              <th>Associated Return Id </th>
               <th>Type</th>
               <th>Enclosure</th>
             </tr>
@@ -104,6 +105,7 @@ export const LREnclosures = () => {
             {enclosures.map((enclosure, index) => (
               <tr key={index}>
                 <td>{enclosure.dateEntered}</td>
+                <td>{enclosure.returnId}</td>
                 <td>{enclosure.type}</td>
                 <td>{enclosure.enclosure}</td>
               </tr>

@@ -10,6 +10,7 @@ export const LREvidence = () => {
   const [evidence, setEvidence] = useState([
     {
       dateEntered: "12/01/2024",
+      returnId:1,
       type: "Physical",
       collectionDate: "12/01/2024",
       disposedDate: "12/03/2024",
@@ -17,6 +18,7 @@ export const LREvidence = () => {
     },
     {
       dateEntered: "12/02/2024",
+      returnId:2,
       type: "Digital",
       collectionDate: "12/02/2024",
       disposedDate: "12/04/2024",
@@ -114,6 +116,7 @@ export const LREvidence = () => {
           <thead>
             <tr>
               <th>Date Entered</th>
+              <th>Associated Return Id </th>
               <th>Type</th>
               <th>Collection Date</th>
               <th>Disposed Date</th>
@@ -124,6 +127,7 @@ export const LREvidence = () => {
             {evidence.map((item, index) => (
               <tr key={index}>
                 <td>{item.dateEntered}</td>
+                <td> {item.returnId} </td>
                 <td>{item.type}</td>
                 <td>{item.collectionDate}</td>
                 <td>{item.disposedDate}</td>

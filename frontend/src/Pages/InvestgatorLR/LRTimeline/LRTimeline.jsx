@@ -13,6 +13,7 @@ export const LRTimeline = () => {
   const [timelineEntries, setTimelineEntries] = useState([
     {
       date: '01/01/2024',
+      returnId:1,
       timeRange: '10:30 AM - 12:00 PM',
       location: '123 Main St, NY',
       description: 'Suspect spotted leaving crime scene',
@@ -20,6 +21,7 @@ export const LRTimeline = () => {
     },
     {
       date: '01/05/2024',
+      returnId:2,
       timeRange: '2:00 PM - 3:30 PM',
       location: '456 Elm St, CA',
       description: 'Suspect was going to the airport',
@@ -141,6 +143,7 @@ export const LRTimeline = () => {
             <thead>
               <tr>
                 <th>Event Date</th>
+                <th> Associated Return Id </th>
                 <th>Event Time Range</th>
                 <th>Event Location</th>
                 <th>Event Description</th>
@@ -153,6 +156,7 @@ export const LRTimeline = () => {
                 timelineEntries.map((entry, index) => (
                   <tr key={index}>
                     <td>{entry.date}</td>
+                    <td>{entry.returnId}</td>
                     <td>{entry.timeRange}</td>
                     <td>{entry.location}</td>
                     <td>{entry.description}</td>
