@@ -10,18 +10,21 @@ export const LRPictures = () => {
   const [pictures, setPictures] = useState([
     {
       dateEntered: "2024-12-01",
+      returnId:1,
       datePictureTaken: "2024-11-25",
       description: "Picture of the crime scene from Main Street.",
       image: "/Materials/pict1.jpeg", // Path to your default image
     },
     {
       dateEntered: "2024-12-02",
+      returnId:1,
       datePictureTaken: "2024-11-26",
       description: "Vehicle involved in the robbery.",
       image: "/Materials/pict2.jpg", // Path to your default image
     },
     {
       dateEntered: "2024-12-03",
+      returnId:2,
       datePictureTaken: "2024-11-27",
       description: "Evidence collected at the crime location.",
       image: "/Materials/pict3.jpg", // Path to your default image
@@ -123,6 +126,7 @@ export const LRPictures = () => {
           <thead>
             <tr>
               <th>Date Entered</th>
+              <th>Associated Return Id </th>
               <th>Date Picture Taken</th>
               <th>Description</th>
             </tr>
@@ -131,6 +135,7 @@ export const LRPictures = () => {
             {pictures.map((picture, index) => (
               <tr key={index}>
                 <td>{picture.dateEntered}</td>
+                <td>{picture.returnId}</td>
                 <td>{picture.datePictureTaken}</td>
                 <td>{picture.description}</td>
               </tr>

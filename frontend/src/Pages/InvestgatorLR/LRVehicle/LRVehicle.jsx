@@ -8,10 +8,10 @@ export const LRVehicle = () => {
   const navigate = useNavigate(); // Initialize useNavigate hook
 
   const [vehicles, setVehicles] = useState([
-    { dateEntered: "01/01/2024", year: "2023", make: "Honda", model: "Accord",color: "Blue", vin: "123456", plate: "XYZ-1234", state: "NY" },
-    { dateEntered: "01/05/2024", year: "2022", make: "Toyota", model: "Camry", color: "Black",vin: "654321", plate: "ABC-5678", state: "CA" },
-    { dateEntered: "01/10/2024", year: "2021", make: "Ford", model: "F-150", color: "White",vin: "789012", plate: "DEF-9101", state: "TX" },
-    { dateEntered: "01/15/2024", year: "2024", make: "Tesla", model: "Model 3", color: "Red",vin: "345678", plate: "TES-2024", state: "FL" },
+    {  returnId: 1,dateEntered: "01/01/2024", year: "2023", make: "Honda", model: "Accord",color: "Blue", vin: "123456", plate: "XYZ-1234", state: "NY" },
+    {  returnId: 1,dateEntered: "01/05/2024", year: "2022", make: "Toyota", model: "Camry", color: "Black",vin: "654321", plate: "ABC-5678", state: "CA" },
+    { returnId: 2, dateEntered: "01/10/2024", year: "2021", make: "Ford", model: "F-150", color: "White",vin: "789012", plate: "DEF-9101", state: "TX" },
+    {  returnId: 2,dateEntered: "01/15/2024", year: "2024", make: "Tesla", model: "Model 3", color: "Red",vin: "345678", plate: "TES-2024", state: "FL" },
   ]);
 
     
@@ -148,6 +148,7 @@ export const LRVehicle = () => {
           <thead>
             <tr>
               <th>Date Entered</th>
+              <th>Associated Return Id</th>
               <th>Year</th>
               <th>Make</th>
               <th>Model</th>
@@ -161,6 +162,7 @@ export const LRVehicle = () => {
     {vehicles.map((vehicle, index) => (
       <tr key={index}>
         <td>{vehicle.dateEntered}</td>
+        <td>{vehicle.returnId}</td>
         <td>{vehicle.year}</td>
         <td>{vehicle.make}</td>
         <td>{vehicle.model}</td>

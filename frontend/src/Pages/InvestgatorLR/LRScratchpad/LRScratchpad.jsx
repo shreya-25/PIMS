@@ -10,11 +10,13 @@ export const LRScratchpad = () => {
   const [notes, setNotes] = useState([
     {
       dateEntered: "12/01/2024",
+      returnId:1,
       enteredBy: "John Smith",
       text: "Initial observations of the case.",
     },
     {
       dateEntered: "12/02/2024",
+      returnId:2,
       enteredBy: "Jane Doe",
       text: "Follow-up notes on interviews conducted.",
     },
@@ -102,6 +104,7 @@ export const LRScratchpad = () => {
           <thead>
             <tr>
               <th>Date Entered</th>
+              <th> Associated Return Id </th>
               <th>Entered By</th>
               <th>Text</th>
             </tr>
@@ -110,6 +113,7 @@ export const LRScratchpad = () => {
             {notes.map((note, index) => (
               <tr key={index}>
                 <td>{note.dateEntered}</td>
+                <td> {note.returnId} </td>
                 <td>{note.enteredBy}</td>
                 <td>{note.text}</td>
               </tr>

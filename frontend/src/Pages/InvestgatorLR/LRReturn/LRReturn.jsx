@@ -109,6 +109,7 @@ export const LRReturn = () => {
         <table className="timeline-table">
           <thead>
             <tr>
+            <th>Return Id </th>
               <th>Date Entered</th>
               <th>Entered By</th>
               <th>Results</th>
@@ -118,6 +119,7 @@ export const LRReturn = () => {
           <tbody>
             {returns.map((ret) => (
               <tr key={ret.id}>
+                 <td>{ret.id}</td>
                 <td>{ret.dateEntered}</td>
                 <td>{ret.enteredBy}</td>
                 <td>{ret.results}</td>
