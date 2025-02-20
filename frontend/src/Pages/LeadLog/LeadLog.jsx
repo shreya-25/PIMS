@@ -14,6 +14,7 @@ export const LeadLog = () => {
   const [leadLogData, setLeadLogData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { caseDetails } = location.state || {};
 
 
   const navigate = useNavigate(); // Initialize the navigate function
