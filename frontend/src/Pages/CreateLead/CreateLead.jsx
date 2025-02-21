@@ -18,14 +18,15 @@ const { id: caseID, title: caseName } = caseDetails;  // Extract Case ID & Case 
 
   // State for all input fields
   const [leadData, setLeadData] = useState({
-    CaseName: 'Bank Robbery Investigation',
-    CaseNo: '65734',
+    CaseName: '',
+    CaseNo: '',
     leadNumber: '',
     leadOrigin: '',
     incidentNumber: '',
     subNumber: '',
     associatedSubNumbers: [],
     assignedDate: '',
+    dueDate: '',
     leadSummary: '',
     assignedBy: '',
     leadDescription: '',
@@ -42,89 +43,39 @@ const { id: caseID, title: caseName } = caseDetails;  // Extract Case ID & Case 
   const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]); // Selected Subnumbers
   const [subDropdownOpen, setSubDropdownOpen] = useState(false);
 
-
-//   useEffect(() => {
-//     // Default highestLeadNumber to 3 so that it starts from 4 if nothing is found
-//     let highestLeadNumber = 3;
- 
-//     if (leadEntries?.length > 0) {
-//       // Calculate the highest lead number from the passed leadEntries
-//       highestLeadNumber = leadEntries.reduce(
-//         (max, lead) => Math.max(max, parseInt(lead.leadNumber || '0', 10)),
-//         highestLeadNumber
-//       );
-//     } else {
-//       // Check if anything is in localStorage
-//       const savedEntries = JSON.parse(localStorage.getItem('leadEntries')) || [];
- 
-//       if (savedEntries.length > 0) {
-//         highestLeadNumber = savedEntries.reduce(
-//           (max, lead) => Math.max(max, parseInt(lead.leadNumber || '0', 10)),
-//           highestLeadNumber
-//         );
-//       }
-//     }
- 
-//     // Increment the highest lead number by 1
-//     const newLeadNumber = highestLeadNumber + 1;
- 
-//      // Set leadNumber only if it hasn't been manually changed
-//   setLeadData((prevData) => {
-//     if (prevData.leadNumber) {
-//       return prevData; // Prevent overwriting manual edits
-//     }
-//     return {
-//       ...prevData,
-//       leadNumber: newLeadNumber.toString(),
-//       subNumber: `SUB-${newLeadNumber.toString().padStart(6, '0')}`,
-//     };
-//   });
-// }, [leadEntries]);
- 
-// useEffect(() => {
-//   const fetchMaxLeadNumber = async () => {
-//     try {
-
-//       if (leadData.caseName === "Main Street Theft") {
-//         setLeadData((prevData) => ({
-//           ...prevData,
-//           leadNumber: "1",
-//           subNumber: `SUB-${"1".padStart(6, '0')}`, // Generate sub-number for first lead
-//         }));
-//         return; // Exit function to prevent API call
-//       }
-
-//       const response = await axios.get("https://pims-backend.onrender.com/api/lead/maxLeadNumber");
-//       const maxLeadNo = response.data.maxLeadNo || 0; // Default to 0 if no leads exist
-//       const newLeadNumber = maxLeadNo + 1;
-
-//       setLeadData((prevData) => ({
-//         ...prevData,
-//         leadNumber: newLeadNumber.toString(),
-//         subNumber: `SUB-${newLeadNumber.toString().padStart(6, '0')}`, // Auto-generate sub-number
-//       }));
-//     } catch (error) {
-//       console.error("Error fetching max lead number:", error);
-//     }
-//   };
-
-//   fetchMaxLeadNumber();
-// }, []);
+  const getFormattedDate = () => {
+    const today = new Date();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    const year = today.getFullYear().toString().slice(-2);
+    return `${month}/${day}/${year}`;
+  };
 
 useEffect(() => {
   const fetchMaxLeadNumber = async () => {
     try {
+      // Ensure caseDetails exists before proceeding.
+      if (!caseDetails) return;
+
+      // Destructure case details
+      const { id: caseNo, title: caseName } = caseDetails;
+
+      // Special case: if the case is "Main Street Theft", use predefined values.
       if (caseName === "Main Street Theft") {
         setLeadData((prevData) => ({
           ...prevData,
           leadNumber: "1",
           subNumber: `SUB-${"1".padStart(6, '0')}`,
+          incidentNumber:`INC-${"1".padStart(6, '0')}`,
+          assignedDate: getFormattedDate(),
         }));
-        return; // Prevent API call
+        return; // Prevent API call for this case.
       }
 
-      // Otherwise, fetch max lead number
-      const response = await axios.get("https://pims-backend.onrender.com/api/lead/maxLeadNumber");
+      // Otherwise, fetch the max lead number using the caseNo and caseName.
+      const response = await axios.get(
+        `http://localhost:5000/api/lead/maxLeadNumber?caseNo=${caseNo}&caseName=${encodeURIComponent(caseName)}`
+      );
       const maxLeadNo = response.data.maxLeadNo || 0;
       const newLeadNumber = maxLeadNo + 1;
 
@@ -132,6 +83,8 @@ useEffect(() => {
         ...prevData,
         leadNumber: newLeadNumber.toString(),
         subNumber: `SUB-${newLeadNumber.toString().padStart(6, '0')}`,
+        assignedDate: getFormattedDate(),
+        incidentNumber :  `INC-${newLeadNumber.toString().padStart(6, '0')}`,
       }));
     } catch (error) {
       console.error("Error fetching max lead number:", error);
@@ -139,7 +92,8 @@ useEffect(() => {
   };
 
   fetchMaxLeadNumber();
-}, [caseName]); // Runs when caseName changes
+}, [caseDetails]);
+
 
  
 
@@ -197,27 +151,33 @@ useEffect(() => {
 
 const handleGenerateLead = async () => {
   const {
+    caseName,
+    caseNo,
     leadNumber,
     leadOrigin,
     incidentNumber,
     subNumber,
+    associatedSubNumbers,
     assignedDate,
+    dueDate,
     assignedOfficer,
     assignedBy,
     leadSummary,
     leadDescription,
   } = leadData;
 
-
   try {
     const response = await axios.post(
       "http://localhost:5000/api/lead/create", // Replace with your backend endpoint
       {
+        caseName:  caseDetails.title,
+        caseNo: caseDetails.id,
         leadNo: leadNumber,
         parentLeadNo: leadOrigin,
         incidentNo: incidentNumber,
         subNumber: subNumber,
-        // associatedSubNumbers: [102, 103],
+        associatedSubNumbers: associatedSubNumbers,
+        dueDate,
         assignedDate,
         assignedTo: assignedOfficer,
         assignedBy,
@@ -447,17 +407,18 @@ const handleGenerateLead = async () => {
   </td>
 </tr>
 <tr>
-              <td>Due Date:</td>
-              <td>
-                <input
-                  type="text"
-                  className="input-field"
-                  // value={leadData.leadSummary}
-                  // onChange={(e) => handleInputChange('leadSummary', e.target.value)}
-                  placeholder="MM/DD/YY"
-                />
-              </td>
-            </tr>
+  <td>Due Date:</td>
+  <td>
+    <input
+      type="text"
+      className="input-field"
+      value={leadData.dueDate}
+      onChange={(e) => handleInputChange('dueDate', e.target.value)}
+      placeholder="MM/DD/YY"
+    />
+  </td>
+</tr>
+
 
           {/* <tr>
             <td>Priority:</td>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import "./MainPage.css";
+import "./HomePage.css";
 import Navbar from "../../components/Navbar/Navbar";
 import Searchbar from "../../components/Searchbar/Searchbar";
 import NotificationCard from "../../components/NotificationCard/NotificationCard1";
@@ -12,7 +12,7 @@ import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 import { useNavigate } from "react-router-dom";
 
 
-export const MainPage = () => {
+export const HomePage = () => {
   const [activeTab, setActiveTab] = useState("cases"); // Default tab
   const [sortField, setSortField] = useState(""); // Sorting field
   const [filterText, setFilterText] = useState(""); // Filter text

@@ -49,7 +49,7 @@ export function Login() {
             // role: localStorage.getItem("role"),
         });
 
-        navigate("/MainPage");
+        navigate("/HomePage");
 
         // // Navigate based on role
         // if (role === "Investigator" || role === "CaseManager") {

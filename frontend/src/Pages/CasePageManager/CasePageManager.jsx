@@ -123,6 +123,37 @@ export const CasePageManager = () => {
   const token = localStorage.getItem('token') || '';
 
   // 2) useEffect to fetch leads once the component mounts or caseDetails changes
+  // useEffect(() => {
+  //   if (caseDetails?.id && caseDetails?.title) {
+  //     fetch(`http://localhost:5000/api/lead/case/${caseDetails.id}/${caseDetails.title}`, {
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //         'Content-Type': 'application/json'
+  //       },
+  //     })
+  //       .then((response) => {
+  //         if (!response.ok) {
+  //           throw new Error(`HTTP error! status: ${response.status}`);
+  //         }
+  //         return response.json();
+  //       })
+  //       .then((data) => {
+  //         const assignedLeads = data.filter(lead => lead.leadStatus === "Assigned");
+  //         const pendingLeads = data.filter(lead => lead.leadStatus === "Pending");
+
+  //         setLeads((prev) => ({
+  //           ...prev,
+  //           allLeads: data,
+  //           assignedLeads: assignedLeads,
+  //           pendingLeads: pendingLeads
+  //         }));
+  //       })
+  //       .catch((error) => {
+  //         console.error("Error fetching leads:", error.message);
+  //       });
+  //   }
+  // }, [caseDetails, token]);
+
   useEffect(() => {
     if (caseDetails?.id && caseDetails?.title) {
       fetch(`http://localhost:5000/api/lead/case/${caseDetails.id}/${caseDetails.title}`, {
@@ -138,16 +169,57 @@ export const CasePageManager = () => {
           return response.json();
         })
         .then((data) => {
+          console.log("✅ Fetched Leads Data:", data); // 🔍 Debug API response
+  
+          // Ensure `data` is an array, or default to an empty array
+          const leadsArray = Array.isArray(data) ? data : [];
+  
+          // ✅ Filter and map assigned and pending leads
+          const assignedLeads = leadsArray
+            .filter(lead => lead.leadStatus === "Assigned")
+            .map(lead => ({
+              id: lead.leadNo,
+              description: lead.description,
+              dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
+              priority: lead.priority || "Medium",
+              flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [], // Ensure array
+              assignedOfficers: Array.isArray(lead.assignedTo) ? lead.assignedTo : [], // Ensure array
+              leadStatus: lead.leadStatus,
+              caseName: lead.caseName,
+              caseNo: String(lead.caseNo) // Ensure string format
+            }));
+  
+          const pendingLeads = leadsArray
+            .filter(lead => lead.leadStatus === "Pending")
+            .map(lead => ({
+              id: lead.leadNo,
+              description: lead.description,
+              dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
+              priority: lead.priority || "Medium",
+              flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [], // Ensure array
+              assignedOfficers: Array.isArray(lead.assignedTo) ? lead.assignedTo : [], // Ensure array
+              leadStatus: lead.leadStatus,
+              caseName: lead.caseName,
+              caseNo: String(lead.caseNo) // Ensure string format
+            }));
+  
+          console.log("✅ Assigned Leads:", assignedLeads);
+          console.log("✅ Pending Leads:", pendingLeads);
+  
           setLeads((prev) => ({
             ...prev,
-            allLeads: data,
+            allLeads: leadsArray,
+            assignedLeads: assignedLeads,
+            pendingLeads: pendingLeads
           }));
         })
         .catch((error) => {
-          console.error("Error fetching leads:", error.message);
+          console.error("❌ Error fetching leads:", error.message);
         });
     }
   }, [caseDetails, token]);
+  
+  
 
     const handleTabClick = (tab) => {
       if (!isMainStreetThreat) {
@@ -228,71 +300,71 @@ export const CasePageManager = () => {
 }, [signedInOfficer, caseDetails]);
 
 
-useEffect(() => {
-  const fetchPendingLeads = async () => {
-      try {
-          const token = localStorage.getItem("token");
-          if (!token) {
-              console.error("❌ No token found. User is not authenticated.");
-              return;
-          }
+// useEffect(() => {
+//   const fetchPendingLeads = async () => {
+//       try {
+//           const token = localStorage.getItem("token");
+//           if (!token) {
+//               console.error("❌ No token found. User is not authenticated.");
+//               return;
+//           }
 
-          // ✅ Fetch all assigned leads
-          const leadsResponse = await axios.get("http://localhost:5000/api/lead/assigned-leads", {
-              headers: {
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "application/json",
-              }
-          });
+//           // ✅ Fetch all assigned leads
+//           const leadsResponse = await axios.get("http://localhost:5000/api/lead/assigned-leads", {
+//               headers: {
+//                   Authorization: `Bearer ${token}`,
+//                   "Content-Type": "application/json",
+//               }
+//           });
 
-          console.log("✅ API Response (Assigned Leads):", leadsResponse.data); // Debugging log
+//           console.log("✅ API Response (Assigned Leads):", leadsResponse.data); // Debugging log
 
-          // ✅ Check if `caseDetails` is defined before proceeding
-          if (!caseDetails?.id || !caseDetails?.title) {
-              console.warn("⚠️ caseDetails not provided, skipping lead filtering.");
-              return;
-          }
+//           // ✅ Check if `caseDetails` is defined before proceeding
+//           if (!caseDetails?.id || !caseDetails?.title) {
+//               console.warn("⚠️ caseDetails not provided, skipping lead filtering.");
+//               return;
+//           }
 
-          console.log("✅ Using caseDetails:", caseDetails);
+//           console.log("✅ Using caseDetails:", caseDetails);
 
-          // ✅ Filter leads where the signed-in officer is assigned and the case matches exactly
-          const assignedLeads = leadsResponse.data
-              .filter(lead =>
-                  lead.caseNo === caseDetails.id && 
-                  lead.caseName === caseDetails.title // Ensure exact case match
-              )
-              .map(lead => ({
-                  id: lead.leadNo,
-                  description: lead.description,
-                  dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
-                  priority: lead.priority || "Medium",
-                  flags: lead.associatedFlags || [],
-                  assignedOfficers: lead.assignedTo, // Keep all assigned officers
-                  leadStatus: lead.leadStatus, // Capture status
-                  caseName: lead.caseName,
-                  caseNo: lead.caseNo
-              }));
+//           // ✅ Filter leads where the signed-in officer is assigned and the case matches exactly
+//           const assignedLeads = leadsResponse.data
+//               .filter(lead =>
+//                   lead.caseNo === caseDetails.id && 
+//                   lead.caseName === caseDetails.title // Ensure exact case match
+//               )
+//               .map(lead => ({
+//                   id: lead.leadNo,
+//                   description: lead.description,
+//                   dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
+//                   priority: lead.priority || "Medium",
+//                   flags: lead.associatedFlags || [],
+//                   assignedOfficers: lead.assignedTo, // Keep all assigned officers
+//                   leadStatus: lead.leadStatus, // Capture status
+//                   caseName: lead.caseName,
+//                   caseNo: lead.caseNo
+//               }));
 
-          // ✅ Filter leads where status is "Pending"
-          const pendingLeads = assignedLeads.filter(lead => lead.leadStatus === "Pending");
+//           // ✅ Filter leads where status is "Pending"
+//           const pendingLeads = assignedLeads.filter(lead => lead.leadStatus === "Pending");
 
-          console.log("✅ Filtered Assigned Leads:", assignedLeads);
-          console.log("✅ Filtered Pending Leads:", pendingLeads);
+//           console.log("✅ Filtered Assigned Leads:", assignedLeads);
+//           console.log("✅ Filtered Pending Leads:", pendingLeads);
 
-          // ✅ Update state with filtered leads
-          setLeads(prevLeads => ({
-              ...prevLeads,
-              assignedLeads: assignedLeads,
-              pendingLeads: pendingLeads
-          }));
+//           // ✅ Update state with filtered leads
+//           setLeads(prevLeads => ({
+//               ...prevLeads,
+//               assignedLeads: assignedLeads,
+//               pendingLeads: pendingLeads
+//           }));
 
-      } catch (error) {
-          console.error("❌ Error fetching assigned leads:", error.response?.data || error);
-      }
-  };
+//       } catch (error) {
+//           console.error("❌ Error fetching assigned leads:", error.response?.data || error);
+//       }
+//   };
 
-  fetchPendingLeads();
-}, [signedInOfficer, caseDetails]);
+//   fetchPendingLeads();
+// }, [signedInOfficer, caseDetails]);
 
 
 
@@ -373,6 +445,7 @@ useEffect(() => {
     // Save the edited text and disable editing
     const handleSaveClick = () => {
         setIsEditing(false);
+        alert("Report Saved!");
         // You can add logic here to update the backend with the new summary if needed
     };
       const filtersConfig = [
@@ -520,7 +593,7 @@ useEffect(() => {
                         <li className="sidebar-item"onClick={() => handleTabClick("pendingLeadReturns")}>My Pending Lead Returns {leads.pendingLeadReturns.length}</li>
                         <li className="sidebar-item" onClick={() => handleTabClick("allLeads")}>Total Generated Leads {leads.allLeads.length}</li> */}
                         <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
-                        <li className="sidebar-item" onClick={() => navigate("/leadlog")}>View Lead Log</li>
+                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
                         <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
                         <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
                         <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
@@ -552,12 +625,14 @@ useEffect(() => {
                             onChange={handleCaseSummaryChange}
                             readOnly={!isEditing} // Read-only when not in edit mode
                         ></textarea>
+
+                         <button className="save-btn1" onClick={handleSaveClick}>Save</button>
                  {/* Buttons: Show "Edit" when not editing, "Save" when editing */}
-                 {!isEditing ? (
+                 {/* {!isEditing ? (
                             <button className="edit-btn1" onClick={handleEditClick}>Edit</button>
                         ) : (
                             <button className="save-btn1" onClick={handleSaveClick}>Save</button>
-                        )}
+                        )} */}
                 </div>
                 {/* Content Area */}
                 <div className="content">
@@ -566,7 +641,6 @@ useEffect(() => {
                     </div>
                     <Button
                         label="Generate Lead"
-                        color="#a33"
                         className="generate-lead-btn1"
                         onClick={handleGenerateLead}
                     />
@@ -1137,7 +1211,7 @@ useEffect(() => {
                     )}
                 </div>
                 <div className="gotomainpagebtn">
-                   <button className="cancel-btn"onClick={() => handleNavigation("/MainPage")}>Go to Main Page</button>
+                   <button className="mainpagebtn"onClick={() => handleNavigation("/HomePage")}>Go to Home Page</button>
                 </div>
                 </div>
             </div>
