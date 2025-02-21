@@ -77,7 +77,7 @@ export const LeadReview = () => {
             <li className="sidebar-item" onClick={() => navigate('/LeadReview')}>Lead Information</li>
             <li className="sidebar-item" onClick={() => navigate('/Investigator')}>Case Page</li>
             <li className="sidebar-item" onClick={() => navigate('/leadlog')}>View Lead Log</li>
-            <li className="sidebar-item" onClick={() => navigate('/LRInstructions')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => navigate('/LRInstruction')}>View Lead Return</li>
             <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
             <li className="sidebar-item" onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
           </ul>

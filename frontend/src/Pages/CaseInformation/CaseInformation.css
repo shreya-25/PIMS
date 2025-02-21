@@ -75,4 +75,9 @@
 
 .btn-sec button{
     min-width: 110px;
+    background-color: rgba(41, 41, 139, 0.795); 
+}
+
+.btn-sec button:hover {
+    background-color: rgb(96, 96, 179);
 }

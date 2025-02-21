@@ -25,5 +25,5 @@ const leadSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
-
+leadSchema.index({ caseNo: 1, leadNo: 1 }, { unique: true });
 module.exports = mongoose.model("Lead", leadSchema, "leads");
