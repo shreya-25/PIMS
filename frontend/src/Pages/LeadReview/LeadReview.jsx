@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect} from 'react';
+
 import Navbar from '../../components/Navbar/Navbar';
 import Searchbar from '../../components/Searchbar/Searchbar';
 import Button from '../../components/Button/Button';
@@ -6,6 +7,7 @@ import Filter from "../../components/Filter/Filter";
 import Sort from "../../components/Sort/Sort";
 import './LeadReview.css';
 import { useLocation, useNavigate } from 'react-router-dom';
+import axios from "axios";
 
 export const LeadReview = () => {
   const navigate = useNavigate();
@@ -17,8 +19,6 @@ export const LeadReview = () => {
 
   // Default case summary if no data is passed
   const defaultCaseSummary = "Initial findings indicate that the suspect was last seen near the crime scene at 9:45 PM. Witness statements collected. Awaiting forensic reports and CCTV footage analysis.";
-  const [caseSummary, setCaseSummary] = useState(caseDetails?.summary || defaultCaseSummary);
-
   // For demonstration, we store lead-related data
   const [leadData, setLeadData] = useState({
     leadNumber: '',
@@ -62,6 +62,32 @@ export const LeadReview = () => {
   const handleNavigation = (route) => {
     navigate(route);
   };
+
+  const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
+
+  const [isEditing, setIsEditing] = useState(false); // Controls whether the textarea is editable
+  useEffect(() => {
+   const fetchCaseSummary = async () => {
+     try {
+       if (caseDetails && caseDetails.id) {
+         const token = localStorage.getItem("token");
+         const response = await axios.get(`http://localhost:5000/api/cases/summary/${caseDetails.id}`, {
+           headers: { Authorization: `Bearer ${token}` }
+         });
+         // Update case summary if data is received
+         console.log("Response data:", response.data);
+         if (response.data) {
+           setCaseSummary(response.data.summary );
+         }
+       }
+     } catch (error) {
+       console.error("Error fetching case summary:", error);
+     }
+   };
+
+   fetchCaseSummary();
+ }, [caseDetails]);
+
 
   return (
     <div className="lead-review-page">

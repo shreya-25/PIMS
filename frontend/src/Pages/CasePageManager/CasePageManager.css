@@ -328,12 +328,20 @@
   font-size: 20px;
 }
 
-.textarea-field
-{
-  /* font-family: Arial, Helvetica, sans-serif; */
-  font-family: Arial, sans-serif;
-  font-size: 20px;
-}
+.textarea-field {
+    font-family: Arial, sans-serif;
+    font-size: 20px;
+    width: 100%;
+    min-height: 150px; /* Set a reasonable minimum height */
+    max-height: 500px; /* Optional: Limit max height */
+    height: auto; /* Allow automatic height expansion */
+    overflow-y: auto; /* Enable scrolling if content exceeds max height */
+    resize: vertical; /* Allow user to manually adjust height if needed */
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #fff;
+  }
 
 .edit-btn1
 {

@@ -258,7 +258,7 @@ exports.rejectCase = async (req, res) => {
       const updatedCase = await existingCase.save();
       
       return res.status(200).json({
-        message: "Case rejected. Case Manager changed to 'Admin'.",
+        message: "Case rejected.",
         data: updatedCase,
       });
     } catch (error) {
@@ -269,4 +269,28 @@ exports.rejectCase = async (req, res) => {
       });
     }
   };
+
+
+  exports.getCaseSummaryByCaseNo = async (req, res) => {
+    try {
+      const { caseNo } = req.params;
+      if (!caseNo) {
+        return res.status(400).json({ message: "Case number is required" });
+      }
+      
+      // Assuming caseNo is stored as a Number in your Case model.
+      const caseData = await Case.findOne({ caseNo: Number(caseNo) });
+      
+      if (!caseData) {
+        return res.status(404).json({ message: "Case not found" });
+      }
+      
+      // Assuming the summary is stored in a field called "summary"
+      res.status(200).json({ summary: caseData.caseSummary});
+    } catch (error) {
+      console.error("Error fetching case summary:", error);
+      res.status(500).json({ message: "Error fetching case summary", error: error.message });
+    }
+  };
+  
   
