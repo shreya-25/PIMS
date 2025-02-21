@@ -244,10 +244,11 @@ export const Investigator = () => {
   
             // ✅ Filter leads where the signed-in officer is assigned and the case matches exactly
             const assignedLeads = leadsResponse.data
-                .filter(lead =>
-                    lead.caseNo === caseDetails.id && 
-                    lead.caseName === caseDetails.title // Ensure exact case match
-                )
+            .filter(lead =>
+              String(lead.caseNo) === String(caseDetails.id) && 
+              lead.caseName === caseDetails.title
+          )
+          
                 .map(lead => ({
                     id: lead.leadNo,
                     description: lead.description,

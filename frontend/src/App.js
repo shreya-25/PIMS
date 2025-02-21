@@ -5,7 +5,7 @@ import {Login} from './Pages/Login/Login';
 import {LoginAdmin} from './Pages/LoginAdmin/LoginAdmin';
 import {Register} from './Pages/Register/Register';
 import {RegisterAdmin} from './Pages/RegisterAdmin/RegisterAdmin';
-import {MainPage} from './Pages/MainPage/MainPage';
+import {HomePage} from './Pages/HomePage/HomePage';
 import {CasePageManager} from './Pages/CasePageManager/CasePageManager';
 import {Investigator} from './Pages/Investigator/Investigator';
 import {CreateLead} from './Pages/CreateLead/CreateLead';
@@ -65,7 +65,7 @@ function App() {
         <Route path="/LoginAdmin" element={<LoginAdmin />} />
         <Route path="/Register" element={<Register />} />
         <Route path="/RegisterAdmin" element={<RegisterAdmin />} />
-        <Route path="/MainPage" element={<MainPage />} />
+        <Route path="/HomePage" element={<HomePage />} />
         <Route path="/CasePageManager" element={<CasePageManager />} />
         <Route path="/Investigator" element={<Investigator />} />
         <Route path="/CreateLead" element={<CreateLead />} />

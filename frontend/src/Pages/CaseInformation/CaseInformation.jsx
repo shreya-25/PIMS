@@ -149,7 +149,7 @@ export const CaseInformation = () => {
           <div className="sideitem">
             <ul className="sidebar-list">
               <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-              <li className="sidebar-item" onClick={() => navigate('/casepagemanager')}>Main Page</li>
+              <li className="sidebar-item" onClick={() => navigate('/casepagemanager')}>Case Page</li>
               <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
               <li className="sidebar-item" onClick={() => navigate("/leadlog")}>View Lead Log</li>
               <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>

@@ -19,62 +19,54 @@ export const LeadLog = () => {
 
   const navigate = useNavigate(); // Initialize the navigate function
 
-  const loggedInOfficer = "Officer 912";
+  const loggedInOfficer =  localStorage.getItem("loggedInUser");
+  const token = localStorage.getItem('token') || '';
 
-  // useEffect(() => {
-  //   const fetchLeads = async () => {
-  //     try {
-  //       const response = await fetch("http://localhost:5000/api/lead/assigned-leads", {
-  //         method: "GET",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           Authorization: `Bearer ${localStorage.getItem("token")}`, // Assuming token-based authentication
-  //         },
-  //       });
+  const getFormattedDate = () => {
+    const today = new Date();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    const year = today.getFullYear().toString().slice(-2);
+    return `${month}/${day}/${year}`;
+  };
 
-  //       if (!response.ok) {
-  //         throw new Error("Failed to fetch leads");
-  //       }
+  const generateIncidentNumber = () => {
+    const numbers = leadEntries
+      .map((entry) => Number(entry.leadNo))
+      .filter((num) => !isNaN(num));
+    const maxNumber = numbers.length ? Math.max(...numbers) : 0;
+    return (maxNumber + 1).toString();
+  };
 
-  //       const data = await response.json();
-  //       setLeadLogData(data);
-  //     } catch (err) {
-  //       setError(err.message);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   fetchLeads();
-  // }, []);
 
   useEffect(() => {
-    const fetchLeads = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch("http://localhost:5000/api/lead/assigned-leads", { // ✅ Updated endpoint
-          method: "GET",
+      if (caseDetails?.id && caseDetails?.title) {
+        fetch(`http://localhost:5000/api/lead/case/${caseDetails.id}/${caseDetails.title}`, {
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`, // Ensure token is present
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
           },
-        });
-  
-        if (!response.ok) {
-          throw new Error("Failed to fetch leads");
-        }
-  
-        const data = await response.json();
-        setLeadLogData(data); // ✅ Store all leads in state
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            console.log("✅ Fetched Leads Data:", data); // 🔍 Debug API response
+    
+            // Ensure `data` is an array, or default to an empty array
+            const leadsArray = Array.isArray(data) ? data : [];
+    
+            setLeadLogData(leadsArray);
+          })
+          .catch((error) => {
+            console.error("❌ Error fetching leads:", error.message);
+          });
       }
-    };
-  
-    fetchLeads();
-  }, []);
+    }, [caseDetails, token]);
+    
   
 
 
@@ -237,7 +229,6 @@ export const LeadLog = () => {
     }
   }, [leadEntries, updateLeadLogCount]);
 
-
   const [sortOrder, setSortOrder] = useState("asc"); // Default sort order is ascending
   const [appliedSortOption, setAppliedSortOption] = useState(""); // Applied sort option
 const [appliedSortOrder, setAppliedSortOrder] = useState("asc"); // Applied sort order
@@ -357,125 +348,6 @@ const handleResetSort = () => {
       <div className="filters-section">
       <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
       <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
-        {/* <table className="filter-table">
-          <thead>
-            <tr>
-              <th>Filter By:</th>
-              <th>Filter Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <select
-                  className="dropdown"
-                  value={filterCategory}
-                  onChange={(e) => setFilterCategory(e.target.value)}
-                >
-                  <option value="">Select Category</option>
-                  <option value="status">Status</option>
-                  <option value="assignedOfficer">Assigned Officer</option>
-                  <option value="leadNumber">Lead Number</option>
-                  <option value="dateCreated">Assigned Date</option>
-                </select>
-              </td>
-              <td>
-              {filterCategory === "status" ? (
-                  <select
-                    className="dropdown"
-                    value={filterValue}
-                    onChange={(e) => setFilterValue(e.target.value)}
-                  >
-                    <option value="">Select Status</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Completed">Completed</option>
-                  </select>
-                ) : filterCategory === "assignedOfficer" ? (
-                  <select
-                    className="dropdown"
-                    value={filterValue}
-                    onChange={(e) => setFilterValue(e.target.value)}
-                  >
-                    <option value="">Select Officer</option>
-                    <option value="Officer 1">Officer 1</option>
-                    <option value="Officer 2">Officer 2</option>
-                    <option value="Officer 4">Officer 4</option>
-                    <option value="Officer 5">Officer 5</option>
-                    <option value="Officer 8">Officer 8</option>
-                  </select>
-                ) : filterCategory === "dateCreated" ? (
-                  <div>
-                    <input
-                      type="date"
-                      className="input-field"
-                      value={dateRange.startDate}
-                      onChange={(e) =>
-                        setDateRange((prev) => ({ ...prev, startDate: e.target.value }))
-                      }
-                      placeholder="Start Date"
-                    />
-                    <input
-                      type="date"
-                      className="input-field"
-                      value={dateRange.endDate}
-                      onChange={(e) =>
-                        setDateRange((prev) => ({ ...prev, endDate: e.target.value }))
-                      }
-                      placeholder="End Date"
-                    />
-                  </div>
-                ) : (
-                  <input
-                    type="text"
-                    className="input-field"
-                    value={filterValue}
-                    onChange={(e) => setFilterValue(e.target.value)}
-                    placeholder="Enter Value"
-                  />
-                )}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div className="filter-buttons">
-          <button className="apply-filter-btn" onClick={handleApplyFilter}>
-            Apply
-          </button>
-          <button className="reset-filter-btn" onClick={resetFilters}>
-            Reset
-          </button>
-        </div>
-        <div className="sort-by">
-      <label>Sort By: </label>
-      <select
-        className="dropdown"
-        value={sortOption}
-        onChange={(e) => setSortOption(e.target.value)}
-      >
-        <option value="date">Date</option>
-        <option value="status">Status</option>
-        <option value="assigned to">Assigned</option>
-        <option value="lead number">Lead Number</option>
-      </select>
-
-      <label>Order: </label>
-      <select
-        className="dropdown"
-        value={sortOrder}
-        onChange={(e) => setSortOrder(e.target.value)}
-      >
-        <option value="asc">Ascending</option>
-        <option value="desc">Descending</option>
-      </select>
-      <div className="sort-buttons">
-       <button className="apply-sort-btn" onClick={handleApplySort}>
-          Apply
-        </button> 
-        <button className="reset-sort-btn" onClick={handleResetSort}>
-          Reset
-        </button>
-      </div>
-    </div> */}
       </div>
 
 
@@ -499,7 +371,7 @@ const handleResetSort = () => {
                   <td>{entry.leadNo}</td>
                   <td>{entry.summary}</td>
                   <td>{entry.assignedDate}</td>
-                  <td>{entry.status || 'Assigned'}</td>
+                  <td>{entry.leadStatus }</td>
                   <td>{entry.assignedTo?.join(", ")}</td>
                   <td>{entry.dateSubmitted || ''}</td>
                   <td>{entry.dateApproved || ''}</td>
