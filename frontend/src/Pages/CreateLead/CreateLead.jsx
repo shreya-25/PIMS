@@ -207,6 +207,35 @@ const handleGenerateLead = async () => {
   }
 };  
 
+const defaultCaseSummary = "Initial findings indicate that the suspect was last seen near the crime scene at 9:45 PM. Witness statements collected. Awaiting forensic reports and CCTV footage analysis.";
+
+
+const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
+
+  const [isEditing, setIsEditing] = useState(false); // Controls whether the textarea is editable
+  useEffect(() => {
+   const fetchCaseSummary = async () => {
+     try {
+       if (caseDetails && caseDetails.id) {
+         const token = localStorage.getItem("token");
+         const response = await axios.get(`http://localhost:5000/api/cases/summary/${caseDetails.id}`, {
+           headers: { Authorization: `Bearer ${token}` }
+         });
+         // Update case summary if data is received
+         console.log("Response data:", response.data);
+         if (response.data) {
+           setCaseSummary(response.data.summary );
+         }
+       }
+     } catch (error) {
+       console.error("Error fetching case summary:", error);
+     }
+   };
+
+   fetchCaseSummary();
+ }, [caseDetails]);
+
+
 
   return (
     <div className="lead-instructions-page">
@@ -340,7 +369,7 @@ const handleGenerateLead = async () => {
                 <input
                   type="text"
                   // className="input-field"
-                  value={leadData.caseSummary || 'Initial findings indicate that the suspect was last seen near the crime scene at 9:45 PM. Witness statements collected. Awaiting forensic reports and CCTV footage analysis.'} 
+                  value={caseSummary}
                   // onChange={(e) => handleInputChange('caseName', e.target.value)} 
     />
               </td>

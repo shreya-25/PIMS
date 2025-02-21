@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect} from 'react';
+import axios from "axios";
 import Navbar from '../../components/Navbar/Navbar';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './CaseInformation.css'; // Custom CSS
@@ -56,7 +57,7 @@ export const CaseInformation = () => {
 
     // Example summary handling (like your existing code):
     const defaultCaseSummary = "Initial findings indicate that the suspect was last seen near the crime scene at 9:45 PM. Witness statements collected. Awaiting forensic reports and CCTV footage analysis.";
-    const [caseSummary, setCaseSummary] = useState(caseDetails?.summary || defaultCaseSummary);
+  
 
     const handleSaveClick = () => {
       // Save logic or API call can go here
@@ -136,6 +137,31 @@ export const CaseInformation = () => {
       alert("An error occurred while rejecting the case.");
     }
   };
+
+  const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
+
+  const [isEditing, setIsEditing] = useState(false); // Controls whether the textarea is editable
+  useEffect(() => {
+   const fetchCaseSummary = async () => {
+     try {
+       if (caseDetails && caseDetails.id) {
+         const token = localStorage.getItem("token");
+         const response = await axios.get(`http://localhost:5000/api/cases/summary/${caseDetails.id}`, {
+           headers: { Authorization: `Bearer ${token}` }
+         });
+         // Update case summary if data is received
+         console.log("Response data:", response.data);
+         if (response.data) {
+           setCaseSummary(response.data.summary );
+         }
+       }
+     } catch (error) {
+       console.error("Error fetching case summary:", error);
+     }
+   };
+
+   fetchCaseSummary();
+ }, [caseDetails]);
 
 
 
