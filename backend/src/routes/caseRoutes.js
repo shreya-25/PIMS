@@ -68,4 +68,12 @@ router.put("/:id/reject", verifyToken, async (req, res) => {
     }
   });
 
+  router.get("/summary/:caseNo", verifyToken, async (req, res) => {
+    try {
+      await caseController.getCaseSummaryByCaseNo(req, res);
+    } catch (error) {
+      res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+  });
+
 module.exports = router;

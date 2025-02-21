@@ -61,7 +61,9 @@ html, body {
 /* Large text area for case summary */
 .case-summary-textarea {
   width: 90%;
-  height: 80px;
+  height: 150px;
+  overflow-y: auto; /* Enable scrolling if content exceeds max height */
+  resize: vertical; /* Allow user to manually adjust height if needed */
   resize: vertical;
   padding: 8px;
   font-size: 20px;
