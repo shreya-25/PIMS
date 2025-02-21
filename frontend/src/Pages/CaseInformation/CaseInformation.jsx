@@ -191,9 +191,9 @@ export const CaseInformation = () => {
               Save
             </button>
             </div>
-            <h2> Field Case Report </h2>
+            {/* <h2> Field Case Report </h2> */}
             <div className ="field-case-sec">
-                <div className ="detail-sec">
+                {/* <div className ="detail-sec">
                <h2 onClick={() => setIsDetailOpen(!isDetailOpen)} 
                style={{ cursor: 'pointer' }} 
                className = "collapsible-header">
@@ -246,7 +246,6 @@ export const CaseInformation = () => {
               )}
             </div>
 
-            {/* Offenses Section */}
             <div className="detail-sec">
               <h2 onClick={() => setIsOffensesOpen(!isOffensesOpen)} 
               style={{ cursor: 'pointer' }} className = "collapsible-header">
@@ -290,7 +289,7 @@ export const CaseInformation = () => {
                   </div>
                 </div>
               ))}
-              {/* Button to add another offense if desired */}
+
               <button
                 onClick={() =>
                   setOffenses([...offenses, { statute: '', desc: '', attemptCommit: '', counts: '' }])
@@ -302,7 +301,7 @@ export const CaseInformation = () => {
                 )}
             </div>
 
-            {/* Subject Section (Up to 3 blocks in the original form) */}
+          
             <div className="detail-sec">
               <h2 onClick={() => setIsSubjectsOpen(!isSubjectsOpen)}
                style={{ cursor: 'pointer' }} className = "collapsible-header">
@@ -497,7 +496,6 @@ export const CaseInformation = () => {
               )}
             </div>
 
-            {/* Reporting/Reviewing Officers */}
             <div className="detail-sec">
               <h2 onClick={() => setIsCaseDetailOpen(!isCaseDetailOpen)} style={{ cursor: 'pointer' }} className = "collapsible-header">
                <span>  Case Details </span>
@@ -507,7 +505,7 @@ export const CaseInformation = () => {
 
               {isCaseDetailOpen && (
                 <>
-                 {/* Case Status */}
+               
 
                 <div className="form-row">
                     <label>Case Status:</label>
@@ -591,7 +589,7 @@ export const CaseInformation = () => {
               </h2>
               </div>
       
-          </div>
+          </div> */}
 
           <div className="comment-sec">
                 <label> Comments </label>
@@ -601,6 +599,10 @@ export const CaseInformation = () => {
               </div>
 
               <div className="btn-sec">
+
+              <button className="save-btn1" onClick={handleSaveClick}>
+             Back
+            </button>
               <button className="save-btn1" onClick={handleSaveClick}>
              Accept
             </button>
@@ -608,9 +610,14 @@ export const CaseInformation = () => {
             <button className="save-btn1" onClick={handleRejectClick}>
               Reject
             </button>
+            <button className="save-btn1" onClick={handleSaveClick}>
+             Next
+            </button>
               </div>
+
           </div>
         </div>
+     </div>
      </div>
     );
 };
