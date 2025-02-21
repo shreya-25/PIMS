@@ -65,6 +65,21 @@ const getLeadsByOfficer = async (req, res) => {
     }
 };
 
+const getLeadsForAssignedToOfficer= async (req, res) => {
+  try {
+      const officerName = req.user.name; // Extract officer's name from the authenticated request
+
+      // Fetch leads where assignedTo contains the officer's name
+      const leads = await Lead.find({ assignedTo: officerName });
+
+      res.status(200).json(leads);
+  } catch (err) {
+      console.error("Error fetching leads:", err.message);
+      res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+
 const getLeadsByCase = async (req, res) => {
     try {
       const { caseNo, caseName } = req.params; 
@@ -78,4 +93,4 @@ const getLeadsByCase = async (req, res) => {
     }
   };
 
-module.exports = { createLead, getLeadsByOfficer, getLeadsByCase };
+module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer };
