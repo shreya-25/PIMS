@@ -4,6 +4,7 @@ const dotenv = require("dotenv").config();
 const authRoutes = require("./routes/authRoutes.js");
 const userRoutes = require("./routes/userRoutes.js");
 const leadRoutes = require("./routes/leadRoutes.js"); // Import lead routes
+const leadReturnRoutes = require("./routes/leadReturnRoutes.js");
 const caseRoutes = require("./routes/caseRoutes.js");
 const notificationRoutes = require("./routes/notificationRoutes");
 const dbConnect = require("./config/dbConnect.js");
@@ -22,6 +23,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/lead", leadRoutes); // Mount lead routes
 app.use("/api/cases", caseRoutes); 
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/leadReturn", leadReturnRoutes);
 
 
 // Start Server

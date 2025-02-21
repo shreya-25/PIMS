@@ -1,5 +1,5 @@
 const express = require("express");
-const { createLead, getLeadsByOfficer, getLeadsByCase } = require("../controller/leadController");
+const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer } = require("../controller/leadController");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
 const Lead = require("../models/lead");
@@ -14,6 +14,8 @@ router.post("/create", verifyToken, roleMiddleware("CaseManager"), createLead);
 router.get("/assigned-leads", verifyToken, getLeadsByOfficer);
 
 router.get("/case/:caseNo/:caseName", verifyToken, getLeadsByCase);
+
+router.get("/assignedTo-leads", verifyToken, getLeadsForAssignedToOfficer);
 
 
 // API to get the maximum lead number

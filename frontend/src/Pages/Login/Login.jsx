@@ -9,28 +9,6 @@ export function Login() {
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
 
-  // const handleLogin = (e) => {
-  //   e.preventDefault();
-
-  //   // Retrieve all registered users from localStorage
-  //   const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || [];
-
-  //   // Find a matching user
-  //   const matchingUser = registeredUsers.find(
-  //     (user) => user.username === username && user.password === password
-  //   );
-
-  //   if (matchingUser) {
-  //     // Save logged-in username to localStorage
-  //     localStorage.setItem('loggedInUser', username);
-
-  //     // Redirect to the main page
-  //     navigate('/MainPage');
-  //   } else {
-  //     setErrorMessage('Invalid username or password. Please try again.');
-  //   }
-  // };
-
   const handleLogin = async (e) => {
     e.preventDefault();
 
@@ -39,13 +17,13 @@ export function Login() {
         console.log("Attempting login for:", username);
 
         
-        const response = await axios.post("https://pims-backend.onrender.com/api/auth/login", {
+        const response = await axios.post("http://localhost:5000/api/auth/login", {
             username,
             password,
         });
 
         // Extract required data from response
-        const { token, username: loggedInUser, role } = response.data;
+        const { token, name, role } = response.data;
 
         // Debug logs
         console.log("Login successful!");
@@ -62,7 +40,7 @@ export function Login() {
 
         // Save token and user details to localStorage
         localStorage.setItem("token", token);
-        localStorage.setItem("loggedInUser", loggedInUser);  // Trim to avoid space issues
+        localStorage.setItem("loggedInUser", name);  // Trim to avoid space issues
         // localStorage.setItem("role", role);
 
         console.log("Stored in localStorage:", {
