@@ -49,8 +49,8 @@
 
 .comment-sec
 {
-    width: 81%;
-    margin-left: 9%;
+    width: 85%;
+    margin-left: 7%;
     margin-bottom: 20px;
 }
 .comment-sec label
@@ -66,7 +66,7 @@
 
 .btn-sec
 {
-    margin-left: -20px;
+    margin-left: 500px;
     display: flex;
     align-items: center;
     gap: 30px;
