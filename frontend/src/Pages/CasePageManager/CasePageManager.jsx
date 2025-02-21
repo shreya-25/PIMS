@@ -6,6 +6,7 @@ import Sort from "../../components/Sort/Sort";
 import Button from '../../components/Button/Button';
 import './CasePageManager.css'; // Custom CSS file for styling
 import { useLocation, useNavigate } from 'react-router-dom';
+import axios from "axios";
 
 export const CasePageManager = () => {
     const navigate = useNavigate();
@@ -34,6 +35,9 @@ export const CasePageManager = () => {
     const handleNavigation = (route) => {
       navigate(route); // Navigate to respective page
     };
+
+    const signedInOfficer = localStorage.getItem("loggedInUser");
+
 
     
     // Handler to accept the assigned lead
@@ -87,12 +91,12 @@ export const CasePageManager = () => {
       allLeads: [],
   } : {
       assignedLeads: [
-          { id: 1, description: "Some details about the theft incident ", dueDate: "12/25/2024",
-            priority: "High", flags: ["Important"], assignedOfficers: ["Officer 1", "Officer 3"] },
-          { id: 2, description: "Collect Audio Recording from Dispatcher", dueDate: "12/31/2024",
-            priority: "Medium", flags: [], assignedOfficers: ["Officer 2"] },
-          { id: 3, description: "Interview John", dueDate: "12/29/2024",
-            priority: "Low", flags: [], assignedOfficers: ["Officer 4"] },
+          // { id: 1, description: "Some details about the theft incident ", dueDate: "12/25/2024",
+          //   priority: "High", flags: ["Important"], assignedOfficers: ["Officer 1", "Officer 3"] },
+          // { id: 2, description: "Collect Audio Recording from Dispatcher", dueDate: "12/31/2024",
+          //   priority: "Medium", flags: [], assignedOfficers: ["Officer 2"] },
+          // { id: 3, description: "Interview John", dueDate: "12/29/2024",
+          //   priority: "Low", flags: [], assignedOfficers: ["Officer 4"] },
       ],
       pendingLeads: [
           // { id: 4, description: "Interview Witness", dueDate: "12/26/2024",
@@ -134,8 +138,6 @@ export const CasePageManager = () => {
           return response.json();
         })
         .then((data) => {
-          // data is the array of leads for that case
-          // Store in leads.allLeads or wherever you want
           setLeads((prev) => ({
             ...prev,
             allLeads: data,
@@ -172,6 +174,128 @@ export const CasePageManager = () => {
       ],
     }));
   };
+
+
+  useEffect(() => {
+    const fetchPendingLeadReturns = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                console.error("❌ No token found. User is not authenticated.");
+                return;
+            }
+
+            if (!caseDetails?.id || !caseDetails?.title) {
+                console.error("⚠️ No valid case details provided.");
+                return;
+            }
+
+            console.log("🔍 Fetching pending lead returns for exact case:", caseDetails);
+
+            // ✅ Fetch all lead returns assigned to or assigned by the officer
+            const leadsResponse = await axios.get("http://localhost:5000/api/leadreturn/officer-leads", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                }
+            });
+
+            // ✅ Filter pending lead returns that match the exact case details (caseNo & caseName)
+            const pendingLeadReturns = leadsResponse.data.filter(lead => 
+                lead.assignedBy.lRStatus === "Pending"
+                &&
+                lead.caseNo === caseDetails.id &&   // Match exact case number
+                lead.caseName === caseDetails.title // Match exact case name
+            ).map(lead => ({
+                id: lead.leadNo,
+                description: lead.description,
+                caseName: lead.caseName,
+                caseNo: lead.caseNo,
+            }));
+
+            // ✅ Update state with filtered pending lead returns
+            setLeads(prevLeads => ({
+                ...prevLeads,
+                pendingLeadReturns: pendingLeadReturns
+            }));
+
+        } catch (error) {
+            console.error("Error fetching pending lead returns:", error.response?.data || error);
+        }
+    };
+
+    fetchPendingLeadReturns();
+}, [signedInOfficer, caseDetails]);
+
+
+useEffect(() => {
+  const fetchPendingLeads = async () => {
+      try {
+          const token = localStorage.getItem("token");
+          if (!token) {
+              console.error("❌ No token found. User is not authenticated.");
+              return;
+          }
+
+          // ✅ Fetch all assigned leads
+          const leadsResponse = await axios.get("http://localhost:5000/api/lead/assigned-leads", {
+              headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+              }
+          });
+
+          console.log("✅ API Response (Assigned Leads):", leadsResponse.data); // Debugging log
+
+          // ✅ Check if `caseDetails` is defined before proceeding
+          if (!caseDetails?.id || !caseDetails?.title) {
+              console.warn("⚠️ caseDetails not provided, skipping lead filtering.");
+              return;
+          }
+
+          console.log("✅ Using caseDetails:", caseDetails);
+
+          // ✅ Filter leads where the signed-in officer is assigned and the case matches exactly
+          const assignedLeads = leadsResponse.data
+              .filter(lead =>
+                  lead.caseNo === caseDetails.id && 
+                  lead.caseName === caseDetails.title // Ensure exact case match
+              )
+              .map(lead => ({
+                  id: lead.leadNo,
+                  description: lead.description,
+                  dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
+                  priority: lead.priority || "Medium",
+                  flags: lead.associatedFlags || [],
+                  assignedOfficers: lead.assignedTo, // Keep all assigned officers
+                  leadStatus: lead.leadStatus, // Capture status
+                  caseName: lead.caseName,
+                  caseNo: lead.caseNo
+              }));
+
+          // ✅ Filter leads where status is "Pending"
+          const pendingLeads = assignedLeads.filter(lead => lead.leadStatus === "Pending");
+
+          console.log("✅ Filtered Assigned Leads:", assignedLeads);
+          console.log("✅ Filtered Pending Leads:", pendingLeads);
+
+          // ✅ Update state with filtered leads
+          setLeads(prevLeads => ({
+              ...prevLeads,
+              assignedLeads: assignedLeads,
+              pendingLeads: pendingLeads
+          }));
+
+      } catch (error) {
+          console.error("❌ Error fetching assigned leads:", error.response?.data || error);
+      }
+  };
+
+  fetchPendingLeads();
+}, [signedInOfficer, caseDetails]);
+
+
+
   
 
   // Calculate remaining days from the due date
@@ -232,6 +356,9 @@ export const CasePageManager = () => {
 
    const [caseSummary, setCaseSummary] = useState(caseDetails?.summary || defaultCaseSummary);
    const [isEditing, setIsEditing] = useState(false); // Controls whether the textarea is editable
+
+
+
 
 
    const handleCaseSummaryChange = (e) => {

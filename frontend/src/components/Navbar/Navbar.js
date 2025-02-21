@@ -75,7 +75,7 @@ const Navbar = () => {
           <Link to="#">
             <i className="fa-solid fa-user"></i>
           </Link>
-          <span className="username">{"Officer 916"}</span>
+          <span className="username">{username || "Guest"}</span>
         </div>
         <ul>
           {/* Emails */}

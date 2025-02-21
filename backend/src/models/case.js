@@ -12,8 +12,15 @@ const caseSchema = new mongoose.Schema(
             }
         ],
         caseStatus: { type: String, enum: ['Ongoing', 'Completed'], required: true },
-        caseSummary: {type: String}
-        // allLeads: [{
+        caseSummary: {type: String},
+        scratchpadEntry: { type: String }, 
+    },
+    { timestamps: true }
+);
+
+module.exports = mongoose.model("Case", caseSchema);
+
+ // allLeads: [{
         //     name: { type: String, required: true },
         //     number: { type: Number, required: true },
         //     status: { type: String, enum: ['Assigned', 'Pending', 'Completed'], required: true }
@@ -27,9 +34,3 @@ const caseSchema = new mongoose.Schema(
         //         status: { type: String, enum: ['Assigned', 'Pending', 'Completed'], required: true }
         //     }
         // ],
-        // scratchpadEntry: { type: String }, 
-    },
-    { timestamps: true }
-);
-
-module.exports = mongoose.model("Case", caseSchema);

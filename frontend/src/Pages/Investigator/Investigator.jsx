@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect} from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import Searchbar from '../../components/Searchbar/Searchbar';
 import Button from '../../components/Button/Button';
@@ -6,6 +6,7 @@ import Filter from "../../components/Filter/Filter";
 import Sort from "../../components/Sort/Sort";
 import './Investigator.css'; // Custom CSS file for styling
 import { useLocation, useNavigate } from 'react-router-dom';
+import axios from "axios";
 
 export const Investigator = () => {
     const navigate = useNavigate();
@@ -34,6 +35,35 @@ export const Investigator = () => {
       navigate(route); // Navigate to respective page
     };
 
+    const signedInOfficer = localStorage.getItem("loggedInUser");
+    const token = localStorage.getItem("token");
+
+  useEffect(() => {
+     if (caseDetails?.id && caseDetails?.title) {
+       fetch(`http://localhost:5000/api/lead/case/${caseDetails.id}/${caseDetails.title}`, {
+         headers: {
+           Authorization: `Bearer ${token}`,
+           'Content-Type': 'application/json'
+         },
+       })
+         .then((response) => {
+           if (!response.ok) {
+             throw new Error(`HTTP error! status: ${response.status}`);
+           }
+           return response.json();
+         })
+         .then((data) => {
+          console.log("✅ Fetched Leads Data:", data);
+           setLeads((prev) => ({
+             ...prev,
+             allLeads: data,
+           }));
+         })
+         .catch((error) => {
+           console.error("Error fetching leads:", error.message);
+         });
+     }
+   }, [caseDetails, token]);
     
     // Handler to accept the assigned lead
     const handleAcceptAssignedLead = (lead) => {
@@ -80,58 +110,178 @@ export const Investigator = () => {
       
       const [leads, setLeads] = useState({
         assignedLeads: [
-          { id: 1, description: "Collect Audio Records from Dispatcher",dueDate: "12/25/2024",
-            priority: "High",
-            flags: ["Important"],
-            assignedOfficers: ["Officer 1", "Officer 3"], },
-          { id: 2, description: "Interview Mr. John",dueDate: "12/31/2024",
-            priority: "Medium",
-            flags: [],
-            assignedOfficers: ["Officer 2"] },
-          { id: 3, description: "Collect Evidence from 63 Mudray Street",dueDate: "12/29/2024",
-            priority: "Low",
-            flags: [],
-            assignedOfficers: ["Officer 4"] },
+          // { id: 1, description: "Collect Audio Records from Dispatcher",dueDate: "12/25/2024",
+          //   priority: "High",
+          //   flags: ["Important"],
+          //   assignedOfficers: ["Officer 1", "Officer 3"], },
+          // { id: 2, description: "Interview Mr. John",dueDate: "12/31/2024",
+          //   priority: "Medium",
+          //   flags: [],
+          //   assignedOfficers: ["Officer 2"] },
+          // { id: 3, description: "Collect Evidence from 63 Mudray Street",dueDate: "12/29/2024",
+          //   priority: "Low",
+          //   flags: [],
+          //   assignedOfficers: ["Officer 4"] },
         ],
         pendingLeads: [
-          {
-            id: 4,
-            description: "Interview Witness",
-            dueDate: "12/26/2024",
-            priority: "High",
-            flags: ["Important"],
-            assignedOfficers: ["Officer 1", "Officer 3"],
-          },
-          {
-            id: 6,
-            description: "Interview Neighbours",
-            dueDate: "12/23/2024",
-            priority: "Medium",
-            flags: [],
-            assignedOfficers: ["Officer 2"],
-          },
-          {
-            id: 7,
-            description: "Collect Evidence",
-            dueDate: "12/22/2024",
-            priority: "Low",
-            flags: [],
-            assignedOfficers: ["Officer 4"],
-          },
+          // {
+          //   id: 4,
+          //   description: "Interview Witness",
+          //   dueDate: "12/26/2024",
+          //   priority: "High",
+          //   flags: ["Important"],
+          //   assignedOfficers: ["Officer 1", "Officer 3"],
+          // },
+          // {
+          //   id: 6,
+          //   description: "Interview Neighbours",
+          //   dueDate: "12/23/2024",
+          //   priority: "Medium",
+          //   flags: [],
+          //   assignedOfficers: ["Officer 2"],
+          // },
+          // {
+          //   id: 7,
+          //   description: "Collect Evidence",
+          //   dueDate: "12/22/2024",
+          //   priority: "Low",
+          //   flags: [],
+          //   assignedOfficers: ["Officer 4"],
+          // },
         ],
         pendingLeadReturns: [
-            { id: 5, description: "Submit Crime Scene Photos" },
-            { id: 8, description: "Collect Evidence", dueDate: "12/30/2024" },
-            { id: 9, description: "Interview Witness", dueDate: "12/31/2024" },
+            // { id: 5, description: "Submit Crime Scene Photos" },
+            // { id: 8, description: "Collect Evidence", dueDate: "12/30/2024" },
+            // { id: 9, description: "Interview Witness", dueDate: "12/31/2024" },
         ],
         allLeads: [
-            { id: 1, description: "Collect Audio Records from Dispatcher", status: "Assigned" },
-            { id: 2, description: "Interview Mr. John", status: "Assigned" },
-            { id: 3, description: "Collect Evidence from 63 Mudray Street", status: "Completed" },
-            { id: 4, description: "Interview Witness", status: "Pending" },
-            { id: 5, description: "Submit Crime Scene Photos", status: "Completed" },
+            // { id: 1, description: "Collect Audio Records from Dispatcher", status: "Assigned" },
+            // { id: 2, description: "Interview Mr. John", status: "Assigned" },
+            // { id: 3, description: "Collect Evidence from 63 Mudray Street", status: "Completed" },
+            // { id: 4, description: "Interview Witness", status: "Pending" },
+            // { id: 5, description: "Submit Crime Scene Photos", status: "Completed" },
         ],
     });
+
+    useEffect(() => {
+      const fetchPendingLeadReturns = async () => {
+          try {
+              const token = localStorage.getItem("token");
+              if (!token) {
+                  console.error("❌ No token found. User is not authenticated.");
+                  return;
+              }
+  
+              if (!caseDetails?.id || !caseDetails?.title) {
+                  console.error("⚠️ No valid case details provided.");
+                  return;
+              }
+  
+              console.log("🔍 Fetching pending lead returns for exact case:", caseDetails);
+  
+              // ✅ Fetch all lead returns assigned to or assigned by the officer
+              const leadsResponse = await axios.get("http://localhost:5000/api/leadreturn/officer-leads", {
+                  headers: {
+                      Authorization: `Bearer ${token}`,
+                      "Content-Type": "application/json",
+                  }
+              });
+  
+              // ✅ Filter pending lead returns that match the exact case details (caseNo & caseName)
+              const pendingLeadReturns = leadsResponse.data.filter(lead => 
+                  lead.assignedBy.lRStatus === "Pending"
+                  &&
+                  lead.caseNo === caseDetails.id &&   // Match exact case number
+                  lead.caseName === caseDetails.title // Match exact case name
+              ).map(lead => ({
+                  id: lead.leadNo,
+                  description: lead.description,
+                  caseName: lead.caseName,
+                  caseNo: lead.caseNo,
+              }));
+  
+              // ✅ Update state with filtered pending lead returns
+              setLeads(prevLeads => ({
+                  ...prevLeads,
+                  pendingLeadReturns: pendingLeadReturns
+              }));
+  
+          } catch (error) {
+              console.error("Error fetching pending lead returns:", error.response?.data || error);
+          }
+      };
+  
+      fetchPendingLeadReturns();
+  }, [signedInOfficer, caseDetails]);
+  
+  
+  useEffect(() => {
+    const fetchPendingLeads = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                console.error("❌ No token found. User is not authenticated.");
+                return;
+            }
+  
+            // ✅ Fetch all assigned leads
+            const leadsResponse = await axios.get("http://localhost:5000/api/lead/assigned-leads", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                }
+            });
+  
+            console.log("✅ API Response (Assigned Leads):", leadsResponse.data); // Debugging log
+  
+            // ✅ Check if `caseDetails` is defined before proceeding
+            if (!caseDetails?.id || !caseDetails?.title) {
+                console.warn("⚠️ caseDetails not provided, skipping lead filtering.");
+                return;
+            }
+  
+            console.log("✅ Using caseDetails:", caseDetails);
+  
+            // ✅ Filter leads where the signed-in officer is assigned and the case matches exactly
+            const assignedLeads = leadsResponse.data
+                .filter(lead =>
+                    lead.caseNo === caseDetails.id && 
+                    lead.caseName === caseDetails.title // Ensure exact case match
+                )
+                .map(lead => ({
+                    id: lead.leadNo,
+                    description: lead.description,
+                    dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
+                    priority: lead.priority || "Medium",
+                    flags: lead.associatedFlags || [],
+                    assignedOfficers: lead.assignedTo, // Keep all assigned officers
+                    leadStatus: lead.leadStatus, // Capture status
+                    caseName: lead.caseName,
+                    caseNo: lead.caseNo
+                }));
+  
+            // ✅ Filter leads where status is "Pending"
+            const pendingLeads = assignedLeads.filter(lead => lead.leadStatus === "Pending");
+  
+            console.log("✅ Filtered Assigned Leads:", assignedLeads);
+            console.log("✅ Filtered Pending Leads:", pendingLeads);
+  
+            // ✅ Update state with filtered leads
+            setLeads(prevLeads => ({
+                ...prevLeads,
+                assignedLeads: assignedLeads,
+                pendingLeads: pendingLeads
+            }));
+  
+        } catch (error) {
+            console.error("❌ Error fetching assigned leads:", error.response?.data || error);
+        }
+    };
+  
+    fetchPendingLeads();
+  }, [signedInOfficer, caseDetails]);
+  
+  
 
     const handleTabClick = (tab) => {
         setActiveTab(tab);
@@ -917,9 +1067,9 @@ export const Investigator = () => {
       <tbody>
         {leads.allLeads.map((lead) => (
           <tr key={lead.id}>
-            <td>{lead.id}</td>
+            <td>{lead.leadNo }</td>
             <td>{lead.description}</td>
-            <td>{lead.status}</td>
+            <td>{lead.leadStatus}</td>
             <td>
               <button
                 className= "view-btn1"

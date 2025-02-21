@@ -35,7 +35,6 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
     setShowCaseSelector(true);
   };
 
-
   // Function to close CaseSelector
   const handleCloseCaseSelector = () => {
     setShowCaseSelector(false);
@@ -55,7 +54,7 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
   };
 
 
-  const signedInOfficer = "Officer 916";
+  const signedInOfficer = localStorage.getItem("loggedInUser");
 
   const [cases, setCases] = useState([]);
 
@@ -100,65 +99,6 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
 
     fetchCases();
   }, [signedInOfficer]);
-
-
-  // const [cases, setCases] = useState([
-  //   { id: 82659, title: "Main Street Theft", status: "ongoing", role: "Case Manager" },
-  //   { id: 65734, title: "Murray Street Stolen Gold", status: "ongoing", role: "Investigator" },
-  //   { id: 45637, title: "Cook Street School Threat", status: "ongoing", role: "Case Manager" },
-  //   { id: 23789, title: "216 Endicott Suicide", status: "ongoing", role: "Investigator" },
-  //   { id: 12345, title: "Main Street Murder", status: "ongoing", role: "Investigator" },
-  // ]);
-
-
-  // const loggedInOfficer = localStorage.getItem("loggedInUser")?.trim();
-  // const loggedInOfficer = "Officer 916";
-  // console.log("Logged-in officer from localStorage:", loggedInOfficer);
-
-
-
-
-
-
-  // useEffect(() => {
-
-
-  //   if (!loggedInOfficer) {
-  //     navigate("/"); // Redirect to login if not authenticated
-  //     return;
-  // }
-
-
-  //   const fetchCases = async () => {
-  //     try {
-  //       const response = await axios.get("http://localhost:5000/api/cases", {
-  //         params: { officerName: loggedInOfficer },
-  //       });
-
-
-  //       setCases(response.data);
-
-
-  //       const formattedCases = response.data.map((c) => ({
-  //         id: c.caseNo,
-  //         title: c.caseName,
-  //         status: c.caseStatus,
-  //         role: c.assignedOfficers.find((o) => o.name === loggedInOfficer)?.role || "Unknown",
-  //       }));
-
-
-  //       setCases(formattedCases);
-  //     } catch (error) {
-  //       console.error("Error fetching cases:", error);
-  //     }
-  //   };
-
-
-  //   fetchCases();
-  // }, [loggedInOfficer]);
-
-
-
 
   // Handler to view the assigned lead details (can be updated to show a modal or navigate)
 const handleViewAssignedLead = (lead) => {
@@ -231,60 +171,218 @@ const acceptLead = (leadId) => {
   }));
 };
 
-
-
-
- 
-  const [leads, setLeads] = useState({
-    assignedLeads: [
-      { id: 45, description: "Collect Audio Records from Dispatcher",dueDate: "12/28/2024",
-        priority: "High",
-        flags: ["Important"],
-        assignedOfficers: ["Officer 1", "Officer 3"], },
-      { id: 20, description: "Interview Mr. John",dueDate: "12/31/2024",
-        priority: "Medium",
-        flags: [],
-        assignedOfficers: ["Officer 2"] },
-      { id: 84, description: "Collect Evidence from 63 Mudray Street",dueDate: "12/20/2024",
-        priority: "Low",
-        flags: [],
-        assignedOfficers: ["Officer 4"] },
-    ],
-    pendingLeads: [
-      {
-        id: 21,
-        description: "Interview Witness",
-        dueDate: "12/28/2024",
-        priority: "High",
-        flags: ["Important"],
-        assignedOfficers: ["Officer 1", "Officer 3", "Officer 8"],
-      },
-      {
-        id: 30,
-        description: "Interview Neighbours",
-        dueDate: "12/30/2024",
-        priority: "Medium",
-        flags: [],
-        assignedOfficers: ["Officer 2"],
-      },
-      {
-        id: 32,
-        description: "Collect Evidence",
-        dueDate: "12/31/2024",
-        priority: "Low",
-        flags: [],
-        assignedOfficers: ["Officer 4"],
-      },
-    ],
-    pendingLeadReturns: [
-      { id: 33, description: "Submit Crime Scene Photos" },
-      { id: 32, description: "Collect Evidence", dueDate: "12/25/2024" },
-      { id: 21, description: "Interview Witness", dueDate: "12/24/2024" },
-    ],
-  });
+const [leads, setLeads] = useState({
+  assignedLeads: [
+    // { id: 45, description: "Collect Audio Records from Dispatcher",dueDate: "12/28/2024",
+    //   priority: "High",
+    //   flags: ["Important"],
+    //   assignedOfficers: ["Officer 1", "Officer 3"], },
+    // { id: 20, description: "Interview Mr. John",dueDate: "12/31/2024",
+    //   priority: "Medium",
+    //   flags: [],
+    //   assignedOfficers: ["Officer 2"] },
+    // { id: 84, description: "Collect Evidence from 63 Mudray Street",dueDate: "12/20/2024",
+    //   priority: "Low",
+    //   flags: [],
+    //   assignedOfficers: ["Officer 4"] },
+  ],
+  pendingLeads: [
+    // {
+    //   id: 21,
+    //   description: "Interview Witness",
+    //   dueDate: "12/28/2024",
+    //   priority: "High",
+    //   flags: ["Important"],
+    //   assignedOfficers: ["Officer 1", "Officer 3", "Officer 8"],
+    // },
+    // {
+    //   id: 30,
+    //   description: "Interview Neighbours",
+    //   dueDate: "12/30/2024",
+    //   priority: "Medium",
+    //   flags: [],
+    //   assignedOfficers: ["Officer 2"],
+    // },
+    // {
+    //   id: 32,
+    //   description: "Collect Evidence",
+    //   dueDate: "12/31/2024",
+    //   priority: "Low",
+    //   flags: [],
+    //   assignedOfficers: ["Officer 4"],
+    // },
+  ],
+  pendingLeadReturns: [
+    // { id: 33, description: "Submit Crime Scene Photos" },
+    // { id: 32, description: "Collect Evidence", dueDate: "12/25/2024" },
+    // { id: 21, description: "Interview Witness", dueDate: "12/24/2024" },
+  ],
+});
 
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchPendingLeadReturns = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                console.error("❌ No token found. User is not authenticated.");
+                return;
+            }
+
+            // ✅ Fetch all lead returns assigned to or assigned by the officer
+            const leadsResponse = await axios.get("http://localhost:5000/api/leadreturn/officer-leads", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                }
+            });
+
+            console.log("✅ API Response (Lead Returns):", leadsResponse.data); // Debugging log
+
+            // ✅ Fetch all cases with their statuses
+            const casesResponse = await axios.get("http://localhost:5000/api/cases", {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                }
+            });
+
+            console.log("✅ API Response (Cases):", casesResponse.data); // Debugging log
+
+            // ✅ Extract only ongoing cases (caseStatus = "Ongoing")
+            const ongoingCases = casesResponse.data
+                .filter(c => c.caseStatus === "Ongoing")
+                .map(c => ({ caseNo: c.caseNo, caseName: c.caseName })); // Extract relevant fields
+
+            console.log("✅ Ongoing Cases:", ongoingCases);
+
+            // ✅ Filter pending lead returns for the signed-in officer and ongoing cases
+            const pendingLeadReturns = [];
+
+            leadsResponse.data.forEach(lead => {
+                let officerStatus = null;
+
+                // Check if the signed-in officer is in assignedTo
+                if (lead.assignedTo.assignees.includes(signedInOfficer)) {
+                    officerStatus = lead.assignedTo.lRStatus;
+                }
+
+                // Check if the signed-in officer is in assignedBy
+                if (lead.assignedBy.assignee === signedInOfficer) {
+                    officerStatus = lead.assignedBy.lRStatus;
+                }
+
+                // ✅ If officerStatus is Pending and the case is ongoing, add to pendingLeadReturns
+                if (officerStatus === "Pending" &&
+                    ongoingCases.some(c => c.caseNo === lead.caseNo && c.caseName === lead.caseName)) {
+                    pendingLeadReturns.push({
+                        id: lead.leadNo,
+                        description: lead.description,
+                        caseName: lead.caseName,
+                        caseNo: lead.caseNo,
+                    });
+                }
+            });
+
+            console.log("✅ Filtered Pending Lead Returns:", pendingLeadReturns);
+
+            // ✅ Update state with filtered lead returns
+            setLeads(prevLeads => ({
+                ...prevLeads,
+                pendingLeadReturns: pendingLeadReturns
+            }));
+
+        } catch (error) {
+            console.error("❌ Error fetching pending lead returns:", error.response?.data || error);
+        }
+    };
+
+    fetchPendingLeadReturns();
+}, [signedInOfficer]);
+
+
+
+useEffect(() => {
+  const fetchPendingLeads = async () => {
+      try {
+          const token = localStorage.getItem("token");
+          if (!token) {
+              console.error("❌ No token found. User is not authenticated.");
+              return;
+          }
+
+          // ✅ Fetch all assigned leads
+          const leadsResponse = await axios.get("http://localhost:5000/api/lead/assignedTo-leads", {
+              headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+              }
+          });
+
+          console.log("✅ API Response (Assigned Leads):", leadsResponse.data); // Debugging log
+
+          // ✅ Fetch all cases with their statuses
+          const casesResponse = await axios.get("http://localhost:5000/api/cases", {
+              headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+              }
+          });
+
+          console.log("✅ API Response (Cases):", casesResponse.data); // Debugging log
+
+          // ✅ Extract only ongoing cases (caseStatus = "Ongoing")
+          const ongoingCases = casesResponse.data
+              .filter(c => c.caseStatus === "Ongoing")
+              .map(c => ({ caseNo: c.caseNo, caseName: c.caseName })); // Extract relevant fields
+
+          console.log("✅ Ongoing Cases:", ongoingCases);
+
+          // ✅ Filter leads where the signed-in officer is assigned and the case is ongoing
+          const assignedLeads = leadsResponse.data
+              .filter(lead =>
+                  lead.assignedTo.includes(signedInOfficer) && 
+                  ongoingCases.some(c => c.caseNo === lead.caseNo && c.caseName === lead.caseName) // Match ongoing cases
+              )
+              .map(lead => ({
+                  id: lead.leadNo,
+                  description: lead.description,
+                  dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
+                  priority: lead.priority || "Medium",
+                  flags: lead.associatedFlags || [],
+                  assignedOfficers: lead.assignedTo, // Keep all assigned officers
+                  leadStatus: lead.leadStatus, // Capture status
+                  caseName: lead.caseName,
+                  caseNo: lead.caseNo
+              }));
+
+          // ✅ Filter leads where status is "Pending"
+          const pendingLeads = assignedLeads.filter(lead => lead.leadStatus === "Pending");
+
+          console.log("✅ Filtered Assigned Leads:", assignedLeads);
+          console.log("✅ Filtered Pending Leads:", pendingLeads);
+
+          // ✅ Update state with filtered leads
+          setLeads(prevLeads => ({
+              ...prevLeads,
+              assignedLeads: assignedLeads,
+              pendingLeads: pendingLeads
+          }));
+
+      } catch (error) {
+          console.error("❌ Error fetching assigned leads:", error.response?.data || error);
+      }
+  };
+
+  fetchPendingLeads();
+}, [signedInOfficer]);
+
+
+
+
+
 
 
 
@@ -573,7 +671,8 @@ const addCase = (newCase) => {
             className={`hoverable ${activeTab === "pendingLeads" ? "active" : ""}`}
             onClick={() => setActiveTab("pendingLeads")}
           >
-            Pending Leads: {leads.pendingLeads.length}
+            {/* Pending Leads: {leads.pendingLeads.length} */}
+            Pending Leads: {leads?.pendingLeads?.length || 0}
           </span>
           <span
             className={`hoverable ${activeTab === "pendingLeadReturns" ? "active" : ""}`}
@@ -1141,21 +1240,6 @@ const addCase = (newCase) => {
                   ))}
               </tbody>
             </table>
-    {/* <ul className="lead-list">
-      {leads.pendingLeadReturns.map((lead) => (
-        <li key={lead.id} className="lead-item">
-          <span>{lead.description}</span>
-          <button
-            className="continue-btn"
-            onClick={() => {
-              handleLRClick(lead)
-            }}
-          >
-            Continue
-          </button>
-        </li>
-      ))}
-    </ul> */}
   </div>
 )}  
 
