@@ -598,24 +598,23 @@ export const CaseInformation = () => {
                 />
               </div>
 
-              <div className="btn-sec">
-
-              <button className="save-btn1" onClick={handleSaveClick}>
-             Back
-            </button>
-              <button className="save-btn1" onClick={handleSaveClick}>
-             Accept
-            </button>
-
-            <button className="save-btn1" onClick={handleRejectClick}>
-              Reject
-            </button>
-            <button className="save-btn1" onClick={handleSaveClick}>
-             Next
-            </button>
-              </div>
-
           </div>
+          <div className="btn-sec">
+
+<button className="save-btn1" onClick={handleSaveClick}>
+Back
+</button>
+<button className="save-btn1" onClick={handleSaveClick}>
+Accept
+</button>
+
+<button className="save-btn1" onClick={handleRejectClick}>
+Reject
+</button>
+<button className="save-btn1" onClick={handleSaveClick}>
+Next
+</button>
+</div>
         </div>
      </div>
      </div>
