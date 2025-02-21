@@ -12,6 +12,10 @@
     width: 90%;
 }
 
+.textarea-field
+{
+    height: 300px;
+}
 
 .case-info-report-sec
 {
@@ -62,9 +66,13 @@
 
 .btn-sec
 {
-    margin-left: 40%;
+    margin-left: -20px;
     display: flex;
     align-items: center;
     gap: 30px;
     width: 10%;
+}
+
+.btn-sec button{
+    min-width: 110px;
 }
