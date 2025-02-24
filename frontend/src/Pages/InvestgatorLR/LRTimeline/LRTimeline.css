@@ -26,12 +26,12 @@ body{
 
 }
 
-.timeline-table {
+/* .timeline-table {
  width: 90%;
  margin-left: 5%;
  background-color: #f9f9f9;
  margin-top: 10px;
-}
+} */
 
 .timeline-form-sec{
     width: 60%;
@@ -47,7 +47,7 @@ body{
   color: #343a40;
 }
 
-.timeline-table table {
+/* .timeline-table table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 10px;
@@ -76,7 +76,36 @@ body{
 
 .timeline-table tr:hover {
   background-color: #e9ecef;
+} */
+
+.timeline-table
+{
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  table-layout: fixed; 
 }
+
+.timeline-table th,
+.timeline-table td {
+  padding: 10px;
+  text-align: left;
+  border: 1px solid #ddd;
+  font-size: 20px;
+  word-wrap: break-word; /* Ensures text wraps inside the cell */
+  overflow-wrap: break-word; /* Helps break long words */
+  white-space: normal; /* Allows text to wrap */
+}
+
+.timeline-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.timeline-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
 
 .timeline-table .btn-edit, .timeline-table .btn-delete {
   padding: 10px;
@@ -88,7 +117,7 @@ body{
   margin-right: 10px;
 }
 
-.timeline-table .btn-edit {
+/* .timeline-table .btn-edit {
   background-color: #ffc107;
   color: #343a40;
 }
@@ -104,7 +133,7 @@ body{
 
 .timeline-table .btn-delete:hover {
   background-color: #c82333;
-}
+} */
 
 .no-timeline {
   text-align: center;

@@ -626,6 +626,8 @@ export const CasePageManager = () => {
                         <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
                         <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
                         <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+
                         <li className="sidebar-item">View Lead Chain of Custody</li>
                     </ul>
                 </div>
@@ -860,7 +862,7 @@ export const CasePageManager = () => {
       <thead>
         <tr>
           <th>Lead No.</th>
-          <th>Lead Name</th>
+          <th>Lead Description</th>
           <th>Due Date</th>
           <th>Priority</th>
           <th>Days Left</th>
@@ -1090,7 +1092,7 @@ export const CasePageManager = () => {
       <thead>
         <tr>
           <th>Lead No.</th>
-          <th>Lead Name</th>
+          <th>Lead Description</th>
           <th>Due Date</th>
           <th>Priority</th>
           <th>Days Left</th>
@@ -1156,7 +1158,7 @@ export const CasePageManager = () => {
               <thead>
                 <tr>
                   <th>Lead No.</th>
-                  <th>Lead Name</th>
+                  <th>Lead Description</th>
                   <th></th>
                 </tr>
               </thead>
@@ -1203,7 +1205,7 @@ export const CasePageManager = () => {
       <thead>
         <tr>
           <th>Lead No.</th>
-          <th>Lead Name</th>
+          <th>Lead Description</th>
           <th>Lead Status</th>
           <th></th> {/* Empty header for buttons column */}
         </tr>
