@@ -1,10 +1,15 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from 'react-router-dom';
+
 import Navbar from '../../../components/Navbar/Navbar';
 import "./LRFinish.css";
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const LRFinish = () => {
   const navigate = useNavigate();
+    const location = useLocation();
+  const { caseDetails } = location.state || {};
 
   const handleNavigation = (route) => {
     navigate(route); // Navigate to respective page
@@ -136,13 +141,22 @@ export const LRFinish = () => {
 
         {/* Buttons */}
         <div className="form-buttons-finish">
-          <button className="run-report-btn">Run Report</button>
-          <button className="back-btn" onClick={() => handleNavigation("/LRScratchpad")}>Back</button>
+          <button className="save-btn1">Run Report</button>
+          {/* <button className="back-btn" onClick={() => handleNavigation("/LRScratchpad")}>Back</button>
           <button className="finish-btn"onClick={() => handleNavigation("/casepagemanager")}>Submit</button>
-          <button className="cancel-btn"onClick={() => handleNavigation("/casepagemanager")}>Cancel</button>
+          <button className="cancel-btn"onClick={() => handleNavigation("/casepagemanager")}>Cancel</button> */}
          
         </div>
       </div>
+
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/casepagemanager", { state: { caseDetails } } )}
+        
+        
+        
+        // Takes user to CM Return page
+      />
     </div>
   );
 };

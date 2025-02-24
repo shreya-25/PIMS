@@ -1154,7 +1154,7 @@ export const CasePageManager = () => {
   <div className="pending-lead-returns">
     <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
     <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
-    <table className="pending-lr-table">
+    <table className="leads-table">
               <thead>
                 <tr>
                   <th>Lead No.</th>
@@ -1201,7 +1201,7 @@ export const CasePageManager = () => {
   <div className="all-leads">
     <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
     <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
-    <table className="all-lead-table">
+    <table className="leads-table">
       <thead>
         <tr>
           <th>Lead No.</th>

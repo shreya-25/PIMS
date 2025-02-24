@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar/Navbar";
 import "./LRVideo.css"; // Custom CSS file for Video styling
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const LRVideo = () => {
   const navigate = useNavigate();
@@ -115,28 +117,6 @@ export const LRVideo = () => {
         </div>
       </div>
 
-        {/* Videos Table */}
-        <table className="timeline-table">
-          <thead>
-            <tr>
-              <th>Date Entered</th>
-              <th> Associated Return Id </th>
-              <th>Date Video Recorded</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {videos.map((video, index) => (
-              <tr key={index}>
-                <td>{video.dateEntered}</td>
-                <td>{video.returnId} </td>
-                <td>{video.dateVideoRecorded}</td>
-                <td>{video.description}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
         {/* Video Form */}
         <h4 className="evidence-form-h4">Enter Video Details</h4>
         <div className="video-form">
@@ -162,6 +142,30 @@ export const LRVideo = () => {
             <input type="file" accept="video/*" className="evidence-head" onChange={handleFileChange} />
           </div>
         </div>
+        <button className="save-btn1" onClick={handleAddVideo}>Add Video</button>
+
+            {/* Videos Table */}
+            <table className="timeline-table">
+          <thead>
+            <tr>
+              <th>Date Entered</th>
+              <th> Associated Return Id </th>
+              <th>Date Video Recorded</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {videos.map((video, index) => (
+              <tr key={index}>
+                <td>{video.dateEntered}</td>
+                <td>{video.returnId} </td>
+                <td>{video.dateVideoRecorded}</td>
+                <td>{video.description}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
 
         {/* Uploaded Video Preview */}
         <div className="uploaded-video">
@@ -179,15 +183,22 @@ export const LRVideo = () => {
           </div>
         </div>
 
+        
+
         {/* Action Buttons */}
-        <div className="form-buttons-video">
+        {/* <div className="form-buttons-video">
           <button className="add-btn" onClick={handleAddVideo}>Add Video</button>
           <button className="back-btn" onClick={() => handleNavigation("/LRAudio")}>Back</button>
           <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
           <button className="save-btn">Save</button>
           <button className="cancel-btn">Cancel</button>
-        </div>
+        </div> */}
       </div>
+
+      <FootBar
+         onPrevious={() => navigate(-1)} // Takes user to the last visited page
+         onNext={() => navigate("/LRScratchpad")} // Takes user to CM Return page
+       />
     </div>
   );
 };

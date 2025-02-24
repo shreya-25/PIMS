@@ -7,6 +7,7 @@ const leadRoutes = require("./routes/leadRoutes.js"); // Import lead routes
 const leadReturnRoutes = require("./routes/leadReturnRoutes.js");
 const caseRoutes = require("./routes/caseRoutes.js");
 const notificationRoutes = require("./routes/notificationRoutes");
+const leadReturnResultRoutes = require("./routes/leadReturnResultRoutes.js");
 const dbConnect = require("./config/dbConnect.js");
 
 dbConnect();
@@ -24,6 +25,7 @@ app.use("/api/lead", leadRoutes); // Mount lead routes
 app.use("/api/cases", caseRoutes); 
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/leadReturn", leadReturnRoutes);
+app.use("/api/leadReturnResult", leadReturnResultRoutes);
 
 
 // Start Server

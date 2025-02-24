@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar/Navbar";
 import "./LRScratchpad.css"; // Custom CSS file for Scratchpad styling
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const LRScratchpad = () => {
   const navigate = useNavigate();
@@ -99,8 +101,19 @@ export const LRScratchpad = () => {
         </div>
       </div>
 
-        {/* Scratchpad Table */}
-        <table className="timeline-table">
+        {/* Scratchpad Form */}
+        <h4 className="evidence-form-h4">Add New Note</h4>
+        <div className="scratchpad-form">
+          <textarea
+            value={noteData.text}
+            onChange={(e) => handleInputChange("text", e.target.value)}
+            placeholder="Write your note here..."
+          ></textarea>
+        </div>
+        <button className="save-btn1" onClick={handleAddNote}>Add Note</button>
+
+           {/* Scratchpad Table */}
+           <table className="timeline-table">
           <thead>
             <tr>
               <th>Date Entered</th>
@@ -121,25 +134,20 @@ export const LRScratchpad = () => {
           </tbody>
         </table>
 
-        {/* Scratchpad Form */}
-        <h4 className="evidence-form-h4">Add New Note</h4>
-        <div className="scratchpad-form">
-          <textarea
-            value={noteData.text}
-            onChange={(e) => handleInputChange("text", e.target.value)}
-            placeholder="Write your note here..."
-          ></textarea>
-        </div>
-
         {/* Action Buttons */}
-        <div className="form-buttons-scratchpad">
+        {/* <div className="form-buttons-scratchpad">
           <button className="add-btn" onClick={handleAddNote}>Add Note</button>
           <button className="back-btn" onClick={() => handleNavigation("/LRVideos")}>Back</button>
           <button className="next-btn" onClick={() => handleNavigation("/LRFinish")}>Next</button>
           <button className="save-btn">Save</button>
           <button className="cancel-btn">Cancel</button>
-        </div>
+        </div> */}
       </div>
+
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LRTimeline")} // Takes user to CM Return page
+      />
     </div>
   );
 };
