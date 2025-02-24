@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../../components/Navbar/Navbar';
 import './LRTimeline.css';
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const LRTimeline = () => {
   const navigate = useNavigate();
@@ -138,43 +140,6 @@ export const LRTimeline = () => {
          <div className="right-section">
         </div>
       </div>
-        <div className="timeline-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Event Date</th>
-                <th> Associated Return Id </th>
-                <th>Event Time Range</th>
-                <th>Event Location</th>
-                <th>Event Description</th>
-                <th>Flags</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {timelineEntries.length > 0 ? (
-                timelineEntries.map((entry, index) => (
-                  <tr key={index}>
-                    <td>{entry.date}</td>
-                    <td>{entry.returnId}</td>
-                    <td>{entry.timeRange}</td>
-                    <td>{entry.location}</td>
-                    <td>{entry.description}</td>
-                    <td>{entry.flags.join(', ')}</td>
-                    <td>
-                      <button className="btn-edit" onClick={() => handleEditEntry(index)}>Edit</button>
-                      <button className="btn-delete" onClick={() => handleDeleteEntry(index)}>Delete</button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="no-timeline">No timelines found during investigation.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
 
         <div className="timeline-form-sec">
           <h3>Add/Edit Entry</h3>
@@ -231,11 +196,55 @@ export const LRTimeline = () => {
             <button className="btn-add" onClick={handleAddEntry}>Add Entry</button>
           </div>
         </div>
-      <div className="form-buttons-timeline">
+
+        <div className="timeline-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Event Date</th>
+                <th> Associated Return Id </th>
+                <th>Event Time Range</th>
+                <th>Event Location</th>
+                <th>Event Description</th>
+                <th>Flags</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {timelineEntries.length > 0 ? (
+                timelineEntries.map((entry, index) => (
+                  <tr key={index}>
+                    <td>{entry.date}</td>
+                    <td>{entry.returnId}</td>
+                    <td>{entry.timeRange}</td>
+                    <td>{entry.location}</td>
+                    <td>{entry.description}</td>
+                    <td>{entry.flags.join(', ')}</td>
+                    <td>
+                      <button className="btn-edit" onClick={() => handleEditEntry(index)}>Edit</button>
+                      <button className="btn-delete" onClick={() => handleDeleteEntry(index)}>Delete</button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="no-timeline">No timelines found during investigation.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      {/* <div className="form-buttons-timeline">
           <button className="back-btn" onClick={() => handleNavigation("/LRScratchpad")}>Back</button>
           <button className="next-btn" onClick={() => handleNavigation("/LRFinish")}>Next</button>
           <button className="cancel-btn">Cancel</button>
-        </div>
+        </div> */}
+
+        <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LRFinish")} // Takes user to CM Return page
+      />
+        
     </div>
   );
 };

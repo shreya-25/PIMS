@@ -433,9 +433,16 @@
   white-space: normal; /* Allows text to wrap */
 }
 
+
 .pending-lr-table th {
   background-color: #f2f2f2;
   font-weight: bold;
+}
+
+
+.pending-lr-table th{
+  background-color: #00000000; /* Darker grey */
+  color: rgb(39, 36, 36); /* Keep text visible on dark background */
 }
 
 .pending-lr-table tr:nth-child(even) {

@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
 import Navbar from '../../../components/Navbar/Navbar';
 import "./LREvidence.css"; // Custom CSS file for Evidence styling
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const LREvidence = () => {
   const navigate = useNavigate(); // Initialize navigate hook
@@ -111,32 +113,6 @@ export const LREvidence = () => {
         </div>
       </div>
 
-        {/* Evidence Table */}
-        <table className="timeline-table">
-          <thead>
-            <tr>
-              <th>Date Entered</th>
-              <th>Associated Return Id </th>
-              <th>Type</th>
-              <th>Collection Date</th>
-              <th>Disposed Date</th>
-              <th>Disposition</th>
-            </tr>
-          </thead>
-          <tbody>
-            {evidence.map((item, index) => (
-              <tr key={index}>
-                <td>{item.dateEntered}</td>
-                <td> {item.returnId} </td>
-                <td>{item.type}</td>
-                <td>{item.collectionDate}</td>
-                <td>{item.disposedDate}</td>
-                <td>{item.disposition}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
         {/* Evidence Form */}
         <h4 className="evidence-form-h4">Enter Evidence Details</h4>
         <div className="evidence-form">
@@ -173,16 +149,49 @@ export const LREvidence = () => {
             ></textarea>
           </div>
         </div>
+        <button className="save-btn1" onClick={handleAddEvidence}>Add Evidence</button>
+
+            {/* Evidence Table */}
+            <table className="timeline-table">
+          <thead>
+            <tr>
+              <th>Date Entered</th>
+              <th>Associated Return Id </th>
+              <th>Type</th>
+              <th>Collection Date</th>
+              <th>Disposed Date</th>
+              <th>Disposition</th>
+            </tr>
+          </thead>
+          <tbody>
+            {evidence.map((item, index) => (
+              <tr key={index}>
+                <td>{item.dateEntered}</td>
+                <td> {item.returnId} </td>
+                <td>{item.type}</td>
+                <td>{item.collectionDate}</td>
+                <td>{item.disposedDate}</td>
+                <td>{item.disposition}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
 
         {/* Action Buttons */}
-        <div className="form-buttons-evidence">
+        {/* <div className="form-buttons-evidence">
           <button className="add-btn" onClick={handleAddEvidence}>Add Evidence</button>
           <button className="back-btn" onClick={() => handleNavigation("/LREnclosures")}>Back</button>
           <button className="next-btn" onClick={() => handleNavigation("/LRPictures")}>Next</button>
           <button className="save-btn">Save</button>
           <button className="cancel-btn">Cancel</button>
-        </div>
+        </div> */}
       </div>
+
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LRPictures")} // Takes user to CM Return page
+      />
     </div>
   );
 };

@@ -352,7 +352,7 @@ const handleResetSort = () => {
 
 
       <div className="table-section">
-        <table className="leadlog-table">
+        <table className="leads-table">
           <thead>
             <tr>
               <th>LEAD #</th>
