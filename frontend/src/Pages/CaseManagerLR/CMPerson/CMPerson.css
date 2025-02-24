@@ -55,17 +55,17 @@ button:disabled {
   cursor: not-allowed;
 }
 
-.action-buttons button:nth-child(1) {
-  background-color: #13756d; /* Add Person */
+/* .action-buttons button:nth-child(1) {
+  background-color: #13756d; 
 }
 
 .action-buttons button:nth-child(2) {
-  background-color: #13756d; /* Edit */
+  background-color: #13756d; 
 }
 
 .action-buttons button:nth-child(3) {
-  background-color: #13756d; /* Delete */
-}
+  background-color: #13756d; 
+} */
 
 .bottom-buttons .back-btn,
 .bottom-buttons .cancel-btn {

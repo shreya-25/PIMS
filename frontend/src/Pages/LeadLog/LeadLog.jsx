@@ -356,7 +356,7 @@ const handleResetSort = () => {
           <thead>
             <tr>
               <th>LEAD #</th>
-              <th>LEAD SUMMARY</th>
+              <th>LEAD DESCRIPTION</th>
               <th>DATE CREATED</th>
               <th>STATUS</th>
               <th>ASSIGNED TO</th>
@@ -369,7 +369,7 @@ const handleResetSort = () => {
               leadLogData.map((entry, index) => (
                 <tr key={index} onClick={() => handleLeadClick(entry)}>
                   <td>{entry.leadNo}</td>
-                  <td>{entry.summary}</td>
+                  <td>{entry.description}</td>
                   <td>{entry.assignedDate}</td>
                   <td>{entry.leadStatus }</td>
                   <td>{entry.assignedTo?.join(", ")}</td>

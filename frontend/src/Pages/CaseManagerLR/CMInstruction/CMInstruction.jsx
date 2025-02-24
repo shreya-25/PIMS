@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 
 import Navbar from '../../../components/Navbar/Navbar';
+import FootBar from '../../../components/FootBar/FootBar';
 import './CMInstruction.css';
 
 export const CMInstruction = () => {
@@ -322,7 +323,7 @@ export const CMInstruction = () => {
       </div>
 
       {/* Action Buttons */}
-      <div className="form-buttons-inst">
+      {/* <div className="form-buttons-inst">
         <button className="edit-btn" onClick={handleGenerateLead}>
           Edit
         </button>
@@ -331,7 +332,11 @@ export const CMInstruction = () => {
         <button className="next-btn" onClick={handleNextPage}>Cancel</button>
 
 
-      </div>
+      </div> */}
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/CMReturn")} // Takes user to CM Return page
+      />
     </div>
   );
 };

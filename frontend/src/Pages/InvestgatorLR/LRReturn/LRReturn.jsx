@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar/Navbar";
 import "./LRReturn.css";
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const LRReturn = () => {
   const navigate = useNavigate();
@@ -106,6 +108,24 @@ export const LRReturn = () => {
         </div>
       </div>
 
+      <h4 className="return-form-h4">{editMode ? "Edit Return" : "Add Return"}</h4>
+        <div className="return-form">
+          <textarea
+            value={returnData.results}
+            onChange={(e) => handleInputChange("results", e.target.value)}
+            placeholder="Enter return details"
+          ></textarea>
+                    <button className="save-btn1" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Return"}</button>
+
+        </div>
+
+        {/* <div className="form-buttons-return">
+          <button className="save-btn1" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Return"}</button>
+          <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
+          <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
+          <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button>
+        </div> */}
+
         <table className="timeline-table">
           <thead>
             <tr>
@@ -125,8 +145,8 @@ export const LRReturn = () => {
                 <td>{ret.results}</td>
                 <td>
                   <div classname = "lr-table-btn">
-                  <button className="btn-edit" onClick={() => handleEditReturn(ret)}>Edit</button>
-                  <button className="btn-delete" onClick={() => handleDeleteReturn(ret.id)}>Delete</button>
+                  <button className="save-btn1" onClick={() => handleEditReturn(ret)}>Edit</button>
+                  <button className="del-button" onClick={() => handleDeleteReturn(ret.id)}>Delete</button>
                   </div>
                 </td>
               </tr>
@@ -134,22 +154,11 @@ export const LRReturn = () => {
           </tbody>
         </table>
 
-        <h4 className="return-form-h4">{editMode ? "Edit Return" : "Add Return"}</h4>
-        <div className="return-form">
-          <textarea
-            value={returnData.results}
-            onChange={(e) => handleInputChange("results", e.target.value)}
-            placeholder="Enter return details"
-          ></textarea>
         </div>
-
-        <div className="form-buttons-return">
-          <button className="save-btn" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Return"}</button>
-          <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
-          <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
-          <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button>
-        </div>
+        <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LRPerson")} // Takes user to CM Return page
+      />
       </div>
-    </div>
   );
 };

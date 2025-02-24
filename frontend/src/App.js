@@ -55,6 +55,7 @@ import { OfficerManagement } from './Pages/OfficerManagement/OfficerManagement';
 import { LeadInfo } from './Pages/LeadInfo/LeadInfo';
 import { CaseInformation } from './Pages/CaseInformation/CaseInformation';
 import {LeadReview} from './Pages/LeadReview/LeadReview';
+import { LeadsDesk } from './Pages/LeadsDesk/LeadsDesk';
 
 function App() {
   return (
@@ -115,6 +116,7 @@ function App() {
         <Route path="/AdminDashboard" element={<AdminDashboard />} />
         <Route path="/CaseInformation" element={<CaseInformation />} />
         <Route path="/LeadReview" element = {<LeadReview />} />
+        <Route path="/LeadsDesk" element= {<LeadsDesk />} />
       </Routes>
     </Router>
   );

@@ -21,6 +21,60 @@ export const Investigator = () => {
     const [remainingDaysFilter, setRemainingDaysFilter] = useState("");
   const [flagsFilter, setFlagsFilter] = useState("");
   const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
+  const [leads, setLeads] = useState({
+    assignedLeads: [
+      // { id: 1, description: "Collect Audio Records from Dispatcher",dueDate: "12/25/2024",
+      //   priority: "High",
+      //   flags: ["Important"],
+      //   assignedOfficers: ["Officer 1", "Officer 3"], },
+      // { id: 2, description: "Interview Mr. John",dueDate: "12/31/2024",
+      //   priority: "Medium",
+      //   flags: [],
+      //   assignedOfficers: ["Officer 2"] },
+      // { id: 3, description: "Collect Evidence from 63 Mudray Street",dueDate: "12/29/2024",
+      //   priority: "Low",
+      //   flags: [],
+      //   assignedOfficers: ["Officer 4"] },
+    ],
+    pendingLeads: [
+      // {
+      //   id: 4,
+      //   description: "Interview Witness",
+      //   dueDate: "12/26/2024",
+      //   priority: "High",
+      //   flags: ["Important"],
+      //   assignedOfficers: ["Officer 1", "Officer 3"],
+      // },
+      // {
+      //   id: 6,
+      //   description: "Interview Neighbours",
+      //   dueDate: "12/23/2024",
+      //   priority: "Medium",
+      //   flags: [],
+      //   assignedOfficers: ["Officer 2"],
+      // },
+      // {
+      //   id: 7,
+      //   description: "Collect Evidence",
+      //   dueDate: "12/22/2024",
+      //   priority: "Low",
+      //   flags: [],
+      //   assignedOfficers: ["Officer 4"],
+      // },
+    ],
+    pendingLeadReturns: [
+        // { id: 5, description: "Submit Crime Scene Photos" },
+        // { id: 8, description: "Collect Evidence", dueDate: "12/30/2024" },
+        // { id: 9, description: "Interview Witness", dueDate: "12/31/2024" },
+    ],
+    allLeads: [
+        // { id: 1, description: "Collect Audio Records from Dispatcher", status: "Assigned" },
+        // { id: 2, description: "Interview Mr. John", status: "Assigned" },
+        // { id: 3, description: "Collect Evidence from 63 Mudray Street", status: "Completed" },
+        // { id: 4, description: "Interview Witness", status: "Pending" },
+        // { id: 5, description: "Submit Crime Scene Photos", status: "Completed" },
+    ],
+});
 
     const [activeTab, setActiveTab] = useState("allLeads"); // Default to All Leads tab
     const handleViewAssignedLead = (lead) => {
@@ -38,7 +92,7 @@ export const Investigator = () => {
     const signedInOfficer = localStorage.getItem("loggedInUser");
     const token = localStorage.getItem("token");
 
-  useEffect(() => {
+   useEffect(() => {
      if (caseDetails?.id && caseDetails?.title) {
        fetch(`http://localhost:5000/api/lead/case/${caseDetails.id}/${caseDetails.title}`, {
          headers: {
@@ -53,14 +107,52 @@ export const Investigator = () => {
            return response.json();
          })
          .then((data) => {
-          console.log("✅ Fetched Leads Data:", data);
+           console.log("✅ Fetched Leads Data:", data); // 🔍 Debug API response
+   
+           // Ensure `data` is an array, or default to an empty array
+           const leadsArray = Array.isArray(data) ? data : [];
+   
+           // ✅ Filter and map assigned and pending leads
+           const assignedLeads = leadsArray
+             .filter(lead => lead.leadStatus === "Assigned")
+             .map(lead => ({
+               id: lead.leadNo,
+               description: lead.description,
+               dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
+               priority: lead.priority || "Medium",
+               flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [], // Ensure array
+               assignedOfficers: Array.isArray(lead.assignedTo) ? lead.assignedTo : [], // Ensure array
+               leadStatus: lead.leadStatus,
+               caseName: lead.caseName,
+               caseNo: String(lead.caseNo) // Ensure string format
+             }));
+   
+           const pendingLeads = leadsArray
+             .filter(lead => lead.leadStatus === "Pending")
+             .map(lead => ({
+               id: lead.leadNo,
+               description: lead.description,
+               dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
+               priority: lead.priority || "Medium",
+               flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [], // Ensure array
+               assignedOfficers: Array.isArray(lead.assignedTo) ? lead.assignedTo : [], // Ensure array
+               leadStatus: lead.leadStatus,
+               caseName: lead.caseName,
+               caseNo: String(lead.caseNo) // Ensure string format
+             }));
+   
+           console.log("✅ Assigned Leads:", assignedLeads);
+           console.log("✅ Pending Leads:", pendingLeads);
+   
            setLeads((prev) => ({
              ...prev,
-             allLeads: data,
+             allLeads: leadsArray,
+             assignedLeads: assignedLeads,
+             pendingLeads: pendingLeads
            }));
          })
          .catch((error) => {
-           console.error("Error fetching leads:", error.message);
+           console.error("❌ Error fetching leads:", error.message);
          });
      }
    }, [caseDetails, token]);
@@ -105,63 +197,6 @@ export const Investigator = () => {
         pendingLeads: [...prevLeads.pendingLeads, newPendingLead],
       }));
     };
-    
-    
-      
-      const [leads, setLeads] = useState({
-        assignedLeads: [
-          // { id: 1, description: "Collect Audio Records from Dispatcher",dueDate: "12/25/2024",
-          //   priority: "High",
-          //   flags: ["Important"],
-          //   assignedOfficers: ["Officer 1", "Officer 3"], },
-          // { id: 2, description: "Interview Mr. John",dueDate: "12/31/2024",
-          //   priority: "Medium",
-          //   flags: [],
-          //   assignedOfficers: ["Officer 2"] },
-          // { id: 3, description: "Collect Evidence from 63 Mudray Street",dueDate: "12/29/2024",
-          //   priority: "Low",
-          //   flags: [],
-          //   assignedOfficers: ["Officer 4"] },
-        ],
-        pendingLeads: [
-          // {
-          //   id: 4,
-          //   description: "Interview Witness",
-          //   dueDate: "12/26/2024",
-          //   priority: "High",
-          //   flags: ["Important"],
-          //   assignedOfficers: ["Officer 1", "Officer 3"],
-          // },
-          // {
-          //   id: 6,
-          //   description: "Interview Neighbours",
-          //   dueDate: "12/23/2024",
-          //   priority: "Medium",
-          //   flags: [],
-          //   assignedOfficers: ["Officer 2"],
-          // },
-          // {
-          //   id: 7,
-          //   description: "Collect Evidence",
-          //   dueDate: "12/22/2024",
-          //   priority: "Low",
-          //   flags: [],
-          //   assignedOfficers: ["Officer 4"],
-          // },
-        ],
-        pendingLeadReturns: [
-            // { id: 5, description: "Submit Crime Scene Photos" },
-            // { id: 8, description: "Collect Evidence", dueDate: "12/30/2024" },
-            // { id: 9, description: "Interview Witness", dueDate: "12/31/2024" },
-        ],
-        allLeads: [
-            // { id: 1, description: "Collect Audio Records from Dispatcher", status: "Assigned" },
-            // { id: 2, description: "Interview Mr. John", status: "Assigned" },
-            // { id: 3, description: "Collect Evidence from 63 Mudray Street", status: "Completed" },
-            // { id: 4, description: "Interview Witness", status: "Pending" },
-            // { id: 5, description: "Submit Crime Scene Photos", status: "Completed" },
-        ],
-    });
 
     useEffect(() => {
       const fetchPendingLeadReturns = async () => {
@@ -215,72 +250,72 @@ export const Investigator = () => {
   }, [signedInOfficer, caseDetails]);
   
   
-  useEffect(() => {
-    const fetchPendingLeads = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                console.error("❌ No token found. User is not authenticated.");
-                return;
-            }
+  // useEffect(() => {
+  //   const fetchPendingLeads = async () => {
+  //       try {
+  //           const token = localStorage.getItem("token");
+  //           if (!token) {
+  //               console.error("❌ No token found. User is not authenticated.");
+  //               return;
+  //           }
   
-            // ✅ Fetch all assigned leads
-            const leadsResponse = await axios.get("http://localhost:5000/api/lead/assigned-leads", {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                }
-            });
+  //           // ✅ Fetch all assigned leads
+  //           const leadsResponse = await axios.get("http://localhost:5000/api/lead/assigned-leads", {
+  //               headers: {
+  //                   Authorization: `Bearer ${token}`,
+  //                   "Content-Type": "application/json",
+  //               }
+  //           });
   
-            console.log("✅ API Response (Assigned Leads):", leadsResponse.data); // Debugging log
+  //           console.log("✅ API Response (Assigned Leads):", leadsResponse.data); // Debugging log
   
-            // ✅ Check if `caseDetails` is defined before proceeding
-            if (!caseDetails?.id || !caseDetails?.title) {
-                console.warn("⚠️ caseDetails not provided, skipping lead filtering.");
-                return;
-            }
+  //           // ✅ Check if `caseDetails` is defined before proceeding
+  //           if (!caseDetails?.id || !caseDetails?.title) {
+  //               console.warn("⚠️ caseDetails not provided, skipping lead filtering.");
+  //               return;
+  //           }
   
-            console.log("✅ Using caseDetails:", caseDetails);
+  //           console.log("✅ Using caseDetails:", caseDetails);
   
-            // ✅ Filter leads where the signed-in officer is assigned and the case matches exactly
-            const assignedLeads = leadsResponse.data
-            .filter(lead =>
-              String(lead.caseNo) === String(caseDetails.id) && 
-              lead.caseName === caseDetails.title
-          )
+  //           // ✅ Filter leads where the signed-in officer is assigned and the case matches exactly
+  //           const assignedLeads = leadsResponse.data
+  //           .filter(lead =>
+  //             String(lead.caseNo) === String(caseDetails.id) && 
+  //             lead.caseName === caseDetails.title
+  //         )
           
-                .map(lead => ({
-                    id: lead.leadNo,
-                    description: lead.description,
-                    dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
-                    priority: lead.priority || "Medium",
-                    flags: lead.associatedFlags || [],
-                    assignedOfficers: lead.assignedTo, // Keep all assigned officers
-                    leadStatus: lead.leadStatus, // Capture status
-                    caseName: lead.caseName,
-                    caseNo: lead.caseNo
-                }));
+  //               .map(lead => ({
+  //                   id: lead.leadNo,
+  //                   description: lead.description,
+  //                   dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
+  //                   priority: lead.priority || "Medium",
+  //                   flags: lead.associatedFlags || [],
+  //                   assignedOfficers: lead.assignedTo, // Keep all assigned officers
+  //                   leadStatus: lead.leadStatus, // Capture status
+  //                   caseName: lead.caseName,
+  //                   caseNo: lead.caseNo
+  //               }));
   
-            // ✅ Filter leads where status is "Pending"
-            const pendingLeads = assignedLeads.filter(lead => lead.leadStatus === "Pending");
+  //           // ✅ Filter leads where status is "Pending"
+  //           const pendingLeads = assignedLeads.filter(lead => lead.leadStatus === "Pending");
   
-            console.log("✅ Filtered Assigned Leads:", assignedLeads);
-            console.log("✅ Filtered Pending Leads:", pendingLeads);
+  //           console.log("✅ Filtered Assigned Leads:", assignedLeads);
+  //           console.log("✅ Filtered Pending Leads:", pendingLeads);
   
-            // ✅ Update state with filtered leads
-            setLeads(prevLeads => ({
-                ...prevLeads,
-                assignedLeads: assignedLeads,
-                pendingLeads: pendingLeads
-            }));
+  //           // ✅ Update state with filtered leads
+  //           setLeads(prevLeads => ({
+  //               ...prevLeads,
+  //               assignedLeads: assignedLeads,
+  //               pendingLeads: pendingLeads
+  //           }));
   
-        } catch (error) {
-            console.error("❌ Error fetching assigned leads:", error.response?.data || error);
-        }
-    };
+  //       } catch (error) {
+  //           console.error("❌ Error fetching assigned leads:", error.response?.data || error);
+  //       }
+  //   };
   
-    fetchPendingLeads();
-  }, [signedInOfficer, caseDetails]);
+  //   fetchPendingLeads();
+  // }, [signedInOfficer, caseDetails]);
   
   
 
@@ -506,7 +541,7 @@ export const Investigator = () => {
                         <li className="sidebar-item" onClick={() => handleTabClick("pendingLeads")}>My Pending Leads: {leads.pendingLeads.length}</li>
                         <li className="sidebar-item"onClick={() => handleTabClick("pendingLeadReturns")}>My Pending Lead Returns: {leads.pendingLeadReturns.length}</li>
                         <li className="sidebar-item" onClick={() => handleTabClick("allLeads")}>My Total Leads: {leads.allLeads.length}</li> */}
-                        <li className="sidebar-item"onClick={() => navigate('/leadlog')}>View Lead Log</li>
+                        <li className="sidebar-item"onClick={() => navigate('/leadlog', { state: { caseDetails } })}>View Lead Log</li>
                         <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
                         <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
                     </ul>
@@ -717,7 +752,7 @@ export const Investigator = () => {
       <thead>
         <tr>
           <th>Lead No.</th>
-          <th>Lead Name</th>
+          <th>Lead Description</th>
           <th>Due Date</th>
           <th>Priority</th>
           <th>Days Left</th>
@@ -947,7 +982,7 @@ export const Investigator = () => {
       <thead>
         <tr>
           <th>Lead No.</th>
-          <th>Lead Name</th>
+          <th>Lead Description</th>
           <th>Due Date</th>
           <th>Priority</th>
           <th>Days Left</th>
@@ -1013,7 +1048,7 @@ export const Investigator = () => {
               <thead>
                 <tr>
                   <th>Lead No.</th>
-                  <th>Lead Name</th>
+                  <th>Lead Description</th>
                   <th></th>
                 </tr>
               </thead>
@@ -1060,7 +1095,7 @@ export const Investigator = () => {
       <thead>
         <tr>
           <th>Lead No.</th>
-          <th>Lead Name</th>
+          <th>Lead Description</th>
           <th>Lead Status</th>
           <th></th> {/* Empty header for buttons column */}
         </tr>
@@ -1089,7 +1124,7 @@ export const Investigator = () => {
                     </div>
                 </div>
                 <div className="gotomainpagebtn">
-                   <button className="cancel-btn"onClick={() => handleNavigation("/MainPage")}>Go to Main Page</button>
+                <button className="mainpagebtn"onClick={() => handleNavigation("/HomePage")}>Go to Home Page</button>
                 </div>
                 </div>
             </div>
