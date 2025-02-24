@@ -697,7 +697,7 @@ const addCase = (newCase) => {
 <Sort columns={["Lead Number", "Lead Name","Priority", "Flag"]} onApplySort={handleSort} />
 
 
-        <table className="timeline-table">
+        <table className="leads-table">
               <thead>
                 <tr>
                   <th>Case No.</th>
@@ -1213,7 +1213,7 @@ const addCase = (newCase) => {
   <div className="pending-lead-returns">
     <Filter filtersConfig={filtersConfigPLR} onApply={handleFilterApply} />
     <Sort columns={["Lead Number", "Lead Name","Priority", "Flag"]} onApplySort={handleSort} />
-    <table className="pending-lr-table">
+    <table className="leads-table">
               <thead>
                 <tr>
                   <th>Lead No.</th>

@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
 import Navbar from '../../../components/Navbar/Navbar';
 import "./LREnclosures.css"; // Custom CSS file for Enclosures styling
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const LREnclosures = () => {
   const navigate = useNavigate(); // Initialize navigate hook
@@ -91,8 +93,29 @@ export const LREnclosures = () => {
         </div>
       </div>
 
-        {/* Enclosures Table */}
-        <table className="timeline-table">
+        {/* Enclosure Form */}
+        <div className="enclosure-form">
+          <div className="form-row">
+            <label>Type:</label>
+            <input
+              type="text"
+              value={enclosureData.type}
+              onChange={(e) => handleInputChange("type", e.target.value)}
+            />
+          </div>
+          <div className="form-row">
+            <label>Enclosure:</label>
+            <textarea
+              value={enclosureData.enclosure}
+              onChange={(e) => handleInputChange("enclosure", e.target.value)}
+            ></textarea>
+          </div>
+        </div>
+        <button className="save-btn1
+        " onClick={handleAddEnclosure}>Add Enclosure</button>
+
+              {/* Enclosures Table */}
+              <table className="timeline-table">
           <thead>
             <tr>
               <th>Date Entered</th>
@@ -113,34 +136,21 @@ export const LREnclosures = () => {
           </tbody>
         </table>
 
-        {/* Enclosure Form */}
-        <div className="enclosure-form">
-          <div className="form-row">
-            <label>Type:</label>
-            <input
-              type="text"
-              value={enclosureData.type}
-              onChange={(e) => handleInputChange("type", e.target.value)}
-            />
-          </div>
-          <div className="form-row">
-            <label>Enclosure:</label>
-            <textarea
-              value={enclosureData.enclosure}
-              onChange={(e) => handleInputChange("enclosure", e.target.value)}
-            ></textarea>
-          </div>
-        </div>
 
         {/* Action Buttons */}
         <div className="form-buttons">
-          <button className="add-btn" onClick={handleAddEnclosure}>Add Enclosure</button>
-          <button className="back-btn" onClick={() => handleNavigation("/LRVehicle")}>Back</button>
+          {/* <button className="add-btn" onClick={handleAddEnclosure}>Add Enclosure</button> */}
+          {/* <button className="back-btn" onClick={() => handleNavigation("/LRVehicle")}>Back</button>
           <button className="next-btn" onClick={() => handleNavigation("/LREvidence")}>Next</button>
           <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button>
+          <button className="cancel-btn">Cancel</button> */}
         </div>
+
       </div>
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LREvidence")} // Takes user to CM Return page
+      />
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
+import FootBar from '../../../components/FootBar/FootBar';
 
 import Navbar from '../../../components/Navbar/Navbar';
 import './LRPerson.css';
@@ -192,6 +193,9 @@ export const LRPerson = () => {
             ))}
           </tbody>
         </table>
+        <button onClick={() => handleNavigation('/LRPerson1')} className="save-btn1
+        ">Add Person</button>
+
       </div>
 
       {/* Action Buttons */}
@@ -203,12 +207,16 @@ export const LRPerson = () => {
 
       {/* Bottom Buttons */}
       <div className="bottom-buttons">
-      <button onClick={() => handleNavigation('/LRPerson1')} className="back-btn">Add Person</button>
-        <button className="back-btn"onClick={() => handleNavigation('/LRReturn')} >Back</button>
-        <button className="next-btn"onClick={() => handleNavigation('/LRVehicle')} >Next</button>
-        <button className="save-btn">Save</button>
-        <button className="cancel-btn">Cancel</button>
+      {/* <button onClick={() => handleNavigation('/LRPerson1')} className="back-btn">Add Person</button> */}
+        {/* <button className="back-btn"onClick={() => handleNavigation('/LRReturn')} >Back</button>
+        <button className="next-btn"onClick={() => handleNavigation('/LRVehicle')} >Next</button> */}
+        {/* <button className="save-btn">Save</button>
+        <button className="cancel-btn">Cancel</button> */}
       </div>
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LRVehicle")} // Takes user to CM Return page
+      />
     </div>
   );
 };

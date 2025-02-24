@@ -2,6 +2,8 @@ import './LRVehicle.css';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 import Navbar from '../../../components/Navbar/Navbar';
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const LRVehicle = () => {
 
@@ -142,52 +144,6 @@ export const LRVehicle = () => {
          <div className="right-section">
         </div>
       </div>
-
-        {/* Vehicle Table */}
-        <table className="timeline-table">
-          <thead>
-            <tr>
-              <th>Date Entered</th>
-              <th>Associated Return Id</th>
-              <th>Year</th>
-              <th>Make</th>
-              <th>Model</th>
-              <th>Color</th>
-              <th>VIN</th>
-              <th>Plate</th>
-              <th>State</th>
-            </tr>
-          </thead>
-          <tbody>
-    {vehicles.map((vehicle, index) => (
-      <tr key={index}>
-        <td>{vehicle.dateEntered}</td>
-        <td>{vehicle.returnId}</td>
-        <td>{vehicle.year}</td>
-        <td>{vehicle.make}</td>
-        <td>{vehicle.model}</td>
-        <td style={{ textAlign: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ width: '60px', display: 'inline-block' }}>{vehicle.color}</span>
-          <div
-            style={{
-              width: '18px',
-              height: '18px',
-              backgroundColor: vehicle.color,
-              marginLeft: '15px',
-              border: '1px solid #000',
-            }}
-          ></div>
-        </div>
-      </td>
-        <td>{vehicle.vin}</td>
-        <td>{vehicle.plate}</td>
-        <td>{vehicle.state}</td>
-      </tr>
-    ))}
-  </tbody>
-        </table>
-
         {/* Vehicle Form */}
         <div className="vehicle-form">
           <div className="form-row">
@@ -273,9 +229,58 @@ export const LRVehicle = () => {
             ></textarea>
           </div>
         </div>
+        <button className="save-btn1" onClick={handleAddVehicle}>
+            Add Vehicle
+          </button>
+
+             {/* Vehicle Table */}
+        <table className="timeline-table">
+          <thead>
+            <tr>
+              <th>Date Entered</th>
+              <th>Associated Return Id</th>
+              <th>Year</th>
+              <th>Make</th>
+              <th>Model</th>
+              <th>Color</th>
+              <th>VIN</th>
+              <th>Plate</th>
+              <th>State</th>
+            </tr>
+          </thead>
+          <tbody>
+    {vehicles.map((vehicle, index) => (
+      <tr key={index}>
+        <td>{vehicle.dateEntered}</td>
+        <td>{vehicle.returnId}</td>
+        <td>{vehicle.year}</td>
+        <td>{vehicle.make}</td>
+        <td>{vehicle.model}</td>
+        <td style={{ textAlign: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ width: '60px', display: 'inline-block' }}>{vehicle.color}</span>
+          <div
+            style={{
+              width: '18px',
+              height: '18px',
+              backgroundColor: vehicle.color,
+              marginLeft: '15px',
+              border: '1px solid #000',
+            }}
+          ></div>
+        </div>
+      </td>
+        <td>{vehicle.vin}</td>
+        <td>{vehicle.plate}</td>
+        <td>{vehicle.state}</td>
+      </tr>
+    ))}
+  </tbody>
+        </table>
+
 
         {/* Buttons */}
-        <div className="form-buttons">
+        {/* <div className="form-buttons">
         <button className="add-btnvh" onClick={handleAddVehicle}>
             Add Vehicle
           </button>
@@ -283,8 +288,12 @@ export const LRVehicle = () => {
           <button className="next-btn">Next</button>
           <button className="save-btn">Save</button>
           <button className="cancel-btn">Cancel</button>
-        </div>
+        </div> */}
       </div>
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
+      />
     </div>
   );
 };

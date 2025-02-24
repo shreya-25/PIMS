@@ -1,203 +1,173 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import axios from "axios";
-import { useNavigate } from 'react-router-dom'; 
-import Navbar from '../../components/Navbar/Navbar'; 
-import './LeadsDesk.css'; 
-import FootBar from '../../components/FootBar/FootBar'; // Ensure FootBar is properly linked
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Navbar from "../../components/Navbar/Navbar";
+import FootBar from "../../components/FootBar/FootBar";
+import "./LeadsDesk.css"; // Ensure this file is linked for styling
 
 export const LeadsDesk = () => {
   const navigate = useNavigate();
-  const location = useLocation();
 
-    const [leadData, setLeadData] = useState({
-      CaseName: '',
-      CaseNo: '',
-      leadNumber: '',
-      leadOrigin: '',
-      incidentNumber: '',
-      subNumber: '',
-      associatedSubNumbers: [],
-      assignedDate: '',
-      dueDate: '',
-      leadSummary: '',
-      assignedBy: '',
-      leadDescription: '',
-      assignedOfficer: '',
-    });
+  // Dummy data for multiple leads
+  const [leadsData, setLeadsData] = useState([
+    {
+      leadNumber: "1",
+      leadOrigin: "",
+      assignedOfficer: "Officer 912",
+      assignedDate: "02/25/25",
+      leadDescription: "Collect Audio Recording from dispatcher",
+      leadReturns: [
+        "Officer checked nearby park.",
+        "Neighbor provided security footage.",
+        "Witness identified the child.",
+      ],
+    },
+    {
+      leadNumber: "2",
+      leadOrigin: "",
+      assignedOfficer: "Officer 914",
+      assignedDate: "02/26/25",
+      leadDescription: "Interview witness near the grocery store",
+      leadReturns: [
+        "Security footage shows the suspect.",
+        "Officer confirmed identity with store clerk.",
+      ],
+    },
+    {
+      leadNumber: "3",
+      leadOrigin: "1",
+      assignedOfficer: "Officer 918",
+      assignedDate: "02/27/25",
+      leadDescription: "Follow up on car seen near the location",
+      leadReturns: [
+        "Car owner identified.",
+        "Suspect had no criminal record.",
+        "No suspicious activity found.",
+      ],
+    },
+    {
+      leadNumber: "4",
+      leadOrigin: "2",
+      assignedOfficer: "Officer 918",
+      assignedDate: "02/27/25",
+      leadDescription: "Check video footage of main street",
+      leadReturns: [
+        "Suspect went outside the house at 2:00 PM "
+      ],
+    },
+  ]);
 
-    const handleInputChange = (field, value) => {
-      // Validate leadNumber to allow only numeric values
-      if (field === 'leadNumber' && !/^\d*$/.test(value)) {
-        alert("Lead Number must be a numeric value.");
-        return;
-      }
-    
-      // Update state
-      setLeadData({ ...leadData, [field]: value });
-    };
-
-  // Extract case details
-  const caseDetails = location.state?.caseDetails || {};
-  const { id: caseID, title: caseName } = caseDetails;
-
-  // State to store leads
-  const [leads, setLeads] = useState([]);
-
-  // Fetch all leads for the case
-  useEffect(() => {
-    const fetchLeadsForCase = async () => {
-      try {
-        const response = await axios.get(`http://localhost:5000/api/lead/getLeads?caseID=${caseID}`);
-        
-        if (response.data && response.data.length > 0) {
-          // Sort leads in ascending order based on lead number
-          const sortedLeads = response.data.sort((a, b) => a.leadNo - b.leadNo);
-          setLeads(sortedLeads);
-        }
-      } catch (error) {
-        console.error("Error fetching leads:", error);
-      }
-    };
-
-    if (caseID) {
-      fetchLeadsForCase();
-    }
-  }, [caseID]);
+  const options = [
+    { name: "Person" },
+    { name: "Vehicle" },
+    { name: "Evidence" },
+    { name: "Enclosure" },
+    { name: "Pictures" },
+    { name: "Audio" },
+    { name: "Video" },
+    { name: "Scratchpad" },
+  ];
 
   return (
     <div className="lead-instructions-page">
-      {/* Navbar */}
       <Navbar />
 
-      <div className="main-content-cl">
+      <div className="main-content-cl1">
         {/* Left Section */}
         <div className="left-section">
           <img
-            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
+            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
             alt="Police Department Logo"
             className="police-logo-cl"
           />
         </div>
 
-
         {/* Center Section */}
-        <div className="center-section">
-        <h1 className="title">LEADS DESK</h1>
-          {caseDetails ? (
-                        <h1>
-                          Case: {caseDetails?.id || "N/A"} | {caseDetails?.title || "Unknown Case"}
-                        </h1>
-                    ) : (
-                        <h1>Case: 12345 | Main Street Murder </h1>
-                    )}
+        <div className="center-section-ld">
+          <h1 className="title">LEADS DESK</h1>
+          <h1>Case: 88765 | Floral Avenue Lost Child</h1>
         </div>
+      </div>
 
-
-        {/* Right Section */}
-        <div className="right-section">
-          <table className="info-table">
-            <tbody>
-              <tr>
-                <td>LEAD NUMBER:</td>
-                <td>
-                {/* <input
-                    type="text"
-                    className="input-field1"
-                    value={leadData.leadNumber}
-                    onChange={(e) => handleInputChange('leadNumber', e.target.value)} // Allow manual edits
-                    placeholder="Enter Lead Number"
-                  /> */}
-                        <input type="text" value={leadData.leadNumber} className="input-field" readOnly /> {/* Read-only auto-generated */}
-
-                </td>
-              </tr>
-              <tr>
-                <td>INCIDENT NUMBER:</td>
-                <td>
-                  <input
-                    type="text"
-                    className="input-field"
-                    value={leadData.incidentNumber}
-                    onChange={(e) => handleInputChange('incidentNumber', e.target.value)}
-                    placeholder=""
-                  />
-                </td>
-              </tr>
-              <tr>
-                <td>SUBNUMBER:</td>
-                <td>
-                <input
-                    type="text"
-                    className="input-field"
-                    value={leadData.subNumber}
-                    readOnly // Make it read-only
-                  />
-                </td>
-              </tr>
-              {/* <tr>
-                <td>ASSOCIATED SUBNUMBERS:</td>
-                <td>
-                <input
-                    type="text"
-                    className="input-field1"
-                    value={leadData.associatedSubNumbers}
-                    readOnly // Make it read-only
-                  />
-                </td>
-              </tr> */}
-             
-                           <tr>
-                <td>ASSIGNED DATE:</td>
-                <td>
-                  <input
-                    type="text"
-                    className="input-field"
-                    value={leadData.assignedDate}
-                    onChange={(e) => handleInputChange('assignedDate', e.target.value)}
-                    placeholder=""
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        </div>
-
-        {/* Leads Table */}
-        <div className="leads-container">
-          {/* {leads.length > 0 ? ( */}
-            <table className="leads-table">
-              <thead>
-                <tr>
-                  <th>Lead No</th>
-                  <th>Lead Instruction</th>
-                  <th>Assigned Officer</th>
-                  <th>Assigned Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leads.map((lead) => (
-                  <tr key={lead.leadNo}>
-                    <td>{lead.leadNo|| "1"}</td>
-                    <td>{lead.description || "Collect Audio Recording from Dispatcher"}</td>
-                    <td>{lead.assignedTo || "Not Assigned"}</td>
-                    <td>{lead.assignedDate|| "02/25/25"}</td>
-                    <td>{lead.dueDate || "N/A"}</td>
+      <div className="bottom-sec-ld">
+        {/* Loop through multiple leads */}
+        {leadsData.map((lead, leadIndex) => (
+          <div key={leadIndex} className="lead-section">
+            {/* Lead Information Table */}
+            <div className="">
+              <table className="info-table">
+                <tbody>
+                  <tr>
+                    <td>LEAD NUMBER:</td>
+                    <td>
+                      <input type="text" value={lead.leadNumber} className="input-field" readOnly />
+                    </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          {/* ) : (
-            <p>No leads available for this case.</p>
-          )} */}
+                  <tr>
+                    <td>LEAD ORIGIN:</td>
+                    <td>
+                      <input type="text" value={lead.leadOrigin} className="input-field" readOnly />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>ASSIGNED OFFICERS:</td>
+                    <td>
+                      <input type="text" value={lead.assignedOfficer} className="input-field" readOnly />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>ASSIGNED DATE:</td>
+                    <td>
+                      <input type="text" value={lead.assignedDate} className="input-field" readOnly />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Leads Table */}
+            <div className="leads-container">
+              <table className="leads-table">
+                <tbody>
+                  <tr>
+                    <td>Lead Instruction</td>
+                    <td>
+                      <input type="text" value={lead.leadDescription} className="input-field" readOnly />
+                    </td>
+                  </tr>
+
+                  {/* Dynamically render multiple Lead Returns */}
+                  {lead.leadReturns.map((returnItem, index) => (
+                    <React.Fragment key={index}>
+                      <tr>
+                        <td>Lead Return {index + 1}</td>
+                        <td>
+                          <input type="text" value={returnItem} className="input-field" readOnly />
+                        </td>
+                      </tr>
+
+                      {/* Options under each Lead Return */}
+                      <tr>
+                        <td colSpan="2">
+                          <div className="options-container">
+                            {options.map((option) => (
+                              <button key={option.name} className="option-button">
+                                {option.name}
+                              </button>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* FootBar with navigation */}
-      <FootBar 
-        onPrevious={() => navigate(-1)} // Go back
-        onNext={() => navigate("/cm-return")} // Go to CM Return page
-      />
+      <FootBar onPrevious={() => navigate(-1)} />
     </div>
   );
 };

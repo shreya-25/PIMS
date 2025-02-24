@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from '../../../components/Navbar/Navbar';
 import "./LRAudio.css"; // Custom CSS file for Audio styling
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const LRAudio = () => {
   const navigate = useNavigate();
@@ -114,28 +116,6 @@ export const LRAudio = () => {
         </div>
       </div>
 
-        {/* Audio Files Table */}
-        <table className="timeline-table">
-          <thead>
-            <tr>
-              <th>Date Entered</th>
-              <th> Associated Return Id </th>
-              <th>Date Audio Recorded</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {audioFiles.map((audio, index) => (
-              <tr key={index}>
-                <td>{audio.dateEntered}</td>
-                <td>{audio.returnId}</td>
-                <td>{audio.dateAudioRecorded}</td>
-                <td>{audio.description}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
         {/* Audio Form */}
         <h4 className="evidence-form-h4">Enter Audio Details</h4>
         <div className="audio-form">
@@ -162,6 +142,30 @@ export const LRAudio = () => {
             <input type="file" accept="audio/*" className="evidence-head" onChange={handleFileChange} />
           </div>
         </div>
+        <button className="save-btn1" onClick={handleAddAudio}>Add Audio</button>
+
+           {/* Audio Files Table */}
+           <table className="timeline-table">
+          <thead>
+            <tr>
+              <th>Date Entered</th>
+              <th> Associated Return Id </th>
+              <th>Date Audio Recorded</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {audioFiles.map((audio, index) => (
+              <tr key={index}>
+                <td>{audio.dateEntered}</td>
+                <td>{audio.returnId}</td>
+                <td>{audio.dateAudioRecorded}</td>
+                <td>{audio.description}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
 
         {/* Uploaded Audio Preview */}
         <div className="uploaded-audio">
@@ -180,14 +184,18 @@ export const LRAudio = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="form-buttons-audio">
+        {/* <div className="form-buttons-audio">
           <button className="add-btn" onClick={handleAddAudio}>Add Audio</button>
           <button className="back-btn" onClick={() => handleNavigation("/LRPictures")}>Back</button>
           <button className="next-btn" onClick={() => handleNavigation("/LRVideos")}>Next</button>
           <button className="save-btn">Save</button>
           <button className="cancel-btn">Cancel</button>
-        </div>
+        </div> */}
       </div>
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LRVideo")} // Takes user to CM Return page
+      />
     </div>
   );
 };

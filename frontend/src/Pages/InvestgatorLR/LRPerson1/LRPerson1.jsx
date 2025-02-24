@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
-
+import FootBar from '../../../components/FootBar/FootBar';
 import Navbar from '../../../components/Navbar/Navbar';
 import './LRPerson1.css';
 
@@ -228,18 +228,24 @@ export const LRPerson1 = () => {
         </table>
 
         {/* Additional Details */}
-        <button className="details-btn" onClick={() => handleNavigation('/LRPerson2')} >Add Additional Details ➤</button>
+        <button className="save-btn1" onClick={() => handleNavigation('/LRPerson2')} >Add Additional Details ➤</button>
+        {/* <button className="save-btn1">Save</button> */}
 
         {/* Action Buttons */}
         <div className="form-buttons">
-          <button onClick={() => navigate(-1)} className="back-btn">
+          {/* <button onClick={() => navigate(-1)} className="back-btn">
             Back
           </button>
-          <button className="next-btn" onClick={() => handleNavigation('/LRPerson2')}>Next</button>
-          <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button>
+          <button className="next-btn" onClick={() => handleNavigation('/LRPerson2')}>Next</button> */}
+          {/* <button className="save-btn1">Save</button> */}
+          {/* <button className="cancel-btn">Cancel</button> */}
         </div>
+        
       </div>
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LRVehicle")} // Takes user to CM Return page
+      />
     </div>
   );
 };

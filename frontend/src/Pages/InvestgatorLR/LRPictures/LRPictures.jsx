@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar/Navbar";
 import "./LRPictures.css";
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const LRPictures = () => {
   const navigate = useNavigate();
@@ -121,28 +123,6 @@ export const LRPictures = () => {
         </div>
       </div>
 
-        {/* Pictures Table */}
-        <table className="timeline-table">
-          <thead>
-            <tr>
-              <th>Date Entered</th>
-              <th>Associated Return Id </th>
-              <th>Date Picture Taken</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pictures.map((picture, index) => (
-              <tr key={index}>
-                <td>{picture.dateEntered}</td>
-                <td>{picture.returnId}</td>
-                <td>{picture.datePictureTaken}</td>
-                <td>{picture.description}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
         {/* Picture Form */}
         <h4 className="evidence-form-h4">Enter Picture Details</h4>
         <div className="picture-form">
@@ -168,6 +148,30 @@ export const LRPictures = () => {
             <input type="file" accept="image/*"  className="evidence-head" onChange={handleFileChange} />
           </div>
         </div>
+        <button className="save-btn1" onClick={handleAddPicture}>Add Picture</button>
+
+
+           {/* Pictures Table */}
+           <table className="timeline-table">
+          <thead>
+            <tr>
+              <th>Date Entered</th>
+              <th>Associated Return Id </th>
+              <th>Date Picture Taken</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pictures.map((picture, index) => (
+              <tr key={index}>
+                <td>{picture.dateEntered}</td>
+                <td>{picture.returnId}</td>
+                <td>{picture.datePictureTaken}</td>
+                <td>{picture.description}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
         {/* Uploaded Pictures Preview */}
         <div className="uploaded-pictures">
@@ -182,15 +186,22 @@ export const LRPictures = () => {
           </div>
         </div>
 
+        
+
         {/* Action Buttons */}
-        <div className="form-buttons-pic">
+        {/* <div className="form-buttons-pic">
           <button className="add-btn" onClick={handleAddPicture}>Add Picture</button>
           <button className="back-btn" onClick={() => handleNavigation("/LREvidence")}>Back</button>
           <button className="next-btn" onClick={() => handleNavigation("/LRAudio")}>Next</button>
           <button className="save-btn">Save</button>
           <button className="cancel-btn">Cancel</button>
-        </div>
+        </div> */}
       </div>
+
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LRAudio")} // Takes user to CM Return page
+      />
     </div>
   );
 };

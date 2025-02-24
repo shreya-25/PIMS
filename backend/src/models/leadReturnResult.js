@@ -1,10 +1,9 @@
 const mongoose = require("mongoose");
 
-const leadReturnSchema = new mongoose.Schema(
+const leadReturnResultsSchema = new mongoose.Schema(
     {
-        // leadNo: { type: Number, required: true, unique: true },
         leadNo: { type: Number, required: true },
-        // assignedDate: { type: Date, required: true },
+        description: { type: String, required: true },
         assignedTo: {
             assignees: [{ type: String, required: true }], // List of officers
             lRStatus: { 
@@ -21,17 +20,14 @@ const leadReturnSchema = new mongoose.Schema(
                 default: "Assigned" 
             }
         },
-        // summary: { type: String, required: true },
-        description: { type: String, required: true },
-        // leadStatus: { type: String, required: true, enum: ["Assigned", "Pending", "Approved","Returned", "Completed"], default: "Assigned"},
-        // dueDate: { type: Date },
-        submittedDate:  { type: Date },
-        approvedDate:   { type: Date },
-        returnedDate: { type: Date },
+        enteredDate:  { type: Date },
+        enteredBy: { type: String, required: true},
         caseName: { type: String, required: true},
         caseNo: { type: Number , required: true},
+        leadReturnId: { type: Number , required: true},
+        leadReturnResult: { type: String, required: true},
     },
     { timestamps: true }
 );
 
-module.exports = mongoose.model("LeadReturn", leadReturnSchema , "LeadReturns");
+module.exports = mongoose.model("LeadReturnResult", leadReturnResultsSchema, "LeadReturnResults");
