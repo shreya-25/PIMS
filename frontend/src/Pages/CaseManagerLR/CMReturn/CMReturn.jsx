@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar/Navbar";
 import "./CMReturn.css";
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const CMReturn = () => {
   const navigate = useNavigate();
@@ -110,6 +112,22 @@ export const CMReturn = () => {
       </div>
     </div>
 
+    <h4 className="return-form-h4">{editMode ? "Edit Return" : "Add Return"}</h4>
+      <div className="return-form">
+        <textarea
+          value={returnData.results}
+          onChange={(e) => handleInputChange("results", e.target.value)}
+          placeholder="Enter return details"
+        ></textarea>
+      </div>
+
+      <div className="form-buttons-return">
+        <button className="save-btn" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Return"}</button>
+        {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
+        <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
+        <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
+      </div>
+
       <table className="timeline-table">
         <thead>
           <tr>
@@ -136,22 +154,12 @@ export const CMReturn = () => {
         </tbody>
       </table>
 
-      <h4 className="return-form-h4">{editMode ? "Edit Return" : "Add Return"}</h4>
-      <div className="return-form">
-        <textarea
-          value={returnData.results}
-          onChange={(e) => handleInputChange("results", e.target.value)}
-          placeholder="Enter return details"
-        ></textarea>
-      </div>
-
-      <div className="form-buttons-return">
-        <button className="save-btn" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Return"}</button>
-        <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
-        <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
-        <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button>
-      </div>
     </div>
+
+    <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LRPerson")} // Takes user to CM Return page
+      />
   </div>
 );
 };

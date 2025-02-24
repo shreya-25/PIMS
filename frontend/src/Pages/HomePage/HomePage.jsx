@@ -697,7 +697,7 @@ const addCase = (newCase) => {
 <Sort columns={["Lead Number", "Lead Name","Priority", "Flag"]} onApplySort={handleSort} />
 
 
-        <table className="ongoing-case-table">
+        <table className="timeline-table">
               <thead>
                 <tr>
                   <th>Case No.</th>

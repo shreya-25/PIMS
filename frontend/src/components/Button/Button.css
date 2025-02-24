@@ -7,9 +7,9 @@
     transition: all 0.3s ease;
   }
   
-  .custom-button:hover {
+  /* .custom-button:hover {
     background-color: #003636;
-  }
+  } */
   
   .custom-button:active {
     transform: scale(0.98);

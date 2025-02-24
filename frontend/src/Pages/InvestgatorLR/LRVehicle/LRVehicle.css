@@ -16,11 +16,6 @@
     cursor: pointer;
   }
   
-  .menu-item.active {
-    color: #13756d;
-    text-decoration: underline;
-  }
-  
   .title {
     text-align: center;
     margin-bottom: 15px;

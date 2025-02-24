@@ -8,6 +8,10 @@ export const CaseInformation = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { caseDetails } = location.state || {};
+    
+    const handleHomeClick = () => {
+      navigate("/Homepage"); // Replace "/" with the actual home page route if different
+    };
 
     // Example state fields mirroring the police report sections
     const [recentType, setRecentType] = useState('');
@@ -627,7 +631,7 @@ export const CaseInformation = () => {
           </div>
           <div className="btn-sec">
 
-<button className="save-btn1" onClick={handleSaveClick}>
+<button className="save-btn1" onClick={handleHomeClick}>
 Back
 </button>
 <button className="save-btn1" onClick={handleSaveClick}>

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 import Navbar from '../../../components/Navbar/Navbar';
 import './LRInstruction.css';
@@ -325,7 +327,7 @@ export const LRInstruction = () => {
       </div>
 
       {/* Action Buttons */}
-      <div className="form-buttons-inst">
+      {/* <div className="form-buttons-inst">
         <button className="edit-btn" onClick={handleGenerateLead}>
           Edit
         </button>
@@ -334,7 +336,11 @@ export const LRInstruction = () => {
         <button className="next-btn" onClick={handleNextPage}>Cancel</button>
 
 
-      </div>
+      </div> */}
+     <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LRReturn")} // Takes user to CM Return page
+      />
     </div>
   );
 };
