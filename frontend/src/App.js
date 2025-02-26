@@ -1,5 +1,6 @@
 import './App.css';
 import React from 'react';
+import ReactDOM from "react-dom";
 import {BrowserRouter as Router, Routes, Route} from 'react-router-dom';
 import {Login} from './Pages/Login/Login';
 import {LoginAdmin} from './Pages/LoginAdmin/LoginAdmin';
@@ -56,6 +57,16 @@ import { LeadInfo } from './Pages/LeadInfo/LeadInfo';
 import { CaseInformation } from './Pages/CaseInformation/CaseInformation';
 import {LeadReview} from './Pages/LeadReview/LeadReview';
 import { LeadsDesk } from './Pages/LeadsDesk/LeadsDesk';
+import { DataProvider } from "./Pages/Context/DataContext";
+
+ReactDOM.render(
+  <React.StrictMode>
+    <DataProvider>
+      <App />
+    </DataProvider>
+  </React.StrictMode>,
+  document.getElementById("root")
+);
 
 function App() {
   return (
