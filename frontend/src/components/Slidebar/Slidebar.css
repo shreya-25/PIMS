@@ -109,8 +109,8 @@ select.input-field {
   transition: background-color 0.3s ease; /* Smooth hover transition */
   position: absolute;
   width: 10%;
-  margin-left: 18%;
-  margin-top: 0;
+  margin-left: 75%;
+  margin-top: -3%;
 }
 
 .add-case-button:hover {

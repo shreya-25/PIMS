@@ -108,18 +108,22 @@ export const AdminCM1 = () => {
       </div>
       <div className="admin-content">
         <div className="main-section-admin">
-          <Searchbar
+
+           <div className='searchContainer'>
+           <Searchbar
               placeholder="Search Cases"
               onSearch={(query) => console.log("Search query:", query)}
             />
+                    </div>
             </div>
 
              {/* Main Table */}
         <div className="table-container1">
-          <table className="person-table">
+          <table className="leads-table">
             <thead>
               <tr>
-                <th>Case Number and Name</th>
+                <th>Case No.</th>
+                <th>Case Name</th>
                 <th>Assigned Case Manager</th>
                 <th>Assigned Officers</th>
                 <th>Status</th>
@@ -130,13 +134,14 @@ export const AdminCM1 = () => {
             <tbody>
               {caseInfo.map((caseItem, index) => (
                 <tr key={index}>
-                  <td>{`${caseItem.CaseNo} | ${caseItem.CaseName}`}</td>
+                  <td>{`${caseItem.CaseNo}`}</td>
+                  <td>{`${caseItem.CaseName}`}</td>
                   <td>{caseItem.CaseManager}</td>
                   <td>{caseItem.Officers.join(", ")}</td>
                   <td>{caseItem.Status}</td>
                   <td>{caseItem.CompletionDate}</td>
                   <td>
-                    <button className = "edit-button1"
+                    <button className = "save-btn1"
                       onClick={() => confirmAndNavigate('/CasePageManager', caseItem.CaseNo)}
                     >
                       View

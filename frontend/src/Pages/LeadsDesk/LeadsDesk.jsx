@@ -1,11 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
 import FootBar from "../../components/FootBar/FootBar";
+import { useDataContext } from "../Context/DataContext"; // Import Context
+
 import "./LeadsDesk.css"; // Ensure this file is linked for styling
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 export const LeadsDesk = () => {
   const navigate = useNavigate();
+  const pdfRef = useRef();
+  const { persons } = useDataContext(); // Fetch Data from Context
+
 
   // Dummy data for multiple leads
   const [leadsData, setLeadsData] = useState([
@@ -67,8 +74,20 @@ export const LeadsDesk = () => {
     { name: "Scratchpad" },
   ];
 
+  const generatePDF = () => {
+    const input = pdfRef.current;
+    html2canvas(input, { scale: 2 }).then((canvas) => {
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const imgWidth = 210; // A4 width
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      pdf.save("leads_desk.pdf");
+    });
+  };
+
   return (
-    <div className="lead-instructions-page">
+    <div ref={pdfRef} className="lead-instructions-page">
       <Navbar />
 
       <div className="main-content-cl1">
@@ -161,10 +180,40 @@ export const LeadsDesk = () => {
                   ))}
                 </tbody>
               </table>
+{/* Fetch and Insert Person Table Dynamically after Lead 1 */}
+{lead.leadNumber === "1" && persons.length > 0 && (
+              <div className="person-section">
+                <h2 className="title">Lead Person Details</h2>
+                <table className="timeline-table">
+                  <thead>
+                    <tr>
+                      <th>Date Entered</th>
+                      <th>Name</th>
+                      <th>Phone No</th>
+                      <th>Address</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {persons.map((person, index) => (
+                      <tr key={index}>
+                        <td>{person.dateEntered}</td>
+                        <td>{person.name}</td>
+                        <td>{person.phoneNo}</td>
+                        <td>{person.address}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+              
+
             </div>
           </div>
         ))}
       </div>
+
+      <button onClick={generatePDF} className="save-btn1">Download PDF</button>
 
       {/* FootBar with navigation */}
       <FootBar onPrevious={() => navigate(-1)} />
