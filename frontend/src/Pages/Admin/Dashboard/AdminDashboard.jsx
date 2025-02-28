@@ -675,3 +675,60 @@
 // };
 
 // export default AdminDashboard;
+
+
+import React, { useEffect } from "react";
+import Navbar from "../../../components/Navbar/Navbar";
+import "./AdminDashboard.css";
+import Papa from "papaparse";
+import Chart from "chart.js/auto";
+import L from "leaflet";
+import { useNavigate } from "react-router-dom";
+
+export const AdminDashboard = () => {
+
+   const navigate = useNavigate();
+
+   const handleNavigation = (route) => {
+    navigate(route); // Navigate to the respective page
+  };
+  return (
+    <div className="dashboard">
+      <Navbar />
+
+      <div className="top-menu">
+        <div className="menu-items">
+        <span className="menu-item" onClick={() => handleNavigation('/AdminUR')}>
+            User Registration
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/AdminCM')}>
+           Case Management
+          </span>
+          <span className="menu-item"onClick={() => handleNavigation('/AdminSC')} >
+            Search Cases
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
+            Search People
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
+            Calendar
+          </span>
+          <span className="menu-item active" onClick={() => handleNavigation('/AdminDashboard')} >
+            Dashboard
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
+            Discussion
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/AdminDB')} >
+           Database Backup
+          </span>
+         </div>
+       </div>
+
+
+      <iframe src="/dashboard.html" width="100%" height="100%" title="HTML Preview"></iframe>
+
+      </div>
+      );
+
+};
