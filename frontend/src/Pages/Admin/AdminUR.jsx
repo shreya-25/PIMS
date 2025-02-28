@@ -48,7 +48,8 @@ export const AdminUR = () => {
 
 
   return (
-    <div className="admin-container">
+    <div className="whole-content">
+    <div className="admin-container1">
       <Navbar />
 
       <div className="top-menu">
@@ -158,9 +159,10 @@ export const AdminUR = () => {
             />
             <label>Allow user to create a case</label>
           </div>
-          <button type="submit">Add User</button>
+          <button type="submit" className = "Add-user">Add User</button>
         </form>
       </div>
+    </div>
     </div>
   );
 };
