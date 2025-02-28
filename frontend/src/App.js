@@ -57,6 +57,8 @@ import { LeadInfo } from './Pages/LeadInfo/LeadInfo';
 import { CaseInformation } from './Pages/CaseInformation/CaseInformation';
 import {LeadReview} from './Pages/LeadReview/LeadReview';
 import { LeadsDesk } from './Pages/LeadsDesk/LeadsDesk';
+import { ChainOfCustody } from './Pages/ChainOfCustody/ChainOfCustody';
+
 function App() {
   return (
     <Router>
@@ -117,6 +119,7 @@ function App() {
         <Route path="/CaseInformation" element={<CaseInformation />} />
         <Route path="/LeadReview" element = {<LeadReview />} />
         <Route path="/LeadsDesk" element= {<LeadsDesk />} />
+        <Route path="/ChainOfCustody" element= {<ChainOfCustody />} />
       </Routes>
     </Router>
   );
