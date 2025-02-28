@@ -24,12 +24,8 @@
 //     const yearSelect = document.getElementById("year-select");
 //     const crimeTypeSelect = document.getElementById("crime-type-select");
 //     const summaryPopulation = document.querySelector("#summary-population p");
-//     const summaryViolentTotal = document.querySelector(
-//       "#summary-violent-total p"
-//     );
-//     const summaryPropertyTotal = document.querySelector(
-//       "#summary-property-total p"
-//     );
+//     const summaryViolentTotal = document.querySelector("#summary-violent-total p");
+//     const summaryPropertyTotal = document.querySelector("#summary-property-total p");
 //     const summaryViolentRate = document.querySelector("#summary-violent-rate p");
 
 //     // Helper functions to process data
@@ -143,6 +139,11 @@
 //     };
 
 //     // Initialize the Leaflet map
+//     // Prevent reinitializing if a map already exists in the container.
+//     const mapContainer = document.getElementById("map-container");
+//     if (mapContainer && mapContainer._leaflet_id) {
+//       mapContainer._leaflet_id = null;
+//     }
 //     map = L.map("map-container").setView([37.8, -96], 4);
 //     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 //       attribution: "© OpenStreetMap contributors",
@@ -509,6 +510,16 @@
 //       link.href = URL.createObjectURL(blob);
 //       link.download = "crime_data.csv";
 //       link.click();
+//     };
+
+//     // Cleanup function: destroy chart instances and remove the map on unmount.
+//     return () => {
+//       if (barChartCrime) barChartCrime.destroy();
+//       if (lineChartTrend) lineChartTrend.destroy();
+//       if (pieChartDistribution) pieChartDistribution.destroy();
+//       if (groupedBarChart) groupedBarChart.destroy();
+//       if (scatterChart) scatterChart.destroy();
+//       if (map) map.remove();
 //     };
 //   }, []);
 
