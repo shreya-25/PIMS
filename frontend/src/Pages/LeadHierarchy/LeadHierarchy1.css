@@ -1,258 +1,226 @@
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  /* background-color: #f4f4f4; */
+/* Container for the entire component */
+.lead-log-container {
+  position: relative;
+  margin: 0px;
 }
 
+.row h2{
+  margin-top: 50px;
+  font-weight: 700;
+  margin-bottom: -70px;
+}
 
-.hierarchy-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  transform-origin: top center;  /* Scale from the top center */
+/* ---------------- Tree Styles ---------------- */
+
+.tree {
   width: 100%;
-
-}
-
-/* Parent Node */
-.lead-node {
-  display: flex;
-  justify-content: center;
-  position: relative;
-  flex-direction: column;
-  align-items: center;
-  margin: 4% auto;
-}
-
-.children {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  position: relative;
-  margin-top: 40px;
-}
-
-
-/* Vertical line from parent to children */
-.children::before {
-  content: "";
-  position: absolute;
-  top: -40px;
-  left: 50%;
-  width: 2px;
-  height: 22px;
-  background-color: #918d8d;
-  transform: translateX(-50%);
-}
-
-/* Horizontal line connecting sibling nodes */
-.children::after {
-  content: "";
-  position: absolute;
-  top: -20px;
-  height: 2px;
-  background-color: #918d8d;
-
-  /* Only show if there are multiple child nodes */
-  display: flex; /* Ensures visibility for multiple children */
-  left: var(--line-left-offset, 0);
-  right: var(--line-right-offset, 0);
-}
-
-/* .lead-node:first-child::before{
-  display: none;
-} 
-
-.lead-node:last-child::before{
-  display: none;
-}  */
-
-
-
-/* ####################### */
-
-/* Space between sibling nodes */
-.children .lead-node {
-  margin: 0 20px;
-  position: relative;
-  flex: none;
-}
-
-/* Vertical line from each child to the horizontal line */
-.children .lead-node::before {
-  content: "";
-  position: absolute;
-  top: -20px;
-  left: 50%;
-  width: 2px;
-  height: 20px;
-  background-color: #918d8d;
-  transform: translateX(-50%);
-}
-
-/* Remove lines for single children */
-.children:only-child::before,
-.children:only-child::after {
-  display: none;
-}
-
-
-
-/* ##################################################### */
-
-/* Node Styling */
-.lead {
-  padding: 12px 40px;
-  background-color: #f0f0f0;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  width: 200px;
-  position: relative;
+  height: auto;
   text-align: center;
+  margin: 50px auto;
 }
 
-.lead:hover {
-  background-color: #e0e0e0;
-  transform: scale(1.05);
+.tree ul {
+  padding-top: 20px;
+  position: relative;
+  transition: 0.5s;
 }
-/* Remove connecting lines for leaf nodes (nodes without children) */
-.children:empty::before,
-.children:empty::after,
-.lead-node:only-child .lead::before {
+
+.tree li {
+  display: inline-table;
+  text-align: center;
+  list-style-type: none;
+  position: relative;
+  padding: 10px;
+  transition: 0.5s;
+}
+
+.tree li::before,
+.tree li::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 50%;
+  border-top: 1px solid #ccc;
+  width: 51%;
+  height: 10px;
+}
+
+.tree li::after {
+  right: auto;
+  left: 50%;
+  border-left: 1px solid #ccc;
+}
+
+.tree li:only-child::after,
+.tree li:only-child::before {
   display: none;
 }
 
-/* Styling for selected node */
-.selected-lead {
-  background-color: #5a5a5a;
-  color: white;
+.tree li:only-child {
+  padding-top: 0;
 }
 
-/* Darken disabled nodes */
-.disabled .lead {
-  background-color: #a9a9a9;
-  color: #ffffff;
-  border-color: #7a7a7a;
-  box-shadow: none;
-  cursor: not-allowed;
-  opacity: 1;
+.tree li:first-child::before,
+.tree li:last-child::after {
+  border: 0 none;
+}
+
+.tree li:last-child::before {
+  border-right: 1px solid #ccc;
+  border-radius: 0 5px 0 0;
+  -webkit-border-radius: 0 5px 0 0;
+  -moz-border-radius: 0 5px 0 0;
+}
+
+.tree li:first-child::after {
+  border-radius: 5px 0 0 0;
+  -webkit-border-radius: 5px 0 0 0;
+  -moz-border-radius: 5px 0 0 0;
+}
+
+.tree ul ul::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  border-left: 1px solid #ccc;
+  width: 0;
+  height: 20px;
+}
+
+.tree li a {
+  border: 1px solid #ccc;
+  padding: 10px;
+  display: inline-grid;
+  border-radius: 5px;
+  text-decoration: none;
+  transition: 0.5s;
+  background: #fff;
+  width: 200px;
+
+  /* color: #636363; */
+  padding: 8px;
+  font-size: 20px;
+  /* text-transform: uppercase; */
+  letter-spacing: 1px;
+  font-weight: 700;
+  border: 1px solid rgba(26, 26, 136, 0.212);
 }
 
 
 
+.tree li a span {
+  color: #535050;
+  padding: 8px;
+  font-size: 16px;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
 
-/* Sidebar Style */
-/* Sidebar Styling */
+/* Hover Effects */
+.tree li a:hover,
+.tree li a:hover i,
+/* .tree li a:hover span, */
+.tree li a:hover + ul li a {
+  background: rgba(98, 98, 218, 0.068);
+  /* color: #000; */
+  border: 1px solid rgb(26, 26, 136);
+}
+
+.tree li a:hover + ul li::after,
+.tree li a:hover + ul li::before,
+.tree li a:hover + ul::before,
+.tree li a:hover + ul ul::before {
+  border-color: #94a0b4;
+}
+
+.tree li a.active-lead {
+  background: rgba(98, 98, 218, 0.068); /* Same hover effect */
+  border: 1px solid rgb(26, 26, 136);
+}
+
+/* ---------------- Sidebar Styles ---------------- */
+
 .details-sidebar {
   position: fixed;
   right: 0;
   top: 0;
-  width: 500px;
-  height: 100%;
-  background-color: #e6e6e6; /* Light gray for the sidebar background */
-  border-left: 2px solid #ddd;
-  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.1);
-  transform: translateX(100%);
-  transition: transform 0.3s ease-in-out;
-  z-index: 1000;
+  width: 700px;
+  height: 100vh;
+  background: #fff;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
   padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  transition: transform 0.3s ease-in-out;
+  transform: translateX(100%);
 }
 
 .details-sidebar.open {
   transform: translateX(0);
 }
 
-.details-sidebar h3 {
-  font-size: 1.5rem;
-  text-align: left;
-  color: #333;
-  margin-bottom: 20px;
-}
-
-/* Detail Block Styling */
-.detail-block {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background-color: #f9f9f9; /* Light gray for the blocks */
-  padding: 20px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-  height: 80px; /* Fixed height for uniform block size */
-}
-
-.block-label {
-  font-size: 1rem;
-  color: #666;
-  font-weight: bold;
-}
-
-.block-content {
-  background-color: #d9d9d9; /* Gray for the placeholder */
-  flex-grow: 1;
-  border-radius: 5px;
-  font-size: 1rem;
-  color: #333;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%; /* Ensures consistent content alignment */
-}
-
-/* Close Button */
 .close-sidebar-btn {
-  position: absolute;
-  top: 15px;
-  right: 20px;
-  color: rgb(0, 0, 0);
+  background: none;
   border: none;
-  padding: 10px 14px;
-  font-size: 14px;
+  font-size: 18px;
   cursor: pointer;
-  border-radius: 50%;
-  transition: background-color 0.3s ease;
+  color: #555;
+  float: right;
 }
 
+.sidebar-title {
+  margin-bottom: 15px;
+  font-size: 24px;
+}
 
+.lead-info {
+  margin-bottom: 10px;
+}
 
-.disable-btn-hierarchy {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 10px 14px;
-  font-size: 1rem;
+.lead-info label {
+  display: block;
+  font-size: 22px;
+  margin-left: -20px;
+}
+
+.lead-input {
+  margin-bottom: 15px;
+}
+
+.lead-input label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+  font-size: 22px;
+}
+
+.lead-input textarea {
+  width: 100%;
+  height: 200px;
+  padding: 8px;
+  border: 1px solid #ccc;
   border-radius: 5px;
+  font-size: 20px;
+  resize: none;
+  color: rgb(46, 46, 46);
+}
+
+.disable-btn {
+  width: 100%;
+  padding: 10px;
+  border: none;
   cursor: pointer;
-  text-align: center;
-  transition: background-color 0.3s ease;
-  margin-top: auto;
+  font-size: 20px;
+  border-radius: 5px;
+  margin-top: 10px;
+  transition: background 0.3s ease;
 }
 
-.disable-btn-hierarchy:hover {
-  background-color: #0056b3;
+.disable-btn.disable {
+  background: rgba(172, 32, 32, 0.76);
+  color: white;
 }
 
-
-/* Responsive Design */
-@media (max-width: 900px) {
-  .hierarchy-container {
-      width: 100%;
-      padding: 10px;
-  }
-
-  .details-sidebar {
-      width: 100%;
-  }
+.disable-btn.enable {
+  background: rgba(25, 58, 73, 0.795);
+  color: white;
 }
-
-.disable-btn-hierarchy
-{background-color:#2f8f62}
