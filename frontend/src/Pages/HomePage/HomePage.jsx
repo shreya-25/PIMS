@@ -646,8 +646,9 @@ const addCase = (newCase) => {
               onSearch={(query) => console.log("Search query:", query)}
             />
             <SlideBar
-                onAddCase={(newCase) => addCase(newCase)} // Pass addCase function with confirmation
-            />
+            onAddCase={(newCase) => addCase(newCase)}
+            buttonClass="custom-add-case-btn1"
+          />
           </div>
         </div>
         <div className="content-container">
