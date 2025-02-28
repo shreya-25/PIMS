@@ -11,7 +11,7 @@ import {CasePageManager} from './Pages/CasePageManager/CasePageManager';
 import {Investigator} from './Pages/Investigator/Investigator';
 import {CreateLead} from './Pages/CreateLead/CreateLead';
 import { LeadLog } from './Pages/LeadLog/LeadLog';
-import { LeadHierarchy } from './Pages/LeadHierarchy/LeadHierarchy';
+import { LeadHierarchy1 } from './Pages/LeadHierarchy/LeadHierarchy1';
 import { CaseScratchpad } from './Pages/CaseScratchpad/CaseScratchpad';
 import { LeadReturn } from './Pages/LeadReturn/LeadReturn';
 import { LRInstruction } from './Pages/InvestgatorLR/LRInstruction/LRInstruction';
@@ -57,17 +57,6 @@ import { LeadInfo } from './Pages/LeadInfo/LeadInfo';
 import { CaseInformation } from './Pages/CaseInformation/CaseInformation';
 import {LeadReview} from './Pages/LeadReview/LeadReview';
 import { LeadsDesk } from './Pages/LeadsDesk/LeadsDesk';
-import { DataProvider } from "./Pages/Context/DataContext";
-
-ReactDOM.render(
-  <React.StrictMode>
-    <DataProvider>
-      <App />
-    </DataProvider>
-  </React.StrictMode>,
-  document.getElementById("root")
-);
-
 function App() {
   return (
     <Router>
@@ -83,7 +72,7 @@ function App() {
         <Route path="/CreateLead" element={<CreateLead />} />
         <Route path="/leadlog" element={<LeadLog />} />
         <Route path="/FlaggedLead" element={<FlaggedLead />} />
-        <Route path="/LeadHierarchy" element={<LeadHierarchy />} />
+        <Route path="/LeadHierarchy1" element={<LeadHierarchy1 />} />
         <Route path="/CaseScratchpad" element={<CaseScratchpad />} />
         <Route path="/LeadReturn" element={<LeadReturn />} />
         <Route path="/LRInstruction" element={<LRInstruction />} />

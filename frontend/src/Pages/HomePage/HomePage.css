@@ -1384,3 +1384,22 @@
     color: white;
   }
 } */
+
+.custom-add-case-btn1 {
+  background-color: #a05252; /* Red color */
+  color: white; /* White text */
+  border: none;
+  padding: 10px 20px; /* Increased padding for better visibility */
+  border-radius: 5px; /* Rounded corners */
+  font-size: 20px; /* Adjusted font size */
+  font-weight: bold; /* Bold text */
+  cursor: pointer;
+  transition: background-color 0.3s ease; /* Smooth hover transition */
+  position: absolute;
+  width: 10%;
+ margin-left: 480px;
+}
+
+.add-case-button:hover {
+  background-color: rgba(137, 51, 51, 0.705); /* Darker red on hover */
+}
