@@ -364,17 +364,6 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
               </td>
             </tr>
             <tr>
-              <td>Case Summary:</td>
-              <td>
-                <input
-                  type="text"
-                  // className="input-field"
-                  value={caseSummary}
-                  // onChange={(e) => handleInputChange('caseName', e.target.value)} 
-    />
-              </td>
-            </tr>
-            <tr>
               <td>Lead Summary:</td>
               <td>
                 <input
@@ -557,8 +546,8 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
                 }}
               />
               <label htmlFor={officer.name}>
-                  {officer.name}{" "}[{officer.assignedLeads}] {" "} [{officer.totalAssignedLeads}] {" "}
-                  <em style={{ fontSize: "14px", color: "gray" }}>
+                  {officer.name}{" "}[{officer.assignedLeads}] {" "} [{officer.totalAssignedLeads}] {"   "}
+                  <em style={{ fontSize: "20px", color: "gray" }}>
                     ({isAvailable})
                   </em>
                 </label>

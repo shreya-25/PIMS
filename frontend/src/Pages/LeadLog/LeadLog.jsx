@@ -76,7 +76,7 @@ export const LeadLog = () => {
 
 
   const handleLeadClick = (lead) => {
-    navigate("/LRInstruction", { state: { lead } }); // Navigate to lead details page with lead data
+    navigate("/LeadInfo", { state: { lead } }); // Navigate to lead details page with lead data
   };
 
 
@@ -369,7 +369,13 @@ const handleResetSort = () => {
               leadLogData.map((entry, index) => (
                 <tr key={index} onClick={() => handleLeadClick(entry)}>
                   <td>{entry.leadNo}</td>
-                  <td>{entry.description}</td>
+                  <td 
+          className="clickable-description" 
+          onClick={() => handleLeadClick(entry)}
+          style={{ color: "blue", cursor: "pointer", textDecoration: "underline" }}
+        >
+          {entry.description}
+        </td>
                   <td>{entry.assignedDate}</td>
                   <td>{entry.leadStatus }</td>
                   <td>{entry.assignedTo?.join(", ")}</td>

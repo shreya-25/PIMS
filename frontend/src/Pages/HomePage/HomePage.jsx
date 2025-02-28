@@ -520,25 +520,24 @@ const addCase = (newCase) => {
       options: ["Officer 1", "Officer 2", "Officer 3"],
     },
     {
-      name: "Priority",
-      label: "Priority",
-      options: ["High", "Medium", "Low"],
-    },
-    {
-      name: "Flag",
-      label: "Flag",
-      options: ["Important"],
-    },
-    {
       name: "assignedOfficers",
       label: "Assigned Officers",
       options: ["Officer 1", "Officer 2", "Officer 3"],
     },
     {
-      name: "daysLeft",
-      label: "Days Left",
-      options: ["1", "2", "3"],
-    },
+      name: "CaseName",
+      label: "Case Name",
+      options: [
+        "Main Street Murder",
+        "Cook Streat School Threat",
+        "216 Endicott Suicide",
+      ],
+    }
+    // {
+    //   name: "daysLeft",
+    //   label: "Days Left",
+    //   options: ["1", "2", "3"],
+    // },
   ];
 
   const filtersConfigPLR = [
@@ -557,15 +556,14 @@ const addCase = (newCase) => {
       ],
     },
     {
-      name: "Priority",
-      label: "Priority",
-      options: ["High", "Medium", "Low"],
-    },
-    {
-      name: "Flag",
-      label: "Flag",
-      options: ["Important"],
-    },
+      name: "CaseName",
+      label: "Case Name",
+      options: [
+        "Main Street Murder",
+        "Cook Streat School Threat",
+        "216 Endicott Suicide",
+      ],
+    }
   ];
 
   const filtersConfigOC = [
@@ -1155,11 +1153,9 @@ const addCase = (newCase) => {
         <tr>
           <th>Lead No.</th>
           <th>Lead Name</th>
-          <th>Due Date</th>
-          <th>Priority</th>
-          <th>Days Left</th>
-          <th>Flags</th>
           <th>Assigned Officers</th>
+          <th>Case Name</th>
+          <th>Due Date</th>
           <th></th>
         </tr>
       </thead>
@@ -1191,11 +1187,9 @@ const addCase = (newCase) => {
             <tr key={lead.id}>
               <td>{lead.id}</td>
               <td>{lead.description}</td>
-              <td>{lead.dueDate}</td>
-              <td>{lead.priority}</td>
-              <td>{calculateRemainingDays(lead.dueDate)}</td>
-              <td>{lead.flags.join(", ") || "None"}</td>
               <td>{lead.assignedOfficers.join(", ")}</td>
+              <td>{lead.caseName }</td>
+              <td>{lead.dueDate}</td>
               <td>
                 <button
                   className="view-btn1"
@@ -1219,6 +1213,7 @@ const addCase = (newCase) => {
                 <tr>
                   <th>Lead No.</th>
                   <th>Lead Name</th>
+                  <th>Case Name</th>
                   <th></th>
                 </tr>
               </thead>
@@ -1227,6 +1222,7 @@ const addCase = (newCase) => {
                     <tr key={lead.id}>
                       <td>{lead.id}</td>
                       <td>{lead.description}</td>
+                      <td>{lead.caseName}</td>
                       <td>
                         <button
                               className="continue-btn"
