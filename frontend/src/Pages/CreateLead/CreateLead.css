@@ -364,6 +364,11 @@ input[readonly]
   transform: translate(-50%, -50%);
 }
 
+.dropdown-item label{
+  font-size: 20px;
+}
+
+
 /* Lighter Placeholder */
 .input-field::placeholder {
   color: #575555;
