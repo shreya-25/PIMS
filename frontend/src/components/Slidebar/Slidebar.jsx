@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "./Slidebar.css";
 
-export const SlideBar = ({ onAddCase }) => {
+export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [caseDetails, setCaseDetails] = useState({
     title: "",
@@ -129,7 +129,7 @@ export const SlideBar = ({ onAddCase }) => {
 
   return (
     <div>
-      <button className="add-case-button" onClick={toggleSidebar}>
+      <button className={buttonClass} onClick={toggleSidebar}>
         <i className="fa-solid fa-plus"></i> Add Case
       </button>
       {isSidebarOpen && (

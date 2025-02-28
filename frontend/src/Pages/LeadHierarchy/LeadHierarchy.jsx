@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./LeadHierarchy.css";
+import Navbar from '../../components/Navbar/Navbar';
+
 
 const LeadHierarchy = () => {
   const [selectedLead, setSelectedLead] = useState(null);
@@ -97,6 +99,7 @@ const LeadHierarchy = () => {
 
   return (
     <div className="lead-log-container" ref={containerRef}>
+      <Navbar />
       <div className="hierarchy-container">
         <h2>Lead Hierarchy</h2>
         {renderHierarchy(null)}
