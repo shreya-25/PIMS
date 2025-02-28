@@ -46,7 +46,7 @@ export const LeadInfo = () => {
       <div className="lead-info">
         <h2>Lead Information</h2>
         <h3>
-          Lead No: <span className="case-number">12</span> | Interview Mr. John
+          Lead No: <span className="case-number">lead.leadNo</span> | Interview Mr. John
         </h3>
         <div className="lead-content">
         <div className="lead-content-left">
