@@ -621,14 +621,14 @@ export const CasePageManager = () => {
                         <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
                         <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
                         <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy')}>View Lead Hierarchy</li>
+                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
                         <li className="sidebar-item">Generate Report</li>
                         <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
                         <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
                         <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
                         <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
 
-                        <li className="sidebar-item">View Lead Chain of Custody</li>
+                        <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
                     </ul>
                 </div>
                 <div className="left-content">
