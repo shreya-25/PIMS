@@ -69,7 +69,7 @@ export const AdminUR = () => {
           <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
             Calendar
           </span>
-          <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
+          <span className="menu-item" onClick={() => handleNavigation('/AdminDashboard')} >
             Dashboard
           </span>
           <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
