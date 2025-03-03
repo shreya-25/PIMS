@@ -41,7 +41,7 @@ export const LeadInfo = () => {
   };
 
   return (
-    <div className="leads-container">
+    <div className="leads-container1">
       <Navbar />
       <div className="lead-info">
         <h2>Lead Information</h2>
