@@ -93,4 +93,28 @@ const getLeadsByCase = async (req, res) => {
     }
   };
 
-module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer };
+  const getLeadsByLeadNoandLeadName = async (req, res) => {
+    try {
+
+        const { leadNo, leadName, caseNo, caseName } = req.params;
+
+        const query = { 
+            leadNo: leadNo, 
+            description: leadName,  
+            caseNo: Number(caseNo), 
+            caseName: caseName
+        };
+
+        const leads = await Lead.find(query);
+
+   
+
+        res.status(200).json(leads);
+    } catch (err) {
+        console.error("Error fetching leads by case:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+
+module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName };

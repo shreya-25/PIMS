@@ -15,7 +15,10 @@ export const LeadReview = () => {
 
   // Grab case details from location.state
   const { caseDetails } = location.state || {};
+  const { leadId, leadDescription } = location.state || {};
   const leadEntries = location.state?.leadEntries || [];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const statuses = [
     "Lead Created",
@@ -29,6 +32,7 @@ export const LeadReview = () => {
   
   // Change this index to highlight the current status dynamically
   const currentStatusIndex = 3; // Example: Highlighting "Lead Return Submitted"
+
 
   // Default case summary if no data is passed
   const defaultCaseSummary = "Initial findings indicate that the suspect was last seen near the crime scene at 9:45 PM. Witness statements collected. Awaiting forensic reports and CCTV footage analysis.";
@@ -47,6 +51,36 @@ export const LeadReview = () => {
     caseName: 'Main Street Theft',
     caseSummary: defaultCaseSummary,
   });
+
+  useEffect(() => {
+    const fetchLeadData = async () => {
+      try {
+        if (leadId && leadDescription && caseDetails?.id && caseDetails?.title) {
+          const response = await axios.get(
+            `http://localhost:5000/api/lead/lead/${leadId}/${encodeURIComponent(
+              leadDescription
+            )}/${caseDetails.id}/${encodeURIComponent(caseDetails.title)}`
+          );
+
+          console.log("Fetched Lead Data1:", response.data);
+
+          if (response.data.length > 0) {
+            setLeadData(response.data[0]); // Assuming one lead is returned
+          } else {
+            setError("No lead data found.");
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching lead data:", err);
+        setError("Failed to fetch lead data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeadData();
+  }, [leadId, leadDescription, caseDetails]);
+
 
   // For subnumbers
   const [availableSubNumbers] = useState([
@@ -126,7 +160,7 @@ export const LeadReview = () => {
         <div className="lead-main-content">
           {/* Page Header */}
           <div className="case-header">
-            <h1>Lead No: 24 | Interview Sarah</h1>
+            <h1>Lead No: {leadId} | {leadDescription}</h1>
           </div>
 
           {/* Case Summary Textarea */}
