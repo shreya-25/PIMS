@@ -58,6 +58,7 @@ import { CaseInformation } from './Pages/CaseInformation/CaseInformation';
 import {LeadReview} from './Pages/LeadReview/LeadReview';
 import { LeadsDesk } from './Pages/LeadsDesk/LeadsDesk';
 import { ChainOfCustody } from './Pages/ChainOfCustody/ChainOfCustody';
+import { Chatbot } from './Pages/Admin/Chatbot';
 
 function App() {
   return (
@@ -120,6 +121,7 @@ function App() {
         <Route path="/LeadReview" element = {<LeadReview />} />
         <Route path="/LeadsDesk" element= {<LeadsDesk />} />
         <Route path="/ChainOfCustody" element= {<ChainOfCustody />} />
+        <Route path="/Chatbot" element= {<Chatbot />} />
       </Routes>
     </Router>
   );

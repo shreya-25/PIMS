@@ -421,8 +421,8 @@ export const AdminCM = () => {
           <span className="menu-item" onClick={() => handleNavigation('/AdminDashboard')} >
             Dashboard
           </span>
-          <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
-            Discussion
+          <span className="menu-item" onClick={() => handleNavigation('/Chatbot')} >
+            Chatbot
           </span>
           <span className="menu-item" onClick={() => handleNavigation('/AdminDB')} >
            Database Backup
