@@ -17,6 +17,19 @@ export const LeadReview = () => {
   const { caseDetails } = location.state || {};
   const leadEntries = location.state?.leadEntries || [];
 
+  const statuses = [
+    "Lead Created",
+    "Lead Assigned",
+    "Lead Accepted",
+    "Lead Return Submitted",
+    "Lead Approved",
+    "Lead Returned",
+    "Lead Completed",
+  ];
+  
+  // Change this index to highlight the current status dynamically
+  const currentStatusIndex = 3; // Example: Highlighting "Lead Return Submitted"
+
   // Default case summary if no data is passed
   const defaultCaseSummary = "Initial findings indicate that the suspect was last seen near the crime scene at 9:45 PM. Witness statements collected. Awaiting forensic reports and CCTV footage analysis.";
   // For demonstration, we store lead-related data
@@ -117,20 +130,21 @@ export const LeadReview = () => {
           </div>
 
           {/* Case Summary Textarea */}
-          <div className="form-section">
+          {/* <div className="form-section">
             <label className="input-label">Case Summary</label>
             <textarea
               className="case-summary-textarea"
               value={caseSummary}
               onChange={(e) => setCaseSummary(e.target.value)}
             />
-          </div>
+          </div> */}
 
           {/* Additional Lead Details (Bottom Table) */}
+          <div className="form_and_tracker">
           <div className="form-section">
             <table className="details-table">
               <tbody>
-                <tr>
+                {/* <tr>
                   <td className="info-label">Case Name:</td>
                   <td>
                     <input
@@ -140,7 +154,7 @@ export const LeadReview = () => {
                       onChange={(e) => handleInputChange('caseName', e.target.value)}
                     />
                   </td>
-                </tr>
+                </tr> */}
                 {/* <tr>
                   <td className="info-label">Case Summary:</td>
                   <td>
@@ -152,7 +166,7 @@ export const LeadReview = () => {
                     />
                   </td>
                 </tr> */}
-                <tr>
+                {/* <tr>
                   <td className="info-label">Lead Number:</td>
                   <td>
                     <input
@@ -162,7 +176,7 @@ export const LeadReview = () => {
                       readOnly
                     />
                   </td>
-                </tr>
+                </tr> */}
                 <tr>
                   <td className="info-label">Incident Number:</td>
                   <td>
@@ -197,7 +211,7 @@ export const LeadReview = () => {
                     />
                   </td>
                 </tr>
-                <tr>
+                {/* <tr>
                   <td className="info-label">Lead Summary:</td>
                   <td>
                     <input
@@ -208,7 +222,7 @@ export const LeadReview = () => {
                       placeholder="Enter Lead Summary"
                     />
                   </td>
-                </tr>
+                </tr> */}
                 <tr>
                   <td className="info-label">Lead Origin:</td>
                   <td>
@@ -337,19 +351,51 @@ export const LeadReview = () => {
                   </td>
                 </tr>
                 <tr>
-                  <td className="info-label">Lead Description:</td>
+                  <td className="info-label">Lead Summary:</td>
                   <td>
                     <textarea
                       className="textarea-field"
-                      value={leadData.leadDescription}
+                      value={leadData.leadSummary}
                       onChange={(e) => handleInputChange('leadDescription', e.target.value)}
-                      placeholder="Enter Lead Description"
+                      placeholder="Enter Lead Summary"
                     ></textarea>
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
+
+          <div className="lead-tracker-container">
+                  {statuses.map((status, index) => (
+                       <div key={index} className="lead-tracker-row" onClick={() => {
+                        if (status === "Lead Return Submitted") {
+                          handleNavigation("/CMInstruction");
+                        }
+                      }}
+                      style={{ cursor: status === "Lead Return Submitted" ? "pointer" : "default" }}
+                    >
+                          {/* Circle Indicator */}
+                          <div
+                            className={`status-circle ${index <= currentStatusIndex ? "active" : ""}`}
+                          >
+                            {index <= currentStatusIndex && <span className="status-number">{index + 1}</span>}
+                         </div>
+
+                            {/* Connector Line (Except Last Item) */}
+                            {index < statuses.length && (
+                              <div className={`status-line ${index < currentStatusIndex ? "active" : ""}`}></div>
+                            )}
+
+                            {/* Status Box */}
+                            <div
+                              className={`status-text-box ${index === currentStatusIndex ? "highlighted" : ""}`}
+                            >
+                              {status}
+                            </div>
+                        </div>
+                      ))}
+                </div>
+                </div>
 
           {/* Example "Go to Main Page" button */}
           <div className="navigation-buttons">

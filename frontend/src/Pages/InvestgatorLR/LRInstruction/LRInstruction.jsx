@@ -16,9 +16,9 @@ export const LRInstruction = () => {
     subNumber: 'C0000045',
     associatedSubNumbers: [],
     assignedDate: '09/29/24',
-    leadSummary: 'Interview Mr. John',
+    leadSummary: 'Interview Sarah',
     assignedBy: 'Officer 5',
-    leadDescription: 'Interview Mr. John to find out where he was on Saturday 09/25',
+    leadDescription: 'Interview Sarah to find out where she was on Saturday 09/25',
     assignedOfficer: ['Officer 1','Officer 2'],
   });
   const [dropdownOpen, setDropdownOpen] = useState(false);
