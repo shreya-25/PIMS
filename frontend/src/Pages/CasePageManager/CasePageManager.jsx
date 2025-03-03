@@ -1137,7 +1137,7 @@ export const CasePageManager = () => {
               <td>
                 <button
                   className="view-btn1"
-                  onClick={() => alert(`Viewing lead: ${lead.description}`)}
+                  onClick={() => navigate("/leadInfo", { state: { caseDetails } } )}
                 >
                   View
                 </button>

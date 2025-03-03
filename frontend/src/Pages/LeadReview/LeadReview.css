@@ -49,6 +49,7 @@ html, body {
 /* Form Section container (groups fields) */
 .form-section {
   margin-bottom: 20px;
+  width: 7%;
 }
 
 /* Label styling */
@@ -69,6 +70,14 @@ html, body {
   font-size: 20px;
   border: 1px solid #ddd;
   border-radius: 4px;
+}
+
+.form_and_tracker
+{
+  display: flex;
+  margin-top: 20px;
+  min-width: 1000%;
+  align-items: center;
 }
 
 /* Info Table styling (top) */
