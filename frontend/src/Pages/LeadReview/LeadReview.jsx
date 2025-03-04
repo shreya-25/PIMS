@@ -39,36 +39,48 @@ export const LeadReview = () => {
   // For demonstration, we store lead-related data
   const [leadData, setLeadData] = useState({
     leadNumber: '',
-    leadOrigin: '',
-    incidentNumber: '',
+    parentLeadNo: '',
+    incidentNo: '',
     subNumber: '',
     associatedSubNumbers: [],
     assignedDate: '',
-    leadSummary: '',
+    dueDate: '',
+    summary: '',
     assignedBy: '',
     leadDescription: '',
-    assignedOfficer: [],
-    caseName: 'Main Street Theft',
-    caseSummary: defaultCaseSummary,
+    assignedTo: [],
+    // caseName: 'Main Street Theft',
+    // caseSummary: defaultCaseSummary,
   });
+
 
   useEffect(() => {
     const fetchLeadData = async () => {
       try {
         if (leadId && leadDescription && caseDetails?.id && caseDetails?.title) {
-          const response = await axios.get(
-            `http://localhost:5000/api/lead/lead/${leadId}/${encodeURIComponent(
-              leadDescription
-            )}/${caseDetails.id}/${encodeURIComponent(caseDetails.title)}`
-          );
+          const token = localStorage.getItem("token");
+          console.log("localstorage data",localStorage.getItem("token"));
+
+          const response = await axios.get(`http://localhost:5000/api/lead/lead/${leadId}/${encodeURIComponent(
+              leadDescription)}/${caseDetails.id}/${encodeURIComponent(caseDetails.title)}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
 
           console.log("Fetched Lead Data1:", response.data);
 
+          // if (response.data.length > 0) {
+          //   setLeadData(response.data[0]); // Assuming one lead is returned
+          // } else {
+          //   setError("No lead data found.");
+          // }
+
           if (response.data.length > 0) {
-            setLeadData(response.data[0]); // Assuming one lead is returned
-          } else {
-            setError("No lead data found.");
+            setLeadData({
+              ...response.data[0], 
+              assignedOfficer: response.data[0].assignedOfficer || [] // Ensure array
+            });
           }
+          
         }
       } catch (err) {
         console.error("Error fetching lead data:", err);
@@ -87,6 +99,21 @@ export const LeadReview = () => {
     "SUB-000001", "SUB-000002", "SUB-000003", "SUB-000004", "SUB-000005"
   ]);
   const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]);
+      const [assignedOfficers, setAssignedOfficers] = useState([]);
+  
+
+  useEffect(() => {
+    if (leadData.associatedSubNumbers) {
+      setAssociatedSubNumbers(leadData.associatedSubNumbers);
+    }
+  }, [leadData]);
+
+  useEffect(() => {
+    if (leadData.assignedTo) {
+      setAssignedOfficers(leadData.assignedTo);
+    }
+  }, [leadData]);
+  
 
   // Dropdown states
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -217,7 +244,7 @@ export const LeadReview = () => {
                     <input
                       type="text"
                       className="input-field"
-                      value={leadData.incidentNumber}
+                      value={leadData.incidentNo}
                       onChange={(e) => handleInputChange('incidentNumber', e.target.value)}
                     />
                   </td>
@@ -227,9 +254,9 @@ export const LeadReview = () => {
                   <td>
                     <input
                       type="text"
-                      className="input-field read-only"
+                      className="input-field"
                       value={leadData.subNumber}
-                      readOnly
+                    
                     />
                   </td>
                 </tr>
@@ -263,51 +290,56 @@ export const LeadReview = () => {
                     <input
                       type="text"
                       className="input-field"
-                      value={leadData.leadOrigin}
+                      value={leadData.parentLeadNo}
                       onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
-                      placeholder="Enter Lead Origin"
+                      placeholder="NA"
                     />
                   </td>
                 </tr>
 
                 {/* Associated Subnumbers */}
                 <tr>
-                  <td className="info-label">Associated Subnumbers:</td>
-                  <td>
-                    <div className="custom-dropdown">
-                      <div
-                        className="dropdown-header"
-                        onClick={() => setSubDropdownOpen(!subDropdownOpen)}
-                      >
-                        {associatedSubNumbers.length > 0
-                          ? associatedSubNumbers.join(", ")
-                          : "Select Subnumbers"}
-                        <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
-                      </div>
-                      {subDropdownOpen && (
-                        <div className="dropdown-options">
-                          {availableSubNumbers.map((subNum) => (
-                            <div key={subNum} className="dropdown-item">
-                              <input
-                                type="checkbox"
-                                id={subNum}
-                                value={subNum}
-                                checked={associatedSubNumbers.includes(subNum)}
-                                onChange={(e) => {
-                                  const updatedSubs = e.target.checked
-                                    ? [...associatedSubNumbers, e.target.value]
-                                    : associatedSubNumbers.filter((num) => num !== e.target.value);
-                                  setAssociatedSubNumbers(updatedSubs);
-                                }}
-                              />
-                              <label htmlFor={subNum}>{subNum}</label>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                </tr>
+  <td className="info-label">Associated Subnumbers:</td>
+  <td>
+    <div className="custom-dropdown">
+      <div
+        className="dropdown-header"
+        onClick={() => setSubDropdownOpen(!subDropdownOpen)}
+      >
+        {associatedSubNumbers.length > 0
+          ? associatedSubNumbers.join(", ")
+          : "Select Subnumbers"}
+        <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
+      </div>
+      {subDropdownOpen && (
+        <div className="dropdown-options">
+          {availableSubNumbers.map((subNum) => (
+            <div key={subNum} className="dropdown-item">
+              <input
+                type="checkbox"
+                id={subNum}
+                value={subNum}
+                checked={associatedSubNumbers.includes(subNum)}
+                onChange={(e) => {
+                  const updatedSubs = e.target.checked
+                    ? [...associatedSubNumbers, e.target.value]
+                    : associatedSubNumbers.filter((num) => num !== e.target.value);
+
+                  setAssociatedSubNumbers(updatedSubs); // Update dropdown selection
+                  setLeadData((prevData) => ({
+                    ...prevData,
+                    associatedSubNumbers: updatedSubs, // Update leadData
+                  }));
+                }}
+              />
+              <label htmlFor={subNum}>{subNum}</label>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </td>
+</tr>
 
                 {/* Another example date field */}
                 <tr>
@@ -316,61 +348,55 @@ export const LeadReview = () => {
                     <input
                       type="text"
                       className="input-field"
+                      value={leadData.dueDate}
                       placeholder="MM/DD/YY"
                     />
                   </td>
                 </tr>
 
-                {/* Officer Assignment */}
                 <tr>
-                  <td className="info-label">Assign Officers:</td>
-                  <td>
-                    <div className="custom-dropdown">
-                      <div
-                        className="dropdown-header"
-                        onClick={() => setDropdownOpen(!dropdownOpen)}
-                      >
-                        {leadData.assignedOfficer.length > 0
-                          ? leadData.assignedOfficer.join(', ')
-                          : 'Select Officers'}
-                        <span className="dropdown-icon">{dropdownOpen ? '▲' : '▼'}</span>
-                      </div>
-                      {dropdownOpen && (
-                        <div className="dropdown-options">
-                          {[
-                            { name: "Officer 1", assignedLeads: 2, totalAssignedLeads: 1, assignedDays: 5, unavailableDays: 4 },
-                            { name: "Officer 2", assignedLeads: 3, totalAssignedLeads: 3, assignedDays: 3, unavailableDays: 3 },
-                            { name: "Officer 3", assignedLeads: 3, totalAssignedLeads: 3, assignedDays: 2, unavailableDays: 1 },
-                          ].map((officer) => {
-                            const isAvailable = officer.unavailableDays === 0
-                              ? "Available"
-                              : `Unavailable for ${officer.unavailableDays} days`;
-                            return (
-                              <div key={officer.name} className="dropdown-item">
-                                <input
-                                  type="checkbox"
-                                  id={officer.name}
-                                  value={officer.name}
-                                  checked={leadData.assignedOfficer.includes(officer.name)}
-                                  onChange={(e) => {
-                                    const newOfficers = e.target.checked
-                                      ? [...leadData.assignedOfficer, e.target.value]
-                                      : leadData.assignedOfficer.filter((o) => o !== e.target.value);
-                                    handleInputChange('assignedOfficer', newOfficers);
-                                  }}
-                                />
-                                <label htmlFor={officer.name}>
-                                  {officer.name} [{officer.assignedLeads}] [{officer.totalAssignedLeads}]{" "}
-                                  <em className="officer-availability">({isAvailable})</em>
-                                </label>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                </tr>
+  <td>Assigned Officers:</td>
+  <td>
+    <div className="custom-dropdown-cl">
+      <div
+        className="dropdown-header-cl"
+        onClick={() => setDropdownOpen(!dropdownOpen)}
+      >
+        {assignedOfficers.length > 0
+          ? assignedOfficers.join(", ")
+          : "Select Officers"}
+        <span className="dropdown-icon">{dropdownOpen ? "▲" : "▼"}</span>
+      </div>
+      {dropdownOpen && (
+        <div className="dropdown-options">
+          {["Officer 99", "Officer 24", "Officer 1", "Officer 2", "Officer 3"].map((officer) => (
+            <div key={officer} className="dropdown-item">
+              <input
+                type="checkbox"
+                id={officer}
+                value={officer}
+                checked={assignedOfficers.includes(officer)}
+                onChange={(e) => {
+                  const updatedOfficers = e.target.checked
+                    ? [...assignedOfficers, e.target.value]
+                    : assignedOfficers.filter((o) => o !== e.target.value);
+
+                  setAssignedOfficers(updatedOfficers); // Update UI state
+                  setLeadData((prevData) => ({
+                    ...prevData,
+                    assignedTo: updatedOfficers, // Ensure backend gets updated
+                  }));
+                }}
+              />
+              <label htmlFor={officer}>{officer}</label>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </td>
+</tr>
+
 
                 <tr>
                   <td className="info-label">Assigned By:</td>
@@ -380,7 +406,7 @@ export const LeadReview = () => {
                       className="input-field"
                       value={leadData.assignedBy}
                       onChange={(e) => handleInputChange('assignedBy', e.target.value)}
-                      placeholder="Assigned By"
+                      placeholder=""
                     />
                   </td>
                 </tr>
@@ -389,9 +415,9 @@ export const LeadReview = () => {
                   <td>
                     <textarea
                       className="textarea-field"
-                      value={leadData.leadSummary}
+                      value={leadData.summary}
                       onChange={(e) => handleInputChange('leadDescription', e.target.value)}
-                      placeholder="Enter Lead Summary"
+                      placeholder=""
                     ></textarea>
                   </td>
                 </tr>
