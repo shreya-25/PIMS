@@ -5,7 +5,7 @@ const leadReturnResultsSchema = new mongoose.Schema(
         leadNo: { type: Number, required: true },
         description: { type: String, required: true },
         assignedTo: {
-            assignees: [{ type: String, required: true }], // List of officers
+            assignees: [{ type: String, required: true }],
             lRStatus: { 
                 type: String, 
                 enum: ["Assigned", "Pending", "Approved", "Returned", "Completed", "Submitted"], 

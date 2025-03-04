@@ -6,8 +6,8 @@ const createLeadReturnResult = async (req, res) => {
         const {
             leadNo,
             description,
-            assignedTo, // Expected to be an object { assignees: [], lRStatus: "" }
-            assignedBy, // Expected to be an object { assignee: "", lRStatus: "" }
+            assignedTo, 
+            assignedBy, 
             enteredDate,
             enteredBy,
             caseName,
@@ -67,4 +67,24 @@ const getLeadReturnResultsByOfficer = async (req, res) => {
     }
 };
 
-module.exports = { createLeadReturnResult, getLeadReturnResultsByOfficer };
+const getLeadReturnResultByLeadNoandLeadName = async (req, res) => {
+    try {
+        const { leadNo, leadName, caseNo, caseName } = req.params;
+
+        const query = { 
+            leadNo: Number(leadNo), // Ensure number type 
+            description: leadName,  
+            caseNo: Number(caseNo), 
+            caseName: caseName
+        };
+
+        const leadReturns = await LeadReturnResult.find(query);
+        res.status(200).json(leadReturns);
+    } catch (err) {
+        console.error("Error fetching lead return results by case and lead:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+
+module.exports = { createLeadReturnResult, getLeadReturnResultsByOfficer, getLeadReturnResultByLeadNoandLeadName };
