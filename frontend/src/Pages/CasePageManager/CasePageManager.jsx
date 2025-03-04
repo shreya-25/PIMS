@@ -30,7 +30,7 @@ export const CasePageManager = () => {
       navigate("/CasePageManager", { state: { caseDetails } }); // Pass case details via state
     };
     const handleLRClick = (lead) => {
-      navigate("/LRInstruction", { state: { leadDetails: lead } });
+      navigate("/CMInstruction", { state: {caseDetails, leadDetails: lead } });
     };
     const handleNavigation = (route) => {
       navigate(route); // Navigate to respective page
@@ -1137,7 +1137,7 @@ export const CasePageManager = () => {
               <td>
                 <button
                   className="view-btn1"
-                  onClick={() => alert(`Viewing lead: ${lead.description}`)}
+                  onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.description} } )}
                 >
                   View
                 </button>
@@ -1219,7 +1219,7 @@ export const CasePageManager = () => {
             <td>
               <button
                 className= "view-btn1"
-                onClick={() => handleNavigation("/LeadInfo")}
+                onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.leadNo, leadDescription: lead.description} } )}
               >
                 View
               </button>

@@ -1,18 +1,61 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar/Navbar";
 import "./CMReturn.css";
 import FootBar from '../../../components/FootBar/FootBar';
+import axios from "axios";
 
 
 export const CMReturn = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+const { leadDetails, caseDetails } = location.state || {};
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   //  Sample returns data
     const [returns, setReturns] = useState([
-      { id: 1, dateEntered: "12/01/2024",enteredBy: "Officer 916", results: "Returned item A" },
-      { id: 2, dateEntered: "12/02/2024", enteredBy: "Officer 916",results: "Returned item B" },
+      { leadReturnId: '', enteredDate: "",enteredBy: "", leadReturnResult: "" },
+      // { id: 2, dateEntered: "12/02/2024", enteredBy: "Officer 916",results: "Returned item B" },
     ]);
+
+
+
+    useEffect(() => {
+      const fetchLeadData = async () => {
+        try {
+          if (leadDetails?.id && leadDetails?.description && caseDetails?.id && caseDetails?.title) {
+            const token = localStorage.getItem("token");
+  
+            const response = await axios.get(`http://localhost:5000/api/leadReturnResult/${leadDetails.id}/${encodeURIComponent(
+              leadDetails.description)}/${caseDetails.id}/${encodeURIComponent(caseDetails.title)}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+  
+            console.log("Fetched Lead RR1:", response.data);
+
+            setReturns(response.data.length > 0 ? response.data : []);
+
+  
+            // if (response.data.length > 0) {
+            //   setReturns({
+            //     ...response.data[0], 
+            //   });
+            // }
+            
+          }
+        } catch (err) {
+          console.error("Error fetching lead data:", err);
+          setError("Failed to fetch lead data.");
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      fetchLeadData();
+    }, [leadDetails, caseDetails]);
+  
   
     // State for managing form input
     const [returnData, setReturnData] = useState({ results: "" });
@@ -131,6 +174,7 @@ export const CMReturn = () => {
       <table className="timeline-table">
         <thead>
           <tr>
+            <th>Return Id</th>
             <th>Date Entered</th>
             <th>Entered By</th>
             <th>Results</th>
@@ -140,9 +184,10 @@ export const CMReturn = () => {
         <tbody>
           {returns.map((ret) => (
             <tr key={ret.id}>
-              <td>{ret.dateEntered}</td>
+              <td>{ret.leadReturnId}</td>
+              <td>{ret.enteredDate}</td>
               <td>{ret.enteredBy}</td>
-              <td>{ret.results}</td>
+              <td>{ret.leadReturnResult}</td>
               <td>
                 <div classname = "lr-table-btn">
                 <button className="btn-edit" onClick={() => handleEditReturn(ret)}>Edit</button>

@@ -21,7 +21,7 @@ app.use(cors({ origin: "http://localhost:3000" })); // Replace with your fronten
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/lead", leadRoutes); // Mount lead routes
+app.use("/api/lead", leadRoutes); 
 app.use("/api/cases", caseRoutes); 
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/leadReturn", leadReturnRoutes);
