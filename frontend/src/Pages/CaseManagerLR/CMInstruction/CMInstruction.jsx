@@ -1,24 +1,36 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
+import React, { useState, useEffect} from 'react';
+import { useLocation, useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 
 import Navbar from '../../../components/Navbar/Navbar';
 import FootBar from '../../../components/FootBar/FootBar';
 import './CMInstruction.css';
+import axios from "axios";
+
 
 export const CMInstruction = () => {
-    const navigate = useNavigate(); // Initialize useNavigate hook
+    const navigate = useNavigate(); 
+    const location = useLocation();
+     const [loading, setLoading] = useState(true);
+      const [error, setError] = useState("");
+    
+        const { caseDetails, leadDetails } = location.state || {};
+
+        const handleLRClick = () => {
+          navigate("/CMReturn", { state: {caseDetails, leadDetails } });
+        };
   
   const [leadData, setLeadData] = useState({
-    leadNumber: '16',
-    leadOrigin: '7',
-    incidentNumber: 'C000006',
-    subNumber: 'C0000045',
+    leadNumber: '',
+    parentLeadNo: '',
+    incidentNo: '',
+    subNumber: '',
     associatedSubNumbers: [],
-    assignedDate: '09/29/24',
-    leadSummary: 'Interview Mr. John',
-    assignedBy: 'Officer 5',
-    leadDescription: 'Interview Mr. John to find out where he was on Saturday 09/25',
-    assignedOfficer: ['Officer 1','Officer 2'],
+    assignedDate: '',
+    dueDate: '',
+    summary: '',
+    assignedBy: '',
+    leadDescription: '',
+    assignedTo: [],
   });
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -29,9 +41,64 @@ export const CMInstruction = () => {
     const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]); // Selected Subnumbers
     const [subDropdownOpen, setSubDropdownOpen] = useState(false);
 
+    const [assignedOfficers, setAssignedOfficers] = useState([]);
+
+
   const handleInputChange = (field, value) => {
     setLeadData({ ...leadData, [field]: value });
   };
+
+    useEffect(() => {
+      if (leadData.associatedSubNumbers) {
+        setAssociatedSubNumbers(leadData.associatedSubNumbers);
+      }
+    }, [leadData]);
+
+    useEffect(() => {
+      if (leadData.assignedTo) {
+        setAssignedOfficers(leadData.assignedTo);
+      }
+    }, [leadData]);
+    
+
+  useEffect(() => {
+    const fetchLeadData = async () => {
+      try {
+        if (leadDetails?.id && leadDetails?.description && caseDetails?.id && caseDetails?.title) {
+          const token = localStorage.getItem("token");
+          console.log("localstorage data",localStorage.getItem("token"));
+
+          const response = await axios.get(`http://localhost:5000/api/lead/lead/${leadDetails.id}/${encodeURIComponent(
+            leadDetails.description)}/${caseDetails.id}/${encodeURIComponent(caseDetails.title)}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+
+          console.log("Fetched Lead Data1:", response.data);
+
+          // if (response.data.length > 0) {
+          //   setLeadData(response.data[0]); // Assuming one lead is returned
+          // } else {
+          //   setError("No lead data found.");
+          // }
+
+          if (response.data.length > 0) {
+            setLeadData({
+              ...response.data[0], 
+              assignedOfficer: response.data[0].assignedOfficer || [] // Ensure array
+            });
+          }
+          
+        }
+      } catch (err) {
+        console.error("Error fetching lead data:", err);
+        setError("Failed to fetch lead data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeadData();
+  }, [leadDetails, caseDetails]);
 
   const handleGenerateLead = () => {
     const { leadNumber, leadSummary, assignedDate, assignedOfficer, assignedBy } = leadData;
@@ -73,7 +140,7 @@ export const CMInstruction = () => {
         <span className="menu-item active" onClick={() => handleNavigation('/CMInstruction')}>
             Instructions
           </span>
-          <span className="menu-item" onClick={() => handleNavigation('/CMReturn')}>
+          <span className="menu-item" onClick={() =>   handleLRClick()}>
             Returns
           </span>
           <span className="menu-item" onClick={() => handleNavigation('/CMPerson')} >
@@ -146,7 +213,7 @@ export const CMInstruction = () => {
                   <input
                     type="text"
                     className="input-field"
-                    value={leadData.incidentNumber}
+                    value={leadData.incidentNo}
                     onChange={(e) => handleInputChange('incidentNumber', e.target.value)}
                     placeholder="C000000"
                   />
@@ -186,7 +253,7 @@ export const CMInstruction = () => {
         <table className="details-table">
           <tbody>
           <tr>
-              <td>Case Name:</td>
+              <td className="info-label">Case Name:</td>
               <td>
                 <input
                   type="text"
@@ -198,35 +265,35 @@ export const CMInstruction = () => {
               </td>
             </tr>
             <tr>
-              <td>Lead Summary:</td>
+              <td className="info-label">Lead Description:</td>
               <td>
                 <input
                   type="text"
                   className="input-field"
-                  value={leadData.leadSummary}
+                  value={leadData.description}
                   onChange={(e) => handleInputChange('leadSummary', e.target.value)}
                   placeholder="Enter Lead Summary"
                 />
               </td>
             </tr>
             <tr>
-                <td>Lead Origin:</td>
+                <td className="info-label">Lead Origin:</td>
                 <td>
                   <input
                     type="text"
                     className="input-field"
-                    value={leadData.leadOrigin}
+                    value={leadData.parentLeadNo}
                     onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
                     placeholder="Enter Lead Origin"
                   />
                 </td>
               </tr>
-            <tr>
-  <td>Associated Subnumbers:</td>
+              <tr>
+  <td className="info-label">Associated Subnumbers:</td>
   <td>
-    <div className="custom-dropdown-cl">
+    <div className="custom-dropdown">
       <div
-        className="dropdown-header-cl"
+        className="dropdown-header"
         onClick={() => setSubDropdownOpen(!subDropdownOpen)}
       >
         {associatedSubNumbers.length > 0
@@ -244,10 +311,15 @@ export const CMInstruction = () => {
                 value={subNum}
                 checked={associatedSubNumbers.includes(subNum)}
                 onChange={(e) => {
-                  const updatedSubNumbers = e.target.checked
+                  const updatedSubs = e.target.checked
                     ? [...associatedSubNumbers, e.target.value]
                     : associatedSubNumbers.filter((num) => num !== e.target.value);
-                  setAssociatedSubNumbers(updatedSubNumbers);
+
+                  setAssociatedSubNumbers(updatedSubs); // Update dropdown selection
+                  setLeadData((prevData) => ({
+                    ...prevData,
+                    associatedSubNumbers: updatedSubs, // Update leadData
+                  }));
                 }}
               />
               <label htmlFor={subNum}>{subNum}</label>
@@ -258,33 +330,38 @@ export const CMInstruction = () => {
     </div>
   </td>
 </tr>
-            <tr>
-  <td>Assign Officers:</td>
+<tr>
+  <td className="info-label">Assigned Officers:</td>
   <td>
     <div className="custom-dropdown-cl">
       <div
         className="dropdown-header-cl"
         onClick={() => setDropdownOpen(!dropdownOpen)}
       >
-        {leadData.assignedOfficer.length > 0
-          ? leadData.assignedOfficer.join(', ')
-          : 'Select Officers'}
-        <span className="dropdown-icon">{dropdownOpen ? '▲' : '▼'}</span>
+        {assignedOfficers.length > 0
+          ? assignedOfficers.join(", ")
+          : "Select Officers"}
+        <span className="dropdown-icon">{dropdownOpen ? "▲" : "▼"}</span>
       </div>
       {dropdownOpen && (
         <div className="dropdown-options">
-          {['Officer 1', 'Officer 2', 'Officer 3'].map((officer) => (
+          {["Officer 99", "Officer 24", "Officer 1", "Officer 2", "Officer 3"].map((officer) => (
             <div key={officer} className="dropdown-item">
               <input
                 type="checkbox"
                 id={officer}
                 value={officer}
-                checked={leadData.assignedOfficer.includes(officer)}
+                checked={assignedOfficers.includes(officer)}
                 onChange={(e) => {
-                  const newAssignedOfficers = e.target.checked
-                    ? [...leadData.assignedOfficer, e.target.value]
-                    : leadData.assignedOfficer.filter((o) => o !== e.target.value);
-                  handleInputChange('assignedOfficer', newAssignedOfficers);
+                  const updatedOfficers = e.target.checked
+                    ? [...assignedOfficers, e.target.value]
+                    : assignedOfficers.filter((o) => o !== e.target.value);
+
+                  setAssignedOfficers(updatedOfficers); // Update UI state
+                  setLeadData((prevData) => ({
+                    ...prevData,
+                    assignedTo: updatedOfficers, // Ensure backend gets updated
+                  }));
                 }}
               />
               <label htmlFor={officer}>{officer}</label>
@@ -295,29 +372,30 @@ export const CMInstruction = () => {
     </div>
   </td>
 </tr>
-            <tr>
-              <td>Assigned By:</td>
-              <td>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={leadData.assignedBy}
-                  onChange={(e) => handleInputChange('assignedBy', e.target.value)}
-                  placeholder="Assigned By"
-                />
-              </td>
-            </tr>
-            <tr>
-              <td>Lead Description:</td>
-              <td>
-                <textarea
-                  className="textarea-field-cl"
-                  value={leadData.leadDescription}
-                  onChange={(e) => handleInputChange('leadDescription', e.target.value)}
-                  placeholder="Enter Lead Description"
-                ></textarea>
-              </td>
-            </tr>
+
+<tr>
+                  <td className="info-label">Assigned By:</td>
+                  <td>
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={leadData.assignedBy}
+                      onChange={(e) => handleInputChange('assignedBy', e.target.value)}
+                      placeholder=""
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td className="info-label">Lead Summary:</td>
+                  <td>
+                    <textarea
+                      className="textarea-field"
+                      value={leadData.summary}
+                      onChange={(e) => handleInputChange('leadDescription', e.target.value)}
+                      placeholder=""
+                    ></textarea>
+                  </td>
+                </tr>
           </tbody>
         </table>
       </div>
@@ -335,7 +413,7 @@ export const CMInstruction = () => {
       </div> */}
       <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
-        onNext={() => navigate("/CMReturn")} // Takes user to CM Return page
+        onNext={() => handleLRClick()} // Takes user to CM Return page
       />
     </div>
   );
