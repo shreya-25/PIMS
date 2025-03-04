@@ -30,7 +30,7 @@ export const CasePageManager = () => {
       navigate("/CasePageManager", { state: { caseDetails } }); // Pass case details via state
     };
     const handleLRClick = (lead) => {
-      navigate("/LRInstruction", { state: { leadDetails: lead } });
+      navigate("/CMInstruction", { state: {caseDetails, leadDetails: lead } });
     };
     const handleNavigation = (route) => {
       navigate(route); // Navigate to respective page
