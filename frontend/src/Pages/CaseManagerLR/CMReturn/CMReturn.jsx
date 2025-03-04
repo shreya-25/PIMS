@@ -34,12 +34,15 @@ const { leadDetails, caseDetails } = location.state || {};
               });
   
             console.log("Fetched Lead RR1:", response.data);
+
+            setReturns(response.data.length > 0 ? response.data : []);
+
   
-            if (response.data.length > 0) {
-              setReturns({
-                ...response.data[0], 
-              });
-            }
+            // if (response.data.length > 0) {
+            //   setReturns({
+            //     ...response.data[0], 
+            //   });
+            // }
             
           }
         } catch (err) {
