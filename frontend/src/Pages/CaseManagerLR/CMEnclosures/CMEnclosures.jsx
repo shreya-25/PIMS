@@ -1,15 +1,19 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
+import React, { useContext, useState, useEffect} from 'react';
+import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from '../../../components/Navbar/Navbar';
-import "./CMEnclosures.css"; // Custom CSS file for Enclosures styling
+import "./CMEnclosures.css";
+import axios from "axios";
+import { CaseContext } from "../../CaseContext";
 
 export const CMEnclosures = () => {
-  const navigate = useNavigate(); // Initialize navigate hook
+  const navigate = useNavigate(); 
+  const location = useLocation();
+  
 
   // Sample enclosures data
   const [enclosures, setEnclosures] = useState([
-    { dateEntered: "12/01/2024", type: "Report", enclosure: "Incident Report" },
-    { dateEntered: "12/03/2024", type: "Evidence", enclosure: "Photo Evidence" },
+    { dateEntered: "", leadReturnType: "", type: "", enclosure: "" },
+    // { dateEntered: "12/03/2024", type: "Evidence", enclosure: "Photo Evidence" },
   ]);
 
   // State to manage form data
@@ -96,14 +100,16 @@ export const CMEnclosures = () => {
           <thead>
             <tr>
               <th>Date Entered</th>
+              <th>Associated Return Id</th>
               <th>Type</th>
-              <th>Enclosure</th>
+              <th>Enclosure Description</th>
             </tr>
           </thead>
           <tbody>
             {enclosures.map((enclosure, index) => (
               <tr key={index}>
                 <td>{enclosure.dateEntered}</td>
+                <td>{enclosure.leadReturnId}</td>
                 <td>{enclosure.type}</td>
                 <td>{enclosure.enclosure}</td>
               </tr>
