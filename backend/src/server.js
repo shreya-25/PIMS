@@ -8,6 +8,8 @@ const leadReturnRoutes = require("./routes/leadReturnRoutes.js");
 const caseRoutes = require("./routes/caseRoutes.js");
 const notificationRoutes = require("./routes/notificationRoutes");
 const leadReturnResultRoutes = require("./routes/leadReturnResultRoutes.js");
+const LPRoutes = require("./routes/LPRoutes.js");
+const LVRoutes = require("./routes/LVRoutes.js");
 const dbConnect = require("./config/dbConnect.js");
 
 dbConnect();
@@ -26,6 +28,8 @@ app.use("/api/cases", caseRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/leadReturn", leadReturnRoutes);
 app.use("/api/leadReturnResult", leadReturnResultRoutes);
+app.use("/api/lrperson", LPRoutes);
+app.use("/api/lrvehicle", LVRoutes);
 
 
 // Start Server
