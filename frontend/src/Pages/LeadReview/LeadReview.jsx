@@ -24,8 +24,6 @@ export const LeadReview = () => {
 
   const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
 
-  console.log(selectedLead);
-
   const statuses = [
     "Lead Created",
     "Lead Assigned",

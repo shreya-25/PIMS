@@ -1,16 +1,24 @@
 
-
+import React, { useContext, useState, useEffect} from 'react';
+import { useLocation, useNavigate } from "react-router-dom";
 import './CMVehicle.css';
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 import Navbar from '../../../components/Navbar/Navbar';
+import axios from "axios";
+import { CaseContext } from "../../CaseContext";
 
 export const CMVehicle = () => {
 
-  const navigate = useNavigate(); // Initialize useNavigate hook
+  const navigate = useNavigate(); 
+  const location = useLocation();
+
+  const { leadDetails, caseDetails } = location.state || {};
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+  
 
   const [vehicles, setVehicles] = useState([
-    { dateEntered: "", returnId: '', year: "", make: "", model: "",color: "", vin: "", plate: "", state: "" },
+    { enteredDate: "", leadReturnId: '', year: "", make: "", model: "",primaryColor: "", vin: "", plate: "", state: "" },
     // { dateEntered: "01/05/2024", year: "2022", make: "Toyota", model: "Camry", color: "Black",vin: "654321", plate: "ABC-5678", state: "CA" },
     // { dateEntered: "01/10/2024", year: "2021", make: "Ford", model: "F-150", color: "White",vin: "789012", plate: "DEF-9101", state: "TX" },
     // { dateEntered: "01/15/2024", year: "2024", make: "Tesla", model: "Model 3", color: "Red",vin: "345678", plate: "TES-2024", state: "FL" },
@@ -31,6 +39,43 @@ export const CMVehicle = () => {
     state: '',
     information: '',
   });
+
+  useEffect(() => {
+    const fetchLeadData = async () => {
+      try {
+        if (selectedLead?.leadNo && selectedLead?.leadName && selectedLead?.caseNo && selectedLead?.caseName) {
+          const token = localStorage.getItem("token");
+
+          const response = await axios.get(`http://localhost:5000/api/lrvehicle/lrvehicle/${selectedLead.leadNo}/${encodeURIComponent(
+            selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+  
+
+          console.log("Fetched Lead RR1:", response.data);
+
+          setVehicles(response.data.length > 0 ? response.data : []);
+
+
+          // if (response.data.length > 0) {
+          //   setReturns({
+          //     ...response.data[0], 
+          //   });
+          // }
+          
+        }
+      } catch (err) {
+        console.error("Error fetching lead data:", err);
+        setError("Failed to fetch lead data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeadData();
+  }, [leadDetails, caseDetails]);
+
+
 
   const handleChange = (field, value) => {
     setVehicleData({ ...vehicleData, [field]: value });
@@ -162,19 +207,19 @@ export const CMVehicle = () => {
           <tbody>
     {vehicles.map((vehicle, index) => (
       <tr key={index}>
-        <td>{vehicle.dateEntered}</td>
-        <td>{vehicle.returnId}</td>
+        <td>{vehicle.enteredDate}</td>
+        <td>{vehicle.leadReturnId}</td>
         <td>{vehicle.year}</td>
         <td>{vehicle.make}</td>
         <td>{vehicle.model}</td>
         <td style={{ textAlign: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ width: '60px', display: 'inline-block' }}>{vehicle.color}</span>
+          <span style={{ width: '60px', display: 'inline-block' }}>{vehicle.primaryColor}</span>
           <div
             style={{
               width: '18px',
               height: '18px',
-              backgroundColor: vehicle.color,
+              backgroundColor: vehicle.primaryColor,
               marginLeft: '15px',
               border: '1px solid #000',
             }}
