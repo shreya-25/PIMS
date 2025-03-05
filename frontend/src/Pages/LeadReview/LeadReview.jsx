@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect} from 'react';
 
 import Navbar from '../../components/Navbar/Navbar';
 import Searchbar from '../../components/Searchbar/Searchbar';
@@ -8,6 +8,8 @@ import Sort from "../../components/Sort/Sort";
 import './LeadReview.css';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
+import { CaseContext } from "../CaseContext";
+
 
 export const LeadReview = () => {
   const navigate = useNavigate();
@@ -19,6 +21,10 @@ export const LeadReview = () => {
   const leadEntries = location.state?.leadEntries || [];
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+
+  console.log(selectedLead);
 
   const statuses = [
     "Lead Created",
@@ -53,16 +59,22 @@ export const LeadReview = () => {
     // caseSummary: defaultCaseSummary,
   });
 
+  const getCasePageRoute = () => {
+    if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
+    return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
+};
+
+
 
   useEffect(() => {
     const fetchLeadData = async () => {
       try {
-        if (leadId && leadDescription && caseDetails?.id && caseDetails?.title) {
+        if (selectedLead.leadNo && selectedLead.leadName && selectedCase?.caseNo && selectedCase?.caseName) {
           const token = localStorage.getItem("token");
           console.log("localstorage data",localStorage.getItem("token"));
 
-          const response = await axios.get(`http://localhost:5000/api/lead/lead/${leadId}/${encodeURIComponent(
-              leadDescription)}/${caseDetails.id}/${encodeURIComponent(caseDetails.title)}`, {
+          const response = await axios.get(`http://localhost:5000/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(
+            selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, {
               headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -91,7 +103,7 @@ export const LeadReview = () => {
     };
 
     fetchLeadData();
-  }, [leadId, leadDescription, caseDetails]);
+  }, [selectedLead, selectedCase]);
 
 
   // For subnumbers
@@ -143,9 +155,9 @@ export const LeadReview = () => {
   useEffect(() => {
    const fetchCaseSummary = async () => {
      try {
-       if (caseDetails && caseDetails.id) {
+       if (selectedCase && selectedCase.caseNo) {
          const token = localStorage.getItem("token");
-         const response = await axios.get(`http://localhost:5000/api/cases/summary/${caseDetails.id}`, {
+         const response = await axios.get(`http://localhost:5000/api/cases/summary/${selectedCase.caseNo}`, {
            headers: { Authorization: `Bearer ${token}` }
          });
          // Update case summary if data is received
@@ -160,7 +172,7 @@ export const LeadReview = () => {
    };
 
    fetchCaseSummary();
- }, [caseDetails]);
+ }, [selectedCase]);
 
 
   return (
@@ -175,7 +187,7 @@ export const LeadReview = () => {
           <ul className="sidebar-list">
             <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
             <li className="sidebar-item" onClick={() => navigate('/LeadReview')}>Lead Information</li>
-            <li className="sidebar-item" onClick={() => navigate('/Investigator')}>Case Page</li>
+            <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
             <li className="sidebar-item" onClick={() => navigate('/leadlog')}>View Lead Log</li>
             <li className="sidebar-item" onClick={() => navigate('/LRInstruction')}>View Lead Return</li>
             <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
@@ -187,7 +199,7 @@ export const LeadReview = () => {
         <div className="lead-main-content">
           {/* Page Header */}
           <div className="case-header">
-            <h1>Lead No: {leadId} | {leadDescription}</h1>
+            <h1>Lead No: {selectedLead.leadNo} | {selectedLead.leadName}</h1>
           </div>
 
           {/* Case Summary Textarea */}
@@ -355,11 +367,11 @@ export const LeadReview = () => {
                 </tr>
 
                 <tr>
-  <td>Assigned Officers:</td>
+  <td className="info-label">Assigned Officers:</td>
   <td>
-    <div className="custom-dropdown-cl">
+    <div className="custom-dropdown">
       <div
-        className="dropdown-header-cl"
+        className="dropdown-header"
         onClick={() => setDropdownOpen(!dropdownOpen)}
       >
         {assignedOfficers.length > 0

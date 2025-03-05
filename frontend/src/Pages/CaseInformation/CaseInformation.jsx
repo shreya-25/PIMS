@@ -1,13 +1,18 @@
-import React, { useState,useEffect} from 'react';
+import React, { useContext, useState, useEffect} from 'react';
 import axios from "axios";
 import Navbar from '../../components/Navbar/Navbar';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './CaseInformation.css'; // Custom CSS
+import { CaseContext } from "../CaseContext";
+
 
 export const CaseInformation = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { caseDetails } = location.state || {};
+
+    const { selectedCase } = useContext(CaseContext);
+    
     
     const handleHomeClick = () => {
       navigate("/Homepage"); // Replace "/" with the actual home page route if different
@@ -150,7 +155,7 @@ export const CaseInformation = () => {
      try {
        if (caseDetails && caseDetails.id) {
          const token = localStorage.getItem("token");
-         const response = await axios.get(`http://localhost:5000/api/cases/summary/${caseDetails.id}`, {
+         const response = await axios.get(`http://localhost:5000/api/cases/summary/${selectedCase.caseNo}`, {
            headers: { Authorization: `Bearer ${token}` }
          });
          // Update case summary if data is received
@@ -197,13 +202,11 @@ export const CaseInformation = () => {
           {/* Main Content: Replicate the Police Report Fields */}
           <div className="left-content">
             <div className="case-header">
-              {caseDetails ? (
-                <h1>
-                  Case: {caseDetails?.id || "N/A"} | {caseDetails?.title || "Unknown Case"}
-                </h1>
-              ) : (
-                <h1>Case: 12345 | Main Street Murder</h1>
-              )}
+            {
+                        <h1>
+                          Case: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"}
+                        </h1>
+                    }
             </div>
 
             {/* Detail Section */}

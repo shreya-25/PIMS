@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect} from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import Searchbar from '../../components/Searchbar/Searchbar';
 import Filter from "../../components/Filter/Filter";
@@ -7,6 +7,8 @@ import Button from '../../components/Button/Button';
 import './CasePageManager.css'; // Custom CSS file for styling
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
+import { CaseContext } from "../CaseContext";
+
 
 export const CasePageManager = () => {
     const navigate = useNavigate();
@@ -23,21 +25,39 @@ export const CasePageManager = () => {
   const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
   const [leadLogCount, setLeadLogCount] = useState(0);
 
+  const { selectedCase, setSelectedLead } = useContext(CaseContext);
+
+
     const [activeTab, setActiveTab] = useState("allLeads"); // Default to All Leads tab
     const handleViewAssignedLead = (lead) => {
     };
     const handleCaseClick = (caseDetails) => {
       navigate("/CasePageManager", { state: { caseDetails } }); // Pass case details via state
     };
-    const handleLRClick = (lead) => {
-      navigate("/CMInstruction", { state: {caseDetails, leadDetails: lead } });
-    };
+  
     const handleNavigation = (route) => {
       navigate(route); // Navigate to respective page
     };
 
     const signedInOfficer = localStorage.getItem("loggedInUser");
 
+    const handleLRClick = (lead) => {
+      setSelectedLead({
+          leadNo: lead.id,
+          incidentNo: lead.incidentNo,
+          leadName: lead.description,
+          dueDate: lead.dueDate || "N/A",
+          priority: lead.priority || "Medium",
+          flags: lead.flags || [],
+          assignedOfficers: lead.assignedOfficers || [],
+          leadStatus: lead.leadStatus,
+          caseName: lead.caseName,
+          caseNo: lead.caseNo
+      });
+    
+      // Navigate to Lead Review Page
+      navigate("/CMInstruction", { state: { leadDetails: lead, caseDetails: selectedCase } });
+    };
 
     
     // Handler to accept the assigned lead
@@ -84,41 +104,30 @@ export const CasePageManager = () => {
     const isMainStreetThreat = caseDetails?.title === "Main Street Murder";
     
       
-    const [leads, setLeads] = useState(isMainStreetThreat ? {
+    const [leads, setLeads] = useState({
       assignedLeads: [],
       pendingLeads: [],
       pendingLeadReturns: [],
       allLeads: [],
-  } : {
-      assignedLeads: [
-          // { id: 1, description: "Some details about the theft incident ", dueDate: "12/25/2024",
-          //   priority: "High", flags: ["Important"], assignedOfficers: ["Officer 1", "Officer 3"] },
-          // { id: 2, description: "Collect Audio Recording from Dispatcher", dueDate: "12/31/2024",
-          //   priority: "Medium", flags: [], assignedOfficers: ["Officer 2"] },
-          // { id: 3, description: "Interview John", dueDate: "12/29/2024",
-          //   priority: "Low", flags: [], assignedOfficers: ["Officer 4"] },
-      ],
-      pendingLeads: [
-          // { id: 4, description: "Interview Witness", dueDate: "12/26/2024",
-          //   priority: "High", flags: ["Important"], assignedOfficers: ["Officer 1", "Officer 3"] },
-          // { id: 6, description: "Interview Neighbours", dueDate: "12/23/2024",
-          //   priority: "Medium", flags: [], assignedOfficers: ["Officer 2"] },
-          // { id: 7, description: "Collect Evidence", dueDate: "12/22/2024",
-          //   priority: "Low", flags: [], assignedOfficers: ["Officer 4"] },
-      ],
-      pendingLeadReturns: [
-          // { id: 5, description: "Submit Crime Scene Photos" },
-          // { id: 8, description: "Collect Evidence", dueDate: "12/30/2024" },
-          // { id: 9, description: "Interview Witness", dueDate: "12/31/2024" },
-      ],
-      allLeads: [
-          // { id: 1, description: "Collect Audio Records from Dispatcher", status: "Assigned" },
-          // { id: 2, description: "Interview Mr. John", status: "Assigned" },
-          // { id: 3, description: "Collect Evidence from 63 Mudray Street", status: "Completed" },
-          // { id: 4, description: "Interview Witness", status: "Pending" },
-          // { id: 5, description: "Submit Crime Scene Photos", status: "Completed" },
-      ],
+ } );
+
+ const handleLeadClick = (lead) => {
+  setSelectedLead({
+      leadNo: lead.leadNo,
+      incidentNo: lead.incidentNo,
+      leadName: lead.description,
+      dueDate: lead.dueDate || "N/A",
+      priority: lead.priority || "Medium",
+      flags: lead.flags || [],
+      assignedOfficers: lead.assignedOfficers || [],
+      leadStatus: lead.leadStatus,
+      caseName: lead.caseName,
+      caseNo: lead.caseNo
   });
+
+  // Navigate to Lead Review Page
+  navigate("/leadReview", { state: { leadDetails: lead, caseDetails: selectedCase } });
+};
 
   const token = localStorage.getItem('token') || '';
 
@@ -155,8 +164,8 @@ export const CasePageManager = () => {
   // }, [caseDetails, token]);
 
   useEffect(() => {
-    if (caseDetails?.id && caseDetails?.title) {
-      fetch(`http://localhost:5000/api/lead/case/${caseDetails.id}/${caseDetails.title}`, {
+    if (selectedCase?.caseNo && selectedCase?.caseName) {
+      fetch(`http://localhost:5000/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -256,7 +265,7 @@ export const CasePageManager = () => {
                 return;
             }
 
-            if (!caseDetails?.id || !caseDetails?.title) {
+            if (!selectedCase?.caseNo || !selectedCase?.caseName) {
                 console.error("⚠️ No valid case details provided.");
                 return;
             }
@@ -275,8 +284,8 @@ export const CasePageManager = () => {
             const pendingLeadReturns = leadsResponse.data.filter(lead => 
                 lead.assignedBy.lRStatus === "Pending"
                 &&
-                lead.caseNo === caseDetails.id &&   // Match exact case number
-                lead.caseName === caseDetails.title // Match exact case name
+                lead.caseNo === selectedCase.caseNo &&   // Match exact case number
+                lead.caseName === selectedCase.caseName // Match exact case name
             ).map(lead => ({
                 id: lead.leadNo,
                 description: lead.description,
@@ -296,7 +305,7 @@ export const CasePageManager = () => {
     };
 
     fetchPendingLeadReturns();
-}, [signedInOfficer, caseDetails]);
+}, [signedInOfficer, selectedCase]);
 
 
 // useEffect(() => {
@@ -433,9 +442,9 @@ export const CasePageManager = () => {
    useEffect(() => {
     const fetchCaseSummary = async () => {
       try {
-        if (caseDetails && caseDetails.id) {
+        if (selectedCase && selectedCase.caseNo) {
           const token = localStorage.getItem("token");
-          const response = await axios.get(`http://localhost:5000/api/cases/summary/${caseDetails.id}`, {
+          const response = await axios.get(`http://localhost:5000/api/cases/summary/${selectedCase.caseNo}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           // Update case summary if data is received
@@ -450,7 +459,7 @@ export const CasePageManager = () => {
     };
 
     fetchCaseSummary();
-  }, [caseDetails]);
+  }, [selectedCase]);
 
   
 
@@ -635,13 +644,11 @@ export const CasePageManager = () => {
 
                    {/* Display Case Number and Name */}
                 <div className="case-header">
-                    {caseDetails ? (
+                    {
                         <h1>
-                          Case: {caseDetails?.id || "N/A"} | {caseDetails?.title || "Unknown Case"}
+                          Case: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"}
                         </h1>
-                    ) : (
-                        <h1>Case: 12345 | Main Street Murder </h1>
-                    )}
+                    }
                 </div>
                 <div className = "case-summary">
                 <label className="input-label">Case Summary</label>
@@ -1219,7 +1226,7 @@ export const CasePageManager = () => {
             <td>
               <button
                 className= "view-btn1"
-                onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.leadNo, leadDescription: lead.description} } )}
+                onClick={() => handleLeadClick(lead)}
               >
                 View
               </button>

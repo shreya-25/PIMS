@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import "./HomePage.css";
+import { CaseContext } from "../CaseContext";
 import Navbar from "../../components/Navbar/Navbar";
 import Searchbar from "../../components/Searchbar/Searchbar";
 import NotificationCard from "../../components/NotificationCard/NotificationCard1";
@@ -10,9 +11,12 @@ import { SlideBar } from "../../components/Slidebar/Slidebar";
 import { SideBar } from "../../components/Sidebar/Sidebar";
 import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 import { useNavigate } from "react-router-dom";
+import { useContext } from "react";
+
 
 
 export const HomePage = () => {
+
   const [activeTab, setActiveTab] = useState("cases"); // Default tab
   const [sortField, setSortField] = useState(""); // Sorting field
   const [filterText, setFilterText] = useState(""); // Filter text
@@ -28,6 +32,9 @@ const [newInvestigator, setNewInvestigator] = useState("");
 
 const [showCaseSelector, setShowCaseSelector] = useState(false);
   const [navigateTo, setNavigateTo] = useState(""); // Target page
+
+  const { setSelectedCase, setToken } = useContext(CaseContext);
+
 
 
   const handleShowCaseSelector = (targetPage) => {
@@ -103,13 +110,25 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
   // Handler to view the assigned lead details (can be updated to show a modal or navigate)
 const handleViewAssignedLead = (lead) => {
 };
+
 const handleCaseClick = (caseDetails) => {
+ 
+
+  // Save case details in context
+  setSelectedCase({
+    caseNo: caseDetails.id,
+    caseName: caseDetails.title,
+    role: caseDetails.role
+  });
+
+  // Navigate to the appropriate page based on role
   if (caseDetails.role === "Investigator") {
     navigate("/Investigator", { state: { caseDetails } });
   } else if (caseDetails.role === "Case Manager") {
     navigate("/CasePageManager", { state: { caseDetails } });
   }
 };
+
 
 
 const handleLRClick = (lead) => {

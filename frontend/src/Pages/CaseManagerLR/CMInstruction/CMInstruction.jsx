@@ -1,10 +1,12 @@
-import React, { useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect} from 'react';
 import { useLocation, useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 
 import Navbar from '../../../components/Navbar/Navbar';
 import FootBar from '../../../components/FootBar/FootBar';
 import './CMInstruction.css';
 import axios from "axios";
+import { CaseContext } from "../../CaseContext";
+
 
 
 export const CMInstruction = () => {
@@ -18,6 +20,9 @@ export const CMInstruction = () => {
         const handleLRClick = () => {
           navigate("/CMReturn", { state: {caseDetails, leadDetails } });
         };
+
+          const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+
   
   const [leadData, setLeadData] = useState({
     leadNumber: '',
@@ -60,26 +65,20 @@ export const CMInstruction = () => {
       }
     }, [leadData]);
     
-
+console.log(selectedLead);
   useEffect(() => {
     const fetchLeadData = async () => {
       try {
-        if (leadDetails?.id && leadDetails?.description && caseDetails?.id && caseDetails?.title) {
+        if (selectedLead?.leadNo && selectedLead?.leadName && selectedLead?.caseNo && selectedLead?.caseName) {
           const token = localStorage.getItem("token");
           console.log("localstorage data",localStorage.getItem("token"));
 
-          const response = await axios.get(`http://localhost:5000/api/lead/lead/${leadDetails.id}/${encodeURIComponent(
-            leadDetails.description)}/${caseDetails.id}/${encodeURIComponent(caseDetails.title)}`, {
+          const response = await axios.get(`http://localhost:5000/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(
+            selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
               headers: { Authorization: `Bearer ${token}` }
             });
 
           console.log("Fetched Lead Data1:", response.data);
-
-          // if (response.data.length > 0) {
-          //   setLeadData(response.data[0]); // Assuming one lead is returned
-          // } else {
-          //   setError("No lead data found.");
-          // }
 
           if (response.data.length > 0) {
             setLeadData({
@@ -98,7 +97,7 @@ export const CMInstruction = () => {
     };
 
     fetchLeadData();
-  }, [leadDetails, caseDetails]);
+  }, [selectedLead]);
 
   const handleGenerateLead = () => {
     const { leadNumber, leadSummary, assignedDate, assignedOfficer, assignedBy } = leadData;
@@ -201,9 +200,9 @@ export const CMInstruction = () => {
                   <input
                     type="text"
                     className="input-field"
-                    value={leadData.leadNumber}
+                    value={selectedLead.leadNo}
                     onChange={(e) => handleInputChange('leadNumber', e.target.value)}
-                    placeholder="12"
+                    placeholder=""
                   />
                 </td>
               </tr>
@@ -215,7 +214,7 @@ export const CMInstruction = () => {
                     className="input-field"
                     value={leadData.incidentNo}
                     onChange={(e) => handleInputChange('incidentNumber', e.target.value)}
-                    placeholder="C000000"
+                    placeholder=""
                   />
                 </td>
               </tr>
@@ -227,7 +226,7 @@ export const CMInstruction = () => {
                     className="input-field"
                     value={leadData.subNumber}
                     onChange={(e) => handleInputChange('subNumber', e.target.value)}
-                    placeholder="C0000000"
+                    placeholder=""
                   />
                 </td>
               </tr>
@@ -239,7 +238,7 @@ export const CMInstruction = () => {
                     className="input-field"
                     value={leadData.assignedDate}
                     onChange={(e) => handleInputChange('assignedDate', e.target.value)}
-                    placeholder="08/25/24"
+                    placeholder=""
                   />
                 </td>
               </tr>
@@ -258,9 +257,9 @@ export const CMInstruction = () => {
                 <input
                   type="text"
                   className="input-field"
-                  value={leadData.caseName || 'Main Street Murder'} // Display selected case name or an empty string
+                  value={selectedLead.caseName} // Display selected case name or an empty string
                   onChange={(e) => handleInputChange('caseName', e.target.value)} // Update 'caseName' in leadData
-                  placeholder="Enter Case Name"
+                  placeholder=""
     />
               </td>
             </tr>
@@ -270,9 +269,9 @@ export const CMInstruction = () => {
                 <input
                   type="text"
                   className="input-field"
-                  value={leadData.description}
+                  value={selectedLead.leadName}
                   onChange={(e) => handleInputChange('leadSummary', e.target.value)}
-                  placeholder="Enter Lead Summary"
+                  placeholder=""
                 />
               </td>
             </tr>
@@ -284,7 +283,7 @@ export const CMInstruction = () => {
                     className="input-field"
                     value={leadData.parentLeadNo}
                     onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
-                    placeholder="Enter Lead Origin"
+                    placeholder=""
                   />
                 </td>
               </tr>
@@ -298,7 +297,7 @@ export const CMInstruction = () => {
       >
         {associatedSubNumbers.length > 0
           ? associatedSubNumbers.join(", ")
-          : "Select Subnumbers"}
+          : "NA"}
         <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
       </div>
       {subDropdownOpen && (
@@ -333,14 +332,14 @@ export const CMInstruction = () => {
 <tr>
   <td className="info-label">Assigned Officers:</td>
   <td>
-    <div className="custom-dropdown-cl">
+    <div className="custom-dropdown">
       <div
-        className="dropdown-header-cl"
+        className="dropdown-header"
         onClick={() => setDropdownOpen(!dropdownOpen)}
       >
         {assignedOfficers.length > 0
           ? assignedOfficers.join(", ")
-          : "Select Officers"}
+          : "NA"}
         <span className="dropdown-icon">{dropdownOpen ? "▲" : "▼"}</span>
       </div>
       {dropdownOpen && (
