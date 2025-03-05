@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useContext, useState, useEffect} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar/Navbar";
 import "./CMReturn.css";
 import FootBar from '../../../components/FootBar/FootBar';
 import axios from "axios";
-
+import { CaseContext } from "../../CaseContext";
 
 export const CMReturn = () => {
   const navigate = useNavigate();
@@ -13,6 +13,8 @@ export const CMReturn = () => {
 const { leadDetails, caseDetails } = location.state || {};
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+
 
   //  Sample returns data
     const [returns, setReturns] = useState([
@@ -20,18 +22,23 @@ const { leadDetails, caseDetails } = location.state || {};
       // { id: 2, dateEntered: "12/02/2024", enteredBy: "Officer 916",results: "Returned item B" },
     ]);
 
+    const handleLRClick = () => {
+      navigate("/CMPerson", { state: {caseDetails, leadDetails } });
+    };
+
 
 
     useEffect(() => {
       const fetchLeadData = async () => {
         try {
-          if (leadDetails?.id && leadDetails?.description && caseDetails?.id && caseDetails?.title) {
+          if (selectedLead?.leadNo && selectedLead?.leadName && selectedLead?.caseNo && selectedLead?.caseName) {
             const token = localStorage.getItem("token");
-  
-            const response = await axios.get(`http://localhost:5000/api/leadReturnResult/${leadDetails.id}/${encodeURIComponent(
-              leadDetails.description)}/${caseDetails.id}/${encodeURIComponent(caseDetails.title)}`, {
+
+            const response = await axios.get(`http://localhost:5000/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
+              selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
                 headers: { Authorization: `Bearer ${token}` }
               });
+    
   
             console.log("Fetched Lead RR1:", response.data);
 
@@ -118,7 +125,7 @@ const { leadDetails, caseDetails } = location.state || {};
       <div className="menu-items">
           <span className="menu-item" onClick={() => handleNavigation("/CMInstruction")}>Instructions</span>
           <span className="menu-item active" onClick={() => handleNavigation("/CMReturn")}>Returns</span>
-          <span className="menu-item" onClick={() => handleNavigation("/CMPerson")}>Person</span>
+          <span className="menu-item" onClick={() =>  handleLRClick()}>Person</span>
           <span className="menu-item" onClick={() => handleNavigation("/CMVehicle")}>Vehicles</span>
           <span className="menu-item" onClick={() => handleNavigation("/CMEnclosures")}>Enclosures</span>
           <span className="menu-item" onClick={() => handleNavigation("/CMEvidence")}>Evidence</span>

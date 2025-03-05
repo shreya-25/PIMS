@@ -1,20 +1,63 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
-
+import React, { useContext, useState, useEffect} from 'react';
+import { useLocation, useNavigate } from "react-router-dom";
+import { CaseContext } from "../../CaseContext";
 import Navbar from '../../../components/Navbar/Navbar';
 import './CMPerson.css';
+import axios from "axios";
 
 export const CMPerson = () => {
     const navigate = useNavigate(); // Initialize useNavigate hook
+      const location = useLocation();
+      
+    const { leadDetails, caseDetails } = location.state || {};
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState("");
+        const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+      
+    
 
     const [persons, setPersons] = useState([
-      { dateEntered: "01/01/2024", name: "John Doe", phoneNo: "123-456-7890", address: "123 Main St, NY" },
-      { dateEntered: "01/05/2024", name: "Jane Smith", phoneNo: "987-654-3210", address: "456 Elm St, CA" },
-      { dateEntered: "01/10/2024", name: "Mike Johnson", phoneNo: "555-789-1234", address: "789 Pine St, TX" },
-      { dateEntered: "01/15/2024", name: "Emily Davis", phoneNo: "111-222-3333", address: "321 Maple St, FL" },
+      { leadReturnId: "", dateEntered: "", name: "", phoneNo: "", address: "" },
+      // { dateEntered: "01/05/2024", name: "Jane Smith", phoneNo: "987-654-3210", address: "456 Elm St, CA" },
+      // { dateEntered: "01/10/2024", name: "Mike Johnson", phoneNo: "555-789-1234", address: "789 Pine St, TX" },
+      // { dateEntered: "01/15/2024", name: "Emily Davis", phoneNo: "111-222-3333", address: "321 Maple St, FL" },
     ]);
   
     const [selectedRow, setSelectedRow] = useState(null);
+
+    useEffect(() => {
+      const fetchLeadData = async () => {
+        try {
+          if (selectedLead?.leadNo && selectedLead?.leadName && selectedLead?.caseNo && selectedLead?.caseName)  {
+            const token = localStorage.getItem("token");
+  
+            const response = await axios.get(`http://localhost:5000/api/lrperson/lrperson/${selectedLead.leadNo}/${encodeURIComponent(
+              selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+  
+            console.log("Fetched Lead RR1:", response.data);
+
+            setPersons(response.data.length > 0 ? response.data : []);
+
+  
+            // if (response.data.length > 0) {
+            //   setReturns({
+            //     ...response.data[0], 
+            //   });
+            // }
+            
+          }
+        } catch (err) {
+          console.error("Error fetching person data:", err);
+          setError("Failed to fetch lead data.");
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      fetchLeadData();
+    }, [leadDetails, caseDetails]);
   
     const handleAddPerson = () => {
       setPersons([...persons, { dateEntered: "", name: "", phoneNo: "", address: "" }]);
@@ -169,6 +212,7 @@ export const CMPerson = () => {
         <table className="timeline-table">
           <thead>
             <tr>
+            <th>Associated Return Id</th>
               <th>Date Entered</th>
               <th>Name</th>
               <th>Phone No</th>
@@ -182,10 +226,17 @@ export const CMPerson = () => {
                 className={selectedRow === index ? "selected-row" : ""}
                 onClick={() => setSelectedRow(index)}
               >
-                <td>{person.dateEntered}</td>
-                <td>{person.name}</td>
-                <td>{person.phoneNo}</td>
-                <td>{person.address}</td>
+                 <td>{person.leadReturnId}</td>
+                <td>{person.enteredDate}</td>
+                <td>{person.firstName ? 
+                  `${person.firstName || ''}, ${person.lastName || ''}`: "N/A"}
+                </td>
+                <td>{person.cellNumber}</td>
+                <td>
+                    {person.address ? 
+                      `${person.address.street1 || ''}, ${person.address.city || ''}, ${person.address.state || ''}, ${person.address.zipCode || ''}`
+                      : "N/A"}
+                </td>
               </tr>
             ))}
           </tbody>
