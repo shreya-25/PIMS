@@ -16,15 +16,24 @@ export const CMEnclosures = () => {
     // { dateEntered: "12/03/2024", type: "Evidence", enclosure: "Photo Evidence" },
   ]);
 
+
+  const [file, setFile] = useState(null);
+
+  const handleInputChange = (field, value) => {
+    setEnclosureData({ ...enclosureData, [field]: value });
+  };
+
   // State to manage form data
   const [enclosureData, setEnclosureData] = useState({
     type: "",
     enclosure: "",
   });
 
-  const handleInputChange = (field, value) => {
-    setEnclosureData({ ...enclosureData, [field]: value });
+  // Handle file selection
+  const handleFileChange = (event) => {
+    setFile(event.target.files[0]);
   };
+
 
   const handleAddEnclosure = () => {
     const newEnclosure = {
@@ -133,6 +142,10 @@ export const CMEnclosures = () => {
               value={enclosureData.enclosure}
               onChange={(e) => handleInputChange("enclosure", e.target.value)}
             ></textarea>
+          </div>
+          <div className="form-row">
+            <label>Upload File:</label>
+            <input type="file" onChange={handleFileChange} />
           </div>
         </div>
 
