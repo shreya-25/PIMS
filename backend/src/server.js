@@ -10,6 +10,7 @@ const notificationRoutes = require("./routes/notificationRoutes");
 const leadReturnResultRoutes = require("./routes/leadReturnResultRoutes.js");
 const LPRoutes = require("./routes/LPRoutes.js");
 const LVRoutes = require("./routes/LVRoutes.js");
+const LEnRoutes = require("./routes/LEnRoutes.js");
 const dbConnect = require("./config/dbConnect.js");
 
 dbConnect();
@@ -30,6 +31,7 @@ app.use("/api/leadReturn", leadReturnRoutes);
 app.use("/api/leadReturnResult", leadReturnResultRoutes);
 app.use("/api/lrperson", LPRoutes);
 app.use("/api/lrvehicle", LVRoutes);
+app.use("/api/lrenclosure", LEnRoutes);
 
 
 // Start Server
@@ -42,6 +44,10 @@ app.listen(PORT, () => {
 app.get("/", (req, res) => {
     res.send("Server is ready");
 });
+
+app.get('/test', (req, res) => {
+    res.send({ message: 'Server is still alive!' });
+  });
 
 // Log MongoDB connection string (for debugging, remove in production)
 console.log(process.env.MONGO_URI);
