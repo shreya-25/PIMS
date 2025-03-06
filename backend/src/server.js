@@ -11,15 +11,16 @@ const leadReturnResultRoutes = require("./routes/leadReturnResultRoutes.js");
 const LPRoutes = require("./routes/LPRoutes.js");
 const LVRoutes = require("./routes/LVRoutes.js");
 const LEnRoutes = require("./routes/LEnRoutes.js");
-const dbConnect = require("./config/dbConnect.js");
-
-dbConnect();
+const { dbConnect } = require("./config/dbConnect"); // Import dbConnect properly
 
 const app = express();
 
 // Middleware
 app.use(express.json());
 app.use(cors({ origin: "http://localhost:3000" })); // Replace with your frontend URL
+
+dbConnect().then(() => {
+    console.log("✅ Database connected, starting server...");
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -51,3 +52,4 @@ app.get('/test', (req, res) => {
 
 // Log MongoDB connection string (for debugging, remove in production)
 console.log(process.env.MONGO_URI);
+});

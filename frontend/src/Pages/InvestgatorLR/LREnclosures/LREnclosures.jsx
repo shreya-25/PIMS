@@ -66,8 +66,8 @@ export const LREnclosures = () => {
 
     // Append other required fields
     formData.append("leadNo", selectedLead.leadNo); // Example value; update as needed
-    formData.append("description", enclosureData.leadName);
-    formData.append("enteredBy", localStorage.getItem("name"));
+    formData.append("description", selectedLead.leadName);
+    formData.append("enteredBy", localStorage.getItem("loggedInUser"));
     formData.append("caseName", selectedLead.caseName);
     formData.append("caseNo", selectedLead.caseNo);
     formData.append("leadReturnId", enclosureData.returnId); // Example value; update as needed
@@ -77,6 +77,7 @@ export const LREnclosures = () => {
 
     // Retrieve token from localStorage
     const token = localStorage.getItem("token");
+    console.log(token);
     for (const [key, value] of formData.entries()) {
       console.log(key, value);
     }
