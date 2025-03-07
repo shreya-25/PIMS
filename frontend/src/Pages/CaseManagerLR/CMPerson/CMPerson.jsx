@@ -4,6 +4,8 @@ import { CaseContext } from "../../CaseContext";
 import Navbar from '../../../components/Navbar/Navbar';
 import './CMPerson.css';
 import axios from "axios";
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const CMPerson = () => {
     const navigate = useNavigate(); // Initialize useNavigate hook
@@ -86,7 +88,16 @@ export const CMPerson = () => {
         setSelectedRow(null);
       }
     };
-  
+ 
+    const handleAccessChange = (index, newAccess) => {
+      setPersons((prevPersons) =>
+        prevPersons.map((person, i) =>
+          i === index ? { ...person, access: newAccess } : person
+        )
+      );
+    };
+    
+    
   
   const [leadData, setLeadData] = useState({
     leadNumber: '16',
@@ -217,29 +228,42 @@ export const CMPerson = () => {
               <th>Name</th>
               <th>Phone No</th>
               <th>Address</th>
+              <th>Access</th>
             </tr>
           </thead>
           <tbody>
-            {persons.map((person, index) => (
-              <tr
-                key={index}
-                className={selectedRow === index ? "selected-row" : ""}
-                onClick={() => setSelectedRow(index)}
-              >
-                 <td>{person.leadReturnId}</td>
-                <td>{person.enteredDate}</td>
-                <td>{person.firstName ? 
-                  `${person.firstName || ''}, ${person.lastName || ''}`: "N/A"}
-                </td>
-                <td>{person.cellNumber}</td>
-                <td>
-                    {person.address ? 
-                      `${person.address.street1 || ''}, ${person.address.city || ''}, ${person.address.state || ''}, ${person.address.zipCode || ''}`
-                      : "N/A"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
+  {persons.map((person, index) => (
+    <tr
+      key={index}
+      className={selectedRow === index ? "selected-row" : ""}
+      onClick={() => setSelectedRow(index)}
+    >
+      <td>{person.leadReturnId}</td>
+      <td>{person.enteredDate}</td>
+      <td>
+        {person.firstName
+          ? `${person.firstName || ''}, ${person.lastName || ''}`
+          : "N/A"}
+      </td>
+      <td>{person.cellNumber}</td>
+      <td>
+        {person.address
+          ? `${person.address.street1 || ''}, ${person.address.city || ''}, ${person.address.state || ''}, ${person.address.zipCode || ''}`
+          : "N/A"}
+      </td>
+      <td>
+        <select
+          value={person.access || "Case Manager"}
+          onChange={(e) => handleAccessChange(index, e.target.value)} // Pass index properly
+        >
+          <option value="Case Manager">Case Manager</option>
+          <option value="Everyone">Everyone</option>
+        </select>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
         </table>
       </div>
 
@@ -252,12 +276,16 @@ export const CMPerson = () => {
 
       {/* Bottom Buttons */}
       <div className="bottom-buttons">
-      <button onClick={() => handleNavigation('/LRPerson1')} className="back-btn">Add Person</button>
-        <button className="back-btn"onClick={() => handleNavigation('/LRReturn')} >Back</button>
+      <button onClick={() => handleNavigation('/LRPerson1')} className="save-btn1">Add Person</button>
+        {/* <button className="back-btn"onClick={() => handleNavigation('/LRReturn')} >Back</button>
         <button className="next-btn"onClick={() => handleNavigation('/LRVehicle')} >Next</button>
         <button className="save-btn">Save</button>
-        <button className="cancel-btn">Cancel</button>
+        <button className="cancel-btn">Cancel</button> */}
       </div>
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LRVehicle")} // Takes user to CM Return page
+      />
     </div>
   );
 };

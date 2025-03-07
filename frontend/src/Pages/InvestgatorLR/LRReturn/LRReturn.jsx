@@ -1,18 +1,66 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useContext, useState, useEffect} from 'react';
+import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar/Navbar";
 import "./LRReturn.css";
 import FootBar from '../../../components/FootBar/FootBar';
+import axios from "axios";
+import { CaseContext } from "../../CaseContext";
 
 
 export const LRReturn = () => {
   const navigate = useNavigate();
+   const location = useLocation();
+    
+  const { leadDetails, caseDetails } = location.state || {};
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+  
+  
 
   // Sample returns data
   const [returns, setReturns] = useState([
-    { id: 1, dateEntered: "12/01/2024",enteredBy: "Officer 916", results: "Returned item A" },
-    { id: 2, dateEntered: "12/02/2024", enteredBy: "Officer 916",results: "Returned item B" },
+    // { id: 1, dateEntered: "12/01/2024",enteredBy: "Officer 916", results: "Returned item A" },
+    // { id: 2, dateEntered: "12/02/2024", enteredBy: "Officer 916",results: "Returned item B" },
+    { leadReturnId: '', enteredDate: "",enteredBy: "", leadReturnResult: "" },
+
   ]);
+
+  useEffect(() => {
+    const fetchLeadData = async () => {
+      try {
+        if (selectedLead?.leadNo && selectedLead?.leadName && selectedLead?.caseNo && selectedLead?.caseName) {
+          const token = localStorage.getItem("token");
+
+          const response = await axios.get(`http://localhost:5000/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
+            selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+  
+
+          console.log("Fetched Lead RR1:", response.data);
+
+          setReturns(response.data.length > 0 ? response.data : []);
+
+
+          // if (response.data.length > 0) {
+          //   setReturns({
+          //     ...response.data[0], 
+          //   });
+          // }
+          
+        }
+      } catch (err) {
+        console.error("Error fetching lead data:", err);
+        setError("Failed to fetch lead data.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeadData();
+  }, [leadDetails, caseDetails]);
+
 
   // State for managing form input
   const [returnData, setReturnData] = useState({ results: "" });
@@ -23,32 +71,97 @@ export const LRReturn = () => {
     setReturnData({ ...returnData, [field]: value });
   };
 
-  const handleAddOrUpdateReturn = () => {
+  // const handleAddOrUpdateReturn = () => {
+  //   if (!returnData.results) {
+  //     alert("Please enter return details!");
+  //     return;
+  //   }
+
+  //   if (editMode) {
+  //     setReturns(
+  //       returns.map((ret) =>
+  //         ret.id === editId ? { ...ret, results: returnData.results } : ret
+  //       )
+  //     );
+  //     setEditMode(false);
+  //     setEditId(null);
+  //   } else {
+  //     const newReturn = {
+  //       id: returns.length + 1,
+  //       dateEntered: new Date().toLocaleDateString(),
+  //       results: returnData.results,
+  //     };
+  //     setReturns([...returns, newReturn]);
+  //   }
+
+  //   setReturnData({ results: "" });
+  // };
+
+  const handleAddOrUpdateReturn = async () => {
     if (!returnData.results) {
       alert("Please enter return details!");
       return;
     }
+  
+    const officerName = localStorage.getItem("officerName") || "Officer 916";
+    const token = localStorage.getItem("token");
+  
+    try {
+      // Fetch existing lead returns to determine the next ID
+      const response = await axios.get(`http://localhost:5000/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
+        selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+    
+  
+      const existingReturns = response.data || [];
+      console.log("data existing", response.data);
+      
+      // Determine the next sequential leadReturnId
+      const nextLeadReturnId = existingReturns.length + 1;
+      // Fetch the latest assignedTo and assignedBy from the most recent return
+    const latestReturn = existingReturns.length > 0 ? existingReturns[existingReturns.length - 1] : null;
 
-    if (editMode) {
-      setReturns(
-        returns.map((ret) =>
-          ret.id === editId ? { ...ret, results: returnData.results } : ret
-        )
-      );
-      setEditMode(false);
-      setEditId(null);
-    } else {
+    const assignedTo = latestReturn ? latestReturn.assignedTo : { assignees: [officerName], lRStatus: "Pending" };
+    const assignedBy = latestReturn ? latestReturn.assignedBy : { assignee: officerName, lRStatus: "Pending" };
+
+  
       const newReturn = {
-        id: returns.length + 1,
-        dateEntered: new Date().toLocaleDateString(),
-        results: returnData.results,
+        leadNo: selectedLead?.leadNo,
+        description: selectedLead?.leadName,
+        enteredDate: new Date().toISOString(),
+        enteredBy: officerName,
+        caseName: selectedLead?.caseName,
+        caseNo: selectedLead?.caseNo,
+        leadReturnId: nextLeadReturnId, // Sequentially generated ID
+        leadReturnResult: returnData.results,
+        assignedTo,
+        assignedBy,
       };
-      setReturns([...returns, newReturn]);
+
+      console.log("New return created:", newReturn);
+  
+      // Send a POST request to create a new return
+      const createResponse = await axios.post(
+        "http://localhost:5000/api/leadReturnResult/create",
+        newReturn,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+  
+      console.log("New return created:", createResponse.data);
+  
+      // Update the local state with the new return
+      setReturns([...existingReturns, createResponse.data]);
+  
+      // Reset input field
+      setReturnData({ results: "" });
+    } catch (err) {
+      console.error("Error creating return:", err);
+      alert("Failed to add return. Please try again.");
     }
-
-    setReturnData({ results: "" });
   };
-
+  
+  
   const handleEditReturn = (ret) => {
     setReturnData({ results: ret.results });
     setEditMode(true);
@@ -139,10 +252,10 @@ export const LRReturn = () => {
           <tbody>
             {returns.map((ret) => (
               <tr key={ret.id}>
-                 <td>{ret.id}</td>
-                <td>{ret.dateEntered}</td>
-                <td>{ret.enteredBy}</td>
-                <td>{ret.results}</td>
+                 <td>{ret.leadReturnId}</td>
+              <td>{ret.enteredDate}</td>
+              <td>{ret.enteredBy}</td>
+              <td>{ret.leadReturnResult}</td>
                 <td>
                   <div classname = "lr-table-btn">
                   <button className="save-btn1" onClick={() => handleEditReturn(ret)}>Edit</button>

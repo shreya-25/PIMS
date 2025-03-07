@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 import FootBar from '../../../components/FootBar/FootBar';
-
+import React, { useState, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import ReactToPrint from 'react-to-print';
 
 import Navbar from '../../../components/Navbar/Navbar';
 import './LRInstruction.css';
 
+
+
 export const LRInstruction = () => {
     const navigate = useNavigate(); // Initialize useNavigate hook
+    const printRef = useRef();
+    const routerLocation = useLocation();
+    const { caseDetails } = routerLocation.state || {};
+
   
   const [leadData, setLeadData] = useState({
     leadNumber: '16',
@@ -62,6 +68,56 @@ export const LRInstruction = () => {
   const handleNextPage = () => {
     navigate('/LRReturn'); // Replace '/nextpage' with the actual next page route
   };
+
+  const PrintableContent = React.forwardRef((props, ref) => (
+    <div ref={ref}>
+      {/* Title with Case No and Case Name */}
+      <h1 style={{ textAlign: 'center', marginBottom: '20px' }}>
+        Lead Return Report – {caseDetails.caseNo} – {caseDetails.caseName}
+      </h1>
+      {/* The printable area (starting from the bottom-content) */}
+      <div className="bottom-content">
+        <table className="details-table">
+          <tbody>
+            <tr>
+              <td>Case Name:</td>
+              <td>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={leadData.caseName || 'Main Street Murder'}
+                  readOnly
+                />
+              </td>
+            </tr>
+            <tr>
+              <td>Lead Summary:</td>
+              <td>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={leadData.leadSummary}
+                  readOnly
+                />
+              </td>
+            </tr>
+            <tr>
+              <td>Assigned Date:</td>
+              <td>
+                <input
+                  type="text"
+                  className="input-field"
+                  value={leadData.assignedDate}
+                  readOnly
+                />
+              </td>
+            </tr>
+            {/* Add any other rows you want printed */}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  ));
   
   return (
     <div className="person-page">

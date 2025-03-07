@@ -114,7 +114,15 @@ const { leadDetails, caseDetails } = location.state || {};
     const handleNavigation = (route) => {
       navigate(route);
     };
-  
+    const handleAccessChange = (index, newAccess) => {
+      setReturns((prevReturns) =>
+        prevReturns.map((ret, i) =>
+          i === index ? { ...ret, access: newAccess } : ret
+        )
+      );
+    };
+    
+    
   return (
     <div className="lrreturn-container">
       {/* Navbar */}
@@ -172,7 +180,7 @@ const { leadDetails, caseDetails } = location.state || {};
       </div>
 
       <div className="form-buttons-return">
-        <button className="save-btn" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Return"}</button>
+        <button className="save-btn1" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Return"}</button>
         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
@@ -185,25 +193,36 @@ const { leadDetails, caseDetails } = location.state || {};
             <th>Date Entered</th>
             <th>Entered By</th>
             <th>Results</th>
+            <th>Access</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
-          {returns.map((ret) => (
-            <tr key={ret.id}>
-              <td>{ret.leadReturnId}</td>
-              <td>{ret.enteredDate}</td>
-              <td>{ret.enteredBy}</td>
-              <td>{ret.leadReturnResult}</td>
-              <td>
-                <div classname = "lr-table-btn">
-                <button className="btn-edit" onClick={() => handleEditReturn(ret)}>Edit</button>
-                <button className="btn-delete" onClick={() => handleDeleteReturn(ret.id)}>Delete</button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
+  {returns.map((ret, index) => ( // Ensure index is passed
+    <tr key={ret.id || index}>
+      <td>{ret.leadReturnId}</td>
+      <td>{ret.enteredDate}</td>
+      <td>{ret.enteredBy}</td>
+      <td>{ret.leadReturnResult}</td>
+      <td>
+        <select
+          value={ret.access || "Case Manager"}
+          onChange={(e) => handleAccessChange(index, e.target.value)} // Pass index correctly
+        >
+          <option value="Case Manager">Case Manager</option>
+          <option value="Everyone">Everyone</option>
+        </select>
+      </td>
+      <td>
+        <div className="lr-table-btn">
+          <button className="save-btn1" onClick={() => handleEditReturn(ret)}>Edit</button>
+          <button className="del-button" onClick={() => handleDeleteReturn(ret.id)}>Delete</button>
+        </div>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
       </table>
 
     </div>
