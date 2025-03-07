@@ -1,8 +1,14 @@
 import './LRVehicle.css';
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
+import React, { useContext, useState, useEffect, useRef } from "react";
 import Navbar from '../../../components/Navbar/Navbar';
 import FootBar from '../../../components/FootBar/FootBar';
+import VehicleModal from "../../../components/VehicleModal/VehicleModel";
+import axios from "axios";
+import { CaseContext } from "../../CaseContext";
+import { useDataContext } from "../../Context/DataContext"; // Import Context
+import { useLocation, useNavigate } from 'react-router-dom';
+
+
 
 
 export const LRVehicle = () => {
@@ -15,7 +21,41 @@ export const LRVehicle = () => {
     { returnId: 2, dateEntered: "01/10/2024", year: "2021", make: "Ford", model: "F-150", color: "White",vin: "789012", plate: "DEF-9101", state: "TX" },
     {  returnId: 2,dateEntered: "01/15/2024", year: "2024", make: "Tesla", model: "Model 3", color: "Red",vin: "345678", plate: "TES-2024", state: "FL" },
   ]);
+   const [vehicleModalData, setVehicleModalData] = useState({
+        leadNo: "",
+        description: "",
+        caseNo: "",
+        caseName: "",
+        leadReturnId: "",
+        leadsDeskCode: "",
+      });
+      
+                    const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+        
+ const openVehicleModal = (leadNo, description, caseNo, caseName, leadReturnId, leadsDeskCode) => {
+      setVehicleModalData({
+        leadNo,
+        description,
+        caseNo,
+        caseName,
+        leadReturnId,
+        leadsDeskCode,
+      });
+      setShowVehicleModal(true); // Ensure this state exists
+    };
 
+    const closeVehicleModal = () => {
+      setVehicleModalData({
+        leadNo: "",
+        description: "",
+        caseNo: "",
+        caseName: "",
+        leadReturnId: "",
+        leadsDeskCode: "",
+      });
+      setShowVehicleModal(false);
+    };
+    const [showVehicleModal, setShowVehicleModal] = useState(false);
     
   const [vehicleData, setVehicleData] = useState({
     year: '',
@@ -145,6 +185,7 @@ export const LRVehicle = () => {
         </div>
       </div>
         {/* Vehicle Form */}
+        <div className = "content-to-add">
         <div className="vehicle-form">
           <div className="form-row">
             <label>Year:</label>
@@ -229,9 +270,17 @@ export const LRVehicle = () => {
             ></textarea>
           </div>
         </div>
+        </div>
+        {/* Buttons */}
+        <div className="form-buttons">
         <button className="save-btn1" onClick={handleAddVehicle}>
             Add Vehicle
           </button>
+          {/* <button className="back-btn">Back</button>
+          <button className="next-btn">Next</button>
+          <button className="save-btn">Save</button>
+          <button className="cancel-btn">Cancel</button> */}
+        </div>
 
              {/* Vehicle Table */}
         <table className="timeline-table">
@@ -243,9 +292,8 @@ export const LRVehicle = () => {
               <th>Make</th>
               <th>Model</th>
               <th>Color</th>
-              <th>VIN</th>
-              <th>Plate</th>
               <th>State</th>
+              <th>Additional Details</th>
             </tr>
           </thead>
           <tbody>
@@ -270,9 +318,25 @@ export const LRVehicle = () => {
           ></div>
         </div>
       </td>
-        <td>{vehicle.vin}</td>
-        <td>{vehicle.plate}</td>
+     
         <td>{vehicle.state}</td>
+        <td> <button className="download-btn" onClick={() => openVehicleModal(
+                      selectedLead.leadNo,
+                      selectedLead.description,
+                      selectedCase.caseNo,
+                      selectedCase.caseName,
+                      vehicle.returnId
+
+                    )}>View</button></td>
+                    <VehicleModal
+    isOpen={showVehicleModal}
+    onClose={closeVehicleModal}
+    leadNo={vehicleModalData.leadNo}
+    description={vehicleModalData.description}
+    caseNo={vehicleModalData.caseNo}
+    caseName={vehicleModalData.caseName}
+    leadReturnId={vehicleModalData.leadReturnId}
+  />
       </tr>
     ))}
   </tbody>

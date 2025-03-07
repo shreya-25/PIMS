@@ -221,35 +221,44 @@ export const LRReturn = () => {
         </div>
       </div>
 
-      <h4 className="return-form-h4">{editMode ? "Edit Return" : "Add Return"}</h4>
-        <div className="return-form">
-          <textarea
-            value={returnData.results}
-            onChange={(e) => handleInputChange("results", e.target.value)}
-            placeholder="Enter return details"
-          ></textarea>
-                    <button className="save-btn1" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Return"}</button>
+      <div className = "content-to-add">
+      <div className = "content-to-add-first-row">
+        
+           <h4>Return Id</h4>
+           <label className='input-field'></label>
+           <h4>Date Entered</h4>
+           <label className='input-field'></label>
+           <h4>Entered By</h4>
+           <label className='input-field'></label>
+      </div>
+    <h4 className="return-form-h4">{editMode ? "Edit Return" : "Add Return"}</h4>
+      <div className="return-form">
+        <textarea
+          value={returnData.results}
+          onChange={(e) => handleInputChange("results", e.target.value)}
+          placeholder="Enter return details"
+        ></textarea>
+      </div>
 
-        </div>
+      <div className="form-buttons-return">
+        <button className="save-btn1" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Return"}</button>
+        {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
+        <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
+        <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
+      </div>
+      </div>
 
-        {/* <div className="form-buttons-return">
-          <button className="save-btn1" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Return"}</button>
-          <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
-          <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
-          <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button>
-        </div> */}
-
-        <table className="timeline-table">
-          <thead>
-            <tr>
-            <th>Return Id </th>
-              <th>Date Entered</th>
-              <th>Entered By</th>
-              <th>Results</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
+      <table className="timeline-table">
+        <thead>
+          <tr>
+            <th style={{ width: "6%" }}>Return Id</th>
+            <th style={{ width: "13%" }}>Date Entered</th>
+            <th style={{ width: "9%" }}>Entered By</th>
+            <th>Results</th>
+            <th style={{ width: "10%" }}></th>
+          </tr>
+        </thead>
+        <tbody>
             {returns.map((ret) => (
               <tr key={ret.id}>
                  <td>{ret.leadReturnId}</td>

@@ -5,6 +5,9 @@ import { useDataContext } from "../Context/DataContext"; // Import Context
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
+import PersonModal from "../../components/PersonModal/PersonModel";
+import VehicleModal from "../../components/VehicleModal/VehicleModel";
+
 
 
 import "./LeadsDesk.css"; // Ensure this file is linked for styling
@@ -18,6 +21,105 @@ export const LeadsDesk = () => {
   const pdfRef = useRef();
   const { selectedCase, setSelectedLead } = useContext(CaseContext);
   const { persons } = useDataContext(); // Fetch Data from Context
+
+    // State to control the modal
+    const [showPersonModal, setShowPersonModal] = useState(false);
+
+    // We’ll store the leadReturn info we need for the modal
+    const [personModalData, setPersonModalData] = useState({
+      leadNo: "",
+      description: "",
+      caseNo: "",
+      caseName: "",
+      leadReturnId: "",
+    });
+
+    const [vehicleModalData, setVehicleModalData] = useState({
+      leadNo: "",
+      description: "",
+      caseNo: "",
+      caseName: "",
+      leadReturnId: "",
+      leadsDeskCode: "",
+    });
+    
+  
+    // Function to open the modal, passing the needed data
+    const openPersonModal = (leadNo, description, caseNo, caseName, leadReturnId) => {
+      setPersonModalData({ leadNo, description, caseNo, caseName, leadReturnId });
+      setShowPersonModal(true);
+    };
+  
+    // Function to close the modal
+    const closePersonModal = () => {
+      setShowPersonModal(false);
+    };
+
+    const openVehicleModal = (leadNo, description, caseNo, caseName, leadReturnId, leadsDeskCode) => {
+      setVehicleModalData({
+        leadNo,
+        description,
+        caseNo,
+        caseName,
+        leadReturnId,
+        leadsDeskCode,
+      });
+      setShowVehicleModal(true); // Ensure this state exists
+    };
+
+    const closeVehicleModal = () => {
+      setVehicleModalData({
+        leadNo: "",
+        description: "",
+        caseNo: "",
+        caseName: "",
+        leadReturnId: "",
+        leadsDeskCode: "",
+      });
+      setShowVehicleModal(false);
+    };
+    const [showVehicleModal, setShowVehicleModal] = useState(false);
+
+    const MediaModal = ({ isOpen, onClose, media }) => {
+      if (!isOpen || !media) return null;
+    
+      return (
+        <div className="modal-overlay" onClick={onClose}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            {["jpg", "jpeg", "png"].includes(media.type.toLowerCase()) ? (
+              <img src={media.url} alt="Preview" className="modal-media-full" />
+            ) : ["mp4", "webm", "ogg"].includes(media.type.toLowerCase()) ? (
+              <video controls className="modal-media-full">
+                <source src={media.url} type={`video/${media.type.toLowerCase()}`} />
+                Your browser does not support the video tag.
+              </video>
+            ) : null}
+            <button className="close-btn" onClick={onClose}>✕</button>
+          </div>
+        </div>
+      );
+    };
+    
+    const [showMediaModal, setShowMediaModal] = useState(false);
+    const [selectedMedia, setSelectedMedia] = useState(null);
+  
+    // const openImageModal = (url) => {
+    //   setImageUrl(url);
+    //   setShowImageModal(true);
+    // };
+  
+    // const closeImageModal = () => {
+    //   setShowImageModal(false);
+    // };
+    const openMediaModal = (media) => {
+      setSelectedMedia(media);
+      setShowMediaModal(true);
+    };
+  
+    const closeMediaModal = () => {
+      setShowMediaModal(false);
+    };
+    
 
   const [leadsData, setLeadsData] = useState([]);
 
@@ -257,7 +359,7 @@ export const LeadsDesk = () => {
         sharing: "Shared",
         modified: "Today",
         size: "150 KB",
-        url: "https://via.placeholder.com/150",
+        url: "/Materials/forensic.jpg",
       },
       {
         id: 5,
@@ -266,7 +368,7 @@ export const LeadsDesk = () => {
         sharing: "Shared",
         modified: "Today",
         size: "1.5 MB",
-        url: "https://www.w3schools.com/html/mov_bbb.mp4",
+        url: "/Materials/video1.mp4",
       },
       {
         id: 6,
@@ -407,19 +509,90 @@ export const LeadsDesk = () => {
   };
 
   const runReport = () => {
-    // Get the inner HTML of the container that excludes the navbar
     const content = document.getElementById("main-content").innerHTML;
-    
+  
     const printContents = `
       <html>
         <head>
           <title>Lead Return Report – ${selectedCase?.caseNo} – ${selectedCase?.caseName}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            h1 { text-align: center; margin-bottom: 20px; }
-            h2 { text-align: center; margin-bottom: 20px; }
-            .details-table { width: 100%; border-collapse: collapse; }
-            .details-table td, .details-table th { border: 1px solid #000; padding: 8px; }
+            @media print {
+              body {
+                font-family: Arial, sans-serif;
+                margin: 10px;
+                color: #000;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+  
+              h1, h2 {
+                text-align: center;
+                margin-bottom: 15px;
+              }
+  
+              table {
+                width: 100% !important;
+                border-collapse: collapse;
+                table-layout: auto !important;
+                word-wrap: break-word !important;
+                font-size: 11px;
+                overflow: visible !important;
+              }
+  
+              th, td {
+                border: 1px solid #000;
+                padding: 5px;
+                text-align: left;
+                vertical-align: top;
+                white-space: normal !important;
+                word-break: break-word !important;
+                overflow: visible !important;
+              }
+  
+              /* Explicitly ensure containers don't hide overflow content */
+              div, span, p {
+                overflow: visible !important;
+                white-space: normal !important;
+                word-break: break-word !important;
+              }
+  
+              /* Explicitly remove height constraints */
+              .case-summary, .lead-return-id, .lead-instruction {
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+              }
+  
+              /* Ensure flex/grid layouts do not constrain content */
+              .container, .row, .col, .content, .main-content {
+                display: block !important;
+                overflow: visible !important;
+                width: 100% !important;
+                height: auto !important;
+                max-height: none !important;
+                flex: none !important;
+                grid: none !important;
+              }
+  
+              /* Inputs and textareas clearly displayed */
+              input, textarea {
+                border: none !important;
+                width: 100% !important;
+                height: auto !important;
+                box-sizing: border-box !important;
+                resize: none !important;
+                overflow: visible !important;
+                white-space: normal !important;
+                word-break: break-word !important;
+              }
+  
+              /* Header labels explicitly styled for clarity */
+              .single-line-header {
+                white-space: nowrap !important;
+                font-weight: bold !important;
+                vertical-align: top !important;
+              }
+            }
           </style>
         </head>
         <body>
@@ -427,17 +600,20 @@ export const LeadsDesk = () => {
         </body>
       </html>
     `;
-    
+  
     const printWindow = window.open("", "_blank", "width=800,height=600");
     printWindow.document.open();
     printWindow.document.write(printContents);
     printWindow.document.close();
     printWindow.focus();
+  
     setTimeout(() => {
       printWindow.print();
       printWindow.close();
     }, 500);
   };
+  
+  
   
   return (
     <div ref={pdfRef} className="lead-instructions-page">
@@ -599,7 +775,15 @@ export const LeadsDesk = () => {
                     : 'N/A'}
                 </td>
                 <td>
-                  <button className="download-btn">View</button>
+                  <button className="download-btn" onClick={() =>
+                              openPersonModal(
+                                lead.leadNo,
+                                lead.description,
+                                selectedCase.caseNo,
+                                selectedCase.caseName,
+                                returnItem.leadReturnId
+                              )
+                            }>View</button>
                 </td>
               </tr>
             ))}
@@ -608,6 +792,17 @@ export const LeadsDesk = () => {
       </div>
     )}
   </td>
+  {/* Render the PersonModal conditionally */}
+<PersonModal
+  isOpen={showPersonModal}
+  onClose={closePersonModal}
+  leadNo={personModalData.leadNo}
+  description={personModalData.description}
+  caseNo={personModalData.caseNo}
+  caseName={personModalData.caseName}
+  leadReturnId={personModalData.leadReturnId}
+/>
+
 </tr>
 
 <tr>
@@ -654,7 +849,15 @@ export const LeadsDesk = () => {
     
         <td>{vehicle.plate}</td>
         <td>{vehicle.state}</td>
-        <td> <button className="download-btn">View</button></td>
+        <td> <button className="download-btn" onClick={() => openVehicleModal(
+                      lead.leadNo,
+                      lead.description,
+                      selectedCase.caseNo,
+                      selectedCase.caseName,
+                      returnItem.leadReturnId,
+                      returnItem.leadsDeskCode // Including Leads Desk Code
+
+                    )}>View</button></td>
               </tr>
             ))}
           </tbody>
@@ -662,59 +865,69 @@ export const LeadsDesk = () => {
       </div>
     )}
   </td>
+  <VehicleModal
+    isOpen={showVehicleModal}
+    onClose={closeVehicleModal}
+    leadNo={vehicleModalData.leadNo}
+    description={vehicleModalData.description}
+    caseNo={vehicleModalData.caseNo}
+    caseName={vehicleModalData.caseName}
+    leadReturnId={vehicleModalData.leadReturnId}
+    leadsDeskCode={vehicleModalData.leadsDeskCode} // Passing Leads Desk Code
+  />
 </tr>
 
 <tr>
   <td colSpan={2}>
       <div className="person-section">
         <h2 className="title">Uploaded Files</h2>
-        <table className="lead-table2" style={{ width: '100%', tableLayout: 'fixed' }}>
-                <thead>
-                  <tr>
-                    <th >Name</th>
-                    <th >Sharing</th>
-                    <th>Size</th>
-                    <th >Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {uploadedFiles.map((file) => {
-                      const fileTypeLower = file.type.toLowerCase();
+        <table className="lead-table2" style={{ width: "100%", tableLayout: "fixed" }}>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Sharing</th>
+                <th>Size</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {uploadedFiles.map((file) => {
+                const fileTypeLower = file.type.toLowerCase();
+                const isImage = ["jpg", "jpeg", "png"].includes(fileTypeLower);
+                const isVideo = ["mp4", "webm", "ogg"].includes(fileTypeLower);
+                const isDocument = ["pdf", "doc", "docx"].includes(fileTypeLower);
 
-                      const isDocument = ["doc", "docx", "pdf"].includes(fileTypeLower);
-                    return (
-                      <tr key={file.id}>
-                        <td>
-                          {isDocument ? (
-                            <a
-                              href={file.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              {file.name}
-                            </a>
-                          ) : (
-                            file.name
-                          )}
-                        </td>
-                        <td>{file.sharing}</td>
-                    
-                        <td>{file.size}</td>
-                        <td>
-                          <button
-                            className="download-btn"
-                            onClick={() => handleDownload(file)}
-                          >
-                            Download
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-        </table>
+                return (
+                  <tr key={file.id}>
+                    <td>
+                      {isImage || isVideo ? (
+                        <a href="#" onClick={(e) => { e.preventDefault(); openMediaModal(file); }}>
+                          {file.name}
+                        </a>
+                      ) : isDocument ? (
+                        <a href={file.url} target="_blank" rel="noopener noreferrer">
+                          {file.name}
+                        </a>
+                      ) : (
+                        file.name
+                      )}
+                    </td>
+                    <td>{file.sharing}</td>
+                    <td>{file.size}</td>
+                    <td>
+                      <a href={file.url} download>
+                        <button className="download-btn">Download</button>
+                      </a>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
       </div>
   </td>
+  <MediaModal isOpen={showMediaModal} onClose={closeMediaModal} media={selectedMedia} />
+
 </tr>
 
         </React.Fragment>
@@ -785,7 +998,7 @@ export const LeadsDesk = () => {
       </div>
       <div className = "last-sec">
       <div className = "btn-sec">
-      <button className="save-btn1" onClick={runReport}>
+      <button className="save-btn1"  onClick={() => runReport()}>
             Run Report
           </button>
       </div>

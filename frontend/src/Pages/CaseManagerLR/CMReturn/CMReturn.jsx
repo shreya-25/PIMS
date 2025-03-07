@@ -148,6 +148,8 @@ const { leadDetails, caseDetails } = location.state || {};
         </div>
       </div>
 
+ <div className="contnt-footer">
+
     <div className="main-contentLRR">
       <div className="main-content-cl">
       {/* Left Section */}
@@ -170,6 +172,16 @@ const { leadDetails, caseDetails } = location.state || {};
       </div>
     </div>
 
+    <div className = "content-to-add">
+      <div className = "content-to-add-first-row">
+        
+           <h4>Return Id</h4>
+           <label className='input-field'></label>
+           <h4>Date Entered</h4>
+           <label className='input-field'></label>
+           <h4>Entered By</h4>
+           <label className='input-field'></label>
+      </div>
     <h4 className="return-form-h4">{editMode ? "Edit Return" : "Add Return"}</h4>
       <div className="return-form">
         <textarea
@@ -185,16 +197,17 @@ const { leadDetails, caseDetails } = location.state || {};
         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
       </div>
+      </div>
 
       <table className="timeline-table">
         <thead>
           <tr>
-            <th>Return Id</th>
-            <th>Date Entered</th>
-            <th>Entered By</th>
+            <th style={{ width: "6%" }}>Return Id</th>
+            <th style={{ width: "13%" }}>Date Entered</th>
+            <th style={{ width: "9%" }}>Entered By</th>
             <th>Results</th>
-            <th>Access</th>
-            <th></th>
+            <th style={{ width: "10%" , fontSize: "20px" }}>Access</th>
+            <th style={{ width: "10%" }}></th>
           </tr>
         </thead>
         <tbody>
@@ -231,6 +244,7 @@ const { leadDetails, caseDetails } = location.state || {};
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
         onNext={() => navigate("/LRPerson")} // Takes user to CM Return page
       />
+  </div>
   </div>
 );
 };

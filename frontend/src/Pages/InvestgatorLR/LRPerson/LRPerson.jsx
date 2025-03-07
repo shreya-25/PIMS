@@ -1,12 +1,45 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
+
 import FootBar from '../../../components/FootBar/FootBar';
+import React, { useContext, useState, useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { CaseContext } from "../../CaseContext";
+import axios from "axios";
+import PersonModal from "../../../components/PersonModal/PersonModel";
 
 import Navbar from '../../../components/Navbar/Navbar';
 import './LRPerson.css';
 
 export const LRPerson = () => {
     const navigate = useNavigate(); // Initialize useNavigate hook
+       const location = useLocation();
+          
+        const { leadDetails, caseDetails } = location.state || {};
+          const [loading, setLoading] = useState(true);
+          const [error, setError] = useState("");
+            const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+
+               // State to control the modal
+                    const [showPersonModal, setShowPersonModal] = useState(false);
+                
+                    // We’ll store the leadReturn info we need for the modal
+                    const [personModalData, setPersonModalData] = useState({
+                      leadNo: "",
+                      description: "",
+                      caseNo: "",
+                      caseName: "",
+                      leadReturnId: "",
+                    });
+            
+                     // Function to open the modal, passing the needed data
+                const openPersonModal = (leadNo, description, caseNo, caseName, leadReturnId) => {
+                  setPersonModalData({ leadNo, description, caseNo, caseName, leadReturnId });
+                  setShowPersonModal(true);
+                };
+              
+                // Function to close the modal
+                const closePersonModal = () => {
+                  setShowPersonModal(false);
+                };
 
     const [persons, setPersons] = useState([
       { returnId: 1,dateEntered: "01/01/2024", name: "John Doe", phoneNo: "123-456-7890", address: "123 Main St, NY" },
@@ -100,6 +133,7 @@ export const LRPerson = () => {
   
   return (
     <div className="person-page">
+        <div className="person-page-content">
       {/* Navbar at the top */}
       <Navbar />
 
@@ -175,6 +209,7 @@ export const LRPerson = () => {
               <th>Name</th>
               <th>Phone No</th>
               <th>Address</th>
+              <th>Additional Details</th>
             </tr>
           </thead>
           <tbody>
@@ -189,12 +224,30 @@ export const LRPerson = () => {
                 <td>{person.name}</td>
                 <td>{person.phoneNo}</td>
                 <td>{person.address}</td>
+                <td>  <button className="download-btn" onClick={() =>
+                              openPersonModal(
+                                selectedLead.leadNo,
+                                selectedLead.description,
+                                selectedCase.caseNo,
+                                selectedCase.caseName,
+                                person.leadReturnId
+                              )
+                            }>View</button></td>
+                            <PersonModal
+  isOpen={showPersonModal}
+  onClose={closePersonModal}
+  leadNo={personModalData.leadNo}
+  description={personModalData.description}
+  caseNo={personModalData.caseNo}
+  caseName={personModalData.caseName}
+  leadReturnId={personModalData.leadReturnId}
+/>
               </tr>
             ))}
           </tbody>
         </table>
-        <button onClick={() => handleNavigation('/LRPerson1')} className="save-btn1
-        ">Add Person</button>
+        {/* <button onClick={() => handleNavigation('/LRPerson1')} className="save-btn1
+        ">Add Person</button> */}
 
       </div>
 
@@ -207,11 +260,14 @@ export const LRPerson = () => {
 
       {/* Bottom Buttons */}
       <div className="bottom-buttons">
+      <button onClick={() => handleNavigation('/LRPerson1')} className="save-btn1">Add Person</button>
+
       {/* <button onClick={() => handleNavigation('/LRPerson1')} className="back-btn">Add Person</button> */}
         {/* <button className="back-btn"onClick={() => handleNavigation('/LRReturn')} >Back</button>
         <button className="next-btn"onClick={() => handleNavigation('/LRVehicle')} >Next</button> */}
         {/* <button className="save-btn">Save</button>
         <button className="cancel-btn">Cancel</button> */}
+      </div>
       </div>
       <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
