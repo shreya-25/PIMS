@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar/Navbar";
 import "./CMPictures.css";
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const CMPictures = () => {
   const navigate = useNavigate();
@@ -118,27 +120,8 @@ export const CMPictures = () => {
         </div>
       </div>
 
-        {/* Pictures Table */}
-        <table className="timeline-table">
-          <thead>
-            <tr>
-              <th>Date Entered</th>
-              <th>Date Picture Taken</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pictures.map((picture, index) => (
-              <tr key={index}>
-                <td>{picture.dateEntered}</td>
-                <td>{picture.datePictureTaken}</td>
-                <td>{picture.description}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
         {/* Picture Form */}
+        <div className = "content-to-add">
         <h4 className="evidence-form-h4">Enter Picture Details</h4>
         <div className="picture-form">
           <div className="form-row-pic">
@@ -163,6 +146,7 @@ export const CMPictures = () => {
             <input type="file" accept="image/*"  className="evidence-head" onChange={handleFileChange} />
           </div>
         </div>
+       
 
         {/* Uploaded Pictures Preview */}
         <div className="uploaded-pictures">
@@ -176,16 +160,43 @@ export const CMPictures = () => {
             ))}
           </div>
         </div>
+        </div>
 
         {/* Action Buttons */}
-        <div className="form-buttons-pic">
-          <button className="add-btn" onClick={handleAddPicture}>Add Picture</button>
-          <button className="back-btn" onClick={() => handleNavigation("/LREvidence")}>Back</button>
+        <div className="form-buttons">
+          <button className="save-btn1" onClick={handleAddPicture}>Add Picture</button>
+          {/* <button className="back-btn" onClick={() => handleNavigation("/LREvidence")}>Back</button>
           <button className="next-btn" onClick={() => handleNavigation("/LRAudio")}>Next</button>
           <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button>
+          <button className="cancel-btn">Cancel</button> */}
         </div>
+
+        {/* Pictures Table */}
+        <table className="timeline-table">
+          <thead>
+            <tr>
+              <th>Date Entered</th>
+              <th>Date Picture Taken</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pictures.map((picture, index) => (
+              <tr key={index}>
+                <td>{picture.dateEntered}</td>
+                <td>{picture.datePictureTaken}</td>
+                <td>{picture.description}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+      
       </div>
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
+      />
     </div>
   );
 };

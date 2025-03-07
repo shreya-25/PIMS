@@ -4,6 +4,8 @@ import Navbar from '../../../components/Navbar/Navbar';
 import "./CMEnclosures.css";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const CMEnclosures = () => {
   const navigate = useNavigate(); 
@@ -159,6 +161,10 @@ export const CMEnclosures = () => {
           </tbody>
         </table>
       </div>
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
+      />
     </div>
   );
 };
