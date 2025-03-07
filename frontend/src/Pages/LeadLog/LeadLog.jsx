@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import React, { useContext, useState, useEffect} from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import './LeadLog.css';
 import Filter from "../../components/Filter/Filter";
 import Sort from "../../components/Sort/Sort";
+import { useLocation, useNavigate } from 'react-router-dom';
+import axios from "axios";
+import { CaseContext } from "../CaseContext";
+
 
 
 export const LeadLog = () => {
@@ -15,6 +17,8 @@ export const LeadLog = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { caseDetails } = location.state || {};
+    const { selectedCase, setSelectedLead } = useContext(CaseContext);
+  
 
 
   const navigate = useNavigate(); // Initialize the navigate function
@@ -41,7 +45,7 @@ export const LeadLog = () => {
 
   useEffect(() => {
       if (caseDetails?.id && caseDetails?.title) {
-        fetch(`http://localhost:5000/api/lead/case/${caseDetails.id}/${caseDetails.title}`, {
+        fetch(`http://localhost:5000/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -65,7 +69,7 @@ export const LeadLog = () => {
             console.error("❌ Error fetching leads:", error.message);
           });
       }
-    }, [caseDetails, token]);
+    }, [selectedCase, token]);
     
   
 

@@ -76,3 +76,13 @@ button:disabled {
 .bottom-buttons .save-btn {
   background-color: #8b0000;
 }
+
+.person-page-content
+{
+  min-height: 90vh;
+}
+
+.download-btn
+{
+  font-size: 20px;
+}

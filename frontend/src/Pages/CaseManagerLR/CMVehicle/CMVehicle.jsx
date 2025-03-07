@@ -5,6 +5,10 @@ import './CMVehicle.css';
 import Navbar from '../../../components/Navbar/Navbar';
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
+import FootBar from '../../../components/FootBar/FootBar';
+import VehicleModal from "../../../components/VehicleModal/VehicleModel";
+
+
 
 export const CMVehicle = () => {
 
@@ -23,6 +27,41 @@ export const CMVehicle = () => {
     // { dateEntered: "01/10/2024", year: "2021", make: "Ford", model: "F-150", color: "White",vin: "789012", plate: "DEF-9101", state: "TX" },
     // { dateEntered: "01/15/2024", year: "2024", make: "Tesla", model: "Model 3", color: "Red",vin: "345678", plate: "TES-2024", state: "FL" },
   ]);
+
+   const [vehicleModalData, setVehicleModalData] = useState({
+          leadNo: "",
+          description: "",
+          caseNo: "",
+          caseName: "",
+          leadReturnId: "",
+          leadsDeskCode: "",
+        });
+                  
+   const openVehicleModal = (leadNo, description, caseNo, caseName, leadReturnId, leadsDeskCode) => {
+        setVehicleModalData({
+          leadNo,
+          description,
+          caseNo,
+          caseName,
+          leadReturnId,
+          leadsDeskCode,
+        });
+        setShowVehicleModal(true); // Ensure this state exists
+      };
+  
+      const closeVehicleModal = () => {
+        setVehicleModalData({
+          leadNo: "",
+          description: "",
+          caseNo: "",
+          caseName: "",
+          leadReturnId: "",
+          leadsDeskCode: "",
+        });
+        setShowVehicleModal(false);
+      };
+      const [showVehicleModal, setShowVehicleModal] = useState(false);
+      
 
     
   const [vehicleData, setVehicleData] = useState({
@@ -75,7 +114,13 @@ export const CMVehicle = () => {
     fetchLeadData();
   }, [leadDetails, caseDetails]);
 
-
+  const handleAccessChange = (index, newAccess) => {
+    setVehicles((prevVehicles) =>
+      prevVehicles.map((vehicle, i) =>
+        i === index ? { ...vehicle, access: newAccess } : vehicle
+      )
+    );
+  };
 
   const handleChange = (field, value) => {
     setVehicleData({ ...vehicleData, [field]: value });
@@ -189,51 +234,7 @@ export const CMVehicle = () => {
         </div>
       </div>
 
-        {/* Vehicle Table */}
-        <table className="timeline-table">
-          <thead>
-            <tr>
-              <th>Date Entered</th>
-              <th>Associated Return Id</th>
-              <th>Year</th>
-              <th>Make</th>
-              <th>Model</th>
-              <th>Color</th>
-              <th>VIN</th>
-              <th>Plate</th>
-              <th>State</th>
-            </tr>
-          </thead>
-          <tbody>
-    {vehicles.map((vehicle, index) => (
-      <tr key={index}>
-        <td>{vehicle.enteredDate}</td>
-        <td>{vehicle.leadReturnId}</td>
-        <td>{vehicle.year}</td>
-        <td>{vehicle.make}</td>
-        <td>{vehicle.model}</td>
-        <td style={{ textAlign: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ width: '60px', display: 'inline-block' }}>{vehicle.primaryColor}</span>
-          <div
-            style={{
-              width: '18px',
-              height: '18px',
-              backgroundColor: vehicle.primaryColor,
-              marginLeft: '15px',
-              border: '1px solid #000',
-            }}
-          ></div>
-        </div>
-      </td>
-        <td>{vehicle.vin}</td>
-        <td>{vehicle.plate}</td>
-        <td>{vehicle.state}</td>
-      </tr>
-    ))}
-  </tbody>
-        </table>
-
+      <div className = "content-to-add">
         {/* Vehicle Form */}
         <div className="vehicle-form">
           <div className="form-row">
@@ -319,18 +320,92 @@ export const CMVehicle = () => {
             ></textarea>
           </div>
         </div>
+        </div>
 
         {/* Buttons */}
         <div className="form-buttons">
-        <button className="add-btnvh" onClick={handleAddVehicle}>
+        <button className="save-btn1" onClick={handleAddVehicle}>
             Add Vehicle
           </button>
-          <button className="back-btn">Back</button>
+          {/* <button className="back-btn">Back</button>
           <button className="next-btn">Next</button>
           <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button>
+          <button className="cancel-btn">Cancel</button> */}
         </div>
+
+        {/* Vehicle Table */}
+        <table className="timeline-table">
+          <thead>
+            <tr>
+              <th>Date Entered</th>
+              <th>Associated Return Id</th>
+              <th>Year</th>
+              <th>Make</th>
+              <th>Model</th>
+              <th>Color</th>
+              <th>State</th>
+              <th>Access</th>
+              <th>Additional Details</th>
+            </tr>
+          </thead>
+          <tbody>
+    {vehicles.map((vehicle, index) => (
+      <tr key={index}>
+        <td>{vehicle.enteredDate}</td>
+        <td>{vehicle.leadReturnId}</td>
+        <td>{vehicle.year}</td>
+        <td>{vehicle.make}</td>
+        <td>{vehicle.model}</td>
+        <td style={{ textAlign: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ width: '60px', display: 'inline-block' }}>{vehicle.primaryColor}</span>
+          <div
+            style={{
+              width: '18px',
+              height: '18px',
+              backgroundColor: vehicle.primaryColor,
+              marginLeft: '15px',
+              border: '1px solid #000',
+            }}
+          ></div>
+        </div>
+      </td>
+        <td>{vehicle.state}</td>
+        <td>
+        <select
+          value={vehicle.access || "Case Manager"}
+          onChange={(e) => handleAccessChange(index, e.target.value)} // Pass index properly
+        >
+          <option value="Case Manager">Case Manager</option>
+          <option value="Everyone">Everyone</option>
+        </select>
+      </td>
+      <td> <button className="download-btn" onClick={() => openVehicleModal(
+                      selectedLead.leadNo,
+                      selectedLead.description,
+                      selectedCase.caseNo,
+                      selectedCase.caseName,
+                      vehicle.returnId
+
+                    )}>View</button></td> <VehicleModal
+                    isOpen={showVehicleModal}
+                    onClose={closeVehicleModal}
+                    leadNo={vehicleModalData.leadNo}
+                    description={vehicleModalData.description}
+                    caseNo={vehicleModalData.caseNo}
+                    caseName={vehicleModalData.caseName}
+                    leadReturnId={vehicleModalData.leadReturnId}
+                  />
+      </tr>
+    ))}
+  </tbody>
+        </table>
+
       </div>
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
+      />
     </div>
   );
 };

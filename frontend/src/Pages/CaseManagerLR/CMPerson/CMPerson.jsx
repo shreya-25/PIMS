@@ -1,10 +1,11 @@
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { CaseContext } from "../../CaseContext";
 import Navbar from '../../../components/Navbar/Navbar';
 import './CMPerson.css';
 import axios from "axios";
 import FootBar from '../../../components/FootBar/FootBar';
+import PersonModal from "../../../components/PersonModal/PersonModel";
 
 
 export const CMPerson = () => {
@@ -16,7 +17,28 @@ export const CMPerson = () => {
       const [error, setError] = useState("");
         const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
       
+    // State to control the modal
+        const [showPersonModal, setShowPersonModal] = useState(false);
     
+        // We’ll store the leadReturn info we need for the modal
+        const [personModalData, setPersonModalData] = useState({
+          leadNo: "",
+          description: "",
+          caseNo: "",
+          caseName: "",
+          leadReturnId: "",
+        });
+
+         // Function to open the modal, passing the needed data
+    const openPersonModal = (leadNo, description, caseNo, caseName, leadReturnId) => {
+      setPersonModalData({ leadNo, description, caseNo, caseName, leadReturnId });
+      setShowPersonModal(true);
+    };
+  
+    // Function to close the modal
+    const closePersonModal = () => {
+      setShowPersonModal(false);
+    };
 
     const [persons, setPersons] = useState([
       { leadReturnId: "", dateEntered: "", name: "", phoneNo: "", address: "" },
@@ -153,6 +175,7 @@ export const CMPerson = () => {
   
   return (
     <div className="person-page">
+        <div className="person-page-content">
       {/* Navbar at the top */}
       <Navbar />
 
@@ -229,6 +252,7 @@ export const CMPerson = () => {
               <th>Phone No</th>
               <th>Address</th>
               <th>Access</th>
+              <th>Additional Details</th>
             </tr>
           </thead>
           <tbody>
@@ -260,6 +284,15 @@ export const CMPerson = () => {
           <option value="Everyone">Everyone</option>
         </select>
       </td>
+      <td>  <button className="download-btn" onClick={() =>
+                              openPersonModal(
+                                selectedLead.leadNo,
+                                selectedLead.description,
+                                selectedCase.caseNo,
+                                selectedCase.caseName,
+                                person.leadReturnId
+                              )
+                            }>View</button></td>
     </tr>
   ))}
 </tbody>
@@ -276,11 +309,12 @@ export const CMPerson = () => {
 
       {/* Bottom Buttons */}
       <div className="bottom-buttons">
-      <button onClick={() => handleNavigation('/LRPerson1')} className="save-btn1">Add Person</button>
+      <button onClick={() => handleNavigation('/CMPerson1')} className="save-btn1">Add Person</button>
         {/* <button className="back-btn"onClick={() => handleNavigation('/LRReturn')} >Back</button>
         <button className="next-btn"onClick={() => handleNavigation('/LRVehicle')} >Next</button>
         <button className="save-btn">Save</button>
         <button className="cancel-btn">Cancel</button> */}
+      </div>
       </div>
       <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
