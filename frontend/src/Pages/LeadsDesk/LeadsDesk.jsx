@@ -406,6 +406,39 @@ export const LeadsDesk = () => {
     });
   };
 
+  const runReport = () => {
+    // Get the inner HTML of the container that excludes the navbar
+    const content = document.getElementById("main-content").innerHTML;
+    
+    const printContents = `
+      <html>
+        <head>
+          <title>Lead Return Report – ${selectedCase?.caseNo} – ${selectedCase?.caseName}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h1 { text-align: center; margin-bottom: 20px; }
+            h2 { text-align: center; margin-bottom: 20px; }
+            .details-table { width: 100%; border-collapse: collapse; }
+            .details-table td, .details-table th { border: 1px solid #000; padding: 8px; }
+          </style>
+        </head>
+        <body>
+          ${content}
+        </body>
+      </html>
+    `;
+    
+    const printWindow = window.open("", "_blank", "width=800,height=600");
+    printWindow.document.open();
+    printWindow.document.write(printContents);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
+  };
+  
   return (
     <div ref={pdfRef} className="lead-instructions-page">
       <Navbar />
@@ -429,7 +462,7 @@ export const LeadsDesk = () => {
         </div>
       </div>
 
-      <div className="bottom-sec-ld">
+      <div className="bottom-sec-ld" id="main-content">
 
       <div className = "case-summary">
                 <label className="input-label">Case Summary</label>
@@ -752,7 +785,9 @@ export const LeadsDesk = () => {
       </div>
       <div className = "last-sec">
       <div className = "btn-sec">
-      <button onClick={generatePDF} className="save-btn1">Download PDF</button>
+      <button className="save-btn1" onClick={runReport}>
+            Run Report
+          </button>
       </div>
 
        {/* FootBar with navigation */}

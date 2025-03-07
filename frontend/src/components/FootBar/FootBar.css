@@ -4,8 +4,10 @@
   justify-content: space-between;
   align-items: center;
   padding: 0px 20px;
-  background-color: #2c3e502d; /* Dark Blue-Gray */}
-
+  background-color: #2c3e502d;
+  margin-top: 20px;
+  position: relative;
+}
 /* Button Styling */
 .footbar-btn {
   padding: 10px 15px;
