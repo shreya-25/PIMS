@@ -183,13 +183,16 @@ export const LeadReview = () => {
 
       <div className="sideitem">
           <ul className="sidebar-list">
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
             <li className="sidebar-item" onClick={() => navigate('/LeadReview')}>Lead Information</li>
             <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
             <li className="sidebar-item" onClick={() => navigate('/leadlog')}>View Lead Log</li>
             <li className="sidebar-item" onClick={() => navigate('/LRInstruction')}>View Lead Return</li>
             <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
             <li className="sidebar-item" onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
+            <li className="sidebar-item" onClick={() => navigate('/leadsDesk')}>Leads Desk</li>
+            <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
+
+
           </ul>
         </div>
 
