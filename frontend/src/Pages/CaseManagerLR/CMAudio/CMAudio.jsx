@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from '../../../components/Navbar/Navbar';
 import "./CMAudio.css"; // Custom CSS file for Audio styling
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const CMAudio = () => {
   const navigate = useNavigate();
@@ -113,27 +115,9 @@ export const CMAudio = () => {
       </div>
 
         {/* Audio Files Table */}
-        <table className="timeline-table">
-          <thead>
-            <tr>
-              <th>Date Entered</th>
-              <th>Date Audio Recorded</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {audioFiles.map((audio, index) => (
-              <tr key={index}>
-                <td>{audio.dateEntered}</td>
-                <td>{audio.dateAudioRecorded}</td>
-                <td>{audio.description}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Audio Form */}
-        <h4 className="evidence-form-h4">Enter Audio Details</h4>
+         {/* Audio Form */}
+         <div className = "content-to-add">
+         <h4 className="evidence-form-h4">Enter Audio Details</h4>
         <div className="audio-form">
           <div className="form-row-audio">
             <label className="evidence-head">Date Audio Recorded:</label>
@@ -174,16 +158,40 @@ export const CMAudio = () => {
             ))}
           </div>
         </div>
+        </div>
 
         {/* Action Buttons */}
-        <div className="form-buttons-audio">
-          <button className="add-btn" onClick={handleAddAudio}>Add Audio</button>
-          <button className="back-btn" onClick={() => handleNavigation("/LRPictures")}>Back</button>
+        <div className="form-buttons">
+          <button className="save-btn1" onClick={handleAddAudio}>Add Audio</button>
+          {/* <button className="back-btn" onClick={() => handleNavigation("/LRPictures")}>Back</button>
           <button className="next-btn" onClick={() => handleNavigation("/LRVideos")}>Next</button>
           <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button>
+          <button className="cancel-btn">Cancel</button> */}
         </div>
+        <table className="timeline-table">
+          <thead>
+            <tr>
+              <th>Date Entered</th>
+              <th>Date Audio Recorded</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {audioFiles.map((audio, index) => (
+              <tr key={index}>
+                <td>{audio.dateEntered}</td>
+                <td>{audio.dateAudioRecorded}</td>
+                <td>{audio.description}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
+      />
+  
     </div>
   );
 };
