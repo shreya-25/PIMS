@@ -301,3 +301,59 @@ body{
   font-size: 20px;
   color:#555;
  }
+
+
+
+/* Full-screen overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.9); /* Dark background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+/* Centered modal container */
+.modal-content {
+  max-width: 100%;
+  max-height: 100%;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Ensures the image fills the screen while keeping aspect ratio */
+.modal-media-full {
+  width: auto;
+  height: auto;
+  max-width: 90vw;  /* Ensures it does not exceed screen width */
+  max-height: 90vh; /* Ensures it does not exceed screen height */
+  object-fit: contain; /* Ensures full view without stretching */
+  border-radius: 6px;
+}
+
+/* Close button */
+.close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(255, 255, 255, 0.8);
+  color: black;
+  border: none;
+  font-size: 24px;
+  font-weight: bold;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 1);
+}

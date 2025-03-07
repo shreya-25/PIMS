@@ -158,6 +158,7 @@ export const LREnclosures = () => {
       </div>
 
         {/* Enclosure Form */}
+        <div className = "content-to-add">
         <div className="enclosure-form">
         <div className="form-row">
             <label>Associated Return Id:</label>
@@ -168,7 +169,7 @@ export const LREnclosures = () => {
             />
           </div>
           <div className="form-row">
-            <label>Type:</label>
+            <label>Enclosure Type:</label>
             <input
               type="text"
               value={enclosureData.type}
@@ -176,7 +177,7 @@ export const LREnclosures = () => {
             />
           </div>
           <div className="form-row">
-            <label>Enclosure:</label>
+            <label>Enclosure Description:</label>
             <textarea
               value={enclosureData.enclosure}
               onChange={(e) => handleInputChange("enclosure", e.target.value)}
@@ -187,8 +188,15 @@ export const LREnclosures = () => {
             <input type="file" onChange={handleFileChange} />
           </div>
         </div>
-        <button className="save-btn1
-        " onClick={handleSaveEnclosure}>Add Enclosure</button>
+        </div>
+          {/* Action Buttons */}
+          <div className="form-buttons">
+          <button className="save-btn1" onClick={handleAddEnclosure}>Add Enclosure</button>
+          {/* <button className="back-btn" onClick={() => handleNavigation("/LRVehicle")}>Back</button>
+          <button className="next-btn" onClick={() => handleNavigation("/LREvidence")}>Next</button>
+          <button className="save-btn">Save</button>
+          <button className="cancel-btn">Cancel</button> */}
+        </div>
 
               {/* Enclosures Table */}
               <table className="timeline-table">

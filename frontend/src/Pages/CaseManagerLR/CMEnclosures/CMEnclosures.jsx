@@ -93,7 +93,6 @@ export const CMEnclosures = () => {
           />
         </div>
 
-
         {/* Center Section */}
         <div className="center-section">
           <h2 className="title">ENCLOSURES INFORMATION</h2>
@@ -103,6 +102,40 @@ export const CMEnclosures = () => {
          <div className="right-section">
         </div>
       </div>
+
+        {/* Enclosure Form */}
+  <div className = "content-to-add">
+  <div className="enclosure-form">
+          <div className="form-row">
+            <label>Type:</label>
+            <input
+              type="text"
+              value={enclosureData.type}
+              onChange={(e) => handleInputChange("type", e.target.value)}
+            />
+          </div>
+          <div className="form-row">
+            <label>Enclosure:</label>
+            <textarea
+              value={enclosureData.enclosure}
+              onChange={(e) => handleInputChange("enclosure", e.target.value)}
+            ></textarea>
+          </div>
+          <div className="form-row">
+            <label>Upload File:</label>
+            <input type="file" onChange={handleFileChange} />
+          </div>
+        </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="form-buttons">
+          <button className="save-btn1" onClick={handleAddEnclosure}>Add Enclosure</button>
+          {/* <button className="back-btn" onClick={() => handleNavigation("/LRVehicle")}>Back</button>
+          <button className="next-btn" onClick={() => handleNavigation("/LREvidence")}>Next</button>
+          <button className="save-btn">Save</button>
+          <button className="cancel-btn">Cancel</button> */}
+        </div>
 
         {/* Enclosures Table */}
         <table className="timeline-table">
@@ -125,38 +158,6 @@ export const CMEnclosures = () => {
             ))}
           </tbody>
         </table>
-
-        {/* Enclosure Form */}
-        <div className="enclosure-form">
-          <div className="form-row">
-            <label>Type:</label>
-            <input
-              type="text"
-              value={enclosureData.type}
-              onChange={(e) => handleInputChange("type", e.target.value)}
-            />
-          </div>
-          <div className="form-row">
-            <label>Enclosure:</label>
-            <textarea
-              value={enclosureData.enclosure}
-              onChange={(e) => handleInputChange("enclosure", e.target.value)}
-            ></textarea>
-          </div>
-          <div className="form-row">
-            <label>Upload File:</label>
-            <input type="file" onChange={handleFileChange} />
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="form-buttons">
-          <button className="add-btn" onClick={handleAddEnclosure}>Add Enclosure</button>
-          <button className="back-btn" onClick={() => handleNavigation("/LRVehicle")}>Back</button>
-          <button className="next-btn" onClick={() => handleNavigation("/LREvidence")}>Next</button>
-          <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button>
-        </div>
       </div>
     </div>
   );

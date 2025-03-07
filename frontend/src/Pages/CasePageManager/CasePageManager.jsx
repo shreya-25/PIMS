@@ -648,7 +648,7 @@ export const CasePageManager = () => {
                         </h1>
                     }
                 </div>
-                <div className = "case-summary">
+                {/* <div className = "case-summary">
                 <label className="input-label">Case Summary</label>
                         <textarea
                             className="textarea-field"
@@ -658,13 +658,8 @@ export const CasePageManager = () => {
                         ></textarea>
 
                          <button className="save-btn1" onClick={handleSaveClick}>Save</button>
-                 {/* Buttons: Show "Edit" when not editing, "Save" when editing */}
-                 {/* {!isEditing ? (
-                            <button className="edit-btn1" onClick={handleEditClick}>Edit</button>
-                        ) : (
-                            <button className="save-btn1" onClick={handleSaveClick}>Save</button>
-                        )} */}
-                </div>
+               
+                </div> */}
                 {/* Content Area */}
                 <div className="content">
                   <div className='searchContainer'>
