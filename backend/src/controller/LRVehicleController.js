@@ -84,4 +84,29 @@ const getLRVehicleByDetails = async (req, res) => {
     }
 };
 
-module.exports = { createLRVehicle, getLRVehicleByDetails };
+const getLRVehicleByDetailsandid = async (req, res) => {
+    try {
+        const { leadNo, leadName, caseNo, caseName, id } = req.params;
+
+        const query = {
+            leadNo: Number(leadNo),
+            description: leadName,
+            caseNo: Number(caseNo),
+            caseName: caseName,
+            leadReturnId: Number(id),
+        };
+
+        const lrVehicles = await LRVehicle.find(query);
+
+        if (lrVehicles.length === 0) {
+            return res.status(404).json({ message: "No records found." });
+        }
+
+        res.status(200).json(lrVehicles);
+    } catch (err) {
+        console.error("Error fetching LRVehicles records:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+module.exports = { createLRVehicle, getLRVehicleByDetails, getLRVehicleByDetailsandid };

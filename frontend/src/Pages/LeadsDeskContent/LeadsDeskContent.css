@@ -1,0 +1,298 @@
+body{
+    font-family: "Segoe UI",
+  }
+  .leads-container {
+    margin-top: 20px;
+    padding: 15px;
+    /* background: #ecf0f1; */
+     background-color: rgba(41, 41, 139, 0.034);
+    border-radius: 8px;
+  }
+  
+  /* Table Heading section */
+  
+  .table-heading {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+  }
+  
+  .table-heading td {
+    padding: 8px;
+    vertical-align: middle;
+  }
+  
+  .table-label {
+    width: 15%; /* fixed narrower width for labels */
+    /* font-weight: bold; */
+    color: #555;
+  }
+  
+  .table-input {
+    width: 18%; /* slightly wider to accommodate input comfortably */
+  }
+  
+  .table-input[colspan="5"] {
+    width: 85%; /* spans across the entire remaining width */
+  }
+  
+  .input-field {
+    width: 100%;
+    box-sizing: border-box; /* ensures padding and border are included in width */
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+  }
+  
+  .lead-input1
+  {
+    height: 90px;
+    width: 100px;
+    font-size: 100px;
+    border: 1px solid #ccc;
+    background-color: #f9f9f9;
+  }
+  .lead
+  
+  .return-input
+  {
+    min-height: 20%;
+  }
+  
+  
+  /* ################################################ */
+  
+  /* .lead-return-input {
+    padding: 10px;
+    border-radius: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    height: auto;
+  } */
+  
+  .table-first-row
+  {
+    background-color: #f9f9f9;
+  }
+  
+  .leads-table {
+    width: 100%;
+    table-layout: fixed; /* Ensure table occupies full width */
+  }
+  
+  .leads-table td:first-child {
+    width: 15%; 
+    padding-left: 10px;
+    /* font-weight: bold; */
+  }
+  
+  .leads-table td:nth-child(2) {
+    width: 85%; /* Adjust width for inputs */
+    height: auto;
+  }
+  
+  /* ################################################ */
+  
+  .main-content-cl1 {
+    display: flex;
+    grid-template-columns: 1fr auto 1fr; 
+    gap: 20px;
+    align-items: flex-start;
+    margin: 20px 20px 12px 20px;
+    /* padding: 0 20px; */
+    min-height: 20%;
+  }
+  
+  .center-section-ld
+  {
+   align-items: center;
+   margin-left: 15%;
+   padding: 30px;
+  }
+  .bottom-sec-ld
+  {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   margin: -50px 10%;
+  }
+  
+  .lead-section
+  {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  /* Options container */
+  .options-container {
+    display: flex;
+    flex-wrap: wrap; /* Allows wrapping on smaller screens */
+    gap: 10px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    justify-content: center; /* Center items */
+  }
+  
+  /* Individual buttons */
+  .option-button {
+    /* display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    background-color:  rgba(41, 41, 139, 0.678);
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out; */
+    background-color:  rgba(41, 41, 139, 0.678);
+  
+  }
+  
+  .option-button:hover {
+    background-color: rgb(41, 41, 139, 0.5);
+  }
+  
+  /* Option icons */
+  .option-icon {
+    font-size: 18px;
+  }
+  
+  /* Responsive CSS */
+  @media (max-width: 768px) {
+    .options-container {
+      justify-content: flex-start; /* Align items to start */
+    }
+  
+    .option-button {
+      font-size: 14px;
+      padding: 8px 12px;
+    }
+  
+    .option-icon {
+      font-size: 16px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .options-container {
+      flex-direction: column; /* Stack buttons on small screens */
+      align-items: center;
+    }
+  
+    .option-button {
+      width: 90%; /* Full-width buttons */
+      text-align: center;
+    }
+  }
+  
+  
+  .last-sec
+  {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 80px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  
+  .btn-sec
+  {
+   margin-left: 47%;
+  }
+  
+  /* Buttons */
+  .preview-btn,
+  .download-btn {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #fff;
+  }
+  
+  
+  .download-btn {
+    background-color: #fff;   /* White background */
+    color: #333;             /* Dark text */
+    border: 1px solid #ccc;  /* Light gray border */
+    padding: 6px 12px;       /* Button padding */
+    border-radius: 4px;      /* Slightly rounded corners */
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+    width: 150px;
+    height: 40px;
+  }
+  
+  
+  .download-btn:hover {
+    background-color: #f1f1f1;
+  }
+  
+  
+  .lead-table1 {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 20px; 
+    text-align: left; 
+  }
+  
+  .lead-table1 th,
+  .lead-table1 td {
+    border: 1px solid #ddd; 
+    padding: 12px; 
+  }
+  
+  .lead-table1 th {
+    background-color: #f9f9f9;
+  }
+  
+  .lead-table1 tr:nth-child(even) {
+    background-color: #f8f8f8; 
+  }
+  
+  
+   .lead-table1 button{
+    font-size: 20px;
+    color:#555;
+   }
+  
+  .lead-table1 button:hover {
+    background-color: #e2e2e2; 
+  }
+  
+  /* .person-section {
+    margin-top: 20px;
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  .eg-table1 {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .eg-table1 th,
+  .eg-table1 td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+    font-weight: normal; 
+    white-space: nowrap; 
+  }
+  
+  .eg-table1 th {
+    background-color: #f9f9f9;
+    font-weight: normal;
+  }
+  
+  .download-btn {
+    white-space: nowrap;
+  } */
+  

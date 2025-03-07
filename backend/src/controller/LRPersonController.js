@@ -108,4 +108,29 @@ const getLRPersonByDetails = async (req, res) => {
     }
 };
 
-module.exports = { createLRPerson, getLRPersonByDetails };
+const getLRPersonByDetailsandid = async (req, res) => {
+    try {
+        const { leadNo, leadName, caseNo, caseName, id } = req.params;
+
+        const query = {
+            leadNo: Number(leadNo),
+            description: leadName,
+            caseNo: Number(caseNo),
+            caseName: caseName,
+            leadReturnId: Number(id),
+        };
+
+        const lrPersons = await LRPerson.find(query);
+
+        if (lrPersons.length === 0) {
+            return res.status(404).json({ message: "No records found." });
+        }
+
+        res.status(200).json(lrPersons);
+    } catch (err) {
+        console.error("Error fetching LRPerson records:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+module.exports = { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid };
