@@ -238,6 +238,42 @@ const { leadDetails, caseDetails } = location.state || {};
 
       </table>
 
+      {/* <div className="comment">
+
+      <div className="comment-sec">
+                <label> Comments </label>
+                <input
+                  type="text"
+                />
+                
+              </div>
+              <div className="btn-sec1">
+
+              <button className="save-btn1" >
+              Save
+              </button>
+              </div>
+       </div> */}
+                  <div className = "content-to-add">
+     
+                      <h4 className="return-form-h4">{editMode ? "Add Comment" : "Add Comment"}</h4>
+                        <div className="return-form">
+                          <textarea
+                            value={returnData.results}
+                            onChange={(e) => handleInputChange("results", e.target.value)}
+                            placeholder="Enter comments"
+                          ></textarea>
+                        </div>
+
+                        <div className="form-buttons-return">
+                          <button className="save-btn1" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Comment"}</button>
+                          {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
+                          <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
+                          <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
+                        </div>
+                 </div>
+
+
     </div>
 
     <FootBar

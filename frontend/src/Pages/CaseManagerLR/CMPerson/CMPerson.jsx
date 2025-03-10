@@ -253,6 +253,7 @@ export const CMPerson = () => {
               <th>Address</th>
               <th>Access</th>
               <th>Additional Details</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -293,6 +294,12 @@ export const CMPerson = () => {
                                 person.leadReturnId
                               )
                             }>View</button></td>
+                            <td>
+        <div className="lr-table-btn">
+          <button className="save-btn1" >Edit</button>
+          <button className="del-button" >Delete</button>
+        </div>
+      </td>
     </tr>
   ))}
 </tbody>
@@ -315,6 +322,26 @@ export const CMPerson = () => {
         <button className="save-btn">Save</button>
         <button className="cancel-btn">Cancel</button> */}
       </div>
+
+      <div className = "content-to-add">
+     
+     <h4 className="return-form-h4"> Add Comment</h4>
+       <div className="return-form">
+         <textarea
+          //  value={returnData.results}
+          //  onChange={(e) => handleInputChange("results", e.target.value)}
+           placeholder="Enter comments"
+         ></textarea>
+       </div>
+
+       <div className="form-buttons-return">
+         <button className="save-btn1">Add Comment</button>
+         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
+         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
+         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
+       </div>
+</div>
+
       </div>
       <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page

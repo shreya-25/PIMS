@@ -339,13 +339,14 @@ export const CMVehicle = () => {
             <tr>
               <th>Date Entered</th>
               <th>Associated Return Id</th>
-              <th>Year</th>
+              {/* <th>Year</th> */}
               <th>Make</th>
               <th>Model</th>
               <th>Color</th>
               <th>State</th>
               <th>Access</th>
               <th>Additional Details</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -353,7 +354,7 @@ export const CMVehicle = () => {
       <tr key={index}>
         <td>{vehicle.enteredDate}</td>
         <td>{vehicle.leadReturnId}</td>
-        <td>{vehicle.year}</td>
+        {/* <td>{vehicle.year}</td> */}
         <td>{vehicle.make}</td>
         <td>{vehicle.model}</td>
         <td style={{ textAlign: 'center' }}>
@@ -396,12 +397,40 @@ export const CMVehicle = () => {
                     caseName={vehicleModalData.caseName}
                     leadReturnId={vehicleModalData.leadReturnId}
                   />
+
+<td>
+        <div className="lr-table-btn">
+          <button className="save-btn1" >Edit</button>
+          <button className="del-button" >Delete</button>
+        </div>
+      </td>
       </tr>
     ))}
   </tbody>
         </table>
 
+        <div className = "content-to-add">
+     
+     <h4 className="return-form-h4"> Add Comment</h4>
+       <div className="return-form">
+         <textarea
+          //  value={returnData.results}
+          //  onChange={(e) => handleInputChange("results", e.target.value)}
+           placeholder="Enter comments"
+         ></textarea>
+       </div>
+
+       <div className="form-buttons-return">
+         <button className="save-btn1">Add Comment</button>
+         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
+         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
+         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
+       </div>
+</div>
+
       </div>
+
+      
       <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
         onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page

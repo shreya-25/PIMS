@@ -169,6 +169,17 @@
   margin: 0 auto; /* Centers horizontally */
 }
 
+.icon-image
+{
+  height: 20px;
+  width: 20px;
+}
+.filter-sort-icons
+{
+  display: flex;
+  gap: 10px;
+}
+
 /* @media (max-width: 600px) {
   .case-item,
   .lead-item {

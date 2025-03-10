@@ -12,6 +12,8 @@ import { SideBar } from "../../components/Sidebar/Sidebar";
 import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 import { useNavigate } from "react-router-dom";
 import { useContext } from "react";
+import { FaFilter, FaSort } from "react-icons/fa";
+
 
 
 
@@ -34,6 +36,10 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
   const [navigateTo, setNavigateTo] = useState(""); // Target page
 
   const { setSelectedCase, setToken } = useContext(CaseContext);
+
+  const [showFilter, setShowFilter] = useState(false);
+const [showSort, setShowSort] = useState(false);
+
 
 
 
@@ -710,18 +716,54 @@ const addCase = (newCase) => {
         <div className="content-section">
         {activeTab === "cases" && (
             <div className="case-list">
+                  <div className="filter-sort-icons">
+                    <button onClick={() => setShowFilter(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                        alt="Filter Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                  </div>
 
-<Filter filtersConfig={filtersConfigOC} onApply={handleFilterApply} />
-<Sort columns={["Lead Number", "Lead Name","Priority", "Flag"]} onApplySort={handleSort} />
+      {/* Conditionally render the Filter component */}
+      {showFilter && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
+              &times;
+            </button>
+            <Filter filtersConfig={filtersConfigOC} onApply={handleFilterApply} />
+          </div>
+        </div>
+      )}
 
+      {/* Conditionally render the Sort component */}
+      {showSort && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
+              &times;
+            </button>
+            <Sort columns={["Lead Number", "Lead Name", "Priority", "Flag"]} onApplySort={handleSort} />
+          </div>
+          </div>
+      )}
 
         <table className="leads-table">
               <thead>
                 <tr>
-                  <th>Case No.</th>
+                  <th style={{ width: "6%" }}>Case No.</th>
                   <th>Case Name</th>
-                  <th>Role</th>
-                  <th></th>
+                  <th style={{ width: "12%" }}>Role</th>
+                  <th style={{ width: "10%" }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -1015,8 +1057,47 @@ const addCase = (newCase) => {
 {activeTab === "pendingLeads" && (
   <div className="pending-leads">
 
-    <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
-          <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+<div className="filter-sort-icons">
+                    <button onClick={() => setShowFilter(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                        alt="Filter Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                  </div>
+
+      {/* Conditionally render the Filter component */}
+      {showFilter && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
+              &times;
+            </button>
+            <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+          </div>
+        </div>
+      )}
+
+      {/* Conditionally render the Sort component */}
+      {showSort && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
+              &times;
+            </button>
+            <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+            </div>
+          </div>
+      )}
+
     {/* <button
       onClick={() => setFilterSortPopupVisible(true)}
       className="filter-sort-button"
@@ -1170,12 +1251,12 @@ const addCase = (newCase) => {
     <table className="leads-table">
       <thead>
         <tr>
-          <th>Lead No.</th>
+          <th style={{ width: "6%" }}>Lead No.</th>
           <th>Lead Name</th>
           <th>Assigned Officers</th>
           <th>Case Name</th>
-          <th>Due Date</th>
-          <th></th>
+          <th style={{ width: "6%" }}>Due Date</th>
+          <th style={{ width: "10%" }}></th>
         </tr>
       </thead>
       <tbody>
@@ -1225,15 +1306,57 @@ const addCase = (newCase) => {
 
 {activeTab === "pendingLeadReturns" && (
   <div className="pending-lead-returns">
-    <Filter filtersConfig={filtersConfigPLR} onApply={handleFilterApply} />
-    <Sort columns={["Lead Number", "Lead Name","Priority", "Flag"]} onApplySort={handleSort} />
+
+    <div className="filter-sort-icons">
+                    <button onClick={() => setShowFilter(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                        alt="Filter Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                  </div>
+
+      {/* Conditionally render the Filter component */}
+      {showFilter && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
+              &times;
+            </button>
+            <Filter filtersConfig={filtersConfigPLR} onApply={handleFilterApply} />
+          </div>
+        </div>
+      )}
+
+      {/* Conditionally render the Sort component */}
+      {showSort && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
+              &times;
+            </button>
+            <Sort columns={["Lead Number", "Lead Name","Priority", "Flag"]} onApplySort={handleSort} />
+            </div>
+          </div>
+      )}
+
+
+
     <table className="leads-table">
               <thead>
                 <tr>
-                  <th>Lead No.</th>
+                  <th style={{ width: "6%" }}>Lead No.</th>
                   <th>Lead Name</th>
-                  <th>Case Name</th>
-                  <th></th>
+                  <th style={{ width: "20%" }}>Case Name</th>
+                  <th style={{ width: "10%" }}></th>
                 </tr>
               </thead>
               <tbody>
