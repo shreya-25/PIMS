@@ -175,6 +175,7 @@ console.log(selectedLead);
          </div>
        </div>
 
+       <div className="main-content-everything">
       <div className="main-content-cl">
         {/* Left Section */}
         <div className="left-section">
@@ -248,7 +249,7 @@ console.log(selectedLead);
       </div>
 
        {/* Bottom Content */}
-       <div className="bottom-content">
+       <div className="bottom-content-cminst">
         <table className="details-table">
           <tbody>
           <tr>
@@ -410,6 +411,7 @@ console.log(selectedLead);
 
 
       </div> */}
+      </div>
       <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
         onNext={() => handleLRClick()} // Takes user to CM Return page

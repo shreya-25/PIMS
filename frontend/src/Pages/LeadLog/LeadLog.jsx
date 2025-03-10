@@ -18,6 +18,9 @@ export const LeadLog = () => {
   const [error, setError] = useState("");
   const { caseDetails } = location.state || {};
     const { selectedCase, setSelectedLead } = useContext(CaseContext);
+
+       const [showFilter, setShowFilter] = useState(false);
+      const [showSort, setShowSort] = useState(false);
   
 
 
@@ -349,9 +352,50 @@ const handleResetSort = () => {
         </div>
       </div>
 
-      <div className="filters-section">
-      <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
-      <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+      <div className="filters-section1">
+      {/* <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} /> */}
+      {/* <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} /> */}
+
+      <div className="filter-sort-icons">
+                    <button onClick={() => setShowFilter(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                        alt="Filter Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                  </div>
+
+      {/* Conditionally render the Filter component */}
+      {showFilter && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
+              &times;
+            </button>
+            <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+            </div>
+        </div>
+      )}
+
+      {/* Conditionally render the Sort component */}
+      {showSort && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
+              &times;
+            </button>
+            <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+            </div>
+          </div>
+      )}
       </div>
 
 
@@ -359,13 +403,13 @@ const handleResetSort = () => {
         <table className="leads-table">
           <thead>
             <tr>
-              <th>LEAD #</th>
-              <th>LEAD DESCRIPTION</th>
-              <th>DATE CREATED</th>
-              <th>STATUS</th>
-              <th>ASSIGNED TO</th>
-              <th>DATE SUBMITTED</th>
-              <th>DATE APPROVED</th>
+              <th style={{ width: "6%" }}>LEAD #</th>
+              <th>LEAD LOG SUMMARY</th>
+              <th style={{ width: "12%" }}>DATE CREATED</th>
+              <th style={{ width: "6%" }}>STATUS</th>
+              <th style={{ width: "12%" }}>ASSIGNED TO</th>
+              <th style={{ width: "12%" }}>DATE SUBMITTED</th>
+              <th style={{ width: "12%" }}>DATE APPROVED</th>
             </tr>
           </thead>
           <tbody>

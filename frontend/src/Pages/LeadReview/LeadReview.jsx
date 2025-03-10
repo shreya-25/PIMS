@@ -62,6 +62,12 @@ export const LeadReview = () => {
     return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
 };
 
+const [caseDropdownOpen, setCaseDropdownOpen] = useState(false);
+const [leadDropdownOpen, setLeadDropdownOpen] = useState(false);
+
+const onShowCaseSelector = (route) => {
+  navigate(route, { state: { caseDetails } });
+};
 
 
   useEffect(() => {
@@ -183,16 +189,56 @@ export const LeadReview = () => {
 
       <div className="sideitem">
           <ul className="sidebar-list">
-            <li className="sidebar-item" onClick={() => navigate('/LeadReview')}>Lead Information</li>
-            <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
-            <li className="sidebar-item" onClick={() => navigate('/leadlog')}>View Lead Log</li>
-            <li className="sidebar-item" onClick={() => navigate('/LRInstruction')}>View Lead Return</li>
-            <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
-            <li className="sidebar-item" onClick={() => navigate('/leadsDesk')}>Leads Desk</li>
-            <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
 
+          <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▲" : "▼"}
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Case Scratchpad
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
 
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+
+          <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+                    Lead Management {leadDropdownOpen ?  "▲": "▼" }
+                  </li>
+                  {leadDropdownOpen && (
+                    <ul className="dropdown-list1">
+                       {/* <li className="sidebar-item" onClick={() => navigate('/LeadReview')}>Lead Information</li> */}
+                       <li className="sidebar-item" onClick={() => navigate('/LRInstruction')}>View Lead Return</li>
+                       <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li>
+                       <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                       <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
+          </ul>
+        )} 
           </ul>
         </div>
 
@@ -200,7 +246,7 @@ export const LeadReview = () => {
         <div className="lead-main-content">
           {/* Page Header */}
           <div className="case-header">
-            <h1>Lead No: {selectedLead.leadNo} | {selectedLead.leadName}</h1>
+            <h1>Lead No:{selectedLead.leadNo} | {selectedLead.leadName}</h1>
           </div>
 
           {/* Case Summary Textarea */}
@@ -312,7 +358,7 @@ export const LeadReview = () => {
 
                 {/* Associated Subnumbers */}
                 <tr>
-  <td className="info-label">Associated Subnumbers:</td>
+  <td className="info-label"style={{ width: "25%" }}>Associated Subnumbers:</td>
   <td>
     <div className="custom-dropdown">
       <div
@@ -424,7 +470,7 @@ export const LeadReview = () => {
                   </td>
                 </tr>
                 <tr>
-                  <td className="info-label">Lead Summary:</td>
+                  <td className="info-label">Lead Instruction:</td>
                   <td>
                     <textarea
                       className="textarea-field"
@@ -471,14 +517,14 @@ export const LeadReview = () => {
                 </div>
 
           {/* Example "Go to Main Page" button */}
-          <div className="navigation-buttons">
+          {/* <div className="navigation-buttons">
             <button
               className="custom-button secondary-button"
               onClick={() => handleNavigation("/MainPage")}
             >
               Go to Main Page
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
