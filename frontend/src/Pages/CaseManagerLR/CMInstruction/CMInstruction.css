@@ -16,10 +16,20 @@ body {
   padding: 10px 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+.main-content-everything
+{
+  min-height: 80vh;
+}
 
 .menu-items {
   display: flex;
   gap: 20px;
+}
+
+.bottom-content-cminst
+{
+  margin-left: 100px;
+  margin-top: 20px;
 }
 
 .menu-item {
