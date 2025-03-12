@@ -7,7 +7,7 @@ import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import PersonModal from "../../components/PersonModal/PersonModel";
 import VehicleModal from "../../components/VehicleModal/VehicleModel";
-
+import Pagination from "../../components/Pagination/Pagination";
 
 
 import "./LeadsDesk.css"; // Ensure this file is linked for styling
@@ -54,6 +54,10 @@ export const LeadsDesk = () => {
     const closePersonModal = () => {
       setShowPersonModal(false);
     };
+
+        const [currentPage, setCurrentPage] = useState(2);
+      const [pageSize, setPageSize] = useState(50);
+      const totalPages = 10; // Change based on your data
 
     const openVehicleModal = (leadNo, description, caseNo, caseName, leadReturnId, leadsDeskCode) => {
       setVehicleModalData({
@@ -123,90 +127,6 @@ export const LeadsDesk = () => {
 
   const [leadsData, setLeadsData] = useState([]);
 
-  // useEffect(() => {
-  //   const fetchLeadsReturnsAndPersons = async () => {
-  //     if (selectedCase?.caseNo && selectedCase?.caseName) {
-  //       const token = localStorage.getItem("token");
-  //       try {
-  //         // Step 1: Fetch all leads for the selected case
-  //         const leadsResponse = await axios.get(
-  //           `http://localhost:5000/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
-  //           { headers: { Authorization: `Bearer ${token}` } }
-  //         );
-  
-  //         const leads = leadsResponse.data;
-  
-  //         // Step 2: Fetch lead returns and persons for each lead
-  //         const leadsWithReturnsAndPersons = await Promise.all(
-  //           leads.map(async (lead) => {
-  //             try {
-  //               // Fetch lead returns
-  //               const returnsResponse = await axios.get(
-  //                 `http://localhost:5000/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
-  //                 { headers: { Authorization: `Bearer ${token}` } }
-  //               );
-  
-  //               const leadReturns = returnsResponse.data;
-  
-  //               // Fetch person details for each lead return
-  //               const leadReturnsWithPersons = await Promise.all(
-  //                 leadReturns.map(async (leadReturn) => {
-  //                   try {
-  //                     const personsResponse = await axios.get(
-  //                       `http://localhost:5000/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/${leadReturn.leadReturnId}`,
-  //                       { headers: { Authorization: `Bearer ${token}` } }
-  //                     );
-
-  //                     // const vehiclesResponse = await axios.get(
-  //                     //   `http://localhost:5000/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/${leadReturn.leadReturnId}`,
-  //                     //   { headers: { Authorization: `Bearer ${token}` } }
-  //                     // );
-  
-  //                     return {
-  //                       ...leadReturn,
-  //                       persons: personsResponse.data,
-  //                       // vehicles: vehiclesResponse.data,
-  //                     };
-  //                   } catch (error) {
-  //                     console.error(`Error fetching persons for Lead Return ID ${leadReturn.leadReturnId}:`, error);
-  //                     return {
-  //                       ...leadReturn,
-  //                       persons: [],
-  //                       // vehicles: [],
-  //                     };
-  //                   }
-  //                 })
-  //               );
-  
-  //               return {
-  //                 ...lead,
-  //                 leadReturns: leadReturnsWithPersons,
-  //               };
-  //             } catch (error) {
-  //               console.error(`Error fetching returns for Lead ${lead.leadNo}:`, error);
-  //               return {
-  //                 ...lead,
-  //                 leadReturns: [],
-  //               };
-  //             }
-  //           })
-  //         );
-  
-  //         setLeadsData(leadsWithReturnsAndPersons);
-  //         console.log("Leads with returns and persons:", leadsWithReturnsAndPersons);
-  //       } catch (error) {
-  //         console.error("Error fetching leads:", error);
-  //       }
-  //     }
-  //   };
-  
-  //   fetchLeadsReturnsAndPersons();
-  // }, [selectedCase]);
-  
-
-  
-  
-
   // Dummy data for multiple leads
   // const [leadsData, setLeadsData] = useState([
   //   {
@@ -252,6 +172,111 @@ export const LeadsDesk = () => {
   //   },
   // ]);
 
+  // useEffect(() => {
+
+  //   const fetchLeadsReturnsAndPersons = async () => {
+  //     if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+  
+  //     const token = localStorage.getItem("token");
+  //     try {
+  //       // Step 1: Fetch all leads for the selected case
+  //       const { data: leads } = await axios.get(
+  //         `http://localhost:5000/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+  //         { headers: { Authorization: `Bearer ${token}` } }
+  //       );
+  
+  //       // Step 2: Fetch lead returns, persons, and vehicles for each lead
+  //       const leadsWithDetails = await Promise.all(
+  //         leads.map(async (lead) => {
+  //           let leadReturns = [];
+  //           let hierarchyChain = [];
+  
+  //           try {
+  //             // Fetch lead returns
+  //             const { data: returnsData } = await axios.get(
+  //               `http://localhost:5000/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+  //               { headers: { Authorization: `Bearer ${token}` } }
+  //             );
+  
+  //             // Fetch person and vehicle details for each lead return
+  //             leadReturns = await Promise.all(
+  //               returnsData.map(async (leadReturn) => {
+  //                 let persons = [];
+  //                 let vehicles = [];
+  
+  //                 // Fetch persons
+  //                 try {
+  //                   const { data: personsData } = await axios.get(
+  //                     `http://localhost:5000/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/${leadReturn.leadReturnId}`,
+  //                     { headers: { Authorization: `Bearer ${token}` } }
+  //                   );
+  //                   persons = personsData;
+  //                 } catch (personError) {
+  //                   console.error(`Error fetching persons for LeadReturn ${leadReturn.leadReturnId}`, personError);
+  //                 }
+  
+  //                 // Fetch vehicles
+  //                 try {
+  //                   const { data: vehiclesData } = await axios.get(
+  //                     `http://localhost:5000/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/${leadReturn.leadReturnId}`,
+  //                     { headers: { Authorization: `Bearer ${token}` } }
+  //                   );
+  //                   vehicles = vehiclesData;
+  //                 } catch (vehicleError) {
+  //                   console.error(`Error fetching vehicles for LeadReturn ${leadReturn.leadReturnId}`, vehicleError);
+  //                 }
+  
+  //                 return {
+  //                   ...leadReturn,
+  //                   persons,
+  //                   vehicles,
+  //                 };
+  //               })
+  //             );
+  //           } catch (returnsError) {
+  //             console.error(`Error fetching returns for Lead ${lead.leadNo}`, returnsError);
+  //           }
+  
+  //           return {
+  //             ...lead,
+  //             leadReturns,
+  //           };
+  //         })
+  //       );
+  
+  //       setLeadsData(leadsWithDetails);
+  //       console.log("Leads with full details:", leadsWithDetails);
+  //     } catch (leadsError) {
+  //       console.error("Error fetching leads:", leadsError);
+  //     }
+  //   };
+  
+  //   fetchLeadsReturnsAndPersons();
+  // }, [selectedCase]);
+
+  const fetchLeadHierarchy = async (leadNo, token) => {
+    try {
+      // Fetch the lead details by lead number
+      const { data: leadData } = await axios.get(
+        `http://localhost:5000/api/lead/${leadNo}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+  
+      // If this lead has a parent, fetch its hierarchy recursively.
+      if (leadData.parentLeadNo) {
+        const parentHierarchy = await fetchLeadHierarchy(leadData.parentLeadNo, token);
+        return [...parentHierarchy, leadData.leadNo];
+      } else {
+        // No parent lead; this is the top of the chain.
+        return [leadData.leadNo];
+      }
+    } catch (error) {
+      console.error("Error fetching lead hierarchy for", leadNo, error);
+      return [];
+    }
+  };
+  
+
   useEffect(() => {
     const fetchLeadsReturnsAndPersons = async () => {
       if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
@@ -264,11 +289,12 @@ export const LeadsDesk = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
   
-        // Step 2: Fetch lead returns, persons, and vehicles for each lead
+        // Step 2: Fetch details (returns, persons, vehicles) and the hierarchy for each lead
         const leadsWithDetails = await Promise.all(
           leads.map(async (lead) => {
             let leadReturns = [];
-  
+            let hierarchyChain = [];
+            
             try {
               // Fetch lead returns
               const { data: returnsData } = await axios.get(
@@ -315,15 +341,20 @@ export const LeadsDesk = () => {
               console.error(`Error fetching returns for Lead ${lead.leadNo}`, returnsError);
             }
   
+            // Fetch the lead hierarchy for this lead using the helper function
+            hierarchyChain = await fetchLeadHierarchy(lead.leadNo, token);
+  
             return {
               ...lead,
               leadReturns,
+              // Convert hierarchy array to a string. For example: "TopLead > ParentLead > CurrentLead"
+              leadHierarchy: hierarchyChain.join(" > "),
             };
           })
         );
   
         setLeadsData(leadsWithDetails);
-        console.log("Leads with full details:", leadsWithDetails);
+        console.log("Leads with full details and hierarchy:", leadsWithDetails);
       } catch (leadsError) {
         console.error("Error fetching leads:", leadsError);
       }
@@ -331,6 +362,7 @@ export const LeadsDesk = () => {
   
     fetchLeadsReturnsAndPersons();
   }, [selectedCase]);
+  
   
 
    const [uploadedFiles, setUploadedFiles] = useState([
@@ -447,6 +479,7 @@ export const LeadsDesk = () => {
   const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
 
   const [isEditing, setIsEditing] = useState(false); // Controls whether the textarea is editable
+
   useEffect(() => {
    const fetchCaseSummary = async () => {
      try {
@@ -640,7 +673,7 @@ export const LeadsDesk = () => {
 
       <div className="bottom-sec-ld" id="main-content">
 
-      <div className = "case-summary">
+      <div className = "case-summary-ld">
                 <label className="input-label">Case Summary</label>
                         <textarea
                             className="textarea-field"
@@ -657,6 +690,27 @@ export const LeadsDesk = () => {
                             <button className="save-btn1" onClick={handleSaveClick}>Save</button>
                         )} */}
                 </div>
+
+                <div className="p-6">
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        pageSize={pageSize}
+        onPageSizeChange={setPageSize}
+      />
+    </div>
+    <div className="search_and_hierarchy_container">
+    <div className="search-container-ld">
+      <input
+        type="text"
+        className="search-input"
+        placeholder="Search Lead Number"
+      />
+      <button className="search-button">Search</button>
+    </div>
+    </div>
+
         {/* Loop through multiple leads */}
         {leadsData.map((lead, leadIndex) => (
           <div key={leadIndex} className="lead-section">
@@ -701,6 +755,12 @@ export const LeadsDesk = () => {
                       <td className="table-label">Assigned Officers:</td>
                       <td className="table-input" colSpan={5}>
                         <input type="text" value={lead.assignedTo} className="input-field" readOnly />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="table-label">Lead Hierarchy:</td>
+                      <td className="table-input" colSpan={5}>
+                        <input type="text" value={lead.leadHierarchy} className="input-field" readOnly />
                       </td>
                     </tr>
                   </tbody>
