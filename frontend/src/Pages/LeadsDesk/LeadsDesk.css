@@ -115,7 +115,12 @@ body{
  display: flex;
  flex-direction: column;
  align-items: center;
- margin: -50px 10%;
+ margin: 0 10%;
+}
+
+.case-summary-ld , .p-6
+{
+  width: 100%;
 }
 
 .lead-section
@@ -356,4 +361,46 @@ body{
 
 .close-btn:hover {
   background: rgba(255, 255, 255, 1);
+}
+
+.search_and_hierarchy_container
+{
+  width:100%;
+}
+
+.search-container-ld {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  border: 1px solid #555;
+  border-radius: 8px;
+  overflow: hidden;
+  width: 20%;
+  background: #5555550a;
+  margin-top: 20px;
+}
+
+
+
+.search-input {
+  flex: 1;
+  border: none;
+  padding: 12px;
+  font-size: 20px;
+  outline: none;
+  color: #555;
+}
+
+.search-button {
+  background: black;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  cursor: pointer;
+  font-size: 20px;
+  transition: 0.3s;
+}
+
+.search-button:hover {
+  opacity: 0.8;
 }

@@ -12,7 +12,7 @@ import { SideBar } from "../../components/Sidebar/Sidebar";
 import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 import { useNavigate } from "react-router-dom";
 import { useContext } from "react";
-import { FaFilter, FaSort } from "react-icons/fa";
+// import { FaFilter, FaSort } from "react-icons/fa";
 
 
 

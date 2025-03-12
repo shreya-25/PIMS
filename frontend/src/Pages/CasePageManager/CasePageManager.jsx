@@ -8,6 +8,7 @@ import './CasePageManager.css'; // Custom CSS file for styling
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
+import Pagination from "../../components/Pagination/Pagination";
 
 
 export const CasePageManager = () => {
@@ -43,7 +44,12 @@ export const CasePageManager = () => {
       navigate(route); // Navigate to respective page
     };
 
+    const [currentPage, setCurrentPage] = useState(2);
+  const [pageSize, setPageSize] = useState(50);
+  const totalPages = 10; // Change based on your data
+
     const signedInOfficer = localStorage.getItem("loggedInUser");
+
 
     const handleLRClick = (lead) => {
       setSelectedLead({
@@ -1450,6 +1456,15 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(false);
   </div>
 )}
 
+<div className="p-6">
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+        pageSize={pageSize}
+        onPageSizeChange={setPageSize}
+      />
+    </div>
                     </div> ): (
                         <div className="no-leads-message">
                         </div>
