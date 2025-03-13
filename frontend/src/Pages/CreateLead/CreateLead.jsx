@@ -255,8 +255,10 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
 
 
         {/* Center Section */}
-        <div className="center-section">
-          <h2 className="title">LEAD INSTRUCTIONS</h2>
+        <div className="center-section-cl">
+        <div className="case-header-cl">
+          <h2 >LEAD INSTRUCTIONS</h2>
+          </div>
         </div>
 
 

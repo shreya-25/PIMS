@@ -15,8 +15,9 @@
   .main-content {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     margin-bottom: 10px;
+    background-color:green;
   }
   
   /* Title */
@@ -25,6 +26,12 @@
     font-weight: bold;
     text-align: center;
     margin-left: -1000%;
+    background-color: pink;
+  }
+
+  .case-header-cl
+  {
+    background-color: pink;
   }
   
   /* Filters Section */
