@@ -654,7 +654,7 @@ const addCase = (newCase) => {
           setActiveTab={setActiveTab}
           onShowCaseSelector={handleShowCaseSelector} // Pass handler
         /> */}
-         <div className="above-sec">
+         <div className="above-sec-MP">
         <div className="logo-sec">
           <img
             src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
@@ -663,17 +663,24 @@ const addCase = (newCase) => {
           />
           <h1 className="main-page-heading"> PIMS</h1>
         </div>
-        <div className="top-controlsMP">
-            <Searchbar
-              placeholder="Search Cases"
-              onSearch={(query) => console.log("Search query:", query)}
-            />
-            <SlideBar
-            onAddCase={(newCase) => addCase(newCase)}
-            buttonClass="custom-add-case-btn1"
-          />
-          </div>
         </div>
+        <div className="top-controlsMP">
+            <div className="search-container">
+                    <i className="fa-solid fa-magnifying-glass"></i>
+                    <input
+                      type="text"
+                      className="search-input"
+                      placeholder="Search Cases"
+                      // onChange={(e) => onSearch && onSearch(e.target.value)}
+                    />
+              </div>
+              <div className="slidebartopcontrolMP">
+              <SlideBar
+              onAddCase={(newCase) => addCase(newCase)}
+              buttonClass="custom-add-case-btn1"
+            />
+            </div>
+          </div>
         <div className="content-container">
           {/* {showCaseSelector && (
             <CaseSelector
