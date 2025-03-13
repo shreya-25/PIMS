@@ -385,8 +385,8 @@ export const CasePageManager = () => {
 // }, [signedInOfficer, caseDetails]);
 
 
-const [caseDropdownOpen, setCaseDropdownOpen] = useState(false);
-const [leadDropdownOpen, setLeadDropdownOpen] = useState(false);
+const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
 
   
 
@@ -628,7 +628,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(false);
 
                             {/* Case Information Dropdown */}
         <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▲" : "▼"}
+          Case Management {caseDropdownOpen ? "▼" : "▲" }
         </li>
         {caseDropdownOpen && (
           <ul className="dropdown-list1">
@@ -666,7 +666,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(false);
 
                                  {/* Lead Management Dropdown */}
                                  <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▲": "▼" }
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
         </li>
         {leadDropdownOpen && (
           <ul className="dropdown-list1">
