@@ -1342,9 +1342,9 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
     <table className="leads-table">
               <thead>
                 <tr>
-                  <th style={{ width: "6%" }}>Lead No.</th>
+                  <th style={{ width: "10%" }}>Lead No.</th>
                   <th>Lead Description</th>
-                  <th style={{ width: "10%" }}></th>
+                  <th style={{ width: "12%" }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -1429,10 +1429,10 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
     <table className="leads-table">
       <thead>
         <tr>
-          <th style={{ width: "6%" }}>Lead No.</th>
+          <th style={{ width: "10%" }}>Lead No.</th>
           <th>Lead Description</th>
           <th style={{ width: "10%" }}>Lead Status</th>
-          <th style={{ width: "10%" }}></th> {/* Empty header for buttons column */}
+          <th style={{ width: "12%" }}></th> {/* Empty header for buttons column */}
         </tr>
       </thead>
       <tbody>
