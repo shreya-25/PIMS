@@ -44,9 +44,10 @@ export const CasePageManager = () => {
       navigate(route); // Navigate to respective page
     };
 
-    const [currentPage, setCurrentPage] = useState(2);
+    const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const totalPages = 10; // Change based on your data
+  const totalEntries = 100;
 
     const signedInOfficer = localStorage.getItem("loggedInUser");
 
@@ -1463,13 +1464,14 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
 )}
 
 <div className="p-6">
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-        pageSize={pageSize}
-        onPageSizeChange={setPageSize}
-      />
+<Pagination
+  currentPage={currentPage}
+  totalEntries={totalEntries}  // Automatically calculate total entries
+  onPageChange={setCurrentPage} // Update current page state
+  pageSize={pageSize}
+  onPageSizeChange={setPageSize} // Update page size state
+/>
+
     </div>
                     </div> ): (
                         <div className="no-leads-message">
