@@ -14,10 +14,10 @@
   .page-size-selector {
     display: flex;
     align-items: center;
-    width: 30%;
+    width: 40%;
   }
   .page-size-selector span {
-    width: 30%;
+    width: 20%;
   }
   
   .page-size-dropdown {
