@@ -23,10 +23,10 @@
 
   .case-header {
     display: flex;
-    justify-content: center; /* Center horizontally */
-    align-items: center; /* Center vertically */
-    height: 50px; /* Set a height for the header */
-    margin-top: 100px;
+    justify-content: center; 
+    align-items: center; 
+    height: 5%; 
+    margin-top: 3%;
     font-weight: bold;
     color: #333333;
     font-size: 20px;
