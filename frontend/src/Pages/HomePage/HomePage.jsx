@@ -1258,11 +1258,11 @@ const addCase = (newCase) => {
     <table className="leads-table">
       <thead>
         <tr>
-          <th style={{ width: "6%" }}>Lead No.</th>
+          <th style={{ width: "10%" }}>Lead No.</th>
           <th>Lead Name</th>
           <th>Assigned Officers</th>
           <th>Case Name</th>
-          <th style={{ width: "6%" }}>Due Date</th>
+          <th style={{ width: "10%" }}>Due Date</th>
           <th style={{ width: "10%" }}></th>
         </tr>
       </thead>
@@ -1360,7 +1360,7 @@ const addCase = (newCase) => {
     <table className="leads-table">
               <thead>
                 <tr>
-                  <th style={{ width: "6%" }}>Lead No.</th>
+                  <th style={{ width: "10%" }}>Lead No.</th>
                   <th>Lead Name</th>
                   <th style={{ width: "20%" }}>Case Name</th>
                   <th style={{ width: "10%" }}></th>
