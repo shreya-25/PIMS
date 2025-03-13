@@ -1234,11 +1234,11 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
     <table className="leads-table">
       <thead>
         <tr>
-          <th style={{ width: "6%" }}>Lead No.</th>
+          <th style={{ width: "10%" }}>Lead No.</th>
           <th>Lead Description</th>
           <th style={{ width: "10%" }}>Due Date</th>
-          <th style={{ width: "6%" }}>Priority</th>
-          <th style={{ width: "7%" }}>Days Left</th>
+          <th style={{ width: "8%" }}>Priority</th>
+          <th style={{ width: "8%" }}>Days Left</th>
           <th style={{ width: "6%" }}>Flags</th>
           <th style={{ width: "14%" }}>Assigned Officers</th>
           <th style={{ width: "10%" }}></th>
