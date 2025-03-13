@@ -1241,7 +1241,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           <th style={{ width: "8%" }}>Days Left</th>
           <th style={{ width: "6%" }}>Flags</th>
           <th style={{ width: "14%" }}>Assigned Officers</th>
-          <th style={{ width: "10%" }}></th>
+          <th style={{ width: "12%" }}></th>
         </tr>
       </thead>
       <tbody>
