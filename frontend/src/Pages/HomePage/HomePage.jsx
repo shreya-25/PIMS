@@ -1294,7 +1294,13 @@ const addCase = (newCase) => {
             <tr key={lead.id}>
               <td>{lead.id}</td>
               <td>{lead.description}</td>
-              <td>{lead.assignedOfficers.join(", ")}</td>
+              {/* <td>{lead.assignedOfficers.join(", ")}</td> */}
+              <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
+                {/* {lead.assignedOfficers.join(", ")} */}
+                {lead.assignedOfficers.map((officer, index) => (
+                  <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
+                ))}
+                </td>
               <td>{lead.caseName }</td>
               <td>{lead.dueDate}</td>
               <td>
