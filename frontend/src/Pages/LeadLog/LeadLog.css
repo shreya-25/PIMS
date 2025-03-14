@@ -12,28 +12,36 @@
   }
   
   /* Main Content */
-  .main-content {
+  .main-content-ll {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
+    justify-content: flex-start;
     margin-bottom: 10px;
-    background-color:green;
   }
   
   /* Title */
-  .center-sectionll .title {
+  .center-sectionll
+  {
+     width: 60%;
+     height: 100%;
+  }
+
+  .title1 {
+    display: flex;
+    justify-content: center; 
+    align-items: center; 
+    height: 100px; 
+    font-weight: bold;
+    color: #333333;
+    margin-top: 5%;
+    }
+  /* .center-sectionll .title {
     font-size: 30px;
     font-weight: bold;
     text-align: center;
-    margin-left: -1000%;
     background-color: pink;
-  }
-
-  .case-header-cl
-  {
-    background-color: pink;
-  }
-  
+    width: 100%;
+  } */
   /* Filters Section */
 .filters-section1 {
   display: flex;
@@ -184,10 +192,18 @@
 
   
   /* Table Section */
+  .table-section1
+  {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
   .table-section {
     margin-bottom: 20px;
     margin-left: 20px;
     margin-right: 20px;
+    width: 90%;
   }
   
   .leadlog-table {
@@ -242,3 +258,16 @@
     width: 7%;
   }
   
+  .pagination-tab
+  {
+    width: 90%;
+  }
+
+  .btn-sec-ll
+  {
+    margin-top: 1%;
+    width: 20%;
+    display: flex;
+    justify-content: center;
+    gap: 5%;
+  }

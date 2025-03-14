@@ -6,6 +6,7 @@ import Sort from "../../components/Sort/Sort";
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
+import Pagination from "../../components/Pagination/Pagination";
 
 
 
@@ -22,7 +23,11 @@ export const LeadLog = () => {
        const [showFilter, setShowFilter] = useState(false);
       const [showSort, setShowSort] = useState(false);
   
-
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(50);
+    const totalPages = 10; // Change based on your data
+    const totalEntries = 100;
+  
 
   const navigate = useNavigate(); // Initialize the navigate function
 
@@ -337,7 +342,7 @@ const handleResetSort = () => {
       <Navbar />
 
 
-      <div className="main-content">
+      <div className="main-content-ll">
         <div className="left-section">
           <img
             src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
@@ -348,7 +353,7 @@ const handleResetSort = () => {
 
 
         <div className="center-sectionll">
-          <h2 className="title">LEAD LOG</h2>
+          <h2 className="title1">LEAD LOG</h2>
         </div>
 
       {/* <div className="center-sectionll">
@@ -405,6 +410,7 @@ const handleResetSort = () => {
       </div>
 
 
+      <div className="table-section1">
       <div className="table-section">
         <table className="leads-table">
           <thead>
@@ -447,21 +453,42 @@ const handleResetSort = () => {
           </tbody>
         </table>
       </div>
+      <div className ="pagination-tab">
+      <Pagination
+  currentPage={currentPage}
+  totalEntries={totalEntries}  // Automatically calculate total entries
+  onPageChange={setCurrentPage} // Update current page state
+  pageSize={pageSize}
+  onPageSizeChange={setPageSize} // Update page size state
+/>
+</div>
 
 
-      <div className="report-section">
+      {/* <div className="report-section">
         <label>Select Report Type: </label>
         <select className="dropdown">
           <option value="summary">Summary</option>
           <option value="detailed">Detailed</option>
         </select>
-      </div>
+      </div> */}
 
 
-      <div className="btn-sec-cl">
+      {/* <div className="btn-sec-cl">
       <button className="next-btncl" onClick={handleBackClick}>Back</button>
         <button className="next-btncl">Download</button>
         <button className="next-btncl">Print</button>
+      </div> */}
+      <div className = "btn-sec-ll">
+      <button className="save-btn1">
+            Preview
+      </button>
+      <button className="save-btn1">
+            Print
+      </button>
+      </div>
+
+       {/* FootBar with navigation */}
+       {/* <FootBar onPrevious={() => navigate(-1)} /> */}
       </div>
     </div>
   );
