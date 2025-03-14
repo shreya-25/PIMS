@@ -17,6 +17,16 @@ import html2canvas from "html2canvas";
 
 
 export const LeadsDesk = () => {
+
+  useEffect(() => {
+    // Apply style when component mounts
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      // Reset to default when component unmounts
+      document.body.style.overflow = "auto";
+    };
+  }, []);
   const navigate = useNavigate();
   const pdfRef = useRef();
   const { selectedCase, setSelectedLead } = useContext(CaseContext);
@@ -49,6 +59,21 @@ export const LeadsDesk = () => {
       setPersonModalData({ leadNo, description, caseNo, caseName, leadReturnId });
       setShowPersonModal(true);
     };
+
+    
+  // Function to format dates as MM/DD/YY
+const formatDate = (dateString) => {
+  if (!dateString) return ""; // Handle empty dates
+  const date = new Date(dateString);
+  if (isNaN(date)) return ""; // Handle invalid dates
+
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  const year = date.getFullYear().toString().slice(-2); // Get last two digits of the year
+
+  return `${month}/${day}/${year}`;
+};
+
   
     // Function to close the modal
     const closePersonModal = () => {
@@ -809,8 +834,9 @@ export const LeadsDesk = () => {
                       <input
                             type="text"
                             value={lead.leadNo}
-                            className="lead-input1"
-                            style={{ fontSize: '50px', padding: '10px', textAlign: 'center' }}
+                            // className="lead-input1"
+                             className = "input-field"
+                            // style={{ fontSize: '20px', padding: '10px', textAlign: 'center' }}
                             readOnly
                           />
 
@@ -821,8 +847,9 @@ export const LeadsDesk = () => {
                            <input
                             type="text"
                             value={lead.parentLeadNo}
-                            className="lead-input1"
-                            style={{ fontSize: '50px', padding: '10px', textAlign: 'center' }}
+                            // className="lead-input1"
+                            className = "input-field"
+                            // style={{ fontSize: '20px', padding: '10px', textAlign: 'center' }}
                             readOnly
                           />
 
@@ -830,7 +857,8 @@ export const LeadsDesk = () => {
 
                       <td className="table-label">Assigned Date:</td>
                       <td className="table-input">
-                        <input type="text" value={lead.assignedDate} className="input-field" readOnly />
+                        <input type="text" value={formatDate(lead.assignedDate)} className="input-field" readOnly />
+                        
                       </td>
                     </tr>
 
