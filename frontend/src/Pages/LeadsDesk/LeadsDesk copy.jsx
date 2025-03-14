@@ -16,7 +16,7 @@ import html2canvas from "html2canvas";
 
 
 
-export const LeadsDesk = () => {
+export const LeadsDeskCopy = () => {
   const navigate = useNavigate();
   const pdfRef = useRef();
   const { selectedCase, setSelectedLead } = useContext(CaseContext);
@@ -647,119 +647,30 @@ export const LeadsDesk = () => {
     }, 500);
   };
   
-    const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
-    const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
-  
-  //   const onShowCaseSelector = (route) => {
-  //     navigate(route, { state: { caseDetails } });
-  // };
   
   
   return (
-    <div ref={pdfRef} className="lead-desk-page">
+    <div ref={pdfRef} className="lead-instructions-page">
       <Navbar />
 
-      <div className="main-content-ld">
-      <div className="sideitem">
-                    <ul className="sidebar-list">
-                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
-                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
-                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
-                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
-                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
-                        <li className="sidebar-item">Generate Report</li>
-                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
-
-                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
-
-                            {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▼" : "▲" }
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-              <li className="sidebar-item" onClick={() => navigate("/LeadLog")}>
-              View Lead Log
-            </li>
-            <li className="sidebar-item" onClick={() => navigate("/OfficerManagement")}>
-              Officer Management
-            </li>
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Case Scratchpad
-            </li>
-            <li className="sidebar-item" onClick={() => navigate("/LeadHierarchy")}>
-              View Lead Hierarchy
-            </li>
-            <li className="sidebar-item" onClick={() => navigate("/ViewHierarchy")}>
-              Generate Report
-            </li>
-            <li className="sidebar-item" onClick={() => navigate("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
-            <li className="sidebar-item" onClick={() => navigate("/ViewTimeline")}>
-              View Timeline Entries
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
-
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk" )} >View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage" )} >Go to Home Page</li>
-
-         
-          </ul>
-        )}
-
-
-                                 {/* Lead Management Dropdown */}
-                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => navigate("/CreateLead")}>
-              New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => navigate("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
-
-                    </ul>
-                </div>
+      <div className="main-content-cl1">
         {/* Left Section */}
-        {/* <div className="left-section">
+        <div className="left-section">
           <img
             src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
             alt="Police Department Logo"
             className="police-logo-cl"
           />
-        </div> */}
+        </div>
 
         {/* Center Section */}
-        {/* <div className="center-section-ld">
+        <div className="center-section-ld">
           <h1 className="title">LEADS DESK</h1>
           <h1>
                Case: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"}
           </h1>
         </div>
-      </div> */}
-          <div className="left-content">
-
-                <div className="case-header">
-                  <h2 className="">LEADS DESK</h2>
-                </div>
-
-                <div className="center-section-ld">
-          <h1>
-               Case: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"}
-          </h1>
-        </div>
+      </div>
 
       <div className="bottom-sec-ld" id="main-content">
 
@@ -781,17 +692,14 @@ export const LeadsDesk = () => {
                         )} */}
                 </div>
     <div className="search_and_hierarchy_container">
-    <div className="search-bar">
-      <div className="search-container1">
-      <i className="fa-solid fa-magnifying-glass"></i>
+    <div className="search-container-ld">
       <input
         type="text"
-        className="search-input1"
-        placeholder="Search Lead"
+        className="search-input"
+        placeholder="Search Lead Number"
       />
-      {/* <button className="search-button">Search</button> */}
-      </div>
-      </div>
+      <button className="search-button">Search</button>
+    </div>
     </div>
 
         {/* Loop through multiple leads */}
@@ -881,8 +789,7 @@ export const LeadsDesk = () => {
                   resize: "none",
                   overflow: "hidden",
                   height: "auto",
-                  // fontFamily: "Segoe UI",
-                  fontFamily:"Arial",
+                  fontFamily: "Segoe UI",
                 }}
                 rows={Math.max(returnItem.leadReturnResult.length / 50, 2)}
               />
@@ -1137,9 +1044,7 @@ export const LeadsDesk = () => {
                                
 
             </div>
-          </div>
-        ))}
-                <div className="p-6">
+            <div className="p-6">
                 <Pagination
   currentPage={currentPage}
   totalEntries={totalEntries}  // Automatically calculate total entries
@@ -1148,8 +1053,9 @@ export const LeadsDesk = () => {
   onPageSizeChange={setPageSize} // Update page size state
 />
     </div>
+          </div>
+        ))}
       </div>
-      
       <div className = "last-sec">
       <div className = "btn-sec">
       <button className="save-btn1"  onClick={() => runReport()}>
@@ -1162,8 +1068,7 @@ export const LeadsDesk = () => {
 
       </div>
 
-    </div>
-    </div>
+    
     </div>
   );
 };

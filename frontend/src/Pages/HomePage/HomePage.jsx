@@ -13,6 +13,7 @@ import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 import { useNavigate } from "react-router-dom";
 import { useContext } from "react";
 // import { FaFilter, FaSort } from "react-icons/fa";
+import Pagination from "../../components/Pagination/Pagination";
 
 
 
@@ -30,6 +31,12 @@ export const HomePage = () => {
 const [flagsFilter, setFlagsFilter] = useState("");
 const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
 const [newInvestigator, setNewInvestigator] = useState("");
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(50);
+    const totalPages = 10; // Change based on your data
+    const totalEntries = 100;
+  
 
 
 const [showCaseSelector, setShowCaseSelector] = useState(false);
@@ -767,14 +774,15 @@ const addCase = (newCase) => {
         <table className="leads-table">
               <thead>
                 <tr>
-                  <th style={{ width: "6%" }}>Case No.</th>
+                  <th style={{ width: "10%" }}>Case No.</th>
                   <th>Case Name</th>
                   <th style={{ width: "12%" }}>Role</th>
                   <th style={{ width: "10%" }}></th>
                 </tr>
               </thead>
               <tbody>
-                {cases.map((c) => (
+                {cases.length > 0 ? (
+                  cases.map((c) => (
                     <tr key={c.id}>
                       <td>{c.id}</td>
                       <td>{c.title}</td>
@@ -788,7 +796,13 @@ const addCase = (newCase) => {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center' }}>
+                      No Cases Available
+                    </td>
+                  </tr>)}
               </tbody>
             </table>
             {/* {cases.map((c) => (
@@ -827,6 +841,13 @@ const addCase = (newCase) => {
                 </div>
               </div>
             ))} */}
+               <Pagination
+  currentPage={currentPage}
+  totalEntries={totalEntries}  // Automatically calculate total entries
+  onPageChange={setCurrentPage} // Update current page state
+  pageSize={pageSize}
+  onPageSizeChange={setPageSize} // Update page size state
+/>
           </div>
          
 )}
@@ -1267,7 +1288,8 @@ const addCase = (newCase) => {
         </tr>
       </thead>
       <tbody>
-        {leads.pendingLeads
+        {leads.length > 0 ? (
+          leads.pendingLeads
           .filter(
             (lead) =>
               lead.description
@@ -1311,9 +1333,24 @@ const addCase = (newCase) => {
                 </button>
               </td>
             </tr>
-          ))}
+          ))
+        ) : (
+          <tr>
+            <td colSpan="6" style={{ textAlign: 'center' }}>
+              No Pending Leads Available
+            </td>
+          </tr>
+        )}
       </tbody>
     </table>
+
+    <Pagination
+  currentPage={currentPage}
+  totalEntries={totalEntries}  // Automatically calculate total entries
+  onPageChange={setCurrentPage} // Update current page state
+  pageSize={pageSize}
+  onPageSizeChange={setPageSize} // Update page size state
+/>
   </div>
 )}
 
@@ -1373,7 +1410,8 @@ const addCase = (newCase) => {
                 </tr>
               </thead>
               <tbody>
-                {leads.pendingLeadReturns.map((lead) => (
+                {leads.pendingLeadReturns.length > 0 ? (
+                leads.pendingLeadReturns.map((lead) => (
                     <tr key={lead.id}>
                       <td>{lead.id}</td>
                       <td>{lead.description}</td>
@@ -1389,9 +1427,23 @@ const addCase = (newCase) => {
                             </button>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7" style={{ textAlign: 'center' }}>
+                      No Pending Lead Returns Available
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
+            <Pagination
+  currentPage={currentPage}
+  totalEntries={totalEntries}  // Automatically calculate total entries
+  onPageChange={setCurrentPage} // Update current page state
+  pageSize={pageSize}
+  onPageSizeChange={setPageSize} // Update page size state
+/>
   </div>
 )}  
 
