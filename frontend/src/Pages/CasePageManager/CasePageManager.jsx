@@ -601,6 +601,11 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
       const onShowCaseSelector = (route) => {
         navigate(route, { state: { caseDetails } });
     };
+
+    useEffect(() => {
+      // Scroll to the top when the component mounts
+      window.scrollTo(0, 0);
+    }, []); // Empty dependency array ensures it runs only once on mount
       
 
     return (
