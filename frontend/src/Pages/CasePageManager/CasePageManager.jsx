@@ -1231,7 +1231,6 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
       </div>
     )}
 
-
     <table className="leads-table">
       <thead>
         <tr>
@@ -1344,8 +1343,6 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           </div>
       )}
 
-
-
     <table className="leads-table">
               <thead>
                 <tr>
@@ -1373,6 +1370,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                   ))}
               </tbody>
             </table>
+            
   </div>
 )}  
 
@@ -1432,7 +1430,6 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           </div>
       )}
 
-
     <table className="leads-table">
       <thead>
         <tr>
@@ -1462,8 +1459,6 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
     </table>
   </div>
 )}
-
-<div className="p-6">
 <Pagination
   currentPage={currentPage}
   totalEntries={totalEntries}  // Automatically calculate total entries
@@ -1471,8 +1466,6 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
   pageSize={pageSize}
   onPageSizeChange={setPageSize} // Update page size state
 />
-
-    </div>
                     </div> ): (
                         <div className="no-leads-message">
                         </div>
