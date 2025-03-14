@@ -115,6 +115,27 @@ const getLeadsByCase = async (req, res) => {
         res.status(500).json({ message: "Something went wrong" });
     }
 };
+const getLeadsforHierarchy = async (req, res) => {
+  try {
+
+      const { leadNo, caseNo, caseName } = req.params;
+
+      const query = { 
+          leadNo: leadNo, 
+          caseNo: Number(caseNo), 
+          caseName: caseName
+      };
+
+      const leads = await Lead.find(query);
+
+ 
+
+      res.status(200).json(leads);
+  } catch (err) {
+      console.error("Error fetching leads by case:", err.message);
+      res.status(500).json({ message: "Something went wrong" });
+  }
+};
 
 
-module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName };
+module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy };

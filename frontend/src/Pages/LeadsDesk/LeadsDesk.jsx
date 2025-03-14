@@ -280,27 +280,56 @@ const formatDate = (dateString) => {
   //   fetchLeadsReturnsAndPersons();
   // }, [selectedCase]);
 
-  const fetchLeadHierarchy = async (leadNo, token) => {
+  const fetchLeadHierarchy = async (leadNo, caseNo, caseName, token, hierarchy = []) => {
     try {
-      // Fetch the lead details by lead number
-      const { data: leadData } = await axios.get(
-        `http://localhost:5000/api/lead/${leadNo}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-  
-      // If this lead has a parent, fetch its hierarchy recursively.
-      if (leadData.parentLeadNo) {
-        const parentHierarchy = await fetchLeadHierarchy(leadData.parentLeadNo, token);
-        return [...parentHierarchy, leadData.leadNo];
-      } else {
-        // No parent lead; this is the top of the chain.
-        return [leadData.leadNo];
-      }
+        console.log(`🔍 Fetching hierarchy for LeadNo: ${leadNo}`); // Log the lead number being processed
+
+        // Fetch lead details
+        const { data: leadData } = await axios.get(
+            `http://localhost:5000/api/lead/lead/${leadNo}/${caseNo}/${encodeURIComponent(caseName)}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        console.log(`✅ Lead Data Fetched for ${leadNo}:`, leadData); // Log the fetched data
+
+        if (!leadData || leadData.length === 0) {
+            console.warn(`⚠️ No lead data found for LeadNo: ${leadNo}`);
+            return hierarchy;
+        }
+
+        // Extract the first matching lead (assuming API returns an array)
+        const lead = leadData[0];
+
+        // Add the current lead to the hierarchy
+        hierarchy.push(lead.leadNo);
+        console.log(`📌 Current Hierarchy Chain:`, hierarchy);
+
+        // If there are parent leads, fetch each one recursively
+        if (lead.parentLeadNo && lead.parentLeadNo.length > 0) {
+            console.log(`🔄 Fetching Parent Leads for ${leadNo}:`, lead.parentLeadNo);
+            const parentHierarchies = await Promise.all(
+                lead.parentLeadNo.map(parentNo => 
+                    fetchLeadHierarchy(parentNo, caseNo, caseName, token, [...hierarchy])
+                )
+            );
+
+            // Merge multiple parent hierarchies
+            const mergedHierarchy = parentHierarchies.flat().reverse();
+            console.log(`🔗 Merged Hierarchy for Lead ${leadNo}:`, mergedHierarchy);
+            return mergedHierarchy;
+        } else {
+            // No parent leads, return the final hierarchy
+            console.log(`🎯 Final Hierarchy for Lead ${leadNo}:`, hierarchy.reverse());
+            return hierarchy.reverse();
+        }
     } catch (error) {
-      console.error("Error fetching lead hierarchy for", leadNo, error);
-      return [];
+        console.error(`❌ Error fetching lead hierarchy for ${leadNo}:`, error);
+        return hierarchy;
     }
-  };
+};
+
+
+
   
 
   useEffect(() => {
@@ -368,7 +397,10 @@ const formatDate = (dateString) => {
             }
   
             // Fetch the lead hierarchy for this lead using the helper function
-            hierarchyChain = await fetchLeadHierarchy(lead.leadNo, token);
+            hierarchyChain = await fetchLeadHierarchy(  lead.leadNo,
+              selectedCase.caseNo,
+              selectedCase.caseName,
+              token);
   
             return {
               ...lead,
@@ -871,7 +903,9 @@ const formatDate = (dateString) => {
                     <tr>
                       <td className="table-label">Lead Hierarchy:</td>
                       <td className="table-input" colSpan={5}>
-                        <input type="text" value={lead.leadHierarchy} className="input-field" readOnly />
+                        <input type="text" 
+                        value={lead.leadHierarchy ? lead.leadHierarchy : "No Hierarchy Available"} 
+                        className="input-field" readOnly />
                       </td>
                     </tr>
                   </tbody>
