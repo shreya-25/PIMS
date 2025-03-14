@@ -105,12 +105,6 @@ export const FlaggedLead = () => {
         <div className="center-sectionll">
           <h2 className="title1">FLAGGED LEADS</h2>
         </div>
-
-      {/* <div className="center-sectionll">
-        <div className="case-header-cl">
-          <h2 >LEAD LOG</h2>
-          </div>
-        </div> */}
       </div>
 
       <div className="filters-section">

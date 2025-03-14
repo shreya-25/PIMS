@@ -198,30 +198,49 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    /* background-color: rgba(12, 31, 32, 0.096);
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); */
   }
   .table-section {
     margin-bottom: 20px;
     margin-left: 20px;
     margin-right: 20px;
     width: 90%;
+    padding: 30px;
+    /* background-color: rgba(0, 0, 0, 0.014);
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); */
+    /* background-color: rgba(12, 31, 32, 0.096);
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); */
   }
   
-  .leadlog-table {
+  .leadlog-table1 {
     width: 100%;
     border-collapse: collapse;
     text-align: left;
     max-height: 40px;
+    
   }
   
-  .leadlog-table th,
-  .leadlog-table td {
-    border: 1px solid #ddd;
-    padding: 0.5%;
+  .leadlog-table1 th,
+  .leadlog-table1 td {
+    /* border: 1px solid #ddd; */
+    padding: 0.7%;
     font-size: 20px;
   }
   
-  .leadlog-table th {
+  .leadlog-table1 tr{
+    border: 1px solid #ddd;
+  }
+  .leadlog-table1 th, 
+.leadlog-table1 td {
+  border-left: none;
+  border-right: none;
+}
+
+  .leadlog-table1 th {
     background-color: #f2f2f2;
+    font-size: 20px;
+    font-weight: 500;
   }
   
   /* Report Section */
@@ -238,36 +257,79 @@
     min-width: 40%;
     font-size: 20px;
   }
-  
-  /* Action Buttons */
-  .action-buttons {
+
+  .table-controls {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
+    margin-bottom: 10px;
+    
+  }
+  
+  /* Empty Space for Alignment */
+  .empty-space {
+    flex: 1;
+  }
+
+  .search-bar
+  {
+    display: flex;
+    width: 30%;
+    padding:5px 0px;
+    justify-content: center;
+    align-items: center;
+  }
+  .search-container1
+  {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+    border: 1px solid #2b2a2a7c;
+    border-radius: 5px;
+    color: rgb(0, 0, 0);
+    padding: 5px;
+    transition: border-color 0.3s, box-shadow 0.3s; 
+    width: 100%;
+  }
+
+  .search-bar ::placeholder
+  {
+    font-size: 18px;
+  }
+  
+  .search-input1
+  {
+    width: 100%;
+  }
+  /* Buttons Styling */
+  .control-buttons {
+    display: flex;
     gap: 10px;
   }
   
-  .download-pdf-btn,
-  .print-pdf-btn {
-    background-color: #a33;
+  .control-buttons button {
+  
     color: white;
-    padding: 10px 15px;
     border: none;
-    border-radius: 5px;
+    padding: 8px 15px;
     cursor: pointer;
-    width: 7%;
+    border-radius: 5px;
+    font-size: 20px;
+    height: 100%;
   }
   
-  .pagination-tab
+  .search-container
   {
-    width: 90%;
+    width: 100%;
+    height: 100%;
   }
 
-  .btn-sec-ll
-  {
-    margin-top: 1%;
-    width: 20%;
-    display: flex;
-    justify-content: center;
-    gap: 5%;
+  .left-content {
+    flex-grow: 1; 
+    overflow-y: auto; 
+    margin-bottom: 50px;
+    align-items: center;
+    height: calc(100vh - 10px); /* Ensures content fits inside viewport */
+    padding-bottom: 80px; /* Adds space at the bottom */
+    box-sizing: border-box;
   }
