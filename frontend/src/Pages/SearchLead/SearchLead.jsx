@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
 import "./SearchLead.css";
+import Pagination from "../../components/Pagination/Pagination";
 
 // Sample lead data for matching
 const sampleLeads = [
@@ -48,6 +49,11 @@ export const SearchLead = () => {
   const [staticRows, setStaticRows] = useState(initialStaticRows);
   const [dynamicRows, setDynamicRows] = useState([]); // Dynamic rows managed separately
   const [matchingLeads, setMatchingLeads] = useState([]);
+
+    const [currentPage, setCurrentPage] = useState(1);
+      const [pageSize, setPageSize] = useState(50);
+      const totalPages = 10; // Change based on your data
+      const totalEntries = 100;
 
   // Handles input changes for static or dynamic rows
   const handleInputChange = (index, field, value, isDynamic = false) => {
@@ -111,7 +117,21 @@ export const SearchLead = () => {
     <div className="searchlead-container">
       <Navbar />
 
-      <h1 className="searchlead-title">SEARCH LEAD</h1>
+      {/* <h1 className="searchlead-title">SEARCH LEAD</h1> */}
+      <div className="main-content-ll">
+        <div className="left-section">
+          <img
+            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
+            alt="Police Department Logo"
+            className="police-logo-cl"
+          />
+        </div>
+
+
+        <div className="center-sectionll">
+          <h2 className="title1">SEARCH LEAD</h2>
+        </div>
+      </div>
 
       <div className="main-content-searchlead">
         <table className="search-table">
@@ -303,6 +323,13 @@ export const SearchLead = () => {
       )}
     </tbody>
   </table>
+  <Pagination
+  currentPage={currentPage}
+  totalEntries={totalEntries}  // Automatically calculate total entries
+  onPageChange={setCurrentPage} // Update current page state
+  pageSize={pageSize}
+  onPageSizeChange={setPageSize} // Update page size state
+/>
 
   <button className="main-page-btn" onClick={() => navigate('/MainPage')}>Go to Main Page</button>
 </div>
