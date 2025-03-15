@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect} from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import Searchbar from '../../components/Searchbar/Searchbar';
 import Button from '../../components/Button/Button';
@@ -7,6 +7,8 @@ import Sort from "../../components/Sort/Sort";
 import './Investigator.css'; // Custom CSS file for styling
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
+import { CaseContext } from "../CaseContext";
+
 
 export const Investigator = () => {
     const navigate = useNavigate();
@@ -21,6 +23,8 @@ export const Investigator = () => {
     const [remainingDaysFilter, setRemainingDaysFilter] = useState("");
   const [flagsFilter, setFlagsFilter] = useState("");
   const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
+  const { selectedCase, setSelectedLead } = useContext(CaseContext);
+
   const [leads, setLeads] = useState({
     assignedLeads: [
       // { id: 1, description: "Collect Audio Records from Dispatcher",dueDate: "12/25/2024",
@@ -76,6 +80,23 @@ export const Investigator = () => {
     ],
 });
 
+const handleLeadClick = (lead) => {
+  setSelectedLead({
+      leadNo: lead.id,
+      leadName: lead.description,
+      dueDate: lead.dueDate || "N/A",
+      priority: lead.priority || "Medium",
+      flags: lead.flags || [],
+      assignedOfficers: lead.assignedOfficers || [],
+      leadStatus: lead.leadStatus,
+      caseName: lead.caseName,
+      caseNo: lead.caseNo
+  });
+
+  // Navigate to Lead Review Page
+  navigate("/leadReview", { state: { leadDetails: lead, caseDetails: selectedCase } });
+};
+
     const [activeTab, setActiveTab] = useState("allLeads"); // Default to All Leads tab
     const handleViewAssignedLead = (lead) => {
     };
@@ -83,8 +104,23 @@ export const Investigator = () => {
       navigate("/CasePageManager", { state: { caseDetails } }); // Pass case details via state
     };
     const handleLRClick = (lead) => {
-      navigate("/LRInstruction", { state: { leadDetails: lead } });
+      setSelectedLead({
+          leadNo: lead.leadNo,
+          incidentNo: lead.incidentNo,
+          leadName: lead.description,
+          dueDate: lead.dueDate || "N/A",
+          priority: lead.priority || "Medium",
+          flags: lead.flags || [],
+          assignedOfficers: lead.assignedOfficers || [],
+          leadStatus: lead.leadStatus,
+          caseName: lead.caseName,
+          caseNo: lead.caseNo
+      });
+    
+      // Navigate to Lead Review Page
+      navigate("/LRInstruction", { state: { leadDetails: lead, caseDetails: selectedCase } });
     };
+
     const handleNavigation = (route) => {
       navigate(route); // Navigate to respective page
     };
@@ -93,8 +129,8 @@ export const Investigator = () => {
     const token = localStorage.getItem("token");
 
    useEffect(() => {
-     if (caseDetails?.id && caseDetails?.title) {
-       fetch(`http://localhost:5000/api/lead/case/${caseDetails.id}/${caseDetails.title}`, {
+     if (selectedCase?.caseNo && selectedCase?.caseName) {
+       fetch(`http://localhost:5000/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`, {
          headers: {
            Authorization: `Bearer ${token}`,
            'Content-Type': 'application/json'
@@ -155,7 +191,7 @@ export const Investigator = () => {
            console.error("❌ Error fetching leads:", error.message);
          });
      }
-   }, [caseDetails, token]);
+   }, [selectedCase, token]);
     
     // Handler to accept the assigned lead
     const handleAcceptAssignedLead = (lead) => {
@@ -207,12 +243,12 @@ export const Investigator = () => {
                   return;
               }
   
-              if (!caseDetails?.id || !caseDetails?.title) {
+              if (!selectedCase?.caseNo || !selectedCase?.caseName) {
                   console.error("⚠️ No valid case details provided.");
                   return;
               }
   
-              console.log("🔍 Fetching pending lead returns for exact case:", caseDetails);
+              console.log("🔍 Fetching pending lead returns for exact case:", selectedCase);
   
               // ✅ Fetch all lead returns assigned to or assigned by the officer
               const leadsResponse = await axios.get("http://localhost:5000/api/leadreturn/officer-leads", {
@@ -226,8 +262,8 @@ export const Investigator = () => {
               const pendingLeadReturns = leadsResponse.data.filter(lead => 
                   lead.assignedBy.lRStatus === "Pending"
                   &&
-                  lead.caseNo === caseDetails.id &&   // Match exact case number
-                  lead.caseName === caseDetails.title // Match exact case name
+                  lead.caseNo === selectedCase.caseNo &&   // Match exact case number
+                  lead.caseName === selectedCase.caseName // Match exact case name
               ).map(lead => ({
                   id: lead.leadNo,
                   description: lead.description,
@@ -247,7 +283,7 @@ export const Investigator = () => {
       };
   
       fetchPendingLeadReturns();
-  }, [signedInOfficer, caseDetails]);
+  }, [signedInOfficer, selectedCase]);
   
   
   // useEffect(() => {
@@ -550,13 +586,9 @@ export const Investigator = () => {
 
                    {/* Display Case Number and Name */}
                 <div className="case-header">
-                    {caseDetails ? (
                         <h1>
-                            Case: {caseDetails.id} |  {caseDetails.title}
+                            Case: {selectedCase.caseNo} |  {selectedCase.caseName}
                         </h1>
-                    ) : (
-                        <h1>Case: 12345 | Main Street Murder </h1>
-                    )}
                 </div>
                 {/* Content Area */}
                 <div className="content">
@@ -1109,7 +1141,7 @@ export const Investigator = () => {
             <td>
               <button
                 className= "view-btn1"
-                onClick={() => handleNavigation("/LeadInfo")}
+                onClick={() => handleLeadClick(lead)}
               >
                 View
               </button>

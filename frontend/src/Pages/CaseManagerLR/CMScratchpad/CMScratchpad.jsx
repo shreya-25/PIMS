@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar/Navbar";
 import "./CMScratchpad.css"; // Custom CSS file for Scratchpad styling
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const CMScratchpad = () => {
   const navigate = useNavigate();
@@ -96,6 +98,26 @@ export const CMScratchpad = () => {
          <div className="right-section">
         </div>
       </div>
+      <div className = "content-to-add">
+          {/* Scratchpad Form */}
+          <h4 className="evidence-form-h4">Add New Note</h4>
+        <div className="scratchpad-form">
+          <textarea
+            value={noteData.text}
+            onChange={(e) => handleInputChange("text", e.target.value)}
+            placeholder="Write your note here"
+          ></textarea>
+        </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="form-buttons">
+          <button className="save-btn1" onClick={handleAddNote}>Add Note</button>
+          {/* <button className="back-btn" onClick={() => handleNavigation("/LRVideos")}>Back</button>
+          <button className="next-btn" onClick={() => handleNavigation("/LRFinish")}>Next</button>
+          <button className="save-btn">Save</button>
+          <button className="cancel-btn">Cancel</button> */}
+        </div>
 
         {/* Scratchpad Table */}
         <table className="timeline-table">
@@ -117,25 +139,30 @@ export const CMScratchpad = () => {
           </tbody>
         </table>
 
-        {/* Scratchpad Form */}
-        <h4 className="evidence-form-h4">Add New Note</h4>
-        <div className="scratchpad-form">
-          <textarea
-            value={noteData.text}
-            onChange={(e) => handleInputChange("text", e.target.value)}
-            placeholder="Write your note here..."
-          ></textarea>
-        </div>
+        <div className = "content-to-add">
+     
+     <h4 className="return-form-h4"> Add Comment</h4>
+       <div className="return-form">
+         <textarea
+          //  value={returnData.results}
+          //  onChange={(e) => handleInputChange("results", e.target.value)}
+           placeholder="Enter comments"
+         ></textarea>
+       </div>
 
-        {/* Action Buttons */}
-        <div className="form-buttons-scratchpad">
-          <button className="add-btn" onClick={handleAddNote}>Add Note</button>
-          <button className="back-btn" onClick={() => handleNavigation("/LRVideos")}>Back</button>
-          <button className="next-btn" onClick={() => handleNavigation("/LRFinish")}>Next</button>
-          <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button>
-        </div>
+       <div className="form-buttons-return">
+         <button className="save-btn1">Add Comment</button>
+         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
+         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
+         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
+       </div>
+</div>
+
       </div>
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
+      />
     </div>
   );
 };

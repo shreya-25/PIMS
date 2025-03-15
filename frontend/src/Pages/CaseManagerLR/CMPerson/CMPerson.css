@@ -35,6 +35,7 @@
   justify-content: center;
   gap: 10px;
   margin: 20px;
+  margin-bottom: 60px;
 }
 
 button {
@@ -75,4 +76,14 @@ button:disabled {
 .bottom-buttons .next-btn,
 .bottom-buttons .save-btn {
   background-color: #8b0000;
+}
+
+.person-page-content
+{
+  min-height: 90vh;
+}
+
+.download-btn
+{
+  font-size: 20px;
 }

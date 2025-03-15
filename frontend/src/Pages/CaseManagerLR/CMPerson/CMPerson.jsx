@@ -1,20 +1,87 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
-
+import React, { useContext, useState, useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { CaseContext } from "../../CaseContext";
 import Navbar from '../../../components/Navbar/Navbar';
 import './CMPerson.css';
+import axios from "axios";
+import FootBar from '../../../components/FootBar/FootBar';
+import PersonModal from "../../../components/PersonModal/PersonModel";
+
 
 export const CMPerson = () => {
     const navigate = useNavigate(); // Initialize useNavigate hook
+      const location = useLocation();
+      
+    const { leadDetails, caseDetails } = location.state || {};
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState("");
+        const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+      
+    // State to control the modal
+        const [showPersonModal, setShowPersonModal] = useState(false);
+    
+        // We’ll store the leadReturn info we need for the modal
+        const [personModalData, setPersonModalData] = useState({
+          leadNo: "",
+          description: "",
+          caseNo: "",
+          caseName: "",
+          leadReturnId: "",
+        });
+
+         // Function to open the modal, passing the needed data
+    const openPersonModal = (leadNo, description, caseNo, caseName, leadReturnId) => {
+      setPersonModalData({ leadNo, description, caseNo, caseName, leadReturnId });
+      setShowPersonModal(true);
+    };
+  
+    // Function to close the modal
+    const closePersonModal = () => {
+      setShowPersonModal(false);
+    };
 
     const [persons, setPersons] = useState([
-      { dateEntered: "01/01/2024", name: "John Doe", phoneNo: "123-456-7890", address: "123 Main St, NY" },
-      { dateEntered: "01/05/2024", name: "Jane Smith", phoneNo: "987-654-3210", address: "456 Elm St, CA" },
-      { dateEntered: "01/10/2024", name: "Mike Johnson", phoneNo: "555-789-1234", address: "789 Pine St, TX" },
-      { dateEntered: "01/15/2024", name: "Emily Davis", phoneNo: "111-222-3333", address: "321 Maple St, FL" },
+      { leadReturnId: "", dateEntered: "", name: "", phoneNo: "", address: "" },
+      // { dateEntered: "01/05/2024", name: "Jane Smith", phoneNo: "987-654-3210", address: "456 Elm St, CA" },
+      // { dateEntered: "01/10/2024", name: "Mike Johnson", phoneNo: "555-789-1234", address: "789 Pine St, TX" },
+      // { dateEntered: "01/15/2024", name: "Emily Davis", phoneNo: "111-222-3333", address: "321 Maple St, FL" },
     ]);
   
     const [selectedRow, setSelectedRow] = useState(null);
+
+    useEffect(() => {
+      const fetchLeadData = async () => {
+        try {
+          if (selectedLead?.leadNo && selectedLead?.leadName && selectedLead?.caseNo && selectedLead?.caseName)  {
+            const token = localStorage.getItem("token");
+  
+            const response = await axios.get(`http://localhost:5000/api/lrperson/lrperson/${selectedLead.leadNo}/${encodeURIComponent(
+              selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+  
+            console.log("Fetched Lead RR1:", response.data);
+
+            setPersons(response.data.length > 0 ? response.data : []);
+
+  
+            // if (response.data.length > 0) {
+            //   setReturns({
+            //     ...response.data[0], 
+            //   });
+            // }
+            
+          }
+        } catch (err) {
+          console.error("Error fetching person data:", err);
+          setError("Failed to fetch lead data.");
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      fetchLeadData();
+    }, [leadDetails, caseDetails]);
   
     const handleAddPerson = () => {
       setPersons([...persons, { dateEntered: "", name: "", phoneNo: "", address: "" }]);
@@ -43,7 +110,16 @@ export const CMPerson = () => {
         setSelectedRow(null);
       }
     };
-  
+ 
+    const handleAccessChange = (index, newAccess) => {
+      setPersons((prevPersons) =>
+        prevPersons.map((person, i) =>
+          i === index ? { ...person, access: newAccess } : person
+        )
+      );
+    };
+    
+    
   
   const [leadData, setLeadData] = useState({
     leadNumber: '16',
@@ -99,6 +175,7 @@ export const CMPerson = () => {
   
   return (
     <div className="person-page">
+        <div className="person-page-content">
       {/* Navbar at the top */}
       <Navbar />
 
@@ -169,26 +246,64 @@ export const CMPerson = () => {
         <table className="timeline-table">
           <thead>
             <tr>
+            <th>Associated Return Id</th>
               <th>Date Entered</th>
               <th>Name</th>
               <th>Phone No</th>
               <th>Address</th>
+              <th>Access</th>
+              <th>Additional Details</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
-            {persons.map((person, index) => (
-              <tr
-                key={index}
-                className={selectedRow === index ? "selected-row" : ""}
-                onClick={() => setSelectedRow(index)}
-              >
-                <td>{person.dateEntered}</td>
-                <td>{person.name}</td>
-                <td>{person.phoneNo}</td>
-                <td>{person.address}</td>
-              </tr>
-            ))}
-          </tbody>
+  {persons.map((person, index) => (
+    <tr
+      key={index}
+      className={selectedRow === index ? "selected-row" : ""}
+      onClick={() => setSelectedRow(index)}
+    >
+      <td>{person.leadReturnId}</td>
+      <td>{person.enteredDate}</td>
+      <td>
+        {person.firstName
+          ? `${person.firstName || ''}, ${person.lastName || ''}`
+          : "N/A"}
+      </td>
+      <td>{person.cellNumber}</td>
+      <td>
+        {person.address
+          ? `${person.address.street1 || ''}, ${person.address.city || ''}, ${person.address.state || ''}, ${person.address.zipCode || ''}`
+          : "N/A"}
+      </td>
+      <td>
+        <select
+          value={person.access || "Case Manager"}
+          onChange={(e) => handleAccessChange(index, e.target.value)} // Pass index properly
+        >
+          <option value="Case Manager">Case Manager</option>
+          <option value="Everyone">Everyone</option>
+        </select>
+      </td>
+      <td>  <button className="download-btn" onClick={() =>
+                              openPersonModal(
+                                selectedLead.leadNo,
+                                selectedLead.description,
+                                selectedCase.caseNo,
+                                selectedCase.caseName,
+                                person.leadReturnId
+                              )
+                            }>View</button></td>
+                            <td>
+        <div className="lr-table-btn">
+          <button className="save-btn1" >Edit</button>
+          <button className="del-button" >Delete</button>
+        </div>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
         </table>
       </div>
 
@@ -201,12 +316,37 @@ export const CMPerson = () => {
 
       {/* Bottom Buttons */}
       <div className="bottom-buttons">
-      <button onClick={() => handleNavigation('/LRPerson1')} className="back-btn">Add Person</button>
-        <button className="back-btn"onClick={() => handleNavigation('/LRReturn')} >Back</button>
+      <button onClick={() => handleNavigation('/CMPerson1')} className="save-btn1">Add Person</button>
+        {/* <button className="back-btn"onClick={() => handleNavigation('/LRReturn')} >Back</button>
         <button className="next-btn"onClick={() => handleNavigation('/LRVehicle')} >Next</button>
         <button className="save-btn">Save</button>
-        <button className="cancel-btn">Cancel</button>
+        <button className="cancel-btn">Cancel</button> */}
       </div>
+
+      <div className = "content-to-add">
+     
+     <h4 className="return-form-h4"> Add Comment</h4>
+       <div className="return-form">
+         <textarea
+          //  value={returnData.results}
+          //  onChange={(e) => handleInputChange("results", e.target.value)}
+           placeholder="Enter comments"
+         ></textarea>
+       </div>
+
+       <div className="form-buttons-return">
+         <button className="save-btn1">Add Comment</button>
+         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
+         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
+         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
+       </div>
+</div>
+
+      </div>
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LRVehicle")} // Takes user to CM Return page
+      />
     </div>
   );
 };

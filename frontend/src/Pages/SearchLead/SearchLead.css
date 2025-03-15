@@ -32,6 +32,7 @@
   .search-table td {
     padding: 12px;
     text-align: center;
+    font-size: 20px;
   }
   
   .search-table th {
@@ -42,6 +43,7 @@
   .search-table input {
     width: 90%;
     padding: 10px;
+    font-size: 20px;
   }
   
   .clear-btn {
@@ -108,7 +110,7 @@
     background-color: #874b4b;
     color: white;
     padding: 10px 20px;
-    font-size: 16px;
+    font-size: 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -144,6 +146,7 @@
     padding: 15px;
     text-align: left;
     border: 1px solid #ddd;
+    font-size: 20px;
   }
   
   .results-table th {
@@ -171,11 +174,12 @@
     padding: 12px 24px;
     background-color: #6a3a3a;
     color: white;
-    font-size: 14px;
+    font-size: 20px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    margin-left: 90%;
+    margin-left: 87%;
+    width: 12%;
     
   }
   

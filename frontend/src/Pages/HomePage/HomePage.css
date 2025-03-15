@@ -57,24 +57,57 @@
   align-items: center;
 }
 
-.above-sec {
+.above-sec-MP {
   height: 20%;
-  width:100%;
+  width:70%;
   min-height: 150px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-left: 50px;
+ 
 }
-
-.top-controls {
-  margin-top: -30px;
-}
-
 .top-controlsMP {
-  width: 30%;
-  margin-top: -5%;
-  
+  padding: 1%;
+  width: 25%;
+  height: 20%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 20px;
 }
+
+.search-container 
+{
+  width: 100%;
+  height: 20%;
+}
+/* .slidebartopcontrolMP
+{
+  width: 80%;
+  min-height: 20%;
+} */
+
+.custom-add-case-btn1 {
+  background-color: #a05252; 
+  color: white; 
+  border: none;
+  /* padding: 10px 20px;
+  border-radius: 5px; */
+  /* font-size: 20px; 
+  font-weight: bold;
+  cursor: pointer; */
+  /* transition: background-color 0.3s ease;  */
+  /* position: absolute; */
+  /* width: 30%;
+ margin-left: 50%; */
+}
+
+.add-case-button:hover {
+  background-color: rgba(137, 51, 51, 0.705); /* Darker red on hover */
+}
+
 
 .police-logo {
   width: 250px; /* Increased size for a larger logo */
@@ -167,6 +200,17 @@
   margin-top: 10%;
   width: 80%;
   margin: 0 auto; /* Centers horizontally */
+}
+
+.icon-image
+{
+  height: 20px;
+  width: 20px;
+}
+.filter-sort-icons
+{
+  display: flex;
+  gap: 10px;
 }
 
 /* @media (max-width: 600px) {
@@ -1384,22 +1428,3 @@
     color: white;
   }
 } */
-
-.custom-add-case-btn1 {
-  background-color: #a05252; /* Red color */
-  color: white; /* White text */
-  border: none;
-  padding: 10px 20px; /* Increased padding for better visibility */
-  border-radius: 5px; /* Rounded corners */
-  font-size: 20px; /* Adjusted font size */
-  font-weight: bold; /* Bold text */
-  cursor: pointer;
-  transition: background-color 0.3s ease; /* Smooth hover transition */
-  position: absolute;
-  width: 10%;
- margin-left: 480px;
-}
-
-.add-case-button:hover {
-  background-color: rgba(137, 51, 51, 0.705); /* Darker red on hover */
-}

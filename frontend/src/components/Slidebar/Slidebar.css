@@ -97,21 +97,20 @@ select.input-field {
 }
 
 
-.add-case-button {
-  background-color: #7a262f; /* Red color */
-  color: white; /* White text */
+/* .add-case-button {
+  background-color: #7a262f; 
+  color: white;
   border: none;
-  padding: 10px 20px; /* Increased padding for better visibility */
-  border-radius: 5px; /* Rounded corners */
-  font-size: 20px; /* Adjusted font size */
-  font-weight: bold; /* Bold text */
+  padding: 10px 20px; 
+  border-radius: 5px; 
+  font-size: 20px;
+  font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.3s ease; /* Smooth hover transition */
+  transition: background-color 0.3s ease; 
   position: absolute;
   width: 10%;
-  margin-left: 75%;
   margin-top: -3%;
-}
+} */
 
 .add-case-button:hover {
   background-color: rgba(137, 51, 51, 0.705); /* Darker red on hover */

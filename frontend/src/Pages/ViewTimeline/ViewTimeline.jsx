@@ -148,7 +148,22 @@ const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   return (
     <div className="timeline-container">
       <Navbar />
-      <h2 className="title">CRIME INVESTIGATION TIMELINE</h2>
+      {/* <h2 className="title">CRIME INVESTIGATION TIMELINE</h2> */}
+      
+      <div className="main-content-ll">
+        <div className="left-section">
+          <img
+            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
+            alt="Police Department Logo"
+            className="police-logo-cl"
+          />
+        </div>
+
+
+        <div className="center-sectionll">
+          <h2 className="title1">CRIME INVESTIGATION TIMELINE</h2>
+        </div>
+      </div>
 
       <div className="timeline-section">
         <div className="timeline-horizontal">

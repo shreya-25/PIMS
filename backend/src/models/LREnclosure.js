@@ -1,0 +1,37 @@
+const mongoose = require("mongoose");
+const { Schema } = mongoose;
+
+const lrEnclosureSchema = new mongoose.Schema(
+    {
+        leadNo: { type: Number, required: true },
+        description: { type: String, required: true },
+        assignedTo: {
+            assignees: [{ type: String }],
+            lRStatus: { 
+                type: String, 
+                enum: ["Assigned", "Pending", "Approved", "Returned", "Completed", "Submitted"], 
+                default: "Assigned"
+            }
+        },
+        assignedBy: {
+            assignee: { type: String },
+            lRStatus: { 
+                type: String, 
+                enum: ["Assigned", "Pending"], 
+                default: "Assigned" 
+            }
+        },
+        enteredBy: { type: String, required: true },
+        caseName: { type: String, required: true },
+        caseNo: { type: Number, required: true },
+        leadReturnId: { type: Number, required: true },
+        enteredDate: { type: Date, required: true },
+        type: { type: String },
+        enclosureDescription: { type: String }, 
+        fileId: { type: mongoose.Schema.Types.ObjectId, ref: "uploads" },
+       
+    },
+    { timestamps: true } // Automatically adds createdAt and updatedAt fields
+);
+
+module.exports = mongoose.model("LREnclosure", lrEnclosureSchema, "LREnclosures");

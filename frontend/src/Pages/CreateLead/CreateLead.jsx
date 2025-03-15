@@ -255,8 +255,10 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
 
 
         {/* Center Section */}
-        <div className="center-section">
-          <h2 className="title">LEAD INSTRUCTIONS</h2>
+        <div className="center-section-cl">
+        <div className="case-header-cl">
+          <h2 >LEAD INSTRUCTIONS</h2>
+          </div>
         </div>
 
 
@@ -332,24 +334,9 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
 
 
       {/* Bottom Content */}
-      <div className="bottom-content">
+      <div className="bottom-content-cl">
         <table className="details-table">
           <tbody>
-          <tr>
-              <td>Case No:
-
-              </td>
-              <td>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={caseDetails?.id
-                     || '65734'} // Display selected case name or an empty string
-                  onChange={(e) => handleInputChange('caseName', e.target.value)} // Update 'caseName' in leadData
-                  placeholder="Enter Case No"
-    />
-              </td>
-            </tr>
             <tr>
               <td>Case Name:</td>
               <td>
@@ -364,15 +351,26 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
               </td>
             </tr>
             <tr>
-              <td>Lead Summary:</td>
+              <td>Lead Log Summary:</td>
               <td>
                 <input
                   type="text"
                   className="input-field"
                   value={leadData.leadSummary}
                   onChange={(e) => handleInputChange('leadSummary', e.target.value)}
-                  placeholder="Enter Lead Summary"
+                  placeholder=""
                 />
+              </td>
+            </tr>
+            <tr>
+              <td> Lead Instruction:</td>
+              <td>
+                <textarea
+                  className="textarea-field-cl"
+                  value={leadData.leadDescription}
+                  onChange={(e) => handleInputChange('leadDescription', e.target.value)}
+                  placeholder=""
+                ></textarea>
               </td>
             </tr>
             <tr>
@@ -383,7 +381,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
                     className="input-field"
                     value={leadData.leadOrigin}
                     onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
-                    placeholder="Enter Lead Origin"
+                    placeholder=""
                   />
                 </td>
               </tr>
@@ -572,19 +570,8 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
                   className="input-field"
                   value={leadData.assignedBy}
                   onChange={(e) => handleInputChange('assignedBy', e.target.value)}
-                  placeholder="Assigned By"
+                  placeholder=""
                 />
-              </td>
-            </tr>
-            <tr>
-              <td>Lead Description:</td>
-              <td>
-                <textarea
-                  className="textarea-field-cl"
-                  value={leadData.leadDescription}
-                  onChange={(e) => handleInputChange('leadDescription', e.target.value)}
-                  placeholder="Enter Lead Description"
-                ></textarea>
               </td>
             </tr>
           </tbody>

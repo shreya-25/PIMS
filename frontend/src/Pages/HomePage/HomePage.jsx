@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import "./HomePage.css";
+import { CaseContext } from "../CaseContext";
 import Navbar from "../../components/Navbar/Navbar";
 import Searchbar from "../../components/Searchbar/Searchbar";
 import NotificationCard from "../../components/NotificationCard/NotificationCard1";
@@ -10,9 +11,15 @@ import { SlideBar } from "../../components/Slidebar/Slidebar";
 import { SideBar } from "../../components/Sidebar/Sidebar";
 import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 import { useNavigate } from "react-router-dom";
+import { useContext } from "react";
+// import { FaFilter, FaSort } from "react-icons/fa";
+import Pagination from "../../components/Pagination/Pagination";
+
+
 
 
 export const HomePage = () => {
+
   const [activeTab, setActiveTab] = useState("cases"); // Default tab
   const [sortField, setSortField] = useState(""); // Sorting field
   const [filterText, setFilterText] = useState(""); // Filter text
@@ -25,9 +32,22 @@ const [flagsFilter, setFlagsFilter] = useState("");
 const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
 const [newInvestigator, setNewInvestigator] = useState("");
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(50);
+    const totalPages = 10; // Change based on your data
+    const totalEntries = 100;
+  
+
 
 const [showCaseSelector, setShowCaseSelector] = useState(false);
   const [navigateTo, setNavigateTo] = useState(""); // Target page
+
+  const { setSelectedCase, setToken } = useContext(CaseContext);
+
+  const [showFilter, setShowFilter] = useState(false);
+const [showSort, setShowSort] = useState(false);
+
+
 
 
   const handleShowCaseSelector = (targetPage) => {
@@ -103,13 +123,25 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
   // Handler to view the assigned lead details (can be updated to show a modal or navigate)
 const handleViewAssignedLead = (lead) => {
 };
+
 const handleCaseClick = (caseDetails) => {
+ 
+
+  // Save case details in context
+  setSelectedCase({
+    caseNo: caseDetails.id,
+    caseName: caseDetails.title,
+    role: caseDetails.role
+  });
+
+  // Navigate to the appropriate page based on role
   if (caseDetails.role === "Investigator") {
     navigate("/Investigator", { state: { caseDetails } });
   } else if (caseDetails.role === "Case Manager") {
     navigate("/CasePageManager", { state: { caseDetails } });
   }
 };
+
 
 
 const handleLRClick = (lead) => {
@@ -629,7 +661,7 @@ const addCase = (newCase) => {
           setActiveTab={setActiveTab}
           onShowCaseSelector={handleShowCaseSelector} // Pass handler
         /> */}
-         <div className="above-sec">
+         <div className="above-sec-MP">
         <div className="logo-sec">
           <img
             src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
@@ -638,17 +670,24 @@ const addCase = (newCase) => {
           />
           <h1 className="main-page-heading"> PIMS</h1>
         </div>
-        <div className="top-controlsMP">
-            <Searchbar
-              placeholder="Search Cases"
-              onSearch={(query) => console.log("Search query:", query)}
-            />
-            <SlideBar
-            onAddCase={(newCase) => addCase(newCase)}
-            buttonClass="custom-add-case-btn1"
-          />
-          </div>
         </div>
+        <div className="top-controlsMP">
+            <div className="search-container">
+                    <i className="fa-solid fa-magnifying-glass"></i>
+                    <input
+                      type="text"
+                      className="search-input"
+                      placeholder="Search Cases"
+                      // onChange={(e) => onSearch && onSearch(e.target.value)}
+                    />
+              </div>
+              <div className="slidebartopcontrolMP">
+              <SlideBar
+              onAddCase={(newCase) => addCase(newCase)}
+              buttonClass="custom-add-case-btn1"
+            />
+            </div>
+          </div>
         <div className="content-container">
           {/* {showCaseSelector && (
             <CaseSelector
@@ -691,22 +730,59 @@ const addCase = (newCase) => {
         <div className="content-section">
         {activeTab === "cases" && (
             <div className="case-list">
+                  <div className="filter-sort-icons">
+                    <button onClick={() => setShowFilter(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                        alt="Filter Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                  </div>
 
-<Filter filtersConfig={filtersConfigOC} onApply={handleFilterApply} />
-<Sort columns={["Lead Number", "Lead Name","Priority", "Flag"]} onApplySort={handleSort} />
+      {/* Conditionally render the Filter component */}
+      {showFilter && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
+              &times;
+            </button>
+            <Filter filtersConfig={filtersConfigOC} onApply={handleFilterApply} />
+          </div>
+        </div>
+      )}
 
+      {/* Conditionally render the Sort component */}
+      {showSort && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
+              &times;
+            </button>
+            <Sort columns={["Lead Number", "Lead Name", "Priority", "Flag"]} onApplySort={handleSort} />
+          </div>
+          </div>
+      )}
 
         <table className="leads-table">
               <thead>
                 <tr>
-                  <th>Case No.</th>
+                  <th style={{ width: "10%" }}>Case No.</th>
                   <th>Case Name</th>
-                  <th>Role</th>
-                  <th></th>
+                  <th style={{ width: "12%" }}>Role</th>
+                  <th style={{ width: "10%" }}></th>
                 </tr>
               </thead>
               <tbody>
-                {cases.map((c) => (
+                {cases.length > 0 ? (
+                  cases.map((c) => (
                     <tr key={c.id}>
                       <td>{c.id}</td>
                       <td>{c.title}</td>
@@ -720,7 +796,13 @@ const addCase = (newCase) => {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center' }}>
+                      No Cases Available
+                    </td>
+                  </tr>)}
               </tbody>
             </table>
             {/* {cases.map((c) => (
@@ -759,6 +841,13 @@ const addCase = (newCase) => {
                 </div>
               </div>
             ))} */}
+               <Pagination
+  currentPage={currentPage}
+  totalEntries={totalEntries}  // Automatically calculate total entries
+  onPageChange={setCurrentPage} // Update current page state
+  pageSize={pageSize}
+  onPageSizeChange={setPageSize} // Update page size state
+/>
           </div>
          
 )}
@@ -996,8 +1085,47 @@ const addCase = (newCase) => {
 {activeTab === "pendingLeads" && (
   <div className="pending-leads">
 
-    <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
-          <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+<div className="filter-sort-icons">
+                    <button onClick={() => setShowFilter(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                        alt="Filter Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                  </div>
+
+      {/* Conditionally render the Filter component */}
+      {showFilter && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
+              &times;
+            </button>
+            <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+          </div>
+        </div>
+      )}
+
+      {/* Conditionally render the Sort component */}
+      {showSort && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
+              &times;
+            </button>
+            <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+            </div>
+          </div>
+      )}
+
     {/* <button
       onClick={() => setFilterSortPopupVisible(true)}
       className="filter-sort-button"
@@ -1151,16 +1279,17 @@ const addCase = (newCase) => {
     <table className="leads-table">
       <thead>
         <tr>
-          <th>Lead No.</th>
+          <th style={{ width: "10%" }}>Lead No.</th>
           <th>Lead Name</th>
           <th>Assigned Officers</th>
           <th>Case Name</th>
-          <th>Due Date</th>
-          <th></th>
+          <th style={{ width: "10%" }}>Due Date</th>
+          <th style={{ width: "10%" }}></th>
         </tr>
       </thead>
       <tbody>
-        {leads.pendingLeads
+        {leads.length > 0 ? (
+          leads.pendingLeads
           .filter(
             (lead) =>
               lead.description
@@ -1187,7 +1316,13 @@ const addCase = (newCase) => {
             <tr key={lead.id}>
               <td>{lead.id}</td>
               <td>{lead.description}</td>
-              <td>{lead.assignedOfficers.join(", ")}</td>
+              {/* <td>{lead.assignedOfficers.join(", ")}</td> */}
+              <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
+                {/* {lead.assignedOfficers.join(", ")} */}
+                {lead.assignedOfficers.map((officer, index) => (
+                  <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
+                ))}
+                </td>
               <td>{lead.caseName }</td>
               <td>{lead.dueDate}</td>
               <td>
@@ -1198,27 +1333,85 @@ const addCase = (newCase) => {
                 </button>
               </td>
             </tr>
-          ))}
+          ))
+        ) : (
+          <tr>
+            <td colSpan="6" style={{ textAlign: 'center' }}>
+              No Pending Leads Available
+            </td>
+          </tr>
+        )}
       </tbody>
     </table>
+
+    <Pagination
+  currentPage={currentPage}
+  totalEntries={totalEntries}  // Automatically calculate total entries
+  onPageChange={setCurrentPage} // Update current page state
+  pageSize={pageSize}
+  onPageSizeChange={setPageSize} // Update page size state
+/>
   </div>
 )}
 
 {activeTab === "pendingLeadReturns" && (
   <div className="pending-lead-returns">
-    <Filter filtersConfig={filtersConfigPLR} onApply={handleFilterApply} />
-    <Sort columns={["Lead Number", "Lead Name","Priority", "Flag"]} onApplySort={handleSort} />
+
+    <div className="filter-sort-icons">
+                    <button onClick={() => setShowFilter(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                        alt="Filter Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                  </div>
+
+      {/* Conditionally render the Filter component */}
+      {showFilter && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
+              &times;
+            </button>
+            <Filter filtersConfig={filtersConfigPLR} onApply={handleFilterApply} />
+          </div>
+        </div>
+      )}
+
+      {/* Conditionally render the Sort component */}
+      {showSort && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
+              &times;
+            </button>
+            <Sort columns={["Lead Number", "Lead Name","Priority", "Flag"]} onApplySort={handleSort} />
+            </div>
+          </div>
+      )}
+
+
+
     <table className="leads-table">
               <thead>
                 <tr>
-                  <th>Lead No.</th>
+                  <th style={{ width: "10%" }}>Lead No.</th>
                   <th>Lead Name</th>
-                  <th>Case Name</th>
-                  <th></th>
+                  <th style={{ width: "20%" }}>Case Name</th>
+                  <th style={{ width: "10%" }}></th>
                 </tr>
               </thead>
               <tbody>
-                {leads.pendingLeadReturns.map((lead) => (
+                {leads.pendingLeadReturns.length > 0 ? (
+                leads.pendingLeadReturns.map((lead) => (
                     <tr key={lead.id}>
                       <td>{lead.id}</td>
                       <td>{lead.description}</td>
@@ -1234,9 +1427,23 @@ const addCase = (newCase) => {
                             </button>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="7" style={{ textAlign: 'center' }}>
+                      No Pending Lead Returns Available
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
+            <Pagination
+  currentPage={currentPage}
+  totalEntries={totalEntries}  // Automatically calculate total entries
+  onPageChange={setCurrentPage} // Update current page state
+  pageSize={pageSize}
+  onPageSizeChange={setPageSize} // Update page size state
+/>
   </div>
 )}  
 

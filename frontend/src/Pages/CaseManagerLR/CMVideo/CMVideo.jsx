@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar/Navbar";
 import "./CMVideo.css"; // Custom CSS file for Video styling
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const CMVideo = () => {
   const navigate = useNavigate();
@@ -113,28 +115,9 @@ export const CMVideo = () => {
         </div>
       </div>
 
-        {/* Videos Table */}
-        <table className="timeline-table">
-          <thead>
-            <tr>
-              <th>Date Entered</th>
-              <th>Date Video Recorded</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            {videos.map((video, index) => (
-              <tr key={index}>
-                <td>{video.dateEntered}</td>
-                <td>{video.dateVideoRecorded}</td>
-                <td>{video.description}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-         {/* Video Form */}
-         <h4 className="evidence-form-h4">Enter Video Details</h4>
+          {/* Video Form */}
+          <div className = "content-to-add">
+          <h4 className="evidence-form-h4">Enter Video Details</h4>
         <div className="video-form">
           <div className="form-row-video">
             <label className="evidence-head">Date Video Recorded:</label>
@@ -174,16 +157,62 @@ export const CMVideo = () => {
             ))}
           </div>
         </div>
+        </div>
 
         {/* Action Buttons */}
-        <div className="form-buttons-video">
-          <button className="add-btn" onClick={handleAddVideo}>Add Video</button>
-          <button className="back-btn" onClick={() => handleNavigation("/LRAudio")}>Back</button>
+        <div className="form-buttons">
+          <button className="save-btn1" onClick={handleAddVideo}>Add Video</button>
+          {/* <button className="back-btn" onClick={() => handleNavigation("/LRAudio")}>Back</button>
           <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
           <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button>
+          <button className="cancel-btn">Cancel</button> */}
         </div>
-      </div>
+      
+
+        {/* Videos Table */}
+        <table className="timeline-table">
+          <thead>
+            <tr>
+              <th>Date Entered</th>
+              <th>Date Video Recorded</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {videos.map((video, index) => (
+              <tr key={index}>
+                <td>{video.dateEntered}</td>
+                <td>{video.dateVideoRecorded}</td>
+                <td>{video.description}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className = "content-to-add">
+     
+     <h4 className="return-form-h4"> Add Comment</h4>
+       <div className="return-form">
+         <textarea
+          //  value={returnData.results}
+          //  onChange={(e) => handleInputChange("results", e.target.value)}
+           placeholder="Enter comments"
+         ></textarea>
+       </div>
+
+       <div className="form-buttons-return">
+         <button className="save-btn1">Add Comment</button>
+         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
+         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
+         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
+       </div>
+</div>
+
+     </div>
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
+      />
     </div>
   );
 };
