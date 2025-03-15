@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect} from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import Searchbar from '../../components/Searchbar/Searchbar';
 import Filter from "../../components/Filter/Filter";
@@ -7,6 +7,9 @@ import Button from '../../components/Button/Button';
 import './CasePageManager.css'; // Custom CSS file for styling
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
+import { CaseContext } from "../CaseContext";
+import Pagination from "../../components/Pagination/Pagination";
+
 
 export const CasePageManager = () => {
     const navigate = useNavigate();
@@ -23,21 +26,49 @@ export const CasePageManager = () => {
   const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
   const [leadLogCount, setLeadLogCount] = useState(0);
 
+    const [showFilter, setShowFilter] = useState(false);
+  const [showSort, setShowSort] = useState(false);
+  
+
+  const { selectedCase, setSelectedLead } = useContext(CaseContext);
+
+
     const [activeTab, setActiveTab] = useState("allLeads"); // Default to All Leads tab
     const handleViewAssignedLead = (lead) => {
     };
     const handleCaseClick = (caseDetails) => {
       navigate("/CasePageManager", { state: { caseDetails } }); // Pass case details via state
     };
-    const handleLRClick = (lead) => {
-      navigate("/CMInstruction", { state: {caseDetails, leadDetails: lead } });
-    };
+  
     const handleNavigation = (route) => {
       navigate(route); // Navigate to respective page
     };
 
+    const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const totalPages = 10; // Change based on your data
+  const totalEntries = 100;
+
     const signedInOfficer = localStorage.getItem("loggedInUser");
 
+
+    const handleLRClick = (lead) => {
+      setSelectedLead({
+          leadNo: lead.id,
+          incidentNo: lead.incidentNo,
+          leadName: lead.description,
+          dueDate: lead.dueDate || "N/A",
+          priority: lead.priority || "Medium",
+          flags: lead.flags || [],
+          assignedOfficers: lead.assignedOfficers || [],
+          leadStatus: lead.leadStatus,
+          caseName: lead.caseName,
+          caseNo: lead.caseNo
+      });
+    
+      // Navigate to Lead Review Page
+      navigate("/CMInstruction", { state: { leadDetails: lead, caseDetails: selectedCase } });
+    };
 
     
     // Handler to accept the assigned lead
@@ -84,41 +115,30 @@ export const CasePageManager = () => {
     const isMainStreetThreat = caseDetails?.title === "Main Street Murder";
     
       
-    const [leads, setLeads] = useState(isMainStreetThreat ? {
+    const [leads, setLeads] = useState({
       assignedLeads: [],
       pendingLeads: [],
       pendingLeadReturns: [],
       allLeads: [],
-  } : {
-      assignedLeads: [
-          // { id: 1, description: "Some details about the theft incident ", dueDate: "12/25/2024",
-          //   priority: "High", flags: ["Important"], assignedOfficers: ["Officer 1", "Officer 3"] },
-          // { id: 2, description: "Collect Audio Recording from Dispatcher", dueDate: "12/31/2024",
-          //   priority: "Medium", flags: [], assignedOfficers: ["Officer 2"] },
-          // { id: 3, description: "Interview John", dueDate: "12/29/2024",
-          //   priority: "Low", flags: [], assignedOfficers: ["Officer 4"] },
-      ],
-      pendingLeads: [
-          // { id: 4, description: "Interview Witness", dueDate: "12/26/2024",
-          //   priority: "High", flags: ["Important"], assignedOfficers: ["Officer 1", "Officer 3"] },
-          // { id: 6, description: "Interview Neighbours", dueDate: "12/23/2024",
-          //   priority: "Medium", flags: [], assignedOfficers: ["Officer 2"] },
-          // { id: 7, description: "Collect Evidence", dueDate: "12/22/2024",
-          //   priority: "Low", flags: [], assignedOfficers: ["Officer 4"] },
-      ],
-      pendingLeadReturns: [
-          // { id: 5, description: "Submit Crime Scene Photos" },
-          // { id: 8, description: "Collect Evidence", dueDate: "12/30/2024" },
-          // { id: 9, description: "Interview Witness", dueDate: "12/31/2024" },
-      ],
-      allLeads: [
-          // { id: 1, description: "Collect Audio Records from Dispatcher", status: "Assigned" },
-          // { id: 2, description: "Interview Mr. John", status: "Assigned" },
-          // { id: 3, description: "Collect Evidence from 63 Mudray Street", status: "Completed" },
-          // { id: 4, description: "Interview Witness", status: "Pending" },
-          // { id: 5, description: "Submit Crime Scene Photos", status: "Completed" },
-      ],
+ } );
+
+ const handleLeadClick = (lead) => {
+  setSelectedLead({
+      leadNo: lead.leadNo,
+      incidentNo: lead.incidentNo,
+      leadName: lead.description,
+      dueDate: lead.dueDate || "N/A",
+      priority: lead.priority || "Medium",
+      flags: lead.flags || [],
+      assignedOfficers: lead.assignedOfficers || [],
+      leadStatus: lead.leadStatus,
+      caseName: lead.caseName,
+      caseNo: lead.caseNo
   });
+
+  // Navigate to Lead Review Page
+  navigate("/leadReview", { state: { leadDetails: lead, caseDetails: selectedCase } });
+};
 
   const token = localStorage.getItem('token') || '';
 
@@ -155,8 +175,8 @@ export const CasePageManager = () => {
   // }, [caseDetails, token]);
 
   useEffect(() => {
-    if (caseDetails?.id && caseDetails?.title) {
-      fetch(`http://localhost:5000/api/lead/case/${caseDetails.id}/${caseDetails.title}`, {
+    if (selectedCase?.caseNo && selectedCase?.caseName) {
+      fetch(`http://localhost:5000/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -256,7 +276,7 @@ export const CasePageManager = () => {
                 return;
             }
 
-            if (!caseDetails?.id || !caseDetails?.title) {
+            if (!selectedCase?.caseNo || !selectedCase?.caseName) {
                 console.error("⚠️ No valid case details provided.");
                 return;
             }
@@ -275,8 +295,8 @@ export const CasePageManager = () => {
             const pendingLeadReturns = leadsResponse.data.filter(lead => 
                 lead.assignedBy.lRStatus === "Pending"
                 &&
-                lead.caseNo === caseDetails.id &&   // Match exact case number
-                lead.caseName === caseDetails.title // Match exact case name
+                lead.caseNo === selectedCase.caseNo &&   // Match exact case number
+                lead.caseName === selectedCase.caseName // Match exact case name
             ).map(lead => ({
                 id: lead.leadNo,
                 description: lead.description,
@@ -296,7 +316,7 @@ export const CasePageManager = () => {
     };
 
     fetchPendingLeadReturns();
-}, [signedInOfficer, caseDetails]);
+}, [signedInOfficer, selectedCase]);
 
 
 // useEffect(() => {
@@ -366,6 +386,8 @@ export const CasePageManager = () => {
 // }, [signedInOfficer, caseDetails]);
 
 
+const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
 
   
 
@@ -433,9 +455,9 @@ export const CasePageManager = () => {
    useEffect(() => {
     const fetchCaseSummary = async () => {
       try {
-        if (caseDetails && caseDetails.id) {
+        if (selectedCase && selectedCase.caseNo) {
           const token = localStorage.getItem("token");
-          const response = await axios.get(`http://localhost:5000/api/cases/summary/${caseDetails.id}`, {
+          const response = await axios.get(`http://localhost:5000/api/cases/summary/${selectedCase.caseNo}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           // Update case summary if data is received
@@ -450,7 +472,7 @@ export const CasePageManager = () => {
     };
 
     fetchCaseSummary();
-  }, [caseDetails]);
+  }, [selectedCase]);
 
   
 
@@ -575,6 +597,15 @@ export const CasePageManager = () => {
         { category: "Electronics", price: 200 },
         { category: "Home", price: 150 },
       ];
+
+      const onShowCaseSelector = (route) => {
+        navigate(route, { state: { caseDetails } });
+    };
+
+    useEffect(() => {
+      // Scroll to the top when the component mounts
+      window.scrollTo(0, 0);
+    }, []); // Empty dependency array ensures it runs only once on mount
       
 
     return (
@@ -587,9 +618,28 @@ export const CasePageManager = () => {
                 {/* Sidebar */}
                 <div className="sideitem">
                     <ul className="sidebar-list">
-                    <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
+                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
+                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
+                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
+                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
+                        <li className="sidebar-item">Generate Report</li>
+                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
 
-                    {["assignedLeads", "pendingLeads", "pendingLeadReturns", "allLeads"].map((tab) => (
+                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
+
+       
+                                 {/* Lead Management Dropdown */}
+                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            {["assignedLeads", "pendingLeads", "pendingLeadReturns", "allLeads"].map((tab) => (
   <li
     key={tab}
     className={`sidebar-item ${activeTab === tab ? "active" : ""}`}
@@ -611,39 +661,66 @@ export const CasePageManager = () => {
           </div>
   </li>
 ))}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
 
-                        {/* <li className="sidebar-item" onClick={() => handleTabClick("assignedLeads")}>My Assigned Leads {leads.assignedLeads.length}</li>
-                        <li className="sidebar-item" onClick={() => handleTabClick("pendingLeads")}>My Pending Leads {leads.pendingLeads.length}</li>
-                        <li className="sidebar-item"onClick={() => handleTabClick("pendingLeadReturns")}>My Pending Lead Returns {leads.pendingLeadReturns.length}</li>
-                        <li className="sidebar-item" onClick={() => handleTabClick("allLeads")}>Total Generated Leads {leads.allLeads.length}</li> */}
-                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
-                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
-                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
-                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
-                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
-                        <li className="sidebar-item">Generate Report</li>
-                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
-                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+                            {/* Case Information Dropdown */}
+        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▼" : "▲" }
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Case Scratchpad
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
 
-                        <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+
                     </ul>
                 </div>
                 <div className="left-content">
 
                    {/* Display Case Number and Name */}
                 <div className="case-header">
-                    {caseDetails ? (
+                    {
                         <h1>
-                          Case: {caseDetails?.id || "N/A"} | {caseDetails?.title || "Unknown Case"}
+                          Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"}
                         </h1>
-                    ) : (
-                        <h1>Case: 12345 | Main Street Murder </h1>
-                    )}
+                    }
                 </div>
-                <div className = "case-summary">
+                {/* <div className = "case-summary">
                 <label className="input-label">Case Summary</label>
                         <textarea
                             className="textarea-field"
@@ -653,33 +730,28 @@ export const CasePageManager = () => {
                         ></textarea>
 
                          <button className="save-btn1" onClick={handleSaveClick}>Save</button>
-                 {/* Buttons: Show "Edit" when not editing, "Save" when editing */}
-                 {/* {!isEditing ? (
-                            <button className="edit-btn1" onClick={handleEditClick}>Edit</button>
-                        ) : (
-                            <button className="save-btn1" onClick={handleSaveClick}>Save</button>
-                        )} */}
-                </div>
+               
+                </div> */}
                 {/* Content Area */}
                 <div className="content">
-                  <div className='searchContainer'>
+                  {/* <div className='searchContainer'>
                     <Searchbar placeholder="Search Lead" />
-                    </div>
-                    <Button
+                    </div> */}
+                    {/* <Button
                         label="Generate Lead"
                         className="generate-lead-btn1"
                         onClick={handleGenerateLead}
-                    />
+                    /> */}
                    
                     {/* Tab Navigation */}
 
                     <div className="stats-bar">
-                        <span
+                        {/* <span
                             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("assignedLeads")}
                         >
                             Assigned Leads: {isMainStreetThreat ? 0 : leads.assignedLeads.length}
-                        </span>
+                        </span> */}
                         <span
                             className={`hoverable ${activeTab === "pendingLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("pendingLeads")}
@@ -713,9 +785,46 @@ export const CasePageManager = () => {
       Open Filter & Sort
     </button> */}
 
-<Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
-<Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+<div className="filter-sort-icons">
+                    <button onClick={() => setShowFilter(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                        alt="Filter Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                  </div>
 
+      {/* Conditionally render the Filter component */}
+      {showFilter && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
+              &times;
+            </button>
+            <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+            </div>
+        </div>
+      )}
+
+      {/* Conditionally render the Sort component */}
+      {showSort && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
+              &times;
+            </button>
+            <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+            </div>
+          </div>
+      )}
 
     {filterSortPopupVisible && (
       <div className="popup-overlay">
@@ -936,14 +1045,54 @@ export const CasePageManager = () => {
 {activeTab === "pendingLeads" && (
   <div className="pending-leads">
 
-<Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
-<Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
     {/* <button
       onClick={() => setFilterSortPopupVisible(true)}
       className="filter-sort-button"
     >
       Open Filter & Sort
     </button> */}
+
+<div className="filter-sort-icons">
+                    <button onClick={() => setShowFilter(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                        alt="Filter Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                  </div>
+
+      {/* Conditionally render the Filter component */}
+      {showFilter && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
+              &times;
+            </button>
+            <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+            </div>
+        </div>
+      )}
+
+      {/* Conditionally render the Sort component */}
+      {showSort && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
+              &times;
+            </button>
+            <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+            </div>
+          </div>
+      )}
+
 
 
     {filterSortPopupVisible && (
@@ -1087,18 +1236,17 @@ export const CasePageManager = () => {
       </div>
     )}
 
-
     <table className="leads-table">
       <thead>
         <tr>
-          <th>Lead No.</th>
+          <th style={{ width: "10%" }}>Lead No.</th>
           <th>Lead Description</th>
-          <th>Due Date</th>
-          <th>Priority</th>
-          <th>Days Left</th>
-          <th>Flags</th>
-          <th>Assigned Officers</th>
-          <th></th>
+          <th style={{ width: "10%" }}>Due Date</th>
+          <th style={{ width: "8%" }}>Priority</th>
+          <th style={{ width: "8%" }}>Days Left</th>
+          <th style={{ width: "6%" }}>Flags</th>
+          <th style={{ width: "14%" }}>Assigned Officers</th>
+          <th style={{ width: "12%" }}></th>
         </tr>
       </thead>
       <tbody>
@@ -1133,7 +1281,13 @@ export const CasePageManager = () => {
               <td>{lead.priority}</td>
               <td>{calculateRemainingDays(lead.dueDate)}</td>
               <td>{lead.flags.join(", ") || "None"}</td>
-              <td>{lead.assignedOfficers.join(", ")}</td>
+              {/* <td>{lead.assignedOfficers.join(", ")}</td> */}
+              <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
+                {/* {lead.assignedOfficers.join(", ")} */}
+                {lead.assignedOfficers.map((officer, index) => (
+                  <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
+                ))}
+                </td>
               <td>
                 <button
                   className="view-btn1"
@@ -1152,14 +1306,54 @@ export const CasePageManager = () => {
 
 {activeTab === "pendingLeadReturns" && (
   <div className="pending-lead-returns">
-    <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
-    <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+   
+    <div className="filter-sort-icons">
+                    <button onClick={() => setShowFilter(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                        alt="Filter Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                  </div>
+
+      {/* Conditionally render the Filter component */}
+      {showFilter && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
+              &times;
+            </button>
+            <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />     
+      </div>
+        </div>
+      )}
+
+      {/* Conditionally render the Sort component */}
+      {showSort && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
+              &times;
+            </button>
+            <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+            </div>
+          </div>
+      )}
+
     <table className="leads-table">
               <thead>
                 <tr>
-                  <th>Lead No.</th>
+                  <th style={{ width: "10%" }}>Lead No.</th>
                   <th>Lead Description</th>
-                  <th></th>
+                  <th style={{ width: "12%" }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -1181,6 +1375,7 @@ export const CasePageManager = () => {
                   ))}
               </tbody>
             </table>
+            
   </div>
 )}  
 
@@ -1199,15 +1394,54 @@ export const CasePageManager = () => {
 
 {activeTab === "allLeads" && (
   <div className="all-leads">
-    <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
-    <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+    <div className="filter-sort-icons">
+                    <button onClick={() => setShowFilter(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                        alt="Filter Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                  </div>
+
+      {/* Conditionally render the Filter component */}
+      {showFilter && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
+              &times;
+            </button>
+            <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+      </div>
+        </div>
+      )}
+
+      {/* Conditionally render the Sort component */}
+      {showSort && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
+              &times;
+            </button>
+            <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+            </div>
+          </div>
+      )}
+
     <table className="leads-table">
       <thead>
         <tr>
-          <th>Lead No.</th>
+          <th style={{ width: "10%" }}>Lead No.</th>
           <th>Lead Description</th>
-          <th>Lead Status</th>
-          <th></th> {/* Empty header for buttons column */}
+          <th style={{ width: "10%" }}>Lead Status</th>
+          <th style={{ width: "12%" }}></th> {/* Empty header for buttons column */}
         </tr>
       </thead>
       <tbody>
@@ -1219,7 +1453,7 @@ export const CasePageManager = () => {
             <td>
               <button
                 className= "view-btn1"
-                onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.leadNo, leadDescription: lead.description} } )}
+                onClick={() => handleLeadClick(lead)}
               >
                 View
               </button>
@@ -1230,15 +1464,21 @@ export const CasePageManager = () => {
     </table>
   </div>
 )}
-
+<Pagination
+  currentPage={currentPage}
+  totalEntries={totalEntries}  // Automatically calculate total entries
+  onPageChange={setCurrentPage} // Update current page state
+  pageSize={pageSize}
+  onPageSizeChange={setPageSize} // Update page size state
+/>
                     </div> ): (
                         <div className="no-leads-message">
                         </div>
                     )}
                 </div>
-                <div className="gotomainpagebtn">
+                {/* <div className="gotomainpagebtn">
                    <button className="mainpagebtn"onClick={() => handleNavigation("/HomePage")}>Go to Home Page</button>
-                </div>
+                </div> */}
                 </div>
             </div>
         </div>

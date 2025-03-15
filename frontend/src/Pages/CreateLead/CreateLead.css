@@ -14,12 +14,12 @@ body{
   /* Main Content */
   .main-content-cl {
     display: flex;
+    align-items:center;
+    justify-content: center;
     grid-template-columns: 1fr auto 1fr; 
     gap: 20px;
     align-items: flex-start;
-    margin: 20px 20px 12px 20px;
-    /* padding: 0 20px; */
-    min-height: 20%;
+    margin: 20px 20px 0px 20px;
   }
   
   /* Left Section */
@@ -33,21 +33,26 @@ body{
   }
   
   /* Center Section */
-  .center-section { 
-    padding-left: 200px;
-    margin-top: 4%;
-    width: 60%;
+  .center-section-cl { 
+    width: 50%;
+    height: 100%;
+    margin-top: 3%;
+   
   }
   
   .title {
-    font-size: 24px;
-    font-weight: bold;
-    text-align: center;
+  display: flex;
+  justify-content: center; 
+  align-items: center; 
+  height: 100px; 
+  font-weight: bold;
+  color: #333333;
+  margin-top: 5%;
   }
   
   .right-section
   {
-    width: 50%;
+    width: 30%;
   }
   /* Right Section */
   .right-section .info-table {
@@ -91,16 +96,13 @@ body{
 }
   
   /* Bottom Content */
-  .bottom-content {
+  .bottom-content-cl {
     width: 95%;
     display: flex;
-    flex-direction: column; /* Stack elements vertically */
-    justify-content: center; /* Center vertically */
-    align-items: center; /* Center horizontally */
-    height: 50vh; /* Use a height to ensure the content is positioned in the center */
-    margin: 100px 130px;
-    margin-left: 50px;
-    /* margin-bottom: 60px; */
+    flex-direction: column; 
+    justify-content: center; 
+    align-items: center;
+    margin: 10px 30px;
 
   }
   

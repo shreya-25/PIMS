@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../../components/Navbar/Navbar';
 import './CMTimeline.css';
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const CMTimeline = () => {
   const navigate = useNavigate();
@@ -136,43 +138,8 @@ export const CMTimeline = () => {
          <div className="right-section">
         </div>
       </div>
-        <div className="timeline-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Event Date</th>
-                <th>Event Time Range</th>
-                <th>Event Location</th>
-                <th>Event Description</th>
-                <th>Flags</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {timelineEntries.length > 0 ? (
-                timelineEntries.map((entry, index) => (
-                  <tr key={index}>
-                    <td>{entry.date}</td>
-                    <td>{entry.timeRange}</td>
-                    <td>{entry.location}</td>
-                    <td>{entry.description}</td>
-                    <td>{entry.flags.join(', ')}</td>
-                    <td>
-                      <button className="btn-edit" onClick={() => handleEditEntry(index)}>Edit</button>
-                      <button className="btn-delete" onClick={() => handleDeleteEntry(index)}>Delete</button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="no-timeline">No timelines found during investigation.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
 
-        <div className="timeline-form-sec">
+      <div className="content-to-add">
           <h3>Add/Edit Entry</h3>
           <div className="timeline-form">
             <label>Date</label>
@@ -221,17 +188,79 @@ export const CMTimeline = () => {
                 value={newFlag}
                 onChange={(e) => setNewFlag(e.target.value)}
               />
-              <button onClick={handleAddFlag}>Add Flag</button>
+              <button className="save-btn1" onClick={handleAddFlag}>Add Flag</button>
             </div>
 
-            <button className="btn-add" onClick={handleAddEntry}>Add Entry</button>
+            <button className="save-btn1" onClick={handleAddEntry}>Add Entry</button>
           </div>
         </div>
-      <div className="form-buttons-timeline">
+
+        <div className="timeline-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Event Date</th>
+                <th>Event Time Range</th>
+                <th>Event Location</th>
+                <th>Event Description</th>
+                <th>Flags</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {timelineEntries.length > 0 ? (
+                timelineEntries.map((entry, index) => (
+                  <tr key={index}>
+                    <td>{entry.date}</td>
+                    <td>{entry.timeRange}</td>
+                    <td>{entry.location}</td>
+                    <td>{entry.description}</td>
+                    <td>{entry.flags.join(', ')}</td>
+                    <td>
+                      <button className="save-btn1" onClick={() => handleEditEntry(index)}>Edit</button>
+                      <button className="del-button" onClick={() => handleDeleteEntry(index)}>Delete</button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="no-timeline">No timelines found during investigation.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        
+      {/* <div className="form-buttons-timeline">
           <button className="back-btn" onClick={() => handleNavigation("/LRScratchpad")}>Back</button>
           <button className="next-btn" onClick={() => handleNavigation("/LRFinish")}>Next</button>
           <button className="cancel-btn">Cancel</button>
-        </div>
+        </div> */}
+
+        <div className = "content-to-add">
+     
+     <h4 className="return-form-h4"> Add Comment</h4>
+       <div className="return-form">
+         <textarea
+          //  value={returnData.results}
+          //  onChange={(e) => handleInputChange("results", e.target.value)}
+           placeholder="Enter comments"
+         ></textarea>
+       </div>
+
+       <div className="form-buttons-return">
+         <button className="save-btn1">Add Comment</button>
+         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
+         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
+         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
+       </div>
+</div>
+
+<FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
+      />
     </div>
   );
 };

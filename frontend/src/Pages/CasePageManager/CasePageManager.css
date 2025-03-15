@@ -14,23 +14,12 @@
     flex-direction: row; /* Sidebar and content side-by-side */
     flex: 1;
   }
-  .left-content
+  /* .left-content
   {
-    height:100%;
+    height:100vh;
     width: 100%;
     align-items: center;
-  }
-
-  .case-header {
-    display: flex;
-    justify-content: center; /* Center horizontally */
-    align-items: center; /* Center vertically */
-    height: 50px; /* Set a height for the header */
-    margin-top: 100px;
-    font-weight: bold;
-    color: #333333;
-    font-size: 20px;
-  }
+  } */
   .searchContainer
   {
     width: 60%;
@@ -80,6 +69,8 @@
   color: rgb(5, 5, 5);
   font-weight: 500;
   height: 100%;
+  min-height: 100%;
+  /* position: fixed;  */
   display: flex;
   flex-direction: column;
   padding: 15px;
@@ -336,11 +327,13 @@
     max-height: 500px; /* Optional: Limit max height */
     height: auto; /* Allow automatic height expansion */
     overflow-y: auto; /* Enable scrolling if content exceeds max height */
+    position: sticky;
     resize: vertical; /* Allow user to manually adjust height if needed */
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
     background-color: #fff;
+    top: 0;
   }
 
 .edit-btn1
@@ -365,4 +358,9 @@
 {
   background-color: #a05252;
   color: #fff;
+}
+
+.dropdown-list1
+{
+  margin-left: 10%;
 }

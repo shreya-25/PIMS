@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useContext, useState, useEffect} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar/Navbar";
 import "./CMReturn.css";
 import FootBar from '../../../components/FootBar/FootBar';
 import axios from "axios";
-
+import { CaseContext } from "../../CaseContext";
 
 export const CMReturn = () => {
   const navigate = useNavigate();
@@ -13,6 +13,8 @@ export const CMReturn = () => {
 const { leadDetails, caseDetails } = location.state || {};
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+
 
   //  Sample returns data
     const [returns, setReturns] = useState([
@@ -20,18 +22,23 @@ const { leadDetails, caseDetails } = location.state || {};
       // { id: 2, dateEntered: "12/02/2024", enteredBy: "Officer 916",results: "Returned item B" },
     ]);
 
+    const handleLRClick = () => {
+      navigate("/CMPerson", { state: {caseDetails, leadDetails } });
+    };
+
 
 
     useEffect(() => {
       const fetchLeadData = async () => {
         try {
-          if (leadDetails?.id && leadDetails?.description && caseDetails?.id && caseDetails?.title) {
+          if (selectedLead?.leadNo && selectedLead?.leadName && selectedLead?.caseNo && selectedLead?.caseName) {
             const token = localStorage.getItem("token");
-  
-            const response = await axios.get(`http://localhost:5000/api/leadReturnResult/${leadDetails.id}/${encodeURIComponent(
-              leadDetails.description)}/${caseDetails.id}/${encodeURIComponent(caseDetails.title)}`, {
+
+            const response = await axios.get(`http://localhost:5000/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
+              selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
                 headers: { Authorization: `Bearer ${token}` }
               });
+    
   
             console.log("Fetched Lead RR1:", response.data);
 
@@ -107,7 +114,15 @@ const { leadDetails, caseDetails } = location.state || {};
     const handleNavigation = (route) => {
       navigate(route);
     };
-  
+    const handleAccessChange = (index, newAccess) => {
+      setReturns((prevReturns) =>
+        prevReturns.map((ret, i) =>
+          i === index ? { ...ret, access: newAccess } : ret
+        )
+      );
+    };
+    
+    
   return (
     <div className="lrreturn-container">
       {/* Navbar */}
@@ -118,7 +133,7 @@ const { leadDetails, caseDetails } = location.state || {};
       <div className="menu-items">
           <span className="menu-item" onClick={() => handleNavigation("/CMInstruction")}>Instructions</span>
           <span className="menu-item active" onClick={() => handleNavigation("/CMReturn")}>Returns</span>
-          <span className="menu-item" onClick={() => handleNavigation("/CMPerson")}>Person</span>
+          <span className="menu-item" onClick={() =>  handleLRClick()}>Person</span>
           <span className="menu-item" onClick={() => handleNavigation("/CMVehicle")}>Vehicles</span>
           <span className="menu-item" onClick={() => handleNavigation("/CMEnclosures")}>Enclosures</span>
           <span className="menu-item" onClick={() => handleNavigation("/CMEvidence")}>Evidence</span>
@@ -132,6 +147,8 @@ const { leadDetails, caseDetails } = location.state || {};
           <span className="menu-item" onClick={() => handleNavigation("/CMFinish")}>Finish</span>
         </div>
       </div>
+
+ <div className="contnt-footer">
 
     <div className="main-contentLRR">
       <div className="main-content-cl">
@@ -155,6 +172,16 @@ const { leadDetails, caseDetails } = location.state || {};
       </div>
     </div>
 
+    <div className = "content-to-add">
+      <div className = "content-to-add-first-row">
+        
+           <h4>Return Id</h4>
+           <label className='input-field'></label>
+           <h4>Date Entered</h4>
+           <label className='input-field'></label>
+           <h4>Entered By</h4>
+           <label className='input-field'></label>
+      </div>
     <h4 className="return-form-h4">{editMode ? "Edit Return" : "Add Return"}</h4>
       <div className="return-form">
         <textarea
@@ -165,39 +192,87 @@ const { leadDetails, caseDetails } = location.state || {};
       </div>
 
       <div className="form-buttons-return">
-        <button className="save-btn" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Return"}</button>
+        <button className="save-btn1" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Return"}</button>
         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
+      </div>
       </div>
 
       <table className="timeline-table">
         <thead>
           <tr>
-            <th>Return Id</th>
-            <th>Date Entered</th>
-            <th>Entered By</th>
+            <th style={{ width: "6%" }}>Return Id</th>
+            <th style={{ width: "13%" }}>Date Entered</th>
+            <th style={{ width: "9%" }}>Entered By</th>
             <th>Results</th>
-            <th></th>
+            <th style={{ width: "10%" , fontSize: "20px" }}>Access</th>
+            <th style={{ width: "10%" }}></th>
           </tr>
         </thead>
         <tbody>
-          {returns.map((ret) => (
-            <tr key={ret.id}>
-              <td>{ret.leadReturnId}</td>
-              <td>{ret.enteredDate}</td>
-              <td>{ret.enteredBy}</td>
-              <td>{ret.leadReturnResult}</td>
-              <td>
-                <div classname = "lr-table-btn">
-                <button className="btn-edit" onClick={() => handleEditReturn(ret)}>Edit</button>
-                <button className="btn-delete" onClick={() => handleDeleteReturn(ret.id)}>Delete</button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
+  {returns.map((ret, index) => ( // Ensure index is passed
+    <tr key={ret.id || index}>
+      <td>{ret.leadReturnId}</td>
+      <td>{ret.enteredDate}</td>
+      <td>{ret.enteredBy}</td>
+      <td>{ret.leadReturnResult}</td>
+      <td>
+        <select
+          value={ret.access || "Case Manager"}
+          onChange={(e) => handleAccessChange(index, e.target.value)} // Pass index correctly
+        >
+          <option value="Case Manager">Case Manager</option>
+          <option value="Everyone">Everyone</option>
+        </select>
+      </td>
+      <td>
+        <div className="lr-table-btn">
+          <button className="save-btn1" onClick={() => handleEditReturn(ret)}>Edit</button>
+          <button className="del-button" onClick={() => handleDeleteReturn(ret.id)}>Delete</button>
+        </div>
+      </td>
+    </tr>
+  ))}
+</tbody>
+
       </table>
+
+      {/* <div className="comment">
+
+      <div className="comment-sec">
+                <label> Comments </label>
+                <input
+                  type="text"
+                />
+                
+              </div>
+              <div className="btn-sec1">
+
+              <button className="save-btn1" >
+              Save
+              </button>
+              </div>
+       </div> */}
+                  <div className = "content-to-add">
+     
+                      <h4 className="return-form-h4">{editMode ? "Add Comment" : "Add Comment"}</h4>
+                        <div className="return-form">
+                          <textarea
+                            value={returnData.results}
+                            onChange={(e) => handleInputChange("results", e.target.value)}
+                            placeholder="Enter comments"
+                          ></textarea>
+                        </div>
+
+                        <div className="form-buttons-return">
+                          <button className="save-btn1" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Comment"}</button>
+                          {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
+                          <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
+                          <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
+                        </div>
+                 </div>
+
 
     </div>
 
@@ -205,6 +280,7 @@ const { leadDetails, caseDetails } = location.state || {};
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
         onNext={() => navigate("/LRPerson")} // Takes user to CM Return page
       />
+  </div>
   </div>
 );
 };

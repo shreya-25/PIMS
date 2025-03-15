@@ -1,21 +1,30 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
+import React, { useContext, useState, useEffect} from 'react';
+import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from '../../../components/Navbar/Navbar';
 import "./LREnclosures.css"; // Custom CSS file for Enclosures styling
 import FootBar from '../../../components/FootBar/FootBar';
+import axios from "axios";
+import { CaseContext } from "../../CaseContext";
 
 
 export const LREnclosures = () => {
-  const navigate = useNavigate(); // Initialize navigate hook
+  const navigate = useNavigate(); 
+  const location = useLocation();
+  
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);  
+  
 
   // Sample enclosures data
   const [enclosures, setEnclosures] = useState([
-    { returnId:1,dateEntered: "12/01/2024", type: "Report", enclosure: "Incident Report" },
-    { returnId:2, dateEntered: "12/03/2024", type: "Evidence", enclosure: "Photo Evidence" },
+    { returnId:'',dateEntered: "", type: "", enclosure: "" },
+    // { returnId:2, dateEntered: "12/03/2024", type: "Evidence", enclosure: "Photo Evidence" },
   ]);
 
   // State to manage form data
   const [enclosureData, setEnclosureData] = useState({
+    returnId:'',
     type: "",
     enclosure: "",
   });
@@ -24,6 +33,13 @@ export const LREnclosures = () => {
     setEnclosureData({ ...enclosureData, [field]: value });
   };
 
+    const [file, setFile] = useState(null);
+  
+
+   // Handle file selection
+   const handleFileChange = (event) => {
+    setFile(event.target.files[0]);
+  };
   const handleAddEnclosure = () => {
     const newEnclosure = {
       dateEntered: new Date().toLocaleDateString(),
@@ -39,6 +55,54 @@ export const LREnclosures = () => {
       type: "",
       enclosure: "",
     });
+  };
+
+  // Save Enclosure: Build FormData and post to backend including token from localStorage.
+  const handleSaveEnclosure = async () => {
+    const formData = new FormData();
+    if (file) {
+      formData.append("file", file);
+    }
+
+    // Append other required fields
+    formData.append("leadNo", selectedLead.leadNo); // Example value; update as needed
+    formData.append("description", selectedLead.leadName);
+    formData.append("enteredBy", localStorage.getItem("loggedInUser"));
+    formData.append("caseName", selectedLead.caseName);
+    formData.append("caseNo", selectedLead.caseNo);
+    formData.append("leadReturnId", enclosureData.returnId); // Example value; update as needed
+    formData.append("enteredDate", new Date().toISOString());
+    formData.append("type", enclosureData.type);
+    formData.append("enclosureDescription", enclosureData.enclosure);
+
+    // Retrieve token from localStorage
+    const token = localStorage.getItem("token");
+    console.log(token);
+    for (const [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
+    
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/lrenclosure/upload",
+        formData,
+        { 
+          headers: { 
+            "Content-Type": "multipart/form-data",
+            "Authorization": `Bearer ${token}`  // Add token here
+          } 
+        }
+      );
+      console.log("Enclosure saved:", response.data);
+      // Optionally update local state with the new enclosure
+      setEnclosures([...enclosures, response.data.enclosure]);
+
+      // Clear form fields if needed
+      setEnclosureData({ type: "", enclosure: "" });
+      setFile(null);
+    } catch (error) {
+      console.error("Error saving enclosure:", error);
+    }
   };
 
   const handleNavigation = (route) => {
@@ -94,9 +158,18 @@ export const LREnclosures = () => {
       </div>
 
         {/* Enclosure Form */}
+        <div className = "content-to-add">
         <div className="enclosure-form">
+        <div className="form-row">
+            <label>Associated Return Id:</label>
+            <input
+              type="returnId"
+              value={enclosureData.leadId}
+              onChange={(e) => handleInputChange("returnId", e.target.value)}
+            />
+          </div>
           <div className="form-row">
-            <label>Type:</label>
+            <label>Enclosure Type:</label>
             <input
               type="text"
               value={enclosureData.type}
@@ -104,15 +177,26 @@ export const LREnclosures = () => {
             />
           </div>
           <div className="form-row">
-            <label>Enclosure:</label>
+            <label>Enclosure Description:</label>
             <textarea
               value={enclosureData.enclosure}
               onChange={(e) => handleInputChange("enclosure", e.target.value)}
             ></textarea>
           </div>
+          <div className="form-row">
+            <label>Upload File:</label>
+            <input type="file" onChange={handleFileChange} />
+          </div>
         </div>
-        <button className="save-btn1
-        " onClick={handleAddEnclosure}>Add Enclosure</button>
+        </div>
+          {/* Action Buttons */}
+          <div className="form-buttons">
+          <button className="save-btn1" onClick={handleAddEnclosure}>Add Enclosure</button>
+          {/* <button className="back-btn" onClick={() => handleNavigation("/LRVehicle")}>Back</button>
+          <button className="next-btn" onClick={() => handleNavigation("/LREvidence")}>Next</button>
+          <button className="save-btn">Save</button>
+          <button className="cancel-btn">Cancel</button> */}
+        </div>
 
               {/* Enclosures Table */}
               <table className="timeline-table">

@@ -1,16 +1,29 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
+import React, { useContext, useState, useEffect} from 'react';
+import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from '../../../components/Navbar/Navbar';
-import "./CMEnclosures.css"; // Custom CSS file for Enclosures styling
+import "./CMEnclosures.css";
+import axios from "axios";
+import { CaseContext } from "../../CaseContext";
+import FootBar from '../../../components/FootBar/FootBar';
+
 
 export const CMEnclosures = () => {
-  const navigate = useNavigate(); // Initialize navigate hook
+  const navigate = useNavigate(); 
+  const location = useLocation();
+  
 
   // Sample enclosures data
   const [enclosures, setEnclosures] = useState([
-    { dateEntered: "12/01/2024", type: "Report", enclosure: "Incident Report" },
-    { dateEntered: "12/03/2024", type: "Evidence", enclosure: "Photo Evidence" },
+    { dateEntered: "", leadReturnType: "", type: "", enclosure: "" },
+    // { dateEntered: "12/03/2024", type: "Evidence", enclosure: "Photo Evidence" },
   ]);
+
+
+  const [file, setFile] = useState(null);
+
+  const handleInputChange = (field, value) => {
+    setEnclosureData({ ...enclosureData, [field]: value });
+  };
 
   // State to manage form data
   const [enclosureData, setEnclosureData] = useState({
@@ -18,9 +31,11 @@ export const CMEnclosures = () => {
     enclosure: "",
   });
 
-  const handleInputChange = (field, value) => {
-    setEnclosureData({ ...enclosureData, [field]: value });
+  // Handle file selection
+  const handleFileChange = (event) => {
+    setFile(event.target.files[0]);
   };
+
 
   const handleAddEnclosure = () => {
     const newEnclosure = {
@@ -80,7 +95,6 @@ export const CMEnclosures = () => {
           />
         </div>
 
-
         {/* Center Section */}
         <div className="center-section">
           <h2 className="title">ENCLOSURES INFORMATION</h2>
@@ -91,28 +105,9 @@ export const CMEnclosures = () => {
         </div>
       </div>
 
-        {/* Enclosures Table */}
-        <table className="timeline-table">
-          <thead>
-            <tr>
-              <th>Date Entered</th>
-              <th>Type</th>
-              <th>Enclosure</th>
-            </tr>
-          </thead>
-          <tbody>
-            {enclosures.map((enclosure, index) => (
-              <tr key={index}>
-                <td>{enclosure.dateEntered}</td>
-                <td>{enclosure.type}</td>
-                <td>{enclosure.enclosure}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
         {/* Enclosure Form */}
-        <div className="enclosure-form">
+  <div className = "content-to-add">
+  <div className="enclosure-form">
           <div className="form-row">
             <label>Type:</label>
             <input
@@ -128,17 +123,66 @@ export const CMEnclosures = () => {
               onChange={(e) => handleInputChange("enclosure", e.target.value)}
             ></textarea>
           </div>
+          <div className="form-row">
+            <label>Upload File:</label>
+            <input type="file" onChange={handleFileChange} />
+          </div>
+        </div>
         </div>
 
         {/* Action Buttons */}
         <div className="form-buttons">
-          <button className="add-btn" onClick={handleAddEnclosure}>Add Enclosure</button>
-          <button className="back-btn" onClick={() => handleNavigation("/LRVehicle")}>Back</button>
+          <button className="save-btn1" onClick={handleAddEnclosure}>Add Enclosure</button>
+          {/* <button className="back-btn" onClick={() => handleNavigation("/LRVehicle")}>Back</button>
           <button className="next-btn" onClick={() => handleNavigation("/LREvidence")}>Next</button>
           <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button>
+          <button className="cancel-btn">Cancel</button> */}
         </div>
+
+        {/* Enclosures Table */}
+        <table className="timeline-table">
+          <thead>
+            <tr>
+              <th>Date Entered</th>
+              <th>Associated Return Id</th>
+              <th>Type</th>
+              <th>Enclosure Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {enclosures.map((enclosure, index) => (
+              <tr key={index}>
+                <td>{enclosure.dateEntered}</td>
+                <td>{enclosure.leadReturnId}</td>
+                <td>{enclosure.type}</td>
+                <td>{enclosure.enclosure}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className = "content-to-add">
+     
+     <h4 className="return-form-h4"> Add Comment</h4>
+       <div className="return-form">
+         <textarea
+          //  value={returnData.results}
+          //  onChange={(e) => handleInputChange("results", e.target.value)}
+           placeholder="Enter comments"
+         ></textarea>
+       </div>
+
+       <div className="form-buttons-return">
+         <button className="save-btn1">Add Comment</button>
+         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
+         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
+         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
+       </div>
+</div>
       </div>
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
+      />
     </div>
   );
 };

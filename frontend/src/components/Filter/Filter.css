@@ -7,7 +7,7 @@
     border-radius: 6px;
     align-items: center;
     justify-content: center;
-    margin: 10px; 
+    margin: 50px; 
     min-width: 90%;
     flex-wrap: wrap; /* Ensures items stay in one row */
     overflow-x: auto; /* Allows horizontal scrolling if needed */
