@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar/Navbar";
+import Comment from "../../../components/Comment/Comment";
 import "./LRReturn.css";
 import FootBar from '../../../components/FootBar/FootBar';
 import axios from "axios";
@@ -179,7 +180,7 @@ export const LRReturn = () => {
   };
 
   return (
-    <div className="lrreturn-container">
+    <div className="lrreturn-container1">
       <Navbar />
 
       <div className="top-menu">
@@ -200,7 +201,7 @@ export const LRReturn = () => {
       </div>
 
       <div className="main-contentLRR">
-      <div className="main-content-cl">
+      <div className="main-content-lr">
         {/* Left Section */}
         <div className="left-section">
           <img
@@ -220,7 +221,7 @@ export const LRReturn = () => {
          <div className="right-section">
         </div>
       </div>
-
+      <div className = "bottom-sec-lr">
       <div className = "content-to-add">
       <div className = "content-to-add-first-row">
         
@@ -248,10 +249,10 @@ export const LRReturn = () => {
       </div>
       </div>
 
-      <table className="timeline-table">
+      <table className="leads-table">
         <thead>
           <tr>
-            <th style={{ width: "6%" }}>Return Id</th>
+            <th style={{ width: "10%" }}>Return Id</th>
             <th style={{ width: "13%" }}>Date Entered</th>
             <th style={{ width: "9%" }}>Entered By</th>
             <th>Results</th>
@@ -267,14 +268,32 @@ export const LRReturn = () => {
               <td>{ret.leadReturnResult}</td>
                 <td>
                   <div classname = "lr-table-btn">
-                  <button className="save-btn1" onClick={() => handleEditReturn(ret)}>Edit</button>
-                  <button className="del-button" onClick={() => handleDeleteReturn(ret.id)}>Delete</button>
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                  alt="Edit Icon"
+                  className="edit-icon"
+                  onClick={() => handleEditReturn(ret)}
+                />
+                  </button>
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                  alt="Delete Icon"
+                  className="edit-icon"
+                  onClick={() => handleDeleteReturn(ret.id)}
+                />
+                  </button>
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+
+        <Comment/>
+
+        </div>
 
         </div>
         <FootBar

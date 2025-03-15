@@ -209,10 +209,9 @@
 .content-to-add
 {
   background-color: #5555552a;
-  width: 80%;
-  margin-left: 10%;
+  /* margin-left: 10%; */
   padding: 1%;
-  margin-top: -2%;
+  /* margin-top: -2%; */
 }
 
 .content-to-add-first-row
