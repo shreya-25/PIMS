@@ -91,8 +91,9 @@ body {
 }
 
 .main-contentLRR {
-  flex: 1;
+  /* flex: 1; */
   padding: 20px;
+  margin-bottom: 50px; /* Adds space between content and FootBar */
 }
 
 .title {

@@ -1,20 +1,17 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { DataProvider } from "./Pages/Context/DataContext";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { CaseProvider } from "./Pages/CaseContext";  // Import CaseProvider
+import { DataProvider } from "./Pages/Context/DataContext"; // Import DataProvider
+import "./index.css";
+import App from "./App";
 
-import './index.css';
-import App from './App';
-
-// const root = ReactDOM.createRoot(document.getElementById('root'));
-// root.render(
-//     <App />
-// );
-
-const root = ReactDOM.createRoot(document.getElementById("root")); // ✅ Use createRoot()
+const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
-    <DataProvider>  {/* ✅ Wrap App inside DataProvider */}
-      <App />
-    </DataProvider>
+    <CaseProvider>  {/* ✅ Wrap App inside CaseProvider */}
+      <DataProvider>  {/* ✅ Wrap App inside DataProvider */}
+        <App />
+      </DataProvider>
+    </CaseProvider>
   </React.StrictMode>
 );

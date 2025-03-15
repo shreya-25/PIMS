@@ -92,17 +92,18 @@ export const FlaggedLead = () => {
     <div className="lead-log-page">
       <Navbar />
 
-      <div className="main-content">
+      <div className="main-content-ll">
         <div className="left-section">
           <img
             src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
             alt="Police Department Logo"
-            className="police-logo"
+            className="police-logo-cl"
           />
         </div>
 
-        <div className="center-section">
-          <h2 className="title">FLAGGED LEAD</h2>
+
+        <div className="center-sectionll">
+          <h2 className="title1">FLAGGED LEADS</h2>
         </div>
       </div>
 

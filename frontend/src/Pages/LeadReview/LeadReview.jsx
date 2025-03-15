@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect} from 'react';
 
 import Navbar from '../../components/Navbar/Navbar';
 import Searchbar from '../../components/Searchbar/Searchbar';
@@ -8,6 +8,8 @@ import Sort from "../../components/Sort/Sort";
 import './LeadReview.css';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
+import { CaseContext } from "../CaseContext";
+
 
 export const LeadReview = () => {
   const navigate = useNavigate();
@@ -19,6 +21,8 @@ export const LeadReview = () => {
   const leadEntries = location.state?.leadEntries || [];
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
 
   const statuses = [
     "Lead Created",
@@ -53,16 +57,28 @@ export const LeadReview = () => {
     // caseSummary: defaultCaseSummary,
   });
 
+  const getCasePageRoute = () => {
+    if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
+    return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
+};
+
+const [caseDropdownOpen, setCaseDropdownOpen] = useState(false);
+const [leadDropdownOpen, setLeadDropdownOpen] = useState(false);
+
+const onShowCaseSelector = (route) => {
+  navigate(route, { state: { caseDetails } });
+};
+
 
   useEffect(() => {
     const fetchLeadData = async () => {
       try {
-        if (leadId && leadDescription && caseDetails?.id && caseDetails?.title) {
+        if (selectedLead.leadNo && selectedLead.leadName && selectedCase?.caseNo && selectedCase?.caseName) {
           const token = localStorage.getItem("token");
           console.log("localstorage data",localStorage.getItem("token"));
 
-          const response = await axios.get(`http://localhost:5000/api/lead/lead/${leadId}/${encodeURIComponent(
-              leadDescription)}/${caseDetails.id}/${encodeURIComponent(caseDetails.title)}`, {
+          const response = await axios.get(`http://localhost:5000/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(
+            selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, {
               headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -91,7 +107,7 @@ export const LeadReview = () => {
     };
 
     fetchLeadData();
-  }, [leadId, leadDescription, caseDetails]);
+  }, [selectedLead, selectedCase]);
 
 
   // For subnumbers
@@ -143,9 +159,9 @@ export const LeadReview = () => {
   useEffect(() => {
    const fetchCaseSummary = async () => {
      try {
-       if (caseDetails && caseDetails.id) {
+       if (selectedCase && selectedCase.caseNo) {
          const token = localStorage.getItem("token");
-         const response = await axios.get(`http://localhost:5000/api/cases/summary/${caseDetails.id}`, {
+         const response = await axios.get(`http://localhost:5000/api/cases/summary/${selectedCase.caseNo}`, {
            headers: { Authorization: `Bearer ${token}` }
          });
          // Update case summary if data is received
@@ -160,7 +176,7 @@ export const LeadReview = () => {
    };
 
    fetchCaseSummary();
- }, [caseDetails]);
+ }, [selectedCase]);
 
 
   return (
@@ -173,13 +189,56 @@ export const LeadReview = () => {
 
       <div className="sideitem">
           <ul className="sidebar-list">
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-            <li className="sidebar-item" onClick={() => navigate('/LeadReview')}>Lead Information</li>
-            <li className="sidebar-item" onClick={() => navigate('/Investigator')}>Case Page</li>
-            <li className="sidebar-item" onClick={() => navigate('/leadlog')}>View Lead Log</li>
-            <li className="sidebar-item" onClick={() => navigate('/LRInstruction')}>View Lead Return</li>
-            <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
+
+          <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▲" : "▼"}
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Case Scratchpad
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+
+          <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+                    Lead Management {leadDropdownOpen ?  "▲": "▼" }
+                  </li>
+                  {leadDropdownOpen && (
+                    <ul className="dropdown-list1">
+                       {/* <li className="sidebar-item" onClick={() => navigate('/LeadReview')}>Lead Information</li> */}
+                       <li className="sidebar-item" onClick={() => navigate('/LRInstruction')}>View Lead Return</li>
+                       <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li>
+                       <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                       <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
+          </ul>
+        )} 
           </ul>
         </div>
 
@@ -187,7 +246,7 @@ export const LeadReview = () => {
         <div className="lead-main-content">
           {/* Page Header */}
           <div className="case-header">
-            <h1>Lead No: {leadId} | {leadDescription}</h1>
+            <h1>Lead No:{selectedLead.leadNo} | {selectedLead.leadName}</h1>
           </div>
 
           {/* Case Summary Textarea */}
@@ -299,7 +358,7 @@ export const LeadReview = () => {
 
                 {/* Associated Subnumbers */}
                 <tr>
-  <td className="info-label">Associated Subnumbers:</td>
+  <td className="info-label"style={{ width: "25%" }}>Associated Subnumbers:</td>
   <td>
     <div className="custom-dropdown">
       <div
@@ -355,11 +414,11 @@ export const LeadReview = () => {
                 </tr>
 
                 <tr>
-  <td>Assigned Officers:</td>
+  <td className="info-label">Assigned Officers:</td>
   <td>
-    <div className="custom-dropdown-cl">
+    <div className="custom-dropdown">
       <div
-        className="dropdown-header-cl"
+        className="dropdown-header"
         onClick={() => setDropdownOpen(!dropdownOpen)}
       >
         {assignedOfficers.length > 0
@@ -411,7 +470,7 @@ export const LeadReview = () => {
                   </td>
                 </tr>
                 <tr>
-                  <td className="info-label">Lead Summary:</td>
+                  <td className="info-label">Lead Instruction:</td>
                   <td>
                     <textarea
                       className="textarea-field"
@@ -458,14 +517,14 @@ export const LeadReview = () => {
                 </div>
 
           {/* Example "Go to Main Page" button */}
-          <div className="navigation-buttons">
+          {/* <div className="navigation-buttons">
             <button
               className="custom-button secondary-button"
               onClick={() => handleNavigation("/MainPage")}
             >
               Go to Main Page
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
