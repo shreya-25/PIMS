@@ -18,6 +18,32 @@ body{
    background-color: rgba(41, 41, 139, 0.034);
   border-radius: 8px;
 }
+.search_and_hierarchy_container
+{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+
+.hierarchy-search
+{
+  display: flex;
+  gap: 10px;
+  width: 70%;
+  height: 80%;
+  align-items: center;
+  justify-content: center;
+}
+.hierarchy-search input
+{
+  width: 20%;
+}
+
+.search-button
+{
+  width: 30%;
+}
 
 /* Table Heading section */
 
