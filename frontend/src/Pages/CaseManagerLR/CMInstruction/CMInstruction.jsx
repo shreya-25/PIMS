@@ -270,7 +270,7 @@ console.log(selectedLead);
        <div className="main-content-everything">
       <div className="main-content-cl"> */}
 
-<div className="left-content">
+<div className="left-content1">
         {/* Left Section */}
         {/* <div className="left-section">
           <img
