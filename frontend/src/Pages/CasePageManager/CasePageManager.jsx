@@ -12,6 +12,8 @@ import Pagination from "../../components/Pagination/Pagination";
 
 
 export const CasePageManager = () => {
+
+  
     const navigate = useNavigate();
     const location = useLocation();
     const { caseDetails } = location.state || {};
