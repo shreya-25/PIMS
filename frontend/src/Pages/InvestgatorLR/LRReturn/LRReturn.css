@@ -79,10 +79,6 @@ body {
  }
 
 
-
-
-
-
 /* General Layout */
 .lrreturn-container1 {
   display: flex;
@@ -92,8 +88,7 @@ body {
 }
 
 .main-contentLRR {
-  /* flex: 1; */
-  padding: 20px;
+  width: 100%;
   margin-bottom: 50px; /* Adds space between content and FootBar */
   display: flex;
   flex-direction: column;
