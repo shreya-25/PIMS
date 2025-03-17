@@ -1,0 +1,30 @@
+.LRI_Content
+{
+    display: flex;
+}
+
+.LRI-content-section
+{
+    display:flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 70vh;
+    padding-top: 2%;
+    gap: 20px;
+}
+
+.info-table-sec
+{
+    width: 40%;
+    background-color: beige;
+}
+
+.info-table{
+    width: 100%;
+}
+
+.bottom-content-LRI
+{
+    width: 80%;
+}
