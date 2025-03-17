@@ -114,6 +114,15 @@ const fetchLeadHierarchyFullDetails = async (leadNo, caseNo, caseName, token, ch
 };
 
 export const LeadsDesk = () => {
+  useEffect(() => {
+    // Apply style when component mounts
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      // Reset to default when component unmounts
+      document.body.style.overflow = "auto";
+    };
+  }, []);
   const navigate = useNavigate();
   const pdfRef = useRef();
   const { selectedCase } = useContext(CaseContext);
@@ -948,7 +957,7 @@ export const LeadsDesk = () => {
                 <input
                   type="text"
                   className="input-field"
-                  placeholder="Enter Lead Number"
+                  placeholder="Enter Lead"
                   value={hierarchyLeadInput}
                   onChange={(e) => setHierarchyLeadInput(e.target.value)}
                 />
