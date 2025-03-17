@@ -23,6 +23,16 @@ export const CMInstruction = () => {
 
           const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
 
+          const formatDate = (dateString) => {
+            if (!dateString) return "";
+            const date = new Date(dateString);
+            if (isNaN(date)) return "";
+            const month = (date.getMonth() + 1).toString().padStart(2, "0");
+            const day = date.getDate().toString().padStart(2, "0");
+            const year = date.getFullYear().toString().slice(-2);
+            return `${month}/${day}/${year}`;
+          };
+
   
   const [leadData, setLeadData] = useState({
     leadNumber: '',
@@ -47,6 +57,14 @@ export const CMInstruction = () => {
     const [subDropdownOpen, setSubDropdownOpen] = useState(false);
 
     const [assignedOfficers, setAssignedOfficers] = useState([]);
+
+    
+        const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+        const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+      
+        const onShowCaseSelector = (route) => {
+          navigate(route, { state: { caseDetails } });
+      };
 
 
   const handleInputChange = (field, value) => {
@@ -175,28 +193,105 @@ console.log(selectedLead);
          </div>
        </div>
 
+       <div className="LRI_Content">
+       <div className="sideitem">
+                    <ul className="sidebar-list">
+                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
+                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
+                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
+                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
+                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
+                        <li className="sidebar-item">Generate Report</li>
+                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
+
+                            {/* Case Information Dropdown */}
+        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▼" : "▲" }
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Case Scratchpad
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+
+
+                                 {/* Lead Management Dropdown */}
+                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
+
+                    </ul>
+                </div>
+{/* 
        <div className="main-content-everything">
-      <div className="main-content-cl">
+      <div className="main-content-cl"> */}
+
+<div className="left-content">
         {/* Left Section */}
-        <div className="left-section">
+        {/* <div className="left-section">
           <img
             src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
             alt="Police Department Logo"
             className="police-logo"
           />
-        </div>
+        </div> */}
 
         {/* Center Section */}
-        <div className="center-section">
-          <h2 className="title">LEAD INSTRUCTIONS</h2>
+        <div className="case-header">
+          <h2 className="">LEAD INSTRUCTIONS</h2>
         </div>
 
         {/* Right Section */}
-        <div className="right-section">
+        <div className="LRI-content-section">
+        <div className="info-table-sec">
           <table className="info-table">
             <tbody>
               <tr>
-                <td>LEAD NUMBER:</td>
+                <td>Lead Number:</td>
                 <td>
                   <input
                     type="text"
@@ -208,7 +303,7 @@ console.log(selectedLead);
                 </td>
               </tr>
               <tr>
-                <td>INCIDENT NUMBER:</td>
+                <td>Incident Number:</td>
                 <td>
                   <input
                     type="text"
@@ -220,7 +315,7 @@ console.log(selectedLead);
                 </td>
               </tr>
               <tr>
-                <td>SUBNUMBER:</td>
+                <td>Subnumber:</td>
                 <td>
                   <input
                     type="text"
@@ -232,12 +327,12 @@ console.log(selectedLead);
                 </td>
               </tr>
               <tr>
-                <td>ASSIGNED DATE:</td>
+                <td>Assigned Date:</td>
                 <td>
                   <input
                     type="text"
                     className="input-field"
-                    value={leadData.assignedDate}
+                    value={formatDate(leadData.assignedDate)}
                     onChange={(e) => handleInputChange('assignedDate', e.target.value)}
                     placeholder=""
                   />
@@ -246,10 +341,9 @@ console.log(selectedLead);
             </tbody>
           </table>
         </div>
-      </div>
 
        {/* Bottom Content */}
-       <div className="bottom-content-cminst">
+       <div className="bottom-content-LRI">
         <table className="details-table">
           <tbody>
           <tr>
@@ -416,6 +510,8 @@ console.log(selectedLead);
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
         onNext={() => handleLRClick()} // Takes user to CM Return page
       />
+    </div>
+    </div>
     </div>
   );
 };
