@@ -3,6 +3,7 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%; /* or 100vh */
+  width: 100%;
 }
 
 .lead-review-page {
@@ -29,7 +30,6 @@ html, body {
 
 .lead-review-container1 {
   display: flex;
-  /* flex: 1;  */
 }
 
 /* Sidebar */
@@ -39,7 +39,7 @@ html, body {
 
 /* Content area */
 .lead-main-content {
-  flex: 1;           /* the main content grows to fill remaining width */
+  flex: 1;      
   margin-left: 10%;  /* or remove if you don't need extra spacing */
   padding: 20px;
   box-sizing: border-box;
@@ -49,7 +49,7 @@ html, body {
 /* Form Section container (groups fields) */
 .form-section {
   margin-bottom: 20px;
-  width: 7%;
+  width: 60%;
 }
 
 /* Label styling */
@@ -76,9 +76,13 @@ html, body {
 {
   display: flex;
   margin-top: 20px;
-  min-width: 1000%;
+  min-width: 100%;
   align-items: center;
+  justify-content: center;
+  gap: 20px;
 }
+
+
 
 /* Info Table styling (top) */
 .details-table {
