@@ -637,14 +637,15 @@ export const LeadsDesk = () => {
                               <tbody>
                                 {returnItem.persons.map((person, index) => (
                                   <tr key={person._id || index}>
-                                    <td>{person.enteredDate}</td>
+                                    <td>{formatDate(person.enteredDate)}</td>
+
                                     <td>
                                       {person.firstName
                                         ? `${person.firstName}, ${person.lastName}`
                                         : "N/A"}
                                     </td>
                                     <td>{person.cellNumber}</td>
-                                    <td>
+                                    <td style = {{whiteSpace: "normal", wordWrap: "break-word"}}>
                                       {person.address
                                         ? `${person.address.street1 || ""}, ${person.address.city || ""}, ${person.address.state || ""}, ${person.address.zipCode || ""}`
                                         : "N/A"}
@@ -706,7 +707,7 @@ export const LeadsDesk = () => {
                               <tbody>
                                 {returnItem.vehicles.map((vehicle, index) => (
                                   <tr key={vehicle._id || index}>
-                                    <td>{vehicle.enteredDate}</td>
+                                    <td>{formatDate(vehicle.enteredDate)}</td>
                                     <td>{vehicle.make}</td>
                                     <td>{vehicle.model}</td>
                                     <td>
@@ -870,9 +871,9 @@ export const LeadsDesk = () => {
                 <li className="sidebar-item" onClick={() => navigate("/LeadHierarchy")}>
                   View Lead Hierarchy
                 </li>
-                <li className="sidebar-item" onClick={() => navigate("/ViewHierarchy")}>
+                {/* <li className="sidebar-item" onClick={() => navigate("/ViewHierarchy")}>
                   Generate Report
-                </li>
+                </li> */}
                 <li className="sidebar-item" onClick={() => navigate("/FlaggedLead")}>
                   View Flagged Leads
                 </li>
