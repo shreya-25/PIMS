@@ -62,8 +62,8 @@ export const LeadReview = () => {
     return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
 };
 
-const [caseDropdownOpen, setCaseDropdownOpen] = useState(false);
-const [leadDropdownOpen, setLeadDropdownOpen] = useState(false);
+const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
 
 const onShowCaseSelector = (route) => {
   navigate(route, { state: { caseDetails } });
@@ -185,7 +185,7 @@ const onShowCaseSelector = (route) => {
       <Navbar />
 
       {/* Main Container */}
-      <div className="lead-review-container">
+      <div className="lead-review-container1">
 
       <div className="sideitem">
           <ul className="sidebar-list">
@@ -358,7 +358,7 @@ const onShowCaseSelector = (route) => {
 
                 {/* Associated Subnumbers */}
                 <tr>
-  <td className="info-label"style={{ width: "25%" }}>Associated Subnumbers:</td>
+  <td className="info-label"style={{ width: "30%" }}>Associated Subnumbers:</td>
   <td>
     <div className="custom-dropdown">
       <div
