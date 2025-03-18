@@ -13,6 +13,17 @@ import PersonModal from "../../../components/PersonModal/PersonModel";
 export const CMPerson = () => {
     const navigate = useNavigate(); // Initialize useNavigate hook
       const location = useLocation();
+
+      const formatDate = (dateString) => {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        if (isNaN(date)) return "";
+        const month = (date.getMonth() + 1).toString().padStart(2, "0");
+        const day = date.getDate().toString().padStart(2, "0");
+        const year = date.getFullYear().toString().slice(-2);
+        return `${month}/${day}/${year}`;
+      };
+    
       
     const { leadDetails, caseDetails } = location.state || {};
       const [loading, setLoading] = useState(true);
@@ -325,7 +336,7 @@ export const CMPerson = () => {
 <div className = "content-subsection">
 
      {/* Main Table */}
-     <div className="table-container1">
+     
         <table className="leads-table">
           <thead>
             <tr>
@@ -347,7 +358,7 @@ export const CMPerson = () => {
       onClick={() => setSelectedRow(index)}
     >
       <td>{person.leadReturnId}</td>
-      <td>{person.enteredDate}</td>
+      <td>{formatDate(person.enteredDate)}</td>
       <td>
         {person.firstName
           ? `${person.firstName || ''}, ${person.lastName || ''}`
@@ -388,7 +399,6 @@ export const CMPerson = () => {
 </tbody>
 
         </table>
-      </div>
 
       {/* <div className="bottom-buttons">
       <button onClick={() => handleNavigation('/CMPerson1')} className="save-btn1">Add Person</button>
