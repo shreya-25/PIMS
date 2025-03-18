@@ -735,7 +735,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                
                 </div> */}
                 {/* Content Area */}
-                <div className="content">
+                {/* <div className="table-section1"> */}
                   {/* <div className='searchContainer'>
                     <Searchbar placeholder="Search Lead" />
                     </div> */}
@@ -1477,7 +1477,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                         <div className="no-leads-message">
                         </div>
                     )}
-                </div>
+                {/* </div> */}
                 {/* <div className="gotomainpagebtn">
                    <button className="mainpagebtn"onClick={() => handleNavigation("/HomePage")}>Go to Home Page</button>
                 </div> */}

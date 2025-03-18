@@ -27,9 +27,9 @@ html, body {
   min-height: 100%;
 } */
 
-.lead-review-container {
+.lead-review-container1 {
   display: flex;
-  flex: 1;  /* allows container to fill remaining vertical space */
+  /* flex: 1;  */
 }
 
 /* Sidebar */
