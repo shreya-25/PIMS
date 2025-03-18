@@ -334,27 +334,27 @@ export const CMVehicle = () => {
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th style={{ width: "14%" }}>Associated Return ID</th>
+              <th style={{ width: "15%" }}>Associated Return ID</th>
               {/* <th>Year</th> */}
               <th>Make</th>
               <th>Model</th>
               <th>Color</th>
               <th>State</th>
-              <th>Access</th>
-              <th>Additional Details</th>
+              <th style={{ width: "13%" }}>Access</th>
+              <th style={{ width: "13%" }}>Additional Details</th>
               {/* <th></th> */}
             </tr>
           </thead>
           <tbody>
     {vehicles.map((vehicle, index) => (
       <tr key={index}>
-        <td>{vehicle.enteredDate}</td>
+        <td>{formatDate(vehicle.enteredDate)}</td>
         <td>{vehicle.leadReturnId}</td>
         {/* <td>{vehicle.year}</td> */}
         <td>{vehicle.make}</td>
         <td>{vehicle.model}</td>
         <td style={{ textAlign: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'left', justifyContent: 'flex-start' }}>
           <span style={{ width: '60px', display: 'inline-block' }}>{vehicle.primaryColor}</span>
           <div
             style={{
