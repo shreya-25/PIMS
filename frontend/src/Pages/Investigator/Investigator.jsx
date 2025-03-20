@@ -8,6 +8,7 @@ import './Investigator.css'; // Custom CSS file for styling
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
+import Pagination from "../../components/Pagination/Pagination";
 
 
 export const Investigator = () => {
@@ -127,6 +128,12 @@ const handleLeadClick = (lead) => {
 
     const signedInOfficer = localStorage.getItem("loggedInUser");
     const token = localStorage.getItem("token");
+
+       const [currentPage, setCurrentPage] = useState(1);
+      const [pageSize, setPageSize] = useState(50);
+      const totalPages = 10; // Change based on your data
+      const totalEntries = 100;
+    
 
    useEffect(() => {
      if (selectedCase?.caseNo && selectedCase?.caseName) {
@@ -284,6 +291,19 @@ const handleLeadClick = (lead) => {
   
       fetchPendingLeadReturns();
   }, [signedInOfficer, selectedCase]);
+
+  const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+  const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+
+   const [showFilter, setShowFilter] = useState(false);
+    const [showSort, setShowSort] = useState(false);
+
+  
+      useEffect(() => {
+        // Scroll to the top when the component mounts
+        window.scrollTo(0, 0);
+      }, []); // Empty dependency array ensures it runs only once on mount
+        
   
   
   // useEffect(() => {
@@ -537,7 +557,9 @@ const handleLeadClick = (lead) => {
       { category: "Electronics", price: 200 },
       { category: "Home", price: 150 },
     ];
-      
+    const onShowCaseSelector = (route) => {
+      navigate(route, { state: { caseDetails } });
+  };
 
     return (
         <div className="case-page-manager">
@@ -547,11 +569,31 @@ const handleLeadClick = (lead) => {
             {/* Main Container */}
             <div className="main-container">
                 {/* Sidebar */}
+
                 <div className="sideitem">
                     <ul className="sidebar-list">
+                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
+                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
+                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
+                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
+                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
+                        <li className="sidebar-item">Generate Report</li>
+                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
 
-                      
-                    {["assignedLeads", "pendingLeads", "pendingLeadReturns", "allLeads"].map((tab) => (
+                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
+
+       
+                                 {/* Lead Management Dropdown */}
+                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            {["assignedLeads", "pendingLeads", "pendingLeadReturns", "allLeads"].map((tab) => (
   <li
     key={tab}
     className={`sidebar-item ${activeTab === tab ? "active" : ""}`}
@@ -573,15 +615,44 @@ const handleLeadClick = (lead) => {
           </div>
   </li>
 ))}
-                        {/* <li className="sidebar-item" onClick={() => handleTabClick("assignedLeads")}>My Assigned Leads: {leads.assignedLeads.length}</li>
-                        <li className="sidebar-item" onClick={() => handleTabClick("pendingLeads")}>My Pending Leads: {leads.pendingLeads.length}</li>
-                        <li className="sidebar-item"onClick={() => handleTabClick("pendingLeadReturns")}>My Pending Lead Returns: {leads.pendingLeadReturns.length}</li>
-                        <li className="sidebar-item" onClick={() => handleTabClick("allLeads")}>My Total Leads: {leads.allLeads.length}</li> */}
-                        <li className="sidebar-item"onClick={() => navigate('/leadlog', { state: { caseDetails } })}>View Lead Log</li>
-                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+          </ul>
+        )} 
+
+                            {/* Case Information Dropdown */}
+        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▼" : "▲" }
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Case Scratchpad
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+
                     </ul>
                 </div>
+               
                 <div className="left-content">
 
                    {/* Display Case Number and Name */}
@@ -592,9 +663,6 @@ const handleLeadClick = (lead) => {
                 </div>
                 {/* Content Area */}
                 <div className="content">
-                <div className='searchContainer'>
-                    <Searchbar placeholder="Search Lead" />
-                    </div>
                     {/* Tab Navigation */}
                     <div className="stats-bar">
                         <span
@@ -609,12 +677,12 @@ const handleLeadClick = (lead) => {
                           >
                             Pending Leads: {leads.pendingLeads.length}
                           </span>
-                        <span
+                        {/* <span
                             className={`hoverable ${activeTab === "pendingLeadReturns" ? "active" : ""}`}
                             onClick={() => handleTabClick("pendingLeadReturns")}
                         >
                             Pending Lead Returns: {leads.pendingLeadReturns.length}
-                        </span>
+                        </span> */}
                         <span
                             className={`hoverable ${activeTab === "allLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("allLeads")}
@@ -634,8 +702,48 @@ const handleLeadClick = (lead) => {
       Open Filter & Sort
     </button> */}
 
-<Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
-<Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+{/* <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+<Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} /> */}
+<div className="filter-sort-icons">
+                    <button onClick={() => setShowFilter(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                        alt="Filter Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                  </div>
+
+                  {/* Conditionally render the Filter component */}
+      {showFilter && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
+              &times;
+            </button>
+            <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+            </div>
+        </div>
+      )}
+
+      {/* Conditionally render the Sort component */}
+      {showSort && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
+              &times;
+            </button>
+            <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+            </div>
+          </div>
+      )}
 
 
 
@@ -783,14 +891,14 @@ const handleLeadClick = (lead) => {
     <table className="leads-table">
       <thead>
         <tr>
-          <th>Lead No.</th>
+          <th style={{ width: "10%" }}>Lead No.</th>
           <th>Lead Description</th>
-          <th>Due Date</th>
-          <th>Priority</th>
-          <th>Days Left</th>
-          <th>Flags</th>
-          <th>Assigned Officers</th>
-          <th></th>
+          <th style={{ width: "10%" }}>Due Date</th>
+          <th style={{ width: "8%" }}>Priority</th>
+          <th style={{ width: "8%" }}>Days Left</th>
+          <th style={{ width: "6%" }}>Flags</th>
+          <th style={{ width: "14%" }}>Assigned Officers</th>
+          <th style={{ width: "12%" }}></th>
         </tr>
       </thead>
       <tbody>
@@ -819,13 +927,19 @@ const handleLeadClick = (lead) => {
           })
           .map((lead) => (
             <tr key={lead.id}>
-              <td>{lead.id}</td>
+             <td>{lead.id}</td>
               <td>{lead.description}</td>
-              <td>{lead.dueDate || "N/A"}</td>
-              <td>{lead.priority || "N/A"}</td>
-              <td>{calculateRemainingDays(lead.dueDate) }</td>
-              <td>{lead.flags?.join(", ") || "None"}</td>
-              <td>{lead.assignedOfficers?.join(", ") || "Unassigned"}</td>
+              <td>{lead.dueDate}</td>
+              <td>{lead.priority}</td>
+              <td>{calculateRemainingDays(lead.dueDate)}</td>
+              <td>{lead.flags.join(", ") || "None"}</td>
+              {/* <td>{lead.assignedOfficers.join(", ")}</td> */}
+              <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
+                {/* {lead.assignedOfficers.join(", ")} */}
+                {lead.assignedOfficers.map((officer, index) => (
+                  <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
+                ))}
+                </td>
               <td>
                 <button
                   className="view-btn1"
@@ -851,6 +965,13 @@ const handleLeadClick = (lead) => {
           ))}
       </tbody>
     </table>
+    <Pagination
+  currentPage={currentPage}
+  totalEntries={totalEntries}  // Automatically calculate total entries
+  onPageChange={setCurrentPage} // Update current page state
+  pageSize={pageSize}
+  onPageSizeChange={setPageSize} // Update page size state
+/>
   </div>
 )}
 
@@ -864,9 +985,26 @@ const handleLeadClick = (lead) => {
       Open Filter & Sort
     </button> */}
 
-<Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
-<Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+{/* <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+<Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} /> */}
 
+<div className="filter-sort-icons">
+                    <button onClick={() => setShowFilter(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                        alt="Filter Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                  </div>
+                
 
     {filterSortPopupVisible && (
       <div className="popup-overlay">
@@ -1013,14 +1151,14 @@ const handleLeadClick = (lead) => {
     <table className="leads-table">
       <thead>
         <tr>
-          <th>Lead No.</th>
+        <th style={{ width: "10%" }}>Lead No.</th>
           <th>Lead Description</th>
-          <th>Due Date</th>
-          <th>Priority</th>
-          <th>Days Left</th>
-          <th>Flags</th>
-          <th>Assigned Officers</th>
-          <th></th>
+          <th style={{ width: "10%" }}>Due Date</th>
+          <th style={{ width: "8%" }}>Priority</th>
+          <th style={{ width: "8%" }}>Days Left</th>
+          <th style={{ width: "6%" }}>Flags</th>
+          <th style={{ width: "14%" }}>Assigned Officers</th>
+          <th style={{ width: "12%" }}></th>
         </tr>
       </thead>
       <tbody>
@@ -1055,11 +1193,17 @@ const handleLeadClick = (lead) => {
               <td>{lead.priority}</td>
               <td>{calculateRemainingDays(lead.dueDate)}</td>
               <td>{lead.flags.join(", ") || "None"}</td>
-              <td>{lead.assignedOfficers.join(", ")}</td>
+              {/* <td>{lead.assignedOfficers.join(", ")}</td> */}
+              <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
+                {/* {lead.assignedOfficers.join(", ")} */}
+                {lead.assignedOfficers.map((officer, index) => (
+                  <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
+                ))}
+                </td>
               <td>
                 <button
                   className="view-btn1"
-                  onClick={() => alert(`Viewing lead: ${lead.description}`)}
+                  onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.description} } )}
                 >
                   View
                 </button>
@@ -1067,21 +1211,46 @@ const handleLeadClick = (lead) => {
             </tr>
           ))}
       </tbody>
+
     </table>
+    <Pagination
+  currentPage={currentPage}
+  totalEntries={totalEntries}  // Automatically calculate total entries
+  onPageChange={setCurrentPage} // Update current page state
+  pageSize={pageSize}
+  onPageSizeChange={setPageSize} // Update page size state
+/>
   </div>
 )}
-
-
 {activeTab === "pendingLeadReturns" && (
   <div className="pending-lead-returns">
-     <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+     {/* <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
      <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+     */}
+
+<div className="filter-sort-icons">
+                    <button onClick={() => setShowFilter(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                        alt="Filter Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                  </div>
+    
     <table className="pending-lr-table">
               <thead>
                 <tr>
-                  <th>Lead No.</th>
+                  <th style={{ width: "10%" }}>Lead No.</th>
                   <th>Lead Description</th>
-                  <th></th>
+                  <th style={{ width: "12%" }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -1103,6 +1272,13 @@ const handleLeadClick = (lead) => {
                   ))}
               </tbody>
             </table>
+            <Pagination
+  currentPage={currentPage}
+  totalEntries={totalEntries}  // Automatically calculate total entries
+  onPageChange={setCurrentPage} // Update current page state
+  pageSize={pageSize}
+  onPageSizeChange={setPageSize} // Update page size state
+/>
   </div>
 )}  
 
@@ -1121,15 +1297,34 @@ const handleLeadClick = (lead) => {
 
 {activeTab === "allLeads" && (
   <div className="all-leads">
-    <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
-    <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+    {/* <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+    <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} /> */}
+
+
+<div className="filter-sort-icons">
+                    <button onClick={() => setShowFilter(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                        alt="Filter Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                  </div>
+
     <table className="all-lead-table">
       <thead>
         <tr>
-          <th>Lead No.</th>
+          <th style={{ width: "10%" }}>Lead No.</th>
           <th>Lead Description</th>
-          <th>Lead Status</th>
-          <th></th> {/* Empty header for buttons column */}
+          <th style={{ width: "10%" }}>Lead Status</th>
+          <th style={{ width: "12%" }}></th> {/* Empty header for buttons column */}
         </tr>
       </thead>
       <tbody>
@@ -1150,13 +1345,17 @@ const handleLeadClick = (lead) => {
         ))}
       </tbody>
     </table>
+    <Pagination
+  currentPage={currentPage}
+  totalEntries={totalEntries}  // Automatically calculate total entries
+  onPageChange={setCurrentPage} // Update current page state
+  pageSize={pageSize}
+  onPageSizeChange={setPageSize} // Update page size state
+/>
   </div>
 )}
 
                     </div>
-                </div>
-                <div className="gotomainpagebtn">
-                <button className="mainpagebtn"onClick={() => handleNavigation("/HomePage")}>Go to Home Page</button>
                 </div>
                 </div>
             </div>
