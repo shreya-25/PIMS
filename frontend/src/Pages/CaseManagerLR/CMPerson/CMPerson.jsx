@@ -1,6 +1,8 @@
 import React, { useContext, useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { CaseContext } from "../../CaseContext";
+import Comment from "../../../components/Comment/Comment";
+
 import Navbar from '../../../components/Navbar/Navbar';
 import './CMPerson.css';
 import axios from "axios";
@@ -11,6 +13,17 @@ import PersonModal from "../../../components/PersonModal/PersonModel";
 export const CMPerson = () => {
     const navigate = useNavigate(); // Initialize useNavigate hook
       const location = useLocation();
+
+      const formatDate = (dateString) => {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        if (isNaN(date)) return "";
+        const month = (date.getMonth() + 1).toString().padStart(2, "0");
+        const day = date.getDate().toString().padStart(2, "0");
+        const year = date.getFullYear().toString().slice(-2);
+        return `${month}/${day}/${year}`;
+      };
+    
       
     const { leadDetails, caseDetails } = location.state || {};
       const [loading, setLoading] = useState(true);
@@ -172,6 +185,14 @@ export const CMPerson = () => {
     const handlePrevPage = () => {
     navigate('/LRInstruction'); // Replace '/nextpage' with the actual next page route
   };
+
+     const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+          const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+        
+          const onShowCaseSelector = (route) => {
+            navigate(route, { state: { caseDetails } });
+        };
+  
   
   return (
     <div className="person-page">
@@ -220,40 +241,113 @@ export const CMPerson = () => {
          </div>
        </div>
 
-       <div className="main-content-cl">
+       <div className="LRI_Content">
+       <div className="sideitem">
+                    <ul className="sidebar-list">
+                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
+                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
+                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
+                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
+                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
+                        <li className="sidebar-item">Generate Report</li>
+                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
+
+                            {/* Case Information Dropdown */}
+        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▼" : "▲" }
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Case Scratchpad
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+
+
+                                 {/* Lead Management Dropdown */}
+                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
+
+                    </ul>
+                </div>
+
+       <div className="left-content">
         {/* Left Section */}
-        <div className="left-section">
+        {/* <div className="left-section">
           <img
             src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
             alt="Police Department Logo"
             className="police-logo-lr"
           />
-        </div>
+        </div> */}
 
 
         {/* Center Section */}
-        <div className="center-section">
-          <h2 className="title">LEAD PERSONS DETAILS</h2>
+        <div className="case-header">
+          <h2 className="">LEAD PERSONS DETAILS</h2>
         </div>
 
-         {/* Right Section */}
-         <div className="right-section">
-        </div>
-      </div>
+        <div className = "LRI-content-section">
+
+<div className = "content-subsection">
 
      {/* Main Table */}
-     <div className="table-container1">
-        <table className="timeline-table">
+     
+        <table className="leads-table">
           <thead>
             <tr>
-            <th>Associated Return Id</th>
+            <th style={{ width: "15%" }}>Associated Return ID</th>
               <th>Date Entered</th>
               <th>Name</th>
               <th>Phone No</th>
               <th>Address</th>
               <th>Access</th>
               <th>Additional Details</th>
-              <th></th>
+              {/* <th></th> */}
             </tr>
           </thead>
           <tbody>
@@ -264,7 +358,7 @@ export const CMPerson = () => {
       onClick={() => setSelectedRow(index)}
     >
       <td>{person.leadReturnId}</td>
-      <td>{person.enteredDate}</td>
+      <td>{formatDate(person.enteredDate)}</td>
       <td>
         {person.firstName
           ? `${person.firstName || ''}, ${person.lastName || ''}`
@@ -294,59 +388,33 @@ export const CMPerson = () => {
                                 person.leadReturnId
                               )
                             }>View</button></td>
-                            <td>
+                            {/* <td>
         <div className="lr-table-btn">
           <button className="save-btn1" >Edit</button>
           <button className="del-button" >Delete</button>
         </div>
-      </td>
+      </td> */}
     </tr>
   ))}
 </tbody>
 
         </table>
-      </div>
 
-      {/* Action Buttons */}
-      {/* <div className="action-buttons">
-        <button onClick={() => handleNavigation('/LRPerson1')} >Add Person</button>
-        <button onClick={handleEditPerson}>Edit</button>
-        <button onClick={handleDeletePerson}>Delete</button>
+      {/* <div className="bottom-buttons">
+      <button onClick={() => handleNavigation('/CMPerson1')} className="save-btn1">Add Person</button>
       </div> */}
 
-      {/* Bottom Buttons */}
-      <div className="bottom-buttons">
-      <button onClick={() => handleNavigation('/CMPerson1')} className="save-btn1">Add Person</button>
-        {/* <button className="back-btn"onClick={() => handleNavigation('/LRReturn')} >Back</button>
-        <button className="next-btn"onClick={() => handleNavigation('/LRVehicle')} >Next</button>
-        <button className="save-btn">Save</button>
-        <button className="cancel-btn">Cancel</button> */}
-      </div>
-
-      <div className = "content-to-add">
-     
-     <h4 className="return-form-h4"> Add Comment</h4>
-       <div className="return-form">
-         <textarea
-          //  value={returnData.results}
-          //  onChange={(e) => handleInputChange("results", e.target.value)}
-           placeholder="Enter comments"
-         ></textarea>
-       </div>
-
-       <div className="form-buttons-return">
-         <button className="save-btn1">Add Comment</button>
-         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
-         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
-         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
-       </div>
+<Comment/>
+</div>
 </div>
 
-      </div>
       <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
         onNext={() => navigate("/LRVehicle")} // Takes user to CM Return page
       />
+    </div>
+    </div>
+    </div>
     </div>
   );
 };

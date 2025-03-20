@@ -329,7 +329,7 @@
     overflow-y: auto; 
     margin-bottom: 50px;
     align-items: center;
-    height: calc(100vh - 10px); /* Ensures content fits inside viewport */
+    height: calc(100vh - 10px);
     padding-bottom: 80px; /* Adds space at the bottom */
     box-sizing: border-box;
   }

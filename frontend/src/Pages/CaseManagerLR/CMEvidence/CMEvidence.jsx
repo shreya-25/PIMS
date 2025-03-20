@@ -1,12 +1,30 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
+import React, { useContext, useState, useEffect} from 'react';
+import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from '../../../components/Navbar/Navbar';
 import "./CMEvidence.css"; // Custom CSS file for Evidence styling
 import FootBar from '../../../components/FootBar/FootBar';
+import axios from "axios";
+import { CaseContext } from "../../CaseContext";
+import Comment from "../../../components/Comment/Comment";
+
 
 
 export const CMEvidence = () => {
-  const navigate = useNavigate(); // Initialize navigate hook
+  const navigate = useNavigate();
+   const location = useLocation();
+
+   const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date)) return "";
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const year = date.getFullYear().toString().slice(-2);
+    return `${month}/${day}/${year}`;
+  };
+
+  const { leadDetails, caseDetails } = location.state || {};
+
 
   // Sample evidence data
   const [evidence, setEvidence] = useState([
@@ -63,6 +81,13 @@ export const CMEvidence = () => {
     navigate(route); // Navigate to respective page
   };
 
+   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+              const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+            
+              const onShowCaseSelector = (route) => {
+                navigate(route, { state: { caseDetails } });
+            };
+
   return (
     <div className="lrevidence-container">
       {/* Navbar */}
@@ -88,31 +113,94 @@ export const CMEvidence = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="main-contentLRE">
-      <div className="main-content-cl">
-        {/* Left Section */}
-        <div className="left-section">
+      <div className="LRI_Content">
+       <div className="sideitem">
+                    <ul className="sidebar-list">
+                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
+                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
+                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
+                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
+                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
+                        <li className="sidebar-item">Generate Report</li>
+                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
+
+                            {/* Case Information Dropdown */}
+        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▼" : "▲" }
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Case Scratchpad
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+
+
+                                 {/* Lead Management Dropdown */}
+                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
+
+                    </ul>
+                </div>
+                <div className="left-content">
+     
+        {/* <div className="left-section">
           <img
             src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
             alt="Police Department Logo"
             className="police-logo-lr"
           />
+        </div> */}
+        <div className="case-header">
+          <h2 className="">EVIDENCE INFORMATION</h2>
         </div>
 
-
-        {/* Center Section */}
-        <div className="center-section">
-          <h2 className="title">EVIDENCE INFORMATION</h2>
-        </div>
-
-         {/* Right Section */}
-         <div className="right-section">
-        </div>
-      </div>
-
-        {/* Evidence Form */}
-        <div className = "content-to-add">
+        
+        {/* <div className = "content-to-add">
         <h4 className="evidence-form-h4">Enter Evidence Details</h4>
         <div className="evidence-form">
           <div className="form-row-evidence">
@@ -148,19 +236,17 @@ export const CMEvidence = () => {
             ></textarea>
           </div>
         </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="form-buttons">
+        </div> */}
+        {/* <div className="form-buttons">
           <button className="save-btn1" onClick={handleAddEvidence}>Add Evidence</button>
-          {/* <button className="back-btn" onClick={() => handleNavigation("/LREnclosures")}>Back</button>
-          <button className="next-btn" onClick={() => handleNavigation("/LRPictures")}>Next</button>
-          <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button> */}
-        </div>
+        </div> */}
+
+<div className = "LRI-content-section">
+
+<div className = "content-subsection">
 
         {/* Evidence Table */}
-        <table className="timeline-table">
+        <table className="leads-table">
           <thead>
             <tr>
               <th>Date Entered</th>
@@ -182,30 +268,15 @@ export const CMEvidence = () => {
             ))}
           </tbody>
         </table>
-        <div className = "content-to-add">
-     
-     <h4 className="return-form-h4"> Add Comment</h4>
-       <div className="return-form">
-         <textarea
-          //  value={returnData.results}
-          //  onChange={(e) => handleInputChange("results", e.target.value)}
-           placeholder="Enter comments"
-         ></textarea>
-       </div>
-
-       <div className="form-buttons-return">
-         <button className="save-btn1">Add Comment</button>
-         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
-         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
-         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
-       </div>
-</div>
-      
-      </div>
+        <Comment/>
+        </div>
+        </div>
       <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
         onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
       />
+    </div>
+    </div>
     </div>
   );
 };
