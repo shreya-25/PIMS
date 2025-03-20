@@ -13,6 +13,8 @@ const LVRoutes = require("./routes/LVRoutes.js");
 const LEnRoutes = require("./routes/LEnRoutes.js");
 const { dbConnect } = require("./config/dbConnect"); // Import dbConnect properly
 
+const reportRoutes = require("./routes/reportRoutes.js"); // For report generation
+
 const app = express();
 
 // Middleware
@@ -33,6 +35,8 @@ app.use("/api/leadReturnResult", leadReturnResultRoutes);
 app.use("/api/lrperson", LPRoutes);
 app.use("/api/lrvehicle", LVRoutes);
 app.use("/api/lrenclosure", LEnRoutes);
+
+app.use("/api/report", reportRoutes); // For report generation
 
 
 // Start Server
