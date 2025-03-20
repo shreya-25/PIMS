@@ -16,6 +16,8 @@ export const CMInstruction = () => {
       const [error, setError] = useState("");
     
         const { caseDetails, leadDetails } = location.state || {};
+        console.log(caseDetails, leadDetails);
+
 
         const handleLRClick = () => {
           navigate("/CMReturn", { state: {caseDetails, leadDetails } });
@@ -61,11 +63,13 @@ export const CMInstruction = () => {
     
         const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
         const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+        const leadOrigin = leadDetails?.id;
       
         const onShowCaseSelector = (route) => {
-          navigate(route, { state: { caseDetails } });
+          navigate(route, { state: {caseDetails, leadDetails, leadOrigin}});
       };
-
+      console.log("leadOrigin", leadOrigin);
+      console.log("leaddetails", leadDetails);
 
   const handleInputChange = (field, value) => {
     setLeadData({ ...leadData, [field]: value });
@@ -287,7 +291,7 @@ console.log(selectedLead);
 
         {/* Right Section */}
         <div className="LRI-content-section">
-        <div className="info-table-sec">
+        {/* <div className="info-table-sec">
           <table className="info-table">
             <tbody>
               <tr>
@@ -340,7 +344,31 @@ console.log(selectedLead);
               </tr>
             </tbody>
           </table>
-        </div>
+        </div> */}
+
+{/* <div className="info-table-sec1"> */}
+  <table className="leads-table">
+    <thead>
+      <tr>
+
+        <th style={{ width: "10%" }}>Lead No.</th>
+          <th style={{ width: "10%" }}>Incident No.</th>
+          <th style={{ width: "10%" }}>Subnumber</th>
+          <th style={{ width: "8%" }}>Assigned Date</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td>{selectedLead.leadNo} </td>
+        <td>{leadData.incidentNo}</td>
+        <td>{leadData.subNumber}</td>
+        <td>{formatDate(leadData.assignedDate)} </td>
+
+      </tr>
+    </tbody>
+  </table>
+{/* </div> */}
+
 
        {/* Bottom Content */}
        <div className="bottom-content-LRI">
