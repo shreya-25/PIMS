@@ -1,0 +1,135 @@
+.comment-section {
+    width: 100%;
+    margin: 20px auto;
+    font-family: Arial, sans-serif;
+  }
+  
+  h3 {
+    margin-bottom: 10px;
+  }
+  
+  .tabs {
+    display: flex;
+    gap: 15px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+  }
+  
+  .tabs span {
+    cursor: pointer;
+    color: #888;
+  }
+  
+  .tabs .active-tab {
+    font-weight: bold;
+    color: black;
+    border-bottom: 3px solid rgb(23, 23, 145);
+  }
+  
+  .comments {
+    max-height: 100%;
+    overflow-y: auto;
+    margin-bottom: 10px;
+  }
+  
+  .comment-bar {
+    border: 1px solid #ddd;
+    padding: 10px;
+    position: relative;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    margin-bottom: 10px;
+  }
+  
+  /* Comment header to align author and edit icon */
+  .comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .comment p {
+    margin: 5px 0;
+    text-align: start;
+  }
+  
+  /* Edit icon in the top-right corner */
+  .edit-icon {
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+  }
+  
+  .edit-icon:hover {
+    transform: scale(1.1);
+  }
+  
+  .comment-input {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .comment-input textarea {
+    width: 100%;
+    height: 60px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    resize: none;
+    font-size: 20px;
+  }
+  
+  .buttons {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .customer-btn {
+    background-color: rgba(23, 23, 145, 0.667);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .customer-btn:hover {
+    background-color: rgba(19, 19, 100, 0.5);
+  }
+  
+  /* Save and cancel button styling */
+  .edit-options {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  
+  .save-btn, .cancel-btn {
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  /* .save-btn {
+    background-color: #28a745;
+    color: white;
+  }
+  
+  .cancel-btn {
+    background-color: #dc3545;
+    color: white;
+  }
+  
+  .save-btn:hover {
+    background-color: #218838;
+  }
+  
+  .cancel-btn:hover {
+    background-color: #c82333;
+  }
+   */

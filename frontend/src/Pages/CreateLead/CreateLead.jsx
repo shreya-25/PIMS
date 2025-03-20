@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect} from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from "axios";
 import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 import Navbar from '../../components/Navbar/Navbar'; // Import your Navbar component
 import './CreateLead.css'; // Create this CSS file for styling
+import { CaseContext } from "../CaseContext";
 
 
 export const CreateLead = () => {
@@ -11,8 +12,11 @@ export const CreateLead = () => {
   const location = useLocation();
   const leadEntries = location.state?.leadEntries || [];
 const caseDetails = location.state?.caseDetails || {}; // Get case details
+const leadDetails =  location.state?.leadDetails || {}; // Get case details
+const leadOrigin = location.state?.leadOrigin || null; // Directly assign leadOrigin
 const { id: caseID, title: caseName } = caseDetails;  // Extract Case ID & Case Title
 
+console.log(caseDetails, leadDetails, leadOrigin);
 
 
 
@@ -33,6 +37,7 @@ const { id: caseID, title: caseName } = caseDetails;  // Extract Case ID & Case 
     assignedOfficer: '',
   });
 
+ const { selectedCase, setSelectedLead } = useContext(CaseContext);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -74,7 +79,7 @@ useEffect(() => {
 
       // Otherwise, fetch the max lead number using the caseNo and caseName.
       const response = await axios.get(
-        `http://localhost:5000/api/lead/maxLeadNumber?caseNo=${caseNo}&caseName=${encodeURIComponent(caseName)}`
+        `http://localhost:5000/api/lead/maxLeadNumber?caseNo=${selectedCase.caseNo}&caseName=${encodeURIComponent(selectedCase.caseName)}`
       );
       const maxLeadNo = response.data.maxLeadNo || 0;
       const newLeadNumber = maxLeadNo + 1;
@@ -379,7 +384,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
                   <input
                     type="text"
                     className="input-field"
-                    value={leadData.leadOrigin}
+                    value={leadData.leadOrigin || leadOrigin}
                     onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
                     placeholder=""
                   />

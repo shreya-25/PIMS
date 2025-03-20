@@ -3,6 +3,7 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%; /* or 100vh */
+  width: 100%;
 }
 
 .lead-review-page {
@@ -27,9 +28,8 @@ html, body {
   min-height: 100%;
 } */
 
-.lead-review-container {
+.lead-review-container1 {
   display: flex;
-  flex: 1;  /* allows container to fill remaining vertical space */
 }
 
 /* Sidebar */
@@ -39,17 +39,27 @@ html, body {
 
 /* Content area */
 .lead-main-content {
-  flex: 1;           /* the main content grows to fill remaining width */
-  margin-left: 10%;  /* or remove if you don't need extra spacing */
+  flex: 1;      
   padding: 20px;
+  margin-left: 20px;
   box-sizing: border-box;
 }
 
 
+.form_and_tracker
+{
+  display: flex;
+  margin-top: 50px;
+  min-width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
 /* Form Section container (groups fields) */
 .form-section {
   margin-bottom: 20px;
-  width: 7%;
+  width: 70%;
 }
 
 /* Label styling */
@@ -72,13 +82,7 @@ html, body {
   border-radius: 4px;
 }
 
-.form_and_tracker
-{
-  display: flex;
-  margin-top: 20px;
-  min-width: 1000%;
-  align-items: center;
-}
+
 
 /* Info Table styling (top) */
 .details-table {
@@ -100,6 +104,11 @@ html, body {
   width: 500px;
   font-weight: 600;
   color: #555;
+}
+
+.info-item input
+{
+  font-size: 20px;
 }
 
 /* Input fields */

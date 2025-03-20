@@ -17,13 +17,28 @@ import html2canvas from "html2canvas";
 
 
 export const LeadsDeskCopy = () => {
+
+  useEffect(() => {
+    // Apply style when component mounts
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      // Reset to default when component unmounts
+      document.body.style.overflow = "auto";
+    };
+  }, []);
   const navigate = useNavigate();
   const pdfRef = useRef();
   const { selectedCase, setSelectedLead } = useContext(CaseContext);
   const { persons } = useDataContext(); // Fetch Data from Context
+  
 
     // State to control the modal
     const [showPersonModal, setShowPersonModal] = useState(false);
+
+     // ----- New: Hierarchy search state -----
+  const [hierarchyLeadInput, setHierarchyLeadInput] = useState("");
+  const [hierarchyResult, setHierarchyResult] = useState([]);
 
     // We’ll store the leadReturn info we need for the modal
     const [personModalData, setPersonModalData] = useState({
@@ -49,6 +64,21 @@ export const LeadsDeskCopy = () => {
       setPersonModalData({ leadNo, description, caseNo, caseName, leadReturnId });
       setShowPersonModal(true);
     };
+
+    
+  // Function to format dates as MM/DD/YY
+const formatDate = (dateString) => {
+  if (!dateString) return ""; // Handle empty dates
+  const date = new Date(dateString);
+  if (isNaN(date)) return ""; // Handle invalid dates
+
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  const year = date.getFullYear().toString().slice(-2); // Get last two digits of the year
+
+  return `${month}/${day}/${year}`;
+};
+
   
     // Function to close the modal
     const closePersonModal = () => {
@@ -255,27 +285,77 @@ export const LeadsDeskCopy = () => {
   //   fetchLeadsReturnsAndPersons();
   // }, [selectedCase]);
 
-  const fetchLeadHierarchy = async (leadNo, token) => {
+  const fetchLeadHierarchy = async (leadNo, caseNo, caseName, token, hierarchy = []) => {
     try {
-      // Fetch the lead details by lead number
-      const { data: leadData } = await axios.get(
-        `http://localhost:5000/api/lead/${leadNo}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-  
-      // If this lead has a parent, fetch its hierarchy recursively.
-      if (leadData.parentLeadNo) {
-        const parentHierarchy = await fetchLeadHierarchy(leadData.parentLeadNo, token);
-        return [...parentHierarchy, leadData.leadNo];
-      } else {
-        // No parent lead; this is the top of the chain.
-        return [leadData.leadNo];
-      }
+        console.log(`🔍 Fetching hierarchy for LeadNo: ${leadNo}`);
+
+        // Fetch lead details
+        const { data: leadData } = await axios.get(
+            `http://localhost:5000/api/lead/lead/${leadNo}/${caseNo}/${encodeURIComponent(caseName)}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        console.log(`✅ Lead Data Fetched for ${leadNo}:`, leadData);
+
+        if (!leadData || leadData.length === 0) {
+            console.warn(`⚠️ No lead data found for LeadNo: ${leadNo}`);
+            return [hierarchy];
+        }
+
+        // Extract the first matching lead (assuming API returns an array)
+        const lead = leadData[0];
+
+        // Build the current hierarchy chain
+        const currentHierarchy = [...hierarchy, lead.leadNo];
+        console.log(`📌 Current Hierarchy Chain:`, currentHierarchy);
+
+        // If there are parent leads, fetch each one recursively
+        if (lead.parentLeadNo && lead.parentLeadNo.length > 0) {
+            console.log(`🔄 Fetching Parent Leads for ${leadNo}:`, lead.parentLeadNo);
+            let allHierarchies = [];
+            for (const parentNo of lead.parentLeadNo) {
+                // Each recursive call uses the current chain
+                const parentHierarchyPaths = await fetchLeadHierarchy(parentNo, caseNo, caseName, token, currentHierarchy);
+                allHierarchies.push(...parentHierarchyPaths);
+            }
+            // Print each separate hierarchy path line by line
+            allHierarchies.forEach(path => {
+                console.log(`🔗 Separate Hierarchy for Lead ${leadNo}:`);
+                path.forEach(item => console.log(item));
+                console.log('------------------'); // Separator for clarity
+            });
+            return allHierarchies;
+        } else {
+            // No parent leads means this is a complete hierarchy path.
+            console.log(`🎯 Final Hierarchy for Lead ${leadNo}:`);
+            currentHierarchy.forEach(item => console.log(item));
+            return [currentHierarchy];
+        }
     } catch (error) {
-      console.error("Error fetching lead hierarchy for", leadNo, error);
-      return [];
+        console.error(`❌ Error fetching lead hierarchy for ${leadNo}:`, error);
+        return [hierarchy];
     }
-  };
+};
+
+const handleShowHierarchy = async () => {
+  if (!hierarchyLeadInput) return;
+  const token = localStorage.getItem("token");
+  try {
+    const result = await fetchLeadHierarchy(
+      hierarchyLeadInput,
+      selectedCase.caseNo,
+      selectedCase.caseName,
+      token
+    );
+    // Set the result which is an array of hierarchy paths (each path is an array of lead numbers)
+    setHierarchyResult(result);
+  } catch (err) {
+    console.error("Error fetching hierarchy:", err);
+    setHierarchyResult([]);
+  }
+};
+
+
   
 
   useEffect(() => {
@@ -343,7 +423,10 @@ export const LeadsDeskCopy = () => {
             }
   
             // Fetch the lead hierarchy for this lead using the helper function
-            hierarchyChain = await fetchLeadHierarchy(lead.leadNo, token);
+            hierarchyChain = await fetchLeadHierarchy(  lead.leadNo,
+              selectedCase.caseNo,
+              selectedCase.caseName,
+              token);
   
             return {
               ...lead,
@@ -647,30 +730,119 @@ export const LeadsDeskCopy = () => {
     }, 500);
   };
   
+    const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+    const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+  
+  //   const onShowCaseSelector = (route) => {
+  //     navigate(route, { state: { caseDetails } });
+  // };
   
   
   return (
-    <div ref={pdfRef} className="lead-instructions-page">
+    <div ref={pdfRef} className="lead-desk-page">
       <Navbar />
 
-      <div className="main-content-cl1">
+      <div className="main-content-ld">
+      <div className="sideitem">
+                    <ul className="sidebar-list">
+                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
+                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
+                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
+                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
+                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
+                        <li className="sidebar-item">Generate Report</li>
+                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
+
+                            {/* Case Information Dropdown */}
+        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▼" : "▲" }
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => navigate("/LeadLog")}>
+              View Lead Log
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/OfficerManagement")}>
+              Officer Management
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Case Scratchpad
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/ViewHierarchy")}>
+              Generate Report
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk" )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage" )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+
+
+                                 {/* Lead Management Dropdown */}
+                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => navigate("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => navigate("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
+
+                    </ul>
+                </div>
         {/* Left Section */}
-        <div className="left-section">
+        {/* <div className="left-section">
           <img
             src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
             alt="Police Department Logo"
             className="police-logo-cl"
           />
-        </div>
+        </div> */}
 
         {/* Center Section */}
-        <div className="center-section-ld">
+        {/* <div className="center-section-ld">
           <h1 className="title">LEADS DESK</h1>
           <h1>
                Case: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"}
           </h1>
         </div>
-      </div>
+      </div> */}
+          <div className="left-content">
+
+                <div className="case-header">
+                  <h2 className="">LEADS DESK</h2>
+                </div>
+
+                <div className="center-section-ld">
+          <h1>
+               Case: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"}
+          </h1>
+        </div>
 
       <div className="bottom-sec-ld" id="main-content">
 
@@ -692,15 +864,45 @@ export const LeadsDeskCopy = () => {
                         )} */}
                 </div>
     <div className="search_and_hierarchy_container">
-    <div className="search-container-ld">
+    <div className="search-bar">
+      <div className="search-container1">
+      <i className="fa-solid fa-magnifying-glass"></i>
       <input
         type="text"
-        className="search-input"
-        placeholder="Search Lead Number"
+        className="search-input1"
+        placeholder="Search Lead"
       />
-      <button className="search-button">Search</button>
+      {/* <button className="search-button">Search</button> */}
+      </div>
+      </div>
+
+      <div className="hierarchy-search">
+              <input
+                type="text"
+                className="input-field"
+                placeholder="Enter Lead Number"
+                value={hierarchyLeadInput}
+                onChange={(e) => setHierarchyLeadInput(e.target.value)}
+              />
+              <button className="search-button" onClick={handleShowHierarchy}>
+                Show Hierarchy
+              </button>
+            </div>
     </div>
-    </div>
+
+    {hierarchyResult && hierarchyResult.length > 0 && (
+            <div className="hierarchy-result">
+              <h3>Hierarchy for Lead {hierarchyLeadInput}:</h3>
+              {hierarchyResult.map((path, idx) => (
+                <div key={idx} className="hierarchy-path">
+                  {path.map((lead, id) => (
+                    <div key={id}>{lead}</div>
+                  ))}
+                  <hr />
+                </div>
+              ))}
+            </div>
+          )}
 
         {/* Loop through multiple leads */}
         {leadsData.map((lead, leadIndex) => (
@@ -717,8 +919,9 @@ export const LeadsDeskCopy = () => {
                       <input
                             type="text"
                             value={lead.leadNo}
-                            className="lead-input1"
-                            style={{ fontSize: '50px', padding: '10px', textAlign: 'center' }}
+                            // className="lead-input1"
+                             className = "input-field"
+                            // style={{ fontSize: '20px', padding: '10px', textAlign: 'center' }}
                             readOnly
                           />
 
@@ -729,8 +932,9 @@ export const LeadsDeskCopy = () => {
                            <input
                             type="text"
                             value={lead.parentLeadNo}
-                            className="lead-input1"
-                            style={{ fontSize: '50px', padding: '10px', textAlign: 'center' }}
+                            // className="lead-input1"
+                            className = "input-field"
+                            // style={{ fontSize: '20px', padding: '10px', textAlign: 'center' }}
                             readOnly
                           />
 
@@ -738,7 +942,8 @@ export const LeadsDeskCopy = () => {
 
                       <td className="table-label">Assigned Date:</td>
                       <td className="table-input">
-                        <input type="text" value={lead.assignedDate} className="input-field" readOnly />
+                        <input type="text" value={formatDate(lead.assignedDate)} className="input-field" readOnly />
+                        
                       </td>
                     </tr>
 
@@ -751,7 +956,9 @@ export const LeadsDeskCopy = () => {
                     <tr>
                       <td className="table-label">Lead Hierarchy:</td>
                       <td className="table-input" colSpan={5}>
-                        <input type="text" value={lead.leadHierarchy} className="input-field" readOnly />
+                        <input type="text" 
+                        value={lead.leadHierarchy ? lead.leadHierarchy : "No Hierarchy Available"} 
+                        className="input-field" readOnly />
                       </td>
                     </tr>
                   </tbody>
@@ -789,7 +996,8 @@ export const LeadsDeskCopy = () => {
                   resize: "none",
                   overflow: "hidden",
                   height: "auto",
-                  fontFamily: "Segoe UI",
+                  // fontFamily: "Segoe UI",
+                  fontFamily:"Arial",
                 }}
                 rows={Math.max(returnItem.leadReturnResult.length / 50, 2)}
               />
@@ -1044,7 +1252,9 @@ export const LeadsDeskCopy = () => {
                                
 
             </div>
-            <div className="p-6">
+          </div>
+        ))}
+                <div className="p-6">
                 <Pagination
   currentPage={currentPage}
   totalEntries={totalEntries}  // Automatically calculate total entries
@@ -1053,9 +1263,8 @@ export const LeadsDeskCopy = () => {
   onPageSizeChange={setPageSize} // Update page size state
 />
     </div>
-          </div>
-        ))}
       </div>
+      
       <div className = "last-sec">
       <div className = "btn-sec">
       <button className="save-btn1"  onClick={() => runReport()}>
@@ -1068,7 +1277,8 @@ export const LeadsDeskCopy = () => {
 
       </div>
 
-    
+    </div>
+    </div>
     </div>
   );
 };

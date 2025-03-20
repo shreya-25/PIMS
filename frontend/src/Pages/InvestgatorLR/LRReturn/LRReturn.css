@@ -51,6 +51,7 @@ body {
   gap: 20px;
   align-items: flex-start;
   margin: 0px 20px 12px 20px;
+  width: 100%;
 }
 
  /* Left Section */
@@ -78,28 +79,32 @@ body {
  }
 
 
-
-
-
-
 /* General Layout */
-.lrreturn-container {
+.lrreturn-container1 {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: #f4f4f4;
+  /* background-color: #f4f4f4; */
 }
 
 .main-contentLRR {
-  /* flex: 1; */
-  padding: 20px;
+  width: 100%;
   margin-bottom: 50px; /* Adds space between content and FootBar */
+  display: flex;
+  flex-direction: column;
+  /* justify-content: center; */
+  align-items: center;
 }
 
 .title {
   font-size: 24px;
   margin-bottom: 20px;
   color: #333;
+}
+
+.bottom-sec-lr
+{
+  width: 80%;
 }
 
 /* Returns Table */
