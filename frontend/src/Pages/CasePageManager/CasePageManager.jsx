@@ -12,6 +12,8 @@ import Pagination from "../../components/Pagination/Pagination";
 
 
 export const CasePageManager = () => {
+
+  
     const navigate = useNavigate();
     const location = useLocation();
     const { caseDetails } = location.state || {};
@@ -647,9 +649,9 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
   >
     <div className="sidebar-content">
             <span className="sidebar-text">
-              {tab === "assignedLeads" && "My Assigned Leads"}
-              {tab === "pendingLeads" && "My Pending Leads"}
-              {tab === "pendingLeadReturns" && "My Pending Lead Returns"}
+              {tab === "assignedLeads" && "Assigned Leads"}
+              {tab === "pendingLeads" && "Accepted Leads"}
+              {tab === "pendingLeadReturns" && "Lead Returns fro Review"}
               {tab === "allLeads" && "Total Generated Leads"}
             </span>
             <span className="sidebar-number">
@@ -733,7 +735,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                
                 </div> */}
                 {/* Content Area */}
-                <div className="content">
+                {/* <div className="table-section1"> */}
                   {/* <div className='searchContainer'>
                     <Searchbar placeholder="Search Lead" />
                     </div> */}
@@ -746,23 +748,23 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                     {/* Tab Navigation */}
 
                     <div className="stats-bar">
-                        {/* <span
+                        <span
                             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("assignedLeads")}
                         >
                             Assigned Leads: {isMainStreetThreat ? 0 : leads.assignedLeads.length}
-                        </span> */}
+                        </span>
                         <span
                             className={`hoverable ${activeTab === "pendingLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("pendingLeads")}
                           >
-                            Pending Leads: {isMainStreetThreat ? 0 : leads.pendingLeads.length}
+                            Accepted Leads: {isMainStreetThreat ? 0 : leads.pendingLeads.length}
                           </span>
                         <span
                             className={`hoverable ${activeTab === "pendingLeadReturns" ? "active" : ""}`}
                             onClick={() => handleTabClick("pendingLeadReturns")}
                         >
-                            Pending Lead Returns: {isMainStreetThreat ? 0 : leads.pendingLeadReturns.length}
+                            Lead Returns for Review: {isMainStreetThreat ? 0 : leads.pendingLeadReturns.length}
                         </span>
                         <span
                             className={`hoverable ${activeTab === "allLeads" ? "active" : ""}`}
@@ -970,14 +972,14 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
     <table className="leads-table">
       <thead>
         <tr>
-          <th>Lead No.</th>
+        <th style={{ width: "10%" }}>Lead No.</th>
           <th>Lead Description</th>
-          <th>Due Date</th>
-          <th>Priority</th>
-          <th>Days Left</th>
-          <th>Flags</th>
-          <th>Assigned Officers</th>
-          <th></th>
+          <th style={{ width: "10%" }}>Due Date</th>
+          <th style={{ width: "8%" }}>Priority</th>
+          <th style={{ width: "8%" }}>Days Left</th>
+          <th style={{ width: "6%" }}>Flags</th>
+          <th style={{ width: "14%" }}>Assigned Officers</th>
+          <th style={{ width: "12%" }}></th>
         </tr>
       </thead>
       <tbody>
@@ -1012,7 +1014,12 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
               <td>{lead.priority || "N/A"}</td>
               <td>{calculateRemainingDays(lead.dueDate) }</td>
               <td>{lead.flags?.join(", ") || "None"}</td>
-              <td>{lead.assignedOfficers?.join(", ") || "Unassigned"}</td>
+              <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
+                {/* {lead.assignedOfficers.join(", ")} */}
+                {lead.assignedOfficers.map((officer, index) => (
+                  <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
+                ))}
+                </td>
               <td>
                 <button
                   className="view-btn1"
@@ -1475,7 +1482,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                         <div className="no-leads-message">
                         </div>
                     )}
-                </div>
+                {/* </div> */}
                 {/* <div className="gotomainpagebtn">
                    <button className="mainpagebtn"onClick={() => handleNavigation("/HomePage")}>Go to Home Page</button>
                 </div> */}

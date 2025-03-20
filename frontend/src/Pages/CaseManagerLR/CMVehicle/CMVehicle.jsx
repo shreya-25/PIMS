@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import './CMVehicle.css';
 import Navbar from '../../../components/Navbar/Navbar';
 import axios from "axios";
+import Comment from "../../../components/Comment/Comment";
 import { CaseContext } from "../../CaseContext";
 import FootBar from '../../../components/FootBar/FootBar';
 import VehicleModal from "../../../components/VehicleModal/VehicleModel";
@@ -19,6 +20,17 @@ export const CMVehicle = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+
+    const formatDate = (dateString) => {
+      if (!dateString) return "";
+      const date = new Date(dateString);
+      if (isNaN(date)) return "";
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
+      const day = date.getDate().toString().padStart(2, "0");
+      const year = date.getFullYear().toString().slice(-2);
+      return `${month}/${day}/${year}`;
+    };
+  
   
 
   const [vehicles, setVehicles] = useState([
@@ -162,6 +174,12 @@ export const CMVehicle = () => {
     });
   };
 
+   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+          const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+        
+          const onShowCaseSelector = (route) => {
+            navigate(route, { state: { caseDetails } });
+        };
 
 
   return (
@@ -211,154 +229,132 @@ export const CMVehicle = () => {
          </div>
        </div>
 
+
+       <div className="LRI_Content">
+      <div className="sideitem">
+                    <ul className="sidebar-list">
+                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
+                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
+                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
+                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
+                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
+                        <li className="sidebar-item">Generate Report</li>
+                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
+
+                            {/* Case Information Dropdown */}
+        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▼" : "▲" }
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Case Scratchpad
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+
+
+                                 {/* Lead Management Dropdown */}
+                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
+
+                    </ul>
+                </div>
+
+                <div className="left-content">
+
       {/* Main Content */}
-      <div className="main-contentLRV">
-      <div className="main-content-cl">
+      {/* <div className="main-contentLRV"> */}
+      {/* <div className="main-content-cl">
         {/* Left Section */}
-        <div className="left-section">
+        {/* <div className="left-section">
           <img
             src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
             alt="Police Department Logo"
             className="police-logo-lr"
           />
-        </div>
+        </div> */} 
 
 
         {/* Center Section */}
-        <div className="center-section">
-          <h2 className="title">VEHICLE INFORMATION</h2>
+        <div className="case-header">
+          <h2 className="">VEHICLE INFORMATION</h2>
         </div>
+      {/* </div> */}
 
-         {/* Right Section */}
-         <div className="right-section">
-        </div>
-      </div>
+      <div className = "LRI-content-section">
 
-      <div className = "content-to-add">
-        {/* Vehicle Form */}
-        <div className="vehicle-form">
-          <div className="form-row">
-            <label>Year:</label>
-            <input
-              type="text"
-              value={vehicleData.year}
-              onChange={(e) => handleChange('year', e.target.value)}
-            />
-            <label>Make:</label>
-            <input
-              type="text"
-              value={vehicleData.make}
-              onChange={(e) => handleChange('make', e.target.value)}
-            />
-            <label>Model:</label>
-            <input
-              type="text"
-              value={vehicleData.model}
-              onChange={(e) => handleChange('model', e.target.value)}
-            />
-          </div>
-          {/* <label>Color:</label>
-            <input
-              type="text"
-              value={vehicleData.color}
-              onChange={(e) => handleChange('color', e.target.value)}
-            /> */}
-          
-          <div className="form-row">
-            <label>Plate:</label>
-            <input
-              type="text"
-              value={vehicleData.plate}
-              onChange={(e) => handleChange('plate', e.target.value)}
-            />
-            <label>Category:</label>
-            <input
-              type="text"
-              value={vehicleData.category}
-              onChange={(e) => handleChange('category', e.target.value)}
-            />
-            <label>Type:</label>
-            <input
-              type="text"
-              value={vehicleData.type}
-              onChange={(e) => handleChange('type', e.target.value)}
-            />
-          </div>
-          <div className="form-row">
-            <label>VIN:</label>
-            <input
-              type="text"
-              value={vehicleData.vn}
-              onChange={(e) => handleChange('vn', e.target.value)}
-            />
-            <label>Primary Color:</label>
-            <input
-              type="text"
-              value={vehicleData.primaryColor}
-              onChange={(e) => handleChange('primaryColor', e.target.value)}
-            />
-            <label>Secondary Color:</label>
-            <input
-              type="text"
-              value={vehicleData.secondaryColor}
-              onChange={(e) => handleChange('secondaryColor', e.target.value)}
-            />
-          </div>
-          <div className="form-row">
-            <label>State:</label>
-            <input
-              type="text"
-              value={vehicleData.state}
-              onChange={(e) => handleChange('state', e.target.value)}
-            />
-          </div>
-          <div className="form-row">
-            <label>Information:</label>
-            <textarea
-              value={vehicleData.information}
-              onChange={(e) => handleChange('information', e.target.value)}
-            ></textarea>
-          </div>
-        </div>
-        </div>
-
-        {/* Buttons */}
-        <div className="form-buttons">
-        <button className="save-btn1" onClick={handleAddVehicle}>
-            Add Vehicle
-          </button>
-          {/* <button className="back-btn">Back</button>
-          <button className="next-btn">Next</button>
-          <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button> */}
-        </div>
+<div className = "content-subsection">
 
         {/* Vehicle Table */}
-        <table className="timeline-table">
+        <table className="leads-table">
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th>Associated Return Id</th>
+              <th style={{ width: "15%" }}>Associated Return ID</th>
               {/* <th>Year</th> */}
               <th>Make</th>
               <th>Model</th>
               <th>Color</th>
               <th>State</th>
-              <th>Access</th>
-              <th>Additional Details</th>
-              <th></th>
+              <th style={{ width: "13%" }}>Access</th>
+              <th style={{ width: "13%" }}>Additional Details</th>
+              {/* <th></th> */}
             </tr>
           </thead>
           <tbody>
     {vehicles.map((vehicle, index) => (
       <tr key={index}>
-        <td>{vehicle.enteredDate}</td>
+        <td>{formatDate(vehicle.enteredDate)}</td>
         <td>{vehicle.leadReturnId}</td>
         {/* <td>{vehicle.year}</td> */}
         <td>{vehicle.make}</td>
         <td>{vehicle.model}</td>
         <td style={{ textAlign: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'left', justifyContent: 'flex-start' }}>
           <span style={{ width: '60px', display: 'inline-block' }}>{vehicle.primaryColor}</span>
           <div
             style={{
@@ -398,36 +394,20 @@ export const CMVehicle = () => {
                     leadReturnId={vehicleModalData.leadReturnId}
                   />
 
-<td>
+{/* <td>
         <div className="lr-table-btn">
           <button className="save-btn1" >Edit</button>
           <button className="del-button" >Delete</button>
         </div>
-      </td>
+      </td> */}
       </tr>
     ))}
   </tbody>
         </table>
 
-        <div className = "content-to-add">
-     
-     <h4 className="return-form-h4"> Add Comment</h4>
-       <div className="return-form">
-         <textarea
-          //  value={returnData.results}
-          //  onChange={(e) => handleInputChange("results", e.target.value)}
-           placeholder="Enter comments"
-         ></textarea>
-       </div>
+      <Comment/>
 
-       <div className="form-buttons-return">
-         <button className="save-btn1">Add Comment</button>
-         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
-         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
-         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
-       </div>
-</div>
-
+      </div>
       </div>
 
       
@@ -436,5 +416,7 @@ export const CMVehicle = () => {
         onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
       />
     </div>
+    </div>
+</div>
   );
 };

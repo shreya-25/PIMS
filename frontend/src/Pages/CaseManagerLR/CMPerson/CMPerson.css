@@ -87,3 +87,12 @@ button:disabled {
 {
   font-size: 20px;
 }
+
+.Content-cmperson
+{
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
