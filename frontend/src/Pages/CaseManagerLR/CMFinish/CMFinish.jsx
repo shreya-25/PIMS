@@ -22,6 +22,72 @@ export const CMFinish = () => {
         };
       
         const { leadDetails, caseDetails } = location.state || {};
+        const [leadInstruction, setLeadInstruction] = useState({});
+        const [leadReturns, setLeadReturns] = useState([]);
+        const [leadPersons, setLeadPersons] = useState([]);
+        const [leadVehicles, setLeadVehicles] = useState([]);
+        const [leadEnclosures, setLeadEnclosures] = useState([]);
+        const [leadEvidences, setLeadEvidences] = useState([]);
+
+        const [selectedReports, setSelectedReports] = useState({
+          leadInstruction: false,
+          leadReturns: false,
+          leadPersons: false,
+          leadVehicles: false,
+          leadEnclosures: false,
+          leadEvidence: false,
+          leadPictures: false,
+          leadAudio: false,
+          leadVideos: false,
+          leadScratchpad: false,
+          leadTimeline: false,
+        });
+
+        const toggleReportSection = (sectionKey) => {
+          setSelectedReports((prev) => ({
+            ...prev,
+            [sectionKey]: !prev[sectionKey],
+          }));
+        };
+
+        const token = localStorage.getItem("token");
+        const handleRunReport = async () => {
+          try {
+            // Build the request body. Only include data for selected sections
+            // to keep the payload small (optional). The server can also handle
+            // skipping unselected sections if they come as null/undefined.
+            const body = {
+              user: "OfficerXYZ",  // Or from your auth context
+              reportTimestamp: new Date().toLocaleString(),
+      
+              // Pass the entire object or only if selected
+              leadInstruction: selectedReports.leadInstruction ? leadInstruction : null,
+              leadReturns: selectedReports.leadReturns ? leadReturns : null,
+              leadPersons: selectedReports.leadPersons ? leadPersons : null,
+              leadVehicles: selectedReports.leadVehicles ? leadVehicles : null,
+              // etc. for the rest
+      
+              // Also pass along which sections are selected
+              selectedReports,
+            };
+      
+            // Call your Node server endpoint
+            const response = await axios.post("http://localhost:5000/api/report/generate", body, {
+              responseType: "blob", // so we get the PDF back as a blob
+              headers: {
+                Authorization: `Bearer ${token}`, // Must match your verifyToken strategy
+              },
+            });
+            // Create a blob and open in a new browser tab OR force download
+      const file = new Blob([response.data], { type: "application/pdf" });
+      const fileURL = URL.createObjectURL(file);
+      window.open(fileURL); // Opens in a new tab for printing/previewing
+
+    } catch (error) {
+      console.error("Failed to generate report", error);
+      alert("Error generating PDF");
+    }
+  };
       
 
   const handleNavigation = (route) => {
@@ -33,6 +99,7 @@ export const CMFinish = () => {
                     const onShowCaseSelector = (route) => {
                       navigate(route, { state: { caseDetails } });
                   };
+
 
   return (
     <div className="lrfinish-container">
@@ -174,39 +241,50 @@ export const CMFinish = () => {
             <h4>Reports:</h4>
             <div className="report-column">
               <label>
-                <input type="checkbox" name="report" /> Lead Instruction
+                <input type="checkbox" name="report"  checked={selectedReports.leadInstruction}
+              onChange={() => toggleReportSection("leadInstruction")} /> Lead Instruction
               </label>
               <label>
-                <input type="checkbox" name="report" /> Lead Returns
+                <input type="checkbox" name="report" checked={selectedReports.leadReturns}
+              onChange={() => toggleReportSection("leadReturns")} /> Lead Returns
               </label>
               <label>
-                <input type="checkbox" name="report" /> Lead Persons
+                <input type="checkbox" name="report" checked={selectedReports.leadPersons}
+              onChange={() => toggleReportSection("leadPersons")} /> Lead Persons
               </label>
               <label>
-                <input type="checkbox" name="report" /> Lead Vehicles
+                <input type="checkbox" name="report"  checked={selectedReports.leadEnclosures}
+              onChange={() => toggleReportSection("leadVehicles")} /> Lead Vehicles
               </label>
               <label>
-                <input type="checkbox" name="report" /> Lead Enclosures
+                <input type="checkbox" name="report"  checked={selectedReports.leadEvidence}
+              onChange={() => toggleReportSection("leadEnclosures")} /> Lead Enclosures
               </label>
               <label>
-                <input type="checkbox" name="report" /> Lead Evidences
+                <input type="checkbox" name="report" checked={selectedReports.leadPictures}
+              onChange={() => toggleReportSection("leadEvidence")} /> Lead Evidences
               </label>
             </div>
             <div className="report-column">
               <label>
-                <input type="checkbox" name="report" /> Lead Pictures
+                <input type="checkbox" name="report" checked={selectedReports.leadPictures}
+              onChange={() => toggleReportSection("leadPictures")}/> Lead Pictures
               </label>
               <label>
-                <input type="checkbox" name="report" /> Lead Audio Description
+                <input type="checkbox" name="report"   checked={selectedReports.leadAudio}
+              onChange={() => toggleReportSection("leadAudio")}/> Lead Audio Description
               </label>
               <label>
-                <input type="checkbox" name="report" /> Lead Videos Description
+                <input type="checkbox" name="report"  checked={selectedReports.leadVideos}
+              onChange={() => toggleReportSection("leadVideos")} /> Lead Videos Description
               </label>
               <label>
-                <input type="checkbox" name="report" /> Lead Scratchpad Entries
+                <input type="checkbox" name="report" checked={selectedReports.leadScratchpad}
+              onChange={() => toggleReportSection("leadScratchpad")} /> Lead Scratchpad Entries
               </label>
               <label>
-                <input type="checkbox" name="report" /> Lead Timeline Entries
+                <input type="checkbox" name="report" checked={selectedReports.leadTimeline}
+              onChange={() => toggleReportSection("leadTimeline")} /> Lead Timeline Entries
               </label>
             </div>
           </div>
@@ -224,7 +302,7 @@ export const CMFinish = () => {
         <Comment/>
         {/* Buttons */}
         <div className="form-buttons-finish">
-          <button className="save-btn1">Run Report</button>
+          <button className="save-btn1" onClick={handleRunReport}>Run Report</button>
           <button className="save-btn1">Approve</button>
           <button className="save-btn1">Return</button>
         </div>
