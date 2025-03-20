@@ -37,6 +37,18 @@ export const LeadReview = () => {
   // Change this index to highlight the current status dynamically
   const currentStatusIndex = 3; // Example: Highlighting "Lead Return Submitted"
 
+  const formatDate = (dateString) => {
+    if (!dateString) return ""; // Handle empty dates
+    const date = new Date(dateString);
+    if (isNaN(date)) return ""; // Handle invalid dates
+  
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const year = date.getFullYear().toString().slice(-2); // Get last two digits of the year
+  
+    return `${month}/${day}/${year}`;
+  };
+
 
   // Default case summary if no data is passed
   const defaultCaseSummary = "Initial findings indicate that the suspect was last seen near the crime scene at 9:45 PM. Witness statements collected. Awaiting forensic reports and CCTV footage analysis.";
@@ -325,7 +337,7 @@ const onShowCaseSelector = (route) => {
                     <input
                       type="text"
                       className="input-field"
-                      value={leadData.assignedDate}
+                      value={formatDate(leadData.assignedDate)}
                       onChange={(e) => handleInputChange('assignedDate', e.target.value)}
                       placeholder="MM/DD/YY"
                     />
@@ -407,7 +419,7 @@ const onShowCaseSelector = (route) => {
                     <input
                       type="text"
                       className="input-field"
-                      value={leadData.dueDate}
+                      value={formatDate(leadData.dueDate)}
                       placeholder="MM/DD/YY"
                     />
                   </td>

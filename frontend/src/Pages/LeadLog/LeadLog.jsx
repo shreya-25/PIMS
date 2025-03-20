@@ -547,7 +547,7 @@ const formatDate = (dateString) => {
               <th style={{ width: "10%" }}>Date Created</th>
               <th style={{ width: "10%" }}>Status</th>
               <th style={{ width: "10%" }}>Assigned To</th>
-              <th style={{ width: "12%" }}>Date Submitted</th>
+              <th style={{ width: "10%" }}>Date Submitted</th>
               <th style={{ width: "10%" }}>Date Approved</th>
             </tr>
           </thead>
