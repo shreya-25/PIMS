@@ -14,7 +14,7 @@ export const CMReturn = () => {
 const { leadDetails, caseDetails } = location.state || {};
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+  const { selectedCase, selectedLead, setSelectedLead, leadReturns, setLeadReturns  } = useContext(CaseContext);
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -36,7 +36,7 @@ const { leadDetails, caseDetails } = location.state || {};
     const handleLRClick = () => {
       navigate("/CMPerson", { state: {caseDetails, leadDetails } });
     };
-
+    
 
 
     useEffect(() => {
@@ -55,6 +55,16 @@ const { leadDetails, caseDetails } = location.state || {};
 
             setReturns(response.data.length > 0 ? response.data : []);
 
+            const minimalReturns = response.data.map((item) => ({
+              leadReturnId: item.leadReturnId,
+              leadReturn: item.leadReturnResult, // or whichever field holds "Interview Ram" / "Returned item A"
+              enteredBy: item.enteredBy,
+              dateEntered: item.enteredDate,
+            }));
+ 
+
+            setLeadReturns(minimalReturns);
+            console.log("MMr", minimalReturns);
   
             // if (response.data.length > 0) {
             //   setReturns({
@@ -72,7 +82,7 @@ const { leadDetails, caseDetails } = location.state || {};
       };
   
       fetchLeadData();
-    }, [leadDetails, caseDetails]);
+    }, [leadDetails, caseDetails, setLeadReturns]);
   
   
     // State for managing form input
