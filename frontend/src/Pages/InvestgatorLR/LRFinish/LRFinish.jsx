@@ -5,20 +5,120 @@ import FootBar from "../../../components/FootBar/FootBar";
 import "./LRFinish.css";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
-
-
+import Comment from "../../../components/Comment/Comment";
 
 export const LRFinish = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { caseDetails } = location.state || {};
 
-  const [selectedReports, setSelectedReports] = useState([]);
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date)) return "";
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const year = date.getFullYear().toString().slice(-2);
+    return `${month}/${day}/${year}`;
+  };
+
   const [destination, setDestination] = useState("");
   const [leadInstructionContent, setLeadInstructionContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+
+
+  const { leadDetails, caseDetails } = location.state || {};
+  const [leadInstruction, setLeadInstruction] = useState({});
+  const [leadReturn, setLeadReturn] = useState([]);
+  const [leadPersons, setLeadPersons] = useState([]);
+  const [leadVehicles, setLeadVehicles] = useState([]);
+  const [leadEnclosures, setLeadEnclosures] = useState([]);
+  const [leadEvidences, setLeadEvidences] = useState([]);
+
+  const { selectedCase, selectedLead, leadInstructions, leadReturns } = useContext(CaseContext);
+
+  console.log("LD", leadInstructions);
+
+  useEffect(() => {
+    if (leadInstructions) {
+      setLeadInstruction(leadInstructions);
+    }
+  }, [leadInstructions]);
+
+  useEffect(() => {
+    if (leadReturns) {
+      setLeadReturn(leadReturns);
+    }
+  }, [leadReturns]);
+
+
+
+  const [selectedReports, setSelectedReports] = useState({
+    leadInstruction: false,
+    leadReturn: false,
+    leadPersons: false,
+    leadVehicles: false,
+    leadEnclosures: false,
+    leadEvidence: false,
+    leadPictures: false,
+    leadAudio: false,
+    leadVideos: false,
+    leadScratchpad: false,
+    leadTimeline: false,
+  });
+
+  const toggleReportSection = (sectionKey) => {
+    setSelectedReports((prev) => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey],
+    }));
+  };
+
+  const token = localStorage.getItem("token");
+  const handleRunReport = async () => {
+    try {
+      // Build the request body. Only include data for selected sections
+      // to keep the payload small (optional). The server can also handle
+      // skipping unselected sections if they come as null/undefined.
+      const body = {
+        user: "Officer 916",  // Or from your auth context
+        reportTimestamp: new Date().toLocaleString(),
+
+        // Pass the entire object or only if selected
+        leadInstruction: selectedReports.leadInstruction ? leadInstruction : null,
+        leadReturn: selectedReports.leadReturn ? leadReturn : null,
+        leadPersons: selectedReports.leadPersons ? leadPersons : null,
+        leadVehicles: selectedReports.leadVehicles ? leadVehicles : null,
+        // etc. for the rest
+
+        // Also pass along which sections are selected
+        selectedReports,
+      };
+
+      // Call your Node server endpoint
+      const response = await axios.post("http://localhost:5000/api/report/generate", body, {
+        responseType: "blob", // so we get the PDF back as a blob
+        headers: {
+          Authorization: `Bearer ${token}`, // Must match your verifyToken strategy
+        },
+      });
+      // Create a blob and open in a new browser tab OR force download
+const file = new Blob([response.data], { type: "application/pdf" });
+const fileURL = URL.createObjectURL(file);
+window.open(fileURL); // Opens in a new tab for printing/previewing
+
+} catch (error) {
+console.error("Failed to generate report", error);
+alert("Error generating PDF");
+}
+};
+const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+              const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+            
+              const onShowCaseSelector = (route) => {
+                navigate(route, { state: { caseDetails } });
+            };
+
       
   
 
@@ -158,26 +258,91 @@ const handleNavigationToInstruction = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="main-contentLRF">
-        <div className="main-content-cl">
-          {/* Left Section */}
-          <div className="left-section">
-            <img
-              src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
-              alt="Police Department Logo"
-              className="police-logo-lr"
-            />
-          </div>
+      <div className="LRI_Content">
+       <div className="sideitem">
+                    <ul className="sidebar-list">
+                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
+                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
+                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
+                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
+                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
+                        <li className="sidebar-item">Generate Report</li>
+                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
 
-          {/* Center Section */}
-          <div className="center-section">
-            <h2 className="title">FINISH</h2>
-          </div>
+                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
 
-          {/* Right Section */}
-          <div className="right-section"></div>
+                            {/* Case Information Dropdown */}
+        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▼" : "▲" }
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Case Scratchpad
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+
+
+                                 {/* Lead Management Dropdown */}
+                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
+
+                    </ul>
+                </div>
+                <div className="left-content">
+   
+
+
+        {/* Center Section */}
+        <div className="case-header">
+          <h2 className=""> FINISH</h2>
         </div>
+
+      <div className = "LRI-content-section">
+
+      <div className = "content-subsection">
 
         {/* Logged Information */}
         <div className="logged-info">
@@ -325,7 +490,7 @@ const handleNavigationToInstruction = () => {
             </label>
           </div>
         </div>
-
+        <Comment/>
         {/* Buttons */}
         <div className="form-buttons-finish">
           <button className="save-btn1" onClick={runReport}>
@@ -334,6 +499,9 @@ const handleNavigationToInstruction = () => {
           <button className="save-btn1">
             Submit Report
           </button>
+        </div>
+
+        </div>
         </div>
 
         {/* Conditionally render preview area if "Preview" is selected */}
@@ -361,7 +529,7 @@ const handleNavigationToInstruction = () => {
             )}
           </div>
         )} */}
-      </div>
+   
 
       <FootBar
         onPrevious={() => navigate(-1)}
@@ -369,6 +537,8 @@ const handleNavigationToInstruction = () => {
           navigate("/casepagemanager", { state: { caseDetails } })
         }
       />
+    </div>
+    </div>
     </div>
   );
 };

@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { CaseContext } from "../../CaseContext";
 import axios from "axios";
 import PersonModal from "../../../components/PersonModal/PersonModel";
+import Comment from "../../../components/Comment/Comment";
 
 import Navbar from '../../../components/Navbar/Navbar';
 import './LRPerson.css';
@@ -264,9 +265,9 @@ export const LRPerson = () => {
         <div className="case-header">
           <h2 className="">LEAD PERSONS DETAILS</h2>
         </div>
+        <div className = "LRI-content-section">
 
-     {/* Main Table */}
-     <div className="table-container1">
+<div className = "content-subsection">
         <table className="leads-table">
           <thead>
             <tr>
@@ -315,25 +316,13 @@ export const LRPerson = () => {
         {/* <button onClick={() => handleNavigation('/LRPerson1')} className="save-btn1
         ">Add Person</button> */}
 
-      </div>
-
-      {/* Action Buttons */}
-      {/* <div className="action-buttons">
-        <button onClick={() => handleNavigation('/LRPerson1')} >Add Person</button>
-        <button onClick={handleEditPerson}>Edit</button>
-        <button onClick={handleDeletePerson}>Delete</button>
-      </div> */}
-
       {/* Bottom Buttons */}
       <div className="bottom-buttons">
       <button onClick={() => handleNavigation('/LRPerson1')} className="save-btn1">Add Person</button>
-
-      {/* <button onClick={() => handleNavigation('/LRPerson1')} className="back-btn">Add Person</button> */}
-        {/* <button className="back-btn"onClick={() => handleNavigation('/LRReturn')} >Back</button>
-        <button className="next-btn"onClick={() => handleNavigation('/LRVehicle')} >Next</button> */}
-        {/* <button className="save-btn">Save</button>
-        <button className="cancel-btn">Cancel</button> */}
       </div>
+      <Comment/>
+</div>
+</div>
       <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
         onNext={() => navigate("/LRVehicle")} // Takes user to CM Return page
@@ -341,6 +330,7 @@ export const LRPerson = () => {
     </div>
     </div>
     </div>
-    </div>
+</div>
+      
   );
 };
