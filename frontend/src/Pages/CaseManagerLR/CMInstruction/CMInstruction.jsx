@@ -23,7 +23,7 @@ export const CMInstruction = () => {
           navigate("/CMReturn", { state: {caseDetails, leadDetails } });
         };
 
-          const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+          const { selectedCase, selectedLead, setSelectedLead, leadInstructions, setLeadInstructions } = useContext(CaseContext);
 
           const formatDate = (dateString) => {
             if (!dateString) return "";
@@ -87,7 +87,7 @@ export const CMInstruction = () => {
       }
     }, [leadData]);
     
-console.log(selectedLead);
+
   useEffect(() => {
     const fetchLeadData = async () => {
       try {
@@ -107,6 +107,7 @@ console.log(selectedLead);
               ...response.data[0], 
               assignedOfficer: response.data[0].assignedOfficer || [] // Ensure array
             });
+            setLeadInstructions(response.data[0]);
           }
           
         }
@@ -119,7 +120,7 @@ console.log(selectedLead);
     };
 
     fetchLeadData();
-  }, [selectedLead]);
+  }, [selectedLead, setLeadInstructions]);
 
   const handleGenerateLead = () => {
     const { leadNumber, leadSummary, assignedDate, assignedOfficer, assignedBy } = leadData;

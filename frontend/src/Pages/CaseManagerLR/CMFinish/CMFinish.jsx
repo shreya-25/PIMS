@@ -23,15 +23,33 @@ export const CMFinish = () => {
       
         const { leadDetails, caseDetails } = location.state || {};
         const [leadInstruction, setLeadInstruction] = useState({});
-        const [leadReturns, setLeadReturns] = useState([]);
+        const [leadReturn, setLeadReturn] = useState([]);
         const [leadPersons, setLeadPersons] = useState([]);
         const [leadVehicles, setLeadVehicles] = useState([]);
         const [leadEnclosures, setLeadEnclosures] = useState([]);
         const [leadEvidences, setLeadEvidences] = useState([]);
 
+        const { selectedCase, selectedLead, leadInstructions, leadReturns } = useContext(CaseContext);
+
+        console.log("LD", leadInstructions);
+
+        useEffect(() => {
+          if (leadInstructions) {
+            setLeadInstruction(leadInstructions);
+          }
+        }, [leadInstructions]);
+
+        useEffect(() => {
+          if (leadReturns) {
+            setLeadReturn(leadReturns);
+          }
+        }, [leadReturns]);
+
+
+
         const [selectedReports, setSelectedReports] = useState({
           leadInstruction: false,
-          leadReturns: false,
+          leadReturn: false,
           leadPersons: false,
           leadVehicles: false,
           leadEnclosures: false,
@@ -57,12 +75,12 @@ export const CMFinish = () => {
             // to keep the payload small (optional). The server can also handle
             // skipping unselected sections if they come as null/undefined.
             const body = {
-              user: "OfficerXYZ",  // Or from your auth context
+              user: "Officer 916",  // Or from your auth context
               reportTimestamp: new Date().toLocaleString(),
       
               // Pass the entire object or only if selected
               leadInstruction: selectedReports.leadInstruction ? leadInstruction : null,
-              leadReturns: selectedReports.leadReturns ? leadReturns : null,
+              leadReturn: selectedReports.leadReturn ? leadReturn : null,
               leadPersons: selectedReports.leadPersons ? leadPersons : null,
               leadVehicles: selectedReports.leadVehicles ? leadVehicles : null,
               // etc. for the rest
@@ -245,8 +263,8 @@ export const CMFinish = () => {
               onChange={() => toggleReportSection("leadInstruction")} /> Lead Instruction
               </label>
               <label>
-                <input type="checkbox" name="report" checked={selectedReports.leadReturns}
-              onChange={() => toggleReportSection("leadReturns")} /> Lead Returns
+                <input type="checkbox" name="report" checked={selectedReports.leadReturn}
+              onChange={() => toggleReportSection("leadReturn")} /> Lead Returns
               </label>
               <label>
                 <input type="checkbox" name="report" checked={selectedReports.leadPersons}

@@ -163,6 +163,74 @@ function renderSectionBulletPoints(doc, title, data, startX) {
   doc.moveDown(1);
 }
 
+function renderKeyValueTable(doc, title, data, startX, pageWidth) {
+  // Section title with underline
+  doc.font("Helvetica-Bold").fontSize(12).text(title, startX, doc.y, { underline: true });
+  doc.moveDown(0.5);
+
+  // If data is empty or invalid, show "No data available"
+  if (!data || Object.keys(data).length === 0) {
+    doc.font("Helvetica").fontSize(10).text("No data available", startX, doc.y);
+    doc.moveDown(1);
+    return;
+  }
+
+  // Convert object into array of { Key, Value }
+  const rows = Object.entries(data).map(([key, value]) => {
+    let displayValue = Array.isArray(value) ? value.join(", ") : value;
+    if (displayValue == null || displayValue === "") displayValue = "N/A";
+    return { Key: key, Value: displayValue };
+  });
+
+  // Our table has exactly 2 columns: "Key" and "Value"
+  const headers = ["Key", "Value"];
+  const availableWidth = pageWidth - startX * 2;
+  const colWidth = availableWidth / 2;
+  const columnWidths = [colWidth, colWidth];
+
+  // Reuse your existing dynamic table function
+  drawDynamicTable(doc, startX, headers, rows, columnWidths);
+
+  doc.moveDown(1);
+}
+
+function renderReturnsTable(doc, title, returnsData, startX, pageWidth) {
+  // Section title
+  doc.font("Helvetica-Bold").fontSize(12).text(title, startX, doc.y, { underline: true });
+  doc.moveDown(0.5);
+
+  // If no returns, show a simple message
+  if (!Array.isArray(returnsData) || returnsData.length === 0) {
+    doc.font("Helvetica").fontSize(10).text("No lead returns available.", startX, doc.y);
+    doc.moveDown(1);
+    return;
+  }
+
+  // We define the columns we want in a certain order
+  const headers = ["Return ID", "Date Entered", "Entered By", "Results", "Access"];
+
+  // Transform your returns array to match these columns
+  const rows = returnsData.map(item => ({
+    "Return ID": item.leadReturnId || "",
+    "Date Entered": item.dateEntered || "",
+    "Entered By": item.enteredBy || "",
+    "Results": item.leadReturn || "",      // or item.results
+    "Access": item.access || "Case Manager" // or however you store it
+  }));
+
+  // We can reuse your existing dynamic table code
+  const availableWidth = pageWidth - startX * 2;
+  const colWidth = availableWidth / headers.length;
+  const columnWidths = Array(headers.length).fill(colWidth);
+
+  drawDynamicTable(doc, startX, headers, rows, columnWidths);
+
+  doc.moveDown(1);
+}
+
+
+
+
 // This helper renders key-value pairs for a section
 // function renderKeyValueSection(doc, title, data, startX) {
 //   doc.font("Helvetica-Bold").fontSize(12).text(title, startX, doc.y, { underline: true });
@@ -189,7 +257,7 @@ const generateReport = async (req, res) => {
   console.log(`Report generation requested by ${req.body.user || 'unknown user'} at: ${new Date().toLocaleString()}`);
   const {
     leadInstruction,
-    leadReturns,
+    leadReturn,
     leadPersons,
     leadVehicles,
     leadEnclosures,
@@ -245,34 +313,15 @@ const generateReport = async (req, res) => {
     const pageWidth = doc.page.width;
 
     // --- Lead Details Section ---
-    if (leadInstruction) {
-      doc.font("Helvetica-Bold").fontSize(12).text("Lead Details", startX, doc.y, { underline: true });
-      doc.moveDown(0.5);
-      doc.font("Helvetica").fontSize(10);
-      
-      // Display all available lead instruction fields
-      Object.entries(leadInstruction).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          let displayValue = value;
-          
-          // Special handling for arrays
-          if (Array.isArray(value)) {
-            displayValue = value.join(", ");
-          }
-          
-          doc.text(`${key}: ${displayValue}`, { align: "left" });
-        }
-      });
-      
-      doc.moveDown(1);
-    } else {
-      doc.font("Helvetica").fontSize(10).text("No lead instruction data available.", startX, doc.y);
-      doc.moveDown(1);
-    }
+    // --- Lead Details Section ---
+if (leadInstruction) {
+  renderKeyValueTable(doc, "Lead Details", leadInstruction, startX, pageWidth);
+}
+
 
     // --- Loop Through Each Lead Return ---
-    if (leadReturns && Array.isArray(leadReturns) && leadReturns.length > 0) {
-      leadReturns.forEach((returnRecord, returnIndex) => {
+    if (leadReturn && Array.isArray(leadReturn) && leadReturn.length > 0) {
+      leadReturn.forEach((returnRecord, returnIndex) => {
         // Add a page break between returns if not the first one
         if (returnIndex > 0) {
           doc.addPage();
@@ -405,9 +454,7 @@ const generateReport = async (req, res) => {
           renderSectionTable(doc, "Lead Timeline", relatedTimeline, startX, pageWidth);
         }
       });
-    } else {
-      doc.font("Helvetica").fontSize(10).text("No lead returns available.", startX, doc.y);
-    }
+    } 
 
     // --- Report Footer ---
     doc.font("Helvetica").fontSize(8);
