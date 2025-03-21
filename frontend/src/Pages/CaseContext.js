@@ -18,6 +18,9 @@ export const CaseProvider = ({ children }) => {
         return localStorage.getItem("token") || "";
     });
 
+    const [leadInstructions, setLeadInstructions] = useState(null);
+    const [leadReturns, setLeadReturns] = useState(null);
+
     // Persist case details when updated
     useEffect(() => {
         if (selectedCase) {
@@ -43,7 +46,9 @@ export const CaseProvider = ({ children }) => {
         <CaseContext.Provider value={{ 
             selectedCase, setSelectedCase, 
             selectedLead, setSelectedLead, 
-            token, setToken 
+            token, setToken, 
+            leadInstructions, setLeadInstructions,
+            leadReturns, setLeadReturns
         }}>
             {children}
         </CaseContext.Provider>
