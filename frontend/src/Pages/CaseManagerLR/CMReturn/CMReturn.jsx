@@ -64,7 +64,6 @@ const { leadDetails, caseDetails } = location.state || {};
  
 
             setLeadReturns(minimalReturns);
-            console.log("MMr", minimalReturns);
   
             // if (response.data.length > 0) {
             //   setReturns({
