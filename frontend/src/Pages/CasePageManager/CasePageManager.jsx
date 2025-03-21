@@ -652,7 +652,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
               {tab === "assignedLeads" && "Assigned Leads"}
               {tab === "pendingLeads" && "Accepted Leads"}
               {tab === "pendingLeadReturns" && "Lead Returns fro Review"}
-              {tab === "allLeads" && "Total Generated Leads"}
+              {tab === "allLeads" && "All Leads"}
             </span>
             <span className="sidebar-number">
               {tab === "assignedLeads" && leads.assignedLeads.length}

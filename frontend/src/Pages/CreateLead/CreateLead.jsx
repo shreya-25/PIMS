@@ -113,16 +113,31 @@ useEffect(() => {
 
  
 
+  // const handleInputChange = (field, value) => {
+  //   // Validate leadNumber to allow only numeric values
+  //   if (field === 'leadNumber' && !/^\d*$/.test(value)) {
+  //     alert("Lead Number must be a numeric value.");
+  //     return;
+  //   }
+  
+  //   // Update state
+  //   setLeadData({ ...leadData, [field]: value });
+  // };
+
   const handleInputChange = (field, value) => {
-    // Validate leadNumber to allow only numeric values
+    // Ensure only numeric values (or empty)
     if (field === 'leadNumber' && !/^\d*$/.test(value)) {
       alert("Lead Number must be a numeric value.");
       return;
     }
   
-    // Update state
-    setLeadData({ ...leadData, [field]: value });
+    // Update state properly
+    setLeadData((prevData) => ({
+      ...prevData,
+      [field]: value, // Allow empty value
+    }));
   };
+  
    const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
    const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
 
@@ -345,7 +360,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
 
         {/* Center Section */}
         <div className="case-header">
-          <h2 >LEAD INSTRUCTIONS</h2>
+          <h2 >CREATE LEAD</h2>
           </div>
 
 

@@ -202,6 +202,19 @@ const onShowCaseSelector = (route) => {
       <div className="sideitem">
           <ul className="sidebar-list">
 
+          <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+                    Lead Management {leadDropdownOpen ?  "▲": "▼" }
+                  </li>
+                  {leadDropdownOpen && (
+                    <ul className="dropdown-list1">
+                       {/* <li className="sidebar-item" onClick={() => navigate('/LeadReview')}>Lead Information</li> */}
+                       <li className="sidebar-item" onClick={() => navigate('/LRInstruction', { state: { caseDetails } } )}>Go To Lead Return</li>
+                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
+                       <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                       <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
+          </ul>
+        )} 
+
           <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
           Case Management {caseDropdownOpen ? "▲" : "▼"}
         </li>
@@ -238,19 +251,6 @@ const onShowCaseSelector = (route) => {
          
           </ul>
         )}
-
-          <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-                    Lead Management {leadDropdownOpen ?  "▲": "▼" }
-                  </li>
-                  {leadDropdownOpen && (
-                    <ul className="dropdown-list1">
-                       {/* <li className="sidebar-item" onClick={() => navigate('/LeadReview')}>Lead Information</li> */}
-                       <li className="sidebar-item" onClick={() => navigate('/LRInstruction')}>View Lead Return</li>
-                       <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li>
-                       <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                       <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
-          </ul>
-        )} 
           </ul>
         </div>
 

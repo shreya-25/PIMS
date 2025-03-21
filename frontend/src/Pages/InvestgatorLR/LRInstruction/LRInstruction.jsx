@@ -1,10 +1,12 @@
 import FootBar from '../../../components/FootBar/FootBar';
-import React, { useState, useRef } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ReactToPrint from 'react-to-print';
 
 import Navbar from '../../../components/Navbar/Navbar';
 import './LRInstruction.css';
+import axios from "axios";
+import { CaseContext } from "../../CaseContext";
 
 
 
@@ -12,6 +14,9 @@ export const LRInstruction = () => {
     const navigate = useNavigate(); // Initialize useNavigate hook
     const printRef = useRef();
     const routerLocation = useLocation();
+    const location = useLocation();
+         const [loading, setLoading] = useState(true);
+          const [error, setError] = useState("");
     const { caseDetails } = routerLocation.state || {};
 
     const formatDate = (dateString) => {
@@ -24,18 +29,34 @@ export const LRInstruction = () => {
       return `${month}/${day}/${year}`;
     };
 
+    // const handleLRClick = () => {
+    //   navigate("/LRReturn", { state: {caseDetails, leadDetails } });
+    // };
+
   
   const [leadData, setLeadData] = useState({
-    leadNumber: '16',
-    leadOrigin: '7',
-    incidentNumber: 'C000006',
-    subNumber: 'C0000045',
+    // leadNumber: '16',
+    // leadOrigin: '7',
+    // incidentNumber: 'C000006',
+    // subNumber: 'C0000045',
+    // associatedSubNumbers: [],
+    // assignedDate: '09/29/24',
+    // leadSummary: 'Interview Sarah',
+    // assignedBy: 'Officer 5',
+    // leadDescription: 'Interview Sarah to find out where she was on Saturday 09/25',
+    // assignedOfficer: ['Officer 1','Officer 2'], leadNumber: '',
+    leadNumber: '',
+    parentLeadNo: '',
+    incidentNo: '',
+    subNumber: '',
     associatedSubNumbers: [],
-    assignedDate: '09/29/24',
-    leadSummary: 'Interview Sarah',
-    assignedBy: 'Officer 5',
-    leadDescription: 'Interview Sarah to find out where she was on Saturday 09/25',
-    assignedOfficer: ['Officer 1','Officer 2'],
+    assignedDate: '',
+    dueDate: '',
+    summary: '',
+    assignedBy: '',
+    leadDescription: '',
+    assignedTo: [],
+    assignedOfficer: []
   });
   const [dropdownOpen, setDropdownOpen] = useState(false);
    const [availableSubNumbers, setAvailableSubNumbers] = useState([
@@ -75,13 +96,52 @@ export const LRInstruction = () => {
     navigate(route); // Navigate to the respective page
   };
 
+      const [assignedOfficers, setAssignedOfficers] = useState([]);
+  
+
   const handleNextPage = () => {
     navigate('/LRReturn'); // Replace '/nextpage' with the actual next page route
   };
 
+            const { selectedCase, selectedLead, setSelectedLead, leadInstructions, setLeadInstructions } = useContext(CaseContext);
+  
   
     const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
     const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+
+    useEffect(() => {
+      const fetchLeadData = async () => {
+        try {
+          if (selectedLead?.leadNo && selectedLead?.leadName && selectedLead?.caseNo && selectedLead?.caseName) {
+            const token = localStorage.getItem("token");
+            console.log("localstorage data",localStorage.getItem("token"));
+  
+            const response = await axios.get(`http://localhost:5000/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(
+              selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+  
+            console.log("Fetched Lead Data1:", response.data);
+  
+            if (response.data.length > 0) {
+              setLeadData({
+                ...response.data[0], 
+                assignedOfficer: response.data[0].assignedOfficer || [] // Ensure array
+              });
+              setLeadInstructions(response.data[0]);
+            }
+            
+          }
+        } catch (err) {
+          console.error("Error fetching lead data:", err);
+          setError("Failed to fetch lead data.");
+        } finally {
+          setLoading(false);
+        }
+      };
+  
+      fetchLeadData();
+    }, [selectedLead, setLeadInstructions]);
   
     const onShowCaseSelector = (route) => {
       navigate(route, { state: { caseDetails } });
@@ -296,8 +356,8 @@ export const LRInstruction = () => {
       </thead>
       <tbody>
       <tr>
-      <td>{leadData.leadNumber} </td>
-        <td>{leadData.incidentNumber}</td>
+      <td>{selectedLead.leadNo} </td>
+      <td>{leadData.incidentNo}</td>
         <td>{leadData.subNumber}</td>
         <td>{formatDate(leadData.assignedDate)} </td>
 
@@ -316,7 +376,7 @@ export const LRInstruction = () => {
                 <input
                   type="text"
                   className="input-field"
-                  value={leadData.caseName || 'Main Street Murder'} // Display selected case name or an empty string
+                  value={leadData.caseName} // Display selected case name or an empty string
                   onChange={(e) => handleInputChange('caseName', e.target.value)} // Update 'caseName' in leadData
                   placeholder="Enter Case Name"
     />
@@ -328,10 +388,21 @@ export const LRInstruction = () => {
                 <input
                   type="text"
                   className="input-field"
-                  value={leadData.leadSummary}
+                  value={selectedLead.leadName}
                   onChange={(e) => handleInputChange('leadSummary', e.target.value)}
                   placeholder="Enter Lead Summary"
                 />
+              </td>
+            </tr>
+            <tr>
+              <td>Lead Instruction:</td>
+              <td>
+                <textarea
+                  className="textarea-field-cl"
+                  value={leadData.summary}
+                  onChange={(e) => handleInputChange('leadDescription', e.target.value)}
+                  placeholder="Enter Lead Description"
+                ></textarea>
               </td>
             </tr>
             <tr>
@@ -340,34 +411,23 @@ export const LRInstruction = () => {
                   <input
                     type="text"
                     className="input-field"
-                    value={leadData.leadOrigin}
+                    value={leadData.parentLeadNo}
                     onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
-                    placeholder="Enter Lead Origin"
+                    placeholder="NA"
                   />
                 </td>
               </tr>
               <tr>
-              <td>Lead Instruction:</td>
-              <td>
-                <textarea
-                  className="textarea-field-cl"
-                  value={leadData.leadDescription}
-                  onChange={(e) => handleInputChange('leadDescription', e.target.value)}
-                  placeholder="Enter Lead Description"
-                ></textarea>
-              </td>
-            </tr>
-            <tr>
-  <td>Associated Subnumbers:</td>
+  <td className="info-label">Associated Subnumbers:</td>
   <td>
-    <div className="custom-dropdown-cl">
+    <div className="custom-dropdown">
       <div
-        className="dropdown-header-cl"
+        className="dropdown-header"
         onClick={() => setSubDropdownOpen(!subDropdownOpen)}
       >
         {associatedSubNumbers.length > 0
           ? associatedSubNumbers.join(", ")
-          : "Select Subnumbers"}
+          : "NA"}
         <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
       </div>
       {subDropdownOpen && (
@@ -380,10 +440,15 @@ export const LRInstruction = () => {
                 value={subNum}
                 checked={associatedSubNumbers.includes(subNum)}
                 onChange={(e) => {
-                  const updatedSubNumbers = e.target.checked
+                  const updatedSubs = e.target.checked
                     ? [...associatedSubNumbers, e.target.value]
                     : associatedSubNumbers.filter((num) => num !== e.target.value);
-                  setAssociatedSubNumbers(updatedSubNumbers);
+
+                  setAssociatedSubNumbers(updatedSubs); // Update dropdown selection
+                  setLeadData((prevData) => ({
+                    ...prevData,
+                    associatedSubNumbers: updatedSubs, // Update leadData
+                  }));
                 }}
               />
               <label htmlFor={subNum}>{subNum}</label>
@@ -394,33 +459,38 @@ export const LRInstruction = () => {
     </div>
   </td>
 </tr>
-            <tr>
-  <td>Assign Officers:</td>
+<tr>
+  <td className="info-label">Assigned Officers:</td>
   <td>
-    <div className="custom-dropdown-cl">
+    <div className="custom-dropdown">
       <div
-        className="dropdown-header-cl"
+        className="dropdown-header"
         onClick={() => setDropdownOpen(!dropdownOpen)}
       >
-        {leadData.assignedOfficer.length > 0
-          ? leadData.assignedOfficer.join(', ')
-          : 'Select Officers'}
-        <span className="dropdown-icon">{dropdownOpen ? '▲' : '▼'}</span>
+        {assignedOfficers.length > 0
+          ? assignedOfficers.join(", ")
+          : "NA"}
+        <span className="dropdown-icon">{dropdownOpen ? "▲" : "▼"}</span>
       </div>
       {dropdownOpen && (
         <div className="dropdown-options">
-          {['Officer 1', 'Officer 2', 'Officer 3'].map((officer) => (
+          {["Officer 99", "Officer 24", "Officer 1", "Officer 2", "Officer 3"].map((officer) => (
             <div key={officer} className="dropdown-item">
               <input
                 type="checkbox"
                 id={officer}
                 value={officer}
-                checked={leadData.assignedOfficer.includes(officer)}
+                checked={assignedOfficers.includes(officer)}
                 onChange={(e) => {
-                  const newAssignedOfficers = e.target.checked
-                    ? [...leadData.assignedOfficer, e.target.value]
-                    : leadData.assignedOfficer.filter((o) => o !== e.target.value);
-                  handleInputChange('assignedOfficer', newAssignedOfficers);
+                  const updatedOfficers = e.target.checked
+                    ? [...assignedOfficers, e.target.value]
+                    : assignedOfficers.filter((o) => o !== e.target.value);
+
+                  setAssignedOfficers(updatedOfficers); // Update UI state
+                  setLeadData((prevData) => ({
+                    ...prevData,
+                    assignedTo: updatedOfficers, // Ensure backend gets updated
+                  }));
                 }}
               />
               <label htmlFor={officer}>{officer}</label>
@@ -432,21 +502,18 @@ export const LRInstruction = () => {
   </td>
 </tr>
 
-
-
-
-            <tr>
-              <td>Assigned By:</td>
-              <td>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={leadData.assignedBy}
-                  onChange={(e) => handleInputChange('assignedBy', e.target.value)}
-                  placeholder="Assigned By"
-                />
-              </td>
-            </tr>
+<tr>
+                  <td className="info-label">Assigned By:</td>
+                  <td>
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={leadData.assignedBy}
+                      onChange={(e) => handleInputChange('assignedBy', e.target.value)}
+                      placeholder=""
+                    />
+                  </td>
+                </tr>
           </tbody>
         </table>
       </div>

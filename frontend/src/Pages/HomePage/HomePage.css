@@ -1428,3 +1428,54 @@
     color: white;
   }
 } */
+
+@media (max-width: 480px) {
+  .leads-table {
+    display: none; 
+  }
+
+  .lead-cards {
+    display: block;
+  }
+
+  .lead-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #fff;
+  }
+
+  .lead-card div {
+    margin-bottom: 5px;
+  }
+
+  .lead-card .card-title {
+    font-weight: bold;
+    font-size: 16px;
+  }
+
+  .lead-card .card-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+
+  .lead-card button {
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+
+  .view-btn1 {
+    color: white;
+  }
+
+  .accept-btn {
+    background-color: #0D8790;
+    color: white;
+  }
+}
