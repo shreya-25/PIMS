@@ -388,7 +388,7 @@ export const CMInstruction = () => {
               </td>
             </tr>
             <tr>
-              <td className="info-label">Lead Description:</td>
+              <td className="info-label">Lead Log Summary:</td>
               <td>
                 <input
                   type="text"
@@ -399,6 +399,17 @@ export const CMInstruction = () => {
                 />
               </td>
             </tr>
+            <tr>
+                  <td className="info-label">Lead Instruction:</td>
+                  <td>
+                    <textarea
+                      className="textarea-field"
+                      value={leadData.summary}
+                      onChange={(e) => handleInputChange('leadDescription', e.target.value)}
+                      placeholder=""
+                    ></textarea>
+                  </td>
+                </tr>
             <tr>
                 <td className="info-label">Lead Origin:</td>
                 <td>
@@ -506,17 +517,6 @@ export const CMInstruction = () => {
                       onChange={(e) => handleInputChange('assignedBy', e.target.value)}
                       placeholder=""
                     />
-                  </td>
-                </tr>
-                <tr>
-                  <td className="info-label">Lead Summary:</td>
-                  <td>
-                    <textarea
-                      className="textarea-field"
-                      value={leadData.summary}
-                      onChange={(e) => handleInputChange('leadDescription', e.target.value)}
-                      placeholder=""
-                    ></textarea>
                   </td>
                 </tr>
           </tbody>
