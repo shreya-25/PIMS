@@ -5,16 +5,38 @@ import "./LREnclosures.css"; // Custom CSS file for Enclosures styling
 import FootBar from '../../../components/FootBar/FootBar';
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
+import Comment from "../../../components/Comment/Comment";
+
 
 
 export const LREnclosures = () => {
   const navigate = useNavigate(); 
   const location = useLocation();
+
+  const { leadDetails, caseDetails } = location.state || {};
+
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date)) return "";
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const year = date.getFullYear().toString().slice(-2);
+    return `${month}/${day}/${year}`;
+  };
+
   
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);  
   
+      const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+                const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+              
+                const onShowCaseSelector = (route) => {
+                  navigate(route, { state: { caseDetails } });
+              };
 
   // Sample enclosures data
   const [enclosures, setEnclosures] = useState([
@@ -134,28 +156,99 @@ export const LREnclosures = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="main-contentLRE">
-      <div className="main-content-cl">
+      <div className="LRI_Content">
+       <div className="sideitem">
+                    <ul className="sidebar-list">
+                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
+                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
+                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
+                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
+                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
+                        <li className="sidebar-item">Generate Report</li>
+                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
+
+                            {/* Case Information Dropdown */}
+        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▼" : "▲" }
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Case Scratchpad
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+
+
+                                 {/* Lead Management Dropdown */}
+                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
+
+                    </ul>
+                </div>
+                <div className="left-content">
+     
         {/* Left Section */}
-        <div className="left-section">
+        {/* <div className="left-section">
           <img
             src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
             alt="Police Department Logo"
             className="police-logo-lr"
           />
-        </div>
-
+        </div> */}
 
         {/* Center Section */}
-        <div className="center-section">
-          <h2 className="title">ENCLOSURES INFORMATION</h2>
+        <div className="case-header">
+          <h2 className="">ENCLOSURES INFORMATION</h2>
         </div>
+     
 
-         {/* Right Section */}
-         <div className="right-section">
-        </div>
-      </div>
+      <div className = "LRI-content-section">
+
+<div className = "content-subsection">
 
         {/* Enclosure Form */}
         <div className = "content-to-add">
@@ -199,7 +292,7 @@ export const LREnclosures = () => {
         </div>
 
               {/* Enclosures Table */}
-              <table className="timeline-table">
+              <table className="leads-table">
           <thead>
             <tr>
               <th>Date Entered</th>
@@ -219,22 +312,15 @@ export const LREnclosures = () => {
             ))}
           </tbody>
         </table>
-
-
-        {/* Action Buttons */}
-        <div className="form-buttons">
-          {/* <button className="add-btn" onClick={handleAddEnclosure}>Add Enclosure</button> */}
-          {/* <button className="back-btn" onClick={() => handleNavigation("/LRVehicle")}>Back</button>
-          <button className="next-btn" onClick={() => handleNavigation("/LREvidence")}>Next</button>
-          <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button> */}
-        </div>
-
+        <Comment/>
+      </div>
       </div>
       <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
         onNext={() => navigate("/LREvidence")} // Takes user to CM Return page
       />
+    </div>
+    </div>
     </div>
   );
 };
