@@ -23,7 +23,7 @@ const leadReturnResultsSchema = new mongoose.Schema(
         enteredDate:  { type: Date },
         enteredBy: { type: String, required: true},
         caseName: { type: String, required: true},
-        caseNo: { type: Number , required: true},
+        caseNo: { type: String , required: true},
         leadReturnId: { type: Number , required: true},
         leadReturnResult: { type: String, required: true},
     },

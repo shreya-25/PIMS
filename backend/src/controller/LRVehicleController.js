@@ -67,7 +67,7 @@ const getLRVehicleByDetails = async (req, res) => {
         const query = {
             leadNo: Number(leadNo),
             description: leadName,
-            caseNo: Number(caseNo),
+            caseNo: caseNo,
             caseName: caseName,
         };
 
@@ -91,7 +91,7 @@ const getLRVehicleByDetailsandid = async (req, res) => {
         const query = {
             leadNo: Number(leadNo),
             description: leadName,
-            caseNo: Number(caseNo),
+            caseNo: caseNo,
             caseName: caseName,
             leadReturnId: Number(id),
         };
