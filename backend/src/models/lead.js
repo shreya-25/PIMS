@@ -20,7 +20,7 @@ const leadSchema = new mongoose.Schema(
         dueDate: { type: Date },
         priority:  { type: String },
         caseName: { type: String, required: true},
-        caseNo: { type: Number, required: true},
+        caseNo: { type: String, required: true},
         associatedFlags:  [{ type: String}]
     },
     { timestamps: true }
