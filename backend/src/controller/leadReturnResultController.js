@@ -74,7 +74,7 @@ const getLeadReturnResultByLeadNoandLeadName = async (req, res) => {
         const query = { 
             leadNo: Number(leadNo), // Ensure number type 
             description: leadName,  
-            caseNo: Number(caseNo), 
+            caseNo: caseNo, 
             caseName: caseName
         };
 

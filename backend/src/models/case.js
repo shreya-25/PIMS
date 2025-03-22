@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const caseSchema = new mongoose.Schema(
     {
-        caseNo: { type: Number, required: true, unique: true },
+        caseNo: { type: String, required: true, unique: true },
         caseName: { type: String, required: true },
         assignedOfficers: [
             {

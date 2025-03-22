@@ -29,7 +29,7 @@ const leadReturnSchema = new mongoose.Schema(
         approvedDate:   { type: Date },
         returnedDate: { type: Date },
         caseName: { type: String, required: true},
-        caseNo: { type: Number , required: true},
+        caseNo: { type: String , required: true},
     },
     { timestamps: true }
 );

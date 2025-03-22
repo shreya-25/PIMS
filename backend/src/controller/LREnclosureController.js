@@ -50,7 +50,7 @@ const getLREnclosureByDetails = async (req, res) => {
         const query = {
             leadNo: Number(leadNo),
             description: leadName,
-            caseNo: Number(caseNo),
+            caseNo: caseNo,
             caseName: caseName,
         };
 

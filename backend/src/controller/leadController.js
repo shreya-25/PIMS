@@ -101,7 +101,7 @@ const getLeadsByCase = async (req, res) => {
         const query = { 
             leadNo: leadNo, 
             description: leadName,  
-            caseNo: Number(caseNo), 
+            caseNo: caseNo, 
             caseName: caseName
         };
 
@@ -122,7 +122,7 @@ const getLeadsforHierarchy = async (req, res) => {
 
       const query = { 
           leadNo: leadNo, 
-          caseNo: Number(caseNo), 
+          caseNo: caseNo, 
           caseName: caseName
       };
 
