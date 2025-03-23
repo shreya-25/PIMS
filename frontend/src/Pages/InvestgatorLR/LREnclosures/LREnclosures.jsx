@@ -53,6 +53,7 @@ export const LREnclosures = () => {
 
   const handleInputChange = (field, value) => {
     setEnclosureData({ ...enclosureData, [field]: value });
+    console.log(`enclosureData.${field} updated to: `, value);
   };
 
     const [file, setFile] = useState(null);
@@ -61,19 +62,24 @@ export const LREnclosures = () => {
    // Handle file selection
    const handleFileChange = (event) => {
     setFile(event.target.files[0]);
+    console.log("Selected file:", event.target.files[0]);
   };
   const handleAddEnclosure = () => {
     const newEnclosure = {
       dateEntered: new Date().toLocaleDateString(),
       type: enclosureData.type,
       enclosure: enclosureData.enclosure,
+      returnId: enclosureData.returnId,
     };
+
+    console.log("New Enclosure to add:", newEnclosure);
 
     // Add new enclosure to the list
     setEnclosures([...enclosures, newEnclosure]);
 
     // Clear form fields
     setEnclosureData({
+      returnId: '',
       type: "",
       enclosure: "",
     });
@@ -101,7 +107,7 @@ export const LREnclosures = () => {
     const token = localStorage.getItem("token");
     console.log(token);
     for (const [key, value] of formData.entries()) {
-      console.log(key, value);
+      console.log(`FormData - ${key}:`, value);
     }
     
     try {
@@ -302,17 +308,23 @@ export const LREnclosures = () => {
             </tr>
           </thead>
           <tbody>
-            {enclosures.map((enclosure, index) => (
+          {enclosures.length > 0 ? (
+            enclosures.map((enclosure, index) => (
               <tr key={index}>
                 <td>{enclosure.dateEntered}</td>
                 <td>{enclosure.returnId}</td>
                 <td>{enclosure.type}</td>
                 <td>{enclosure.enclosure}</td>
               </tr>
-            ))}
+                   ))) : (
+                    <tr>
+                      <td colSpan="4" style={{ textAlign: 'center' }}>
+                        No Enclosures Available
+                      </td>
+                    </tr>)}
           </tbody>
         </table>
-        <Comment/>
+        {/* <Comment/> */}
       </div>
       </div>
       <FootBar

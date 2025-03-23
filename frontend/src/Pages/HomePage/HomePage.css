@@ -328,6 +328,9 @@
 .leads-table th {
   background-color: #f2f2f2;
   font-weight: bold;
+  min-width: 220px;
+  max-width: 220px;
+  min-height: 300px;
 }
 
 .leads-table tr:nth-child(even) {

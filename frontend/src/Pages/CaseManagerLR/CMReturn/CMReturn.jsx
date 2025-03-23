@@ -37,7 +37,7 @@ const { leadDetails, caseDetails } = location.state || {};
       navigate("/CMPerson", { state: {caseDetails, leadDetails } });
     };
     
-
+ console.log("casedetails", selectedCase, selectedLead);
 
     useEffect(() => {
       const fetchLeadData = async () => {
@@ -282,7 +282,8 @@ const { leadDetails, caseDetails } = location.state || {};
           </tr>
         </thead>
         <tbody>
-  {returns.map((ret, index) => ( // Ensure index is passed
+  {returns.length > 0 ? (
+  returns.map((ret, index) => ( 
     <tr key={ret.id || index}>
       <td>{ret.leadReturnId}</td>
       <td>{formatDate(ret.enteredDate)}</td>
@@ -304,7 +305,13 @@ const { leadDetails, caseDetails } = location.state || {};
         </div>
       </td> */}
     </tr>
-  ))}
+  ))
+) : (
+  <tr>
+    <td colSpan="5" style={{ textAlign: 'center' }}>
+      No Returns Available
+    </td>
+  </tr>)}
 </tbody>
 
       </table>

@@ -140,6 +140,8 @@ useEffect(() => {
   
    const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
    const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+   const [usernames, setUsernames] = useState([]); // State to hold fetched usernames
+
 
         
    const onShowCaseSelector = (route) => {
@@ -245,7 +247,28 @@ const handleGenerateLead = async () => {
   }
 };  
 
-const defaultCaseSummary = "Initial findings indicate that the suspect was last seen near the crime scene at 9:45 PM. Witness statements collected. Awaiting forensic reports and CCTV footage analysis.";
+const defaultCaseSummary = "";
+const [availableCaseSubNumbers, setAvailableCaseSubNumbers] = useState([]); // To store subnumbers fetched for the case
+
+ // etch all subnumbers for this case
+ useEffect(() => {
+  const fetchCaseSubNumbers = async () => {
+    try {
+      if (caseDetails && caseDetails.id) {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(
+          `http://localhost:5000/api/cases/${caseDetails.id}/subNumbers`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setAvailableCaseSubNumbers(response.data.subNumbers);
+      }
+    } catch (error) {
+      console.error("Error fetching case subnumbers:", error);
+    }
+  };
+
+  fetchCaseSubNumbers();
+}, [caseDetails]);
 
 
 const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
@@ -272,6 +295,27 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
 
    fetchCaseSummary();
  }, [caseDetails]);
+
+
+  // New useEffect: Fetch all usernames for "Assign Officers"
+  useEffect(() => {
+    const fetchUsernames = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("http://localhost:5000/api/users/usernames", {
+          // headers: {
+          //   Authorization: `Bearer ${token}`
+          // }
+        });
+        // Assuming the API returns an object with a "usernames" property that is an array.
+        setUsernames(response.data.usernames);
+      } catch (error) {
+        console.error("Error fetching usernames:", error);
+      }
+    };
+
+    fetchUsernames();
+  }, []);
 
 
 
@@ -440,6 +484,18 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
                   />
                 </td>
               </tr>
+                <tr>
+                  <td>Subnumber:</td>
+                  <td>
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={leadData.subNumber}
+                      onChange={(e) => handleInputChange('subNumber', e.target.value)}
+                      placeholder="Enter Subnumber"
+                    />
+                  </td>
+                </tr>
             <tr>
   <td>Associated Subnumbers:</td>
   <td>
@@ -560,7 +616,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
   </td> */}
   <td>Assign Officers:</td>
 <td>
-  <div className="custom-dropdown-cl">
+  {/* <div className="custom-dropdown-cl">
     <div
       className="dropdown-header-cl"
       onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -609,7 +665,44 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
         })}
       </div>
     )}
-  </div>
+  </div> */}
+
+<div className="custom-dropdown-cl">
+                        <div
+                          className="dropdown-header-cl"
+                          onClick={() => setDropdownOpen(!dropdownOpen)}
+                        >
+                          {leadData.assignedOfficer.length > 0
+                            ? leadData.assignedOfficer.join(', ')
+                            : 'Select Officers'}
+                          <span className="dropdown-icon">{dropdownOpen ? '▲' : '▼'}</span>
+                        </div>
+                        {dropdownOpen && (
+                          <div className="dropdown-options">
+                            {usernames.length > 0 ? (
+                              usernames.map((username) => (
+                                <div key={username} className="dropdown-item">
+                                  <input
+                                    type="checkbox"
+                                    id={username}
+                                    value={username}
+                                    checked={leadData.assignedOfficer.includes(username)}
+                                    onChange={(e) => {
+                                      const newAssignedOfficers = e.target.checked
+                                        ? [...leadData.assignedOfficer, e.target.value]
+                                        : leadData.assignedOfficer.filter((o) => o !== e.target.value);
+                                      handleInputChange('assignedOfficer', newAssignedOfficers);
+                                    }}
+                                  />
+                                  <label htmlFor={username}>{username}</label>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="dropdown-item">No officers found</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
 </td>
 
 </tr>
