@@ -351,7 +351,8 @@ export const CMPerson = () => {
             </tr>
           </thead>
           <tbody>
-  {persons.map((person, index) => (
+  {persons.length > 0 ? (
+  persons.map((person, index) => (
     <tr
       key={index}
       className={selectedRow === index ? "selected-row" : ""}
@@ -395,7 +396,12 @@ export const CMPerson = () => {
         </div>
       </td> */}
     </tr>
-  ))}
+  ))) : (
+    <tr>
+      <td colSpan="4" style={{ textAlign: 'center' }}>
+        No Person Details Available
+      </td>
+    </tr>)}
 </tbody>
 
         </table>

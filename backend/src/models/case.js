@@ -14,7 +14,12 @@ const caseSchema = new mongoose.Schema(
         caseStatus: { type: String, enum: ['Ongoing', 'Completed'], required: true },
         caseSummary: {type: String},
         scratchpadEntry: { type: String }, 
+        subNumbers: {
+            type: [String],
+            default: []
+          }
     },
+
     { timestamps: true }
 );
 

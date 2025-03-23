@@ -9,7 +9,7 @@ const leadSchema = new mongoose.Schema(
             default: [],    
           },
         incidentNo: { type: String },
-        subNumber: { type: String },
+        subNumber: [{ type: String}],
         associatedSubNumbers: [{ type: String}],
         assignedDate: { type: Date, required: true },
         assignedTo: [{ type: String }], 

@@ -40,27 +40,66 @@
 
 // module.exports = getUploadMiddleware;
 
+// const multer = require("multer");
+// const fs = require("fs");
+// const path = require("path");
+
+// // Ensure the uploads directory exists
+// const uploadDir = path.join(__dirname, "../uploads");
+
+// if (!fs.existsSync(uploadDir)) {
+//   fs.mkdirSync(uploadDir, { recursive: true });
+//   console.log("✅ Created 'uploads/' directory");
+// }
+
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, uploadDir); 
+//   },
+//   filename: (req, file, cb) => {
+//     cb(null, `${Date.now()}-${file.originalname}`);
+//   },
+// });
+
+// const upload = multer({ storage });
+
+// module.exports = upload;
+
+
+// middleware/upload.js
 const multer = require("multer");
-const fs = require("fs");
-const path = require("path");
+const { GridFsStorage } = require("multer-gridfs-storage");
+require("dotenv").config(); // load .env file for MONGO_URI
 
-// Ensure the uploads directory exists
-const uploadDir = path.join(__dirname, "../uploads");
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-  console.log("✅ Created 'uploads/' directory");
+async function createUploadMiddleware() {
+  try {
+    const storage = new GridFsStorage({
+      url: process.env.MONGO_URI,
+      options: { useNewUrlParser: true, useUnifiedTopology: true },
+      file: (req, file) => {
+        return new Promise((resolve, reject) => {
+          const fileInfo = {
+            filename: `LREnclosure_${Date.now()}_${file.originalname}`,
+            bucketName: "uploads", // Files will be stored in uploads.files/chunks
+            metadata: {
+              originalname: file.originalname,
+              fieldname: file.fieldname,
+            },
+          };
+          resolve(fileInfo);
+        });
+      },
+    });
+    const upload = multer({ storage });
+    return upload;
+  } catch (error) {
+    console.error("Error setting up GridFsStorage:", error);
+    throw error;
+  }
 }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir); // Use the created directory
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
-});
+module.exports = createUploadMiddleware;
 
-const upload = multer({ storage });
 
-module.exports = upload;
+
+
