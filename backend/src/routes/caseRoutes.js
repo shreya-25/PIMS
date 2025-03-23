@@ -76,4 +76,17 @@ router.put("/:id/reject", verifyToken, async (req, res) => {
     }
   });
 
+  // GET all subnumbers for a given case by its ID
+router.get("/:id/subNumbers", async (req, res) => {
+    try {
+      const caseDoc = await Case.findById(req.params.id);
+      if (!caseDoc) {
+        return res.status(404).json({ message: "Case not found" });
+      }
+      res.status(200).json({ subNumbers: caseDoc.subNumbers });
+    } catch (err) {
+      res.status(500).json({ message: "Error fetching subnumbers" });
+    }
+  });
+
 module.exports = router;

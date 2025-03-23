@@ -1,0 +1,103 @@
+/* Container for the entire attachments section */
+.attachments-section {
+    border: 1px solid #ccc;
+    padding: 16px;
+    max-width: 100%;
+    margin: 10px auto;
+    background-color: #fff;
+    font-family: sans-serif;
+  }
+  
+  /* Header with title */
+  .attachments-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  
+  .attachments-title {
+    font-size: 20px;
+    font-weight: bold;
+  }
+  
+  /* Attachment list styling */
+  .attachments-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  /* Each attachment row: flex with space-between so icons can be on the right */
+  .attachment-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 8px 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
+  }
+  
+  /* Left side (icon + file info) */
+  .attachment-left {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 50%;
+  }
+
+  .attachment-icon
+  {
+    display: flex;
+    align-items: center;
+  }
+  
+  /* Icon placeholder */
+  .attachment-icon img {
+    width: 30px;
+    height: 30px;
+    margin-right: 20px;
+  }
+  
+  /* Info block for each attachment */
+  .attachment-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    width: 100%;
+  }
+  
+  /* Name of the file */
+  .attachment-name {
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+  
+  /* File size and date on one line */
+  .attachment-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 18px;
+    color: #555;
+  }
+  
+  /* Right side (action buttons) */
+  .attachment-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  /* Icon buttons for download/print */
+  .icon-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+  
+  .icon-image {
+    width: 24px;
+    height: 24px;
+  }
+  

@@ -6,6 +6,8 @@ import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import FootBar from '../../../components/FootBar/FootBar';
 import Comment from "../../../components/Comment/Comment";
+import Attachment from "../../../components/Attachment/Attachment";
+
 
 
 
@@ -238,16 +240,23 @@ export const CMEnclosures = () => {
             </tr>
           </thead>
           <tbody>
-            {enclosures.map((enclosure, index) => (
+            {enclosures.length > 0 ? (
+              enclosures.map((enclosure, index) => (
               <tr key={index}>
                 <td>{enclosure.dateEntered}</td>
                 <td>{enclosure.leadReturnId}</td>
                 <td>{enclosure.type}</td>
                 <td>{enclosure.enclosure}</td>
               </tr>
-            ))}
+            ))) : (
+              <tr>
+                <td colSpan="4" style={{ textAlign: 'center' }}>
+                  No Enclosures Available
+                </td>
+              </tr>)}
           </tbody>
         </table>
+        <Attachment />
        <Comment/>
       </div>
       </div>
