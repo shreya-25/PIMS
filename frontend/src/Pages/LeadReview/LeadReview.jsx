@@ -258,7 +258,7 @@ const onShowCaseSelector = (route) => {
         <div className="lead-main-content">
           {/* Page Header */}
           <div className="case-header">
-            <h1>Lead No:{selectedLead.leadNo} | {selectedLead.leadName}</h1>
+            <h1>Lead:{selectedLead.leadNo} | {selectedLead.leadName}</h1>
           </div>
 
           {/* Case Summary Textarea */}
