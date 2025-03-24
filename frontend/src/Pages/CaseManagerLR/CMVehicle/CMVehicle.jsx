@@ -317,15 +317,15 @@ export const CMVehicle = () => {
         <table className="leads-table">
           <thead>
             <tr>
-              <th>Date Entered</th>
-              <th style={{ width: "15%" }}>Associated Return ID</th>
+              <th style={{ width: "10%" }}>Date Entered</th>
+              <th style={{ width: "16%" }}>Associated Return ID</th>
               {/* <th>Year</th> */}
               <th>Make</th>
               <th>Model</th>
               <th>Color</th>
               <th>State</th>
-              <th style={{ width: "13%" }}>Access</th>
-              <th style={{ width: "13%" }}>Additional Details</th>
+              <th style={{ width: "14%" }}>Access</th>
+              <th style={{ width: "15%" }}>Additional Details</th>
               {/* <th></th> */}
             </tr>
           </thead>

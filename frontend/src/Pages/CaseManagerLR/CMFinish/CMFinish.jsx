@@ -213,6 +213,7 @@ export const CMFinish = () => {
       <div className = "content-subsection">
 
         {/* Logged Information */}
+        <div className="timeline-form-sec">
         <div className="logged-info">
           <div className="info-item">
             <label>Logged:</label>
@@ -298,6 +299,7 @@ export const CMFinish = () => {
               <input type="radio" name="destination" className="dest-op-class" /> Preview
             </label>
           </div>
+        </div>
         </div>
 
         <Comment/>

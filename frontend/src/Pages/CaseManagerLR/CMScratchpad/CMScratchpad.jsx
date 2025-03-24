@@ -189,6 +189,7 @@ export const CMScratchpad = () => {
               <th>Date Entered</th>
               <th>Entered By</th>
               <th>Text</th>
+              <th style={{ width: "15%" }}>Access</th>
             </tr>
           </thead>
           <tbody>
@@ -197,6 +198,15 @@ export const CMScratchpad = () => {
                 <td>{note.dateEntered}</td>
                 <td>{note.enteredBy}</td>
                 <td>{note.text}</td>
+                <td>
+        <select
+          value={ "Case Manager"}
+           // Pass index properly
+        >
+          <option value="Case Manager">Case Manager</option>
+          <option value="Everyone">Everyone</option>
+        </select>
+      </td>         
               </tr>
             ))}
           </tbody>
