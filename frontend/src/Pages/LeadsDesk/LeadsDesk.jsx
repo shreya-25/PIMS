@@ -671,7 +671,7 @@ export const LeadsDesk = () => {
                       <td colSpan={2}>
                         {returnItem.persons && returnItem.persons.length > 0 && (
                           <div className="person-section">
-                            <h2 className="title">Person Details</h2>
+                            <h3 className="title-ld">Person Details</h3>
                             <table
                               className="lead-table2"
                               style={{ width: "100%", tableLayout: "fixed" }}
@@ -739,7 +739,7 @@ export const LeadsDesk = () => {
                       <td colSpan={2}>
                         {returnItem.vehicles && returnItem.vehicles.length > 0 && (
                           <div className="person-section">
-                            <h2 className="title">Vehicles Details</h2>
+                            <h3 className="title-ld">Vehicles Details</h3>
                             <table
                               className="lead-table2"
                               style={{ width: "100%", tableLayout: "fixed" }}
@@ -818,7 +818,7 @@ export const LeadsDesk = () => {
                     <tr>
                       <td colSpan={2}>
                         <div className="person-section">
-                          <h2 className="title">Uploaded Files</h2>
+                          <h3 className="title-ld">Uploaded Files</h3>
                           <table
                             className="lead-table2"
                             style={{ width: "100%", tableLayout: "fixed" }}
@@ -979,7 +979,7 @@ export const LeadsDesk = () => {
               <label className="input-label">Case Summary</label>
               <textarea
                 className="textarea-field-ld"
-                style={{ fontFamily: "inherit" }}
+                style={{ fontFamily: "inherit", fontSize: "20px" }}
                 value={caseSummary}
                 onChange={handleCaseSummaryChange}
                 readOnly={!isEditing}
