@@ -47,7 +47,7 @@ body{
 
 /* Table Heading section */
 
-.table-heading {
+/* .table-heading {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 15px;
@@ -56,7 +56,57 @@ body{
 .table-heading td {
   padding: 8px;
   vertical-align: middle;
+} */
+
+
+/* leads detail table  */
+
+.lead-details-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* Important so column widths from <colgroup> are respected */
+  margin-bottom: 1rem; /* spacing as desired */
 }
+
+/* Basic styling for cells */
+.lead-details-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  vertical-align: middle; /* keeps label and input aligned vertically */
+  overflow-wrap: break-word; /* handle long text */
+}
+
+/* Label cells vs. input cells for optional styling */
+.label-cell {
+  background-color: #f7f7f7;
+  text-align: center; /* or left, as you prefer */
+}
+
+.input-cell input,
+.input-cell textarea {
+  width: 95%; /* let inputs fill their cell */
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+/* ################################################ */
+
+.table-heading {
+  width: 100%;
+  table-layout: fixed; /* Important for fixed column widths */
+  border-collapse: collapse;
+}
+
+.table-heading td {
+  border: 1px solid #ddd; /* optional for styling */
+  padding: 8px;
+  vertical-align: top; /* so label aligns well with input */
+  /* word-wrap if content is long */
+  word-wrap: break-word; 
+  overflow-wrap: break-word;
+}
+
 
 .table-label {
   width: 15%; /* fixed narrower width for labels */
@@ -87,6 +137,15 @@ body{
   width: 100px;
   font-size: 20px;
   border: 1px solid #ccc;
+  background-color: #f9f9f9;
+}
+
+.table-input1
+{
+  height: 50px;
+  width: 30px;
+  font-size: 20px;
+  /* border: 1px solid #ccc; */
   background-color: #f9f9f9;
 }
 
