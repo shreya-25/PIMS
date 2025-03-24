@@ -10,6 +10,15 @@ import { CaseContext } from "../../CaseContext";
 
 
 export const LRVideo = () => {
+    useEffect(() => {
+        // Apply style when component mounts
+        document.body.style.overflow = "hidden";
+    
+        return () => {
+          // Reset to default when component unmounts
+          document.body.style.overflow = "auto";
+        };
+      }, []);
   const navigate = useNavigate();
   const location = useLocation();
       

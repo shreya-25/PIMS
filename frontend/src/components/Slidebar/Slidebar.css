@@ -70,7 +70,8 @@ select.input-field {
 
 /* Done button styling */
 .done-button {
-  background-color: #4caf50; /* Green */
+  /* background-color: #4caf50;  */
+  background-color: rgba(23, 23, 145, 0.667);
   color: white;
   border: none;
   padding: 15px; /* Increased padding for better appearance */
@@ -83,9 +84,9 @@ select.input-field {
   margin-top: 20px;
 }
 
-.done-button:hover {
+/* .done-button:hover {
   background-color: #388e3c; 
-}
+} */
 
 /* Improved spacing and alignment */
 .slide-bar h3 {
