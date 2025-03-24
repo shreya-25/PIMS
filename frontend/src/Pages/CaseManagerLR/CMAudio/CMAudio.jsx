@@ -6,6 +6,8 @@ import FootBar from '../../../components/FootBar/FootBar';
 import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
+import Attachment from "../../../components/Attachment/Attachment";
+
 
 
 
@@ -233,10 +235,9 @@ export const CMAudio = () => {
           <thead>
             <tr>
               <th style={{ width: "10%" }}>Date Entered</th>
-              <th style={{ width: "15%" }}>Date Audio Recorded</th>
+              <th style={{ width: "16%" }}>Date Audio Recorded</th>
               <th>Description</th>
-              <th style={{ width: "13%" }}>Access</th>
-              <th style={{ width: "13%" }}>Additional Details</th>
+              <th style={{ width: "15%" }}>Access</th>
             </tr>
           </thead>
           <tbody>
@@ -254,11 +255,12 @@ export const CMAudio = () => {
           <option value="Everyone">Everyone</option>
         </select>
       </td>
-      <td>  <button className="download-btn" >View</button></td>
               </tr>
             ))}
           </tbody>
         </table>
+
+        <Attachment/>
 
       <Comment/>
       </div>

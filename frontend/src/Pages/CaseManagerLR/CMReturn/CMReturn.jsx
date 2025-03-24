@@ -258,10 +258,10 @@ const { leadDetails, caseDetails } = location.state || {};
         <thead>
           <tr>
             <th style={{ width: "10%" }}>Return ID</th>
-            <th style={{ width: "13%" }}>Date Entered</th>
+            <th style={{ width: "10%" }}>Date Entered</th>
             <th style={{ width: "9%" }}>Entered By</th>
             <th>Results</th>
-            <th style={{ width: "13%" , fontSize: "20px" }}>Access</th>
+            <th style={{ width: "15%" , fontSize: "20px" }}>Access</th>
             {/* <th style={{ width: "10%" }}></th> */}
           </tr>
         </thead>

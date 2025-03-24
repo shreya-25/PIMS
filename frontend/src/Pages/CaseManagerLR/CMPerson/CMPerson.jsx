@@ -324,13 +324,13 @@ export const CMPerson = () => {
         <table className="leads-table">
           <thead>
             <tr>
-            <th style={{ width: "15%" }}>Associated Return ID</th>
+            <th style={{ width: "16%" }}>Associated Return ID</th>
               <th>Date Entered</th>
               <th>Name</th>
               <th>Phone No</th>
               <th>Address</th>
-              <th>Access</th>
-              <th>Additional Details</th>
+              <th style={{ width: "15%" }}>Access</th>
+              <th style={{ width: "15%" }}>Additional Details</th>
               {/* <th></th> */}
             </tr>
           </thead>
