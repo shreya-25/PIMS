@@ -259,10 +259,10 @@ export const LRTimeline = () => {
                 value={newFlag}
                 onChange={(e) => setNewFlag(e.target.value)}
               />
-              <button onClick={handleAddFlag}>Add Flag</button>
+              <button className="customer-btn" onClick={handleAddFlag}>Add Flag</button>
             </div>
 
-            <button className="btn-add" onClick={handleAddEntry}>Add Entry</button>
+            <button className="customer-btn" onClick={handleAddEntry}>Add Entry</button>
           </div>
         </div>
 
@@ -275,7 +275,7 @@ export const LRTimeline = () => {
                 <th>Event Location</th>
                 <th>Event Description</th>
                 <th>Flags</th>
-                <th>Actions</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -288,10 +288,30 @@ export const LRTimeline = () => {
                     <td>{entry.location}</td>
                     <td>{entry.description}</td>
                     <td>{entry.flags.join(', ')}</td>
-                    <td>
+                    {/* <td>
                       <button className="btn-edit" onClick={() => handleEditEntry(index)}>Edit</button>
                       <button className="btn-delete" onClick={() => handleDeleteEntry(index)}>Delete</button>
-                    </td>
+                    </td> */}
+                    <td>
+                  <div classname = "lr-table-btn">
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                  alt="Edit Icon"
+                  className="edit-icon"
+                  onClick={() => handleEditEntry(index)}
+                />
+                  </button>
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                  alt="Delete Icon"
+                  className="edit-icon"
+                  onClick={() => handleDeleteEntry(index)}
+                />
+                  </button>
+                  </div>
+                </td>
                   </tr>
                 ))
               ) : (

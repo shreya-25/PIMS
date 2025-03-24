@@ -261,6 +261,7 @@ export const LRPerson = () => {
               <th>Phone No</th>
               <th>Address</th>
               <th>Additional Details</th>
+              <th style={{ width: "10%" }}></th>
             </tr>
           </thead>
           <tbody>
@@ -293,6 +294,26 @@ export const LRPerson = () => {
   caseName={personModalData.caseName}
   leadReturnId={personModalData.leadReturnId}
 />
+<td>
+                  <div classname = "lr-table-btn">
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                  alt="Edit Icon"
+                  className="edit-icon"
+                  // onClick={() => handleEditReturn(ret)}
+                />
+                  </button>
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                  alt="Delete Icon"
+                  className="edit-icon"
+                  // onClick={() => handleDeleteReturn(ret.id)}
+                />
+                  </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>

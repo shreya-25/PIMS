@@ -241,9 +241,9 @@ export const LREnclosures = () => {
 <div className = "content-subsection">
 
         {/* Enclosure Form */}
-        <div className = "content-to-add">
+        <div className = "timeline-form-sec">
         <div className="enclosure-form">
-        <div className="form-row">
+        <div className="form-row-evidence">
             <label>Associated Return Id:</label>
             <input
               type="returnId"
@@ -251,7 +251,7 @@ export const LREnclosures = () => {
               onChange={(e) => handleInputChange("returnId", e.target.value)}
             />
           </div>
-          <div className="form-row">
+          <div className="form-row-evidence">
             <label>Enclosure Type:</label>
             <input
               type="text"
@@ -259,14 +259,14 @@ export const LREnclosures = () => {
               onChange={(e) => handleInputChange("type", e.target.value)}
             />
           </div>
-          <div className="form-row">
+          <div className="form-row-evidence">
             <label>Enclosure Description:</label>
             <textarea
               value={enclosureData.enclosure}
               onChange={(e) => handleInputChange("enclosure", e.target.value)}
             ></textarea>
           </div>
-          <div className="form-row">
+          <div className="form-row-evidence">
             <label>Upload File:</label>
             <input type="file" onChange={handleFileChange} />
           </div>
@@ -289,6 +289,7 @@ export const LREnclosures = () => {
               <th>Associated Return Id </th>
               <th>Type</th>
               <th>Enclosure</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -299,6 +300,26 @@ export const LREnclosures = () => {
                 <td>{enclosure.returnId}</td>
                 <td>{enclosure.type}</td>
                 <td>{enclosure.enclosure}</td>
+                <td>
+                  <div classname = "lr-table-btn">
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                  alt="Edit Icon"
+                  className="edit-icon"
+                  // onClick={() => handleEditReturn(ret)}
+                />
+                  </button>
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                  alt="Delete Icon"
+                  className="edit-icon"
+                  // onClick={() => handleDeleteReturn(ret.id)}
+                />
+                  </button>
+                  </div>
+                </td>
               </tr>
                    ))) : (
                     <tr>
@@ -308,7 +329,7 @@ export const LREnclosures = () => {
                     </tr>)}
           </tbody>
         </table>
-        {/* <Comment/> */}
+        <Comment/>
       </div>
       </div>
       <FootBar

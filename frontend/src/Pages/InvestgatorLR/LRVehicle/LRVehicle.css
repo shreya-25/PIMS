@@ -57,6 +57,17 @@
     justify-content: space-between;
     gap: 10px;
   }
+
+  .form-row1 {
+    display: flex;
+    justify-content: flex-start;
+    gap: 80px;
+  }
+  .form-row2 {
+    display: flex;
+    justify-content: flex-start;
+    gap: 142px;
+  }
   
   .form-row label {
     width: 20%;

@@ -190,7 +190,7 @@ export const LREvidence = () => {
 <div className = "content-subsection">
 
         {/* Evidence Form */}
-        <div className = "content-to-add">
+        <div className = "timeline-form-sec">
         <h4 className="evidence-form-h4">Enter Evidence Details</h4>
         <div className="evidence-form">
           <div className="form-row-evidence">
@@ -241,6 +241,7 @@ export const LREvidence = () => {
               <th>Collection Date</th>
               <th>Disposed Date</th>
               <th>Disposition</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -252,6 +253,26 @@ export const LREvidence = () => {
                 <td>{item.collectionDate}</td>
                 <td>{item.disposedDate}</td>
                 <td>{item.disposition}</td>
+                <td>
+                  <div classname = "lr-table-btn">
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                  alt="Edit Icon"
+                  className="edit-icon"
+                  // onClick={() => handleEditReturn(ret)}
+                />
+                  </button>
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                  alt="Delete Icon"
+                  className="edit-icon"
+                  // onClick={() => handleDeleteReturn(ret.id)}
+                />
+                  </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>

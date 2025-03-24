@@ -381,7 +381,7 @@ export const LRInstruction = () => {
               <td>Lead Instruction:</td>
               <td>
                 <textarea
-                  className="textarea-field-cl"
+                  className="input-field"
                   value={leadData.summary}
                   onChange={(e) => handleInputChange('leadDescription', e.target.value)}
                   placeholder="Enter Lead Description"
@@ -401,7 +401,7 @@ export const LRInstruction = () => {
                 </td>
               </tr>
               <tr>
-  <td className="info-label">Associated Subnumbers:</td>
+  <td >Associated Subnumbers:</td>
   <td>
     <div className="custom-dropdown">
       <div
@@ -443,7 +443,7 @@ export const LRInstruction = () => {
   </td>
 </tr>
 <tr>
-  <td className="info-label">Assigned Officers:</td>
+  <td >Assigned Officers:</td>
   <td>
     <div className="custom-dropdown">
       <div
@@ -486,7 +486,7 @@ export const LRInstruction = () => {
 </tr>
 
 <tr>
-                  <td className="info-label">Assigned By:</td>
+                  <td >Assigned By:</td>
                   <td>
                     <input
                       type="text"
