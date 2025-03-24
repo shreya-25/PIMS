@@ -254,7 +254,7 @@ export const LRVehicle = () => {
         {/* Vehicle Form */}
         <div className = "timeline-form-sec">
         <div className="vehicle-form">
-          <div className="form-row">
+          <div className="form-row4">
             <label>Year:</label>
             <input
               type="text"
@@ -281,7 +281,7 @@ export const LRVehicle = () => {
               onChange={(e) => handleChange('color', e.target.value)}
             /> */}
           
-          <div className="form-row">
+          <div className="form-row4">
             <label>Plate:</label>
             <input
               type="text"
@@ -301,7 +301,7 @@ export const LRVehicle = () => {
               onChange={(e) => handleChange('type', e.target.value)}
             />
           </div>
-          <div className="form-row">
+          <div className="form-row4">
             <label>VIN:</label>
             <input
               type="text"
