@@ -136,7 +136,9 @@ export const LRVehicle = () => {
 
 
   return (
-    <div className="lrvehicle-container">
+    // <div className="lrvehicle-container">
+    <div className="person-page">
+        <div className="person-page-content">
       {/* Navbar */}
       <Navbar />
 
@@ -250,7 +252,7 @@ export const LRVehicle = () => {
 <div className = "content-subsection">
 
         {/* Vehicle Form */}
-        <div className = "content-to-add">
+        <div className = "timeline-form-sec">
         <div className="vehicle-form">
           <div className="form-row">
             <label>Year:</label>
@@ -319,7 +321,9 @@ export const LRVehicle = () => {
               onChange={(e) => handleChange('secondaryColor', e.target.value)}
             />
           </div>
-          <div className="form-row">
+        </div>
+        <div className="vehicle-form">
+          <div className="form-row2">
             <label>State:</label>
             <input
               type="text"
@@ -327,14 +331,14 @@ export const LRVehicle = () => {
               onChange={(e) => handleChange('state', e.target.value)}
             />
           </div>
-          <div className="form-row">
+          <div className="form-row1">
             <label>Information:</label>
             <textarea
               value={vehicleData.information}
               onChange={(e) => handleChange('information', e.target.value)}
             ></textarea>
           </div>
-        </div>
+          </div>
         </div>
         {/* Buttons */}
         <div className="form-buttons">
@@ -352,13 +356,14 @@ export const LRVehicle = () => {
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th>Associated Return Id</th>
+              <th style={{ width: "15%" }}>Associated Return Id</th>
               <th>Year</th>
               <th>Make</th>
               <th>Model</th>
               <th>Color</th>
               <th>State</th>
-              <th>Additional Details</th>
+              <th style={{ width: "12%" }}>Additional Details</th>
+              <th style={{ width: "10%" }}></th>
             </tr>
           </thead>
           <tbody>
@@ -402,6 +407,26 @@ export const LRVehicle = () => {
     caseName={vehicleModalData.caseName}
     leadReturnId={vehicleModalData.leadReturnId}
   />
+  <td>
+                  <div classname = "lr-table-btn">
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                  alt="Edit Icon"
+                  className="edit-icon"
+                  // onClick={() => handleEditReturn(ret)}
+                />
+                  </button>
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                  alt="Delete Icon"
+                  className="edit-icon"
+                  // onClick={() => handleDeleteReturn(ret.id)}
+                />
+                  </button>
+                  </div>
+                </td>
       </tr>
     ))}
   </tbody>
@@ -426,6 +451,7 @@ export const LRVehicle = () => {
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
         onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
       />
+    </div>
     </div>
     </div>
     </div>

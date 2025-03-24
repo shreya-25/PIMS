@@ -978,7 +978,8 @@ export const LeadsDesk = () => {
             <div className="case-summary-ld">
               <label className="input-label">Case Summary</label>
               <textarea
-                className="textarea-field"
+                className="textarea-field-ld"
+                style={{ fontFamily: "inherit" }}
                 value={caseSummary}
                 onChange={handleCaseSummaryChange}
                 readOnly={!isEditing}

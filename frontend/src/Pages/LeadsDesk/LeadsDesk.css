@@ -90,6 +90,10 @@ body{
   background: transparent;
 }
 
+.text-fieldld
+{
+  font-family: inherit;
+}
 /* ################################################ */
 
 .table-heading {
@@ -106,6 +110,7 @@ body{
   word-wrap: break-word; 
   overflow-wrap: break-word;
 }
+
 
 
 .table-label {

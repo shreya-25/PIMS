@@ -193,7 +193,7 @@ export const LRPictures = () => {
 <div className = "content-subsection">
 
         {/* Picture Form */}
-        <div className = "content-to-add">
+        <div className = "timeline-form-sec">
         <h4 className="evidence-form-h4">Enter Picture Details</h4>
         <div className="picture-form">
           <div className="form-row-pic">
@@ -244,6 +244,7 @@ export const LRPictures = () => {
               <th>Associated Return Id </th>
               <th>Date Picture Taken</th>
               <th>Description</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -253,6 +254,26 @@ export const LRPictures = () => {
                 <td>{picture.returnId}</td>
                 <td>{picture.datePictureTaken}</td>
                 <td>{picture.description}</td>
+                <td>
+                  <div classname = "lr-table-btn">
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                  alt="Edit Icon"
+                  className="edit-icon"
+                  // onClick={() => handleEditReturn(ret)}
+                />
+                  </button>
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                  alt="Delete Icon"
+                  className="edit-icon"
+                  // onClick={() => handleDeleteReturn(ret.id)}
+                />
+                  </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
