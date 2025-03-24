@@ -253,7 +253,7 @@ export const CaseInformation = () => {
             <div className="case-header">
             {
                         <h1>
-                          Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"}
+                          Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
                         </h1>
                     }
             </div>
