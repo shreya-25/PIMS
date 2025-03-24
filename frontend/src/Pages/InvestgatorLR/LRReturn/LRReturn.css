@@ -94,9 +94,14 @@ body {
   width: 82%;
 }
 
-.form-row label{
+.form-row4 label{
   width: 100%;
   color:#000000cc;
+}
+.form-row4{
+  display:flex;
+  justify-content: space-between;
+  gap: 20px;
 }
 
 .main-contentLRR {
