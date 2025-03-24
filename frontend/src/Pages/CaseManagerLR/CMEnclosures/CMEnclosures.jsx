@@ -218,9 +218,10 @@ export const CMEnclosures = () => {
           <thead>
             <tr>
               <th style={{ width: "10%" }}>Date Entered</th>
-              <th style={{ width: "15%" }}>Associated Return Id</th>
+              <th style={{ width: "16%" }}>Associated Return Id</th>
               <th style={{ width: "10%" }}>Type</th>
               <th>Enclosure Description</th>
+              <th style={{ width: "14%" }}>Access</th>
             </tr>
           </thead>
           <tbody>
@@ -231,6 +232,15 @@ export const CMEnclosures = () => {
                 <td>{enclosure.leadReturnId}</td>
                 <td>{enclosure.type}</td>
                 <td>{enclosure.enclosure}</td>
+                <td>
+        <select
+          value={ "Case Manager"}
+          // onChange={(e) => handleAccessChange(index, e.target.value)} 
+        >
+          <option value="Case Manager">Case Manager</option>
+          <option value="Everyone">Everyone</option>
+        </select>
+      </td>
               </tr>
             ))) : (
               <tr>

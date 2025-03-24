@@ -266,13 +266,13 @@ export const CMTimeline = () => {
           <table className="leads-table">
             <thead>
               <tr>
-                <th style={{ width: "10%" }}>Event Date</th>
-                <th style={{ width: "14%" }}>Event Time Range</th>
+                <th style={{ width: "9%" }}>Event Date</th>
+                <th style={{ width: "15%" }}>Event Time Range</th>
                 <th style={{ width: "13%" }}>Event Location</th>
                 <th>Event Description</th>
                 <th style={{ width: "10%" }}>Flags</th>
-                <th style={{ width: "13%" }}>Access</th>
-                <th style={{ width: "13%" }}>Additional Details</th>
+                <th style={{ width: "14%" }}>Access</th>
+                <th style={{ width: "14%" }}>Additional Details</th>
 
               </tr>
             </thead>

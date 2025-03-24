@@ -10,12 +10,12 @@ export default function Attachment() {
       date: "05 Jan 2022 4:29pm",
     },
     {
-      name: "Favicon_2014_blue.docx",
+      name: "field case report.docx",
       size: "24 KB",
       date: "05 Jan 2022 4:32pm",
     },
     {
-      name: "Favicon_2014_white.pdf",
+      name: "leads desk report.pdf",
       size: "14 KB",
       date: "05 Jan 2022 4:33pm",
     },

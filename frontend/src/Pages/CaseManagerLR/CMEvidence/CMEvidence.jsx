@@ -6,6 +6,8 @@ import FootBar from '../../../components/FootBar/FootBar';
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import Comment from "../../../components/Comment/Comment";
+import Attachment from "../../../components/Attachment/Attachment";
+
 
 
 
@@ -237,6 +239,7 @@ export const CMEvidence = () => {
               <th>Collection Date</th>
               <th>Disposed Date</th>
               <th>Disposition</th>
+              <th style={{ width: "14%" }}>Access</th>
             </tr>
           </thead>
           <tbody>
@@ -247,10 +250,20 @@ export const CMEvidence = () => {
                 <td>{item.collectionDate}</td>
                 <td>{item.disposedDate}</td>
                 <td>{item.disposition}</td>
+                <td>
+        <select
+          value={ "Case Manager"}
+          // onChange={(e) => handleAccessChange(index, e.target.value)} 
+        >
+          <option value="Case Manager">Case Manager</option>
+          <option value="Everyone">Everyone</option>
+        </select>
+      </td>
               </tr>
             ))}
           </tbody>
         </table>
+        <Attachment />
         <Comment/>
         </div>
         </div>
