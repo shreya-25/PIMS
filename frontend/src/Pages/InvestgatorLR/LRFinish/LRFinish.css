@@ -59,8 +59,8 @@
   }
   input[type="checkbox"] {
     margin-right: 10px; /* Remove default margin to avoid alignment issues */
-    width: 50px;
-    width: 50px;
+    width: 90px;
+    width: 90px;
   }
   
   .report-column {
