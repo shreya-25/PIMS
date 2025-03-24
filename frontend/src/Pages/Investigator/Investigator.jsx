@@ -659,7 +659,7 @@ const handleLeadClick = (lead) => {
                    {/* Display Case Number and Name */}
                 <div className="case-header">
                         <h1>
-                            Case: {selectedCase.caseNo} |  {selectedCase.caseName}
+                            CASE: {selectedCase.caseNo} |  {selectedCase.caseName.toUpperCase()}
                         </h1>
                 </div>
                 {/* Content Area */}
