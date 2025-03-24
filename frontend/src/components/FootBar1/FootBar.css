@@ -1,0 +1,50 @@
+/* Footbar Styling */
+.footbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px 20px;
+  background-color: #2c3e502d;
+  margin-top: 20px;
+  position: relative;
+  margin-bottom: 20px;
+  width: 97%;
+}
+/* Button Styling */
+.footbar-btn {
+  padding: 10px 15px;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+  height: 40px;
+  width: 120px;
+  border-color: black;
+  text-align: center;
+  text-decoration: none;
+
+}
+
+.footbar-btn.prev {
+  background-color: rgba(23, 23, 145, 0.667);
+
+  color: white;
+}
+
+.footbar-btn.next {
+  background-color: rgba(23, 23, 145, 0.667);
+
+  /* background-color: #2980b9; */
+  color: white;
+}
+
+.footbar-btn:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+/* Form Labels */
+.form-label {
+  font-weight: bold;
+  margin-bottom: 5px;
+}

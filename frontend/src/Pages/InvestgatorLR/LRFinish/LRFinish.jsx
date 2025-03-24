@@ -1,13 +1,22 @@
 import React, { useContext, useState, useEffect} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar/Navbar";
-import FootBar from "../../../components/FootBar/FootBar";
+import FootBar1 from "../../../components/FootBar1/FootBar1";
 import "./LRFinish.css";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import Comment from "../../../components/Comment/Comment";
 
 export const LRFinish = () => {
+    useEffect(() => {
+        // Apply style when component mounts
+        document.body.style.overflow = "hidden";
+    
+        return () => {
+          // Reset to default when component unmounts
+          document.body.style.overflow = "auto";
+        };
+      }, []);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -516,7 +525,7 @@ const handleNavigationToInstruction = () => {
         )} */}
    
 
-      <FootBar
+      <FootBar1
         onPrevious={() => navigate(-1)}
         onNext={() =>
           navigate("/casepagemanager", { state: { caseDetails } })
