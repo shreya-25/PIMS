@@ -269,11 +269,11 @@ export const LRTimeline = () => {
           <table  className="leads-table">
             <thead>
               <tr>
-                <th>Event Date</th>
-                <th style={{ width: "14%" }}> Associated Return Id </th>
-                <th>Event Time Range</th>
+                <th >Event Date</th>
+                <th style={{ width: "14%" }}> Return Id </th>
+                <th style={{ width: "15%" }}>Event Time Range</th>
                 <th>Event Location</th>
-                <th>Event Description</th>
+                <th style={{ width: "15%" }}>Event Description</th>
                 <th>Flags</th>
                 <th></th>
               </tr>
