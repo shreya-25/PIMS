@@ -355,15 +355,15 @@ export const LRVehicle = () => {
         <table className="leads-table">
           <thead>
             <tr>
-              <th>Date Entered</th>
-              <th style={{ width: "15%" }}>Associated Return Id</th>
+              <th style={{ width: "12%" }}>Date Entered</th>
+              <th style={{ width: "10%" }}>Return Id</th>
               <th>Year</th>
               <th>Make</th>
               <th>Model</th>
               <th>Color</th>
               <th>State</th>
-              <th style={{ width: "12%" }}>Additional Details</th>
-              <th style={{ width: "10%" }}></th>
+              <th style={{ width: "15%" }}>Additional Details</th>
+              <th style={{ width: "12%" }}></th>
             </tr>
           </thead>
           <tbody>
