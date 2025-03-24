@@ -161,7 +161,15 @@ export const LRReturn = () => {
       alert("Failed to add return. Please try again.");
     }
   };
-  
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date)) return "";
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const year = date.getFullYear().toString().slice(-2);
+    return `${month}/${day}/${year}`;
+  };
   
   const handleEditReturn = (ret) => {
     setReturnData({ results: ret.results });
@@ -188,7 +196,7 @@ export const LRReturn = () => {
     
 
   return (
-    <div className="lrreturn-container1">
+    <div className="lrenclosures-container">
       <Navbar />
 
       <div className="top-menu">
@@ -268,7 +276,7 @@ export const LRReturn = () => {
 
 {/* 
                 <div className="left-content"> */}
-      <div className="main-contentLRR">
+      <div className="left-content">
         
         {/* Left Section */}
         {/* <div className="left-section">
@@ -284,20 +292,51 @@ export const LRReturn = () => {
         <div className="case-header">
           <h2 className="">LEAD RETURNS</h2>
         </div>
-      <div className = "bottom-sec-lr">
-      <div className = "content-to-add">
+
+        <div className = "LRI-content-section">
+
+<div className = "content-subsection">
+    
+      <div className = "timeline-form-sec">
       <div className = "content-to-add-first-row">
+
+      <div className="form-row">
+            <label>Associated Return Id:</label>
+            <input
+              type="text"
+              
+              onChange={(e) => handleInputChange("returnId", e.target.value)}
+            />
+          </div>
+          <div className="form-row">
+            <label>Date Entered:</label>
+            <input
+              type="text"
+              
+              onChange={(e) => handleInputChange("type", e.target.value)}
+            />
+          </div>
+          <div className="form-row">
+            <label>Entered By:</label>
+            <input
+              type="text"
+             
+              onChange={(e) => handleInputChange("enclosure", e.target.value)}
+            ></input>
+          </div>
+        </div>
         
-           <h4>Return Id</h4>
+           {/* <h4>Return Id</h4>
            <label className='input-field'></label>
-           <h4>Date Entered</h4>
+           <h4 >Date Entered</h4>
            <label className='input-field'></label>
            <h4>Entered By</h4>
-           <label className='input-field'></label>
-      </div>
+           <label className='input-field'></label> */}
+     
     <h4 className="return-form-h4">{editMode ? "Edit Return" : "Add Return"}</h4>
       <div className="return-form">
         <textarea
+        type = "text"
           value={returnData.results}
           onChange={(e) => handleInputChange("results", e.target.value)}
           placeholder="Enter return details"
@@ -326,7 +365,7 @@ export const LRReturn = () => {
             {returns.map((ret) => (
               <tr key={ret.id}>
                  <td>{ret.leadReturnId}</td>
-              <td>{ret.enteredDate}</td>
+              <td>{formatDate(ret.enteredDate)}</td>
               <td>{ret.enteredBy}</td>
               <td>{ret.leadReturnResult}</td>
                 <td>
@@ -356,6 +395,7 @@ export const LRReturn = () => {
 
         <Comment/>
 
+        </div>
         </div>
         <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page

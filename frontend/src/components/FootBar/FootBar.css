@@ -26,12 +26,14 @@
 }
 
 .footbar-btn.prev {
-  background-color: rgb(41, 41, 139);
+  background-color: rgba(23, 23, 145, 0.667);
+
   color: white;
 }
 
 .footbar-btn.next {
-  background-color: rgb(41, 41, 139);
+  background-color: rgba(23, 23, 145, 0.667);
+
   /* background-color: #2980b9; */
   color: white;
 }

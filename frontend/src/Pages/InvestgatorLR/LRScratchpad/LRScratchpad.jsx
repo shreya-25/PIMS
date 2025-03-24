@@ -172,13 +172,13 @@ export const LRScratchpad = () => {
 
 <div className = "content-subsection">
         {/* Scratchpad Form */}
-        <div className = "content-to-add">
+        <div className = "timeline-form-sec">
         <h4 className="evidence-form-h4">Add New Note</h4>
         <div className="scratchpad-form">
           <textarea
             value={noteData.text}
             onChange={(e) => handleInputChange("text", e.target.value)}
-            placeholder="Write your note here..."
+            placeholder="Write your note here"
           ></textarea>
         </div>
         <div className="form-buttons-scratchpad">
@@ -194,6 +194,7 @@ export const LRScratchpad = () => {
               <th> Associated Return Id </th>
               <th>Entered By</th>
               <th>Text</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -203,6 +204,26 @@ export const LRScratchpad = () => {
                 <td> {note.returnId} </td>
                 <td>{note.enteredBy}</td>
                 <td>{note.text}</td>
+                <td>
+                  <div classname = "lr-table-btn">
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                  alt="Edit Icon"
+                  className="edit-icon"
+                  // onClick={() => handleEditReturn(ret)}
+                />
+                  </button>
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                  alt="Delete Icon"
+                  className="edit-icon"
+                  // onClick={() => handleDeleteReturn(ret.id)}
+                />
+                  </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>

@@ -186,7 +186,7 @@ export const LRVideo = () => {
 <div className = "content-subsection">
 
         {/* Video Form */}
-        <div className = "content-to-add">
+        <div className = "timeline-form-sec">
         <h4 className="evidence-form-h4">Enter Video Details</h4>
         <div className="video-form">
           <div className="form-row-video">
@@ -243,6 +243,7 @@ export const LRVideo = () => {
               <th> Associated Return Id </th>
               <th>Date Video Recorded</th>
               <th>Description</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -252,6 +253,26 @@ export const LRVideo = () => {
                 <td>{video.returnId} </td>
                 <td>{video.dateVideoRecorded}</td>
                 <td>{video.description}</td>
+                <td>
+                  <div classname = "lr-table-btn">
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                  alt="Edit Icon"
+                  className="edit-icon"
+                  // onClick={() => handleEditReturn(ret)}
+                />
+                  </button>
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                  alt="Delete Icon"
+                  className="edit-icon"
+                  // onClick={() => handleDeleteReturn(ret.id)}
+                />
+                  </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>

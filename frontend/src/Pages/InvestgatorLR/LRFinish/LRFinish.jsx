@@ -328,6 +328,7 @@ const handleNavigationToInstruction = () => {
       <div className = "content-subsection">
 
         {/* Logged Information */}
+        <div className="timeline-form-sec">
         <div className="logged-info">
           <div className="info-item">
             <label>Logged:</label>
@@ -472,6 +473,7 @@ const handleNavigationToInstruction = () => {
               Preview
             </label>
           </div>
+        </div>
         </div>
         <Comment/>
         {/* Buttons */}
