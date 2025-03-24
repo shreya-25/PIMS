@@ -314,7 +314,7 @@ export const LRVehicle = () => {
               value={vehicleData.primaryColor}
               onChange={(e) => handleChange('primaryColor', e.target.value)}
             />
-            <label>Secondary Color:</label>
+            <label>Second Color:</label>
             <input
               type="text"
               value={vehicleData.secondaryColor}

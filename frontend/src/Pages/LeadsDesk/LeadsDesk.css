@@ -18,6 +18,11 @@ body{
    background-color: rgba(41, 41, 139, 0.034);
   border-radius: 8px;
 }
+
+.title-ld
+{
+  margin-top: 2px;
+}
 .search_and_hierarchy_container
 {
   display: flex;

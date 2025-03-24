@@ -13,6 +13,16 @@ import VehicleModal from "../../../components/VehicleModal/VehicleModel";
 
 export const CMVehicle = () => {
 
+  useEffect(() => {
+      // Apply style when component mounts
+      document.body.style.overflow = "hidden";
+  
+      return () => {
+        // Reset to default when component unmounts
+        document.body.style.overflow = "auto";
+      };
+    }, []);
+
   const navigate = useNavigate(); 
   const location = useLocation();
 
