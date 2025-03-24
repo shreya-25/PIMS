@@ -673,15 +673,15 @@ export const CaseInformation = () => {
       
           </div> */}
 
-          <div className="comment-sec">
+          {/* <div className="comment-sec">
                 <label> Comments </label>
                 <input
                   type="text"
                 />
-              </div>
+              </div> */}
 
           </div>
-          <div className="btn-sec">
+          {/* <div className="btn-sec">
 
 <button className="save-btn1" onClick={handleHomeClick}>
 Back
@@ -696,7 +696,7 @@ Reject
 <button className="save-btn1" onClick={handleSaveClick}>
 Next
 </button>
-</div>
+</div> */}
         </div>
      </div>
      </div>
