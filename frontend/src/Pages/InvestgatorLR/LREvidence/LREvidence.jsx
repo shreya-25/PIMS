@@ -236,7 +236,7 @@ export const LREvidence = () => {
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th>Associated Return Id </th>
+              <th style={{ width: "10%" }}> Return Id </th>
               <th>Type</th>
               <th>Collection Date</th>
               <th>Disposed Date</th>
