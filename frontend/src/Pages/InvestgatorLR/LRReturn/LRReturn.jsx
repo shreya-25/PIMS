@@ -300,7 +300,7 @@ export const LRReturn = () => {
       <div className = "timeline-form-sec">
       <div className = "content-to-add-first-row">
 
-      <div className="form-row">
+      <div className="form-row4">
             <label>Associated Return Id:</label>
             <input
               type="text"
@@ -308,7 +308,7 @@ export const LRReturn = () => {
               onChange={(e) => handleInputChange("returnId", e.target.value)}
             />
           </div>
-          <div className="form-row">
+          <div className="form-row4">
             <label>Date Entered:</label>
             <input
               type="text"
@@ -316,7 +316,7 @@ export const LRReturn = () => {
               onChange={(e) => handleInputChange("type", e.target.value)}
             />
           </div>
-          <div className="form-row">
+          <div className="form-row4">
             <label>Entered By:</label>
             <input
               type="text"
