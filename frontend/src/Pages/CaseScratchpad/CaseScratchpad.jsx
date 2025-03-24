@@ -1,8 +1,18 @@
-import React, { useState } from "react";
+import React, { useContext, useState, useEffect} from 'react';
 import Navbar from "../../components/Navbar/Navbar";
 import "./CaseScratchpad.css";
+import { useLocation, useNavigate } from 'react-router-dom';
+import axios from "axios";
+import { CaseContext } from "../CaseContext";
 
 export const CaseScratchpad = () => {
+
+  const navigate = useNavigate(); 
+
+  const location = useLocation();
+
+    const { caseDetails } = location.state || {};
+      const { selectedCase, setSelectedLead } = useContext(CaseContext);
   const [entries, setEntries] = useState([
     { id: 1, date: "2024-12-01", notes: "Initial details of the case." },
     { id: 2, date: "2024-12-02", notes: "Follow-up notes." },
@@ -57,11 +67,106 @@ export const CaseScratchpad = () => {
     setEditId(entry.id);
   };
 
+    // Function to format dates as MM/DD/YY
+  const formatDate = (dateString) => {
+    if (!dateString) return ""; // Handle empty dates
+    const date = new Date(dateString);
+    if (isNaN(date)) return ""; // Handle invalid dates
+  
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const year = date.getFullYear().toString().slice(-2); // Get last two digits of the year
+  
+    return `${month}/${day}/${year}`;
+  };
+  
+  
+    const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+    const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+  
+    const onShowCaseSelector = (route) => {
+      navigate(route, { state: { caseDetails } });
+  };
+    
+
   return (
     <div className="scratchpad-container">
       <Navbar />
+
+
+      <div className="main-container">
+            {/* Sidebar */}
+            <div className="sideitem">
+                    <ul className="sidebar-list">
+                         {/* Lead Management Dropdown */}
+                         <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
+                            {/* Case Information Dropdown */}
+        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▼" : "▲" }
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Add/View Case Notes
+            </li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li> */}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+                    </ul>
+                </div>
+        {/* <div className="left-section">
+          <img
+            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
+            alt="Police Department Logo"
+            className="police-logo-cl"
+          />
+        </div> */}
+
+        <div className="left-content">
+
+        <div className="case-header">
+          <h2 className="">ALL NOTES</h2>
+        </div>
+
       <main className="scratchpad-main">
-        <h1 className="scratchpad-title">ALL SCRATCHPAD ENTRIES</h1>
+        {/* <h1 className="scratchpad-title">ALL SCRATCHPAD ENTRIES</h1> */}
 
         {/* List of Entries */}
         <div className="entries-list">
@@ -122,26 +227,10 @@ export const CaseScratchpad = () => {
             </button>
           </div>
 
-          <div className = "content-to-add">
-     
-     <h4 className="return-form-h4"> Add Comment</h4>
-       <div className="return-form">
-         <textarea
-          //  value={returnData.results}
-          //  onChange={(e) => handleInputChange("results", e.target.value)}
-           placeholder="Enter comments"
-         ></textarea>
-       </div>
-
-       <div className="form-buttons-return">
-         <button className="save-btn1">Add Comment</button>
-         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
-         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
-         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
-       </div>
-</div>
         </div>
       </main>
     </div>
+    </div>
+      </div>
   );
 };
