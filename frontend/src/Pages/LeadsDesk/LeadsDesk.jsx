@@ -580,13 +580,13 @@ export const LeadsDesk = () => {
 <table className="lead-details-table">
   <colgroup>
     {/* Adjust widths as needed; total ~100% */}
-    <col style={{ width: "10%" }} />
-    <col style={{ width: "8%" }} />
-    <col style={{ width: "10%" }} />
     <col style={{ width: "15%" }} />
+    <col style={{ width: "7%" }} />
     <col style={{ width: "10%" }} />
+    <col style={{ width: "13%" }} />
+    <col style={{ width: "12%" }} />
     <col style={{ width: "10%" }} />
-    <col style={{ width: "10%" }} />
+    <col style={{ width: "14%" }} />
     <col style={{ width: "10%" }} />
   </colgroup>
   <tbody>
