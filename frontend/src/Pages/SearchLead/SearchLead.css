@@ -47,7 +47,7 @@
   }
   
   .clear-btn {
-    background-color: #874b4b;
+    background-color: rgba(23, 23, 145, 0.667);
     color: white;
     border: none;
     padding: 10px 15px;
@@ -55,10 +55,10 @@
     border-radius: 4px;
   }
   
-  .clear-btn:hover {
+  /* .clear-btn:hover {
     background-color: #6a3a3a;
   }
-  
+   */
   .searchlead-btns-container {
     margin: 20px 0;
     display: flex;
@@ -79,7 +79,7 @@
   } */
   
   .search-btn:hover {
-    background-color: #6a3a3a;
+    background-color: rgba(23, 23, 145, 0.667);
   }
   
   .results-section {
@@ -107,7 +107,7 @@
   }
 
   .add-row-btn {
-    background-color: #874b4b;
+    background-color: rgba(23, 23, 145, 0.667);
     color: white;
     padding: 10px 20px;
     font-size: 20px;
@@ -117,12 +117,12 @@
     margin-top: 20px;
   }
   
-  .add-row-btn:hover {
+  /* .add-row-btn:hover {
     background-color: #874b4b;
-  }
+  } */
   
   .clear-btn {
-    background-color: #874b4b;
+    background-color: rgba(23, 23, 145, 0.667);
     color: white;
     border: none;
     padding: 8px 15px;
@@ -130,9 +130,9 @@
     border-radius: 4px;
   }
   
-  .clear-btn:hover {
+  /* .clear-btn:hover {
     background-color: #6a3a3a;
-  }
+  } */
 
   .results-table {
     width: 100%;
@@ -172,7 +172,8 @@
   .main-page-btn {
     margin-top: 20px;
     padding: 12px 24px;
-    background-color: #6a3a3a;
+    /* background-color: #6a3a3a; */
+    background-color: rgba(23, 23, 145, 0.667);
     color: white;
     font-size: 20px;
     border: none;
@@ -183,6 +184,6 @@
     
   }
   
-  .main-page-btn:hover {
+  /* .main-page-btn:hover {
     background-color: #6a3a3a;
-  }
+  } */

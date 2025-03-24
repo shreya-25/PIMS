@@ -10,6 +10,15 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Comment from "../../../components/Comment/Comment";
 
 export const LRVehicle = () => {
+    useEffect(() => {
+        // Apply style when component mounts
+        document.body.style.overflow = "hidden";
+    
+        return () => {
+          // Reset to default when component unmounts
+          document.body.style.overflow = "auto";
+        };
+      }, []);
 
   const navigate = useNavigate(); // Initialize useNavigate hook
     const location = useLocation();

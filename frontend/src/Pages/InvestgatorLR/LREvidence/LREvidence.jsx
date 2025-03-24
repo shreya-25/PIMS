@@ -1,15 +1,23 @@
-import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from '../../../components/Navbar/Navbar';
 import "./LREvidence.css"; // Custom CSS file for Evidence styling
 import FootBar from '../../../components/FootBar/FootBar';
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import Comment from "../../../components/Comment/Comment";
-
+import React, { useContext, useState, useEffect} from 'react';
+import { useLocation, useNavigate } from "react-router-dom";
 
 
 export const LREvidence = () => {
+    useEffect(() => {
+        // Apply style when component mounts
+        document.body.style.overflow = "hidden";
+    
+        return () => {
+          // Reset to default when component unmounts
+          document.body.style.overflow = "auto";
+        };
+      }, []);
   const navigate = useNavigate(); // Initialize navigate hook
   const location = useLocation();
   

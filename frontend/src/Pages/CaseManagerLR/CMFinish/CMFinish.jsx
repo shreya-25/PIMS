@@ -2,21 +2,21 @@ import React, { useContext, useState, useEffect} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from '../../../components/Navbar/Navbar';
 import "./CMFinish.css";
-import FootBar from '../../../components/FootBar/FootBar';
+import FootBar1 from '../../../components/FootBar1/FootBar1';
 import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 
 export const CMFinish = () => {
-  // useEffect(() => {
-  //     // Apply style when component mounts
-  //     document.body.style.overflow = "hidden";
+  useEffect(() => {
+      // Apply style when component mounts
+      document.body.style.overflow = "hidden";
   
-  //     return () => {
-  //       // Reset to default when component unmounts
-  //       document.body.style.overflow = "auto";
-  //     };
-  //   }, []);
+      return () => {
+        // Reset to default when component unmounts
+        document.body.style.overflow = "auto";
+      };
+    }, []);
   const navigate = useNavigate();
   const location = useLocation();
       
@@ -321,7 +321,7 @@ export const CMFinish = () => {
 
      </div>
      </div>
-     <FootBar
+     <FootBar1
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
         onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
       />

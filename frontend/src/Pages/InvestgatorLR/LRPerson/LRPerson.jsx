@@ -11,6 +11,15 @@ import Navbar from '../../../components/Navbar/Navbar';
 import './LRPerson.css';
 
 export const LRPerson = () => {
+    useEffect(() => {
+        // Apply style when component mounts
+        document.body.style.overflow = "hidden";
+    
+        return () => {
+          // Reset to default when component unmounts
+          document.body.style.overflow = "auto";
+        };
+      }, []);
     const navigate = useNavigate(); // Initialize useNavigate hook
        const location = useLocation();
           

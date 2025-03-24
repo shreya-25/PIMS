@@ -61,12 +61,12 @@
   .form-row1 {
     display: flex;
     justify-content: flex-start;
-    gap: 80px;
+    gap: 45px;
   }
   .form-row2 {
     display: flex;
     justify-content: flex-start;
-    gap: 142px;
+    gap: 105px;
   }
   
   .form-row label {
