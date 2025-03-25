@@ -279,7 +279,7 @@ exports.rejectCase = async (req, res) => {
       }
       
       // Assuming caseNo is stored as a Number in your Case model.
-      const caseData = await Case.findOne({ caseNo: Number(caseNo) });
+      const caseData = await Case.findOne({ caseNo });
       
       if (!caseData) {
         return res.status(404).json({ message: "Case not found" });

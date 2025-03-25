@@ -6,10 +6,21 @@ import FootBar from '../../../components/FootBar/FootBar';
 import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
+import Attachment from "../../../components/Attachment/Attachment";
+
 
 
 
 export const CMAudio = () => {
+  useEffect(() => {
+      // Apply style when component mounts
+      document.body.style.overflow = "hidden";
+  
+      return () => {
+        // Reset to default when component unmounts
+        document.body.style.overflow = "auto";
+      };
+    }, []);
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -119,20 +130,21 @@ export const CMAudio = () => {
       <div className="LRI_Content">
        <div className="sideitem">
                     <ul className="sidebar-list">
-                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
-                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
-                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
-                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
-                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
-                        <li className="sidebar-item">Generate Report</li>
-                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
-
-                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
-
+                         {/* Lead Management Dropdown */}
+                         <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
                             {/* Case Information Dropdown */}
         <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
           Case Management {caseDropdownOpen ? "▼" : "▲" }
@@ -149,19 +161,19 @@ export const CMAudio = () => {
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Case Scratchpad
             </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
-            </li>
+            </li> */}
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
               View Flagged Leads
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
               View Timeline Entries
             </li>
-            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
@@ -169,24 +181,6 @@ export const CMAudio = () => {
          
           </ul>
         )}
-
-
-                                 {/* Lead Management Dropdown */}
-                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
-
                     </ul>
                 </div>
                 <div className="left-content">
@@ -250,10 +244,9 @@ export const CMAudio = () => {
           <thead>
             <tr>
               <th style={{ width: "10%" }}>Date Entered</th>
-              <th style={{ width: "15%" }}>Date Audio Recorded</th>
+              <th style={{ width: "16%" }}>Date Audio Recorded</th>
               <th>Description</th>
-              <th style={{ width: "13%" }}>Access</th>
-              <th style={{ width: "13%" }}>Additional Details</th>
+              <th style={{ width: "15%" }}>Access</th>
             </tr>
           </thead>
           <tbody>
@@ -271,11 +264,12 @@ export const CMAudio = () => {
           <option value="Everyone">Everyone</option>
         </select>
       </td>
-      <td>  <button className="download-btn" >View</button></td>
               </tr>
             ))}
           </tbody>
         </table>
+
+        <Attachment/>
 
       <Comment/>
       </div>

@@ -11,6 +11,15 @@ import PersonModal from "../../../components/PersonModal/PersonModel";
 
 
 export const CMPerson = () => {
+   useEffect(() => {
+      // Apply style when component mounts
+      document.body.style.overflow = "hidden";
+  
+      return () => {
+        // Reset to default when component unmounts
+        document.body.style.overflow = "auto";
+      };
+    }, []);
     const navigate = useNavigate(); // Initialize useNavigate hook
       const location = useLocation();
 
@@ -244,20 +253,21 @@ export const CMPerson = () => {
        <div className="LRI_Content">
        <div className="sideitem">
                     <ul className="sidebar-list">
-                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
-                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
-                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
-                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
-                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
-                        <li className="sidebar-item">Generate Report</li>
-                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
-
-                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
-
+                          {/* Lead Management Dropdown */}
+                          <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
                             {/* Case Information Dropdown */}
         <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
           Case Management {caseDropdownOpen ? "▼" : "▲" }
@@ -274,19 +284,19 @@ export const CMPerson = () => {
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Case Scratchpad
             </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
-            </li>
+            </li> */}
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
               View Flagged Leads
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
               View Timeline Entries
             </li>
-            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
@@ -294,23 +304,6 @@ export const CMPerson = () => {
          
           </ul>
         )}
-
-
-                                 {/* Lead Management Dropdown */}
-                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
 
                     </ul>
                 </div>
@@ -340,18 +333,19 @@ export const CMPerson = () => {
         <table className="leads-table">
           <thead>
             <tr>
-            <th style={{ width: "15%" }}>Associated Return ID</th>
+            <th style={{ width: "16%" }}>Associated Return ID</th>
               <th>Date Entered</th>
               <th>Name</th>
               <th>Phone No</th>
               <th>Address</th>
-              <th>Access</th>
-              <th>Additional Details</th>
+              <th style={{ width: "15%" }}>Access</th>
+              <th style={{ width: "15%" }}>Additional Details</th>
               {/* <th></th> */}
             </tr>
           </thead>
           <tbody>
-  {persons.map((person, index) => (
+  {persons.length > 0 ? (
+  persons.map((person, index) => (
     <tr
       key={index}
       className={selectedRow === index ? "selected-row" : ""}
@@ -395,7 +389,12 @@ export const CMPerson = () => {
         </div>
       </td> */}
     </tr>
-  ))}
+  ))) : (
+    <tr>
+      <td colSpan="4" style={{ textAlign: 'center' }}>
+        No Person Details Available
+      </td>
+    </tr>)}
 </tbody>
 
         </table>

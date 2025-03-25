@@ -1,8 +1,10 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useContext, useState, useEffect} from 'react';
 import Navbar from "../../components/Navbar/Navbar";
 import "./SearchLead.css";
 import Pagination from "../../components/Pagination/Pagination";
+import { useLocation, useNavigate } from 'react-router-dom';
+import axios from "axios";
+import { CaseContext } from "../CaseContext";
 
 // Sample lead data for matching
 const sampleLeads = [
@@ -113,25 +115,98 @@ export const SearchLead = () => {
     setMatchingLeads(filteredLeads);
   };
 
+      const location = useLocation();
+      const { caseDetails } = location.state || {};
+
+        const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+        const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+      
+        const onShowCaseSelector = (route) => {
+          navigate(route, { state: { caseDetails } });
+      };
+        
+
   return (
     <div className="searchlead-container">
       <Navbar />
+      <div className="main-container">
+            {/* Sidebar */}
+            <div className="sideitem">
+                    <ul className="sidebar-list">
+                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
+                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
+                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
+                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
+                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
+                        <li className="sidebar-item">Generate Report</li>
+                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
 
-      {/* <h1 className="searchlead-title">SEARCH LEAD</h1> */}
-      <div className="main-content-ll">
-        <div className="left-section">
-          <img
-            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
-            alt="Police Department Logo"
-            className="police-logo-cl"
-          />
-        </div>
+                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
 
+                           {/* Lead Management Dropdown */}
+                           <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
 
-        <div className="center-sectionll">
-          <h2 className="title1">SEARCH LEAD</h2>
-        </div>
-      </div>
+                            {/* Case Information Dropdown */}
+        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▼" : "▲" }
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li> */}
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Case Scratchpad
+            </li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li> */}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+
+                    </ul>
+                </div>
+                <div className="left-content">
+
+<div className="case-header">
+  <h2 className="">SEARCH LEAD</h2>
+</div>
 
       <div className="main-content-searchlead">
         <table className="search-table">
@@ -330,10 +405,10 @@ export const SearchLead = () => {
   pageSize={pageSize}
   onPageSizeChange={setPageSize} // Update page size state
 />
-
-  <button className="main-page-btn" onClick={() => navigate('/MainPage')}>Go to Main Page</button>
 </div>
       </div>
+    </div>
+    </div>
     </div>
   );
 };

@@ -6,10 +6,22 @@ import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import FootBar from '../../../components/FootBar/FootBar';
 import Comment from "../../../components/Comment/Comment";
+import Attachment from "../../../components/Attachment/Attachment";
+
 
 
 
 export const CMEnclosures = () => {
+
+  useEffect(() => {
+      // Apply style when component mounts
+      document.body.style.overflow = "hidden";
+  
+      return () => {
+        // Reset to default when component unmounts
+        document.body.style.overflow = "auto";
+      };
+    }, []);
   const navigate = useNavigate(); 
   const location = useLocation();
 
@@ -29,7 +41,7 @@ export const CMEnclosures = () => {
   // Sample enclosures data
   const [enclosures, setEnclosures] = useState([
     { dateEntered: "", leadReturnType: "", type: "", enclosure: "" },
-    // { dateEntered: "12/03/2024", type: "Evidence", enclosure: "Photo Evidence" },
+    { dateEntered: "12/03/2024", leadReturnId: "1", type: "Evidence", enclosure: "Photo Evidence" },
   ]);
 
 
@@ -107,20 +119,21 @@ export const CMEnclosures = () => {
       <div className="LRI_Content">
        <div className="sideitem">
                     <ul className="sidebar-list">
-                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
-                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
-                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
-                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
-                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
-                        <li className="sidebar-item">Generate Report</li>
-                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
-
-                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
-
+                         {/* Lead Management Dropdown */}
+                         <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
                             {/* Case Information Dropdown */}
         <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
           Case Management {caseDropdownOpen ? "▼" : "▲" }
@@ -137,19 +150,19 @@ export const CMEnclosures = () => {
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Case Scratchpad
             </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
-            </li>
+            </li> */}
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
               View Flagged Leads
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
               View Timeline Entries
             </li>
-            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
@@ -157,23 +170,6 @@ export const CMEnclosures = () => {
          
           </ul>
         )}
-
-
-                                 {/* Lead Management Dropdown */}
-                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
 
                     </ul>
                 </div>
@@ -232,22 +228,39 @@ export const CMEnclosures = () => {
           <thead>
             <tr>
               <th style={{ width: "10%" }}>Date Entered</th>
-              <th style={{ width: "15%" }}>Associated Return Id</th>
+              <th style={{ width: "16%" }}>Associated Return Id</th>
               <th style={{ width: "10%" }}>Type</th>
               <th>Enclosure Description</th>
+              <th style={{ width: "14%" }}>Access</th>
             </tr>
           </thead>
           <tbody>
-            {enclosures.map((enclosure, index) => (
+            {enclosures.length > 0 ? (
+              enclosures.map((enclosure, index) => (
               <tr key={index}>
                 <td>{enclosure.dateEntered}</td>
                 <td>{enclosure.leadReturnId}</td>
                 <td>{enclosure.type}</td>
                 <td>{enclosure.enclosure}</td>
+                <td>
+        <select
+          value={ "Case Manager"}
+          // onChange={(e) => handleAccessChange(index, e.target.value)} 
+        >
+          <option value="Case Manager">Case Manager</option>
+          <option value="Everyone">Everyone</option>
+        </select>
+      </td>
               </tr>
-            ))}
+            ))) : (
+              <tr>
+                <td colSpan="4" style={{ textAlign: 'center' }}>
+                  No Enclosures Available
+                </td>
+              </tr>)}
           </tbody>
         </table>
+        <Attachment />
        <Comment/>
       </div>
       </div>

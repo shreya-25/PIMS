@@ -110,6 +110,18 @@ export const CaseInformation = () => {
   const [isCaseDetailOpen, setIsCaseDetailOpen] = useState(false);
   const [isDOpen, setIsDOpen] = useState(false);
 
+  const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+  const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+  
+  const onShowCaseSelector = (route) => {
+    navigate(route, { state: { caseDetails } });
+  };
+
+  const getCasePageRoute = () => {
+    if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
+    return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
+};
+
   // New: Reject click handler that calls your backend endpoint with token
   const handleRejectClick = async () => {
     // Ensure that we have a valid case number from caseDetails
@@ -180,31 +192,68 @@ export const CaseInformation = () => {
         <Navbar />
 
         <div className="main-container">
-          {/* Simple Sidebar */}
-          <div className="sideitem">
-            <ul className="sidebar-list">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-              <li className="sidebar-item" onClick={() => navigate('/casepagemanager')}>Case Page</li>
-              <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
-              <li className="sidebar-item" onClick={() => navigate("/leadlog")}>View Lead Log</li>
-              <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
-              <li className="sidebar-item" onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
-              <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
-              <li className="sidebar-item" onClick={() => navigate('/LeadHierarchy')}>View Lead Hierarchy</li>
-              <li className="sidebar-item">Generate Report</li>
-              <li className="sidebar-item" onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
-              <li className="sidebar-item" onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
-              <li className="sidebar-item" onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
-              <li className="sidebar-item">View Lead Chain of Custody</li>
-            </ul>
-          </div>
+        <div className="sideitem">
+          <ul className="sidebar-list">
+
+          <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+                    Lead Management {leadDropdownOpen ?  "▲": "▼" }
+                  </li>
+                  {leadDropdownOpen && (
+                    <ul className="dropdown-list1">
+                       {/* <li className="sidebar-item" onClick={() => navigate('/LeadReview')}>Lead Information</li> */}
+                       <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
+                       <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                       <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
+          </ul>
+        )} 
+
+          <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▲" : "▼"}
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li> */}
+              <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li> */}
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              View/Add Case Notes
+            </li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li> */}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+          </ul>
+        </div>
 
           {/* Main Content: Replicate the Police Report Fields */}
           <div className="left-content">
             <div className="case-header">
             {
                         <h1>
-                          Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"}
+                          Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
                         </h1>
                     }
             </div>
@@ -624,15 +673,15 @@ export const CaseInformation = () => {
       
           </div> */}
 
-          <div className="comment-sec">
+          {/* <div className="comment-sec">
                 <label> Comments </label>
                 <input
                   type="text"
                 />
-              </div>
+              </div> */}
 
           </div>
-          <div className="btn-sec">
+          {/* <div className="btn-sec">
 
 <button className="save-btn1" onClick={handleHomeClick}>
 Back
@@ -647,7 +696,7 @@ Reject
 <button className="save-btn1" onClick={handleSaveClick}>
 Next
 </button>
-</div>
+</div> */}
         </div>
      </div>
      </div>

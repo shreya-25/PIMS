@@ -23,7 +23,7 @@ export const CMInstruction = () => {
           navigate("/CMReturn", { state: {caseDetails, leadDetails } });
         };
 
-          const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+          const { selectedCase, selectedLead, setSelectedLead, leadInstructions, setLeadInstructions } = useContext(CaseContext);
 
           const formatDate = (dateString) => {
             if (!dateString) return "";
@@ -87,7 +87,7 @@ export const CMInstruction = () => {
       }
     }, [leadData]);
     
-console.log(selectedLead);
+
   useEffect(() => {
     const fetchLeadData = async () => {
       try {
@@ -107,6 +107,7 @@ console.log(selectedLead);
               ...response.data[0], 
               assignedOfficer: response.data[0].assignedOfficer || [] // Ensure array
             });
+            setLeadInstructions(response.data[0]);
           }
           
         }
@@ -119,7 +120,7 @@ console.log(selectedLead);
     };
 
     fetchLeadData();
-  }, [selectedLead]);
+  }, [selectedLead, setLeadInstructions]);
 
   const handleGenerateLead = () => {
     const { leadNumber, leadSummary, assignedDate, assignedOfficer, assignedBy } = leadData;
@@ -213,7 +214,21 @@ console.log(selectedLead);
                         <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
 
                         <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
-
+                          {/* Lead Management Dropdown */}
+                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
                             {/* Case Information Dropdown */}
         <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
           Case Management {caseDropdownOpen ? "▼" : "▲" }
@@ -230,19 +245,19 @@ console.log(selectedLead);
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Case Scratchpad
             </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
-            </li>
+            </li> */}
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
               View Flagged Leads
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
               View Timeline Entries
             </li>
-            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
@@ -250,23 +265,6 @@ console.log(selectedLead);
          
           </ul>
         )}
-
-
-                                 {/* Lead Management Dropdown */}
-                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
 
                     </ul>
                 </div>
@@ -387,7 +385,7 @@ console.log(selectedLead);
               </td>
             </tr>
             <tr>
-              <td className="info-label">Lead Description:</td>
+              <td className="info-label">Lead Log Summary:</td>
               <td>
                 <input
                   type="text"
@@ -398,6 +396,17 @@ console.log(selectedLead);
                 />
               </td>
             </tr>
+            <tr>
+                  <td className="info-label">Lead Instruction:</td>
+                  <td>
+                    <textarea
+                      className="textarea-field"
+                      value={leadData.summary}
+                      onChange={(e) => handleInputChange('leadDescription', e.target.value)}
+                      placeholder=""
+                    ></textarea>
+                  </td>
+                </tr>
             <tr>
                 <td className="info-label">Lead Origin:</td>
                 <td>
@@ -505,17 +514,6 @@ console.log(selectedLead);
                       onChange={(e) => handleInputChange('assignedBy', e.target.value)}
                       placeholder=""
                     />
-                  </td>
-                </tr>
-                <tr>
-                  <td className="info-label">Lead Summary:</td>
-                  <td>
-                    <textarea
-                      className="textarea-field"
-                      value={leadData.summary}
-                      onChange={(e) => handleInputChange('leadDescription', e.target.value)}
-                      placeholder=""
-                    ></textarea>
                   </td>
                 </tr>
           </tbody>

@@ -11,6 +11,15 @@ import { CaseContext } from "../../CaseContext";
 
 
 export const CMScratchpad = () => {
+  useEffect(() => {
+      // Apply style when component mounts
+      document.body.style.overflow = "hidden";
+  
+      return () => {
+        // Reset to default when component unmounts
+        document.body.style.overflow = "auto";
+      };
+    }, []);
   const navigate = useNavigate();
   const location = useLocation();
       
@@ -104,20 +113,21 @@ export const CMScratchpad = () => {
       <div className="LRI_Content">
        <div className="sideitem">
                     <ul className="sidebar-list">
-                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
-                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
-                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
-                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
-                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
-                        <li className="sidebar-item">Generate Report</li>
-                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
-
-                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
-
+                    {/* Lead Management Dropdown */}
+                    <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
                             {/* Case Information Dropdown */}
         <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
           Case Management {caseDropdownOpen ? "▼" : "▲" }
@@ -132,21 +142,21 @@ export const CMScratchpad = () => {
               Officer Management
             </li>
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Case Scratchpad
+              Add/View Case Notes
             </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
-            </li>
+            </li> */}
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
               View Flagged Leads
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
               View Timeline Entries
             </li>
-            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
@@ -154,23 +164,6 @@ export const CMScratchpad = () => {
          
           </ul>
         )}
-
-
-                                 {/* Lead Management Dropdown */}
-                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
 
                     </ul>
                 </div>
@@ -205,6 +198,7 @@ export const CMScratchpad = () => {
               <th>Date Entered</th>
               <th>Entered By</th>
               <th>Text</th>
+              <th style={{ width: "15%" }}>Access</th>
             </tr>
           </thead>
           <tbody>
@@ -213,6 +207,15 @@ export const CMScratchpad = () => {
                 <td>{note.dateEntered}</td>
                 <td>{note.enteredBy}</td>
                 <td>{note.text}</td>
+                <td>
+        <select
+          value={ "Case Manager"}
+           // Pass index properly
+        >
+          <option value="Case Manager">Case Manager</option>
+          <option value="Everyone">Everyone</option>
+        </select>
+      </td>         
               </tr>
             ))}
           </tbody>

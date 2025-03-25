@@ -91,3 +91,12 @@
     color: white;
   }
   
+  .enclosures-table {
+    table-layout: auto;
+    width: 100%;
+  }
+  .enclosures-table th, .enclosures-table td {
+    min-width: auto;
+    max-width: none;
+  }
+  

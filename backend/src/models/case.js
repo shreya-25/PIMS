@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const caseSchema = new mongoose.Schema(
     {
-        caseNo: { type: Number, required: true, unique: true },
+        caseNo: { type: String, required: true, unique: true },
         caseName: { type: String, required: true },
         assignedOfficers: [
             {
@@ -14,7 +14,12 @@ const caseSchema = new mongoose.Schema(
         caseStatus: { type: String, enum: ['Ongoing', 'Completed'], required: true },
         caseSummary: {type: String},
         scratchpadEntry: { type: String }, 
+        subNumbers: {
+            type: [String],
+            default: []
+          }
     },
+
     { timestamps: true }
 );
 

@@ -5,11 +5,21 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { CaseContext } from "../../CaseContext";
 import axios from "axios";
 import PersonModal from "../../../components/PersonModal/PersonModel";
+import Comment from "../../../components/Comment/Comment";
 
 import Navbar from '../../../components/Navbar/Navbar';
 import './LRPerson.css';
 
 export const LRPerson = () => {
+    useEffect(() => {
+        // Apply style when component mounts
+        document.body.style.overflow = "hidden";
+    
+        return () => {
+          // Reset to default when component unmounts
+          document.body.style.overflow = "auto";
+        };
+      }, []);
     const navigate = useNavigate(); // Initialize useNavigate hook
        const location = useLocation();
           
@@ -188,20 +198,21 @@ export const LRPerson = () => {
        <div className="LRI_Content">
       <div className="sideitem">
                     <ul className="sidebar-list">
-                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
-                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
-                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
-                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
-                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
-                        <li className="sidebar-item">Generate Report</li>
-                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
-
-                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
-
+                    {/* Lead Management Dropdown */}
+                    <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
                             {/* Case Information Dropdown */}
         <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
           Case Management {caseDropdownOpen ? "▼" : "▲" }
@@ -216,21 +227,21 @@ export const LRPerson = () => {
               Officer Management
             </li>
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Case Scratchpad
+              Add/View Case Notes
             </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
-            </li>
+            </li> */}
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
               View Flagged Leads
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
               View Timeline Entries
             </li>
-            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
@@ -238,23 +249,6 @@ export const LRPerson = () => {
          
           </ul>
         )}
-
-
-                                 {/* Lead Management Dropdown */}
-                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
 
                     </ul>
                 </div>
@@ -264,18 +258,19 @@ export const LRPerson = () => {
         <div className="case-header">
           <h2 className="">LEAD PERSONS DETAILS</h2>
         </div>
+        <div className = "LRI-content-section">
 
-     {/* Main Table */}
-     <div className="table-container1">
+<div className = "content-subsection">
         <table className="leads-table">
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th>Associated Return Id </th>
+              <th style={{ width: "16%" }}>Associated Return Id </th>
               <th>Name</th>
               <th>Phone No</th>
               <th>Address</th>
-              <th>Additional Details</th>
+              <th style={{ width: "14%" }}>Additional Details</th>
+              <th style={{ width: "12%" }}></th>
             </tr>
           </thead>
           <tbody>
@@ -308,6 +303,26 @@ export const LRPerson = () => {
   caseName={personModalData.caseName}
   leadReturnId={personModalData.leadReturnId}
 />
+<td>
+                  <div classname = "lr-table-btn">
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                  alt="Edit Icon"
+                  className="edit-icon"
+                  // onClick={() => handleEditReturn(ret)}
+                />
+                  </button>
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                  alt="Delete Icon"
+                  className="edit-icon"
+                  // onClick={() => handleDeleteReturn(ret.id)}
+                />
+                  </button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -315,25 +330,13 @@ export const LRPerson = () => {
         {/* <button onClick={() => handleNavigation('/LRPerson1')} className="save-btn1
         ">Add Person</button> */}
 
-      </div>
-
-      {/* Action Buttons */}
-      {/* <div className="action-buttons">
-        <button onClick={() => handleNavigation('/LRPerson1')} >Add Person</button>
-        <button onClick={handleEditPerson}>Edit</button>
-        <button onClick={handleDeletePerson}>Delete</button>
-      </div> */}
-
       {/* Bottom Buttons */}
       <div className="bottom-buttons">
       <button onClick={() => handleNavigation('/LRPerson1')} className="save-btn1">Add Person</button>
-
-      {/* <button onClick={() => handleNavigation('/LRPerson1')} className="back-btn">Add Person</button> */}
-        {/* <button className="back-btn"onClick={() => handleNavigation('/LRReturn')} >Back</button>
-        <button className="next-btn"onClick={() => handleNavigation('/LRVehicle')} >Next</button> */}
-        {/* <button className="save-btn">Save</button>
-        <button className="cancel-btn">Cancel</button> */}
       </div>
+      <Comment/>
+</div>
+</div>
       <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
         onNext={() => navigate("/LRVehicle")} // Takes user to CM Return page
@@ -341,6 +344,7 @@ export const LRPerson = () => {
     </div>
     </div>
     </div>
-    </div>
+</div>
+      
   );
 };

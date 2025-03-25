@@ -710,13 +710,13 @@ const addCase = (newCase) => {
             onClick={() => setActiveTab("pendingLeads")}
           >
             {/* Pending Leads: {leads.pendingLeads.length} */}
-            Pending Leads: {leads?.pendingLeads?.length || 0}
+            Assigned Leads: {leads?.pendingLeads?.length || 0}
           </span>
           <span
             className={`hoverable ${activeTab === "pendingLeadReturns" ? "active" : ""}`}
             onClick={() => setActiveTab("pendingLeadReturns")}
           >
-            Pending Lead Returns: {leads.pendingLeadReturns.length}
+            Lead Returns for Review: {leads.pendingLeadReturns.length}
           </span>
           <span
             className={`hoverable ${activeTab === "cases" ? "active" : ""}`}

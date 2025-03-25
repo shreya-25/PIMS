@@ -9,6 +9,15 @@ import { CaseContext } from "../../CaseContext";
 
 
 export const LRReturn = () => {
+    useEffect(() => {
+        // Apply style when component mounts
+        document.body.style.overflow = "hidden";
+    
+        return () => {
+          // Reset to default when component unmounts
+          document.body.style.overflow = "auto";
+        };
+      }, []);
   const navigate = useNavigate();
    const location = useLocation();
     
@@ -161,7 +170,15 @@ export const LRReturn = () => {
       alert("Failed to add return. Please try again.");
     }
   };
-  
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date)) return "";
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const year = date.getFullYear().toString().slice(-2);
+    return `${month}/${day}/${year}`;
+  };
   
   const handleEditReturn = (ret) => {
     setReturnData({ results: ret.results });
@@ -188,7 +205,7 @@ export const LRReturn = () => {
     
 
   return (
-    <div className="lrreturn-container1">
+    <div className="lrenclosures-container">
       <Navbar />
 
       <div className="top-menu">
@@ -211,20 +228,21 @@ export const LRReturn = () => {
       <div className="LRI_Content">
       <div className="sideitem">
                     <ul className="sidebar-list">
-                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
-                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
-                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
-                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
-                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
-                        <li className="sidebar-item">Generate Report</li>
-                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
-
-                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
-
+                    {/* Lead Management Dropdown */}
+                    <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
                             {/* Case Information Dropdown */}
         <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
           Case Management {caseDropdownOpen ? "▼" : "▲" }
@@ -239,21 +257,21 @@ export const LRReturn = () => {
               Officer Management
             </li>
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Case Scratchpad
+              Add/View Case Notes
             </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
-            </li>
+            </li> */}
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
               View Flagged Leads
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
               View Timeline Entries
             </li>
-            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
@@ -262,29 +280,12 @@ export const LRReturn = () => {
           </ul>
         )}
 
-
-                                 {/* Lead Management Dropdown */}
-                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
-
                     </ul>
                 </div>
 
 {/* 
                 <div className="left-content"> */}
-      <div className="main-contentLRR">
+      <div className="left-content">
         
         {/* Left Section */}
         {/* <div className="left-section">
@@ -300,20 +301,51 @@ export const LRReturn = () => {
         <div className="case-header">
           <h2 className="">LEAD RETURNS</h2>
         </div>
-      <div className = "bottom-sec-lr">
-      <div className = "content-to-add">
+
+        <div className = "LRI-content-section">
+
+<div className = "content-subsection">
+    
+      <div className = "timeline-form-sec">
       <div className = "content-to-add-first-row">
+
+      <div className="form-row4">
+            <label>Return Id:</label>
+            <input
+              type="text"
+              
+              onChange={(e) => handleInputChange("returnId", e.target.value)}
+            />
+          </div>
+          <div className="form-row4">
+            <label>Date Entered:</label>
+            <input
+              type="text"
+              
+              onChange={(e) => handleInputChange("type", e.target.value)}
+            />
+          </div>
+          <div className="form-row4">
+            <label>Entered By:</label>
+            <input
+              type="text"
+             
+              onChange={(e) => handleInputChange("enclosure", e.target.value)}
+            ></input>
+          </div>
+        </div>
         
-           <h4>Return Id</h4>
+           {/* <h4>Return Id</h4>
            <label className='input-field'></label>
-           <h4>Date Entered</h4>
+           <h4 >Date Entered</h4>
            <label className='input-field'></label>
            <h4>Entered By</h4>
-           <label className='input-field'></label>
-      </div>
+           <label className='input-field'></label> */}
+     
     <h4 className="return-form-h4">{editMode ? "Edit Return" : "Add Return"}</h4>
       <div className="return-form">
         <textarea
+        type = "text"
           value={returnData.results}
           onChange={(e) => handleInputChange("results", e.target.value)}
           placeholder="Enter return details"
@@ -335,14 +367,14 @@ export const LRReturn = () => {
             <th style={{ width: "13%" }}>Date Entered</th>
             <th style={{ width: "9%" }}>Entered By</th>
             <th>Results</th>
-            <th style={{ width: "10%" }}></th>
+            <th style={{ width: "12%" }}></th>
           </tr>
         </thead>
         <tbody>
             {returns.map((ret) => (
               <tr key={ret.id}>
                  <td>{ret.leadReturnId}</td>
-              <td>{ret.enteredDate}</td>
+              <td>{formatDate(ret.enteredDate)}</td>
               <td>{ret.enteredBy}</td>
               <td>{ret.leadReturnResult}</td>
                 <td>
@@ -372,6 +404,7 @@ export const LRReturn = () => {
 
         <Comment/>
 
+        </div>
         </div>
         <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page

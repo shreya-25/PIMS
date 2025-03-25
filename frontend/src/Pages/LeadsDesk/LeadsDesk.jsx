@@ -527,15 +527,15 @@ export const LeadsDesk = () => {
     return leadsArray.map((lead, leadIndex) => (
       <div key={leadIndex} className="lead-section">
         <div className="leads-container">
-          <table className="table-heading">
+          {/* <table className="table-heading">
             <tbody>
               <tr>
                 <td className="table-label">Lead Number:</td>
-                <td className="table-input">
+                <td className="table-input1">
                   <input type="text" value={lead.leadNo} className="input-field" readOnly />
                 </td>
                 <td className="table-label">Lead Origin:</td>
-                <td className="table-input">
+                <td className="table-input1">
                   <input
                     type="text"
                     value={lead.parentLeadNo ? lead.parentLeadNo.join(", ") : ""}
@@ -575,7 +575,58 @@ export const LeadsDesk = () => {
                 </td>
               </tr>
             </tbody>
-          </table>
+          </table> */}
+
+<table className="lead-details-table">
+  <colgroup>
+    {/* Adjust widths as needed; total ~100% */}
+    <col style={{ width: "15%" }} />
+    <col style={{ width: "7%" }} />
+    <col style={{ width: "10%" }} />
+    <col style={{ width: "13%" }} />
+    <col style={{ width: "12%" }} />
+    <col style={{ width: "10%" }} />
+    <col style={{ width: "14%" }} />
+    <col style={{ width: "10%" }} />
+  </colgroup>
+  <tbody>
+    <tr>
+      <td className="label-cell">Lead Number:</td>
+      <td className="input-cell">
+        <input type="text" value={lead.leadNo} readOnly />
+      </td>
+
+      <td className="label-cell">Lead Origin:</td>
+      <td className="input-cell">
+        <input
+          type="text"
+          value={lead.parentLeadNo ? lead.parentLeadNo.join(", ") : ""}
+          readOnly
+        />
+      </td>
+
+      <td className="label-cell">Assigned Date:</td>
+      <td className="input-cell">
+        <input type="text" value={formatDate(lead.assignedDate)} readOnly />
+      </td>
+
+      <td className="label-cell">Completed Date:</td>
+      <td className="input-cell">
+        <input type="text" value={formatDate(lead.completedDate)} readOnly />
+      </td>
+    </tr>
+
+    <tr>
+      <td className="label-cell">Assigned Officers:</td>
+      {/* colSpan=7 so it spans the remaining columns */}
+      <td className="input-cell" colSpan={7}>
+        <input type="text" value={lead.assignedTo || ""} readOnly />
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+
 
           <table className="leads-table">
             <tbody>
@@ -620,7 +671,7 @@ export const LeadsDesk = () => {
                       <td colSpan={2}>
                         {returnItem.persons && returnItem.persons.length > 0 && (
                           <div className="person-section">
-                            <h2 className="title">Person Details</h2>
+                            <h3 className="title-ld">Person Details</h3>
                             <table
                               className="lead-table2"
                               style={{ width: "100%", tableLayout: "fixed" }}
@@ -688,7 +739,7 @@ export const LeadsDesk = () => {
                       <td colSpan={2}>
                         {returnItem.vehicles && returnItem.vehicles.length > 0 && (
                           <div className="person-section">
-                            <h2 className="title">Vehicles Details</h2>
+                            <h3 className="title-ld">Vehicles Details</h3>
                             <table
                               className="lead-table2"
                               style={{ width: "100%", tableLayout: "fixed" }}
@@ -767,7 +818,7 @@ export const LeadsDesk = () => {
                     <tr>
                       <td colSpan={2}>
                         <div className="person-section">
-                          <h2 className="title">Uploaded Files</h2>
+                          <h3 className="title-ld">Uploaded Files</h3>
                           <table
                             className="lead-table2"
                             style={{ width: "100%", tableLayout: "fixed" }}
@@ -851,6 +902,23 @@ export const LeadsDesk = () => {
         {/* Sidebar */}
         <div className="sideitem">
           <ul className="sidebar-list">
+          <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+              Lead Management {leadDropdownOpen ? "▼" : "▲"}
+            </li>
+          {leadDropdownOpen && (
+              <ul className="dropdown-list1">
+                <li className="sidebar-item" onClick={() => navigate("/CreateLead")}>
+                  New Lead
+                </li>
+                <li className="sidebar-item" onClick={() => navigate("/SearchLead")}>
+                  Search Lead
+                </li>
+                <li className="sidebar-item" onClick={() => navigate("/ViewHierarchy")}>
+                  View Lead Chain of Custody
+                </li>
+              </ul>
+            )}
+
             <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
               Case Management {caseDropdownOpen ? "▼" : "▲"}
             </li>
@@ -862,15 +930,15 @@ export const LeadsDesk = () => {
                 <li className="sidebar-item" onClick={() => navigate("/LeadLog")}>
                   View Lead Log
                 </li>
-                <li className="sidebar-item" onClick={() => navigate("/OfficerManagement")}>
+                {/* <li className="sidebar-item" onClick={() => navigate("/OfficerManagement")}>
                   Officer Management
-                </li>
+                </li> */}
                 <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
                   Case Scratchpad
                 </li>
-                <li className="sidebar-item" onClick={() => navigate("/LeadHierarchy")}>
+                {/* <li className="sidebar-item" onClick={() => navigate("/LeadHierarchy")}>
                   View Lead Hierarchy
-                </li>
+                </li> */}
                 {/* <li className="sidebar-item" onClick={() => navigate("/ViewHierarchy")}>
                   Generate Report
                 </li> */}
@@ -880,30 +948,14 @@ export const LeadsDesk = () => {
                 <li className="sidebar-item" onClick={() => navigate("/ViewTimeline")}>
                   View Timeline Entries
                 </li>
-                <li className="sidebar-item" onClick={() => navigate("/ViewDocument")}>
+                {/* <li className="sidebar-item" onClick={() => navigate("/ViewDocument")}>
                   View Uploaded Documents
-                </li>
+                </li> */}
                 <li className="sidebar-item" onClick={() => navigate("/LeadsDesk")}>
                   View Leads Desk
                 </li>
                 <li className="sidebar-item" onClick={() => navigate("/HomePage")}>
                   Go to Home Page
-                </li>
-              </ul>
-            )}
-            <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-              Lead Management {leadDropdownOpen ? "▼" : "▲"}
-            </li>
-            {leadDropdownOpen && (
-              <ul className="dropdown-list1">
-                <li className="sidebar-item" onClick={() => navigate("/CreateLead")}>
-                  New Lead
-                </li>
-                <li className="sidebar-item" onClick={() => navigate("/SearchLead")}>
-                  Search Lead
-                </li>
-                <li className="sidebar-item" onClick={() => navigate("/ViewHierarchy")}>
-                  View Lead Chain of Custody
                 </li>
               </ul>
             )}
@@ -917,7 +969,7 @@ export const LeadsDesk = () => {
           </div>
           <div className="center-section-ld">
             <h1>
-              Case: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"}
+              CASE: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
             </h1>
           </div>
 
@@ -926,7 +978,8 @@ export const LeadsDesk = () => {
             <div className="case-summary-ld">
               <label className="input-label">Case Summary</label>
               <textarea
-                className="textarea-field"
+                className="textarea-field-ld"
+                style={{ fontFamily: "inherit", fontSize: "20px" }}
                 value={caseSummary}
                 onChange={handleCaseSummaryChange}
                 readOnly={!isEditing}

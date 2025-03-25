@@ -6,10 +6,22 @@ import FootBar from '../../../components/FootBar/FootBar';
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import Comment from "../../../components/Comment/Comment";
+import Attachment from "../../../components/Attachment/Attachment";
+
 
 
 
 export const CMEvidence = () => {
+
+  useEffect(() => {
+      // Apply style when component mounts
+      document.body.style.overflow = "hidden";
+  
+      return () => {
+        // Reset to default when component unmounts
+        document.body.style.overflow = "auto";
+      };
+    }, []);
   const navigate = useNavigate();
    const location = useLocation();
 
@@ -116,20 +128,21 @@ export const CMEvidence = () => {
       <div className="LRI_Content">
        <div className="sideitem">
                     <ul className="sidebar-list">
-                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
-                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
-                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
-                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
-                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
-                        <li className="sidebar-item">Generate Report</li>
-                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
-
-                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
-
+                          {/* Lead Management Dropdown */}
+                          <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
                             {/* Case Information Dropdown */}
         <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
           Case Management {caseDropdownOpen ? "▼" : "▲" }
@@ -146,19 +159,19 @@ export const CMEvidence = () => {
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Case Scratchpad
             </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
-            </li>
+            </li> */}
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
               View Flagged Leads
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
               View Timeline Entries
             </li>
-            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
@@ -166,24 +179,6 @@ export const CMEvidence = () => {
          
           </ul>
         )}
-
-
-                                 {/* Lead Management Dropdown */}
-                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
-
                     </ul>
                 </div>
                 <div className="left-content">
@@ -254,6 +249,7 @@ export const CMEvidence = () => {
               <th>Collection Date</th>
               <th>Disposed Date</th>
               <th>Disposition</th>
+              <th style={{ width: "14%" }}>Access</th>
             </tr>
           </thead>
           <tbody>
@@ -264,10 +260,20 @@ export const CMEvidence = () => {
                 <td>{item.collectionDate}</td>
                 <td>{item.disposedDate}</td>
                 <td>{item.disposition}</td>
+                <td>
+        <select
+          value={ "Case Manager"}
+          // onChange={(e) => handleAccessChange(index, e.target.value)} 
+        >
+          <option value="Case Manager">Case Manager</option>
+          <option value="Everyone">Everyone</option>
+        </select>
+      </td>
               </tr>
             ))}
           </tbody>
         </table>
+        <Attachment />
         <Comment/>
         </div>
         </div>
