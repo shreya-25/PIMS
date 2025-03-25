@@ -33,13 +33,6 @@ body{
  margin-bottom: 80px;
 }
 
-.timeline-form-sec{
-    width: 60%;
-    margin-left: 20%;
-    margin-top: 1%;
-    font-size: 20px;
-    background-color:#f9f9f9;
-}
 
 .timeline-table .title {
   margin-bottom: 10px;
@@ -171,20 +164,7 @@ body{
   margin-right: 10px;
 }
 
-.timeline-form-sec .add-flag button {
-  background-color: #007bff;
-  color: #ffffff;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 20px;
-  transition: background-color 0.3s ease;
-}
 
-.timeline-form-sec .add-flag button:hover {
-  background-color: #0056b3;
-}
 
 .timeline-form-sec .btn-add {
   background-color: #28a745;

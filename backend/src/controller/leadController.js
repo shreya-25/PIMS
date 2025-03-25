@@ -44,6 +44,13 @@ const createLead = async (req, res) => {
   
       await newLead.save();
       res.status(201).json(newLead);
+      
+          // Update the corresponding case with the new subNumber if not already present
+    const caseDoc = await Case.findById(caseNo);
+    if (caseDoc && !caseDoc.subNumbers.includes(subNumber)) {
+      caseDoc.subNumbers.push(subNumber);
+      await caseDoc.save();
+    }
     } catch (err) {
       console.error("Error creating lead:", err.message);
       res.status(500).json({ message: "Something went wrong" });
@@ -101,7 +108,7 @@ const getLeadsByCase = async (req, res) => {
         const query = { 
             leadNo: leadNo, 
             description: leadName,  
-            caseNo: Number(caseNo), 
+            caseNo: caseNo, 
             caseName: caseName
         };
 
@@ -122,7 +129,7 @@ const getLeadsforHierarchy = async (req, res) => {
 
       const query = { 
           leadNo: leadNo, 
-          caseNo: Number(caseNo), 
+          caseNo: caseNo, 
           caseName: caseName
       };
 

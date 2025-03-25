@@ -5,16 +5,47 @@ import "./LREnclosures.css"; // Custom CSS file for Enclosures styling
 import FootBar from '../../../components/FootBar/FootBar';
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
+import Comment from "../../../components/Comment/Comment";
+
 
 
 export const LREnclosures = () => {
+    useEffect(() => {
+        // Apply style when component mounts
+        document.body.style.overflow = "hidden";
+    
+        return () => {
+          // Reset to default when component unmounts
+          document.body.style.overflow = "auto";
+        };
+      }, []);
   const navigate = useNavigate(); 
   const location = useLocation();
+
+  const { leadDetails, caseDetails } = location.state || {};
+
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date)) return "";
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const year = date.getFullYear().toString().slice(-2);
+    return `${month}/${day}/${year}`;
+  };
+
   
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);  
   
+      const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+                const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+              
+                const onShowCaseSelector = (route) => {
+                  navigate(route, { state: { caseDetails } });
+              };
 
   // Sample enclosures data
   const [enclosures, setEnclosures] = useState([
@@ -31,6 +62,7 @@ export const LREnclosures = () => {
 
   const handleInputChange = (field, value) => {
     setEnclosureData({ ...enclosureData, [field]: value });
+    console.log(`enclosureData.${field} updated to: `, value);
   };
 
     const [file, setFile] = useState(null);
@@ -39,19 +71,24 @@ export const LREnclosures = () => {
    // Handle file selection
    const handleFileChange = (event) => {
     setFile(event.target.files[0]);
+    console.log("Selected file:", event.target.files[0]);
   };
   const handleAddEnclosure = () => {
     const newEnclosure = {
       dateEntered: new Date().toLocaleDateString(),
       type: enclosureData.type,
       enclosure: enclosureData.enclosure,
+      returnId: enclosureData.returnId,
     };
+
+    console.log("New Enclosure to add:", newEnclosure);
 
     // Add new enclosure to the list
     setEnclosures([...enclosures, newEnclosure]);
 
     // Clear form fields
     setEnclosureData({
+      returnId: '',
       type: "",
       enclosure: "",
     });
@@ -79,7 +116,7 @@ export const LREnclosures = () => {
     const token = localStorage.getItem("token");
     console.log(token);
     for (const [key, value] of formData.entries()) {
-      console.log(key, value);
+      console.log(`FormData - ${key}:`, value);
     }
     
     try {
@@ -134,33 +171,88 @@ export const LREnclosures = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="main-contentLRE">
-      <div className="main-content-cl">
+      <div className="LRI_Content">
+       <div className="sideitem">
+                    <ul className="sidebar-list">
+                    {/* Lead Management Dropdown */}
+                    <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
+                            {/* Case Information Dropdown */}
+        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▼" : "▲" }
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Add/View Case Notes
+            </li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li> */}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+
+                    </ul>
+                </div>
+                <div className="left-content">
+     
         {/* Left Section */}
-        <div className="left-section">
+        {/* <div className="left-section">
           <img
             src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
             alt="Police Department Logo"
             className="police-logo-lr"
           />
-        </div>
-
+        </div> */}
 
         {/* Center Section */}
-        <div className="center-section">
-          <h2 className="title">ENCLOSURES INFORMATION</h2>
+        <div className="case-header">
+          <h2 className="">ENCLOSURES INFORMATION</h2>
         </div>
+     
 
-         {/* Right Section */}
-         <div className="right-section">
-        </div>
-      </div>
+      <div className = "LRI-content-section">
+
+<div className = "content-subsection">
 
         {/* Enclosure Form */}
-        <div className = "content-to-add">
+        <div className = "timeline-form-sec">
         <div className="enclosure-form">
-        <div className="form-row">
+        <div className="form-row-evidence">
             <label>Associated Return Id:</label>
             <input
               type="returnId"
@@ -168,7 +260,7 @@ export const LREnclosures = () => {
               onChange={(e) => handleInputChange("returnId", e.target.value)}
             />
           </div>
-          <div className="form-row">
+          <div className="form-row-evidence">
             <label>Enclosure Type:</label>
             <input
               type="text"
@@ -176,14 +268,14 @@ export const LREnclosures = () => {
               onChange={(e) => handleInputChange("type", e.target.value)}
             />
           </div>
-          <div className="form-row">
+          <div className="form-row-evidence">
             <label>Enclosure Description:</label>
             <textarea
               value={enclosureData.enclosure}
               onChange={(e) => handleInputChange("enclosure", e.target.value)}
             ></textarea>
           </div>
-          <div className="form-row">
+          <div className="form-row-evidence">
             <label>Upload File:</label>
             <input type="file" onChange={handleFileChange} />
           </div>
@@ -199,42 +291,62 @@ export const LREnclosures = () => {
         </div>
 
               {/* Enclosures Table */}
-              <table className="timeline-table">
+              <table className="leads-table">
           <thead>
             <tr>
               <th>Date Entered</th>
               <th>Associated Return Id </th>
               <th>Type</th>
               <th>Enclosure</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
-            {enclosures.map((enclosure, index) => (
+          {enclosures.length > 0 ? (
+            enclosures.map((enclosure, index) => (
               <tr key={index}>
                 <td>{enclosure.dateEntered}</td>
                 <td>{enclosure.returnId}</td>
                 <td>{enclosure.type}</td>
                 <td>{enclosure.enclosure}</td>
+                <td>
+                  <div classname = "lr-table-btn">
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                  alt="Edit Icon"
+                  className="edit-icon"
+                  // onClick={() => handleEditReturn(ret)}
+                />
+                  </button>
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                  alt="Delete Icon"
+                  className="edit-icon"
+                  // onClick={() => handleDeleteReturn(ret.id)}
+                />
+                  </button>
+                  </div>
+                </td>
               </tr>
-            ))}
+                   ))) : (
+                    <tr>
+                      <td colSpan="4" style={{ textAlign: 'center' }}>
+                        No Enclosures Available
+                      </td>
+                    </tr>)}
           </tbody>
         </table>
-
-
-        {/* Action Buttons */}
-        <div className="form-buttons">
-          {/* <button className="add-btn" onClick={handleAddEnclosure}>Add Enclosure</button> */}
-          {/* <button className="back-btn" onClick={() => handleNavigation("/LRVehicle")}>Back</button>
-          <button className="next-btn" onClick={() => handleNavigation("/LREvidence")}>Next</button>
-          <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button> */}
-        </div>
-
+        <Comment/>
+      </div>
       </div>
       <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
         onNext={() => navigate("/LREvidence")} // Takes user to CM Return page
       />
+    </div>
+    </div>
     </div>
   );
 };

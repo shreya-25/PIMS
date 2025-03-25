@@ -200,7 +200,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
                         />
                         <label htmlFor={officer.name}>
                           {officer.name} [{officer.assignedLeads}] [{officer.totalAssignedLeads}] 
-                          <em style={{ fontSize: "14px", color: "gray" }}>({isAvailable})</em>
+                          <em style={{ fontSize: "20px", color: "gray" }}>({isAvailable})</em>
                         </label>
                       </div>
                     );

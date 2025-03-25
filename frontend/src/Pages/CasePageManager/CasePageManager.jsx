@@ -652,7 +652,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
               {tab === "assignedLeads" && "Assigned Leads"}
               {tab === "pendingLeads" && "Accepted Leads"}
               {tab === "pendingLeadReturns" && "Lead Returns fro Review"}
-              {tab === "allLeads" && "Total Generated Leads"}
+              {tab === "allLeads" && "All Leads"}
             </span>
             <span className="sidebar-number">
               {tab === "assignedLeads" && leads.assignedLeads.length}
@@ -667,9 +667,9 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
               New Lead
             </li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               View Lead Chain of Custody
-            </li>
+            </li> */}
           </ul>
         )} 
 
@@ -683,25 +683,25 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
               <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
               View Lead Log
             </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
-            </li>
+            </li> */}
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Case Scratchpad
+              Add/View Case Notes
             </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
-            </li>
+            </li> */}
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
               View Flagged Leads
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
               View Timeline Entries
             </li>
-            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
@@ -718,7 +718,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                 <div className="case-header">
                     {
                         <h1>
-                          Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"}
+                          CASE:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
                         </h1>
                     }
                 </div>
@@ -978,7 +978,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           <th style={{ width: "8%" }}>Priority</th>
           <th style={{ width: "8%" }}>Days Left</th>
           <th style={{ width: "6%" }}>Flags</th>
-          <th style={{ width: "14%" }}>Assigned Officers</th>
+          <th style={{ width: "15%" }}>Assigned Officers</th>
           <th style={{ width: "12%" }}></th>
         </tr>
       </thead>
@@ -1252,7 +1252,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           <th style={{ width: "8%" }}>Priority</th>
           <th style={{ width: "8%" }}>Days Left</th>
           <th style={{ width: "6%" }}>Flags</th>
-          <th style={{ width: "14%" }}>Assigned Officers</th>
+          <th style={{ width: "15%" }}>Assigned Officers</th>
           <th style={{ width: "12%" }}></th>
         </tr>
       </thead>

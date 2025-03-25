@@ -83,16 +83,17 @@ export const Investigator = () => {
 
 const handleLeadClick = (lead) => {
   setSelectedLead({
-      leadNo: lead.id,
-      leadName: lead.description,
-      dueDate: lead.dueDate || "N/A",
-      priority: lead.priority || "Medium",
-      flags: lead.flags || [],
-      assignedOfficers: lead.assignedOfficers || [],
-      leadStatus: lead.leadStatus,
-      caseName: lead.caseName,
-      caseNo: lead.caseNo
-  });
+    leadNo: lead.leadNo,
+    incidentNo: lead.incidentNo,
+    leadName: lead.description,
+    dueDate: lead.dueDate || "N/A",
+    priority: lead.priority || "Medium",
+    flags: lead.flags || [],
+    assignedOfficers: lead.assignedOfficers || [],
+    leadStatus: lead.leadStatus,
+    caseName: lead.caseName,
+    caseNo: lead.caseNo
+});
 
   // Navigate to Lead Review Page
   navigate("/leadReview", { state: { leadDetails: lead, caseDetails: selectedCase } });
@@ -604,7 +605,7 @@ const handleLeadClick = (lead) => {
               {tab === "assignedLeads" && "My Assigned Leads"}
               {tab === "pendingLeads" && "My Pending Leads"}
               {tab === "pendingLeadReturns" && "My Pending Lead Returns"}
-              {tab === "allLeads" && "Total Generated Leads"}
+              {tab === "allLeads" && "All Leads"}
             </span>
             <span className="sidebar-number">
               {tab === "assignedLeads" && leads.assignedLeads.length}
@@ -658,7 +659,7 @@ const handleLeadClick = (lead) => {
                    {/* Display Case Number and Name */}
                 <div className="case-header">
                         <h1>
-                            Case: {selectedCase.caseNo} |  {selectedCase.caseName}
+                            CASE: {selectedCase.caseNo} |  {selectedCase.caseName.toUpperCase()}
                         </h1>
                 </div>
                 {/* Content Area */}
@@ -1187,7 +1188,8 @@ const handleLeadClick = (lead) => {
           })
           .map((lead) => (
             <tr key={lead.id}>
-              <td>{lead.id}</td>
+
+              <td>{lead.leadNo }</td>
               <td>{lead.description}</td>
               <td>{lead.dueDate}</td>
               <td>{lead.priority}</td>
@@ -1203,8 +1205,7 @@ const handleLeadClick = (lead) => {
               <td>
                 <button
                   className="view-btn1"
-                  onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.description} } )}
-                >
+                  onClick={() => handleLeadClick(lead)}>
                   View
                 </button>
               </td>

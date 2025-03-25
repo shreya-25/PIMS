@@ -47,6 +47,7 @@
   gap: 20px; /* Adjust spacing between sections */
   margin: 20px 130px;
   width: 90%;
+  height: 400px;
   }
   
   .report-options {
@@ -69,13 +70,13 @@
     gap: 10px;
     align-items: flex-start;
     width: 40%;
-    height: 50%;
+
   }
   
   .report-column label {
     font-size: 20px;
     text-align: left;
-    height: 80px;
+    height: 100px;
     width: 100%
   }
   
