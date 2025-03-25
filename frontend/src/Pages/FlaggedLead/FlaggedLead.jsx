@@ -1,12 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useContext, useState, useEffect} from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import './FlaggedLead.css';
+import { useLocation, useNavigate } from 'react-router-dom';
+import axios from "axios";
+import { CaseContext } from "../CaseContext";
+import Pagination from "../../components/Pagination/Pagination";
+import Filter from "../../components/Filter/Filter";
+import Sort from "../../components/Sort/Sort";
 
 export const FlaggedLead = () => {
   const location = useLocation();
-  const newLead = location.state || null; // Retrieve new lead data passed from CreateLead
-  // const { leadNumber, leadSummary, assignedDate, assignedOfficer } = location.state || {};
+  const newLead = location.state || null; 
+   const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const { caseDetails } = location.state || {};
+      const { selectedCase, setSelectedLead } = useContext(CaseContext);
+      
+             const [showFilter, setShowFilter] = useState(false);
+            const [showSort, setShowSort] = useState(false);
+        
+          const [currentPage, setCurrentPage] = useState(1);
+          const [pageSize, setPageSize] = useState(50);
+          const totalPages = 10; // Change based on your data
+          const totalEntries = 100;
+        
+      
+        const navigate = useNavigate(); // Initialize the navigate function
+
+          const handleFilterApply = (filters) => {
+            console.log("Applied Filters:", filters);
+            // Perform filtering logic here (e.g., API call, state update)
+          };
+        
+            const [sortField, setSortField] = useState(""); // Sorting field
+          
+        
+           // Sort leads
+           const handleSort = (field, order) => {
+           
+          };
+      
 
   const defaultEntries = [
     {
@@ -25,6 +58,29 @@ export const FlaggedLead = () => {
       flag:"Low"
     },
   ];
+
+  const filtersConfig = [
+    {
+      name: "leadNumber",
+      label: "Lead Number",
+      options: ["45", "23", "14"],
+    },
+    {
+      name: "leadSummary",
+      label: "Lead Log Summary",
+      options: [
+        "Collect Audio from Dispatcher",
+        "Interview Mr. John",
+        "Collect evidence from 63 Mudray Street",
+      ],
+    },
+    {
+      name: "Flag",
+      label: "Flag",
+      options: ["Critical", "Moderate", "Low"],
+    },
+  ];
+
 
   // State to maintain a list of lead entries
   const [leadEntries, setLeadEntries] = useState(() => {
@@ -88,43 +144,196 @@ export const FlaggedLead = () => {
     return 0;
   });
 
+  
+  const handleLeadClick = (lead) => {
+    navigate("/LeadReview", { state: { lead } }); // Navigate to lead details page with lead data
+  };
+
+    // Function to format dates as MM/DD/YY
+const formatDate = (dateString) => {
+  if (!dateString) return ""; // Handle empty dates
+  const date = new Date(dateString);
+  if (isNaN(date)) return ""; // Handle invalid dates
+
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  const year = date.getFullYear().toString().slice(-2); // Get last two digits of the year
+
+  return `${month}/${day}/${year}`;
+};
+
+   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+    const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+  
+    const onShowCaseSelector = (route) => {
+      navigate(route, { state: { caseDetails } });
+  };
+    
+
   return (
     <div className="lead-log-page">
       <Navbar />
 
-      <div className="main-content-ll">
-        <div className="left-section">
+      <div className="main-container">
+            {/* Sidebar */}
+            <div className="sideitem">
+                    <ul className="sidebar-list">
+                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
+                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
+                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
+                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
+                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
+                        <li className="sidebar-item">Generate Report</li>
+                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
+                          {/* Lead Management Dropdown */}
+                          <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
+                            {/* Case Information Dropdown */}
+        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▼" : "▲" }
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Case Scratchpad
+            </li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li> */}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+
+                    </ul>
+                </div>
+        {/* <div className="left-section">
           <img
             src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
             alt="Police Department Logo"
             className="police-logo-cl"
           />
+        </div> */}
+
+        <div className="left-content">
+
+        <div className="case-header">
+          <h2 className="">FLAGGED LEADS</h2>
         </div>
-
-
-        <div className="center-sectionll">
-          <h2 className="title1">FLAGGED LEADS</h2>
+        
+      {showFilter && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
+              &times;
+            </button>
+            <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+            </div>
         </div>
-      </div>
+      )}
 
-      <div className="filters-section">
-        <div className="sort-by">
-          <label>Sort By: </label>
-          <select className="dropdown" value={sortOption}
-            onChange={(e) => setSortOption(e.target.value)}>
-            <option value="leadNumber">Lead Number</option>
-            <option value="flag">Flag</option>
-          </select>
-        </div>
-      </div>
+  
+      {showSort && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
+              &times;
+            </button>
+            <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+            </div>
+          </div>
+      )}
 
+<div className="table-section1">
       <div className="table-section">
-        <table className="flagged-lead-table">
+      <div className="table-controls">
+      <div className="search-bar">
+      <div className="search-container1">
+      <i className="fa-solid fa-magnifying-glass"></i>
+      <input
+        type="text"
+        className="search-input1"
+        placeholder="Search Lead"
+      />
+      {/* <button className="search-button">Search</button> */}
+      </div>
+      </div>
+    <div className="empty-space"></div>
+    <div className="control-buttons">
+    <button onClick={() => setShowFilter(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                        alt="Filter Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/download.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/printer.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+    </div>
+  </div>
+        <table className="leads-table">
           <thead>
             <tr>
-              <th>LEAD #</th>
-              <th>LEAD SUMMARY</th>
-              <th>FLAG</th>
+              <th style={{ width: "10%" }}>Lead #</th>
+              <th>Lead Log Summary</th>
+              <th style={{ width: "14%" }}>Flags</th>
             </tr>
           </thead>
           <tbody>
@@ -132,7 +341,11 @@ export const FlaggedLead = () => {
               sortedEntries.map((entry, index) => (
                 <tr key={index}>
                   <td>{entry.leadNumber}</td>
-                  <td>{entry.leadSummary}</td>
+                  <td 
+          className="clickable-description" 
+          onClick={() => handleLeadClick(entry)}
+          style={{ color: "blue", cursor: "pointer", textDecoration: "underline" }}
+        >{entry.leadSummary}</td>
                   <td>{entry.flag}</td>
                 </tr>
               ))
@@ -145,19 +358,16 @@ export const FlaggedLead = () => {
             )}
           </tbody>
         </table>
+        <Pagination
+  currentPage={currentPage}
+  totalEntries={totalEntries}  // Automatically calculate total entries
+  onPageChange={setCurrentPage} // Update current page state
+  pageSize={pageSize}
+  onPageSizeChange={setPageSize} // Update page size state
+/>
       </div>
-
-      {/* <div className="report-section">
-        <label>Select Report Type: </label>
-        <select className="dropdown">
-          <option value="summary">Summary</option>
-          <option value="detailed">Detailed</option>
-        </select>
-      </div> */}
-
-      <div className="action-buttons">
-        <button className="download-pdf-btn1">Download PDF</button>
-        <button className="print-pdf-btn1">Print PDF</button>
+    </div>
+    </div>
       </div>
     </div>
   );

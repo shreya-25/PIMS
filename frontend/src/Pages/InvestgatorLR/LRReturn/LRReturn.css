@@ -87,6 +87,24 @@ body {
   /* background-color: #f4f4f4; */
 }
 
+.content-to-add-first-row
+{
+  display: flex;
+  justify-content: center;
+  width: 82%;
+}
+
+.form-row4 label{
+  width: 100%;
+  color:#000000cc;
+}
+.form-row4{
+  display:flex;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
 .main-contentLRR {
   width: 100%;
   margin-bottom: 50px; /* Adds space between content and FootBar */
@@ -202,6 +220,9 @@ body {
   padding: 10px;
   resize: none;
   font-size: 20px;
+  font-family: inherit; /* match the parent font */
+
+
 }
 
 .signature-btn {

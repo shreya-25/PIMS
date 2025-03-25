@@ -7,9 +7,12 @@ import './CreateLead.css'; // Create this CSS file for styling
 import { CaseContext } from "../CaseContext";
 
 
+
 export const CreateLead = () => {
   const navigate = useNavigate(); // Initialize useNavigate hook
   const location = useLocation();
+       const [loading, setLoading] = useState(true);
+        const [error, setError] = useState("");
   const leadEntries = location.state?.leadEntries || [];
 const caseDetails = location.state?.caseDetails || {}; // Get case details
 const leadDetails =  location.state?.leadDetails || {}; // Get case details
@@ -18,7 +21,15 @@ const { id: caseID, title: caseName } = caseDetails;  // Extract Case ID & Case 
 
 console.log(caseDetails, leadDetails, leadOrigin);
 
-
+const formatDate = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (isNaN(date)) return "";
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  const year = date.getFullYear().toString().slice(-2);
+  return `${month}/${day}/${year}`;
+};
 
   // State for all input fields
   const [leadData, setLeadData] = useState({
@@ -102,16 +113,40 @@ useEffect(() => {
 
  
 
+  // const handleInputChange = (field, value) => {
+  //   // Validate leadNumber to allow only numeric values
+  //   if (field === 'leadNumber' && !/^\d*$/.test(value)) {
+  //     alert("Lead Number must be a numeric value.");
+  //     return;
+  //   }
+  
+  //   // Update state
+  //   setLeadData({ ...leadData, [field]: value });
+  // };
+
   const handleInputChange = (field, value) => {
-    // Validate leadNumber to allow only numeric values
+    // Ensure only numeric values (or empty)
     if (field === 'leadNumber' && !/^\d*$/.test(value)) {
       alert("Lead Number must be a numeric value.");
       return;
     }
   
-    // Update state
-    setLeadData({ ...leadData, [field]: value });
+    // Update state properly
+    setLeadData((prevData) => ({
+      ...prevData,
+      [field]: value, // Allow empty value
+    }));
   };
+  
+   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+   const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+   const [usernames, setUsernames] = useState([]); // State to hold fetched usernames
+
+
+        
+   const onShowCaseSelector = (route) => {
+            navigate(route, { state: {caseDetails, leadDetails}});
+        };
 
   // const handleInputChange = (field, value) => {
   //   setLeadData({ ...leadData, [field]: value });
@@ -212,7 +247,28 @@ const handleGenerateLead = async () => {
   }
 };  
 
-const defaultCaseSummary = "Initial findings indicate that the suspect was last seen near the crime scene at 9:45 PM. Witness statements collected. Awaiting forensic reports and CCTV footage analysis.";
+const defaultCaseSummary = "";
+const [availableCaseSubNumbers, setAvailableCaseSubNumbers] = useState([]); // To store subnumbers fetched for the case
+
+ // etch all subnumbers for this case
+ useEffect(() => {
+  const fetchCaseSubNumbers = async () => {
+    try {
+      if (caseDetails && caseDetails.id) {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(
+          `http://localhost:5000/api/cases/${caseDetails.id}/subNumbers`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setAvailableCaseSubNumbers(response.data.subNumbers);
+      }
+    } catch (error) {
+      console.error("Error fetching case subnumbers:", error);
+    }
+  };
+
+  fetchCaseSubNumbers();
+}, [caseDetails]);
 
 
 const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
@@ -241,6 +297,27 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
  }, [caseDetails]);
 
 
+  // New useEffect: Fetch all usernames for "Assign Officers"
+  useEffect(() => {
+    const fetchUsernames = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("http://localhost:5000/api/users/usernames", {
+          // headers: {
+          //   Authorization: `Bearer ${token}`
+          // }
+        });
+        // Assuming the API returns an object with a "usernames" property that is an array.
+        setUsernames(response.data.usernames);
+      } catch (error) {
+        console.error("Error fetching usernames:", error);
+      }
+    };
+
+    fetchUsernames();
+  }, []);
+
+
 
   return (
     <div className="lead-instructions-page">
@@ -248,98 +325,113 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
       <Navbar />
 
 
-      <div className="main-content-cl">
-        {/* Left Section */}
-        <div className="left-section">
-          <img
-            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
-            alt="Police Department Logo"
-            className="police-logo-cl"
-          />
-        </div>
+      <div className="LRI_Content">
+       <div className="sideitem">
+                    <ul className="sidebar-list">
+                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
+                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
+                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
+                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
+                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
+                        <li className="sidebar-item">Generate Report</li>
+                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
+
+                        {/* Lead Management Dropdown */}
+                        <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li> */}
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
+                            {/* Case Information Dropdown */}
+        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▼" : "▲" }
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li> */}
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              View/Add Case Notes
+            </li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li> */}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+
+                    </ul>
+                </div>
+
+                <div className="left-content1">
 
 
         {/* Center Section */}
-        <div className="center-section-cl">
-        <div className="case-header-cl">
-          <h2 >LEAD INSTRUCTIONS</h2>
+        <div className="case-header">
+          <h2 >CREATE LEAD</h2>
           </div>
-        </div>
 
 
         {/* Right Section */}
-        <div className="right-section">
-          <table className="info-table">
-            <tbody>
-              <tr>
-                <td>LEAD NUMBER:</td>
-                <td>
-                {/* <input
-                    type="text"
-                    className="input-field1"
-                    value={leadData.leadNumber}
-                    onChange={(e) => handleInputChange('leadNumber', e.target.value)} // Allow manual edits
-                    placeholder="Enter Lead Number"
-                  /> */}
-                        <input type="text" value={leadData.leadNumber} className="input-field" readOnly /> {/* Read-only auto-generated */}
+        <div className="LRI-content-section">
+        <table className="leads-table">
+    <thead>
+      <tr>
 
-                </td>
-              </tr>
-              <tr>
-                <td>INCIDENT NUMBER:</td>
-                <td>
-                  <input
-                    type="text"
-                    className="input-field"
-                    value={leadData.incidentNumber}
-                    onChange={(e) => handleInputChange('incidentNumber', e.target.value)}
-                    placeholder=""
-                  />
-                </td>
-              </tr>
-              <tr>
-                <td>SUBNUMBER:</td>
-                <td>
-                <input
-                    type="text"
-                    className="input-field"
-                    value={leadData.subNumber}
-                    readOnly // Make it read-only
-                  />
-                </td>
-              </tr>
-              {/* <tr>
-                <td>ASSOCIATED SUBNUMBERS:</td>
-                <td>
-                <input
-                    type="text"
-                    className="input-field1"
-                    value={leadData.associatedSubNumbers}
-                    readOnly // Make it read-only
-                  />
-                </td>
-              </tr> */}
-             
-                           <tr>
-                <td>ASSIGNED DATE:</td>
-                <td>
-                  <input
-                    type="text"
-                    className="input-field"
-                    value={leadData.assignedDate}
-                    onChange={(e) => handleInputChange('assignedDate', e.target.value)}
-                    placeholder=""
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+        <th style={{ width: "10%" }}>Lead No.</th>
+          <th style={{ width: "10%" }}>Incident No.</th>
+          <th style={{ width: "10%" }}>Subnumber</th>
+          <th style={{ width: "8%" }}>Assigned Date</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+      <td>{leadData.leadNumber} </td>
+        <td>{leadData.incidentNumber}</td>
+        <td>{leadData.subNumber}</td>
+        <td>{formatDate(leadData.assignedDate)} </td>
+
+      </tr>
+    </tbody>
+  </table>
 
 
       {/* Bottom Content */}
-      <div className="bottom-content-cl">
+      <div className="bottom-content-LRI">
         <table className="details-table">
           <tbody>
             <tr>
@@ -390,6 +482,18 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
                   />
                 </td>
               </tr>
+                <tr>
+                  <td>Subnumber:</td>
+                  <td>
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={leadData.subNumber}
+                      onChange={(e) => handleInputChange('subNumber', e.target.value)}
+                      placeholder="Enter Subnumber"
+                    />
+                  </td>
+                </tr>
             <tr>
   <td>Associated Subnumbers:</td>
   <td>
@@ -510,7 +614,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
   </td> */}
   <td>Assign Officers:</td>
 <td>
-  <div className="custom-dropdown-cl">
+  {/* <div className="custom-dropdown-cl">
     <div
       className="dropdown-header-cl"
       onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -559,7 +663,44 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
         })}
       </div>
     )}
-  </div>
+  </div> */}
+
+<div className="custom-dropdown-cl">
+                        <div
+                          className="dropdown-header-cl"
+                          onClick={() => setDropdownOpen(!dropdownOpen)}
+                        >
+                          {leadData.assignedOfficer.length > 0
+                            ? leadData.assignedOfficer.join(', ')
+                            : 'Select Officers'}
+                          <span className="dropdown-icon">{dropdownOpen ? '▲' : '▼'}</span>
+                        </div>
+                        {dropdownOpen && (
+                          <div className="dropdown-options">
+                            {usernames.length > 0 ? (
+                              usernames.map((username) => (
+                                <div key={username} className="dropdown-item">
+                                  <input
+                                    type="checkbox"
+                                    id={username}
+                                    value={username}
+                                    checked={leadData.assignedOfficer.includes(username)}
+                                    onChange={(e) => {
+                                      const newAssignedOfficers = e.target.checked
+                                        ? [...leadData.assignedOfficer, e.target.value]
+                                        : leadData.assignedOfficer.filter((o) => o !== e.target.value);
+                                      handleInputChange('assignedOfficer', newAssignedOfficers);
+                                    }}
+                                  />
+                                  <label htmlFor={username}>{username}</label>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="dropdown-item">No officers found</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
 </td>
 
 </tr>
@@ -592,6 +733,9 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
         <button className="next-btncl">Download</button>
         <button className="next-btncl">Print</button>
       </div>
+    </div>
+    </div>
+    </div>
     </div>
   );
 };

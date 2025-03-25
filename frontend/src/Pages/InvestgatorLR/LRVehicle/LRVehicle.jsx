@@ -7,13 +7,43 @@ import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import { useDataContext } from "../../Context/DataContext"; // Import Context
 import { useLocation, useNavigate } from 'react-router-dom';
-
-
-
+import Comment from "../../../components/Comment/Comment";
 
 export const LRVehicle = () => {
+    useEffect(() => {
+        // Apply style when component mounts
+        document.body.style.overflow = "hidden";
+    
+        return () => {
+          // Reset to default when component unmounts
+          document.body.style.overflow = "auto";
+        };
+      }, []);
 
   const navigate = useNavigate(); // Initialize useNavigate hook
+    const location = useLocation();
+   const { leadDetails, caseDetails } = location.state || {};
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState("");
+
+      const formatDate = (dateString) => {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        if (isNaN(date)) return "";
+        const month = (date.getMonth() + 1).toString().padStart(2, "0");
+        const day = date.getDate().toString().padStart(2, "0");
+        const year = date.getFullYear().toString().slice(-2);
+        return `${month}/${day}/${year}`;
+      };
+
+       const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+                const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+              
+                const onShowCaseSelector = (route) => {
+                  navigate(route, { state: { caseDetails } });
+              };
+      
+    
 
   const [vehicles, setVehicles] = useState([
     {  returnId: 1,dateEntered: "01/01/2024", year: "2023", make: "Honda", model: "Accord",color: "Blue", vin: "123456", plate: "XYZ-1234", state: "NY" },
@@ -115,7 +145,9 @@ export const LRVehicle = () => {
 
 
   return (
-    <div className="lrvehicle-container">
+    // <div className="lrvehicle-container">
+    <div className="person-page">
+        <div className="person-page-content">
       {/* Navbar */}
       <Navbar />
 
@@ -161,33 +193,77 @@ export const LRVehicle = () => {
          </div>
        </div>
 
-      {/* Main Content */}
-      <div className="main-contentLRV">
+       <div className="LRI_Content">
+      <div className="sideitem">
+                    <ul className="sidebar-list">
+                   {/* Lead Management Dropdown */}
+                   <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
+                            {/* Case Information Dropdown */}
+        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▼" : "▲" }
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Add/View Case Notes
+            </li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li> */}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
-      <div className="main-content-cl">
-        {/* Left Section */}
-        <div className="left-section">
-          <img
-            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
-            alt="Police Department Logo"
-            className="police-logo-lr"
-          />
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+                    </ul>
+                </div>
+
+                <div className="left-content">
+
+                <div className="case-header">
+          <h2 className="">VEHICLE INFORMATION</h2>
         </div>
 
+        <div className = "LRI-content-section">
 
-        {/* Center Section */}
-        <div className="center-section">
-          <h2 className="title">VEHICLE INFORMATION</h2>
-        </div>
+<div className = "content-subsection">
 
-         {/* Right Section */}
-         <div className="right-section">
-        </div>
-      </div>
         {/* Vehicle Form */}
-        <div className = "content-to-add">
+        <div className = "timeline-form-sec">
         <div className="vehicle-form">
-          <div className="form-row">
+          <div className="form-row4">
             <label>Year:</label>
             <input
               type="text"
@@ -214,7 +290,7 @@ export const LRVehicle = () => {
               onChange={(e) => handleChange('color', e.target.value)}
             /> */}
           
-          <div className="form-row">
+          <div className="form-row4">
             <label>Plate:</label>
             <input
               type="text"
@@ -234,7 +310,7 @@ export const LRVehicle = () => {
               onChange={(e) => handleChange('type', e.target.value)}
             />
           </div>
-          <div className="form-row">
+          <div className="form-row4">
             <label>VIN:</label>
             <input
               type="text"
@@ -247,14 +323,16 @@ export const LRVehicle = () => {
               value={vehicleData.primaryColor}
               onChange={(e) => handleChange('primaryColor', e.target.value)}
             />
-            <label>Secondary Color:</label>
+            <label>Second Color:</label>
             <input
               type="text"
               value={vehicleData.secondaryColor}
               onChange={(e) => handleChange('secondaryColor', e.target.value)}
             />
           </div>
-          <div className="form-row">
+        </div>
+        <div className="vehicle-form">
+          <div className="form-row2">
             <label>State:</label>
             <input
               type="text"
@@ -262,14 +340,14 @@ export const LRVehicle = () => {
               onChange={(e) => handleChange('state', e.target.value)}
             />
           </div>
-          <div className="form-row">
+          <div className="form-row1">
             <label>Information:</label>
             <textarea
               value={vehicleData.information}
               onChange={(e) => handleChange('information', e.target.value)}
             ></textarea>
           </div>
-        </div>
+          </div>
         </div>
         {/* Buttons */}
         <div className="form-buttons">
@@ -283,17 +361,18 @@ export const LRVehicle = () => {
         </div>
 
              {/* Vehicle Table */}
-        <table className="timeline-table">
+        <table className="leads-table">
           <thead>
             <tr>
-              <th>Date Entered</th>
-              <th>Associated Return Id</th>
+              <th style={{ width: "12%" }}>Date Entered</th>
+              <th style={{ width: "10%" }}>Return Id</th>
               <th>Year</th>
               <th>Make</th>
               <th>Model</th>
               <th>Color</th>
               <th>State</th>
-              <th>Additional Details</th>
+              <th style={{ width: "15%" }}>Additional Details</th>
+              <th style={{ width: "12%" }}></th>
             </tr>
           </thead>
           <tbody>
@@ -337,11 +416,34 @@ export const LRVehicle = () => {
     caseName={vehicleModalData.caseName}
     leadReturnId={vehicleModalData.leadReturnId}
   />
+  <td>
+                  <div classname = "lr-table-btn">
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                  alt="Edit Icon"
+                  className="edit-icon"
+                  // onClick={() => handleEditReturn(ret)}
+                />
+                  </button>
+                  <button>
+                  <img
+                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                  alt="Delete Icon"
+                  className="edit-icon"
+                  // onClick={() => handleDeleteReturn(ret.id)}
+                />
+                  </button>
+                  </div>
+                </td>
       </tr>
     ))}
   </tbody>
         </table>
+        <Comment/>
 
+</div>
+</div>
 
         {/* Buttons */}
         {/* <div className="form-buttons">
@@ -353,11 +455,14 @@ export const LRVehicle = () => {
           <button className="save-btn">Save</button>
           <button className="cancel-btn">Cancel</button>
         </div> */}
-      </div>
+  
       <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
         onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
       />
+    </div>
+    </div>
+    </div>
     </div>
   );
 };

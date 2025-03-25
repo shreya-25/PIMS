@@ -1,10 +1,15 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useContext, useState, useEffect} from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from "../../components/Navbar/Navbar";
 import "./ViewTimeline.css";
+import axios from "axios";
+import { CaseContext } from "../CaseContext";
 
 export const ViewTimeline = () => {
   const navigate = useNavigate();
+   const location = useLocation();
+     const { caseDetails } = location.state || {};
+       const { selectedCase, setSelectedLead } = useContext(CaseContext);
 
     // Function to format date as "Month Day, Year"
     const formatDate = (dateString) => {
@@ -70,6 +75,14 @@ export const ViewTimeline = () => {
   const [sortOrder, setSortOrder] = useState("asc"); // Sort order: 'asc' or 'desc'
   const [showFlagDropdown, setShowFlagDropdown] = useState(false);
 const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+
+
+  const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+  const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+
+  const onShowCaseSelector = (route) => {
+    navigate(route, { state: { caseDetails } });
+};
 
 
   useEffect(() => {
@@ -150,20 +163,90 @@ const [showLocationDropdown, setShowLocationDropdown] = useState(false);
       <Navbar />
       {/* <h2 className="title">CRIME INVESTIGATION TIMELINE</h2> */}
       
-      <div className="main-content-ll">
-        <div className="left-section">
+      <div className="main-container">
+            {/* Sidebar */}
+            <div className="sideitem">
+                    <ul className="sidebar-list">
+                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
+                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
+                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
+                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
+                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
+                        <li className="sidebar-item">Generate Report</li>
+                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
+                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+
+                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
+                            {/* Lead Management Dropdown */}
+                            <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
+                            {/* Case Information Dropdown */}
+        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Management {caseDropdownOpen ? "▼" : "▲" }
+        </li>
+        {caseDropdownOpen && (
+          <ul className="dropdown-list1">
+              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+              View Lead Log
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li>
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Case Scratchpad
+            </li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li> */}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+              View Timeline Entries
+            </li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         
+          </ul>
+        )}
+
+                    </ul>
+                </div>
+        {/* <div className="left-section">
           <img
             src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
             alt="Police Department Logo"
             className="police-logo-cl"
           />
-        </div>
+        </div> */}
 
+        <div className="left-content">
 
-        <div className="center-sectionll">
-          <h2 className="title1">CRIME INVESTIGATION TIMELINE</h2>
+        <div className="case-header">
+          <h2 className="">CRIME INVESTIGATION TIMELINE</h2>
         </div>
-      </div>
 
       <div className="timeline-section">
         <div className="timeline-horizontal">
@@ -321,5 +404,7 @@ const [showLocationDropdown, setShowLocationDropdown] = useState(false);
         <button className="timeline-filter-btn" onClick={handleSort}>Apply Sort</button>
       </div>
     </div>
+    </div>
+            </div>
   );
 };

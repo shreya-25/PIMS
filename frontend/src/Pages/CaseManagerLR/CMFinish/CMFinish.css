@@ -1,6 +1,6 @@
 .lrfinish-container {
     font-family: Arial, sans-serif;
-    background-color: #f9f9f9;
+    /* background-color: #f9f9f9; */
   }
   
   .main-contentLRF {
@@ -139,3 +139,5 @@
   .destination-options h4 {
     margin-bottom: 10px; /* Adjust spacing below the title */
   }
+
+  

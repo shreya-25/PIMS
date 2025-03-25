@@ -8,13 +8,22 @@ import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 
 export const CMReturn = () => {
+   useEffect(() => {
+      // Apply style when component mounts
+      document.body.style.overflow = "hidden";
+  
+      return () => {
+        // Reset to default when component unmounts
+        document.body.style.overflow = "auto";
+      };
+    }, []);
   const navigate = useNavigate();
   const location = useLocation();
   
 const { leadDetails, caseDetails } = location.state || {};
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+  const { selectedCase, selectedLead, setSelectedLead, leadReturns, setLeadReturns  } = useContext(CaseContext);
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -36,8 +45,8 @@ const { leadDetails, caseDetails } = location.state || {};
     const handleLRClick = () => {
       navigate("/CMPerson", { state: {caseDetails, leadDetails } });
     };
-
-
+    
+ console.log("casedetails", selectedCase, selectedLead);
 
     useEffect(() => {
       const fetchLeadData = async () => {
@@ -55,6 +64,15 @@ const { leadDetails, caseDetails } = location.state || {};
 
             setReturns(response.data.length > 0 ? response.data : []);
 
+            const minimalReturns = response.data.map((item) => ({
+              leadReturnId: item.leadReturnId,
+              leadReturn: item.leadReturnResult, // or whichever field holds "Interview Ram" / "Returned item A"
+              enteredBy: item.enteredBy,
+              dateEntered: item.enteredDate,
+            }));
+ 
+
+            setLeadReturns(minimalReturns);
   
             // if (response.data.length > 0) {
             //   setReturns({
@@ -72,7 +90,7 @@ const { leadDetails, caseDetails } = location.state || {};
       };
   
       fetchLeadData();
-    }, [leadDetails, caseDetails]);
+    }, [leadDetails, caseDetails, setLeadReturns]);
   
   
     // State for managing form input
@@ -169,20 +187,21 @@ const { leadDetails, caseDetails } = location.state || {};
       <div className="LRI_Content">
       <div className="sideitem">
                     <ul className="sidebar-list">
-                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
-                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
-                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
-                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
-                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
-                        <li className="sidebar-item">Generate Report</li>
-                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
-
-                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
-
+                   {/* Lead Management Dropdown */}
+                   <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+        </li>
+        {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              View Lead Chain of Custody
+            </li>
+          </ul>
+        )} 
                             {/* Case Information Dropdown */}
         <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
           Case Management {caseDropdownOpen ? "▼" : "▲" }
@@ -199,19 +218,19 @@ const { leadDetails, caseDetails } = location.state || {};
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Case Scratchpad
             </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
-            </li>
+            </li> */}
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
               View Flagged Leads
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
               View Timeline Entries
             </li>
-            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
@@ -219,23 +238,6 @@ const { leadDetails, caseDetails } = location.state || {};
          
           </ul>
         )}
-
-
-                                 {/* Lead Management Dropdown */}
-                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
 
                     </ul>
                 </div>
@@ -265,15 +267,16 @@ const { leadDetails, caseDetails } = location.state || {};
         <thead>
           <tr>
             <th style={{ width: "10%" }}>Return ID</th>
-            <th style={{ width: "13%" }}>Date Entered</th>
+            <th style={{ width: "10%" }}>Date Entered</th>
             <th style={{ width: "9%" }}>Entered By</th>
             <th>Results</th>
-            <th style={{ width: "13%" , fontSize: "20px" }}>Access</th>
+            <th style={{ width: "15%" , fontSize: "20px" }}>Access</th>
             {/* <th style={{ width: "10%" }}></th> */}
           </tr>
         </thead>
         <tbody>
-  {returns.map((ret, index) => ( // Ensure index is passed
+  {returns.length > 0 ? (
+  returns.map((ret, index) => ( 
     <tr key={ret.id || index}>
       <td>{ret.leadReturnId}</td>
       <td>{formatDate(ret.enteredDate)}</td>
@@ -295,7 +298,13 @@ const { leadDetails, caseDetails } = location.state || {};
         </div>
       </td> */}
     </tr>
-  ))}
+  ))
+) : (
+  <tr>
+    <td colSpan="5" style={{ textAlign: 'center' }}>
+      No Returns Available
+    </td>
+  </tr>)}
 </tbody>
 
       </table>

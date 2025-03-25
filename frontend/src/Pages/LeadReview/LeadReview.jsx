@@ -202,6 +202,19 @@ const onShowCaseSelector = (route) => {
       <div className="sideitem">
           <ul className="sidebar-list">
 
+          <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+                    Lead Management {leadDropdownOpen ?  "▲": "▼" }
+                  </li>
+                  {leadDropdownOpen && (
+                    <ul className="dropdown-list1">
+                       {/* <li className="sidebar-item" onClick={() => navigate('/LeadReview')}>Lead Information</li> */}
+                       <li className="sidebar-item" onClick={() => navigate('/LRInstruction', { state: { caseDetails } } )}>Go To Lead Return</li>
+                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
+                       <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                       <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
+          </ul>
+        )} 
+
           <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
           Case Management {caseDropdownOpen ? "▲" : "▼"}
         </li>
@@ -212,25 +225,25 @@ const onShowCaseSelector = (route) => {
               <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
               View Lead Log
             </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
-            </li>
+            </li> */}
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Case Scratchpad
+              View/Add Case Notes
             </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
-            </li>
+            </li> */}
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
               View Flagged Leads
             </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
               View Timeline Entries
             </li>
-            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
@@ -238,19 +251,6 @@ const onShowCaseSelector = (route) => {
          
           </ul>
         )}
-
-          <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-                    Lead Management {leadDropdownOpen ?  "▲": "▼" }
-                  </li>
-                  {leadDropdownOpen && (
-                    <ul className="dropdown-list1">
-                       {/* <li className="sidebar-item" onClick={() => navigate('/LeadReview')}>Lead Information</li> */}
-                       <li className="sidebar-item" onClick={() => navigate('/LRInstruction')}>View Lead Return</li>
-                       <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li>
-                       <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                       <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
-          </ul>
-        )} 
           </ul>
         </div>
 
@@ -258,7 +258,7 @@ const onShowCaseSelector = (route) => {
         <div className="lead-main-content">
           {/* Page Header */}
           <div className="case-header">
-            <h1>Lead No:{selectedLead.leadNo} | {selectedLead.leadName}</h1>
+            <h1>LEAD:{selectedLead.leadNo} | {selectedLead.leadName.toUpperCase()}</h1>
           </div>
 
           {/* Case Summary Textarea */}
