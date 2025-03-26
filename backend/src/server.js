@@ -19,9 +19,14 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(cors({ origin: "http://localhost:3000" })); // Replace with your frontend URL
+app.use(cors({ origin: "http://localhost:3000",
+    methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+ })); 
 
-dbConnect().then(() => {
+ app.options('*', cors());
+
+dbConnect().then((conn) => {
     console.log("✅ Database connected, starting server...");
 
 // Routes
@@ -38,13 +43,6 @@ app.use("/api/lrenclosure", LEnRoutes);
 
 app.use("/api/report", reportRoutes); // For report generation
 
-
-// Start Server
-const PORT = process.env.PORT || 7002;
-app.listen(PORT, () => {
-    console.log(`Server started at http://localhost:${PORT}`);
-});
-
 // Default Route
 app.get("/", (req, res) => {
     res.send("Server is ready");
@@ -56,4 +54,22 @@ app.get('/test', (req, res) => {
 
 // Log MongoDB connection string (for debugging, remove in production)
 console.log(process.env.MONGO_URI);
+
+// Start Server
+const PORT = process.env.PORT || 7002;
+app.listen(PORT, () => {
+    console.log(`Server started at http://localhost:${PORT}`);
+});
+
+  // Add cleanup logic for graceful shutdown
+  process.on("SIGINT", async () => {
+    console.log("SIGINT signal received: closing MongoDB connection");
+    await conn.connection.close();
+    server.close(() => {
+      console.log("Server closed");
+      process.exit(0);
+    });
+  });
+}).catch((error) => {
+  console.error("Database connection failed", error);
 });

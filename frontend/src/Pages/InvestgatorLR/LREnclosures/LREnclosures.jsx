@@ -99,6 +99,7 @@ export const LREnclosures = () => {
     const formData = new FormData();
     if (file) {
       formData.append("file", file);
+      console.log("file", file);
     }
 
     // Append other required fields
@@ -125,7 +126,7 @@ export const LREnclosures = () => {
         formData,
         { 
           headers: { 
-            "Content-Type": "multipart/form-data",
+            // "Content-Type": "multipart/form-data",
             "Authorization": `Bearer ${token}`  // Add token here
           } 
         }
@@ -256,7 +257,7 @@ export const LREnclosures = () => {
             <label>Associated Return Id:</label>
             <input
               type="returnId"
-              value={enclosureData.leadId}
+              value={enclosureData.returnId}
               onChange={(e) => handleInputChange("returnId", e.target.value)}
             />
           </div>
@@ -283,7 +284,7 @@ export const LREnclosures = () => {
         </div>
           {/* Action Buttons */}
           <div className="form-buttons">
-          <button className="save-btn1" onClick={handleAddEnclosure}>Add Enclosure</button>
+          <button className="save-btn1" onClick={handleSaveEnclosure}>Add Enclosure</button>
           {/* <button className="back-btn" onClick={() => handleNavigation("/LRVehicle")}>Back</button>
           <button className="next-btn" onClick={() => handleNavigation("/LREvidence")}>Next</button>
           <button className="save-btn">Save</button>
