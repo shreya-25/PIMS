@@ -122,7 +122,7 @@ export const LREnclosures = () => {
     
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/lrenclosure/upload",
+        "http://localhost:5000/api/lrenclosure/upload-lrenclosure",
         formData,
         { 
           headers: { 
@@ -292,7 +292,7 @@ export const LREnclosures = () => {
         </div>
 
               {/* Enclosures Table */}
-              <table className="leads-table">
+              {/* <table className="leads-table">
           <thead>
             <tr>
               <th>Date Entered</th>
@@ -306,7 +306,7 @@ export const LREnclosures = () => {
           {enclosures.length > 0 ? (
             enclosures.map((enclosure, index) => (
               <tr key={index}>
-                <td>{enclosure.dateEntered}</td>
+                <td>{enclosure.enteredDate}</td>
                 <td>{enclosure.returnId}</td>
                 <td>{enclosure.type}</td>
                 <td>{enclosure.enclosure}</td>
@@ -338,7 +338,7 @@ export const LREnclosures = () => {
                       </td>
                     </tr>)}
           </tbody>
-        </table>
+        </table> */}
         <Comment/>
       </div>
       </div>
