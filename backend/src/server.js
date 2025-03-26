@@ -57,19 +57,42 @@ console.log(process.env.MONGO_URI);
 
 // Start Server
 const PORT = process.env.PORT || 7002;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Server started at http://localhost:${PORT}`);
 });
 
-  // Add cleanup logic for graceful shutdown
-  process.on("SIGINT", async () => {
-    console.log("SIGINT signal received: closing MongoDB connection");
+ // Define a common shutdown function
+ const gracefulShutdown = async (signal) => {
+  console.log(`${signal} received: attempting graceful shutdown...`);
+  try {
     await conn.connection.close();
-    server.close(() => {
-      console.log("Server closed");
-      process.exit(0);
-    });
+    console.log("MongoDB connection closed.");
+  } catch (e) {
+    console.error("Error closing MongoDB connection:", e);
+  }
+  server.close(() => {
+    console.log("HTTP server closed.");
+    process.exit(0);
   });
+};
+
+// Handle SIGINT (Ctrl+C)
+process.on("SIGINT", () => {
+  gracefulShutdown("SIGINT");
+});
+
+// Handle SIGTERM (e.g., kill command)
+process.on("SIGTERM", () => {
+  gracefulShutdown("SIGTERM");
+});
+
+// Handle SIGUSR2 (nodemon restart signal)
+process.once("SIGUSR2", async () => {
+  await gracefulShutdown("SIGUSR2");
+  // Re-emit SIGUSR2 so nodemon can restart
+  process.kill(process.pid, "SIGUSR2");
+});
+
 }).catch((error) => {
-  console.error("Database connection failed", error);
+console.error("Database connection failed", error);
 });
