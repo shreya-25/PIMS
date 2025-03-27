@@ -1,5 +1,6 @@
 const express = require("express");
-const { generateReport, generateTestReport } = require("../controller/reportController.js");
+// const { generateReport, generateTestReport } = require("../controller/reportController.js");
+const { generateReport } = require("../controller/reportController.js");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
 
@@ -10,6 +11,6 @@ router.post("/generate", verifyToken, roleMiddleware("CaseManager"), generateRep
 
 // New test route (no authentication) for testing PDF download
 // For testing purposes, the route is GET, not POST and also the URL is http://localhost:5000/api/report/test
-router.get("/test", generateTestReport);
+// router.get("/test", generateTestReport);
 
 module.exports = router;

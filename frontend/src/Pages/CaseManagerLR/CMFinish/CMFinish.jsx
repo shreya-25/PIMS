@@ -223,22 +223,19 @@ export const CMFinish = () => {
 
         {/* Logged Information */}
         <div className="timeline-form-sec">
+        <div className="finish-content">
         <div className="logged-info">
           <div className="info-item">
-            <label>Logged:</label>
+            <label>Last Updated By:</label>
             <input type="text" value="Officer 1" readOnly />
           </div>
           <div className="info-item">
-            <label>Assigned To:</label>
-            <input type="text" value="Officer 1" readOnly />
-          </div>
-          <div className="info-item">
-            <label>Last Updated:</label>
+            <label>Last Updated Date:</label>
             <input type="date" />
           </div>
           <div className="info-item">
-            <label>Assigned By:</label>
-            <input type="text" value="Officer 5" readOnly />
+            <label>Assigned Date:</label>
+            <input type="date" />
           </div>
           <div className="info-item">
             <label>Completed Date:</label>
@@ -247,67 +244,156 @@ export const CMFinish = () => {
         </div>
 
         {/* Reports and Destination */}
-        <div className="reports-destination">
-          <div className="report-options">
-            <h4>Reports:</h4>
-            <div className="report-column">
-              <label>
-                <input type="checkbox" name="report"  checked={selectedReports.leadInstruction}
-              onChange={() => toggleReportSection("leadInstruction")} /> Lead Instruction
-              </label>
-              <label>
-                <input type="checkbox" name="report" checked={selectedReports.leadReturn}
-              onChange={() => toggleReportSection("leadReturn")} /> Lead Returns
-              </label>
-              <label>
-                <input type="checkbox" name="report" checked={selectedReports.leadPersons}
-              onChange={() => toggleReportSection("leadPersons")} /> Lead Persons
-              </label>
-              <label>
-                <input type="checkbox" name="report"  checked={selectedReports.leadEnclosures}
-              onChange={() => toggleReportSection("leadVehicles")} /> Lead Vehicles
-              </label>
-              <label>
-                <input type="checkbox" name="report"  checked={selectedReports.leadEvidence}
-              onChange={() => toggleReportSection("leadEnclosures")} /> Lead Enclosures
-              </label>
-              <label>
-                <input type="checkbox" name="report" checked={selectedReports.leadPictures}
-              onChange={() => toggleReportSection("leadEvidence")} /> Lead Evidences
-              </label>
-            </div>
-            <div className="report-column">
-              <label>
-                <input type="checkbox" name="report" checked={selectedReports.leadPictures}
-              onChange={() => toggleReportSection("leadPictures")}/> Lead Pictures
-              </label>
-              <label>
-                <input type="checkbox" name="report"   checked={selectedReports.leadAudio}
-              onChange={() => toggleReportSection("leadAudio")}/> Lead Audio Description
-              </label>
-              <label>
-                <input type="checkbox" name="report"  checked={selectedReports.leadVideos}
-              onChange={() => toggleReportSection("leadVideos")} /> Lead Videos Description
-              </label>
-              <label>
-                <input type="checkbox" name="report" checked={selectedReports.leadScratchpad}
-              onChange={() => toggleReportSection("leadScratchpad")} /> Lead Scratchpad Entries
-              </label>
-              <label>
-                <input type="checkbox" name="report" checked={selectedReports.leadTimeline}
-              onChange={() => toggleReportSection("leadTimeline")} /> Lead Timeline Entries
-              </label>
-            </div>
-          </div>
-          <div className="destination-options">
-            <h4>Destination:</h4>
-            <label>
-              <input type="radio" name="destination" className="dest-op-class" /> Print
-            </label>
-            <label>
-              <input type="radio" name="destination" className="dest-op-class" /> Preview
-            </label>
-          </div>
+<h3>Generate Report</h3>
+<div className="reports-destination">
+  {/* Standard Report */}
+  <div className="report-sec">
+    <div className="report-head">
+      <h3>Standard Report</h3>
+    </div>
+    <div className="report-options">
+      <label>
+        <input
+          type="checkbox"
+          name="report"
+          checked={selectedReports.leadInstruction}
+          onChange={() => toggleReportSection("leadInstruction")}
+        />
+        Full Report
+      </label>
+    </div>
+  </div>
+
+  {/* Custom Report */}
+  <div className="report-sec">
+    <div className="report-head">
+      <h3>Custom Report</h3>
+    </div>
+    <div className="report-options">
+      <div className="report-column">
+        <label>
+          <input
+            type="checkbox"
+            name="report"
+            checked={selectedReports.leadInstruction}
+            onChange={() => toggleReportSection("leadInstruction")}
+          />
+          Lead Instruction
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            name="report"
+            checked={selectedReports.leadReturn}
+            onChange={() => toggleReportSection("leadReturn")}
+          />
+          Lead Returns
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            name="report"
+            checked={selectedReports.leadPersons}
+            onChange={() => toggleReportSection("leadPersons")}
+          />
+          Lead Persons
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            name="report"
+            checked={selectedReports.leadVehicles}
+            onChange={() => toggleReportSection("leadVehicles")}
+          />
+          Lead Vehicles
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            name="report"
+            checked={selectedReports.leadEnclosures}
+            onChange={() => toggleReportSection("leadEnclosures")}
+          />
+          Lead Enclosures
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            name="report"
+            checked={selectedReports.leadEvidence}
+            onChange={() => toggleReportSection("leadEvidence")}
+          />
+          Lead Evidences
+        </label>
+      </div>
+      <div className="report-column">
+        <label>
+          <input
+            type="checkbox"
+            name="report"
+            checked={selectedReports.leadPictures}
+            onChange={() => toggleReportSection("leadPictures")}
+          />
+          Lead Pictures
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            name="report"
+            checked={selectedReports.leadAudio}
+            onChange={() => toggleReportSection("leadAudio")}
+          />
+          Lead Audio Description
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            name="report"
+            checked={selectedReports.leadVideos}
+            onChange={() => toggleReportSection("leadVideos")}
+          />
+          Lead Videos Description
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            name="report"
+            checked={selectedReports.leadScratchpad}
+            onChange={() => toggleReportSection("leadScratchpad")}
+          />
+          Lead Scratchpad Entries
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            name="report"
+            checked={selectedReports.leadTimeline}
+            onChange={() => toggleReportSection("leadTimeline")}
+          />
+          Lead Timeline Entries
+        </label>
+      </div>
+    </div>
+  </div>
+
+  {/* Destination */}
+  <div className="report-sec">
+    <div className="report-head">
+      <h3>Destination</h3>
+    </div>
+    <div className="report-options">
+      <label>
+        <input type="radio" name="destination" className="dest-op-class" />
+        Print
+      </label>
+      <label>
+        <input type="radio" name="destination" className="dest-op-class" />
+        Preview
+      </label>
+    </div>
+  </div>
+</div>
+
         </div>
         </div>
 
