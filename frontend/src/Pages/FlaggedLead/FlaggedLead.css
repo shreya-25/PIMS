@@ -1,6 +1,8 @@
 :root
 {
   background-color: #f9f9f9;
+    font-family: Arial, sans-serif;
+  
 }
 
 /* Overall Page Layout */
@@ -9,6 +11,7 @@
     flex-direction: column;
     background-color: #f9f9f9;
     padding: 0px;
+    font-family: Arial, sans-serif;
   }
   
   /* Main Content */

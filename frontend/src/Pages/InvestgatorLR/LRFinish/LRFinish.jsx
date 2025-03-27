@@ -338,24 +338,16 @@ const handleNavigationToInstruction = () => {
 
         {/* Logged Information */}
         <div className="timeline-form-sec">
-        <div className="logged-info">
-          <div className="info-item">
-            <label>Logged:</label>
-            <input type="text" value="Officer 1" readOnly />
-          </div>
-          <div className="info-item">
-            <label>Assigned To:</label>
-            <input type="text" value="Officer 1" readOnly />
-          </div>
-          <div className="info-item">
+         <div className="finish-row">
+         <div className="finish-field">
             <label>Last Updated:</label>
             <input type="date" />
           </div>
-          <div className="info-item">
-            <label>Assigned By:</label>
-            <input type="text" value="Officer 5" readOnly />
+          <div className="finish-field">
+            <label>Last Updated By:</label>
+            <input type="text" value="Officer 916" readOnly />
           </div>
-          <div className="info-item">
+          <div className="finish-field">
             <label>Completed Date:</label>
             <input type="date" />
           </div>
