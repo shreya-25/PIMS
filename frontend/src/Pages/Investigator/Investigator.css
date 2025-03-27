@@ -4,6 +4,7 @@
     flex-direction: column; /* Stack Navbar and Main Container vertically */
     height: 100vh;
     background-color: #f9f9f9;
+    font-family: Arial, sans-serif;
   }
   
   /* Navbar styling (optional, already handled in Navbar.css) */
@@ -12,7 +13,7 @@
   .main-container {
     display: flex;
     flex-direction: row; /* Sidebar and content side-by-side */
-    flex: 1;
+    /* flex: 1; */
   }
   .left-content
   {

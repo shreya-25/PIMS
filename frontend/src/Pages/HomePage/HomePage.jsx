@@ -651,9 +651,9 @@ const addCase = (newCase) => {
 
 
   return (
-    <div>
+    <div className = "main-page-body">
     <Navbar />
-    <div className="main-container">
+    {/* <div className="main-container"> */}
         {/* Pass down props for leads, cases, and modal visibility */}
         {/* <SideBar
           leads={leads} // Pass leads if needed
@@ -661,34 +661,33 @@ const addCase = (newCase) => {
           setActiveTab={setActiveTab}
           onShowCaseSelector={handleShowCaseSelector} // Pass handler
         /> */}
-         <div className="above-sec-MP">
-        <div className="logo-sec">
+         {/* <div className="above-sec-MP"> */}
+        {/* <div className="logo-sec">
           <img
-            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
+            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} 
             alt="Police Department Logo"
             className="police-logo-main-page"
           />
           <h1 className="main-page-heading"> PIMS</h1>
-        </div>
-        </div>
-        <div className="top-controlsMP">
-            <div className="search-container">
+        </div> */}
+        {/* </div> */}
+        {/* <div className="top-controlsMP"> */}
+            {/* <div className="search-container">
                     <i className="fa-solid fa-magnifying-glass"></i>
                     <input
                       type="text"
                       className="search-input"
                       placeholder="Search Cases"
-                      // onChange={(e) => onSearch && onSearch(e.target.value)}
                     />
-              </div>
-              <div className="slidebartopcontrolMP">
+              </div> */}
+              {/* <div className="slidebartopcontrolMP">
               <SlideBar
               onAddCase={(newCase) => addCase(newCase)}
               buttonClass="custom-add-case-btn1"
             />
-            </div>
-          </div>
-        <div className="content-container">
+            </div> */}
+          {/* </div> */}
+        {/* <div className="content-container"> */}
           {/* {showCaseSelector && (
             <CaseSelector
               cases={cases}
@@ -696,8 +695,19 @@ const addCase = (newCase) => {
               onClose={handleCloseCaseSelector} // Pass close functionality
             />
           )} */}
+           <div className="main-page-content">
       <div className="main-page">
       <NotificationCard acceptLead={acceptLead} signedInOfficer={signedInOfficer} />
+
+      <div className= "add-case-section">
+          <h2> Click here to add a new case</h2>
+          {/* <div className="slidebartopcontrolMP"> */}
+              <SlideBar
+              onAddCase={(newCase) => addCase(newCase)}
+              buttonClass="custom-add-case-btn1"
+            />
+            {/* </div> */}
+        </div>
         <div className="stats-bar">
           {/* <span
             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
@@ -725,7 +735,6 @@ const addCase = (newCase) => {
             My Ongoing Cases: {cases.length}
           </span>
         </div>
-
 
         <div className="content-section">
         {activeTab === "cases" && (
@@ -1451,8 +1460,7 @@ const addCase = (newCase) => {
         </div>
       </div>
     </div>
-    </div>
-    </div>
+   </div>
   );
 };
 
