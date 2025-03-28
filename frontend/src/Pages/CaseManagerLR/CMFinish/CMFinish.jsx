@@ -4,7 +4,6 @@ import Navbar from '../../../components/Navbar/Navbar';
 import "./CMFinish.css";
 import FootBar1 from '../../../components/FootBar1/FootBar1';
 import Comment from "../../../components/Comment/Comment";
-import lrFinishR from "../../../components/lrFinishR/lrFinishR";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 
@@ -225,7 +224,6 @@ export const CMFinish = () => {
         {/* Logged Information */}
         <div className="timeline-form-sec">
 
-          <lrFinishR />
         <div className="finish-content">
         <div className="logged-info">
         <div className="info-item">
@@ -247,8 +245,8 @@ export const CMFinish = () => {
         </div>
 
         {/* Reports and Destination */}
-        <h3>Generate Report</h3>
-<div className="reports-destination">
+        <h2>Generate Report</h2>
+<div className="reports-destination-lr">
   <table className="report-table">
     <thead>
       <tr>
@@ -315,8 +313,6 @@ export const CMFinish = () => {
                 />
                 Lead Vehicles
               </label>
-            </div>
-            <div className="checkbox-col">
               <label className="checkbox-label">
                 <input
                   type="checkbox"
@@ -335,6 +331,10 @@ export const CMFinish = () => {
                 />
                 Lead Evidences
               </label>
+            </div>
+            <div className="checkbox-col">
+            
+             
               <label className="checkbox-label">
                 <input
                   type="checkbox"
