@@ -4,6 +4,7 @@ import Navbar from '../../../components/Navbar/Navbar';
 import "./CMFinish.css";
 import FootBar1 from '../../../components/FootBar1/FootBar1';
 import Comment from "../../../components/Comment/Comment";
+import lrFinishR from "../../../components/lrFinishR/lrFinishR";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 
@@ -246,156 +247,170 @@ export const CMFinish = () => {
         </div>
 
         {/* Reports and Destination */}
-<h3>Generate Report</h3>
+        <h3>Generate Report</h3>
 <div className="reports-destination">
+  <table className="report-table">
+    <thead>
+      <tr>
+        <th>Report Section</th>
+        <th>Options</th>
+      </tr>
+    </thead>
+    <tbody>
+      {/* Standard Report Row */}
+      <tr>
+        <td>Standard Report</td>
+        <td>
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              name="report"
+              checked={selectedReports.leadInstruction}
+              onChange={() => toggleReportSection("leadInstruction")}
+            />
+            Full Report
+          </label>
+        </td>
+      </tr>
 
-  {/* Standard Report */}
-  <div className="report-sec">
-    <div className="report-head">
-      <h3>Standard Report</h3>
-    </div>
-    <div className="report-options">
-      <label>
-        <input
-          type="checkbox"
-          name="report"
-          checked={selectedReports.leadInstruction}
-          onChange={() => toggleReportSection("leadInstruction")}
-        />
-        Full Report
-      </label>
-    </div>
-  </div>
+      {/* Custom Report Row */}
+      <tr>
+        <td>Custom Report</td>
+        <td>
+          <div className="checkbox-grid">
+            <div className="checkbox-col">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadInstruction}
+                  onChange={() => toggleReportSection("leadInstruction")}
+                />
+                Lead Instruction
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadReturn}
+                  onChange={() => toggleReportSection("leadReturn")}
+                />
+                Lead Returns
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadPersons}
+                  onChange={() => toggleReportSection("leadPersons")}
+                />
+                Lead Persons
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadVehicles}
+                  onChange={() => toggleReportSection("leadVehicles")}
+                />
+                Lead Vehicles
+              </label>
+            </div>
+            <div className="checkbox-col">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadEnclosures}
+                  onChange={() => toggleReportSection("leadEnclosures")}
+                />
+                Lead Enclosures
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadEvidence}
+                  onChange={() => toggleReportSection("leadEvidence")}
+                />
+                Lead Evidences
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadPictures}
+                  onChange={() => toggleReportSection("leadPictures")}
+                />
+                Lead Pictures
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadAudio}
+                  onChange={() => toggleReportSection("leadAudio")}
+                />
+                Lead Audio Description
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadVideos}
+                  onChange={() => toggleReportSection("leadVideos")}
+                />
+                Lead Videos Description
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadScratchpad}
+                  onChange={() => toggleReportSection("leadScratchpad")}
+                />
+                Lead Scratchpad Entries
+              </label>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadTimeline}
+                  onChange={() => toggleReportSection("leadTimeline")}
+                />
+                Lead Timeline Entries
+              </label>
+            </div>
+          </div>
+        </td>
+      </tr>
 
-  {/* Custom Report */}
-  <div className="report-sec">
-    <div className="report-head">
-      <h3>Custom Report</h3>
-    </div>
-    <div className="report-options">
-      <div className="report-column">
-        <label>
-          <input
-            type="checkbox"
-            name="report"
-            checked={selectedReports.leadInstruction}
-            onChange={() => toggleReportSection("leadInstruction")}
-          />
-          Lead Instruction
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            name="report"
-            checked={selectedReports.leadReturn}
-            onChange={() => toggleReportSection("leadReturn")}
-          />
-          Lead Returns
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            name="report"
-            checked={selectedReports.leadPersons}
-            onChange={() => toggleReportSection("leadPersons")}
-          />
-          Lead Persons
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            name="report"
-            checked={selectedReports.leadVehicles}
-            onChange={() => toggleReportSection("leadVehicles")}
-          />
-          Lead Vehicles
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            name="report"
-            checked={selectedReports.leadEnclosures}
-            onChange={() => toggleReportSection("leadEnclosures")}
-          />
-          Lead Enclosures
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            name="report"
-            checked={selectedReports.leadEvidence}
-            onChange={() => toggleReportSection("leadEvidence")}
-          />
-          Lead Evidences
-        </label>
-      </div>
-      <div className="report-column">
-        <label>
-          <input
-            type="checkbox"
-            name="report"
-            checked={selectedReports.leadPictures}
-            onChange={() => toggleReportSection("leadPictures")}
-          />
-          Lead Pictures
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            name="report"
-            checked={selectedReports.leadAudio}
-            onChange={() => toggleReportSection("leadAudio")}
-          />
-          Lead Audio Description
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            name="report"
-            checked={selectedReports.leadVideos}
-            onChange={() => toggleReportSection("leadVideos")}
-          />
-          Lead Videos Description
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            name="report"
-            checked={selectedReports.leadScratchpad}
-            onChange={() => toggleReportSection("leadScratchpad")}
-          />
-          Lead Scratchpad Entries
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            name="report"
-            checked={selectedReports.leadTimeline}
-            onChange={() => toggleReportSection("leadTimeline")}
-          />
-          Lead Timeline Entries
-        </label>
-      </div>
-    </div>
-  </div>
-
-  {/* Destination */}
-  <div className="report-sec">
-    <div className="report-head">
-      <h3>Destination</h3>
-    </div>
-    <div className="report-options">
-      <label>
-        <input type="radio" name="destination" className="dest-op-class" />
-        Print
-      </label>
-      <label>
-        <input type="radio" name="destination" className="dest-op-class" />
-        Preview
-      </label>
-    </div>
-  </div>
+      {/* Destination Row */}
+      <tr>
+        <td>Destination</td>
+        <td>
+          <label className="radio-label">
+            <input
+              type="radio"
+              name="destination"
+              className="dest-op-class"
+            />
+            Print
+          </label>
+          <label className="radio-label">
+            <input
+              type="radio"
+              name="destination"
+              className="dest-op-class"
+            />
+            Preview
+          </label>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 </div>
+
 
         </div>
         </div>
