@@ -1,152 +1,151 @@
-.main-container, .content-wrapper, .page-content, header, h1 {
+/* Remove default margins/paddings from the page content if needed */
+.main-container,
+.content-wrapper,
+.page-content,
+header,
+h1 {
   margin-top: 0;
   padding-top: 0;
 }
 
+/* Navbar container */
 .NavbarItems {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: rgb(23, 23, 145);
-    padding: 10px 20px;
-    height: 150px;
-    width: auto;
-    font-family: Arial, sans-serif;
-    /* border-bottom: 1px solid #ccc; */
-  }
-  
-  .navbar-left-content {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 30%;
-    height: 30%;
-  }
-  
-  .police-logo-navbar {
-    width: 150px;
-    height: 150px;
-  }
-  
-  .pims-text {
-    font-size: 50px;
-    font-weight: bold;
-    color: #ffffffe3;
-  }
-  
- /* Profile section (right side) */
-.profile {
-    display: flex;
-    align-items: center;
-    gap: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color:   rgb(41, 41, 139); 
+  /* background-color: #0a4275; */
+  padding: 0 20px;
+  height: 110px; /* Reduced height for a cleaner, modern look */
+  color: #ffffff;
+  font-family: Arial, sans-serif;
+  /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);  */
 }
-  
-  /* UL for icons */
-  .profile ul {
-    display: flex;
-    align-items: center;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    gap: 25px;
-    color: #ffffff;
-  }
-  
-  .profile ul li {
-    position: relative;
-    cursor: pointer;
-  }
-  
-  /* Icon sizes/colors */
-  .profile ul li i {
-    font-size: 32px;
-    color: #ffffff;
-    transition: transform 0.2s ease;
-  }
-  
-  .profile ul li i:hover {
-    transform: scale(1.1);
-  }
 
-  .profile img
-  {
-    color: #ffffff;
-  }
-  
-  /* If you use an <img> for icons (e.g., .icon-img) */
-  .icon-img {
-    width: 32px;
-    height: 32px;
-    object-fit: contain;
-    color: #ffffff;
-  }
-  
-  /* Notification badge */
-  .badge {
-    position: absolute;
-    top: -6px;
-    right: -10px;
-    background-color: crimson;
-    /* color: white; */
-    font-size: 12px;
-    font-weight: bold;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  /* Dropdown styles */
-  .dropdown-list {
-    position: absolute;
-    top: 40px; /* Slightly below the icon */
-    right: 0;
-    background-color: white;
-    color: rgb(255, 255, 255);
-    border-radius: 5px;
-    width: 250px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    z-index: 999;
-  }
-  
-  .dropdown-item {
-    padding: 10px 15px;
-    border-bottom: 1px solid #eee;
-    cursor: pointer;
-    font-size: 16px;
-  }
-  
-  .dropdown-item:hover {
-    background-color: #f2f2f2;
-  }
-  
-  /* User profile info (optional) */
-  .user-profile {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    /* background-color: aquamarine;  <-- optional */
-    padding: 5px 10px; /* Some spacing around the user info */
-    border-radius: 4px; /* If you want slight rounding */
-  }
-  
-  .user-profile i  {
-    font-size: 28px;
-    color: #ffffff;
-  }
+/* Left section: logo + brand text */
+.navbar-left-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
 
-  .profile ul li i  {
-    font-size: 28px;
-    color: #ffffff;
-  }
-  
-  .username {
-    font-weight: 500;
-    color: #ffffff;
-    white-space: nowrap; /* Keeps text on one line */
-    overflow: hidden;    /* If needed */
-    text-overflow: ellipsis; /* If you want to handle overflow gracefully */
-    font-size: 20px;
-  }
+/* Adjust the logo size for a more compact navbar */
+.police-logo-navbar {
+  width: 100px;
+  height: 100px;
+  object-fit: cover; /* ensures the logo scales nicely */
+}
+
+.pims-text {
+  font-size: 40px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* Right section: icons + user profile */
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* Icon list styling */
+.profile ul {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 1.5rem;
+}
+
+.profile ul li {
+  position: relative;
+  cursor: pointer;
+}
+
+/* FontAwesome icons inside li */
+.profile ul li i {
+  font-size: 30px;
+  color: #ffffff;
+  /* transition: color 0.2s ease; */
+}
+
+/* If you use <img> for icons (like home-white.png) */
+.icon-img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  transition: opacity 0.2s ease;
+}
+
+.icon-img:hover {
+  opacity: 0.8;
+}
+
+/* Notification badges (small circle with a number) */
+.badge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background-color: crimson;
+  /* background-color: #f2e6ee; */
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Dropdowns (notifications, emails, chats) */
+.dropdown-list {
+  position: absolute;
+  top: 35px; /* Just below the icon */
+  right: 0;
+  background-color: #fff;
+  color: #333;
+  border-radius: 5px;
+  width: 250px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 999;
+}
+
+.dropdown-item {
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.dropdown-item:hover {
+  background-color: #f2f2f2;
+}
+
+/* User profile (icon + name) */
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 50px;
+  width: auto;
+  border:3px solid #eee;
+  padding: 15px;
+}
+
+.user-profile i {
+  font-size: 35px;
+  color: #ffffff;
+}
+
+.username {
+  font-weight: 500;
+  color: #ffffff;
+  font-size: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

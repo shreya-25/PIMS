@@ -104,7 +104,8 @@
 } */
 
 .custom-add-case-btn1 {
-  background-color: #a05252; 
+  /* background-color: #a05252;  */
+  background-color: rgba(25, 58, 73, 0.795);
   color: white; 
   border: none;
   /* padding: 10px 20px;
@@ -119,7 +120,8 @@
 }
 
 .add-case-button:hover {
-  background-color: rgba(137, 51, 51, 0.705); /* Darker red on hover */
+  /* background-color: rgba(137, 51, 51, 0.705);  */
+  background-color: rgba(25, 58, 73, 0.795);
 }
 
 
