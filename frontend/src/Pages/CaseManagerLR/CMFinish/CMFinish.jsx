@@ -4,7 +4,6 @@ import Navbar from '../../../components/Navbar/Navbar';
 import "./CMFinish.css";
 import FootBar1 from '../../../components/FootBar1/FootBar1';
 import Comment from "../../../components/Comment/Comment";
-import lrFinishR from "../../../components/lrFinishR/lrFinishR";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 
