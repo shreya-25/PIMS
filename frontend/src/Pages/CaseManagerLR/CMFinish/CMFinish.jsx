@@ -4,6 +4,7 @@ import Navbar from '../../../components/Navbar/Navbar';
 import "./CMFinish.css";
 import FootBar1 from '../../../components/FootBar1/FootBar1';
 import Comment from "../../../components/Comment/Comment";
+import lrFinishR from "../../../components/lrFinishR/lrFinishR";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 
@@ -223,18 +224,20 @@ export const CMFinish = () => {
 
         {/* Logged Information */}
         <div className="timeline-form-sec">
+
+          <lrFinishR />
         <div className="finish-content">
         <div className="logged-info">
+        <div className="info-item">
+            <label>Assigned Date:</label>
+            <input type="date" value ="03/12/2024" readOnly />
+          </div>
           <div className="info-item">
             <label>Last Updated By:</label>
             <input type="text" value="Officer 1" readOnly />
           </div>
           <div className="info-item">
             <label>Last Updated Date:</label>
-            <input type="date" />
-          </div>
-          <div className="info-item">
-            <label>Assigned Date:</label>
             <input type="date" />
           </div>
           <div className="info-item">
@@ -246,6 +249,7 @@ export const CMFinish = () => {
         {/* Reports and Destination */}
 <h3>Generate Report</h3>
 <div className="reports-destination">
+
   {/* Standard Report */}
   <div className="report-sec">
     <div className="report-head">
