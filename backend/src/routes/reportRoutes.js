@@ -1,6 +1,7 @@
 const express = require("express");
 // const { generateReport, generateTestReport } = require("../controller/reportController.js");
-const { generateReport } = require("../controller/reportController.js");
+// const { generateReport1 } = require("../controller/reportController.js");
+const { generateReport } = require("../controller/leadreportController.js");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
 

@@ -263,8 +263,8 @@ export const CMFinish = () => {
             <input
               type="checkbox"
               name="report"
-              checked={selectedReports.leadInstruction}
-              onChange={() => toggleReportSection("leadInstruction")}
+              checked={selectedReports.FullReport}
+              onChange={() => toggleReportSection("FullReport")}
             />
             Full Report
           </label>

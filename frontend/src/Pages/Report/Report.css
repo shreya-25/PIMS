@@ -1,0 +1,31 @@
+/* Report.css */
+.report-container {
+    width: 800px;
+    margin: auto;
+    padding: 30px;
+    background-color: white;
+    color: #333;
+    font-family: 'Arial', sans-serif;
+    border: 1px solid #ccc;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .report-title {
+    text-align: center;
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #444;
+  }
+  
+  .report-section {
+    font-size: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .report-summary {
+    font-size: 14px;
+    color: #555;
+    border-top: 1px dashed #aaa;
+    padding-top: 10px;
+  }
+  
