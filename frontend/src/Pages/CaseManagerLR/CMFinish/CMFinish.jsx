@@ -68,6 +68,7 @@ export const CMFinish = () => {
 
 
         const [selectedReports, setSelectedReports] = useState({
+          FullReport: false,
           leadInstruction: false,
           leadReturn: false,
           leadPersons: false,
@@ -82,10 +83,23 @@ export const CMFinish = () => {
         });
 
         const toggleReportSection = (sectionKey) => {
-          setSelectedReports((prev) => ({
-            ...prev,
-            [sectionKey]: !prev[sectionKey],
-          }));
+          if (sectionKey === "FullReport") {
+            setSelectedReports((prev) => {
+              // Toggle the full report value
+              const newValue = !prev.FullReport;
+              // Create a new state object where all keys are set to newValue
+              const updated = {};
+              Object.keys(prev).forEach((key) => {
+                updated[key] = newValue;
+              });
+              return updated;
+            });
+          } else {
+            setSelectedReports((prev) => ({
+              ...prev,
+              [sectionKey]: !prev[sectionKey],
+            }));
+          }
         };
 
         const token = localStorage.getItem("token");

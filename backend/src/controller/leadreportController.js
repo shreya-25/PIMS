@@ -68,8 +68,10 @@ function generateReport(req, res) {
     leadVideos,
     leadScratchpad,
     leadTimeline,
+    selectedReports,
   } = req.body;
 
+  const includeAll = selectedReports && selectedReports.FullReport;
   try {
     const doc = new PDFDocument({ size: "LETTER", margin: 50 });
 
@@ -88,7 +90,7 @@ function generateReport(req, res) {
 
     doc.moveDown().moveTo(50, doc.y).lineTo(562, doc.y).stroke();
 
-    if (leadInstruction) {
+    if (includeAll || leadInstruction) {
 
     doc.moveDown().font("Helvetica-Bold").fontSize(12).text("Lead Details:");
 
@@ -116,14 +118,14 @@ function generateReport(req, res) {
 
     }
 
-    if (leadReturn) {
+    if (includeAll ||leadReturn) {
     doc.moveDown(6).font("Helvetica-Bold").fontSize(12).text("Lead Return ID: 1");
 
     drawTextBox(doc, 50, doc.y + 10, 512, 80, "",
       "As part of the Bank Robbery Investigation (Case No. 65734), Officer 915 responded with Officers 1, 2, and 3. The task of interviewing Matthew Jacobs was assigned to Officer 24. During the interview, Jacobs provided valuable information that may assist in furthering this investigation. Additional follow-ups required with Officer 90 and Officer 24 for complete validation.");
     }
 
-    if (leadPersons) {
+    if (includeAll ||leadPersons) {
     doc.moveDown(6).font("Helvetica-Bold").fontSize(10).text("Person Details");
     drawTable(doc, 50, doc.y + 5,
       ["Date Entered", "Name", "Phone #", "Address"],
@@ -176,7 +178,7 @@ function generateReport(req, res) {
   
 
               
-              if (leadVehicles) {
+              if (includeAll ||leadVehicles) {
                 doc.moveDown(6)
                 .font("Helvetica-Bold")
                 .fontSize(10)
@@ -187,7 +189,7 @@ function generateReport(req, res) {
       [90, 70, 70, 70, 70, 70, 72]);
     }
 
-    if (leadEnclosures) {
+    if (includeAll ||leadEnclosures) {
       doc.moveDown(6)
       .font("Helvetica-Bold")
       .fontSize(10)
