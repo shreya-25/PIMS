@@ -195,27 +195,14 @@ export const CaseInformation = () => {
         <div className="sideitem">
           <ul className="sidebar-list">
 
-          <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-                    Lead Management {leadDropdownOpen ?  "▲": "▼" }
-                  </li>
-                  {leadDropdownOpen && (
-                    <ul className="dropdown-list1">
-                       {/* <li className="sidebar-item" onClick={() => navigate('/LeadReview')}>Lead Information</li> */}
-                       <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+          <li className="sidebar-item active">Case Information</li>
+          <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
+          <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
               New Lead
             </li>                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
                        <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                       <li className="sidebar-item " >View Lead Return</li>
                        <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
-          </ul>
-        )} 
-
-          <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▲" : "▼"}
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li> */}
-              <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
               <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
               View Lead Log
             </li>
@@ -242,9 +229,6 @@ export const CaseInformation = () => {
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
 
-         
-          </ul>
-        )}
           </ul>
         </div>
 

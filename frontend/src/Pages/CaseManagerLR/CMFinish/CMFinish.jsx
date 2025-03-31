@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect, useRef} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from '../../../components/Navbar/Navbar';
 import "./CMFinish.css";
@@ -6,6 +6,10 @@ import FootBar1 from '../../../components/FootBar1/FootBar1';
 import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+// import { Report, generatePDF } from "../../Report/Report";
+import pdfRef from "../../refStore";
 
 export const CMFinish = () => {
   useEffect(() => {
@@ -18,7 +22,15 @@ export const CMFinish = () => {
       };
     }, []);
   const navigate = useNavigate();
+  const localPdfRef = useRef(null);
+  const { selectedCase, selectedLead, leadInstructions, leadReturns} = useContext(CaseContext);
+
+
   const location = useLocation();
+  const getCasePageRoute = () => {
+    if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
+    return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
+};
       
         const formatDate = (dateString) => {
           if (!dateString) return "";
@@ -38,7 +50,6 @@ export const CMFinish = () => {
         const [leadEnclosures, setLeadEnclosures] = useState([]);
         const [leadEvidences, setLeadEvidences] = useState([]);
 
-        const { selectedCase, selectedLead, leadInstructions, leadReturns } = useContext(CaseContext);
 
         console.log("LD", leadInstructions);
 
@@ -97,6 +108,8 @@ export const CMFinish = () => {
               // Also pass along which sections are selected
               selectedReports,
             };
+
+            // generatePDF(pdfRef.current);
       
             // Call your Node server endpoint
             const response = await axios.post("http://localhost:5000/api/report/generate", body, {
@@ -108,7 +121,7 @@ export const CMFinish = () => {
             // Create a blob and open in a new browser tab OR force download
       const file = new Blob([response.data], { type: "application/pdf" });
       const fileURL = URL.createObjectURL(file);
-      window.open(fileURL); // Opens in a new tab for printing/previewing
+      window.open(fileURL); 
 
     } catch (error) {
       console.error("Failed to generate report", error);
@@ -154,61 +167,66 @@ export const CMFinish = () => {
 
       <div className="LRI_Content">
        <div className="sideitem">
-                    <ul className="sidebar-list">
-                   {/* Lead Management Dropdown */}
-                   <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
-                            {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▼" : "▲" }
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-              View Lead Log
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-              Officer Management
-            </li>
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
-            </li>
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-              View Lead Hierarchy
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              Generate Report
-            </li> */}
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-              View Timeline Entries
-            </li>
-            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+       <ul className="sidebar-list">
+                   
+                   <li className="sidebar-item">Case Information</li>
+         <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
+         <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+             New Lead
+           </li>                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
+                      <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                      <li className="sidebar-item active" >View Lead Return</li>
+                      <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
+             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+             View Lead Log
+           </li>
+           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+             Officer Management
+           </li> */}
+           <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+             View/Add Case Notes
+           </li>
+           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+             View Lead Hierarchy
+           </li>
+           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+             Generate Report
+           </li> */}
+           <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+             View Flagged Leads
+           </li>
+           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+             View Timeline Entries
+           </li>
+           {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+           <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+           <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
 
-         
-          </ul>
-        )}
-                    </ul>
+         </ul>
                 </div>
                 <div className="left-content">
+
+                  {/* Hidden Report Preview Container (positioned offscreen) */}
+                  {/* <div
+                      ref={pdfRef}
+                      style={{
+                        position: "absolute",
+                        top: "-10000px",
+                        left: "-10000px",
+                        width: "2000px", // A4 width at 96 DPI
+                        padding: "20px",
+                        backgroundColor: "white",
+                        fontFamily: "Arial",
+                        whiteSpace: "normal",
+                        wordBreak: "break-word",
+                        color: "black",
+                       
+                      }}
+                      >
+                      <Report />
+                      </div> */}
+
    
 
 
