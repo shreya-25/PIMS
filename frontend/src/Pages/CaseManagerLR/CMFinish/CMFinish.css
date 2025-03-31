@@ -12,13 +12,13 @@
 .logged-info
 {
   display:flex;
-  width:90%;
+  width:98%;
   justify-content: space-between;
   margin-bottom:20px;
 }
 .reports-destination-lr
 {
-  width: 90%;
+  width: 98%;
   height: 100%;
 }
 
