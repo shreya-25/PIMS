@@ -20,6 +20,7 @@ export const CMPerson = () => {
         document.body.style.overflow = "auto";
       };
     }, []);
+
     const navigate = useNavigate(); // Initialize useNavigate hook
       const location = useLocation();
 
@@ -41,7 +42,7 @@ export const CMPerson = () => {
     const { leadDetails, caseDetails } = location.state || {};
       const [loading, setLoading] = useState(true);
       const [error, setError] = useState("");
-        const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+        const { selectedCase, selectedLead, setSelectedLead, leadPerson, setLeadPerson } = useContext(CaseContext);
       
     // State to control the modal
         const [showPersonModal, setShowPersonModal] = useState(false);
