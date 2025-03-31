@@ -74,6 +74,7 @@ body, html {
 .main_heading {
     font-size: 80px;
     margin-bottom: 20px;
+    margin-top: 20px;
     color: #ffffff ;
     z-index: 10;
 }

@@ -60,7 +60,8 @@ import { LeadsDesk } from './Pages/LeadsDesk/LeadsDesk';
 import { LeadsDeskContent } from './Pages/LeadsDeskContent/LeadsDeskContent';
 import { ChainOfCustody } from './Pages/ChainOfCustody/ChainOfCustody';
 import { Chatbot } from './Pages/Admin/Chatbot';
-import {ReportWrapper} from './Pages/Report/ReportWrapper'
+// import { Report} from './Pages/Report/Report'
+// import {ReportWrapper} from './Pages/Report/ReportWrapper'
 
 function App() {
   return (
@@ -125,7 +126,7 @@ function App() {
         <Route path="/LeadsDeskContent" element= {<LeadsDeskContent />} />
         <Route path="/ChainOfCustody" element= {<ChainOfCustody />} />
         <Route path="/Chatbot" element= {<Chatbot />} />
-        <Route path ="/ReportWrapper" element= {<ReportWrapper />} />
+        {/* <Route path ="/Report" element= {<Report />} /> */}
       </Routes>
     </Router>
   );

@@ -636,8 +636,11 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
 
        
                                  {/* Lead Management Dropdown */}
-                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+
+
+                                 <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+                                 <li className="sidebar-item active" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Case Page {leadDropdownOpen ?  "▲": "▼"}
         </li>
         {leadDropdownOpen && (
           <ul className="dropdown-list1">
@@ -651,7 +654,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
             <span className="sidebar-text">
               {tab === "assignedLeads" && "Assigned Leads"}
               {tab === "pendingLeads" && "Accepted Leads"}
-              {tab === "pendingLeadReturns" && "Lead Returns fro Review"}
+              {tab === "pendingLeadReturns" && "Lead Returns for Review"}
               {tab === "allLeads" && "All Leads"}
             </span>
             <span className="sidebar-number">
@@ -663,24 +666,21 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           </div>
   </li>
 ))}
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               View Lead Chain of Custody
             </li> */}
           </ul>
         )} 
 
-                            {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▼" : "▲" }
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+<li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" >View Lead Return</li>
+            <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
+
+
+<li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
               View Lead Log
             </li>
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
@@ -706,9 +706,8 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
 
-         
-          </ul>
-        )}
+
+       
 
                     </ul>
                 </div>

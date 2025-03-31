@@ -14,6 +14,21 @@ export const CaseProvider = ({ children }) => {
         return storedLead ? JSON.parse(storedLead) : null;
     });
 
+    const [selectedReports, setSelectedReports] = useState({
+        leadInstruction: false,
+        leadReturn: false,
+        leadPersons: false,
+        leadVehicles: false,
+        leadEnclosures: false,
+        leadEvidence: false,
+        leadPictures: false,
+        leadAudio: false,
+        leadVideos: false,
+        leadScratchpad: false,
+        leadTimeline: false,
+      });
+
+
     const [token, setToken] = useState(() => {
         return localStorage.getItem("token") || "";
     });
@@ -48,7 +63,8 @@ export const CaseProvider = ({ children }) => {
             selectedLead, setSelectedLead, 
             token, setToken, 
             leadInstructions, setLeadInstructions,
-            leadReturns, setLeadReturns
+            leadReturns, setLeadReturns,
+            selectedReports, setSelectedReports
         }}>
             {children}
         </CaseContext.Provider>
