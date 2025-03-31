@@ -516,3 +516,18 @@ body{
 .search-button:hover {
   opacity: 0.8;
 }
+
+.top-sec-report
+{
+  display:flex;
+  align-items:center;
+  gap: 400px;
+}
+
+
+.logo-sec-report
+{
+  display:flex;
+  align-items: center;
+  flex-direction: column;
+}
