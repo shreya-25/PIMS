@@ -82,10 +82,20 @@ function generateReport(req, res) {
   const {
     leadInstruction, leadReturn, leadPersons, leadVehicles,
     leadEnclosures, leadEvidence, leadPictures, leadAudio,
-    leadVideos, leadScratchpad, leadTimeline, selectedReports
+    leadVideos, leadScratchpad, leadTimeline, selectedReports, leadInstructions
   } = req.body;
 
   const includeAll = selectedReports && selectedReports.FullReport;
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date)) return "";
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const year = date.getFullYear().toString().slice(-2);
+    return `${month}/${day}/${year}`;
+  };
 
   try {
     const doc = new PDFDocument({ size: "LETTER", margin: 50 });
@@ -102,9 +112,9 @@ function generateReport(req, res) {
     if (fs.existsSync(logoPath)) doc.image(logoPath, 10, verticalCenterY, { width: 70, height: 70, align: "left" });
 
     let currentY = headerHeight - 50;
-    doc.fillColor("white").font("Helvetica-Bold").fontSize(14).text("Case: 62345 | Bank Robbery Case", 0, currentY, { align: "center" });
+    doc.fillColor("white").font("Helvetica-Bold").fontSize(14).text(`Case: ${leadInstructions?.caseNo || 'N/A'} | ${leadInstructions?.caseName || 'N/A'}`, 0, currentY, { align: "center" });
     currentY = doc.y + 5;
-    doc.fillColor("white").font("Helvetica-Bold").fontSize(12).text("Lead: 1 | Interview Mr. John", 0, currentY, { align: "center" });
+    doc.fillColor("white").font("Helvetica-Bold").fontSize(12).text(`Lead: ${leadInstructions?.leadNo || 'N/A'} | ${leadInstructions?.description || 'N/A'}`, 0, currentY, { align: "center" });
     currentY = doc.y + 20;
     doc.fillColor("black");
 
@@ -116,8 +126,8 @@ function generateReport(req, res) {
     }
     doc.font("Helvetica-Bold").fontSize(12).text("Lead Details:", 50, currentY);
     currentY += 20;
-    currentY = drawTable(doc, 50, currentY, ["Lead No.", "Origin", "Assigned Date", "Due Date", "Completed Date"], [{ "Lead No.": "1", "Origin": "12345", "Assigned Date": "03/14/24", "Due Date": "03/20/24", "Completed Date": "03/22/24" }], [90, 90, 120, 120, 92]) + 20;
-    currentY = drawTable(doc, 50, currentY, ["Sub No.", "Associated Sub Nos.", "Assigned Officers", "Assigned By"], [{ "Sub No.": "SUB-0001", "Associated Sub Nos.": "SUB-000001, SUB-000002", "Assigned Officers": "Officer 90, Officer 24", "Assigned By": "Officer 916" }], [90, 170, 170, 82]) + 20;
+    currentY = drawTable(doc, 50, currentY, ["Lead No.", "Origin", "Assigned Date", "Due Date", "Completed Date"], [{ "Lead No.": leadInstructions?.leadNo || 'N/A', "Origin": leadInstructions?.parentLeadNo || 'N/A', "Assigned Date": formatDate(leadInstructions?.assignedDate) || 'N/A', "Due Date": formatDate(leadInstructions?.dueDate) || 'N/A', "Completed Date": "Still to add in db" }], [90, 90, 120, 120, 92]) + 20;
+    currentY = drawTable(doc, 50, currentY, ["Sub No.", "Associated Sub Nos.", "Assigned Officers", "Assigned By"], [{ "Sub No.": leadInstructions?.subNumber || 'N/A', "Associated Sub Nos.": leadInstructions?.associatedSubNumbers || 'N/A', "Assigned Officers": leadInstructions?.assignedTo|| 'N/A', "Assigned By": leadInstructions?.assignedBy || 'N/A' }], [90, 170, 170, 82]) + 20;
 
     if (includeAll || leadInstruction) {
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
@@ -126,7 +136,7 @@ function generateReport(req, res) {
       }
       doc.font("Helvetica-Bold").fontSize(12).text("Lead Log Summary", 50, currentY);
       currentY += 20;
-      currentY = drawTextBox(doc, 50, currentY, 512, "", "Investigate Mr.John");
+      currentY = drawTextBox(doc, 50, currentY, 512, "", leadInstructions?.description || 'N/A');
 
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
         doc.addPage();
@@ -134,7 +144,7 @@ function generateReport(req, res) {
       }
       doc.font("Helvetica-Bold").fontSize(12).text("Lead Instruction", 50, currentY);
       currentY += 20;
-      currentY = drawTextBox(doc, 50, currentY, 512, "", "Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos. Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.");
+      currentY = drawTextBox(doc, 50, currentY, 512, "", leadInstructions?.summary || 'N/A');
 
     }
 
