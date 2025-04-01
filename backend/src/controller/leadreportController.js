@@ -1,207 +1,559 @@
+// const PDFDocument = require("pdfkit");
+// const path = require("path");
+// const fs = require("fs");
+
+// function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
+//   const minRowHeight = 20;
+//   doc.font("Helvetica-Bold").fontSize(10);
+//   let currentY = startY;
+
+//   let headerHeight = 20;
+//   let currentX = startX;
+//   headers.forEach((header, i) => {
+//     doc.rect(currentX, currentY, colWidths[i], headerHeight).stroke();
+//     doc.text(header, currentX + padding, currentY + padding, {
+//       width: colWidths[i] - 2 * padding,
+//       align: "left"
+//     });
+//     currentX += colWidths[i];
+//   });
+
+//   currentY += headerHeight;
+//   doc.font("Helvetica").fontSize(10);
+
+//   rows.forEach((row) => {
+//     let maxHeight = 0;
+//     currentX = startX;
+
+//     headers.forEach((header, i) => {
+//       const cellText = row[header] || "";
+//       const cellHeight = doc.heightOfString(cellText, {
+//         width: colWidths[i] - 2 * padding,
+//         align: "left"
+//       });
+//       maxHeight = Math.max(maxHeight, cellHeight + 2 * padding);
+//     });
+
+//     maxHeight = Math.max(maxHeight, minRowHeight);
+
+//     headers.forEach((header, i) => {
+//       const cellText = row[header] || "";
+//       doc.rect(currentX, currentY, colWidths[i], maxHeight).stroke();
+//       doc.text(cellText, currentX + padding, currentY + padding, {
+//         width: colWidths[i] - 2 * padding,
+//         align: "left"
+//       });
+//       currentX += colWidths[i];
+//     });
+
+//     currentY += maxHeight;
+//   });
+
+//   return currentY;
+// }
+
+// function drawTextBox(doc, x, y, width, title, content) {
+//   const padding = 5;
+//   const titleHeight = title ? 15 : 0;
+
+//   // Measure content height
+//   doc.font("Helvetica").fontSize(10);
+//   const contentHeight = doc.heightOfString(content, {
+//     width: width - 2 * padding,
+//     align: "justify"
+//   });
+
+//   const boxHeight = titleHeight + contentHeight + 2 * padding;
+
+//   // Draw box
+//   doc.save().lineWidth(1).strokeColor("#000").rect(x, y, width, boxHeight).stroke().restore();
+
+//   // Draw title if exists
+//   if (title) {
+//     doc.font("Helvetica-Bold").fontSize(10).text(title, x + padding, y + padding);
+//   }
+
+//   // Draw content
+//   doc.font("Helvetica").fontSize(10).text(content, x + padding, y + padding + titleHeight, {
+//     width: width - 2 * padding,
+//     align: "justify"
+//   });
+
+//   // Return new Y position (with 20px spacing after box)
+//   return y + boxHeight + 20;
+// }
+
+
+// function generateReport(req, res) {
+//   const {
+//     leadInstruction, leadReturn, leadPersons, leadVehicles,
+//     leadEnclosures, leadEvidence, leadPictures, leadAudio,
+//     leadVideos, leadScratchpad, leadTimeline, selectedReports
+//   } = req.body;
+
+//   const includeAll = selectedReports && selectedReports.FullReport;
+
+//   try {
+//     const doc = new PDFDocument({ size: "LETTER", margin: 50 });
+//     res.setHeader("Content-Type", "application/pdf");
+//     res.setHeader("Content-Disposition", "inline; filename=report.pdf");
+//     doc.pipe(res);
+
+//     const headerHeight = 80;
+//     doc.rect(0, 0, doc.page.width, headerHeight).fill("#003366");
+
+//     const logoHeight = 70; 
+//     const verticalCenterY = (headerHeight - logoHeight) / 2;
+//     const logoPath = path.join(__dirname, "../../../frontend/public/Materials/newpolicelogo.png");
+//     if (fs.existsSync(logoPath)) doc.image(logoPath, 10, verticalCenterY, { width: 70, height: 70, align: "left" });
+
+//     let currentY = headerHeight - 50;
+//     doc.fillColor("white").font("Helvetica-Bold").fontSize(14).text("Case: 62345 | Bank Robbery Case", 0, currentY , { align: "center" });
+//     currentY = doc.y + 5;
+//     doc.fillColor("white").font("Helvetica-Bold").fontSize(12).text("Lead: 1 | Interview Mr. John",  0, currentY, { align: "center" });
+//     currentY = doc.y + 20;
+//     doc.fillColor("black");
+
+//     currentY = headerHeight + 20;
+
+//       doc.font("Helvetica-Bold").fontSize(12).text("Lead Details:", 50, currentY);
+//       currentY += 20;
+//       currentY = drawTable(doc, 50, currentY, ["Lead No.", "Origin", "Assigned Date", "Due Date", "Completed Date"], [{ "Lead No.": "1", "Origin": "12345", "Assigned Date": "03/14/24", "Due Date": "03/20/24", "Completed Date": "03/22/24" }], [90, 90, 120, 120, 92]) + 20;
+//       currentY = drawTable(doc, 50, currentY, ["Sub No.", "Associated Sub Nos.", "Assigned Officers", "Assigned By"], [{ "Sub No.": "SUB-0001", "Associated Sub Nos.": "SUB-000001, SUB-000002", "Assigned Officers": "Officer 90, Officer 24", "Assigned By": "Officer 916" }], [90, 170, 170, 82]);
+//       currentY += 20;
+
+//       if (includeAll || leadInstruction) {
+//       doc.font("Helvetica-Bold").fontSize(12).text("Lead Log Summary", 50, currentY);
+//       currentY += 20;
+//       currentY = drawTextBox(doc, 50, currentY, 512, "", "Investigate Mr.John");
+//       doc.font("Helvetica-Bold").fontSize(12).text("Lead Instruction", 50, currentY);
+//       currentY += 20;
+//       currentY =  drawTextBox(doc, 50, currentY, 512, "", "Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.");
+//     }
+
+//     if (includeAll || leadReturn) {
+//       doc.font("Helvetica-Bold").fontSize(12).text("Lead Return ID: 1", 50, currentY);
+//       currentY += 20;
+//       currentY = drawTable(doc, 50, currentY, ["Date Entered", "Entered By"], [{ "Date Entered": "02/12/25", "Entered By": "Officer 22" }], [90, 422]);
+
+//       currentY = drawTextBox(doc, 50, currentY, 512, "", "Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos. Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.");
+//     }
+
+//     if (includeAll || leadPersons) {
+//       doc.font("Helvetica-Bold").fontSize(12).text("Person Details", 50, currentY);
+//       currentY += 20;
+
+//       const personTables = [
+//         ["Date Entered", "Name", "Phone #", "Address"],
+//         ["Last Name", "First Name", "Middle Initial", "Cell Number"],
+//         ["Business Name", "Street 1", "Street 2", "Building"],
+//         ["Apartment", "City", "State", "Zip Code"],
+//         ["SSN", "Age", "Email", "Occupation"],
+//         ["Person Type", "Condition", "Caution Type", "Sex"],
+//         ["Race", "Ethnicity", "Skin Tone", "Eye Color"],
+//         ["Glasses", "Hair Color", "Height", "Weight"]
+//       ];
+//       const personWidths = {
+//         "Date Entered": 90,
+//         "Name": 100,
+//         "Phone #": 100,
+//         "Address": 222,
+      
+//         "Last Name": 90,
+//         "First Name": 100,
+//         "Middle Initial": 100,
+//         "Cell Number": 222,
+      
+//         "Business Name": 90,
+//         "Street 1": 100,
+//         "Street 2": 100,
+//         "Building": 222,
+      
+//         "Apartment": 90,
+//         "City": 100,
+//         "State": 100,
+//         "Zip Code": 222,
+      
+//         "SSN": 90,
+//         "Age": 100,
+//         "Email": 100,
+//         "Occupation": 222,
+      
+//         "Person Type": 90,
+//         "Condition": 100,
+//         "Caution Type": 100,
+//         "Sex": 222,
+      
+//         "Race": 90,
+//         "Ethnicity": 100,
+//         "Skin Tone": 100,
+//         "Eye Color": 222,
+      
+//         "Glasses": 90,
+//         "Hair Color": 100,
+//         "Height": 100,
+//         "Weight": 222,
+//       };
+      
+
+//       const personData = [
+//         ["03/14/24", "Dan, Hill", "1234567890", "120 3rd St, New York, NY"],
+//         ["Hill", "Dan", "S.", "1234567890"],
+//         ["", "", "", ""],
+//         ["", "", "", ""],
+//         ["", "20", "", ""],
+//         ["", "", "", ""],
+//         ["", "", "", ""],
+//         ["", "", "", ""]
+//       ];
+
+//       personTables.forEach((headers, i) => {
+//         const row = {};
+//         const colWidths = headers.map(header => personWidths[header] || 100); // default to 100 if not found
+//         headers.forEach((h, j) => row[h] = personData[i][j]);
+//         currentY = drawTable(doc, 50, currentY, headers, [row], colWidths) + 20;
+//       });
+      
+//     }
+
+//     if (includeAll || leadVehicles) {
+//       doc.font("Helvetica-Bold").fontSize(12).text("Vehicle Details", 50, currentY);
+//       currentY += 20;
+//       currentY = drawTable(doc, 50, currentY, ["Date Entered", "Make", "Model", "Color", "Plate", "State", "VIN"], [{ "Date Entered": "03/14/24", "Make": "Toyota", "Model": "Corolla", "Color": "Blue", "Plate": "XYZ1234", "State": "NY", "VIN": "" }], [90, 70, 70, 70, 70, 70, 72]) + 20;
+//     }
+
+//     if (includeAll || leadEnclosures) {
+//       doc.font("Helvetica-Bold").fontSize(12).text("Enclosure Details", 50, currentY);
+//       currentY += 20;
+//       currentY = drawTable(doc, 50, currentY, ["Date Entered", "Type", "Enclosure Description"], [{ "Date Entered": "", "Type": "", "Enclosure Description": "" }], [90, 70, 352]) + 20;
+//     }
+
+//     doc.end();
+//   } catch (error) {
+//     console.error("Error generating PDF:", error);
+//     res.status(500).json({ error: "Failed to generate PDF" });
+//   }
+// }
+
+// module.exports = { generateReport };
+
 const PDFDocument = require("pdfkit");
 const path = require("path");
 const fs = require("fs");
 
-function drawTable(doc, startX, startY, headers, rows, colWidths, rowHeight = 20) {
+function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
+  const minRowHeight = 20;
   doc.font("Helvetica-Bold").fontSize(10);
-  let currentX = startX;
   let currentY = startY;
+
+  let headerHeight = 20;
+  let currentX = startX;
   headers.forEach((header, i) => {
-    doc.rect(currentX, currentY, colWidths[i], rowHeight).stroke();
-    doc.text(header, currentX + 5, currentY + 5, {
-      width: colWidths[i] - 10,
-      align: "left",
+    doc.rect(currentX, currentY, colWidths[i], headerHeight).stroke();
+    doc.text(header, currentX + padding, currentY + padding, {
+      width: colWidths[i] - 2 * padding,
+      align: "left"
     });
     currentX += colWidths[i];
   });
 
+  currentY += headerHeight;
   doc.font("Helvetica").fontSize(10);
+
   rows.forEach((row) => {
-    currentY += rowHeight;
+    let maxHeight = 0;
     currentX = startX;
+
     headers.forEach((header, i) => {
       const cellText = row[header] || "";
-      doc.rect(currentX, currentY, colWidths[i], rowHeight).stroke();
-      doc.text(cellText, currentX + 5, currentY + 5, {
-        width: colWidths[i] - 10,
-        align: "left",
+      const cellHeight = doc.heightOfString(cellText, {
+        width: colWidths[i] - 2 * padding,
+        align: "left"
+      });
+      maxHeight = Math.max(maxHeight, cellHeight + 2 * padding);
+    });
+
+    maxHeight = Math.max(maxHeight, minRowHeight);
+
+    headers.forEach((header, i) => {
+      const cellText = row[header] || "";
+      doc.rect(currentX, currentY, colWidths[i], maxHeight).stroke();
+      doc.text(cellText, currentX + padding, currentY + padding, {
+        width: colWidths[i] - 2 * padding,
+        align: "left"
       });
       currentX += colWidths[i];
     });
+
+    currentY += maxHeight;
   });
 
-  return currentY + rowHeight;
+  return currentY;
 }
 
-// function drawTextBox(doc, x, y, width, height, title, content) {
-//   doc.save().lineWidth(1).strokeColor("#ccc").rect(x, y, width, height).stroke().restore();
-//   if (title) doc.font("Helvetica-Bold").fontSize(10).text(title, x + 5, y + 5);
-//   doc.font("Helvetica").fontSize(9).text(content, x + 5, y + 20, { width: width - 10, align: "justify" });
-// }
+function drawTextBox(doc, x, y, width, title, content) {
+  const padding = 5;
+  const titleHeight = title ? 15 : 0;
 
-function drawTextBox(doc, x, y, width, height, title, content) {
-  doc
-    .save()
-    .lineWidth(1)
-    .strokeColor("#000") // Use black border
-    .rect(x, y, width, height)
-    .stroke()
-    .restore();
-  if (title)
-    doc.font("Helvetica-Bold").fontSize(10).text(title, x + 5, y + 5);
-  doc
-    .font("Helvetica")
-    .fontSize(10)
-    .text(content, x + 5, y + 20, { width: width - 10, align: "justify" });
+  doc.font("Helvetica").fontSize(10);
+  const contentHeight = doc.heightOfString(content, {
+    width: width - 2 * padding,
+    align: "justify"
+  });
+
+  const boxHeight = titleHeight + contentHeight + 2 * padding;
+
+  doc.save().lineWidth(1).strokeColor("#000").rect(x, y, width, boxHeight).stroke().restore();
+
+  if (title) {
+    doc.font("Helvetica-Bold").fontSize(10).text(title, x + padding, y + padding);
+  }
+
+  doc.font("Helvetica").fontSize(10).text(content, x + padding, y + padding + titleHeight, {
+    width: width - 2 * padding,
+    align: "justify"
+  });
+
+  return y + boxHeight + 20;
 }
 
 function generateReport(req, res) {
   const {
-    leadInstruction,
-    leadReturn,
-    leadPersons,
-    leadVehicles,
-    leadEnclosures,
-    leadEvidence,
-    leadPictures,
-    leadAudio,
-    leadVideos,
-    leadScratchpad,
-    leadTimeline,
-    selectedReports,
+    leadInstruction, leadReturn, leadPersons, leadVehicles,
+    leadEnclosures, leadEvidence, leadPictures, leadAudio,
+    leadVideos, leadScratchpad, leadTimeline, selectedReports
   } = req.body;
 
   const includeAll = selectedReports && selectedReports.FullReport;
+
   try {
     const doc = new PDFDocument({ size: "LETTER", margin: 50 });
-
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline; filename=report.pdf");
     doc.pipe(res);
 
-    
+    const headerHeight = 80;
+    doc.rect(0, 0, doc.page.width, headerHeight).fill("#003366");
 
+    const logoHeight = 70;
+    const verticalCenterY = (headerHeight - logoHeight) / 2;
     const logoPath = path.join(__dirname, "../../../frontend/public/Materials/newpolicelogo.png");
-    if (fs.existsSync(logoPath)) doc.image(logoPath, doc.page.width / 2 - 30, 20, { width: 60 });
+    if (fs.existsSync(logoPath)) doc.image(logoPath, 10, verticalCenterY, { width: 70, height: 70, align: "left" });
 
-    doc.moveDown(4);
-    doc.font("Helvetica-Bold").fontSize(14).text("Case: 62345 | Bank Robbery Case", { align: "center" });
-    doc.font("Helvetica-Bold").fontSize(12).text("Lead: 1 | Interview Mr. John", { align: "center" });
+    let currentY = headerHeight - 50;
+    doc.fillColor("white").font("Helvetica-Bold").fontSize(14).text("Case: 62345 | Bank Robbery Case", 0, currentY, { align: "center" });
+    currentY = doc.y + 5;
+    doc.fillColor("white").font("Helvetica-Bold").fontSize(12).text("Lead: 1 | Interview Mr. John", 0, currentY, { align: "center" });
+    currentY = doc.y + 20;
+    doc.fillColor("black");
 
-    doc.moveDown().moveTo(50, doc.y).lineTo(562, doc.y).stroke();
+    currentY = headerHeight + 20;
+
+    if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+      doc.addPage();
+      currentY = doc.page.margins.top;
+    }
+    doc.font("Helvetica-Bold").fontSize(12).text("Lead Details:", 50, currentY);
+    currentY += 20;
+    currentY = drawTable(doc, 50, currentY, ["Lead No.", "Origin", "Assigned Date", "Due Date", "Completed Date"], [{ "Lead No.": "1", "Origin": "12345", "Assigned Date": "03/14/24", "Due Date": "03/20/24", "Completed Date": "03/22/24" }], [90, 90, 120, 120, 92]) + 20;
+    currentY = drawTable(doc, 50, currentY, ["Sub No.", "Associated Sub Nos.", "Assigned Officers", "Assigned By"], [{ "Sub No.": "SUB-0001", "Associated Sub Nos.": "SUB-000001, SUB-000002", "Assigned Officers": "Officer 90, Officer 24", "Assigned By": "Officer 916" }], [90, 170, 170, 82]) + 20;
 
     if (includeAll || leadInstruction) {
+      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        currentY = doc.page.margins.top;
+      }
+      doc.font("Helvetica-Bold").fontSize(12).text("Lead Log Summary", 50, currentY);
+      currentY += 20;
+      currentY = drawTextBox(doc, 50, currentY, 512, "", "Investigate Mr.John");
 
-    doc.moveDown().font("Helvetica-Bold").fontSize(12).text("Lead Details:");
-
-    const fullWidth = [90, 90, 120, 120, 92];
-    drawTable(doc, 50, doc.y + 10,
-      ["Lead No.", "Origin", "Assigned Date", "Due Date", "Completed Date"],
-      [{ "Lead No.": "1", "Origin": "12345", "Assigned Date": "03/14/24", "Due Date": "03/20/24", "Completed Date": "03/22/24" }],
-      fullWidth);
-
-      drawTable(doc, 50, doc.y + 10,
-        ["Sub No.", "Associated Sub Nos.", "Assigned  Officers", "Assigned By"],
-        [{ "Sub No.": "SUB-0001", "Associated Sub Nos.": "SUB-000001, SUB-000002", "Assigned Officers": "Officer 90, Officer 24", "Assigned By": "Officer 916" }],
-        [90, 170, 170, 82]);
-
-    doc.moveDown(1);
-
-    // drawTextBox(doc, 50, doc.y + 10, 512, 80, "Lead Instruction",
-    //   "Investigate Mr.John");
-
-      // doc.moveDown().font("Helvetica-Bold").fontSize(12).text("Lead Instruction");
-      doc.moveDown().font("Helvetica-Bold").fontSize(12).text("Lead Instruction", 50, doc.y, { align: "left" });
-
-      drawTextBox(doc, 50, doc.y + 10, 512, 80, "", "Investigate Mr.John");
-
+      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        currentY = doc.page.margins.top;
+      }
+      doc.font("Helvetica-Bold").fontSize(12).text("Lead Instruction", 50, currentY);
+      currentY += 20;
+      currentY = drawTextBox(doc, 50, currentY, 512, "", "Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos. Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.");
 
     }
 
-    if (includeAll ||leadReturn) {
-    doc.moveDown(6).font("Helvetica-Bold").fontSize(12).text("Lead Return ID: 1");
+    if (includeAll || leadReturn) {
+      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        currentY = doc.page.margins.top;
+      }
+      doc.font("Helvetica-Bold").fontSize(12).text("Lead Return ID: 1", 50, currentY);
+      currentY += 20;
+      currentY = drawTextBox(doc, 50, currentY, 512, "", "Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos. Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.");
 
-    drawTextBox(doc, 50, doc.y + 10, 512, 80, "",
-      "As part of the Bank Robbery Investigation (Case No. 65734), Officer 915 responded with Officers 1, 2, and 3. The task of interviewing Matthew Jacobs was assigned to Officer 24. During the interview, Jacobs provided valuable information that may assist in furthering this investigation. Additional follow-ups required with Officer 90 and Officer 24 for complete validation.");
     }
 
-    if (includeAll ||leadPersons) {
-    doc.moveDown(6).font("Helvetica-Bold").fontSize(10).text("Person Details");
-    drawTable(doc, 50, doc.y + 5,
-      ["Date Entered", "Name", "Phone #", "Address"],
-      [{ "Date Entered": "03/14/24", "Name": "Dan, Hill", "Phone #": "1234567890", "Address": "120 3rd St, New York, NY" }],
-      [90, 100, 100, 222]);
-      doc.moveDown(1);
+    if (includeAll || leadPersons) {
+      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        currentY = doc.page.margins.top;
+      }
+      doc.font("Helvetica-Bold").fontSize(12).text("Person Details", 50, currentY);
+      currentY += 20;
 
-      drawTable(doc, 50, doc.y + 5,
+      const personTables = [
+        ["Date Entered", "Name", "Phone #", "Address"],
         ["Last Name", "First Name", "Middle Initial", "Cell Number"],
-        [{ "Last Name": "Hill", "First Name": "Dan", "Middle Initial": "S.", "Cell Number": "1234567890" }],
-        [90, 100, 100, 222]);
-        doc.moveDown(1);
-
-        drawTable(doc, 50, doc.y + 5,
-          ["Business Name", "Street 1", "Street 2", "Building"],
-          [{ "Business Name": "", "Street 1": "", "Street 2": "", "Building": "" }],
-          [90, 100, 100, 222]);
-          doc.moveDown(1);
-
-        }
-
-          // drawTable(doc, 50, doc.y + 5,
-          //   ["Apartment", "City", "State", "Zip Code"],
-          //   [{ "Apartmente": "", "City": "", "State": "", "Zip Code": "" }],
-          //   [90, 100, 100, 222]);
-          //   doc.moveDown(1);
-            
-            
-            // doc.moveDown(20);
-            // drawTable(doc, 50, doc.y + 5,
-            //   ["SSN", "Age", "Email", "Occupation"],
-            //   [{ "SSN": "", "Age": "20", "Email": "", "Occupation": "" }],
-            //   [90, 100, 100, 222]);
-
-              // drawTable(doc, 50, doc.y + 5,
-              //   ["Person Type", "Condition", "Caution Type", "Sex"],
-              //   [{ "Person Type": "", "Condition": "", "Caution Type": "", "Sex": "" }],
-              //   [90, 100, 100, 222]);
-              //   doc.moveDown(1);
-              //   drawTable(doc, 50, doc.y + 5,
-              //     ["Race", "Ethnicity", "Skin Tone", "Eye Color"],
-              //     [{ "Race": "", "Ethnicity": "", "Skin Tone": "", "Eye Color": "" }],
-              //     [90, 100, 100, 222]);
-              //     doc.moveDown(1);
-              //     drawTable(doc, 50, doc.y + 5,
-              //       ["Glasses", "Hair Color", "Height", "Weight"],
-              //       [{ "Glasses": "", "Hair Color": "", "Height": "", "Weight": "" }],
-              //       [90, 100, 100, 222]);
-      
-  
-
+        ["Business Name", "Street 1", "Street 2", "Building"],
+        ["Apartment", "City", "State", "Zip Code"],
+        ["SSN", "Age", "Email", "Occupation"],
+        ["Person Type", "Condition", "Caution Type", "Sex"],
+        ["Race", "Ethnicity", "Skin Tone", "Eye Color"],
+        ["Glasses", "Hair Color", "Height", "Weight"]
+      ];
+      const personWidths = {
+                "Date Entered": 90,
+                "Name": 100,
+                "Phone #": 100,
+                "Address": 222,
               
-              if (includeAll ||leadVehicles) {
-                doc.moveDown(6)
-                .font("Helvetica-Bold")
-                .fontSize(10)
-                .text("Vehicle Details", 50, doc.y, { align: "left" });
-    drawTable(doc, 50, doc.y + 5,
-      ["Date Entered", "Make", "Model", "Color", "Plate", "State", "VIN"],
-      [{ "Date Entered": "03/14/24", "Make": "Toyota", "Model": "Corolla", "Color": "Blue", "Plate": "XYZ1234", "State": "NY", "VIN": "" }],
-      [90, 70, 70, 70, 70, 70, 72]);
+                "Last Name": 90,
+                "First Name": 100,
+                "Middle Initial": 100,
+                "Cell Number": 222,
+              
+                "Business Name": 90,
+                "Street 1": 100,
+                "Street 2": 100,
+                "Building": 222,
+              
+                "Apartment": 90,
+                "City": 100,
+                "State": 100,
+                "Zip Code": 222,
+              
+                "SSN": 90,
+                "Age": 100,
+                "Email": 100,
+                "Occupation": 222,
+              
+                "Person Type": 90,
+                "Condition": 100,
+                "Caution Type": 100,
+                "Sex": 222,
+              
+                "Race": 90,
+                "Ethnicity": 100,
+                "Skin Tone": 100,
+                "Eye Color": 222,
+              
+                "Glasses": 90,
+                "Hair Color": 100,
+                "Height": 100,
+                "Weight": 222,
+              };
+              
+
+      const personData = [
+        ["03/14/24", "Dan, Hill", "1234567890", "120 3rd St, New York, NY"],
+        ["Hill", "Dan", "S.", "1234567890"],
+        ["", "", "", ""],
+        ["", "", "", ""],
+        ["", "20", "", ""],
+        ["", "", "", ""],
+        ["", "", "", ""],
+        ["", "", "", ""]
+      ];
+
+      personTables.forEach((headers, i) => {
+        if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+          doc.addPage();
+          currentY = doc.page.margins.top;
+        }
+        const row = {};
+        const colWidths = headers.map(header => personWidths[header] || 100);
+        headers.forEach((h, j) => row[h] = personData[i][j]);
+        currentY = drawTable(doc, 50, currentY, headers, [row], colWidths) + 20;
+      });
     }
 
-    if (includeAll ||leadEnclosures) {
-      doc.moveDown(6)
-      .font("Helvetica-Bold")
-      .fontSize(10)
-      .text("Enclosure Details", 50, doc.y, { align: "left" });
-drawTable(doc, 50, doc.y + 5,
-["Date Entered", "Type", "Enclosure Description"],
-[{ "Date Entered": "", "Type": "", "Enclosure Description": ""}],
-[90, 70, 352]);
+    if (includeAll || leadVehicles) {
+      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        currentY = doc.page.margins.top;
+      }
+      doc.font("Helvetica-Bold").fontSize(12).text("Vehicle Details", 50, currentY);
+      currentY += 20;
+      currentY = drawTable(doc, 50, currentY, ["Date Entered", "Year", "Make", "Model", "Plate", "Category", "VIN"], [{ "Date Entered": "03/14/24","Year": "2019", "Make": "Toyota", "Model": "Corolla", "Plate": "XYZ1234", "Category": "Bike", "VIN": "" }], [90, 70, 70, 70, 70, 70, 72]) + 20;
+      currentY = drawTable(doc, 50, currentY, ["Type", "State", "Primary Color", "Secondary Color","Additional Information"], [{ "Type": "", "State": "NY", "Primary Color": "Blue", "Secondary Color": "Yellow", "Additional Information": "" }], [90, 90, 80, 120, 132]) + 20;
+
     }
+
+    if (includeAll || leadEnclosures) {
+      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        currentY = doc.page.margins.top;
+      }
+      doc.font("Helvetica-Bold").fontSize(12).text("Enclosure Details", 50, currentY);
+      currentY += 20;
+      currentY = drawTable(doc, 50, currentY, ["Date Entered", "Type", "Enclosure Description"], [{ "Date Entered": "", "Type": "", "Enclosure Description": "" }], [90, 70, 352]) + 20;
+    }
+
+    if (includeAll || leadEvidence) {
+      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        currentY = doc.page.margins.top;
+      }
+      doc.font("Helvetica-Bold").fontSize(12).text("Evidence Details", 50, currentY);
+      currentY += 20;
+      currentY = drawTable(doc, 50, currentY, ["Date Entered", "Type", "Collection Date", "Disposed Date","Disposition","Description"], [{ "Date Entered": "", "Type": "", "Collection Date": "", "Disposed Date": "", "Disposition": "", "Description": "" }], [80, 90, 90, 80,80, 92]) + 20;
+    }
+    if (includeAll || leadPictures) {
+      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        currentY = doc.page.margins.top;
+      }
+      doc.font("Helvetica-Bold").fontSize(12).text("Picture Details", 50, currentY);
+      currentY += 20;
+      currentY = drawTable(doc, 50, currentY, ["Date Entered", "Date Picture Taken","Description"], [{ "Date Entered": "", "Date Picture Taken": "", "Description": "" }], [90, 100, 322]) + 20;
+    }
+
+    if (includeAll || leadAudio) {
+      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        currentY = doc.page.margins.top;
+      }
+      doc.font("Helvetica-Bold").fontSize(12).text("Audio Details", 50, currentY);
+      currentY += 20;
+      currentY = drawTable(doc, 50, currentY, ["Date Entered", "Date Audio Recorded","Description"], [{ "Date Entered": "", "Date Audio Recorded": "", "Description": "" }], [90, 120, 302]) + 20;
+    }
+
+    if (includeAll || leadVideos) {
+      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        currentY = doc.page.margins.top;
+      }
+      doc.font("Helvetica-Bold").fontSize(12).text("Video Details", 50, currentY);
+      currentY += 20;
+      currentY = drawTable(doc, 50, currentY, ["Date Entered", "Date Video Recorded","Description"], [{ "Date Entered": "", "Date Video Recorded": "", "Description": "" }], [90, 120, 302]) + 20;
+    }
+    if (includeAll || leadScratchpad) {
+      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        currentY = doc.page.margins.top;
+      }
+      doc.font("Helvetica-Bold").fontSize(12).text("Lead Notes", 50, currentY);
+      currentY += 20;
+      currentY = drawTable(doc, 50, currentY, ["Date Entered", "Entered By","Description"], [{ "Date Entered": "", "Entered By": "", "Description": "" }], [90, 120, 302]) + 20;
+    }
+    if (includeAll || leadTimeline) {
+      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        currentY = doc.page.margins.top;
+      }
+      doc.font("Helvetica-Bold").fontSize(12).text("Timeline Details", 50, currentY);
+      currentY += 20;
+      currentY = drawTable(doc, 50, currentY, ["Event Date", "Event Time Range", "Event Location", "Flags","Event Description"], [{ "Event Date": "", "Event Time Range": "", "Event Location": "", "Flags": "", "Event Description": "" }], [80, 100, 100, 90, 142]) + 20;
+    }
+
+
 
     doc.end();
-
   } catch (error) {
     console.error("Error generating PDF:", error);
     res.status(500).json({ error: "Failed to generate PDF" });
@@ -209,3 +561,4 @@ drawTable(doc, 50, doc.y + 5,
 }
 
 module.exports = { generateReport };
+
