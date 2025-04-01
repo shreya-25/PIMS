@@ -50,9 +50,6 @@ export const CMFinish = () => {
         const [leadEnclosures, setLeadEnclosures] = useState([]);
         const [leadEvidences, setLeadEvidences] = useState([]);
 
-
-        console.log("LD", leadInstructions);
-
         useEffect(() => {
           if (leadInstructions) {
             setLeadInstruction(leadInstructions);
@@ -64,6 +61,8 @@ export const CMFinish = () => {
             setLeadReturn(leadReturns);
           }
         }, [leadReturns]);
+
+        console.log("LD", leadReturns);
 
 
 
@@ -117,10 +116,17 @@ export const CMFinish = () => {
               leadReturn: selectedReports.leadReturn ? leadReturn : null,
               leadPersons: selectedReports.leadPersons ? leadPersons : null,
               leadVehicles: selectedReports.leadVehicles ? leadVehicles : null,
-              // etc. for the rest
+              leadEnclosures: selectedReports.leadEnclosures ? leadVehicles : null,
+              leadEvidence: selectedReports.leadEvidence ? leadVehicles : null,
+              leadPictures: selectedReports.leadPictures ? leadVehicles : null,
+              leadAudio: selectedReports.leadAudio ? leadVehicles : null,
+              leadVideos: selectedReports.leadVideos ? leadVehicles : null,
+              leadScratchpad: selectedReports.leadScratchpad ? leadVehicles : null,
+              leadTimeline: selectedReports.leadTimeline ? leadVehicles : null,
       
               // Also pass along which sections are selected
               selectedReports,
+              leadInstructions
             };
 
             // generatePDF(pdfRef.current);
