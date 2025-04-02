@@ -57,6 +57,7 @@ import { LeadInfo } from './Pages/LeadInfo/LeadInfo';
 import { CaseInformation } from './Pages/CaseInformation/CaseInformation';
 import {LeadReview} from './Pages/LeadReview/LeadReview';
 import { LeadsDesk } from './Pages/LeadsDesk/LeadsDesk';
+import { LeadsDeskTest } from './Pages/LeadsDeskTest/LeadsDeskTest';
 import { LeadsDeskContent } from './Pages/LeadsDeskContent/LeadsDeskContent';
 import { ChainOfCustody } from './Pages/ChainOfCustody/ChainOfCustody';
 import { Chatbot } from './Pages/Admin/Chatbot';
@@ -123,6 +124,7 @@ function App() {
         <Route path="/CaseInformation" element={<CaseInformation />} />
         <Route path="/LeadReview" element = {<LeadReview />} />
         <Route path="/LeadsDesk" element= {<LeadsDesk />} />
+        <Route path="/LeadsDeskTest" element= {<LeadsDeskTest />} />
         <Route path="/LeadsDeskContent" element= {<LeadsDeskContent />} />
         <Route path="/ChainOfCustody" element= {<ChainOfCustody />} />
         <Route path="/Chatbot" element= {<Chatbot />} />
