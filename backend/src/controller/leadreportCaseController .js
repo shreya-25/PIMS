@@ -13,6 +13,7 @@
 
 //   // Draw header row
 //   headers.forEach((header, i) => {
+//     doc.strokeColor("#999999");
 //     doc.rect(currentX, currentY, colWidths[i], headerHeight).stroke();
 //     doc.text(header, currentX + padding, currentY + padding, {
 //       width: colWidths[i] - 2 * padding,
@@ -42,6 +43,7 @@
 //     // Draw row cells
 //     headers.forEach((header, i) => {
 //       const cellText = row[header] || "";
+//       doc.strokeColor("#999999");
 //       doc.rect(currentX, currentY, colWidths[i], maxHeight).stroke();
 //       doc.text(cellText, currentX + padding, currentY + padding, {
 //         width: colWidths[i] - 2 * padding,
@@ -55,35 +57,41 @@
 //   return currentY;
 // }
 
-// // ---------- drawTextBox Helper ----------
 // function drawTextBox(doc, x, y, width, title, content) {
-//   const padding = 5;
+//   const paddingX = 5;  // Left and Right padding
+//   const paddingY = 10; // Top and Bottom padding
 //   const titleHeight = title ? 15 : 0;
 //   doc.font("Helvetica").fontSize(10);
 
 //   // Calculate text height
 //   const contentHeight = doc.heightOfString(content, {
-//     width: width - 2 * padding,
+//     width: width - 2 * paddingX,
 //     align: "justify",
 //   });
-//   const boxHeight = titleHeight + contentHeight + 2 * padding;
+//   const boxHeight = titleHeight + contentHeight + 2 * paddingY;
 
-//   // Draw box
-//   doc.save().lineWidth(1).strokeColor("#000").rect(x, y, width, boxHeight).stroke().restore();
+//   // Draw box with a greyish border and border radius of 5
+//   doc.save();
+//   doc.lineWidth(1);
+//   doc.strokeColor("#999999");
+//   doc.roundedRect(x, y, width, boxHeight, 2).stroke();
+//   doc.restore();
 
 //   // Title
 //   if (title) {
-//     doc.font("Helvetica-Bold").fontSize(10).text(title, x + padding, y + padding);
+//     doc.font("Helvetica-Bold").fontSize(10).text(title, x + paddingX, y + paddingY);
 //   }
 
 //   // Content
-//   doc.font("Helvetica").fontSize(10).text(content, x + padding, y + padding + titleHeight, {
-//     width: width - 2 * padding,
+//   doc.font("Helvetica").fontSize(10).text(content, x + paddingX, y + paddingY + titleHeight, {
+//     width: width - 2 * paddingX,
 //     align: "justify",
 //   });
 
 //   return y + boxHeight + 20;
 // }
+
+
 
 // // ---------- generateCaseReport Main Function ----------
 // function generateCaseReport(req, res) {
@@ -132,11 +140,13 @@
 
 //     doc.fillColor("black");
 
-//     // ---------- Case Summary ----------
+//     // ---------- Case Summary ---------
+
+
 //     if (caseSummary) {
 //       doc.font("Helvetica-Bold").fontSize(12).text("Case Summary:", 50, currentY);
 //       currentY += 20;
-//       currentY = drawTextBox(doc, 50, currentY, 512, "", caseSummary) + 20;
+//       currentY = drawTextBox(doc, 50, currentY, 512, "", caseSummary);
 //     }
 
 //     // ---------- Iterate Over Leads ----------
@@ -311,236 +321,1158 @@
 // module.exports = { generateCaseReport };
 
 
+// const PDFDocument = require("pdfkit");
+// const path = require("path");
+// const fs = require("fs");
+
+// function drawStructuredLeadDetails(doc, x, y, lead) {
+//   const colWidths = [130, 130, 130, 122];
+//   const rowHeight = 20;
+//   const padding = 5;
+
+//   // Header Row
+//   const headers = ["Lead Number:", "Lead Origin:", "Assigned Date:", "Completed Date:"];
+//   const values = [
+//     lead.leadNo || "N/A",
+//     lead.parentLeadNo ? lead.parentLeadNo.join(", ") : "N/A",
+//     lead.assignedDate ? formatDate(lead.assignedDate) : "N/A",
+//     lead.completedDate ? formatDate(lead.completedDate) : "N/A",
+//   ];
+
+//   let currX = x;
+//   for (let i = 0; i < headers.length; i++) {
+//     doc.rect(currX, y, colWidths[i], rowHeight).fillAndStroke("#f5f5f5", "#ccc");
+//     doc.fillColor("#000").font("Helvetica-Bold").fontSize(11).text(headers[i], currX + padding, y + 5);
+//     currX += colWidths[i];
+//   }
+
+//   y += rowHeight;
+//   currX = x;
+//   for (let i = 0; i < values.length; i++) {
+//     doc.rect(currX, y, colWidths[i], rowHeight).stroke();
+//     doc.font("Helvetica").fontSize(12).text(values[i], currX + padding, y + 5);
+//     currX += colWidths[i];
+//   }
+
+//   // Second Row - Assigned Officers
+//   y += rowHeight;
+//   doc.rect(x, y, colWidths.reduce((a, b) => a + b, 0), rowHeight).fillAndStroke("#f5f5f5", "#ccc");
+//   doc.font("Helvetica-Bold").fontSize(11).fillColor("#000").text("Assigned Officers:", x + padding, y + 5);
+
+//   const officersText = lead.assignedTo?.join(", ") || "N/A";
+//   doc.font("Helvetica").fontSize(12).text(officersText, x + 130 + padding, y + 5);
+
+//   return y + rowHeight + 10;
+// }
+
+// function drawLeadInstructionBox(doc, x, y, instruction) {
+//   const padding = 5;
+//   const labelWidth = 130;
+//   const boxWidth = 520 - labelWidth;
+//   const height = 24;
+
+//   // Label Cell
+//   doc.rect(x, y, labelWidth, height).fillAndStroke("#f5f5f5", "#ccc");
+//   doc.font("Helvetica-Bold").fontSize(11).fillColor("#000").text("Lead Log Summary", x + padding, y + 6);
+
+//   // Text Cell
+//   doc.roundedRect(x + labelWidth, y, boxWidth, height, 3).strokeColor("#aaa").stroke();
+//   doc.font("Helvetica").fontSize(12).fillColor("#000").text(instruction || "N/A", x + labelWidth + padding, y + 6);
+
+//   return y + height + 10;
+// }
+
+// function drawLeadSummaryBox(doc, x, y, summary) {
+//   const padding = 5;
+//   const labelWidth = 130;
+//   const boxWidth = 520 - labelWidth;
+//   const height = 24;
+
+//   // Label Cell
+//   doc.rect(x, y, labelWidth, height).fillAndStroke("#f5f5f5", "#ccc");
+//   doc.font("Helvetica-Bold").fontSize(11).fillColor("#000").text("Lead Description", x + padding, y + 6);
+
+//   // Text Cell
+//   doc.roundedRect(x + labelWidth, y, boxWidth, height, 3).strokeColor("#aaa").stroke();
+//   doc.font("Helvetica").fontSize(12).fillColor("#000").text(summary || "N/A", x + labelWidth + padding, y + 6);
+
+//   return y + height + 10;
+// }
+
+// function drawLeadReturnBox(doc, x, y, returns) {
+//   const padding = 5;
+//   const labelWidth = 130;
+//   const boxWidth = 520 - labelWidth;
+//   const height = 24;
+
+//   // Label Cell
+//   doc.rect(x, y, labelWidth, height).fillAndStroke("#f5f5f5", "#ccc");
+//   doc.font("Helvetica-Bold").fontSize(12).fillColor("#000").text("Lead Return Id ", x + padding, y + 6);
+
+//   // Text Cell
+//   doc.roundedRect(x + labelWidth, y, boxWidth, height, 3).strokeColor("#aaa").stroke();
+//   doc.font("Helvetica").fontSize(12).fillColor("#000").text(returns || "N/A", x + labelWidth + padding, y + 6);
+
+//   return y + height + 10;
+// }
+
+// function drawNoLeadReturnsTable(doc, x, y) {
+//   const labelWidth = 130;
+//   const msgWidth = 520 - labelWidth;
+//   const height = 24;
+//   const padding = 5;
+
+//   doc.rect(x, y, labelWidth, height).fillAndStroke("#f5f5f5", "#ccc");
+//   doc.font("Helvetica-Bold").fontSize(12).fillColor("#000").text("Lead Returns", x + padding, y + 6);
+
+//   doc.rect(x + labelWidth, y, msgWidth, height).stroke();
+//   doc.font("Helvetica").fontSize(12).fillColor("#000").text("No Lead Returns Available", x + labelWidth + padding, y + 6);
+
+//   return y + height + 20;
+// }
+
+// function formatDate(dateString) {
+//   if (!dateString) return "";
+//   const date = new Date(dateString);
+//   if (isNaN(date)) return "";
+//   const month = (date.getMonth() + 1).toString().padStart(2, "0");
+//   const day = date.getDate().toString().padStart(2, "0");
+//   const year = date.getFullYear().toString().slice(-2);
+//   return `${month}/${day}/${year}`;
+// }
+
+// function ensureSpace(doc, currentY, estimatedHeight = 100) {
+//   if (currentY + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
+//     doc.addPage();
+//     return doc.page.margins.top;
+//   }
+//   return currentY;
+// }
+
+
+
+// // ---------- drawTable Helper ----------
+// function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
+//   const minRowHeight = 20;
+//   doc.font("Helvetica-Bold").fontSize(10);
+
+//   let currentY = startY;
+//   const headerHeight = 20;
+//   let currentX = startX;
+
+//   // Draw header row
+//   headers.forEach((header, i) => {
+//     doc.strokeColor("#999999");
+//     doc.rect(currentX, currentY, colWidths[i], headerHeight).stroke();
+//     doc.text(header, currentX + padding, currentY + padding, {
+//       width: colWidths[i] - 2 * padding,
+//       align: "left",
+//     });
+//     currentX += colWidths[i];
+//   });
+//   currentY += headerHeight;
+
+//   // Body rows
+//   doc.font("Helvetica").fontSize(10);
+//   rows.forEach((row) => {
+//     let maxHeight = 0;
+//     currentX = startX;
+
+//     // Calculate needed row height
+//     headers.forEach((header, i) => {
+//       const cellText = row[header] || "";
+//       const cellHeight = doc.heightOfString(cellText, {
+//         width: colWidths[i] - 2 * padding,
+//         align: "left",
+//       });
+//       maxHeight = Math.max(maxHeight, cellHeight + 2 * padding);
+//     });
+//     maxHeight = Math.max(maxHeight, minRowHeight);
+
+//     // Draw row cells
+//     headers.forEach((header, i) => {
+//       const cellText = row[header] || "";
+//       doc.strokeColor("#999999");
+//       doc.rect(currentX, currentY, colWidths[i], maxHeight).stroke();
+//       doc.text(cellText, currentX + padding, currentY + padding, {
+//         width: colWidths[i] - 2 * padding,
+//         align: "left",
+//       });
+//       currentX += colWidths[i];
+//     });
+//     currentY += maxHeight;
+//   });
+
+//   return currentY;
+// }
+
+// function drawTextBox(doc, x, y, width, title, content) {
+//   const paddingX = 5;  // Left and Right padding
+//   const paddingY = 10; // Top and Bottom padding
+//   const titleHeight = title ? 15 : 0;
+//   doc.font("Helvetica").fontSize(12);
+
+//   // Calculate text height
+//   const contentHeight = doc.heightOfString(content, {
+//     width: width - 2 * paddingX,
+//     align: "justify",
+//   });
+//   const boxHeight = titleHeight + contentHeight + 2 * paddingY;
+
+//   // Draw box with a greyish border and border radius of 5
+//   doc.save();
+//   doc.lineWidth(1);
+//   doc.strokeColor("#999999");
+//   doc.roundedRect(x, y, width, boxHeight, 2).stroke();
+//   doc.restore();
+
+//   // Title
+//   if (title) {
+//     doc.font("Helvetica-Bold").fontSize(10).text(title, x + paddingX, y + paddingY);
+//   }
+
+//   // Content
+//   doc.font("Helvetica").fontSize(10).text(content, x + paddingX, y + paddingY + titleHeight, {
+//     width: width - 2 * paddingX,
+//     align: "justify",
+//   });
+
+//   return y + boxHeight + 20;
+// }
+
+// function drawTableWithRowSplitting(doc, startX, startY, headers, rows, colWidths) {
+//   let currentY = startY;
+
+//   // Draw header row first
+//   currentY = drawHeaderRow(doc, startX, currentY, headers, colWidths);
+
+//   // For each body row:
+//   for (const row of rows) {
+//     // Measure row height
+//     const rowHeight = measureRowHeight(doc, row, headers, colWidths);
+//     // If it doesn't fit, add a new page
+//     if (currentY + rowHeight > doc.page.height - doc.page.margins.bottom) {
+//       doc.addPage();
+//       currentY = doc.page.margins.top;
+//       // Draw the header again on the new page (usually you want your table header repeated)
+//       currentY = drawHeaderRow(doc, startX, currentY, headers, colWidths);
+//     }
+//     // Draw the row
+//     currentY = drawSingleRow(doc, startX, currentY, row, headers, colWidths, rowHeight);
+//   }
+
+//   return currentY;
+// }
+
+
+
+
+// // ---------- generateCaseReport Main Function ----------
+// function generateCaseReport(req, res) {
+//   const { user, reportTimestamp, leadsData, caseSummary, selectedReports } = req.body;
+//   const includeAll = selectedReports && selectedReports.FullReport;
+
+//   try {
+//     const doc = new PDFDocument({ size: "LETTER", margin: 50 });
+
+//     res.setHeader("Content-Type", "application/pdf");
+//     res.setHeader("Content-Disposition", "inline; filename=report.pdf");
+//     doc.pipe(res);
+
+//     // ---------- Header Section ----------
+//     const headerHeight = 80;
+//     doc.rect(0, 0, doc.page.width, headerHeight).fill("#003366");
+
+//     const logoHeight = 70;
+//     const verticalCenterY = (headerHeight - logoHeight) / 2;
+//     const logoPath = path.join(__dirname, "../../../frontend/public/Materials/newpolicelogo.png");
+//     if (fs.existsSync(logoPath)) {
+//       doc.image(logoPath, 10, verticalCenterY, { width: 70, height: 70 });
+//     }
+
+//     let currentY = headerHeight - 50;
+//     doc.fillColor("white").font("Helvetica-Bold").fontSize(14).text("Case Report", 0, currentY, {
+//       align: "center",
+//     });
+//     currentY = doc.y + 5;
+
+//     doc.fillColor("white").font("Helvetica").fontSize(10);
+//     doc.text(`Generated by: ${user}`, { align: "center" });
+//     doc.text(`Timestamp: ${reportTimestamp}`, { align: "center" });
+//     currentY = doc.y + 20;
+
+//     doc.fillColor("black");
+
+//     // ---------- Case Summary ---------
+
+
+//     if (caseSummary) {
+//       doc.font("Helvetica-Bold").fontSize(11).text("Case Summary:", 50, currentY);
+//       currentY += 20;
+//       currentY = drawTextBox(doc, 50, currentY, 512, "", caseSummary);
+//     }
+
+//     // ---------- Iterate Over Leads ----------
+//     if (leadsData && leadsData.length > 0) {
+//       leadsData.forEach((lead) => {
+//         // Page check
+//         if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+//           doc.addPage();
+//           currentY = doc.page.margins.top;
+//         }
+
+//         // ---------- LEAD DETAILS ----------
+//         // Instead of "Lead X" by array index, we do "Lead No. {lead.leadNo}"
+//         doc.font("Helvetica-Bold").fontSize(12).text(`Lead No. ${lead.leadNo} Details:`, 50, currentY);
+//         currentY += 20;
+
+//         // All columns the same width, e.g. 128 each for 4 columns
+//         // const colWidths = [128, 128, 128, 128];
+
+//         // // 1) Basic lead details table
+//         // currentY = drawTable(
+//         //   doc,
+//         //   50,
+//         //   currentY,
+//         //   ["Lead No.", "Lead Origin", "Assigned Date", "Completed Date"],
+//         //   [
+//         //     {
+//         //       "Lead No.": lead.leadNo || "N/A",
+//         //       "Lead Origin": lead.parentLeadNo ? lead.parentLeadNo.join(", ") : "N/A",
+//         //       "Assigned Date": formatDate(lead.assignedDate) || "N/A",
+//         //       "Completed Date": formatDate(lead.completedDate) || "N/A",
+//         //     },
+//         //   ],
+//         //   colWidths
+//         // ) + 20;
+//         if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+//           doc.addPage();
+//           currentY = doc.page.margins.top;
+//         }
+//         currentY = drawStructuredLeadDetails(doc, 50, currentY, lead);
+//         // currentY = drawLeadInstructionBox(doc, 50, currentY, lead.description);
+//         // currentY = drawLeadSummaryBox(doc, 50, currentY, lead.summary);
+
+//         // 2) "Lead Log Summary" - If you store it in lead.logSummary or similar
+//         if (includeAll && lead.summary) {
+//           if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+//             doc.addPage();
+//             currentY = doc.page.margins.top;
+//           }
+//           doc.font("Helvetica-Bold").fontSize(11).text("Lead Log Summary:", 50, currentY);
+//           currentY += 20;
+//           currentY = drawTextBox(doc, 50, currentY, 512, "", lead.summary);
+//         }
+
+//         // 3) "Lead Instruction" - If you store it in lead.description or similar
+//         if (includeAll && lead.description) {
+//           if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+//             doc.addPage();
+//             currentY = doc.page.margins.top;
+//           }
+//           doc.font("Helvetica-Bold").fontSize(11).text("Lead Instruction:", 50, currentY);
+//           currentY += 20;
+//           currentY = drawTextBox(doc, 50, currentY, 512, "", lead.description);
+//         }
+
+//         // ---------- LEAD RETURNS ----------
+//         if (includeAll) {
+//           if (lead.leadReturns && lead.leadReturns.length > 0) {
+//             lead.leadReturns.forEach((lr) => {
+//               // Page check
+//               if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+//                 doc.addPage();
+//                 currentY = doc.page.margins.top;
+//               }
+
+//               // 1) Lead Return ID and result
+//               doc.font("Helvetica-Bold").fontSize(11).text(`Lead Return ID: ${lr.leadReturnId}`, 50, currentY);
+//               currentY += 20;
+//               currentY = drawTextBox(doc, 50, currentY, 512, "", lr.leadReturnResult || "") + 20;
+
+//               // 2) Person Details
+//               if (lr.persons && lr.persons.length > 0) {
+//                 doc.font("Helvetica-Bold").fontSize(12).text("Person Details:", 50, currentY);
+//                 currentY += 20;
+//                 lr.persons.forEach((person) => {
+//                   const personTables = [
+//                     {
+//                       headers: ["Date Entered", "Name", "Phone #", "Address"],
+//                       widths: [128, 128, 128, 128],
+//                       row: {
+//                         "Date Entered": formatDate(person.enteredDate),
+//                         "Name": person.firstName
+//                           ? `${person.firstName}, ${person.lastName}`
+//                           : "N/A",
+//                         "Phone #": person.cellNumber || "N/A",
+//                         "Address": person.address
+//                           ? `${person.address.street1 || ""}, ${person.address.city || ""}, ${person.address.state || ""}, ${person.address.zipCode || ""}`
+//                           : "N/A",
+//                       },
+//                     },
+//                     {
+//                       headers: ["Last Name", "First Name", "Middle Initial", "Cell Number"],
+//                       widths: [128, 128, 128, 128],
+//                       row: {
+//                         "Last Name": person.lastName || "N/A",
+//                         "First Name": person.firstName || "N/A",
+//                         "Middle Initial": person.middleInitial || "",
+//                         "Cell Number": person.cellNumber || "N/A",
+//                       },
+//                     },
+//                     {
+//                       headers: ["Business Name", "Street 1", "Street 2", "Building"],
+//                       widths: [128, 128, 128, 128],
+//                       row: {
+//                         "Business Name": person.businessName || "N/A",
+//                         "Street 1": person.address?.street1 || "N/A",
+//                         "Street 2": person.address?.street2 || "N/A",
+//                         "Building": person.address?.building || "N/A",
+//                       },
+//                     },
+//                     {
+//                       headers: ["Apartment", "City", "State", "Zip Code"],
+//                       widths: [128, 128, 128, 128],
+//                       row: {
+//                         "Apartment": person.address?.apartment || "N/A",
+//                         "City": person.address?.city || "N/A",
+//                         "State": person.address?.state || "N/A",
+//                         "Zip Code": person.address?.zipCode || "N/A",
+//                       },
+//                     },
+//                     {
+//                       headers: ["SSN", "Age", "Email", "Occupation"],
+//                       widths: [128, 128, 128, 128],
+//                       row: {
+//                         "SSN": person.ssn || "N/A",
+//                         "Age": person.age != null ? person.age.toString() : "N/A",
+//                         "Email": person.email || "N/A",
+//                         "Occupation": person.occupation || "N/A",
+//                       },
+//                     },
+//                     {
+//                       headers: ["Person Type", "Condition", "Caution Type", "Sex"],
+//                       widths: [128, 128, 128, 128],
+//                       row: {
+//                         "Person Type": person.personType || "N/A",
+//                         "Condition": person.condition || "N/A",
+//                         "Caution Type": person.cautionType || "N/A",
+//                         "Sex": person.sex || "N/A",
+//                       },
+//                     },
+//                     {
+//                       headers: ["Race", "Ethnicity", "Skin Tone", "Eye Color"],
+//                       widths: [128, 128, 128, 128],
+//                       row: {
+//                         "Race": person.race || "N/A",
+//                         "Ethnicity": person.ethnicity || "N/A",
+//                         "Skin Tone": person.skinTone || "N/A",
+//                         "Eye Color": person.eyeColor || "N/A",
+//                       },
+//                     },
+//                     {
+//                       headers: ["Glasses", "Hair Color", "Height", "Weight"],
+//                       widths: [128, 128, 128, 128],
+//                       row: {
+//                         "Glasses": person.glasses || "N/A",
+//                         "Hair Color": person.hairColor || "N/A",
+//                         "Height": person.height
+//                           ? `${person.height.feet || 0}'${person.height.inches || 0}"`
+//                           : "N/A",
+//                         "Weight": person.weight != null ? person.weight.toString() : "N/A",
+//                       },
+//                     },
+//                   ];
+
+//                   personTables.forEach((tbl) => {
+//                     // Estimate row height based on tallest text cell
+//                     const estimatedHeights = tbl.headers.map((header, i) => {
+//                       const cellText = tbl.row[header] || "";
+//                       return doc.heightOfString(cellText, {
+//                         width: tbl.widths[i] - 10, // padding
+//                         align: "left",
+//                       }) + 10;
+//                     });
+//                     const estimatedTableHeight = Math.max(...estimatedHeights) + 20; // Add header + padding
+                  
+//                     currentY = ensureSpace(doc, currentY, estimatedTableHeight);
+//                     currentY = drawTableWithRowSplitting(doc, 50, currentY, tbl.headers, [tbl.row], tbl.widths) + 20;
+//                   });
+//                 });
+//               }
+              
+
+//               // 3) Vehicle Details
+//               if (lr.vehicles && lr.vehicles.length > 0) {
+//                 if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+//                   doc.addPage();
+//                   currentY = doc.page.margins.top;
+//                 }
+//                 doc.font("Helvetica-Bold").fontSize(12).text("Vehicle Details:", 50, currentY);
+//                 currentY += 20;
+//                 const vehicleHeaders = ["Date Entered", "Make", "Model", "Plate", "State"];
+//                 const vehicleRows = lr.vehicles.map((vehicle) => ({
+//                   "Date Entered": formatDate(vehicle.enteredDate),
+//                   "Make": vehicle.make || "N/A",
+//                   "Model": vehicle.model || "N/A",
+//                   "Plate": vehicle.plate || "N/A",
+//                   "State": vehicle.state || "N/A",
+//                 }));
+//                 // If you want 5 columns the same width, do e.g. [102, 102, 102, 102, 104]
+//                 currentY = drawTable(doc, 50, currentY, vehicleHeaders, vehicleRows, [102, 102, 102, 102, 104]) + 20;
+//               }
+
+//               // 4) If you want to check for no persons, no vehicles, etc.
+//               // if (lr.persons?.length === 0) {
+//               //   doc.text("No Person Details", 50, currentY);
+//               //   currentY += 20;
+//               // }
+
+//               // 5) Enclosures, Pictures, Evidence, Audio, Video, Scratchpad, Timeline, etc.
+//             });
+//           } else {
+//             // If no returns for this lead, show a table or text indicating no returns
+//             if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+//               doc.addPage();
+//               currentY = doc.page.margins.top;
+//             }
+
+//             // Example: a small table with 1 row stating no returns
+//             const headers = ["Lead Returns"];
+//             const rows = [{ "Lead Returns": "No Lead Returns Available" }];
+//             const widths = [512]; // single column
+//             currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+//           }
+//         }
+//       });
+//     } else {
+//       doc.text("No leads data available.", 50, currentY);
+//     }
+
+//     doc.end();
+//   } catch (error) {
+//     console.error("Error generating PDF:", error);
+//     res.status(500).json({ error: "Failed to generate PDF" });
+//   }
+// }
+
+// module.exports = { generateCaseReport };
+
+
 const PDFDocument = require("pdfkit");
 const path = require("path");
 const fs = require("fs");
 
-// A simple 2-column table: Label, Value
-function drawTwoColumnTable(doc, startX, startY, rows, colWidths = [150, 362], padding = 5) {
-  // We'll draw each row with 2 columns: "Label" and "Value"
+/* ---------------------------------------
+   Helper: measureRowHeight, drawHeaderRow,
+   drawSingleRow for row-splitting
+-----------------------------------------*/
+function measureRowHeight(doc, row, headers, colWidths, padding = 5) {
+  let maxHeight = 20; // or your chosen minRowHeight
+  headers.forEach((header, i) => {
+    const cellText = row[header] || "";
+    const cellHeight = doc.heightOfString(cellText, {
+      width: colWidths[i] - 2 * padding,
+      align: "left",
+    });
+    const fullHeight = cellHeight + 2 * padding;
+    if (fullHeight > maxHeight) {
+      maxHeight = fullHeight;
+    }
+  });
+  return maxHeight;
+}
+
+function drawHeaderRow(doc, startX, startY, headers, colWidths, padding = 5) {
   doc.font("Helvetica-Bold").fontSize(10);
+  let currentX = startX;
+  const headerHeight = 20;
+  headers.forEach((header, i) => {
+    doc.strokeColor("#999999");
+    doc.rect(currentX, startY, colWidths[i], headerHeight).stroke();
+    doc.text(header, currentX + padding, startY + padding, {
+      width: colWidths[i] - 2 * padding,
+      align: "left",
+    });
+    currentX += colWidths[i];
+  });
+  return startY + headerHeight;
+}
+
+function drawSingleRow(doc, startX, startY, row, headers, colWidths, rowHeight, padding = 5) {
+  doc.font("Helvetica").fontSize(10);
+  let currentX = startX;
+  headers.forEach((header, i) => {
+    const cellText = row[header] || "";
+    doc.strokeColor("#999999");
+    doc.rect(currentX, startY, colWidths[i], rowHeight).stroke();
+    doc.text(cellText, currentX + padding, startY + padding, {
+      width: colWidths[i] - 2 * padding,
+      align: "left",
+    });
+    currentX += colWidths[i];
+  });
+  return startY + rowHeight;
+}
+
+/* ---------------------------------------
+   Helper: ensureSpace
+-----------------------------------------*/
+function ensureSpace(doc, currentY, estimatedHeight = 100) {
+  if (currentY + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
+    doc.addPage();
+    return doc.page.margins.top;
+  }
+  return currentY;
+}
+
+/* ---------------------------------------
+   Other small helpers: formatDate, 
+   drawTable, drawTextBox, etc.
+-----------------------------------------*/
+function formatDate(dateString) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (isNaN(date)) return "";
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  const year = date.getFullYear().toString().slice(-2);
+  return `${month}/${day}/${year}`;
+}
+
+// Basic table that does NOT split rows across pages
+function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
+  const minRowHeight = 20;
+  doc.font("Helvetica-Bold").fontSize(10);
+
   let currentY = startY;
+  const headerHeight = 20;
+  let currentX = startX;
 
-  // For each row, we measure the needed height and draw cells
+  // Draw header row
+  headers.forEach((header, i) => {
+    doc.strokeColor("#999999");
+    doc.rect(currentX, currentY, colWidths[i], headerHeight).stroke();
+    doc.text(header, currentX + padding, currentY + padding, {
+      width: colWidths[i] - 2 * padding,
+      align: "left",
+    });
+    currentX += colWidths[i];
+  });
+  currentY += headerHeight;
+
+  // Body rows
+  doc.font("Helvetica").fontSize(10);
   rows.forEach((row) => {
-    // We have row.Label, row.Value
-    const cellHeightLabel = doc.heightOfString(row.Label || "", {
-      width: colWidths[0] - 2 * padding,
-      align: "left",
+    let maxHeight = minRowHeight;
+    currentX = startX;
+    // measure
+    headers.forEach((header, i) => {
+      const cellText = row[header] || "";
+      const cellHeight = doc.heightOfString(cellText, {
+        width: colWidths[i] - 2 * padding,
+        align: "left",
+      });
+      const rowNeeded = cellHeight + 2 * padding;
+      if (rowNeeded > maxHeight) maxHeight = rowNeeded;
     });
-    const cellHeightValue = doc.heightOfString(row.Value || "", {
-      width: colWidths[1] - 2 * padding,
-      align: "left",
+    // draw
+    headers.forEach((header, i) => {
+      const cellText = row[header] || "";
+      doc.strokeColor("#999999");
+      doc.rect(currentX, currentY, colWidths[i], maxHeight).stroke();
+      doc.text(cellText, currentX + padding, currentY + padding, {
+        width: colWidths[i] - 2 * padding,
+        align: "left",
+      });
+      currentX += colWidths[i];
     });
-    const maxHeight = Math.max(cellHeightLabel, cellHeightValue) + 2 * padding;
-    // Draw label cell
-    doc.rect(startX, currentY, colWidths[0], maxHeight).stroke();
-    doc.text(row.Label || "", startX + padding, currentY + padding, {
-      width: colWidths[0] - 2 * padding,
-      align: "left",
-    });
-    // Draw value cell
-    doc.rect(startX + colWidths[0], currentY, colWidths[1], maxHeight).stroke();
-    // Switch to normal font for the value (so label is bold, value is normal)
-    doc.font("Helvetica").fontSize(10);
-    doc.text(row.Value || "", startX + colWidths[0] + padding, currentY + padding, {
-      width: colWidths[1] - 2 * padding,
-      align: "left",
-    });
-    // Switch back to bold for next label
-    doc.font("Helvetica-Bold").fontSize(10);
-
     currentY += maxHeight;
   });
 
   return currentY;
 }
 
-// A single‐column table for “No Lead Returns Available”
-function drawSingleColumnTable(doc, startX, startY, headerText, bodyText, tableWidth = 512) {
-  const padding = 5;
+// "Row Splitting" version
+function drawTableWithRowSplitting(doc, startX, startY, headers, rows, colWidths) {
   let currentY = startY;
+  // Draw header row first
+  currentY = drawHeaderRow(doc, startX, currentY, headers, colWidths);
 
-  // Header row
-  doc.font("Helvetica-Bold").fontSize(10);
-  const headerHeight = 20;
-  doc.rect(startX, currentY, tableWidth, headerHeight).stroke();
-  doc.text(headerText, startX + padding, currentY + padding, {
-    width: tableWidth - 2 * padding,
-    align: "left",
-  });
-  currentY += headerHeight;
-
-  // Body row
-  doc.font("Helvetica").fontSize(10);
-  const bodyHeight = doc.heightOfString(bodyText, {
-    width: tableWidth - 2 * padding,
-    align: "left",
-  });
-  const rowHeight = Math.max(bodyHeight + 2 * padding, 20);
-  doc.rect(startX, currentY, tableWidth, rowHeight).stroke();
-  doc.text(bodyText, startX + padding, currentY + padding, {
-    width: tableWidth - 2 * padding,
-    align: "left",
-  });
-  currentY += rowHeight;
+  // For each body row:
+  for (const row of rows) {
+    // Measure row height
+    const rowHeight = measureRowHeight(doc, row, headers, colWidths);
+    // If it doesn't fit, add a new page
+    if (currentY + rowHeight > doc.page.height - doc.page.margins.bottom) {
+      doc.addPage();
+      currentY = doc.page.margins.top;
+      // re-draw header
+      currentY = drawHeaderRow(doc, startX, currentY, headers, colWidths);
+    }
+    // Draw the row
+    currentY = drawSingleRow(doc, startX, currentY, row, headers, colWidths, rowHeight);
+  }
 
   return currentY;
 }
 
-// Draw a text box for the “Lead Instruction” or similar
-function drawInstructionBox(doc, startX, startY, width, label, instruction) {
-  // We'll do a small heading row with “Lead Instruction” in bold, then a box for the content
-  const padding = 5;
-  const headerHeight = 20;
-  doc.font("Helvetica-Bold").fontSize(10);
-  doc.rect(startX, startY, width, headerHeight).stroke();
-  doc.text(label, startX + padding, startY + padding);
-  startY += headerHeight;
-
-  // Now the instruction box
-  doc.font("Helvetica").fontSize(10);
-  const textHeight = doc.heightOfString(instruction || "", {
-    width: width - 2 * padding,
-    align: "left",
-  });
-  const boxHeight = Math.max(textHeight + 2 * padding, 20);
-  doc.rect(startX, startY, width, boxHeight).stroke();
-  doc.text(instruction || "", startX + padding, startY + padding, {
-    width: width - 2 * padding,
-    align: "left",
-  });
-  return startY + boxHeight;
+// Suppose personTables is an array of "headers" arrays. We have to handle nextTable properly:
+function hasNextTable(i, tables) {
+  return (i + 1 < tables.length);
 }
 
+function measureTableHeight(table) {
+  // This is just a placeholder. 
+  // In reality, you might measure it by building a row and calling doc.heightOfString 
+  // or replicate the logic in measureRowHeight. For now, maybe we just guess 50 again.
+  return 50;
+}
+
+// Simple text box
+function drawTextBox(doc, x, y, width, title, content) {
+  const paddingX = 5;
+  const paddingY = 10;
+  const titleHeight = title ? 15 : 0;
+  doc.font("Helvetica").fontSize(12);
+
+  // Calculate text height
+  const contentHeight = doc.heightOfString(content, {
+    width: width - 2 * paddingX,
+    align: "justify",
+  });
+  const boxHeight = titleHeight + contentHeight + 2 * paddingY;
+
+  // Draw box border
+  doc.save();
+  doc.lineWidth(1);
+  doc.strokeColor("#999999");
+  doc.roundedRect(x, y, width, boxHeight, 2).stroke();
+  doc.restore();
+
+  // Title
+  if (title) {
+    doc.font("Helvetica-Bold").fontSize(10).text(title, x + paddingX, y + paddingY);
+  }
+
+  // Content
+  doc.font("Helvetica").fontSize(10).text(content, x + paddingX, y + paddingY + titleHeight, {
+    width: width - 2 * paddingX,
+    align: "justify",
+  });
+
+  return y + boxHeight + 20;
+}
+
+/* ---------------------------------------
+   Your "structured" lead detail drawing
+-----------------------------------------*/
+function drawStructuredLeadDetails(doc, x, y, lead) {
+  const colWidths = [130, 130, 130, 122];
+  const rowHeight = 20;
+  const padding = 5;
+
+  // Header Row
+  const headers = ["Lead Number:", "Lead Origin:", "Assigned Date:", "Completed Date:"];
+  const values = [
+    lead.leadNo || "N/A",
+    lead.parentLeadNo ? lead.parentLeadNo.join(", ") : "N/A",
+    lead.assignedDate ? formatDate(lead.assignedDate) : "N/A",
+    lead.completedDate ? formatDate(lead.completedDate) : "N/A",
+  ];
+
+  let currX = x;
+
+  // Grey background cells
+  for (let i = 0; i < headers.length; i++) {
+    doc.rect(currX, y, colWidths[i], rowHeight).fillAndStroke("#f5f5f5", "#ccc");
+    doc.fillColor("#000")
+      .font("Helvetica-Bold")
+      .fontSize(11)
+      .text(headers[i], currX + padding, y + 5);
+    currX += colWidths[i];
+  }
+
+  y += rowHeight;
+  currX = x;
+
+  // Values row
+  for (let i = 0; i < values.length; i++) {
+    doc.rect(currX, y, colWidths[i], rowHeight).stroke();
+    doc.font("Helvetica").fontSize(12).text(values[i], currX + padding, y + 5);
+    currX += colWidths[i];
+  }
+
+  // Second Row - Assigned Officers
+  y += rowHeight;
+  doc
+    .rect(x, y, colWidths.reduce((a, b) => a + b, 0), rowHeight)
+    .fillAndStroke("#f5f5f5", "#ccc");
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(11)
+    .fillColor("#000")
+    .text("Assigned Officers:", x + padding, y + 5);
+
+  const officersText = lead.assignedTo?.join(", ") || "N/A";
+  doc.font("Helvetica").fontSize(12).text(officersText, x + 130 + padding, y + 5);
+
+  return y + rowHeight + 20;
+}
+
+/* ---------------------------------------
+   The main generation function
+-----------------------------------------*/
 function generateCaseReport(req, res) {
   const { user, reportTimestamp, leadsData, caseSummary, selectedReports } = req.body;
   const includeAll = selectedReports && selectedReports.FullReport;
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    if (isNaN(date)) return "";
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const day = date.getDate().toString().padStart(2, "0");
-    const year = date.getFullYear().toString().slice(-2);
-    return `${month}/${day}/${year}`;
-  };
-
   try {
+    // Create doc
     const doc = new PDFDocument({ size: "LETTER", margin: 50 });
+
+    // Pipe the PDF into the response
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline; filename=report.pdf");
     doc.pipe(res);
 
-    // Header
+    // -- Header Section --
     const headerHeight = 80;
     doc.rect(0, 0, doc.page.width, headerHeight).fill("#003366");
+
+    const logoHeight = 70;
+    const verticalCenterY = (headerHeight - logoHeight) / 2;
     const logoPath = path.join(__dirname, "../../../frontend/public/Materials/newpolicelogo.png");
     if (fs.existsSync(logoPath)) {
-      doc.image(logoPath, 10, 5, { width: 70, height: 70 });
+      doc.image(logoPath, 10, verticalCenterY, { width: 70, height: 70 });
     }
-    let currentY = 15;
-    doc.fillColor("white").font("Helvetica-Bold").fontSize(14).text("Case Report", 0, currentY, {
-      align: "center",
-    });
+
+    let currentY = headerHeight - 50;
+    doc.fillColor("white")
+      .font("Helvetica-Bold")
+      .fontSize(14)
+      .text("Case Report", 0, currentY, { align: "center" });
     currentY = doc.y + 5;
+
     doc.fillColor("white").font("Helvetica").fontSize(10);
     doc.text(`Generated by: ${user}`, { align: "center" });
     doc.text(`Timestamp: ${reportTimestamp}`, { align: "center" });
-    // Move below header
-    currentY = headerHeight + 10;
+    currentY = doc.y + 20;
+
+    // Reset color
     doc.fillColor("black");
 
-    // If we have a case summary
+    // ---------- Case Summary ----------
     if (caseSummary) {
-      doc.font("Helvetica-Bold").fontSize(12).text("Case Summary:", 50, currentY);
+      doc.font("Helvetica-Bold").fontSize(11).text("Case Summary:", 50, currentY);
       currentY += 20;
-      // Make a text box for the summary
-      const boxStart = currentY;
-      const boxWidth = 512;
-      const newY = drawTextBox(doc, 50, boxStart, boxWidth, "", caseSummary);
-      currentY = newY + 10;
+      currentY = drawTextBox(doc, 50, currentY, 512, "", caseSummary);
     }
 
-    // For each lead
+    // ---------- Iterate Over Leads ----------
     if (leadsData && leadsData.length > 0) {
       leadsData.forEach((lead) => {
         // Page check
-        if (currentY + 100 > doc.page.height - doc.page.margins.bottom) {
-          doc.addPage();
-          currentY = doc.page.margins.top;
-        }
-        // 2-column table for the lead info
-        // We replicate your screenshot style:
-        // Row1: Label=Lead Number, Value=lead.leadNo
-        // Row2: Label=Lead Origin, Value=...
-        // Row3: Label=Assigned Date, Value=...
-        // Row4: Label=Completed Date, Value=...
-        // Row5: Label=Assigned Officers, Value=...
-        doc.font("Helvetica-Bold").fontSize(10).text("", 50, currentY);
-        currentY += 5;
-        const detailRows = [
-          {
-            Label: "Lead Number:",
-            Value: lead.leadNo || "N/A",
-          },
-          {
-            Label: "Lead Origin:",
-            Value: lead.parentLeadNo ? lead.parentLeadNo.join(", ") : "N/A",
-          },
-          {
-            Label: "Assigned Date:",
-            Value: formatDate(lead.assignedDate) || "N/A",
-          },
-          {
-            Label: "Completed Date:",
-            Value: formatDate(lead.completedDate) || "N/A",
-          },
-          {
-            Label: "Assigned Officers:",
-            Value: lead.assignedTo || "N/A",
-          },
-        ];
-        // 2 columns => label, value
-        const colWidths = [150, 362];
-        currentY = drawTwoColumnTable(doc, 50, currentY, detailRows, colWidths) + 10;
+        currentY = ensureSpace(doc, currentY, 60);
 
-        // Now a small text box for the lead instruction
-        // or if you store it as "lead.description"
+        // LEAD DETAILS
+        doc.font("Helvetica-Bold").fontSize(12).text(`Lead No. ${lead.leadNo} Details:`, 50, currentY);
+        currentY += 20;
+
+        // structured details
+        // currentY = ensureSpace(doc, currentY, 60);
+        currentY = drawStructuredLeadDetails(doc, 50, currentY, lead);
+
+        // optional blocks
+        if (includeAll && lead.summary) {
+          currentY = ensureSpace(doc, currentY, 60);
+          doc.font("Helvetica-Bold").fontSize(11).text("Lead Log Summary:", 50, currentY);
+          currentY += 20;
+          // currentY = ensureSpace(doc, currentY, 60);
+          currentY = drawTextBox(doc, 50, currentY, 512, "", lead.summary);
+        }
+
         if (includeAll && lead.description) {
-          currentY = drawInstructionBox(
-            doc,
-            50,
-            currentY,
-            512,
-            "Lead Instruction",
-            lead.description
-          ) + 10;
+          currentY = ensureSpace(doc, currentY, 60);
+          doc.font("Helvetica-Bold").fontSize(11).text("Lead Instruction:", 50, currentY);
+          currentY += 20;
+          // currentY = ensureSpace(doc, currentY, 60);
+          currentY = drawTextBox(doc, 50, currentY, 512, "", lead.description);
         }
 
-        // If no returns, we do a single column table
-        if (!lead.leadReturns || lead.leadReturns.length === 0) {
-          currentY = drawSingleColumnTable(
-            doc,
-            50,
-            currentY,
-            "Lead Returns",
-            "No Lead Returns Available",
-            512
-          ) + 10;
-        } else {
-          // If you want to show returns or person details, you can replicate the approach.
-          // For the screenshot style, we only show "No Lead Returns Available" or nothing.
+        // LEAD RETURNS
+        if (includeAll) {
+          if (lead.leadReturns && lead.leadReturns.length > 0) {
+            lead.leadReturns.forEach((lr) => {
+              // small space check
+              currentY = ensureSpace(doc, currentY, 100);
+
+              // 1) Return ID
+              doc.font("Helvetica-Bold").fontSize(11).text(`Lead Return ID: ${lr.leadReturnId}`, 50, currentY);
+              currentY += 20;
+              // currentY = ensureSpace(doc, currentY, 100);
+
+              currentY = drawTextBox(doc, 50, currentY, 512, "", lr.leadReturnResult || "") + 20;
+
+
+              // 2) Person Details
+              if (lr.persons && lr.persons.length > 0) {
+
+                currentY = ensureSpace(doc, currentY, 60);
+                doc.font("Helvetica-Bold").fontSize(12).text("Person Details:", 50, currentY);
+                currentY += 20;
+                lr.persons.forEach((person) => {
+                  const personTables = [
+                    {
+                      headers: ["Date Entered", "Name", "Phone #", "Address"],
+                      widths: [128, 128, 128, 128],
+                      row: {
+                        "Date Entered": formatDate(person.enteredDate),
+                        "Name": person.firstName
+                          ? `${person.firstName}, ${person.lastName}`
+                          : "N/A",
+                        "Phone #": person.cellNumber || "N/A",
+                        "Address": person.address
+                          ? `${person.address.street1 || ""}, ${person.address.city || ""}, ` +
+                            `${person.address.state || ""}, ${person.address.zipCode || ""}`
+                          : "N/A",
+                      },
+                    },
+                    {
+                      headers: ["Last Name", "First Name", "Middle Initial", "Cell Number"],
+                      widths: [128, 128, 128, 128],
+                      row: {
+                        "Last Name": person.lastName || "N/A",
+                        "First Name": person.firstName || "N/A",
+                        "Middle Initial": person.middleInitial || "",
+                        "Cell Number": person.cellNumber || "N/A",
+                      },
+                    },
+                    {
+                      headers: ["Business Name", "Street 1", "Street 2", "Building"],
+                      widths: [128, 128, 128, 128],
+                      row: {
+                        "Business Name": person.businessName || "N/A",
+                        "Street 1": person.address?.street1 || "N/A",
+                        "Street 2": person.address?.street2 || "N/A",
+                        "Building": person.address?.building || "N/A",
+                      },
+                    },
+                    {
+                      headers: ["Apartment", "City", "State", "Zip Code"],
+                      widths: [128, 128, 128, 128],
+                      row: {
+                        "Apartment": person.address?.apartment || "N/A",
+                        "City": person.address?.city || "N/A",
+                        "State": person.address?.state || "N/A",
+                        "Zip Code": person.address?.zipCode || "N/A",
+                      },
+                    },
+                    {
+                      headers: ["SSN", "Age", "Email", "Occupation"],
+                      widths: [128, 128, 128, 128],
+                      row: {
+                        "SSN": person.ssn || "N/A",
+                        "Age": person.age != null ? person.age.toString() : "N/A",
+                        "Email": person.email || "N/A",
+                        "Occupation": person.occupation || "N/A",
+                      },
+                    },
+                    {
+                      headers: ["Person Type", "Condition", "Caution Type", "Sex"],
+                      widths: [128, 128, 128, 128],
+                      row: {
+                        "Person Type": person.personType || "N/A",
+                        "Condition": person.condition || "N/A",
+                        "Caution Type": person.cautionType || "N/A",
+                        "Sex": person.sex || "N/A",
+                      },
+                    },
+                    {
+                      headers: ["Race", "Ethnicity", "Skin Tone", "Eye Color"],
+                      widths: [128, 128, 128, 128],
+                      row: {
+                        "Race": person.race || "N/A",
+                        "Ethnicity": person.ethnicity || "N/A",
+                        "Skin Tone": person.skinTone || "N/A",
+                        "Eye Color": person.eyeColor || "N/A",
+                      },
+                    },
+                    {
+                      headers: ["Glasses", "Hair Color", "Height", "Weight"],
+                      widths: [128, 128, 128, 128],
+                      row: {
+                        "Glasses": person.glasses || "N/A",
+                        "Hair Color": person.hairColor || "N/A",
+                        "Height": person.height
+                          ? `${person.height.feet || 0}'${person.height.inches || 0}"`
+                          : "N/A",
+                        "Weight": person.weight != null ? person.weight.toString() : "N/A",
+                      },
+                    },
+                  ];
+                  // const personTables = [
+                  //   ["Date Entered", "Name", "Phone #", "Address"],
+                  //   ["Last Name", "First Name", "Middle Initial", "Cell Number"],
+                  //   ["Business Name", "Street 1", "Street 2", "Building"],
+                  //   ["Apartment", "City", "State", "Zip Code"],
+                  //   ["SSN", "Age", "Email", "Occupation"],
+                  //   ["Person Type", "Condition", "Caution Type", "Sex"],
+                  //   ["Race", "Ethnicity", "Skin Tone", "Eye Color"],
+                  //   ["Glasses", "Hair Color", "Height", "Weight"]
+                  // ];
+                  // const personWidths = {
+                  //           "Date Entered": 90,
+                  //           "Name": 100,
+                  //           "Phone #": 100,
+                  //           "Address": 222,
+                          
+                  //           "Last Name": 90,
+                  //           "First Name": 100,
+                  //           "Middle Initial": 100,
+                  //           "Cell Number": 222,
+                          
+                  //           "Business Name": 90,
+                  //           "Street 1": 100,
+                  //           "Street 2": 100,
+                  //           "Building": 222,
+                          
+                  //           "Apartment": 90,
+                  //           "City": 100,
+                  //           "State": 100,
+                  //           "Zip Code": 222,
+                          
+                  //           "SSN": 90,
+                  //           "Age": 100,
+                  //           "Email": 100,
+                  //           "Occupation": 222,
+                          
+                  //           "Person Type": 90,
+                  //           "Condition": 100,
+                  //           "Caution Type": 100,
+                  //           "Sex": 222,
+                          
+                  //           "Race": 90,
+                  //           "Ethnicity": 100,
+                  //           "Skin Tone": 100,
+                  //           "Eye Color": 222,
+                          
+                  //           "Glasses": 90,
+                  //           "Hair Color": 100,
+                  //           "Height": 100,
+                  //           "Weight": 222,
+                  //         };
+                          
+            
+                  // const personData = [
+                  //   ["03/14/24", "Dan, Hill", "1234567890", "120 3rd St, New York, NY"],
+                  //   ["Hill", "Dan", "S.", "1234567890"],
+                  //   ["", "", "", ""],
+                  //   ["", "", "", ""],
+                  //   ["", "20", "", ""],
+                  //   ["", "", "", ""],
+                  //   ["", "", "", ""],
+                  //   ["", "", "", ""]
+                  // ];
+
+                  currentY = ensureSpace(doc, currentY, 60);
+
+                  personTables.forEach((tbl) => {
+                    // Estimate the table height
+                    const rowHeight = measureRowHeight(doc, tbl.row, tbl.headers, tbl.widths);
+                    // Add space for header row + some buffer
+                    const estimatedHeight = rowHeight + 20;
+                    currentY = ensureSpace(doc, currentY, estimatedHeight);
+
+                    // Actually draw table with row splitting
+                    currentY =
+                      drawTableWithRowSplitting(doc, 50, currentY, tbl.headers, [tbl.row], tbl.widths) +
+                      20;
+                  });
+
+                  
+                  // currentY = ensureSpace(doc, currentY, 60);
+
+                  // personTables.forEach((headers, i) => {
+                  
+                  //   currentY = ensureSpace(doc, currentY, 60);
+                  //   const row = {};
+                  //   const colWidths = headers.map(header => personWidths[header] || 100);
+                  //   headers.forEach((h, j) => {
+                  //     row[h] = personData[i][j];
+                  //   });
+                  //   currentY = drawTable(doc, 50, currentY, headers, [row], colWidths) + 20;
+                  
+                  //   // 3) "After" printing: look ahead to the *next* table
+                  //   if (hasNextTable(i, personTables)) {
+                  //     currentY = ensureSpace(doc, currentY, 60);
+                  //     const nextTableHeaders = personTables[i + 1]; // e.g. the next item in personTables
+                  //     const neededForNextTable = measureTableHeight(nextTableHeaders);
+                  //     // If we won't have enough space left for the *next* subtable, start a new page now
+                  //     // if (currentY + neededForNextTable > doc.page.height - doc.page.margins.bottom) {
+                  //     //   doc.addPage();
+                  //     //   currentY = doc.page.margins.top;
+                  //     // }
+
+
+                  //   }
+                  // });
+                });
+              }
+
+              // 3) Vehicle Details
+              if (lr.vehicles && lr.vehicles.length > 0) {
+                currentY = ensureSpace(doc, currentY, 50);
+                doc.font("Helvetica-Bold").fontSize(12).text("Vehicle Details:", 50, currentY);
+                currentY += 20;
+
+                const vehicleHeaders = ["Date Entered", "Make", "Model", "Plate", "State"];
+                const vehicleRows = lr.vehicles.map((vehicle) => ({
+                  "Date Entered": formatDate(vehicle.enteredDate),
+                  "Make": vehicle.make || "N/A",
+                  "Model": vehicle.model || "N/A",
+                  "Plate": vehicle.plate || "N/A",
+                  "State": vehicle.state || "N/A",
+                }));
+                // If you want 5 columns the same width, do e.g. [102, 102, 102, 102, 104]
+                currentY = ensureSpace(doc, currentY, 60);
+                currentY = drawTable(doc, 50, currentY, vehicleHeaders, vehicleRows, [
+                  102, 102, 102, 102, 104,
+                ]) + 20;
+              }
+              // etc...
+            });
+          } else {
+            // No lead returns
+            // currentY = ensureSpace(doc, currentY, 50);
+            // const headers = ["Lead Returns"];
+            // const rows = [{ "Lead Returns": "No Lead Returns Available" }];
+            // const widths = [512];
+            // currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+
+            currentY = ensureSpace(doc, currentY, 60);
+            doc.font("Helvetica-Bold").fontSize(11).text("Lead Return:", 50, currentY);
+            currentY += 20;
+            // currentY = ensureSpace(doc, currentY, 60);
+            currentY = drawTextBox(doc, 50, currentY, 512, "", "No Lead Returns Available");
+          }
         }
       });
     } else {
+      // No leads
       doc.text("No leads data available.", 50, currentY);
     }
 
+    // End the PDF
     doc.end();
+    // Note: This is the ONLY place we call doc.end().
+    // Don’t call it again, or call doc.* after this line!
   } catch (error) {
     console.error("Error generating PDF:", error);
+    // In an error scenario, you generally do NOT want to continue writing
+    // to doc, because that can also cause "write after end" if doc.end() was
+    // already triggered. You might want to handle it like this:
+    // doc.end(); // optionally end if you started writing
     res.status(500).json({ error: "Failed to generate PDF" });
   }
 }

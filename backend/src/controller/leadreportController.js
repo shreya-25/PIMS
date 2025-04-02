@@ -10,6 +10,7 @@ function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
   let headerHeight = 20;
   let currentX = startX;
   headers.forEach((header, i) => {
+    doc.strokeColor("#999999");
     doc.rect(currentX, currentY, colWidths[i], headerHeight).stroke();
     doc.text(header, currentX + padding, currentY + padding, {
       width: colWidths[i] - 2 * padding,
@@ -52,10 +53,100 @@ function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
   return currentY;
 }
 
+const formatDate = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (isNaN(date)) return "";
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  const year = date.getFullYear().toString().slice(-2);
+  return `${month}/${day}/${year}`;
+};
+
+function drawStructuredLeadDetails(doc, x, y, lead) {
+  const colWidths = [130, 130, 130, 122];
+  const rowHeight = 20;
+  const padding = 5;
+
+  // Header Row
+  const headers = ["Lead Origin:", "Assigned By","Assigned Date:", "Completed Date:"];
+  const values = [
+    lead.parentLeadNo ? lead.parentLeadNo.join(", ") : "N/A",
+    lead.assignedBy ? lead.assignedBy : "N/A",
+    lead.assignedDate ? formatDate(lead.assignedDate) : "N/A",
+    lead.completedDate ? formatDate(lead.completedDate) : "N/A",
+  ];
+
+  let currX = x;
+
+  // Grey background cells
+  for (let i = 0; i < headers.length; i++) {
+    doc.rect(currX, y, colWidths[i], rowHeight).fillAndStroke("#f5f5f5", "#ccc");
+    doc.fillColor("#000")
+      .font("Helvetica-Bold")
+      .fontSize(11)
+      .text(headers[i], currX + padding, y + 5);
+    currX += colWidths[i];
+  }
+
+  y += rowHeight;
+  currX = x;
+
+  // Values row
+  for (let i = 0; i < values.length; i++) {
+    doc.rect(currX, y, colWidths[i], rowHeight).stroke();
+    doc.font("Helvetica").fontSize(12).text(values[i], currX + padding, y + 5);
+    currX += colWidths[i];
+  }
+
+  // Second Row - Assigned Officers
+  y += rowHeight;
+  doc
+    .rect(x, y, colWidths.reduce((a, b) => a + b, 0), rowHeight)
+    .fillAndStroke("#f5f5f5", "#ccc");
+  doc
+    .font("Helvetica-Bold")
+    .fontSize(11)
+    .fillColor("#000")
+    .text("Assigned Officers:", x + padding, y + 5);
+
+  const officersText = lead.assignedTo?.join(", ") || "N/A";
+  doc.font("Helvetica").fontSize(12).text(officersText, x + 150 + padding, y + 5);
+
+   // Second Row - Assigned Officers
+   y += rowHeight;
+   doc
+     .rect(x, y, colWidths.reduce((a, b) => a + b, 0), rowHeight)
+     .fillAndStroke("#f5f5f5", "#ccc");
+   doc
+     .font("Helvetica-Bold")
+     .fontSize(11)
+     .fillColor("#000")
+     .text("Subnumbers:", x + padding, y + 5);
+ 
+   const subnumbers = lead.subNumber?.join(", ") || "N/A";
+   doc.font("Helvetica").fontSize(12).text(subnumbers, x + 150 + padding, y + 5);
+     // Second Row - Assigned Officers
+     y += rowHeight;
+     doc
+       .rect(x, y, colWidths.reduce((a, b) => a + b, 0), rowHeight)
+       .fillAndStroke("#f5f5f5", "#ccc");
+     doc
+       .font("Helvetica-Bold")
+       .fontSize(11)
+       .fillColor("#000")
+       .text("Associated Subnumbers:", x + padding, y + 5);
+   
+     const Assosubnumbers = lead.associatedSubNumbers?.join(", ") || "N/A";
+     doc.font("Helvetica").fontSize(12).text(Assosubnumbers, x + 150 + padding, y + 5);
+
+  return y + rowHeight + 20;
+}
+
 function drawTextBox(doc, x, y, width, title, content) {
   const padding = 5;
   const titleHeight = title ? 15 : 0;
-
+  doc.strokeColor("#999999");
   doc.font("Helvetica").fontSize(10);
   const contentHeight = doc.heightOfString(content, {
     width: width - 2 * padding,
@@ -63,13 +154,15 @@ function drawTextBox(doc, x, y, width, title, content) {
   });
 
   const boxHeight = titleHeight + contentHeight + 2 * padding;
+  doc.strokeColor("#999999");
 
-  doc.save().lineWidth(1).strokeColor("#000").rect(x, y, width, boxHeight).stroke().restore();
+  doc.save().lineWidth(1).strokeColor("#999999").rect(x, y, width, boxHeight).stroke().restore();
 
   if (title) {
     doc.font("Helvetica-Bold").fontSize(10).text(title, x + padding, y + padding);
   }
 
+  doc.strokeColor("#999999");
   doc.font("Helvetica").fontSize(10).text(content, x + padding, y + padding + titleHeight, {
     width: width - 2 * padding,
     align: "justify"
@@ -86,16 +179,6 @@ function generateReport(req, res) {
   } = req.body;
 
   const includeAll = selectedReports && selectedReports.FullReport;
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    if (isNaN(date)) return "";
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const day = date.getDate().toString().padStart(2, "0");
-    const year = date.getFullYear().toString().slice(-2);
-    return `${month}/${day}/${year}`;
-  };
 
   try {
     const doc = new PDFDocument({ size: "LETTER", margin: 50 });
@@ -126,8 +209,9 @@ function generateReport(req, res) {
     }
     doc.font("Helvetica-Bold").fontSize(12).text("Lead Details:", 50, currentY);
     currentY += 20;
-    currentY = drawTable(doc, 50, currentY, ["Lead No.", "Origin", "Assigned Date", "Due Date", "Completed Date"], [{ "Lead No.": leadInstructions?.leadNo || 'N/A', "Origin": leadInstructions?.parentLeadNo || 'N/A', "Assigned Date": formatDate(leadInstructions?.assignedDate) || 'N/A', "Due Date": formatDate(leadInstructions?.dueDate) || 'N/A', "Completed Date": "Still to add in db" }], [90, 90, 120, 120, 92]) + 20;
-    currentY = drawTable(doc, 50, currentY, ["Sub No.", "Associated Sub Nos.", "Assigned Officers", "Assigned By"], [{ "Sub No.": leadInstructions?.subNumber || 'N/A', "Associated Sub Nos.": leadInstructions?.associatedSubNumbers || 'N/A', "Assigned Officers": leadInstructions?.assignedTo|| 'N/A', "Assigned By": leadInstructions?.assignedBy || 'N/A' }], [90, 170, 170, 82]) + 20;
+    // currentY = drawTable(doc, 50, currentY, ["Lead No.", "Origin", "Assigned Date", "Due Date", "Completed Date"], [{ "Lead No.": leadInstructions?.leadNo || 'N/A', "Origin": leadInstructions?.parentLeadNo || 'N/A', "Assigned Date": formatDate(leadInstructions?.assignedDate) || 'N/A', "Due Date": formatDate(leadInstructions?.dueDate) || 'N/A', "Completed Date": "Still to add in db" }], [90, 90, 120, 120, 92]) + 20;
+    // currentY = drawTable(doc, 50, currentY, ["Sub No.", "Associated Sub Nos.", "Assigned Officers", "Assigned By"], [{ "Sub No.": leadInstructions?.subNumber || 'N/A', "Associated Sub Nos.": leadInstructions?.associatedSubNumbers || 'N/A', "Assigned Officers": leadInstructions?.assignedTo|| 'N/A', "Assigned By": leadInstructions?.assignedBy || 'N/A' }], [90, 170, 170, 82]) + 20;
+    currentY = drawStructuredLeadDetails(doc, 50, currentY, leadInstructions);
 
     if (includeAll || leadInstruction) {
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
