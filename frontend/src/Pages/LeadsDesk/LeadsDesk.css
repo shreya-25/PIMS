@@ -25,13 +25,13 @@ body{
 {
   margin-top: 2px;
 }
-.search_and_hierarchy_container
+/* .search_and_hierarchy_container
 {
   display: flex;
   gap: 10px;
   align-items: center;
   justify-content: center;
-}
+} */
 
 .hierarchy-search
 {

@@ -31,10 +31,13 @@ const lrEvidenceSchema = new mongoose.Schema(
         disposition: { type: String, required: true },
         type: { type: String },
         evidenceDescription: { type: String }, 
-        fileId: { type: mongoose.Schema.Types.ObjectId, ref: "uploads" },
+        // fileId: { type: mongoose.Schema.Types.ObjectId, ref: "uploads" },
+        filePath: { type: String, required: true },
+        originalName: { type: String },
+        filename: { type: String },
        
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields
 );
 
-module.exports = mongoose.model("LREvidence", lrEnclosureSchema, "LREvidences");
+module.exports = mongoose.model("LREvidence", lrEvidenceSchema, "LREvidences");
