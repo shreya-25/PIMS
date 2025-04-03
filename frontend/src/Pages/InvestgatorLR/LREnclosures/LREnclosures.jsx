@@ -122,7 +122,7 @@ export const LREnclosures = () => {
     
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/lrenclosure/upload-lrenclosure",
+        "http://localhost:5000/api/lrenclosure/upload",
         formData,
         { 
           headers: { 

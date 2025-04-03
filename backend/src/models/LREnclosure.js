@@ -28,7 +28,11 @@ const lrEnclosureSchema = new mongoose.Schema(
         enteredDate: { type: Date, required: true },
         type: { type: String },
         enclosureDescription: { type: String }, 
-        fileId: { type: mongoose.Schema.Types.ObjectId, ref: "uploads" },
+        // fileId: { type: mongoose.Schema.Types.ObjectId, ref: "uploads" },
+        // For disk storage, store file details instead of fileId
+        filePath: { type: String, required: true },
+        originalName: { type: String },
+        filename: { type: String },
        
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields
