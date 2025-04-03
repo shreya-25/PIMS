@@ -25,13 +25,13 @@ body{
 {
   margin-top: 2px;
 }
-.search_and_hierarchy_container
+/* .search_and_hierarchy_container
 {
   display: flex;
   gap: 10px;
   align-items: center;
   justify-content: center;
-}
+} */
 
 .hierarchy-search
 {
@@ -47,9 +47,31 @@ body{
   width: 20%;
 }
 
-.search-button
+/* .search-button
 {
   width: 30%;
+} */
+.search-lead-portion
+{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  /* justify-content: center; */
+}
+.search-lead-head
+{
+  width: 20%;
+}
+
+.block1
+{
+  margin-bottom: 10px;
+}
+
+.select-lead-btn-container
+{
+  gap: 10px;
 }
 
 /* Table Heading section */
@@ -503,7 +525,7 @@ body{
   color: #555;
 }
 
-.search-button {
+/* .search-button {
   background: rgba(0, 0, 0, 0.699);
   color: white;
   border: none;
@@ -515,7 +537,7 @@ body{
 
 .search-button:hover {
   opacity: 0.8;
-}
+} */
 
 .top-sec-report
 {
@@ -531,3 +553,6 @@ body{
   align-items: center;
   flex-direction: column;
 }
+
+.another-btn-selectleadview
+{display: flex;}

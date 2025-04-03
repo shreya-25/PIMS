@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import PersonModal from "../../components/PersonModal/PersonModel";
+import CaseHeaderSection from "../../components/CaseHeaderSection/CaseHeaderSection";
 import VehicleModal from "../../components/VehicleModal/VehicleModel";
 import Pagination from "../../components/Pagination/Pagination";
 import { jsPDF } from "jspdf"; // if still used elsewhere
@@ -23,6 +24,7 @@ const formatDate = (dateString) => {
   const year = date.getFullYear().toString().slice(-2);
   return `${month}/${day}/${year}`;
 };
+
 
 // ---------- Fetch one lead (with returns, persons, vehicles) ----------
 const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
@@ -343,6 +345,7 @@ export const LeadsDeskTest = () => {
   // ------------------ Case Summary Editing ------------------
   const handleCaseSummaryChange = (e) => setCaseSummary(e.target.value);
   const handleEditClick = () => setIsEditing(true);
+  
   const handleSaveClick = () => {
     setIsEditing(false);
     alert("Report Saved!");
@@ -686,6 +689,9 @@ export const LeadsDeskTest = () => {
     ));
   };
 
+    const [selectLead1, setSelectLead1] = useState("");
+      const [selectLead2, setSelectLead2] = useState("");
+
   return (
     <div ref={pdfRef} className="lead-desk-page">
       <Navbar />
@@ -730,6 +736,10 @@ export const LeadsDeskTest = () => {
               ></textarea>
             </div>
 
+            <div className="search-lead-portion">
+            <div className="search-lead-head">
+            <label className="input-label1">Search Lead</label>
+            </div>
             <div className="search_and_hierarchy_container">
               <div className="search-bar">
                 <div className="search-container1">
@@ -737,7 +747,73 @@ export const LeadsDeskTest = () => {
                   <input type="text" className="search-input1" placeholder="Search Lead" />
                 </div>
               </div>
+              </div>
+              </div> 
+              {/* <CaseHeaderSection /> */}
 
+              <div className="block1">
+        <label className="input-label">Select Leads to view</label>
+        <div className="top-row">
+        <div className="top-rowhead">
+          <div className="square">
+          <input
+                  type="text"
+                  className="square-input"
+                  placeholder=""
+                  value={selectLead1}
+                  onChange={(e) => setSelectLead1(e.target.value)}
+                />
+          </div>
+          <div className="dash"></div>
+          <div className="square">
+          <input
+                  type="text"
+                  className="square-input"
+                  placeholder=""
+                  value={selectLead2}
+                  onChange={(e) => setSelectLead2(e.target.value)}
+                />
+          </div>
+          </div>
+          {/* <div className="select-lead-btn-container"> */}
+          <button className="search-button1" >
+                  Show Leads
+                </button>
+                {/* <button className="search-button1" onClick={handleShowAllLeads}>
+                  Show All Leads
+                </button> */}
+                </div>
+        {/* </div> */}
+        {/* <button className="search-button" onClick={handleShowAllLeads}>
+                  Show All Leads
+                </button> */}
+        </div>
+
+
+        <div className="block1">
+        <label className="input-label">View Lead Hierarchy</label>
+        <div className="top-row">
+        <div className="top-rowhead">
+          <div className="square1">
+          <input
+                  type="text"
+                  className="square-input"
+                  placeholder=""
+                  value={hierarchyLeadInput}
+                  onChange={(e) => setHierarchyLeadInput(e.target.value)}
+                />
+          </div>
+          <div className="square4"></div>
+          <div className="square3"></div>
+          </div>
+          <button className="search-button" onClick={handleShowHierarchy}>
+                  Show Hierarchy
+                </button>
+        </div>
+        </div>
+
+
+{/* 
               <div className="hierarchy-search">
                 <input
                   type="text"
@@ -752,8 +828,16 @@ export const LeadsDeskTest = () => {
                 <button className="search-button" onClick={handleShowAllLeads}>
                   Show All Leads
                 </button>
-              </div>
-            </div>
+              </div> */}
+               <div className="p-6">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalEntries={totalEntries}
+                    onPageChange={setCurrentPage}
+                    pageSize={pageSize}
+                    onPageSizeChange={setPageSize}
+                  />
+                </div>
 
             {hierarchyLeadsData.length > 0 ? (
               <>
@@ -767,7 +851,7 @@ export const LeadsDeskTest = () => {
             ) : (
               <>
                 {renderLeads(leadsData)}
-                <div className="p-6">
+                {/* <div className="p-6">
                   <Pagination
                     currentPage={currentPage}
                     totalEntries={totalEntries}
@@ -775,7 +859,7 @@ export const LeadsDeskTest = () => {
                     pageSize={pageSize}
                     onPageSizeChange={setPageSize}
                   />
-                </div>
+                </div> */}
               </>
             )}
           </div>
