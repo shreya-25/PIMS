@@ -86,6 +86,36 @@ export const CMEnclosures = () => {
     navigate(route); // Navigate to respective page
   };
 
+   // Fetch enclosures from backend when component mounts or when selectedLead/selectedCase update
+   useEffect(() => {
+    const fetchEnclosures = async () => {
+      if (!selectedLead || !selectedCase) {
+        console.warn("Missing selected lead or case details");
+        return;
+      }
+      // Build URL using selectedLead and selectedCase; URL-encode values that may have spaces
+      const leadNo = selectedLead.leadNo;
+      const leadName = encodeURIComponent(selectedLead.leadName);
+      const caseNo = encodeURIComponent(selectedLead.caseNo);
+      // Here, assuming caseName is in selectedLead or selectedCase; adjust as needed.
+      const caseName = encodeURIComponent(selectedLead.caseName || selectedCase.caseName);
+      const token = localStorage.getItem("token");
+
+      const url = `http://localhost:5000/api/lrenclosure/${leadNo}/${leadName}/${caseNo}/${caseName}`;
+      try {
+        const response = await axios.get(url, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        console.log("Fetched enclosures:", response.data);
+        setEnclosures(response.data);
+      } catch (error) {
+        console.error("Error fetching enclosures:", error);
+      }
+    };
+
+    fetchEnclosures();
+  }, [selectedLead, selectedCase]);
+
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
             const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           
@@ -229,7 +259,7 @@ export const CMEnclosures = () => {
             {enclosures.length > 0 ? (
               enclosures.map((enclosure, index) => (
               <tr key={index}>
-                <td>{enclosure.dateEntered}</td>
+                <td>{formatDate(enclosure.enteredDate)}</td>
                 <td>{enclosure.leadReturnId}</td>
                 <td>{enclosure.type}</td>
                 <td>{enclosure.enclosure}</td>
@@ -251,7 +281,16 @@ export const CMEnclosures = () => {
               </tr>)}
           </tbody>
         </table>
-        <Attachment />
+        {/* <Attachment /> */}
+        <Attachment attachments={enclosures.map(e => ({
+            name: e.originalName || e.filename,
+            // Optionally include size and date if available:
+            size: e.size || "N/A",
+            date: e.enteredDate ? new Date(e.enteredDate).toLocaleString() : "N/A",
+            // Build a URL to view/download the file
+            url: `http://localhost:5000/uploads/${e.filename}`
+          }))} />
+
        <Comment/>
       </div>
       </div>
