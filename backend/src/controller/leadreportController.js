@@ -1,6 +1,22 @@
 const PDFDocument = require("pdfkit");
+const { PDFDocument: PDFLibDocument } = require("pdf-lib");
 const path = require("path");
 const fs = require("fs");
+
+// Helper: merges your PDFKit doc with an external PDF
+async function mergeWithAnotherPDF(pdfKitBuffer, otherPdfPath) {
+  const mainDoc = await PDFLibDocument.load(pdfKitBuffer);
+  const otherBuffer = fs.readFileSync(otherPdfPath);
+  const otherDoc = await PDFLibDocument.load(otherBuffer);
+
+  // Copy every page from otherDoc, append to mainDoc
+  const copiedPages = await mainDoc.copyPages(otherDoc, otherDoc.getPageIndices());
+  copiedPages.forEach((page) => mainDoc.addPage(page));
+
+  // Return the final merged PDF as a buffer
+  const mergedPdfBytes = await mainDoc.save();
+  return Buffer.from(mergedPdfBytes);
+}
 
 function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
   const minRowHeight = 20;
@@ -52,6 +68,29 @@ function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
 
   return currentY;
 }
+
+function drawHardcodedContent(doc, currentY) {
+  // Possibly force a new page if not enough space
+  if (currentY + 300 > doc.page.height - doc.page.margins.bottom) {
+    doc.addPage();
+    currentY = doc.page.margins.top;
+  }
+
+  const imagePath = path.join(__dirname, "road.jpg");
+  if (fs.existsSync(imagePath)) {
+    // Draw an image 300px tall
+    doc.image(imagePath, { width: 300, height: 300 });
+    // Move your "cursor" down
+    currentY += 300; 
+    // Also consider doc.moveDown() which moves the text cursor, 
+    // but not necessarily your manual currentY variable.
+    currentY += doc.currentLineHeight();
+  }
+
+  // Return it
+  return currentY;
+}
+
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -184,7 +223,26 @@ function generateReport(req, res) {
     const doc = new PDFDocument({ size: "LETTER", margin: 50 });
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline; filename=report.pdf");
-    doc.pipe(res);
+    // doc.pipe(res);
+
+    const chunks = [];
+  doc.on("data", (chunk) => chunks.push(chunk));
+  doc.on("end", async () => {
+  // All PDF data from PDFKit is now in `chunks`
+  const pdfKitBuffer = Buffer.concat(chunks);
+
+  // We'll do the merging with pdf-lib here
+  try {
+    const mergedBuffer = await mergeWithAnotherPDF(pdfKitBuffer, "report_Officer 916_20250321T144351339Z.pdf");
+    // Then send that final merged PDF
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "inline; filename=merged.pdf");
+    res.send(mergedBuffer);
+  } catch (err) {
+    console.error("Merge error:", err);
+    res.status(500).json({ error: "Failed to merge PDF" });
+  }
+});
 
     const headerHeight = 80;
     doc.rect(0, 0, doc.page.width, headerHeight).fill("#003366");
@@ -337,6 +395,7 @@ function generateReport(req, res) {
       currentY = drawTable(doc, 50, currentY, ["Date Entered", "Year", "Make", "Model", "Plate", "Category", "VIN"], [{ "Date Entered": "03/14/24","Year": "2019", "Make": "Toyota", "Model": "Corolla", "Plate": "XYZ1234", "Category": "Bike", "VIN": "" }], [90, 70, 70, 70, 70, 70, 72]) + 20;
       currentY = drawTable(doc, 50, currentY, ["Type", "State", "Primary Color", "Secondary Color","Additional Information"], [{ "Type": "", "State": "NY", "Primary Color": "Blue", "Secondary Color": "Yellow", "Additional Information": "" }], [90, 90, 80, 120, 132]) + 20;
 
+      currentY = drawHardcodedContent(doc, currentY);
     }
 
     if (includeAll || leadEnclosures) {
@@ -405,8 +464,6 @@ function generateReport(req, res) {
       currentY += 20;
       currentY = drawTable(doc, 50, currentY, ["Event Date", "Event Time Range", "Event Location", "Flags","Event Description"], [{ "Event Date": "", "Event Time Range": "", "Event Location": "", "Flags": "", "Event Description": "" }], [80, 100, 100, 90, 142]) + 20;
     }
-
-
 
     doc.end();
   } catch (error) {
