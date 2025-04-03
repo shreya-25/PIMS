@@ -195,3 +195,23 @@
   {
     font-size: 20px;
   }
+
+  .show-all-lead-btn {
+    background: rgba(0, 0, 0, 0.699);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    cursor: pointer;
+    font-size: 20px;
+    transition: 0.3s;
+    width: 10%;
+  }
+  
+  .show-all-lead-btn:hover {
+    opacity: 0.8;
+  }
+
+  .show-all-lead-btn-sec
+  {
+    width: 20%;
+  }

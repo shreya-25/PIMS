@@ -783,6 +783,11 @@ export const LeadsDeskTest = () => {
                   Show All Leads
                 </button> */}
                 </div>
+                <div className="show-all-lead-btn-sec">
+                <button className="show-all-lead-btn" onClick={handleShowAllLeads}>
+                  Show All Leads
+                </button>
+                </div>
         {/* </div> */}
         {/* <button className="search-button" onClick={handleShowAllLeads}>
                   Show All Leads
