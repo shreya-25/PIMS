@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./Slidebar.css";
 
 export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
@@ -12,6 +12,8 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [allUsers, setAllUsers] = useState([]);
+
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -31,6 +33,31 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const token = localStorage.getItem("token");
+      try {
+        const response = await fetch("http://localhost:5000/api/users/usernames", {
+          // headers: {
+          //   Authorization: `Bearer ${token}`,
+          // },
+        });
+  
+        const data = await response.json();
+  
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to fetch users");
+        }
+  
+        setAllUsers(data.usernames); // assuming your API returns a list of user objects
+      } catch (error) {
+        console.error("❌ Error fetching users:", error);
+      }
+    };
+  
+    fetchUsers();
+  }, []);
+
   // const toggleDropdown = () => {
   //   setDropdownOpen(!dropdownOpen);
   // };
@@ -49,6 +76,8 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
         : prevDetails.investigators.filter((inv) => inv !== value),
     }));
   };
+
+
   
 
   // const handleDone = () => {
@@ -87,7 +116,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
     };
   
     // Retrieve token from localStorage or context
-    const token = localStorage.getItem("token"); // Ensure this is where your token is stored
+    const token = localStorage.getItem("token");
   
     try {
       const response = await fetch("http://localhost:5000/api/cases", {
@@ -139,21 +168,21 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
           </button>
           <h3>Add Case</h3>
           <div className="form-group">
-            <label>Case Title:</label>
-            <input
-              type="text"
-              name="title"
-              value={caseDetails.title}
-              onChange={handleInputChange}
-              className="input-field"
-            />
-          </div>
-          <div className="form-group">
             <label>Case Number:</label>
             <input
               type="text"
               name="number"
               value={caseDetails.number}
+              onChange={handleInputChange}
+              className="input-field"
+            />
+          </div>
+          <div className="form-group">
+            <label>Case Title:</label>
+            <input
+              type="text"
+              name="title"
+              value={caseDetails.title}
               onChange={handleInputChange}
               className="input-field"
             />
@@ -167,7 +196,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
               className="input-field"
             >
               <option value="">Select Case Manager</option>
-              {caseManagers.map((manager, index) => (
+              {allUsers.map((manager, index) => (
                 <option key={index} value={manager}>
                   {manager}
                 </option>
@@ -183,7 +212,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
               </div>
               {dropdownOpen && (
                 <div className="dropdown-options">
-                  {investigators.map((officer) => {
+                  {/* {allUsers.map((officer) => {
                     const isAvailable =
                       officer.unavailableDays === 0
                         ? "Available"
@@ -204,7 +233,20 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
                         </label>
                       </div>
                     );
-                  })}
+                  })} */}
+
+                  {allUsers.map((officerName, index) => (
+                            <div key={index} className="dropdown-item">
+                              <input
+                                type="checkbox"
+                                id={officerName}
+                                value={officerName}
+                                checked={caseDetails.investigators.includes(officerName)}
+                                onChange={handleCheckboxChange}
+                              />
+                              <label htmlFor={officerName}>{officerName}</label>
+                            </div>
+                          ))}
                 </div>
               )}
             </div>
@@ -219,10 +261,10 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
               className="input-field textarea-field"
             />
           </div>
-          <div className="form-group">
+          {/* <div className="form-group">
             <h4>Upload any relevant document to the case</h4>
             <input type="file" className="input-field" />
-          </div>
+          </div> */}
           <button className="done-button" onClick={handleDone}>
             Done
           </button>
