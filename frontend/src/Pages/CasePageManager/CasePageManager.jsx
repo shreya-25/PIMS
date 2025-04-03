@@ -94,13 +94,29 @@ export const CasePageManager = () => {
       }
     };
     
-    const acceptLead = (leadId) => {
-      const leadToAccept = leads.assignedLeads.find((lead) => lead.id === leadId);
+    const acceptLead = async (leadNo) => {
+      const leadToAccept = leads.assignedLeads.find((lead) => lead.leadNo === leadNo);
       if (!leadToAccept) return;
+
+      try {
+        const token = localStorage.getItem("token");
+    
+        // Update the lead status in the database to "Pending"
+        await axios.patch(
+          `http://localhost:5000/api/lead/${leadToAccept.leadNo}/${leadToAccept.caseNo}/${encodeURIComponent(leadToAccept.caseName)}/status`,
+          { status: "Pending" },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
     
       // Add lead to pending leads with default fields if not present
       const newPendingLead = {
         ...leadToAccept,
+        leadStatus: "Pending",
         dueDate: leadToAccept.dueDate || "12/31/2024", // Default due date
         priority: leadToAccept.priority || "Medium", // Default priority
         flags: leadToAccept.flags || [],
@@ -109,12 +125,15 @@ export const CasePageManager = () => {
     
       setLeads((prevLeads) => ({
         ...prevLeads,
-        assignedLeads: prevLeads.assignedLeads.filter((lead) => lead.id !== leadId),
+        assignedLeads: prevLeads.assignedLeads.filter((lead) => lead.leadNo !== leadNo),
         pendingLeads: [...prevLeads.pendingLeads, newPendingLead],
       }));
-    };
+    } catch (error) {
+      console.error("Error updating lead status:", error.response?.data || error);
+      alert("Failed to accept lead.");
+    }
+  };
     
-    const isMainStreetThreat = caseDetails?.title === "Main Street Murder";
     
       
     const [leads, setLeads] = useState({
@@ -243,9 +262,7 @@ export const CasePageManager = () => {
   
 
     const handleTabClick = (tab) => {
-      if (!isMainStreetThreat) {
           setActiveTab(tab);
-      }
   };
 
     const handleGenerateLead = () => {
@@ -751,31 +768,31 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("assignedLeads")}
                         >
-                            Assigned Leads: {isMainStreetThreat ? 0 : leads.assignedLeads.length}
+                            Assigned Leads: {leads.assignedLeads.length}
                         </span>
                         <span
                             className={`hoverable ${activeTab === "pendingLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("pendingLeads")}
                           >
-                            Accepted Leads: {isMainStreetThreat ? 0 : leads.pendingLeads.length}
+                            Accepted Leads: {leads.pendingLeads.length}
                           </span>
                         <span
                             className={`hoverable ${activeTab === "pendingLeadReturns" ? "active" : ""}`}
                             onClick={() => handleTabClick("pendingLeadReturns")}
                         >
-                            Lead Returns for Review: {isMainStreetThreat ? 0 : leads.pendingLeadReturns.length}
+                            Lead Returns for Review: {leads.pendingLeadReturns.length}
                         </span>
                         <span
                             className={`hoverable ${activeTab === "allLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("allLeads")}
                         >
-                            All Leads: {isMainStreetThreat ? 0 : leads.allLeads.length}
+                            All Leads: {leads.allLeads.length}
                         </span>
                     </div>
                   
 
                     {/* Tab Content */}
-                    {!isMainStreetThreat ? (
+                
                     <div className="content-section">
                     {activeTab === "assignedLeads" && (
   <div className="assigned-leads">
@@ -1477,10 +1494,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
   pageSize={pageSize}
   onPageSizeChange={setPageSize} // Update page size state
 />
-                    </div> ): (
-                        <div className="no-leads-message">
-                        </div>
-                    )}
+                    </div> 
                 {/* </div> */}
                 {/* <div className="gotomainpagebtn">
                    <button className="mainpagebtn"onClick={() => handleNavigation("/HomePage")}>Go to Home Page</button>

@@ -46,11 +46,11 @@ const createLead = async (req, res) => {
       res.status(201).json(newLead);
       
           // Update the corresponding case with the new subNumber if not already present
-    const caseDoc = await Case.findById(caseNo);
-    if (caseDoc && !caseDoc.subNumbers.includes(subNumber)) {
-      caseDoc.subNumbers.push(subNumber);
-      await caseDoc.save();
-    }
+    // const caseDoc = await Case.findById(caseNo);
+    // if (caseDoc && !caseDoc.subNumbers.includes(subNumber)) {
+    //   caseDoc.subNumbers.push(subNumber);
+    //   await caseDoc.save();
+    // }
     } catch (err) {
       console.error("Error creating lead:", err.message);
       res.status(500).json({ message: "Something went wrong" });
@@ -145,4 +145,31 @@ const getLeadsforHierarchy = async (req, res) => {
 };
 
 
-module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy };
+const updateLeadStatus = async (req, res) => {
+  try {
+    const { leadNo, leadName, caseNo, caseName } = req.params;
+    const { status } = req.body;
+
+    // Find the lead
+    const lead = await Lead.findOne({ leadNo: Number(leadNo), caseNo, caseName });
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found" });
+    }
+
+    // Update the status
+    lead.leadStatus = status;
+    await lead.save();
+
+    res.status(200).json({ message: "Status updated successfully", lead });
+  } catch (err) {
+    console.error("Error updating lead status:", err.message);
+    res.status(500).json({ message: "Server error while updating lead status" });
+  }
+};
+
+module.exports = { updateLeadStatus };
+
+
+
+
+module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus };
