@@ -31,6 +31,15 @@ const formatDate = (dateString) => {
   return `${month}/${day}/${year}`;
 };
 
+const [username, setUsername] = useState("");
+
+useEffect(() => {
+   const loggedInUser = localStorage.getItem("loggedInUser");
+   if (loggedInUser) {
+     setUsername(loggedInUser);
+   }
+  })
+
   // State for all input fields
   const [leadData, setLeadData] = useState({
     CaseName: '',
@@ -220,7 +229,7 @@ const handleGenerateLead = async () => {
         dueDate,
         assignedDate,
         assignedTo: assignedOfficer,
-        assignedBy,
+        assignedBy: username,
         summary: leadSummary,
         description: leadDescription,
       },
@@ -414,15 +423,15 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
 
         <th style={{ width: "10%" }}>Lead No.</th>
           <th style={{ width: "10%" }}>Incident No.</th>
-          <th style={{ width: "10%" }}>Subnumber</th>
+          <th style={{ width: "10%" }}>Assigned By</th>
           <th style={{ width: "8%" }}>Assigned Date</th>
       </tr>
       </thead>
       <tbody>
       <tr>
       <td>{leadData.leadNumber} </td>
-        <td>{leadData.incidentNumber}</td>
-        <td>{leadData.subNumber}</td>
+        <td>{selectedCase.caseNo}</td>
+        <td>{username}</td>
         <td>{formatDate(leadData.assignedDate)} </td>
 
       </tr>
@@ -704,22 +713,6 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
 </td>
 
 </tr>
-
-
-
-
-            <tr>
-              <td>Assigned By:</td>
-              <td>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={leadData.assignedBy}
-                  onChange={(e) => handleInputChange('assignedBy', e.target.value)}
-                  placeholder=""
-                />
-              </td>
-            </tr>
           </tbody>
         </table>
       </div>
