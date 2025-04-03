@@ -940,6 +940,60 @@ function formatDate(dateString) {
   return `${month}/${day}/${year}`;
 }
 
+// Simple demo function that creates "demo.pdf"
+function createHardcodedPDF() {
+  // 1) Create new PDF document
+  const doc = new PDFDocument();
+
+  // 2) Pipe the PDF document to a write stream (to your disk, for example)
+  const outputPath = path.join(__dirname, "demo.pdf");
+  const writeStream = fs.createWriteStream(outputPath);
+  doc.pipe(writeStream);
+
+  // 3) Add some text
+  doc.fontSize(18).text("Hello! Here’s a hard-coded image:", {
+    underline: true,
+    align: "left",
+  });
+
+  // 4) Insert an image if it exists
+  const imagePath = path.join(__dirname, "road.jpg");
+  if (fs.existsSync(imagePath)) {
+    // Optionally specify size or position
+    doc.image(imagePath, {
+      width: 250, // only specifying width => height is scaled proportionally
+      // fit: [250, 200],  // alternative: fit in a bounding box
+      // align: 'center', valign: 'center', // if you want to position it
+    });
+  } else {
+    doc.moveDown().fontSize(12).text(`Image not found: ${imagePath}`);
+  }
+
+  // 5) Move to a new page
+  doc.addPage();
+
+  doc.fontSize(16).text("Attaching a separate PDF file:", { underline: true });
+  const pdfPath = path.join(__dirname, "someDoc.pdf");
+  if (fs.existsSync(pdfPath)) {
+    // If you just want to reference or attach it (not visually show its pages)
+    doc.moveDown().fontSize(12).text("Attaching PDF as a file annotation...");
+    
+    // Note: `doc.file(...)` for attachments depends on PDFKit version and usage.
+    // This line *may* attach the file so that PDF readers can see it under "attachments."
+    // If not supported in your version, you'd need another approach or plugin.
+    doc.file(pdfPath);
+  } else {
+    doc.moveDown().fontSize(12).text(`PDF not found: ${pdfPath}`);
+  }
+
+  // 6) Finish and close the document
+  doc.end();
+
+  writeStream.on("finish", () => {
+    console.log(`PDF created at ${outputPath}`);
+  });
+}
+
 // Basic table that does NOT split rows across pages
 function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
   const minRowHeight = 20;
@@ -1462,6 +1516,8 @@ function generateCaseReport(req, res) {
       // No leads
       doc.text("No leads data available.", 50, currentY);
     }
+
+    createHardcodedPDF();
 
     // End the PDF
     doc.end();
