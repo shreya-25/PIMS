@@ -83,6 +83,10 @@ const leadReturnResultRoutes = require("./routes/leadReturnResultRoutes.js");
 const LPRoutes = require("./routes/LPRoutes.js");
 const LVRoutes = require("./routes/LVRoutes.js");
 const LEnRoutes = require("./routes/LEnRoutes.js");
+const LEvRoutes = require("./routes/LEvRoutes.js");
+const LRPRoutes = require("./routes/LRPRoutes.js");
+const LRARoutes = require("./routes/LRARoutes.js");
+const LRViRoutes = require("./routes/LRViRoutes.js");
 const { dbConnect } = require("./config/dbConnect"); // Import dbConnect properly
 const path = require('path');
 
@@ -120,6 +124,10 @@ app.use("/api/leadReturnResult", leadReturnResultRoutes);
 app.use("/api/lrperson", LPRoutes);
 app.use("/api/lrvehicle", LVRoutes);
 app.use("/api/lrenclosure", LEnRoutes);
+app.use("/api/lrevidence", LEvRoutes);
+app.use("/api/lrpicture", LRPRoutes);
+app.use("/api/lraudio", LRARoutes);
+app.use("/api/lrvideo", LRViRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'temp_uploads')));
 
 app.use("/api/report", reportRoutes); // For report generation

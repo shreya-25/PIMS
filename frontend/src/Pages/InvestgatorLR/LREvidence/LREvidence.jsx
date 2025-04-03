@@ -20,6 +20,8 @@ export const LREvidence = () => {
       }, []);
   const navigate = useNavigate(); // Initialize navigate hook
   const location = useLocation();
+      const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);  
+  
   
      const formatDate = (dateString) => {
       if (!dateString) return "";
@@ -35,24 +37,36 @@ export const LREvidence = () => {
   
 
   // Sample evidence data
-  const [evidence, setEvidence] = useState([
+  // const [evidence, setEvidence] = useState([
+  //   {
+  //     dateEntered: "12/01/2024",
+  //     returnId:1,
+  //     type: "Physical",
+  //     collectionDate: "12/01/2024",
+  //     disposedDate: "12/03/2024",
+  //     disposition: "Stored",
+  //   },
+  //   {
+  //     dateEntered: "12/02/2024",
+  //     returnId:2,
+  //     type: "Digital",
+  //     collectionDate: "12/02/2024",
+  //     disposedDate: "12/04/2024",
+  //     disposition: "Archived",
+  //   },
+  // ]);
+
+  const [evidences, setEvidences] = useState([
     {
-      dateEntered: "12/01/2024",
-      returnId:1,
-      type: "Physical",
-      collectionDate: "12/01/2024",
-      disposedDate: "12/03/2024",
-      disposition: "Stored",
-    },
-    {
-      dateEntered: "12/02/2024",
-      returnId:2,
-      type: "Digital",
-      collectionDate: "12/02/2024",
-      disposedDate: "12/04/2024",
-      disposition: "Archived",
-    },
+      dateEntered: "",
+      returnId:'',
+      type: "",
+      collectionDate: "",
+      disposedDate: "",
+      disposition: "",
+    }
   ]);
+
 
   // State to manage form data
   const [evidenceData, setEvidenceData] = useState({
@@ -61,6 +75,7 @@ export const LREvidence = () => {
     type: "",
     disposition: "",
   });
+    const [file, setFile] = useState(null);
 
   const handleInputChange = (field, value) => {
     setEvidenceData({ ...evidenceData, [field]: value });
@@ -76,7 +91,7 @@ export const LREvidence = () => {
     };
 
     // Add new evidence to the list
-    setEvidence([...evidence, newEvidence]);
+    // setEvidence([...evidence, newEvidence]);
 
     // Clear form fields
     setEvidenceData({
@@ -97,6 +112,59 @@ export const LREvidence = () => {
                 const onShowCaseSelector = (route) => {
                   navigate(route, { state: { caseDetails } });
               };
+
+   // Save Enclosure: Build FormData and post to backend including token from localStorage.
+  const handleSaveEvidence = async () => {
+    const formData = new FormData();
+    if (file) {
+      formData.append("file", file);
+      console.log("file", file);
+    }
+
+    // Append other required fields
+    formData.append("leadNo", selectedLead.leadNo); // Example value; update as needed
+    formData.append("description", selectedLead.leadName);
+    formData.append("enteredBy", localStorage.getItem("loggedInUser"));
+    formData.append("caseName", selectedLead.caseName);
+    formData.append("caseNo", selectedLead.caseNo);
+    formData.append("leadReturnId", evidenceData.returnId); // Example value; update as needed
+    formData.append("enteredDate", new Date().toISOString());
+    formData.append("type", evidenceData.type);
+    formData.append("envidenceDescription", evidenceData.evidence);
+    formData.append("collectionDate", evidenceData.collectionDate);
+    formData.append("disposedDate", evidenceData.disposedDate);
+    formData.append("disposition", evidenceData.disposition);
+
+    // Retrieve token from localStorage
+    const token = localStorage.getItem("token");
+    console.log(token);
+    for (const [key, value] of formData.entries()) {
+      console.log(`FormData - ${key}:`, value);
+    }
+    
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/lrevidence/upload",
+        formData,
+        { 
+          headers: { 
+            // "Content-Type": "multipart/form-data",
+            "Authorization": `Bearer ${token}`  // Add token here
+          } 
+        }
+      );
+      console.log("Evidence saved:", response.data);
+      // Optionally update local state with the new enclosure
+      setEvidences([...evidences, response.data.evidences]);
+
+      // Clear form fields if needed
+      setEvidenceData({ type: "", evidences: "" });
+      setFile(null);
+    } catch (error) {
+      console.error("Error saving evidence:", error);
+    }
+  };
+
   
 
   return (
@@ -253,7 +321,7 @@ export const LREvidence = () => {
             </tr>
           </thead>
           <tbody>
-            {evidence.map((item, index) => (
+            {evidences.map((item, index) => (
               <tr key={index}>
                 <td>{item.dateEntered}</td>
                 <td> {item.returnId} </td>
