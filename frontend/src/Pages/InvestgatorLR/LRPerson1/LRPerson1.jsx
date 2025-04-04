@@ -94,7 +94,7 @@ const [miscDetails, setMiscDetails] = useState([
           <span className="menu-item active" onClick={() => handleNavigation('/LRPerson')} >
             Person
           </span>
-          <span className="menu-item" >
+          <span className="menu-item" onClick={() => handleNavigation('/LRVehicle')} >
             Vehicles
           </span>
           <span className="menu-item" >
@@ -309,23 +309,7 @@ const [miscDetails, setMiscDetails] = useState([
             </tr>
           </tbody>
         </table>
-
-        {/* Additional Details */}
-        <button className="save-btn1" onClick={() => handleNavigation('/LRPerson2')} >Add Additional Details ➤</button>
-        {/* <button className="save-btn1">Save</button> */}
-
-        {/* Action Buttons */}
-        <div className="form-buttons">
-          {/* <button onClick={() => navigate(-1)} className="back-btn">
-            Back
-          </button>
-          <button className="next-btn" onClick={() => handleNavigation('/LRPerson2')}>Next</button> */}
-          {/* <button className="save-btn1">Save</button> */}
-          {/* <button className="cancel-btn">Cancel</button> */}
-        </div>
         
-     {/* Main Content */}
-     <div className="form-container1">
         <table className="person-table2">
           <tbody>
             {/* First Row */}
@@ -434,17 +418,16 @@ const [miscDetails, setMiscDetails] = useState([
             </tr>
           </tbody>
         </table>
+        
 
         {/* Buttons */}
         <div className="form-buttons">
-          <button className="back-btn"onClick={() => handleNavigation('/LRPerson1')}>Back</button>
-          <button className="next-btn"onClick={() => handleNavigation('/LRVehicle')}>Next</button>
-          <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button>
+       
+          <button className="save-btn1">Save</button>
+          {/* <button className="cancel-btn">Cancel</button> */}
         </div>
       {/* </div> */}
         
-      </div>
       </div>
       </div>
       <FootBar
