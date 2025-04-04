@@ -20,7 +20,8 @@ router.get("/assignedTo-leads", verifyToken, getLeadsForAssignedToOfficer);
 router.get("/lead/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLeadsByLeadNoandLeadName);
 router.get("/lead/:leadNo/:caseNo/:caseName", verifyToken, getLeadsforHierarchy);
 
-router.patch('/:leadNo/:caseNo/:caseName/status', verifyToken, updateLeadStatus);
+router.patch('/:leadNo/:leadName/:caseNo/:caseName/status', verifyToken, updateLeadStatus);
+
 
 router.get('/associatedSubNumbers/:caseNo/:caseName', getAssociatedSubNumbers);
 

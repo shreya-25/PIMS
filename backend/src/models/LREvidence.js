@@ -24,7 +24,7 @@ const lrEvidenceSchema = new mongoose.Schema(
         enteredBy: { type: String, required: true },
         caseName: { type: String, required: true },
         caseNo: { type: String, required: true },
-        leadReturnId: { type: Number, required: true },
+        leadReturnId: { type: String, required: true },
         enteredDate: { type: Date, required: true },
         collectionDate: { type: Date, required: true },
         disposedDate: { type: Date, required: true },

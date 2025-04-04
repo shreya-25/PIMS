@@ -24,7 +24,7 @@ const lrAudioSchema = new mongoose.Schema(
         enteredBy: { type: String, required: true },
         caseName: { type: String, required: true },
         caseNo: { type: String, required: true },
-        leadReturnId: { type: Number, required: true },
+        leadReturnId: { type: String, required: true },
         enteredDate: { type: Date, required: true },
         dateAudioRecorded: { type: Date, required: true },
         audioDescription: { type: String }, 
