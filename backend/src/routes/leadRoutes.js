@@ -1,5 +1,5 @@
 const express = require("express");
-const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy, updateLeadStatus } = require("../controller/leadController");
+const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers } = require("../controller/leadController");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
 const Lead = require("../models/lead");
@@ -21,6 +21,8 @@ router.get("/lead/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLeadsByL
 router.get("/lead/:leadNo/:caseNo/:caseName", verifyToken, getLeadsforHierarchy);
 
 router.patch('/:leadNo/:caseNo/:caseName/status', verifyToken, updateLeadStatus);
+
+router.get('/associatedSubNumbers/:caseNo/:caseName', getAssociatedSubNumbers);
 
 
 
