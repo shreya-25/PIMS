@@ -225,7 +225,7 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
         enteredBy: officerName,
         caseName: selectedLead?.caseName,
         caseNo: selectedLead?.caseNo,
-        leadReturnId: nextLeadReturnId, // Sequentially generated ID
+        leadReturnId: nextReturnId, // Sequentially generated ID
         leadReturnResult: returnData.results,
         assignedTo,
         assignedBy,
