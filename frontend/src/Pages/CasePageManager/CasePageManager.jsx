@@ -82,7 +82,7 @@ export const CasePageManager = () => {
         // Remove lead from assignedLeads and add it to pendingLeads
         setLeads((prevLeads) => {
           const updatedAssignedLeads = prevLeads.assignedLeads.filter(
-            (l) => l.id !== lead.id
+            (l) => l.leadNo !== lead.leadNo
           );
           const updatedPendingLeads = [...prevLeads.pendingLeads, lead];
           return {
@@ -214,9 +214,21 @@ export const CasePageManager = () => {
   
           // Ensure `data` is an array, or default to an empty array
           const leadsArray = Array.isArray(data) ? data : [];
+
+          const filteredLeadsArray = leadsArray.filter((lead) => {
+            if (
+              lead.accessLevel === "Only Case Manager and Assignees" &&
+              !lead.assignedTo?.includes(signedInOfficer) &&
+              lead.assignedBy !== signedInOfficer
+            ) {
+              return false;
+            }
+            return true;
+          });
+        
   
           // ✅ Filter and map assigned and pending leads
-          const assignedLeads = leadsArray
+          const assignedLeads = filteredLeadsArray
             .filter(lead => lead.leadStatus === "Assigned")
             .map(lead => ({
               id: lead.leadNo,
@@ -230,7 +242,7 @@ export const CasePageManager = () => {
               caseNo: String(lead.caseNo) // Ensure string format
             }));
   
-          const pendingLeads = leadsArray
+          const pendingLeads = filteredLeadsArray
             .filter(lead => lead.leadStatus === "Pending")
             .map(lead => ({
               id: lead.leadNo,
@@ -249,7 +261,7 @@ export const CasePageManager = () => {
   
           setLeads((prev) => ({
             ...prev,
-            allLeads: leadsArray,
+            allLeads: filteredLeadsArray,
             assignedLeads: assignedLeads,
             pendingLeads: pendingLeads
           }));
@@ -999,7 +1011,8 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
         </tr>
       </thead>
       <tbody>
-        {leads.assignedLeads
+      {leads.assignedLeads.length > 0 ? (
+        leads.assignedLeads
           .filter(
             (lead) =>
               lead.description
@@ -1039,12 +1052,13 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
               <td>
                 <button
                   className="view-btn1"
-                  // onClick={() =>
+                  onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.description} } )}
+
                   // }
                 >
                   View
                 </button>
-                <button
+                {/* <button
                   className="accept-btn"
                   onClick={() => {
                     if (
@@ -1055,10 +1069,17 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                   }}
                 >
                   Accept
-                </button>
+                </button> */}
               </td>
             </tr>
-          ))}
+           ))
+          ) : (
+            <tr>
+              <td colSpan="7" style={{ textAlign: 'center' }}>
+                No Assigned Leads Available
+              </td>
+            </tr>
+          )}
       </tbody>
     </table>
   </div>
@@ -1273,7 +1294,8 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
         </tr>
       </thead>
       <tbody>
-        {leads.pendingLeads
+      {leads.pendingLeads.length > 0 ? (
+        leads.pendingLeads
           .filter(
             (lead) =>
               lead.description
@@ -1320,7 +1342,14 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                 </button>
               </td>
             </tr>
-          ))}
+             ))
+            ) : (
+              <tr>
+                <td colSpan="8" style={{ textAlign: 'center' }}>
+                  No Accepted Leads Available
+                </td>
+              </tr>
+            )}
       </tbody>
     </table>
   </div>
@@ -1380,7 +1409,8 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                 </tr>
               </thead>
               <tbody>
-                {leads.pendingLeadReturns.map((lead) => (
+                {leads.pendingLeadReturns.length > 0 ? (
+                leads.pendingLeadReturns.map((lead) => (
                     <tr key={lead.id}>
                       <td>{lead.id}</td>
                       <td>{lead.description}</td>
@@ -1395,7 +1425,14 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                             </button>
                       </td>
                     </tr>
-                  ))}
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="3" style={{ textAlign: 'center' }}>
+                          No Pending Lead Returns Available
+                        </td>
+                      </tr>
+                    )}
               </tbody>
             </table>
             
@@ -1468,7 +1505,8 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
         </tr>
       </thead>
       <tbody>
-        {leads.allLeads.map((lead) => (
+      {leads.allLeads.length > 0 ? (
+       leads.allLeads.map((lead) => (
           <tr key={lead.id}>
             <td>{lead.leadNo} </td>
             <td>{lead.description}</td>
@@ -1482,7 +1520,13 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
               </button>
             </td>
           </tr>
-        ))}
+        ))  ) : (
+          <tr>
+            <td colSpan="4" style={{ textAlign: 'center' }}>
+              No Leads Available
+            </td>
+          </tr>
+        )}
       </tbody>
     </table>
   </div>

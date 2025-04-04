@@ -155,9 +155,20 @@ const handleLeadClick = (lead) => {
    
            // Ensure `data` is an array, or default to an empty array
            const leadsArray = Array.isArray(data) ? data : [];
+
+           const filteredLeadsArray = leadsArray.filter((lead) => {
+            if (
+              lead.accessLevel === "Only Case Manager and Assignees" &&
+              !lead.assignedTo?.includes(signedInOfficer) &&
+              lead.assignedBy !== signedInOfficer
+            ) {
+              return false;
+            }
+            return true;
+          });
    
            // ✅ Filter and map assigned and pending leads
-           const assignedLeads = leadsArray
+           const assignedLeads = filteredLeadsArray
              .filter(lead => lead.leadStatus === "Assigned")
              .map(lead => ({
                id: lead.leadNo,
@@ -171,7 +182,7 @@ const handleLeadClick = (lead) => {
                caseNo: String(lead.caseNo) // Ensure string format
              }));
    
-           const pendingLeads = leadsArray
+           const pendingLeads = filteredLeadsArray
              .filter(lead => lead.leadStatus === "Pending")
              .map(lead => ({
                id: lead.leadNo,
@@ -190,7 +201,7 @@ const handleLeadClick = (lead) => {
    
            setLeads((prev) => ({
              ...prev,
-             allLeads: leadsArray,
+             allLeads: filteredLeadsArray,
              assignedLeads: assignedLeads,
              pendingLeads: pendingLeads
            }));

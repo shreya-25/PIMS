@@ -12,6 +12,7 @@ const createLead = async (req, res) => {
         subNumber,
         associatedSubNumbers,    // <-- Array of numbers
         assignedDate,
+        completedDate,
         assignedTo,              // <-- Array of strings
         assignedBy,
         summary,
@@ -20,7 +21,8 @@ const createLead = async (req, res) => {
         dueDate,
         priority,
         caseName,
-        caseNo
+        caseNo,
+        accessLevel
       } = req.body;
   
       // Pass them directly into the new Lead object
@@ -31,6 +33,7 @@ const createLead = async (req, res) => {
         subNumber,
         associatedSubNumbers,
         assignedDate,
+        completedDate,
         assignedTo,
         assignedBy,
         summary,
@@ -39,7 +42,8 @@ const createLead = async (req, res) => {
         dueDate,
         priority,
         caseName,
-        caseNo
+        caseNo,
+        accessLevel
       });
   
       await newLead.save();
@@ -144,6 +148,21 @@ const getLeadsforHierarchy = async (req, res) => {
   }
 };
 
+const getAssociatedSubNumbers = async (req, res) => {
+  try {
+    const { caseNo, caseName } = req.params;
+
+    const leads = await Lead.find({ caseNo, caseName });
+    const uniqueSubNumbers = [...new Set(leads.flatMap(lead => lead.subNumber || []))];
+
+    res.status(200).json({ associatedSubNumbers: uniqueSubNumbers });
+  } catch (err) {
+    console.error("Error fetching subnumbers:", err.message);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+
 
 const updateLeadStatus = async (req, res) => {
   try {
@@ -172,4 +191,4 @@ module.exports = { updateLeadStatus };
 
 
 
-module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus };
+module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers };
