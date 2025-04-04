@@ -190,8 +190,69 @@ const updateLeadStatus = async (req, res) => {
   }
 };
 
+exports.updateLeadLRStatus = async (req, res) => {
+  const { leadNo, leadName, caseNo, caseName, lRStatus } = req.body;
+
+  try {
+    const lead = await Lead.findOne({
+      leadNo,
+      leadName,
+      caseNo,
+      caseName,
+    });
+
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found" });
+    }
+
+    // Assuming the `assignedBy` field exists and has `lRStatus`
+    lead.assignedBy.lRStatus = lRStatus;
+
+    await lead.save();
+
+    return res.status(200).json({ message: "Lead status updated successfully" });
+  } catch (error) {
+    console.error("Error updating lead status:", error);
+    return res.status(500).json({ message: "Server error updating lead status" });
+  }
+};
+
+const updateLRStatusToPending = async (req, res) => {
+  try {
+    const { leadNo, description, caseName, caseNo } = req.body;
+
+    if (!leadNo || !description || !caseName || !caseNo) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    const updatedDoc = await LeadReturn.findOneAndUpdate(
+      {
+        leadNo,
+        description,
+        caseName,
+        caseNo,
+      },
+      {
+        $set: {
+          "assignedTo.lRStatus": "Pending",
+        },
+      },
+      { new: true }
+    );
+
+    if (!updatedDoc) {
+      return res.status(404).json({ message: "Lead return not found." });
+    }
+
+    res.status(200).json(updatedDoc);
+  } catch (err) {
+    console.error("Error updating lead return status:", err.message);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
 
 
 
 
-module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers };
+
+module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending };

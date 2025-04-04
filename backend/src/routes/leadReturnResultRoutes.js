@@ -1,5 +1,5 @@
 const express = require("express");
-const { createLeadReturnResult, getLeadReturnResultsByOfficer, getLeadReturnResultByLeadNoandLeadName, deleteLeadReturnResult } = require("../controller/leadReturnResultController");
+const { createLeadReturnResult, getLeadReturnResultsByOfficer, getLeadReturnResultByLeadNoandLeadName } = require("../controller/leadReturnResultController");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
 
@@ -13,7 +13,7 @@ router.get("/officer-leads", verifyToken, getLeadReturnResultsByOfficer);
 
 router.get("/:leadNo/:leadName/:caseNo/:caseName",verifyToken, getLeadReturnResultByLeadNoandLeadName)
 
-router.delete("/delete/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId", deleteLeadReturnResult);
+// router.delete("/delete/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId", deleteLeadReturnResult);
 
 module.exports = router;
 
