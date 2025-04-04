@@ -169,13 +169,17 @@ const updateLeadStatus = async (req, res) => {
     const { leadNo, leadName, caseNo, caseName } = req.params;
     const { status } = req.body;
 
-    // Find the lead
-    const lead = await Lead.findOne({ leadNo: Number(leadNo), caseNo, caseName });
+    const lead = await Lead.findOne({
+      leadNo: Number(leadNo),
+      description: leadName,
+      caseNo,
+      caseName,
+    });
+
     if (!lead) {
       return res.status(404).json({ message: "Lead not found" });
     }
 
-    // Update the status
     lead.leadStatus = status;
     await lead.save();
 
@@ -186,7 +190,6 @@ const updateLeadStatus = async (req, res) => {
   }
 };
 
-module.exports = { updateLeadStatus };
 
 
 
