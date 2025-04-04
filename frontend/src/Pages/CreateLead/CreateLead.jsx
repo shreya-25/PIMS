@@ -55,6 +55,7 @@ useEffect(() => {
     assignedBy: '',
     leadDescription: '',
     assignedOfficer: '',
+    accessLevel: 'Everyone',
   });
 
  const { selectedCase, setSelectedLead } = useContext(CaseContext);
@@ -85,18 +86,6 @@ useEffect(() => {
       // Destructure case details
       const { id: caseNo, title: caseName } = caseDetails;
 
-      // Special case: if the case is "Main Street Theft", use predefined values.
-      if (caseName === "Main Street Theft") {
-        setLeadData((prevData) => ({
-          ...prevData,
-          leadNumber: "1",
-          subNumber: `SUB-${"1".padStart(6, '0')}`,
-          incidentNumber:`INC-${"1".padStart(6, '0')}`,
-          assignedDate: getFormattedDate(),
-        }));
-        return; // Prevent API call for this case.
-      }
-
       // Otherwise, fetch the max lead number using the caseNo and caseName.
       const response = await axios.get(
         `http://localhost:5000/api/lead/maxLeadNumber?caseNo=${selectedCase.caseNo}&caseName=${encodeURIComponent(selectedCase.caseName)}`
@@ -107,7 +96,6 @@ useEffect(() => {
       setLeadData((prevData) => ({
         ...prevData,
         leadNumber: newLeadNumber.toString(),
-        subNumber: `SUB-${newLeadNumber.toString().padStart(6, '0')}`,
         assignedDate: getFormattedDate(),
         incidentNumber :  `INC-${newLeadNumber.toString().padStart(6, '0')}`,
       }));
@@ -199,6 +187,18 @@ useEffect(() => {
 
 
 const handleGenerateLead = async () => {
+
+  const originNumbers = leadData.leadOrigin
+  .split(',')
+  .map((val) => parseInt(val.trim()))
+  .filter((num) => !isNaN(num));
+
+  const subNumbersArray = leadData.subNumber
+  .split(',')
+  .map((val) => val.trim())
+  .filter((val) => val !== '');
+
+
   const {
     caseName,
     caseNo,
@@ -213,6 +213,7 @@ const handleGenerateLead = async () => {
     assignedBy,
     leadSummary,
     leadDescription,
+    accessLevel,
   } = leadData;
 
   try {
@@ -222,9 +223,9 @@ const handleGenerateLead = async () => {
         caseName:  caseDetails.title,
         caseNo: caseDetails.id,
         leadNo: leadNumber,
-        parentLeadNo: leadOrigin,
+        parentLeadNo: originNumbers,
         incidentNo: incidentNumber,
-        subNumber: subNumber,
+        subNumber: subNumbersArray,
         associatedSubNumbers: associatedSubNumbers,
         dueDate,
         assignedDate,
@@ -232,6 +233,7 @@ const handleGenerateLead = async () => {
         assignedBy: username,
         summary: leadSummary,
         description: leadDescription,
+        accessLevel: leadData.accessLevel,
       },
       {
         headers: {
@@ -255,6 +257,9 @@ const handleGenerateLead = async () => {
     }
   }
 };  
+
+console.log("Submitting leadData:", leadData);
+
 
 const defaultCaseSummary = "";
 const [availableCaseSubNumbers, setAvailableCaseSubNumbers] = useState([]); // To store subnumbers fetched for the case
@@ -325,6 +330,28 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
 
     fetchUsernames();
   }, []);
+
+  useEffect(() => {
+    const fetchAssociatedSubNumbers = async () => {
+      try {
+        if (caseDetails && caseDetails.id && caseDetails.title) {
+          const token = localStorage.getItem("token");
+          const response = await axios.get(
+            `http://localhost:5000/api/lead/associatedSubNumbers/${caseDetails.id}/${encodeURIComponent(caseDetails.title)}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+          setAvailableSubNumbers(response.data.associatedSubNumbers);
+        }
+      } catch (error) {
+        console.error("Error fetching associated subnumbers:", error);
+      }
+    };
+  
+    fetchAssociatedSubNumbers();
+  }, [caseDetails]);
+  
 
 
 
@@ -482,24 +509,43 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
             <tr>
                 <td>Lead Origin:</td>
                 <td>
-                  <input
+                  {/* <input
                     type="text"
                     className="input-field"
                     value={leadData.leadOrigin || leadOrigin}
                     onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
                     placeholder=""
+                  /> */}
+                  <input
+                    type="text"
+                    className="input-field"
+                    value={leadData.leadOrigin}
+                    onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
+                    placeholder="e.g. 1, 2, 3"
                   />
+                  
+
                 </td>
               </tr>
                 <tr>
                   <td>Subnumber:</td>
                   <td>
+                    {/* <input
+                      type="text"
+                      className="input-field"
+                      value={leadData.subNumber}
+                      onChange={(e) => {
+                        const values = e.target.value.split(',').map(val => val.trim()).filter(Boolean);
+                        handleInputChange('subNumber', values); // Pass array to state
+                      }}
+                      placeholder="Enter Subnumber"
+                    /> */}
                     <input
                       type="text"
                       className="input-field"
                       value={leadData.subNumber}
                       onChange={(e) => handleInputChange('subNumber', e.target.value)}
-                      placeholder="Enter Subnumber"
+                      placeholder="e.g. SUB-000001, SUB-000002"
                     />
                   </td>
                 </tr>
@@ -530,6 +576,11 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
                     ? [...associatedSubNumbers, e.target.value]
                     : associatedSubNumbers.filter((num) => num !== e.target.value);
                   setAssociatedSubNumbers(updatedSubNumbers);
+
+                  setLeadData((prevData) => ({
+                    ...prevData,
+                    associatedSubNumbers: updatedSubNumbers, // ✅ Add this
+                  }));
                 }}
               />
               <label htmlFor={subNum}>{subNum}</label>
@@ -711,7 +762,19 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
                         )}
                       </div>
 </td>
-
+</tr>
+<tr>
+  <td>Access:</td>
+  <td>
+    <select
+      className="input-field"
+      value={leadData.accessLevel}
+      onChange={(e) => handleInputChange("accessLevel", e.target.value)}
+    >
+      <option value="Only Case Manager and Assignees">Only Case Manager and Assignees</option>
+      <option value="Everyone">Everyone</option>
+    </select>
+  </td>
 </tr>
           </tbody>
         </table>

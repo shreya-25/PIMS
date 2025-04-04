@@ -22,7 +22,10 @@ export const LeadReview = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+  const { selectedCase, setSelectedLead , selectedLead} = useContext(CaseContext);
+// const leadFromState = location.state?.lead || null;
+
+// const selectedLead = leadFromState || null;
 
   const statuses = [
     "Lead Created",
@@ -35,7 +38,7 @@ export const LeadReview = () => {
   ];
   
   // Change this index to highlight the current status dynamically
-  const currentStatusIndex = 3; // Example: Highlighting "Lead Return Submitted"
+  const currentStatusIndex = 1; // Example: Highlighting "Lead Return Submitted"
 
   const formatDate = (dateString) => {
     if (!dateString) return ""; // Handle empty dates
@@ -258,7 +261,11 @@ const onShowCaseSelector = (route) => {
         <div className="lead-main-content">
           {/* Page Header */}
           <div className="case-header">
-            <h1>LEAD:{selectedLead.leadNo} | {selectedLead.leadName.toUpperCase()}</h1>
+            {/* <h1>LEAD:{selectedLead.leadNo} | {selectedLead.leadName.toUpperCase()}</h1> */}
+            <h1>
+  {selectedLead?.leadNo ? `LEAD: ${selectedLead.leadNo} | ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"}
+</h1>
+
           </div>
 
           {/* Case Summary Textarea */}
