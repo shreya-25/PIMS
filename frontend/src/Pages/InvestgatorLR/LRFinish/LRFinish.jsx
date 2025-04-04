@@ -30,6 +30,11 @@ export const LRFinish = () => {
     return `${month}/${day}/${year}`;
   };
 
+  const getCasePageRoute = () => {
+    if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
+    return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
+};
+
   const [destination, setDestination] = useState("");
   const [leadInstructionContent, setLeadInstructionContent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -269,59 +274,43 @@ const handleNavigationToInstruction = () => {
 
       <div className="LRI_Content">
        <div className="sideitem">
-                    <ul className="sidebar-list">
-                    {/* Lead Management Dropdown */}
-                    <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
-                            {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▼" : "▲" }
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-              View Lead Log
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-              Officer Management
-            </li>
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
-            </li>
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-              View Lead Hierarchy
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              Generate Report
-            </li> */}
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-              View Timeline Entries
-            </li>
-            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+       <ul className="sidebar-list">
+                   
+                   <li className="sidebar-item">Case Information</li>
+         <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
+         <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+             New Lead
+           </li>                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
+                      <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                      <li className="sidebar-item active" >View Lead Return</li>
+                      <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
+             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+             View Lead Log
+           </li>
+           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+             Officer Management
+           </li> */}
+           <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+             View/Add Case Notes
+           </li>
+           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+             View Lead Hierarchy
+           </li>
+           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+             Generate Report
+           </li> */}
+           <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+             View Flagged Leads
+           </li>
+           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+             View Timeline Entries
+           </li>
+           {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+           <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+           <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
 
-         
-          </ul>
-        )}
-                    </ul>
+         </ul>
                 </div>
                 <div className="left-content">
    
@@ -338,142 +327,195 @@ const handleNavigationToInstruction = () => {
 
         {/* Logged Information */}
         <div className="timeline-form-sec">
-         <div className="finish-row">
-         <div className="finish-field">
-            <label>Last Updated:</label>
+
+        <div className="finish-content">
+        <div className="logged-info">
+        <div className="info-item">
+            <label>Assigned Date:</label>
+            <input type="date" value ="03/12/2024" readOnly />
+          </div>
+          <div className="info-item">
+            <label>Last Updated By:</label>
+            <input type="text" value="Officer 1" readOnly />
+          </div>
+          <div className="info-item">
+            <label>Last Updated Date:</label>
             <input type="date" />
           </div>
-          <div className="finish-field">
-            <label>Last Updated By:</label>
-            <input type="text" value="Officer 916" readOnly />
-          </div>
-          <div className="finish-field">
+          <div className="info-item">
             <label>Completed Date:</label>
             <input type="date" />
           </div>
         </div>
 
         {/* Reports and Destination */}
-        <div className="reports-destination">
-          <div className="report-options">
-            <h4>Reports:</h4>
-            <div className="report-column">
-              <label>
+        <h2>Generate Report</h2>
+<div className="reports-destination-lr">
+  <table className="report-table">
+    <thead>
+      <tr>
+        <th>Report Section</th>
+        <th>Options</th>
+      </tr>
+    </thead>
+    <tbody>
+      {/* Standard Report Row */}
+      <tr>
+        <td>Standard Report</td>
+        <td>
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              name="report"
+              checked={selectedReports.FullReport}
+              onChange={() => toggleReportSection("FullReport")}
+            />
+            Full Report
+          </label>
+        </td>
+      </tr>
+
+      {/* Custom Report Row */}
+      <tr>
+        <td>Custom Report</td>
+        <td>
+          <div className="checkbox-grid">
+            <div className="checkbox-col">
+              <label className="checkbox-label">
                 <input
                   type="checkbox"
                   name="report"
-                  onChange={() => handleReportChange("Lead Instruction")}
-                />{" "}
+                  checked={selectedReports.leadInstruction}
+                  onChange={() => toggleReportSection("leadInstruction")}
+                />
                 Lead Instruction
               </label>
-
-              <label>
+              <label className="checkbox-label">
                 <input
                   type="checkbox"
                   name="report"
-                  onChange={() => handleReportChange("Lead Returns")}
-                />{" "}
+                  checked={selectedReports.leadReturn}
+                  onChange={() => toggleReportSection("leadReturn")}
+                />
                 Lead Returns
               </label>
-              <label>
+              <label className="checkbox-label">
                 <input
                   type="checkbox"
                   name="report"
-                  onChange={() => handleReportChange("Lead Persons")}
-                />{" "}
+                  checked={selectedReports.leadPersons}
+                  onChange={() => toggleReportSection("leadPersons")}
+                />
                 Lead Persons
               </label>
-              <label>
+              <label className="checkbox-label">
                 <input
                   type="checkbox"
                   name="report"
-                  onChange={() => handleReportChange("Lead Vehicles")}
-                />{" "}
+                  checked={selectedReports.leadVehicles}
+                  onChange={() => toggleReportSection("leadVehicles")}
+                />
                 Lead Vehicles
               </label>
-              <label>
+              <label className="checkbox-label">
                 <input
                   type="checkbox"
                   name="report"
-                  onChange={() => handleReportChange("Lead Enclosures")}
-                />{" "}
+                  checked={selectedReports.leadEnclosures}
+                  onChange={() => toggleReportSection("leadEnclosures")}
+                />
                 Lead Enclosures
               </label>
-              <label>
+              <label className="checkbox-label">
                 <input
                   type="checkbox"
                   name="report"
-                  onChange={() => handleReportChange("Lead Evidences")}
-                />{" "}
+                  checked={selectedReports.leadEvidence}
+                  onChange={() => toggleReportSection("leadEvidence")}
+                />
                 Lead Evidences
               </label>
             </div>
-            <div className="report-column">
-              <label>
+            <div className="checkbox-col">
+            
+             
+              <label className="checkbox-label">
                 <input
                   type="checkbox"
                   name="report"
-                  onChange={() => handleReportChange("Lead Pictures")}
-                />{" "}
+                  checked={selectedReports.leadPictures}
+                  onChange={() => toggleReportSection("leadPictures")}
+                />
                 Lead Pictures
               </label>
-              <label>
+              <label className="checkbox-label">
                 <input
                   type="checkbox"
                   name="report"
-                  onChange={() => handleReportChange("Lead Audio Description")}
-                />{" "}
+                  checked={selectedReports.leadAudio}
+                  onChange={() => toggleReportSection("leadAudio")}
+                />
                 Lead Audio Description
               </label>
-              <label>
+              <label className="checkbox-label">
                 <input
                   type="checkbox"
                   name="report"
-                  onChange={() => handleReportChange("Lead Videos Description")}
-                />{" "}
+                  checked={selectedReports.leadVideos}
+                  onChange={() => toggleReportSection("leadVideos")}
+                />
                 Lead Videos Description
               </label>
-              <label>
+              <label className="checkbox-label">
                 <input
                   type="checkbox"
                   name="report"
-                  onChange={() => handleReportChange("Lead Scratchpad Entries")}
-                />{" "}
+                  checked={selectedReports.leadScratchpad}
+                  onChange={() => toggleReportSection("leadScratchpad")}
+                />
                 Lead Scratchpad Entries
               </label>
-              <label>
+              <label className="checkbox-label">
                 <input
                   type="checkbox"
                   name="report"
-                  onChange={() => handleReportChange("Lead Timeline Entries")}
-                />{" "}
+                  checked={selectedReports.leadTimeline}
+                  onChange={() => toggleReportSection("leadTimeline")}
+                />
                 Lead Timeline Entries
               </label>
             </div>
           </div>
-          <div className="destination-options">
-            <h4>Destination:</h4>
-            <label>
-              <input
-                type="radio"
-                name="destination"
-                value="Print"
-                className="dest-op-class"
-                onChange={handleDestinationChange}
-              />{" "}
-              Print
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="destination"
-                value="Preview"
-                className="dest-op-class"
-                onChange={handleDestinationChange}
-              />{" "}
-              Preview
-            </label>
-          </div>
+        </td>
+      </tr>
+
+      {/* Destination Row */}
+      <tr>
+        <td>Destination</td>
+        <td>
+          <label className="radio-label">
+            <input
+              type="radio"
+              name="destination"
+              className="dest-op-class"
+            />
+            Print
+          </label>
+          <label className="radio-label">
+            <input
+              type="radio"
+              name="destination"
+              className="dest-op-class"
+            />
+            Preview
+          </label>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
         </div>
         </div>
         <Comment/>
