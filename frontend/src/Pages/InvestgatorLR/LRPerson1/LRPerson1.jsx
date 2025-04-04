@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
+import React, { useContext, useState, useEffect} from 'react';
+
+import { useLocation, useNavigate } from "react-router-dom";
 import FootBar from '../../../components/FootBar/FootBar';
 import Navbar from '../../../components/Navbar/Navbar';
 import './LRPerson1.css';
+import { CaseContext } from "../../CaseContext";
+
 
 export const LRPerson1 = () => {
+      useEffect(() => {
+          // Apply style when component mounts
+          document.body.style.overflow = "hidden";
+      
+          return () => {
+            // Reset to default when component unmounts
+            document.body.style.overflow = "auto";
+          };
+        }, []);
     const navigate = useNavigate(); // Initialize useNavigate hook
-
+const location = useLocation();
     const [formData, setFormData] = useState({
       dateEntered: "",
       lastName: "",
@@ -28,6 +40,31 @@ export const LRPerson1 = () => {
     const handleChange = (field, value) => {
       setFormData({ ...formData, [field]: value });
     };
+    const { leadDetails, caseDetails } = location.state || {};
+  const { selectedCase, selectedLead, leadInstructions, leadReturns } = useContext(CaseContext);
+  const onShowCaseSelector = (route) => {
+    navigate(route, { state: { caseDetails } });
+};
+
+const [miscDetails, setMiscDetails] = useState([
+    { description: "", details: "" },
+  ]);
+
+  const addNewRow = () => {
+    setMiscDetails([...miscDetails, { description: "", details: "" }]);
+  };
+
+  const handleInputChange = (index, field, value) => {
+    const updatedDetails = [...miscDetails];
+    updatedDetails[index][field] = value;
+    setMiscDetails(updatedDetails);
+  };
+
+    const getCasePageRoute = () => {
+      if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
+      return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
+  };
+  
 
   const handleNavigation = (route) => {
     navigate(route); // Navigate to the respective page
@@ -87,8 +124,54 @@ export const LRPerson1 = () => {
          </div>
        </div>
 
+       <div className="LRI_Content">
+       <div className="sideitem">
+       <ul className="sidebar-list">
+                   
+                   <li className="sidebar-item">Case Information</li>
+         <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
+         <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+             New Lead
+           </li>                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
+                      <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                      <li className="sidebar-item active" >View Lead Return</li>
+                      <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
+             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+             View Lead Log
+           </li>
+           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+             Officer Management
+           </li> */}
+           <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+             View/Add Case Notes
+           </li>
+           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+             View Lead Hierarchy
+           </li>
+           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+             Generate Report
+           </li> */}
+           <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+             View Flagged Leads
+           </li>
+           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+             View Timeline Entries
+           </li>
+           {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+
+           <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+           <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+         </ul>
+                </div>
+                <div className="left-content">
+   
+                <div className = "LRI-content-section">
+
+<div className = "content-subsection">
+
      {/* Main Content */}
-     <div className="form-container1">
+     {/* <div className="form-container1"> */}
         <table className="person-table2">
           <tbody>
             <tr>
@@ -241,11 +324,135 @@ export const LRPerson1 = () => {
           {/* <button className="cancel-btn">Cancel</button> */}
         </div>
         
+     {/* Main Content */}
+     <div className="form-container1">
+        <table className="person-table2">
+          <tbody>
+            {/* First Row */}
+            <tr>
+              <td>SSN</td>
+              <td><input type="text" /></td>
+              <td>Age</td>
+              <td><input type="text" /></td>
+            </tr>
+
+            {/* Second Row */}
+            <tr>
+              <td>Email</td>
+              <td colSpan="3"><input type="email" /></td>
+            </tr>
+
+            {/* Third Row */}
+            <tr>
+              <td>Occupation</td>
+              <td colSpan="3"><input type="text" /></td>
+            </tr>
+
+            {/* Fourth Row */}
+            <tr>
+              <td>Person Type</td>
+              <td><select><option>Type</option></select></td>
+              <td>Condition</td>
+              <td><select><option>Condition</option></select></td>
+            </tr>
+
+            {/* Fifth Row */}
+            <tr>
+              <td>Caution Type</td>
+              <td><select><option>Type</option></select></td>
+              <td>Sex</td>
+              <td><select><option>Male</option><option>Female</option></select></td>
+            </tr>
+
+            {/* Sixth Row */}
+            <tr>
+              <td>Race</td>
+              <td><select><option>Race</option></select></td>
+              <td>Ethnicity</td>
+              <td><select><option>Ethnicity</option></select></td>
+            </tr>
+
+            {/* Seventh Row */}
+            <tr>
+              <td>Skin Tone</td>
+              <td><select><option>Skin Tone</option></select></td>
+              <td>Eye Color</td>
+              <td><select><option>Eye Color</option></select></td>
+            </tr>
+
+            {/* Eighth Row */}
+            <tr>
+              <td>Glasses</td>
+              <td><select><option>Yes</option><option>No</option></select></td>
+              <td>Hair Color</td>
+              <td><select><option>Hair Color</option></select></td>
+            </tr>
+
+            {/* Ninth Row */}
+            <tr>
+              <td>Height</td>
+              <td>
+                <input type="text" style={{ width: "40px" }} /> '
+                <input type="text" style={{ width: "40px" }} /> "
+              </td>
+              <td>Weight</td>
+              <td><input type="text" /></td>
+            </tr>
+
+            {/* Miscellaneous Section */}
+            <tr>
+              <td colSpan="4">
+                <h4>Miscellaneous Information</h4>
+                <table className="misc-table">
+                <tbody>
+            {miscDetails.map((row, index) => (
+              <tr key={index}>
+                <td>
+                  <input
+                    type="text"
+                    value={row.description}
+                    onChange={(e) =>
+                      handleInputChange(index, "description", e.target.value)
+                    }
+                  />
+                </td>
+                <td>
+                  <textarea
+                    rows="2"
+                    value={row.details}
+                    onChange={(e) =>
+                      handleInputChange(index, "details", e.target.value)
+                    }
+                  ></textarea>
+                </td>
+              </tr>
+              
+            ))}
+          </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Buttons */}
+        <div className="form-buttons">
+          <button className="back-btn"onClick={() => handleNavigation('/LRPerson1')}>Back</button>
+          <button className="next-btn"onClick={() => handleNavigation('/LRVehicle')}>Next</button>
+          <button className="save-btn">Save</button>
+          <button className="cancel-btn">Cancel</button>
+        </div>
+      {/* </div> */}
+        
+      </div>
+      </div>
       </div>
       <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
         onNext={() => navigate("/LRVehicle")} // Takes user to CM Return page
       />
+    </div>
+    </div>
     </div>
   );
 };

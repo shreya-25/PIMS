@@ -20,8 +20,20 @@ export const LRReturn = () => {
       }, []);
   const navigate = useNavigate();
    const location = useLocation();
+const [username, setUsername] = useState("");
+
+useEffect(() => {
+   const loggedInUser = localStorage.getItem("loggedInUser");
+   if (loggedInUser) {
+     setUsername(loggedInUser);
+   }
+  })
+   console.log(username);
+   const todayDate = new Date().toLocaleDateString();
     
   const { leadDetails, caseDetails } = location.state || {};
+  const [maxReturnId, setMaxReturnId] = useState(0);
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
@@ -35,6 +47,8 @@ export const LRReturn = () => {
     { leadReturnId: '', enteredDate: "",enteredBy: "", leadReturnResult: "" },
 
   ]);
+
+  
 
   useEffect(() => {
     const fetchLeadData = async () => {
@@ -80,6 +94,74 @@ export const LRReturn = () => {
   const handleInputChange = (field, value) => {
     setReturnData({ ...returnData, [field]: value });
   };
+
+  const getCasePageRoute = () => {
+    if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
+    return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
+};
+
+// Helper functions to convert between alphabets and numbers
+const alphabetToNumber = (str) => {
+  let result = 0;
+  for (let i = 0; i < str.length; i++) {
+    result = result * 26 + (str.charCodeAt(i) - 64); // 'A' is 65 in ASCII
+  }
+  return result;
+};
+
+const numberToAlphabet = (num) => {
+  let result = "";
+  while (num > 0) {
+    let rem = (num - 1) % 26;
+    result = String.fromCharCode(65 + rem) + result;
+    num = Math.floor((num - 1) / 26);
+  }
+  return result;
+};
+
+
+
+// Fetch return entries for this lead and determine the max return id (alphabetic)
+useEffect(() => {
+  const fetchReturnData = async () => {
+    try {
+      if (
+        selectedLead?.leadNo &&
+        selectedLead?.leadName &&
+        selectedLead?.caseNo &&
+        selectedLead?.caseName
+      ) {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(
+          `http://localhost:5000/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
+            selectedLead.leadName
+          )}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const data = response.data;
+        setReturns(data);
+        // Determine the highest existing return id (if any) using alphabetToNumber conversion
+        const maxNumericId = data.reduce((max, item) => {
+          // If leadReturnId is not defined, treat it as 0.
+          const numVal = item.leadReturnId ? alphabetToNumber(item.leadReturnId) : 0;
+          return Math.max(max, numVal);
+        }, 0);
+        setMaxReturnId(maxNumericId);
+      }
+    } catch (err) {
+      console.error("Error fetching return data:", err);
+      setError("Failed to fetch return data.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchReturnData();
+}, [leadDetails, caseDetails, selectedLead]);
+
+// Calculate the next Return No (max return id plus one, converted back to alphabet)
+const nextReturnId = numberToAlphabet(maxReturnId + 1);
+
 
   // const handleAddOrUpdateReturn = () => {
   //   if (!returnData.results) {
@@ -227,37 +309,22 @@ export const LRReturn = () => {
 
       <div className="LRI_Content">
       <div className="sideitem">
-                    <ul className="sidebar-list">
-                    {/* Lead Management Dropdown */}
-                    <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+      <li className="sidebar-item">Case Information</li>
+          <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
+          <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
               New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
-                            {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▼" : "▲" }
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+            </li>                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
+                       <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                       <li className="sidebar-item active" >View Lead Return</li>
+                       <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
               <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
               View Lead Log
             </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
-            </li>
+            </li> */}
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
+              View/Add Case Notes
             </li>
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
@@ -276,12 +343,8 @@ export const LRReturn = () => {
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
 
-         
-          </ul>
-        )}
-
-                    </ul>
-                </div>
+        
+        </div>
 
 {/* 
                 <div className="left-content"> */}
@@ -312,26 +375,26 @@ export const LRReturn = () => {
       <div className="form-row4">
             <label>Return Id:</label>
             <input
-              type="text"
-              
-              onChange={(e) => handleInputChange("returnId", e.target.value)}
-            />
+                      type="text"
+                      value={nextReturnId}
+                      readOnly
+                    />
           </div>
           <div className="form-row4">
             <label>Date Entered:</label>
             <input
-              type="text"
-              
-              onChange={(e) => handleInputChange("type", e.target.value)}
-            />
+                      type="text"
+                      value={todayDate}
+                      readOnly
+                    />
           </div>
           <div className="form-row4">
             <label>Entered By:</label>
             <input
-              type="text"
-             
-              onChange={(e) => handleInputChange("enclosure", e.target.value)}
-            ></input>
+                      type="text"
+                      value={username}
+                      readOnly
+                    />
           </div>
         </div>
         

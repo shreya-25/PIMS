@@ -26,7 +26,6 @@ export const LeadReview = () => {
 // const leadFromState = location.state?.lead || null;
 
 // const selectedLead = leadFromState || null;
-
   const statuses = [
     "Lead Created",
     "Lead Assigned",
