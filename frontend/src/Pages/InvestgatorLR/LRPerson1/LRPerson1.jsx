@@ -207,7 +207,6 @@ const [miscDetails, setMiscDetails] = useState([
               <td>
                 <input
                   type="text"
-                  maxLength="1"
                   value={formData.mi}
                   onChange={(e) => handleChange("mi", e.target.value)}
                 />
