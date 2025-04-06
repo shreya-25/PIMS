@@ -1374,7 +1374,7 @@ const handleLeadClick = (lead) => {
         <tr>
           <th style={{ width: "10%" }}>Lead No.</th>
           <th>Lead Log Summary</th>
-          <th style={{ width: "10%" }}>Lead Status</th>
+          <th style={{ width: "12%" }}>Lead Status</th>
           <th style={{ width: "12%" }}></th> {/* Empty header for buttons column */}
         </tr>
       </thead>
