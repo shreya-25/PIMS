@@ -250,7 +250,6 @@ const updateLRStatusToPending = async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 };
-
 const searchLeadsByKeyword = async (req, res) => {
   try {
     const { caseNo, caseName, keyword } = req.query;
@@ -285,3 +284,9 @@ const searchLeadsByKeyword = async (req, res) => {
 
 
 module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword };
+
+
+
+
+
+
