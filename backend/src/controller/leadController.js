@@ -251,8 +251,37 @@ const updateLRStatusToPending = async (req, res) => {
   }
 };
 
+const searchLeadsByKeyword = async (req, res) => {
+  try {
+    const { caseNo, caseName, keyword } = req.query;
+    
+    if (!caseNo || !caseName || !keyword) {
+      return res.status(400).json({ message: "caseNo, caseName, and keyword are required." });
+    }
+    
+    // Create a case-insensitive regex for the keyword
+    const regex = new RegExp(keyword, "i");
+    
+    // Find leads matching the case and keyword in description or summary
+
+    const leads = await Lead.find({
+      caseNo, // ensure this is the same type as stored (if it's a string, it should be fine)
+      caseName: { $regex: new RegExp(`^${caseName}$`, "i") },
+      $or: [
+        { description: { $regex: new RegExp(keyword, "i") } },
+        { summary: { $regex: new RegExp(keyword, "i") } }
+      ]
+    });
+    
+    
+    res.status(200).json(leads);
+  } catch (err) {
+    console.error("Error searching leads:", err.message);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
 
 
 
 
-module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending };
+module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword };
