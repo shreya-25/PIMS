@@ -115,6 +115,8 @@ export const LeadsDeskTest = () => {
   const [leadsData, setLeadsData] = useState([]);
   const [hierarchyLeadsData, setHierarchyLeadsData] = useState([]);
   const [hierarchyChains, setHierarchyChains] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+
 
   // Modal states
   const [showPersonModal, setShowPersonModal] = useState(false);
@@ -192,6 +194,7 @@ export const LeadsDeskTest = () => {
           seen.add(leadObj.leadNo);
         }
       }
+      uniqueLeads.sort((a, b) => Number(b.leadNo) - Number(a.leadNo));
       setHierarchyLeadsData(uniqueLeads);
     } catch (err) {
       console.error("Error fetching hierarchy:", err);
@@ -205,6 +208,8 @@ export const LeadsDeskTest = () => {
     setHierarchyChains([]);
     setHierarchyLeadsData([]);
   };
+
+  
    const [uploadedFiles, setUploadedFiles] = useState([
         {
           id: 1,
@@ -321,6 +326,33 @@ export const LeadsDeskTest = () => {
     fetchLeadsReturnsAndPersons();
   }, [selectedCase]);
 
+  const [selectStartLead1, setSelectStartLead1] = useState("");
+const [selectEndLead2, setSelectEndLead2] = useState("");
+
+// This function will run when the user clicks "Show Leads"
+const handleShowLeadsInRange = () => {
+  // Convert the inputs to numbers
+  const min = parseInt(selectStartLead1, 10);
+  const max = parseInt(selectEndLead2, 10);
+
+  // If either value is not a valid number, show an alert (optional)
+  if (isNaN(min) || isNaN(max)) {
+    alert("Please enter valid numeric lead numbers.");
+    return;
+  }
+
+  // Filter your full leadsData based on leadNo being in [min, max]
+  const filtered = leadsData.filter((lead) => {
+    const leadNoNum = parseInt(lead.leadNo, 10);
+    return leadNoNum >= min && leadNoNum <= max;
+  });
+
+  // Put these filtered leads into hierarchyLeadsData (so your render picks them up)
+  setHierarchyLeadsData(filtered);
+  // Clear out any existing chain data
+  setHierarchyChains([]);
+};
+
   // ------------------ Fetch Case Summary (Optional) ------------------
   useEffect(() => {
     const fetchCaseSummary = async () => {
@@ -350,6 +382,25 @@ export const LeadsDeskTest = () => {
     setIsEditing(false);
     alert("Report Saved!");
   };
+
+  const handleSearch = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get("http://localhost:5000/api/lead/search", {
+        params: {
+          caseNo: selectedCase.caseNo,
+          caseName: selectedCase.caseName,
+          keyword: searchTerm,  // searchTerm is the input value from the user
+        },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      // Update your state with the results
+      setLeadsData(response.data);
+    } catch (error) {
+      console.error("Error fetching search results:", error);
+    }
+  };
+  
 
   // ------------------ Updated PDF / Report Generation ------------------
   // This function builds a payload from your current state and calls your Node server endpoint
@@ -689,9 +740,6 @@ export const LeadsDeskTest = () => {
     ));
   };
 
-    const [selectLead1, setSelectLead1] = useState("");
-      const [selectLead2, setSelectLead2] = useState("");
-
   return (
     <div ref={pdfRef} className="lead-desk-page">
       <Navbar />
@@ -744,7 +792,15 @@ export const LeadsDeskTest = () => {
               <div className="search-bar">
                 <div className="search-container1">
                   <i className="fa-solid fa-magnifying-glass"></i>
-                  <input type="text" className="search-input1" placeholder="Search Lead" />
+                  <input type="text" className="search-input1" placeholder="Search Lead" 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      console.log("Enter pressed, calling handleSearch");
+                      handleSearch();
+                    }
+                  }} />
                 </div>
               </div>
               </div>
@@ -760,8 +816,8 @@ export const LeadsDeskTest = () => {
                   type="text"
                   className="square-input"
                   placeholder=""
-                  value={selectLead1}
-                  onChange={(e) => setSelectLead1(e.target.value)}
+                  value={selectStartLead1}
+                  onChange={(e) => setSelectStartLead1(e.target.value)}
                 />
           </div>
           <div className="dash"></div>
@@ -770,13 +826,13 @@ export const LeadsDeskTest = () => {
                   type="text"
                   className="square-input"
                   placeholder=""
-                  value={selectLead2}
-                  onChange={(e) => setSelectLead2(e.target.value)}
+                  value={selectEndLead2}
+                  onChange={(e) => setSelectEndLead2(e.target.value)}
                 />
           </div>
           </div>
           {/* <div className="select-lead-btn-container"> */}
-          <button className="search-button1" >
+          <button className="search-button1" onClick={handleShowLeadsInRange} >
                   Show Leads
                 </button>
                 {/* <button className="search-button1" onClick={handleShowAllLeads}>
