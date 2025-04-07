@@ -400,6 +400,35 @@ const handleShowLeadsInRange = () => {
       console.error("Error fetching search results:", error);
     }
   };
+
+  const HierarchyChain = ({ chain, chainIndex }) => {
+    const [expanded, setExpanded] = useState(false);
+    const leadNumbers = chain.map((l) => l.leadNo);
+    const displayedNumbers = expanded ? leadNumbers : leadNumbers.slice(0, 2);
+  
+    return (
+      <div key={chainIndex} style={{ marginBottom: "10px" }}>
+        <strong>Chain #{chainIndex + 1}:</strong> {displayedNumbers.join(", ")}
+        {leadNumbers.length > 2 && (
+          <button className = "show-more-btn" onClick={() => setExpanded(!expanded)} style={{ marginLeft: "10px" }}>
+            {expanded ? "Show Less" : "Show More"}
+          </button>
+        )}
+      </div>
+    );
+  };
+
+    // New state for the executive summary file
+    const [execSummaryFile, setExecSummaryFile] = useState(null);
+    const [showExecFileModal, setShowExecFileModal] = useState(false);
+
+    // Handler to capture the file input
+    const handleExecSummaryFileChange = (e) => {
+      if (e.target.files && e.target.files[0]) {
+        setExecSummaryFile(e.target.files[0]);
+      }
+    };
+  
   
 
   // ------------------ Updated PDF / Report Generation ------------------
@@ -439,6 +468,81 @@ const handleShowLeadsInRange = () => {
       alert("Error generating PDF");
     }
   };
+
+
+   // New function to run the report and merge it with an uploaded executive summary document
+   const handleRunReportWithSummary = async () => {
+    // const token = localStorage.getItem("token");
+    // if (!execSummaryFile) {
+    //   alert("Please upload an executive summary document.");
+    //   return;
+    // }
+
+    // const formData = new FormData();
+    // formData.append("user", "Officer 916");
+    // formData.append("reportTimestamp", new Date().toLocaleString());
+    // formData.append("caseSummary", caseSummary);
+    // formData.append("leadsData", JSON.stringify(leadsData));
+    // formData.append("execSummaryFile", execSummaryFile);
+    // formData.append("selectedReports", JSON.stringify({ FullReport: true }));
+
+    // try {
+    //   const response = await axios.post(
+    //     "http://localhost:5000/api/report/generateCaseExecSummary",
+    //     formData,
+    //     {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //         "Content-Type": "multipart/form-data",
+    //       },
+    //       responseType: "blob",
+    //     }
+    //   );
+    //   const file = new Blob([response.data], { type: "application/pdf" });
+    //   const fileURL = URL.createObjectURL(file);
+    //   window.open(fileURL, "_blank");
+    // } catch (error) {
+    //   console.error("Failed to generate report with executive summary", error);
+    //   alert("Error generating PDF with executive summary");
+    // }
+
+    const token = localStorage.getItem("token");
+    try {
+      // Build payload. You may adjust the payload structure as required by your backend.
+      const payload = {
+        user: "Officer 916", // Or get from auth context
+        reportTimestamp: new Date().toLocaleString(),
+        // For a full report, pass the entire leadsData and caseSummary.
+        leadsData,
+        caseSummary,
+        // Here, you could also include selectedReports if you want sections toggled.
+        selectedReports: { FullReport: true },
+      };
+      // Call your backend endpoint (adjust the URL if needed)
+      const response = await axios.post(
+        "http://localhost:5000/api/report/generateCaseExecSummary",
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          responseType: "blob", // Expect a PDF blob back
+        }
+      );
+      // Create a blob URL and open in a new tab
+      const file = new Blob([response.data], { type: "application/pdf" });
+      const fileURL = URL.createObjectURL(file);
+      window.open(fileURL, "_blank");
+    } catch (error) {
+      console.error("Failed to generate report", error);
+      alert("Error generating PDF");
+    }
+  };
+
+  
+
+
 
   // ------------------ Render Leads Table ------------------
   const renderLeads = (leadsArray) => {
@@ -844,10 +948,6 @@ const handleShowLeadsInRange = () => {
                   Show All Leads
                 </button>
                 </div>
-        {/* </div> */}
-        {/* <button className="search-button" onClick={handleShowAllLeads}>
-                  Show All Leads
-                </button> */}
         </div>
 
 
@@ -867,29 +967,11 @@ const handleShowLeadsInRange = () => {
           <div className="square4"></div>
           <div className="square3"></div>
           </div>
-          <button className="search-button" onClick={handleShowHierarchy}>
+          <button className="search-button1" onClick={handleShowHierarchy}>
                   Show Hierarchy
                 </button>
         </div>
         </div>
-
-
-{/* 
-              <div className="hierarchy-search">
-                <input
-                  type="text"
-                  className="input-field"
-                  placeholder="Enter Lead"
-                  value={hierarchyLeadInput}
-                  onChange={(e) => setHierarchyLeadInput(e.target.value)}
-                />
-                <button className="search-button" onClick={handleShowHierarchy}>
-                  Show Hierarchy
-                </button>
-                <button className="search-button" onClick={handleShowAllLeads}>
-                  Show All Leads
-                </button>
-              </div> */}
                <div className="p-6">
                   <Pagination
                     currentPage={currentPage}
@@ -903,10 +985,14 @@ const handleShowLeadsInRange = () => {
             {hierarchyLeadsData.length > 0 ? (
               <>
                 <h3>Hierarchy for Lead {hierarchyLeadInput}:</h3>
-                {hierarchyChains.map((chain, idx) => {
+                {/* {hierarchyChains.map((chain, idx) => {
                   const chainStr = chain.map((l) => l.leadNo).join(",");
                   return <div key={idx}>Chain #{idx + 1}: {chainStr}</div>;
-                })}
+                })} */}
+                {hierarchyChains.map((chain, idx) => (
+                  <HierarchyChain key={idx} chain={chain} chainIndex={idx} />
+                ))}
+
                 {renderLeads(hierarchyLeadsData)}
               </>
             ) : (
@@ -926,9 +1012,12 @@ const handleShowLeadsInRange = () => {
           </div>
 
           <div className="last-sec">
-            <div className="btn-sec">
+            <div className="btn-sec-ld">
               <button className="save-btn1" onClick={handleRunReport}>
                 Run Report
+              </button>
+              <button className="save-btn1" onClick={handleRunReportWithSummary}>
+                Run Report with Summary
               </button>
             </div>
             <FootBar onPrevious={() => navigate(-1)} />

@@ -70,6 +70,14 @@ export const CaseInformation = () => {
 
     const handleSaveClick = () => {
       // Save logic or API call can go here
+
+      if (inputMethod === 'upload' && uploadedFile) {
+        // Process the uploaded document
+        console.log('File to be processed:', uploadedFile);
+      } else {
+        // Process the typed executive summary
+        console.log('Executive Summary:', execCaseSummary);
+      }
       console.log("Saved report fields:", {
         recentType,
         reportDateAndTime,
@@ -160,6 +168,14 @@ export const CaseInformation = () => {
   };
 
   const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
+  const [execCaseSummary, setExecCaseSummary] = useState('');
+  const [inputMethod, setInputMethod] = useState('direct'); // 'direct' or 'upload'
+  const [uploadedFile, setUploadedFile] = useState(null);
+
+  const handleFileUpload = (e) => {
+    // Handle the file upload logic here
+    setUploadedFile(e.target.files[0]);
+  }
 
   const [isEditing, setIsEditing] = useState(false); // Controls whether the textarea is editable
   useEffect(() => {
@@ -257,430 +273,46 @@ export const CaseInformation = () => {
               Save
             </button>
             </div>
-            {/* <h2> Field Case Report </h2> */}
-            <div className ="field-case-sec">
-                {/* <div className ="detail-sec">
-               <h2 onClick={() => setIsDetailOpen(!isDetailOpen)} 
-               style={{ cursor: 'pointer' }} 
-               className = "collapsible-header">
-                <span> Incident Details  </span>
-                <span>{isDetailOpen ? '▲' : '▼'}</span>
-                </h2>
-              {isDetailOpen && (
-                <>
-              <div className="form-row">
-                <label>Incident Type:</label>
-                <input
-                  type="text"
-                  value={recentType}
-                  onChange={(e) => setRecentType(e.target.value)}
-                />
-              </div>
-              <div className="form-row">
-                <label>Report Date and Time:</label>
-                <input
-                  type="text"
-                  value={reportDateAndTime}
-                  onChange={(e) => setReportDateAndTime(e.target.value)}
-                />
-              </div>
-              <div className="form-row">
-                <label>Date and Time From:</label>
-                <input
-                  type="text"
-                  value={dateTimeFrom}
-                  onChange={(e) => setDateTimeFrom(e.target.value)}
-                />
-              </div>
-              <div className="form-row">
-                <label>Date and Time To:</label>
-                <input
-                  type="text"
-                  value={dateTimeTo}
-                  onChange={(e) => setDateTimeTo(e.target.value)}
-                />
-              </div>
-              <div className="form-row">
-                <label>Incident Location:</label>
-                <input
-                  type="text"
-                  value={recentLocation}
-                  onChange={(e) => setRecentLocation(e.target.value)}
-                />
-              </div>
-              </>
-              )}
-            </div>
 
-            <div className="detail-sec">
-              <h2 onClick={() => setIsOffensesOpen(!isOffensesOpen)} 
-              style={{ cursor: 'pointer' }} className = "collapsible-header">
-               <span> Offense Details </span> <span> {isOffensesOpen ? '▲' : '▼'} </span>
-                </h2>
-              {isOffensesOpen && (
-                <>
-              {offenses.map((offense, index) => (
-                <div key={index} className="offense-block">
-                  <div className="form-row">
-                    <label>Statute:</label>
-                    <input
-                      type="text"
-                      value={offense.statute}
-                      onChange={(e) => handleOffenseChange(index, 'statute', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Description:</label>
-                    <input
-                      type="text"
-                      value={offense.desc}
-                      onChange={(e) => handleOffenseChange(index, 'desc', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Attempt/Commit:</label>
-                    <input
-                      type="text"
-                      value={offense.attemptCommit}
-                      onChange={(e) => handleOffenseChange(index, 'attemptCommit', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Counts:</label>
-                    <input
-                      type="text"
-                      value={offense.counts}
-                      onChange={(e) => handleOffenseChange(index, 'counts', e.target.value)}
-                    />
-                  </div>
-                </div>
-              ))}
+            <div className="case-summary">
+      <label className="input-label1">Start Executive Case Summary</label>
+      <div>
+        <label>
+          <input
+            type="radio"
+            value="upload"
+            checked={inputMethod === 'upload'}
+            onChange={() => setInputMethod('upload')}
+          />
+          Upload Document
+        </label>
+        <label>
+          <input
+            type="radio"
+            value="direct"
+            checked={inputMethod === 'direct'}
+            onChange={() => setInputMethod('direct')}
+          />
+          Write Directly
+        </label>
+      </div>
 
-              <button
-                onClick={() =>
-                  setOffenses([...offenses, { statute: '', desc: '', attemptCommit: '', counts: '' }])
-                }
-              >
-                + Add Offense
-              </button>
-              </>
-                )}
-            </div>
+      {inputMethod === 'upload' ? (
+        <input type="file" onChange={handleFileUpload} />
+      ) : (
+        <textarea
+          className="textarea-field"
+          value={execCaseSummary}
+          onChange={(e) => setExecCaseSummary(e.target.value)}
+        />
+      )}
 
-          
-            <div className="detail-sec">
-              <h2 onClick={() => setIsSubjectsOpen(!isSubjectsOpen)}
-               style={{ cursor: 'pointer' }} className = "collapsible-header">
-               <span> Subject(s) Information </span> <span>
-               {isSubjectsOpen ? '▲' : '▼'}</span></h2>
-              {isSubjectsOpen && (
-                <>
-              {subjects.map((subj, index) => (
-                <div key={index} className="subject-block">
-
-                  <div className="form-row">
-                  <label>Subject Type:</label>
-                  <input
-                    type="text"
-                    value={subj.type}
-                    onChange={(e) => handleSubjectChange(index, 'type', e.target.value)}
-                  />
-                  </div>
-
-                  <div className="form-row">
-                  <label>Name (Last, First, Middle):</label>
-                  <input
-                    type="text"
-                    value={subj.name}
-                    onChange={(e) => handleSubjectChange(index, 'name', e.target.value)}
-                  />
-                  </div>
-
-                  <div className="form-row">
-                    <label>Victim is Also Complainant:</label>
-                    <input
-                      type="checkbox"
-                      checked={subj.isVictimAlsoComplainant}
-                      onChange={(e) =>
-                        handleSubjectChange(index, 'isVictimAlsoComplainant', e.target.checked)
-                      }
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Address:</label>
-                    <input
-                      type="text"
-                      value={subj.address}
-                      onChange={(e) => handleSubjectChange(index, 'address', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Phone 1:</label>
-                    <input
-                      type="text"
-                      value={subj.phone1}
-                      onChange={(e) => handleSubjectChange(index, 'phone1', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Phone 2:</label>
-                    <input
-                      type="text"
-                      value={subj.phone2}
-                      onChange={(e) => handleSubjectChange(index, 'phone2', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Phone 3:</label>
-                    <input
-                      type="text"
-                      value={subj.phone3}
-                      onChange={(e) => handleSubjectChange(index, 'phone3', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>DOB:</label>
-                    <input
-                      type="text"
-                      value={subj.dob}
-                      onChange={(e) => handleSubjectChange(index, 'dob', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Age:</label>
-                    <input
-                      type="text"
-                      value={subj.age}
-                      onChange={(e) => handleSubjectChange(index, 'age', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Sex:</label>
-                    <input
-                      type="text"
-                      value={subj.sex}
-                      onChange={(e) => handleSubjectChange(index, 'sex', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Race:</label>
-                    <input
-                      type="text"
-                      value={subj.race}
-                      onChange={(e) => handleSubjectChange(index, 'race', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Ethnicity:</label>
-                    <input
-                      type="text"
-                      value={subj.ethnicity}
-                      onChange={(e) => handleSubjectChange(index, 'ethnicity', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Height:</label>
-                    <input
-                      type="text"
-                      value={subj.height}
-                      onChange={(e) => handleSubjectChange(index, 'height', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Weight:</label>
-                    <input
-                      type="text"
-                      value={subj.weight}
-                      onChange={(e) => handleSubjectChange(index, 'weight', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Hair Color:</label>
-                    <input
-                      type="text"
-                      value={subj.hairColor}
-                      onChange={(e) => handleSubjectChange(index, 'hairColor', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Eye Color:</label>
-                    <input
-                      type="text"
-                      value={subj.eyeColor}
-                      onChange={(e) => handleSubjectChange(index, 'eyeColor', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Glasses:</label>
-                    <input
-                      type="text"
-                      value={subj.glasses}
-                      onChange={(e) => handleSubjectChange(index, 'glasses', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Alias:</label>
-                    <input
-                      type="text"
-                      value={subj.alias}
-                      onChange={(e) => handleSubjectChange(index, 'alias', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>Scars/Marks/Tattoos:</label>
-                    <input
-                      type="text"
-                      value={subj.scarsMarksTattoos}
-                      onChange={(e) =>
-                        handleSubjectChange(index, 'scarsMarksTattoos', e.target.value)
-                      }
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>School/Employer Name and Address:</label>
-                    <input
-                      type="text"
-                      value={subj.schoolEmployerNameAndAddress}
-                      onChange={(e) =>
-                        handleSubjectChange(index, 'schoolEmployerNameAndAddress', e.target.value)
-                      }
-                    />
-                  </div>
-                  <div className="form-row">
-                    <label>School/Employer Phone:</label>
-                    <input
-                      type="text"
-                      value={subj.schoolEmployerPhone}
-                      onChange={(e) =>
-                        handleSubjectChange(index, 'schoolEmployerPhone', e.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-              ))}
-              </>
-              )}
-            </div>
-
-            <div className="detail-sec">
-              <h2 onClick={() => setIsCaseDetailOpen(!isCaseDetailOpen)} style={{ cursor: 'pointer' }} className = "collapsible-header">
-               <span>  Case Details </span>
-              <span> {isCaseDetailOpen ? '▲' : '▼'} </span>
-              </h2>
-
-
-              {isCaseDetailOpen && (
-                <>
-               
-
-                <div className="form-row">
-                    <label>Case Status:</label>
-                    <input
-                    type="text"
-                    value={caseStatus}
-                    onChange={(e) => setCaseStatus(e.target.value)}
-                    />
-                </div>
-                <div className="form-row">
-                    <label>Exceptional Clearance:</label>
-                    <input
-                    type="text"
-                    value={exceptionalClearance}
-                    onChange={(e) => setExceptionalClearance(e.target.value)}
-                    />
-                </div>
-              <div className="form-row">
-                <label>Reporting Officer (Last, First, Badge):</label>
-                <input
-                  type="text"
-                  value={reportingOfficer}
-                  onChange={(e) => setReportingOfficer(e.target.value)}
-                />
-              </div>
-              <div className="form-row">
-                <label>Date:</label>
-                <input
-                  type="text"
-                  value={reportDate}
-                  onChange={(e) => setReportDate(e.target.value)}
-                />
-              </div>
-              <div className="form-row">
-                <label>Reviewed By (Last, First, Badge):</label>
-                <input
-                  type="text"
-                  value={reviewedBy}
-                  onChange={(e) => setReviewedBy(e.target.value)}
-                />
-              </div>
-              <div className="form-row">
-                <label>Date:</label>
-                <input
-                  type="text"
-                  value={reviewedDate}
-                  onChange={(e) => setReviewedDate(e.target.value)}
-                />
-              </div>
-              </>
-              )}
-            </div>
-
-            <div className="detail-sec">
-              <h2 onClick={() => setIsDOpen(!isDOpen)} style={{ cursor: 'pointer' }} className = "collapsible-header">
-               <span>  Property Vehicles Details </span>
-              <span> {isDOpen ? '▲' : '▼'} </span>
-              </h2>
-              </div>
-
-              <div className="detail-sec">
-              <h2 onClick={() => setIsDOpen(!isDOpen)} style={{ cursor: 'pointer' }} className = "collapsible-header">
-               <span>  Case Vehicles Details </span>
-              <span> {isDOpen ? '▲' : '▼'} </span>
-              </h2>
-              </div>
-
-              <div className="detail-sec">
-              <h2 onClick={() => setIsDOpen(!isDOpen)} style={{ cursor: 'pointer' }} className = "collapsible-header">
-               <span>  General Items
-                 </span>
-              <span> {isDOpen ? '▲' : '▼'} </span>
-              </h2>
-              </div>
-
-              <div className="detail-sec">
-              <h2 onClick={() => setIsDOpen(!isDOpen)} style={{ cursor: 'pointer' }} className = "collapsible-header">
-               <span>  Fire Alarms
-                 </span>
-              <span> {isDOpen ? '▲' : '▼'} </span>
-              </h2>
-              </div>
-      
-          </div> */}
-
-          {/* <div className="comment-sec">
-                <label> Comments </label>
-                <input
-                  type="text"
-                />
-              </div> */}
-
-          </div>
-          {/* <div className="btn-sec">
-
-<button className="save-btn1" onClick={handleHomeClick}>
-Back
-</button>
-<button className="save-btn1" onClick={handleSaveClick}>
-Accept
-</button>
-
-<button className="save-btn1" onClick={handleRejectClick}>
-Reject
-</button>
-<button className="save-btn1" onClick={handleSaveClick}>
-Next
-</button>
-</div> */}
+      <button className="save-btn1" onClick={handleSaveClick}>
+        Save
+      </button>
+    </div>
+           
+        
         </div>
      </div>
      </div>
