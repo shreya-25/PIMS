@@ -64,7 +64,7 @@ router.get("/maxLeadNumber", async (req, res) => {
     }
   });
 
-  router.patch("/updateStatus", verifyToken, leadController.updateLeadLRStatus);
+  // router.patch("/updateStatus", verifyToken, leadController.updateLeadLRStatus);
   
 
 module.exports = router;

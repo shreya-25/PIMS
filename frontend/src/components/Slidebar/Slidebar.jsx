@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { CaseContext } from "../../Pages/CaseContext";
+import { useContext } from "react";
 import "./Slidebar.css";
 
 export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
@@ -13,6 +15,8 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [allUsers, setAllUsers] = useState([]);
+  
+    const { setSelectedCase, setToken, withAutoRefresh } = useContext(CaseContext);
 
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -107,9 +111,21 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
     setLoading(true);
     setError(null);
   
+    // const newCase = {
+    //   caseNo: caseDetails.number,
+    //   caseName: caseDetails.title,
+    //   caseSummary: caseDetails.summary,
+    //   username: caseDetails.managerName,
+    //   selectedOfficers: caseDetails.investigators.map((name) => ({ name })),
+    // };
+
     const newCase = {
+      id: caseDetails.number,            // Added id property
+      title: caseDetails.title,            // Added title property
+      status: "Ongoing",                   // Added status property
       caseNo: caseDetails.number,
       caseName: caseDetails.title,
+      role: "Case Manager",
       caseSummary: caseDetails.summary,
       username: caseDetails.managerName,
       selectedOfficers: caseDetails.investigators.map((name) => ({ name })),
@@ -131,8 +147,26 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
       const data = await response.json();
   
       if (!response.ok) {
+        if (data.message === "Username is required to assign Case Manager") {
+          alert("Please enter a valid username");
+        } 
+        else if (data.error && data.error.includes("dup key") && data.error.includes("caseName")) {
+          alert("A case with this name already exists. Please choose a unique case name.");
+        } 
+        else if (data.error && data.error.includes("dup key") && data.error.includes("caseName")) {
+          alert("A case with this name already exists. Please choose a unique case name.");
+        }else if (data.message === "Unauthorized: User details not found") {
+          alert("User details not found. Please sign in again");
+        } else if (data.message === "caseNo, caseName, and assignedOfficers are required") {
+          alert("Please fill in the case number, case name, and select at least one assigned officer");
+        } else if (data.message === "Case number already exists. Please use a unique caseNo.") {
+          alert("A case with this number already exists. Please use a unique case number.");
+        } else {
+          alert(`❌ Error: ${data.message}`);
+        }
         throw new Error(data.message || "Failed to create case");
       }
+
   
       alert("✅ Case Created Successfully!");
   
@@ -147,6 +181,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
       });
   
       setIsSidebarOpen(false);
+
     } catch (err) {
       setError(err.message);
       console.error("❌ Error creating case:", err);

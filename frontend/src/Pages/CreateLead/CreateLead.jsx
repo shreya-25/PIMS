@@ -449,7 +449,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
       <tr>
 
         <th style={{ width: "10%" }}>Lead No.</th>
-          <th style={{ width: "10%" }}>Incident No.</th>
+          <th style={{ width: "10%" }}>Case No.</th>
           <th style={{ width: "10%" }}>Assigned By</th>
           <th style={{ width: "8%" }}>Assigned Date</th>
       </tr>
@@ -471,7 +471,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
         <table className="details-table">
           <tbody>
             <tr>
-              <td>Case Name:</td>
+              <td>Case Name</td>
               <td>
                 <input
                   type="text"
@@ -484,7 +484,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
               </td>
             </tr>
             <tr>
-              <td>Lead Log Summary:</td>
+              <td>Lead Log Summary *</td>
               <td>
                 <input
                   type="text"
@@ -496,7 +496,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
               </td>
             </tr>
             <tr>
-              <td> Lead Instruction:</td>
+              <td> Lead Instruction *</td>
               <td>
                 <textarea
                   className="textarea-field-cl"
@@ -507,7 +507,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
               </td>
             </tr>
             <tr>
-                <td>Lead Origin:</td>
+                <td>Lead Origin</td>
                 <td>
                   {/* <input
                     type="text"
@@ -528,7 +528,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
                 </td>
               </tr>
                 <tr>
-                  <td>Subnumber:</td>
+                  <td>Subnumber</td>
                   <td>
                     {/* <input
                       type="text"
@@ -550,7 +550,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
                   </td>
                 </tr>
             <tr>
-  <td>Associated Subnumbers:</td>
+  <td>Associated Subnumbers</td>
   <td>
     <div className="custom-dropdown-cl">
       <div
@@ -592,7 +592,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
   </td>
 </tr>
 <tr>
-  <td>Due Date:</td>
+  <td>Due Date *</td>
   <td>
     <input
       type="text"
@@ -672,7 +672,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
       )}
     </div>
   </td> */}
-  <td>Assign Officers:</td>
+  <td>Assign Officers *</td>
 <td>
   {/* <div className="custom-dropdown-cl">
     <div
@@ -764,7 +764,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
 </td>
 </tr>
 <tr>
-  <td>Access:</td>
+  <td>Access</td>
   <td>
     <select
       className="input-field"
