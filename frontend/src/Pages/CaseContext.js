@@ -57,6 +57,16 @@ export const CaseProvider = ({ children }) => {
         }
     }, [token]);
 
+    // Define the helper function for auto-refreshing
+    const withAutoRefresh = async (action) => {
+        try {
+            await action();
+            window.location.reload();
+        } catch (error) {
+            console.error("Error in action:", error);
+        }
+    };
+
     return (
         <CaseContext.Provider value={{ 
             selectedCase, setSelectedCase, 
@@ -64,7 +74,8 @@ export const CaseProvider = ({ children }) => {
             token, setToken, 
             leadInstructions, setLeadInstructions,
             leadReturns, setLeadReturns,
-            selectedReports, setSelectedReports
+            selectedReports, setSelectedReports,
+            withAutoRefresh,
         }}>
             {children}
         </CaseContext.Provider>

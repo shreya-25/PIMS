@@ -42,7 +42,7 @@ const [newInvestigator, setNewInvestigator] = useState("");
 const [showCaseSelector, setShowCaseSelector] = useState(false);
   const [navigateTo, setNavigateTo] = useState(""); // Target page
 
-  const { setSelectedCase, setToken } = useContext(CaseContext);
+  const { setSelectedCase, setToken, withAutoRefresh } = useContext(CaseContext);
 
   const [showFilter, setShowFilter] = useState(false);
 const [showSort, setShowSort] = useState(false);
@@ -480,11 +480,7 @@ const addCase = (newCase) => {
     // alert("Case must have an ID, title, and status.");
     return;
   }
- 
-  if (window.confirm(`Are you sure you want to add the case "${newCase.title}" with ID ${newCase.id}?`)) {
     setCases((prevCases) => [...prevCases, newCase]);
-    alert(`Case "${newCase.title}" added successfully!`);
-  }
 };
 
 

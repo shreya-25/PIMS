@@ -340,9 +340,14 @@ body{
   margin-bottom: 20px;
 }
 
-.btn-sec
+.btn-sec-ld
 {
- margin-left: 47%;
+ /* margin-left: 47%; */
+ width: 100%;
+ display:flex;
+ gap: 20px;
+ align-items: center;
+ justify-content: center;
 }
 
 /* Buttons */
@@ -556,3 +561,18 @@ body{
 
 /* .another-btn-selectleadview
 {display: flex;} */
+
+.show-more-btn
+{
+  border: 2px solid black;
+  color: rgba(0, 0, 0, 0.733);
+  font-size: 16px;
+}
+
+.save-btn2
+{
+  margin-bottom: 10px;
+  height: 150px;
+  width: 150px;
+  margin-top: 20px;
+}

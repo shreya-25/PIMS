@@ -29,7 +29,7 @@ export const AdminCM = () => {
   ];
 
   const signedInOfficer = localStorage.getItem("loggedInUser");
-  console.log(signedInOfficer);
+  console.log(signedInOfficer)
 
     const [showFilter, setShowFilter] = useState(false);
   const [showSort, setShowSort] = useState(false);
@@ -577,7 +577,7 @@ export const AdminCM = () => {
                   </button>
 
                   <button
-                    className="close-button"
+                    className="save-btn1"
                     onClick={() => {
                       if (window.confirm(`Are you sure you want to close case ${c.id}?`)) {
                         closeCase(c.id);
