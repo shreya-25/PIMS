@@ -658,9 +658,11 @@ export const LeadsDesk = () => {
                             borderRadius: "6px",
                             width: "100%",
                             resize: "none",
-                            overflow: "hidden",
+                            // overflow: "hidden",
                             height: "auto",
                             fontFamily: "Arial",
+                            whiteSpace: "pre-wrap",
+                            wordWrap: "break-word",
                           }}
                           rows={Math.max((returnItem.leadReturnResult || "").length / 50, 2)}
                         />
@@ -902,64 +904,37 @@ export const LeadsDesk = () => {
         {/* Sidebar */}
         <div className="sideitem">
           <ul className="sidebar-list">
-          <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-              Lead Management {leadDropdownOpen ? "▼" : "▲"}
-            </li>
-          {leadDropdownOpen && (
-              <ul className="dropdown-list1">
-                <li className="sidebar-item" onClick={() => navigate("/CreateLead")}>
+          <li className="sidebar-item">Case Information</li>
+          <li className="sidebar-item" onClick={() => navigate("/CasePageManager")}>Case Page</li>
+          <li className="sidebar-item" onClick={() => navigate("/CreateLead")}>
                   New Lead
-                </li>
+                </li>   
                 <li className="sidebar-item" onClick={() => navigate("/SearchLead")}>
                   Search Lead
                 </li>
+                <li className="sidebar-item" >View Lead Return</li>
                 <li className="sidebar-item" onClick={() => navigate("/ViewHierarchy")}>
                   View Lead Chain of Custody
-                </li>
-              </ul>
-            )}
-
-            <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-              Case Management {caseDropdownOpen ? "▼" : "▲"}
-            </li>
-            {caseDropdownOpen && (
-              <ul className="dropdown-list1">
-                <li className="sidebar-item" onClick={() => navigate("/caseInformation")}>
-                  Case Information
                 </li>
                 <li className="sidebar-item" onClick={() => navigate("/LeadLog")}>
                   View Lead Log
                 </li>
-                {/* <li className="sidebar-item" onClick={() => navigate("/OfficerManagement")}>
-                  Officer Management
-                </li> */}
                 <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-                  Case Scratchpad
+                View/Add Case Notes
                 </li>
-                {/* <li className="sidebar-item" onClick={() => navigate("/LeadHierarchy")}>
-                  View Lead Hierarchy
-                </li> */}
-                {/* <li className="sidebar-item" onClick={() => navigate("/ViewHierarchy")}>
-                  Generate Report
-                </li> */}
                 <li className="sidebar-item" onClick={() => navigate("/FlaggedLead")}>
                   View Flagged Leads
                 </li>
                 <li className="sidebar-item" onClick={() => navigate("/ViewTimeline")}>
                   View Timeline Entries
                 </li>
-                {/* <li className="sidebar-item" onClick={() => navigate("/ViewDocument")}>
-                  View Uploaded Documents
-                </li> */}
-                <li className="sidebar-item" onClick={() => navigate("/LeadsDesk")}>
+                <li className="sidebar-item active" onClick={() => navigate("/LeadsDesk")}>
                   View Leads Desk
                 </li>
-                <li className="sidebar-item" onClick={() => navigate("/HomePage")}>
+                <li className="sidebar-item " onClick={() => navigate("/HomePage")}>
                   Go to Home Page
                 </li>
-              </ul>
-            )}
-          </ul>
+                </ul>
         </div>
 
         {/* Main content */}

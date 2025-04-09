@@ -1,5 +1,5 @@
 const express = require("express");
-const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy } = require("../controller/leadController");
+const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, searchLeadsByKeyword } = require("../controller/leadController");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
 const Lead = require("../models/lead");
@@ -19,6 +19,13 @@ router.get("/assignedTo-leads", verifyToken, getLeadsForAssignedToOfficer);
 
 router.get("/lead/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLeadsByLeadNoandLeadName);
 router.get("/lead/:leadNo/:caseNo/:caseName", verifyToken, getLeadsforHierarchy);
+
+router.patch('/:leadNo/:leadName/:caseNo/:caseName/status', verifyToken, updateLeadStatus);
+
+
+router.get('/associatedSubNumbers/:caseNo/:caseName', getAssociatedSubNumbers);
+
+router.get("/search", verifyToken, getLeadsByCase);
 
 
 // API to get the maximum lead number
@@ -56,6 +63,8 @@ router.get("/maxLeadNumber", async (req, res) => {
       res.status(500).json({ message: "Internal Server Error" });
     }
   });
+
+  // router.patch("/updateStatus", verifyToken, leadController.updateLeadLRStatus);
   
 
 module.exports = router;

@@ -24,6 +24,8 @@ export const CMEnclosures = () => {
     }, []);
   const navigate = useNavigate(); 
   const location = useLocation();
+    const { selectedCase, selectedLead, setSelectedLead, leadReturns, setLeadReturns  } = useContext(CaseContext);
+  
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -84,12 +86,48 @@ export const CMEnclosures = () => {
     navigate(route); // Navigate to respective page
   };
 
+   // Fetch enclosures from backend when component mounts or when selectedLead/selectedCase update
+   useEffect(() => {
+    const fetchEnclosures = async () => {
+      if (!selectedLead || !selectedCase) {
+        console.warn("Missing selected lead or case details");
+        return;
+      }
+      // Build URL using selectedLead and selectedCase; URL-encode values that may have spaces
+      const leadNo = selectedLead.leadNo;
+      const leadName = encodeURIComponent(selectedLead.leadName);
+      const caseNo = encodeURIComponent(selectedLead.caseNo);
+      // Here, assuming caseName is in selectedLead or selectedCase; adjust as needed.
+      const caseName = encodeURIComponent(selectedLead.caseName || selectedCase.caseName);
+      const token = localStorage.getItem("token");
+
+      const url = `http://localhost:5000/api/lrenclosure/${leadNo}/${leadName}/${caseNo}/${caseName}`;
+      try {
+        const response = await axios.get(url, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        console.log("Fetched enclosures:", response.data);
+        setEnclosures(response.data);
+      } catch (error) {
+        console.error("Error fetching enclosures:", error);
+      }
+    };
+
+    fetchEnclosures();
+  }, [selectedLead, selectedCase]);
+
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
             const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           
             const onShowCaseSelector = (route) => {
               navigate(route, { state: { caseDetails } });
           };
+
+          const getCasePageRoute = () => {
+            if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
+            return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
+        };
+            
 
   return (
     <div className="lrenclosures-container">
@@ -118,37 +156,22 @@ export const CMEnclosures = () => {
 
       <div className="LRI_Content">
        <div className="sideitem">
-                    <ul className="sidebar-list">
-                         {/* Lead Management Dropdown */}
-                         <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+       <li className="sidebar-item">Case Information</li>
+          <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
+          <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
               New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
-                            {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▼" : "▲" }
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+            </li>                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
+                       <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                       <li className="sidebar-item active" >View Lead Return</li>
+                       <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
               <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
               View Lead Log
             </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
-            </li>
+            </li> */}
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Case Scratchpad
+              View/Add Case Notes
             </li>
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
@@ -167,12 +190,10 @@ export const CMEnclosures = () => {
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
 
-         
-          </ul>
-        )}
+        
+        </div>
 
-                    </ul>
-                </div>
+    
                 <div className="left-content">
      
         {/* Left Section */}
@@ -238,7 +259,7 @@ export const CMEnclosures = () => {
             {enclosures.length > 0 ? (
               enclosures.map((enclosure, index) => (
               <tr key={index}>
-                <td>{enclosure.dateEntered}</td>
+                <td>{formatDate(enclosure.enteredDate)}</td>
                 <td>{enclosure.leadReturnId}</td>
                 <td>{enclosure.type}</td>
                 <td>{enclosure.enclosure}</td>
@@ -260,7 +281,16 @@ export const CMEnclosures = () => {
               </tr>)}
           </tbody>
         </table>
-        <Attachment />
+        {/* <Attachment /> */}
+        <Attachment attachments={enclosures.map(e => ({
+            name: e.originalName || e.filename,
+            // Optionally include size and date if available:
+            size: e.size || "N/A",
+            date: e.enteredDate ? new Date(e.enteredDate).toLocaleString() : "N/A",
+            // Build a URL to view/download the file
+            url: `http://localhost:5000/uploads/${e.filename}`
+          }))} />
+
        <Comment/>
       </div>
       </div>

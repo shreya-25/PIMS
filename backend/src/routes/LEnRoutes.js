@@ -1,97 +1,82 @@
-// const express = require("express");
-// const getUploadMiddleware = require("../middleware/upload"); // Import the async function
-// const { createLREnclosure, getLREnclosureByDetails } = require("../controller/LREnclosureController");
-// const verifyToken = require("../middleware/authMiddleware");
-
-// const router = express.Router();
-
-// (async () => {
-//     try {
-//         const upload = await getUploadMiddleware(); // Await middleware initialization
-
-//         // **Upload File & Create LREnclosure**
-
-//         router.post("/upload",
-//             verifyToken,
-//             (req, res, next) => {
-//               console.log("About to call upload.single('file')");
-//               next();
-//             },
-//             upload.single("file"),
-//             (req, res, next) => {
-//               console.log("After upload.single('file') - req.file is:", req.file);
-//               next();
-//             },
-//             async (req, res, next) => {
-//               console.log("Inside final handler. req.file:", req.file);
-//               try {
-//                 console.log("📁 Uploaded file:", req.file);
-
-//                 if (!req.file) {
-//                     return res.status(400).json({ message: "No file uploaded" });
-//                 }
-
-//                 await createLREnclosure(req, res, next);
-//             } catch (error) {
-//                 console.error("❌ Upload error:", error);
-//                 res.status(500).json({ message: "File upload failed", error: error.message });
-//             }
-//             }
-//           );
-
-//         // **Fetch Enclosures by Details**
-//         router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLREnclosureByDetails);
-
-//     } catch (error) {
-//         console.error("❌ Error initializing upload middleware:", error);
-//     }
-// })();
-
-// module.exports = router;
-
 const express = require("express");
 const verifyToken = require("../middleware/authMiddleware");
 const { createLREnclosure, getLREnclosureByDetails } = require("../controller/LREnclosureController");
-const createUploadMiddleware = require("../middleware/upload");
+const getUploadMiddleware = require("../middleware/upload");
+const upload = require("../middleware/upload-disk");
+
 
 const router = express.Router();
 
-(async () => {
-  try {
-    console.log("Initializing upload middleware...");
-    const upload = await createUploadMiddleware();
-    console.log("Upload middleware initialized");
-
-    router.post("/upload",
-      verifyToken,
-      (req, res, next) => {
-        console.log("Before upload.single('file')");
-        next();
-      },
-      upload.single("file"),
-      (req, res, next) => {
-        console.log("After upload.single('file') - req.file:", req.file);
-        next();
-      },
-      async (req, res, next) => {
-        console.log("Inside final handler. req.file:", req.file);
-        try {
-          if (!req.file) {
-            return res.status(400).json({ message: "No file uploaded" });
-          }
-          await createLREnclosure(req, res, next);
-        } catch (error) {
-          console.error("Upload error in final middleware:", error);
-          res.status(500).json({ message: "File upload failed", error: error.message });
+router.post(
+  "/upload-lrenclosure",
+  verifyToken,
+  async (req, res, next) => {
+    // 1) Perform the file upload
+    try {
+      const upload = await getUploadMiddleware();
+      upload.single("file")(req, res, function (err) {
+        if (err) {
+          console.error("Multer error:", err);
+          return res.status(400).json({ message: err.message });
         }
-      }
-    );
+        console.log("Multer finished, req.file:", req.file);
+        next(); // Proceed to the next middleware/controller
+      });
+    } catch (error) {
+      console.error("Error in upload middleware:", error);
+      return res.status(500).json({ message: "File upload initialization failed" });
+    }
+  },
+  // 2) After the file is uploaded, call createLREnclosure
+  createLREnclosure
+);
 
-    router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLREnclosureByDetails);
 
-  } catch (error) {
-    console.error("Error initializing upload middleware:", error);
-  }
-})();
+router.post(
+    "/upload",
+    verifyToken,
+    upload.single("file"), // process file upload via disk storage
+    createLREnclosure      // then call your controller to save textual data & file details to MongoDB
+  );
+
+// router.post("/upload-test-gridfs", async (req, res) => {
+//   try {
+//     console.log("POST /upload-test-gridfs route reached");
+//     const upload = await getUploadMiddleware();
+//     console.log("Multer instance acquired for test");
+//     upload.single("file")(req, res, function (err) {
+//       if (err) {
+//         console.error("Multer error on /upload-test-gridfs:", err);
+//         return res.status(400).json({ message: err.message });
+//       }
+//       console.log("Multer finished, req.file:", req.file);
+//       res.status(200).json({ 
+//         message: "GridFS upload test successful", 
+//         file: req.file 
+//       });
+//     });
+//   } catch (error) {
+//     console.error("Error in /upload-test-gridfs route:", error);
+//     res.status(500).json({ message: "GridFS upload test initialization failed" });
+//   }
+// });
+
+// router.post("/upload-test", (req, res) => {
+//   upload.single("file")(req, res, (err) => {
+//     if (err) {
+//       console.error("Multer error:", err);
+//       return res.status(400).json({ message: err.message });
+//     }
+//     console.log("Disk storage Multer finished, req.file:", req.file);
+//     res.status(200).json({
+//       message: "Disk storage upload test successful",
+//       file: req.file
+//     });
+//   });
+// });
+
+
+router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLREnclosureByDetails);
+
 
 module.exports = router;

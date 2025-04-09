@@ -2,8 +2,9 @@
 .case-page-manager {
     display: flex;
     flex-direction: column; /* Stack Navbar and Main Container vertically */
-    height: 100vh;
+    /* height: 100vh; */
     background-color: #f9f9f9;
+    font-family: Arial, sans-serif;
   }
   
   /* Navbar styling (optional, already handled in Navbar.css) */
@@ -12,7 +13,7 @@
   .main-container {
     display: flex;
     flex-direction: row; /* Sidebar and content side-by-side */
-    flex: 1;
+    /* flex: 1; */
   }
   /* .left-content
   {
@@ -108,7 +109,7 @@
 }
 /* Active Tab */
 .sidebar-item.active {
-  background-color: #c4c6c98e; /* Same as hover color */
+  background-color:  rgba(41, 41, 139, 0.219) ; /* Same as hover color */
   font-weight: bold;
 }
 
@@ -126,7 +127,8 @@
   text-align: right;
 }
 .sidebar-item:hover {
-  background-color: #c4c6c98e;
+  /* background-color: #c4c6c98e; */
+  background-color: rgba(41, 41, 139, 0.219);
   font-weight: 600;
 }
 

@@ -12,6 +12,7 @@ const leadSchema = new mongoose.Schema(
         subNumber: [{ type: String}],
         associatedSubNumbers: [{ type: String}],
         assignedDate: { type: Date, required: true },
+        completedDate: { type: Date },
         assignedTo: [{ type: String }], 
         assignedBy: { type: String, required: true },
         summary: { type: String, required: true },
@@ -21,7 +22,12 @@ const leadSchema = new mongoose.Schema(
         priority:  { type: String },
         caseName: { type: String, required: true},
         caseNo: { type: String, required: true},
-        associatedFlags:  [{ type: String}]
+        associatedFlags:  [{ type: String}],
+        accessLevel: {
+            type: String,
+            enum: ["Only Case Manager and Assignees", "Everyone"],
+            default: "Everyone"
+          }
     },
     { timestamps: true }
 );
