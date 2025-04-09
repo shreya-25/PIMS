@@ -8,6 +8,7 @@ import Searchbar from "../../components/Searchbar/Searchbar";
 import { SlideBar } from "../../components/Slidebar/Slidebar";
 import { SideBar } from "../../components/Sidebar/Sidebar";
 import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
+import NotificationCard from "../../components/NotificationCard/NotificationCard1";
 import { useNavigate } from "react-router-dom";
 
 export const AdminCM = () => {
@@ -26,6 +27,12 @@ export const AdminCM = () => {
     { name: "Officer 2", casesAssigned: "1" },
     { name: "Officer 3", casesAssigned: "3" },
   ];
+
+  const signedInOfficer = localStorage.getItem("loggedInUser");
+  console.log(signedInOfficer)
+
+    const [showFilter, setShowFilter] = useState(false);
+  const [showSort, setShowSort] = useState(false);
 
   const addCase = (newCase) => {
     setCases([...cases, newCase]);
@@ -397,7 +404,7 @@ export const AdminCM = () => {
 
 
   return (
-    <div className="admin-container">
+    <div className="main-page-body">
       <Navbar />
 
 
@@ -429,23 +436,22 @@ export const AdminCM = () => {
           </span>
          </div>
        </div>
+      <div className="main-page-content">
+        <div className="main-page">
 
-      <div className="logo-sec">
-        <img
-          src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}  // Replace with the actual path to your logo
-          alt="Police Department Logo"
-          className="police-logo-main-page"
-        />
-        <h1 className="main-page-heading">PIMS</h1>
-      </div>
-      <div className="admin-content">
-        <div className="main-section-admin">
-        <div className='searchContainer'>
-        <Searchbar
-              placeholder="Search Cases"
-              onSearch={(query) => console.log("Search query:", query)}
-            />
-                    </div>
+           <NotificationCard acceptLead={acceptLead} signedInOfficer={signedInOfficer} />
+          
+                <div className= "add-case-section">
+                    <h2> Click here to add a new case</h2>
+                    {/* <div className="slidebartopcontrolMP"> */}
+                        <SlideBar
+                        onAddCase={(newCase) => addCase(newCase)}
+                        buttonClass="custom-add-case-btn1"
+                      />
+                      {/* </div> */}
+                  </div>
+
+
                     <SlideBar
   onAddCase={(newCase) => addCase(newCase)}
   buttonClass="custom-add-case-btn"
@@ -499,8 +505,51 @@ export const AdminCM = () => {
         <div className="content-section">
         {activeTab === "cases" && (
             <div className="case-list">
-             <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
-             <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+
+<div className="filter-sort-icons">
+                    <button onClick={() => setShowFilter(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                        alt="Filter Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                    <button onClick={() => setShowSort(true)} className="icon-button">
+                      <img 
+                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                        alt="Sort Icon"
+                        className="icon-image"
+                      />
+                    </button>
+                  </div>
+
+                   {/* Conditionally render the Filter component */}
+      {showFilter && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
+              &times;
+            </button>
+            <Filter filtersConfig={filtersConfigOC} onApply={handleFilterApply} />
+          </div>
+        </div>
+      )}
+
+      {/* Conditionally render the Sort component */}
+      {showSort && (
+        <div className="popup-overlay">
+          <div className="popup-content">
+            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
+              &times;
+            </button>
+            <Sort columns={["Lead Number", "Lead Name", "Priority", "Flag"]} onApplySort={handleSort} />
+          </div>
+          </div>
+      )}
+
+
+             {/* <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
+             <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} /> */}
             {cases.map((c) => (
               <div key={c.id} className="case-item">
                 <span
@@ -528,7 +577,7 @@ export const AdminCM = () => {
                   </button>
 
                   <button
-                    className="close-button"
+                    className="save-btn1"
                     onClick={() => {
                       if (window.confirm(`Are you sure you want to close case ${c.id}?`)) {
                         closeCase(c.id);

@@ -9,7 +9,10 @@ const createLREnclosure = async (req, res) => {
         }
         
         // Extract file ID from the uploaded file
-        const fileId = req.file.id; // or req.file._id depending on your multer-gridfs-storage version
+        // const fileId = req.file.id; or req.file._id depending on your multer-gridfs-storage version
+
+        // For disk storage, use file details (not fileId)
+        const fileLocation = req.file.path;
 
         // Create a new LREnclosure document with the file reference
         const newLREnclosure = new LREnclosure({
@@ -24,7 +27,10 @@ const createLREnclosure = async (req, res) => {
             enteredDate: req.body.enteredDate,
             type: req.body.type,
             enclosureDescription: req.body.enclosureDescription,
-            fileId, // Store the GridFS file reference here
+            // fileId, // Store the GridFS file reference here
+            filePath: fileLocation,               // Save file path on disk
+            originalName: req.file.originalname,  // Save original file name
+            filename: req.file.filename           // Save the generated filename on disk
         });
 
         // Save the document in MongoDB
@@ -54,7 +60,8 @@ const getLREnclosureByDetails = async (req, res) => {
             caseName: caseName,
         };
 
-        const lrEnclosures = await LREnclosure.find(query).populate("fileId"); // Populating file reference
+        // const lrEnclosures = await LREnclosure.find(query).populate("fileId");
+        const lrEnclosures = await LREnclosure.find(query);
 
         if (lrEnclosures.length === 0) {
             return res.status(404).json({ message: "No enclosures found." });

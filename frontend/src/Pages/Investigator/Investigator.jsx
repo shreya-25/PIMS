@@ -155,9 +155,20 @@ const handleLeadClick = (lead) => {
    
            // Ensure `data` is an array, or default to an empty array
            const leadsArray = Array.isArray(data) ? data : [];
+
+           const filteredLeadsArray = leadsArray.filter((lead) => {
+            if (
+              lead.accessLevel === "Only Case Manager and Assignees" &&
+              !lead.assignedTo?.includes(signedInOfficer) &&
+              lead.assignedBy !== signedInOfficer
+            ) {
+              return false;
+            }
+            return true;
+          });
    
            // ✅ Filter and map assigned and pending leads
-           const assignedLeads = leadsArray
+           const assignedLeads = filteredLeadsArray
              .filter(lead => lead.leadStatus === "Assigned")
              .map(lead => ({
                id: lead.leadNo,
@@ -171,7 +182,7 @@ const handleLeadClick = (lead) => {
                caseNo: String(lead.caseNo) // Ensure string format
              }));
    
-           const pendingLeads = leadsArray
+           const pendingLeads = filteredLeadsArray
              .filter(lead => lead.leadStatus === "Pending")
              .map(lead => ({
                id: lead.leadNo,
@@ -190,7 +201,7 @@ const handleLeadClick = (lead) => {
    
            setLeads((prev) => ({
              ...prev,
-             allLeads: leadsArray,
+             allLeads: filteredLeadsArray,
              assignedLeads: assignedLeads,
              pendingLeads: pendingLeads
            }));
@@ -222,13 +233,48 @@ const handleLeadClick = (lead) => {
       }
     };
     
-    const acceptLead = (leadId) => {
-      const leadToAccept = leads.assignedLeads.find((lead) => lead.id === leadId);
+    // const acceptLead = (leadId) => {
+    //   const leadToAccept = leads.assignedLeads.find((lead) => lead.id === leadId);
+    //   if (!leadToAccept) return;
+    
+    //   // Add lead to pending leads with default fields if not present
+    //   const newPendingLead = {
+    //     ...leadToAccept,
+    //     dueDate: leadToAccept.dueDate || "12/31/2024", // Default due date
+    //     priority: leadToAccept.priority || "Medium", // Default priority
+    //     flags: leadToAccept.flags || [],
+    //     assignedOfficers: leadToAccept.assignedOfficers || ["Unassigned"],
+    //   };
+    
+    //   setLeads((prevLeads) => ({
+    //     ...prevLeads,
+    //     assignedLeads: prevLeads.assignedLeads.filter((lead) => lead.id !== leadId),
+    //     pendingLeads: [...prevLeads.pendingLeads, newPendingLead],
+    //   }));
+    // };
+
+    const acceptLead = async (leadNo) => {
+      const leadToAccept = leads.assignedLeads.find((lead) => lead.leadNo === leadNo);
       if (!leadToAccept) return;
+
+      try {
+        const token = localStorage.getItem("token");
+    
+        await axios.patch(
+`http://localhost:5000/api/lead/${leadToAccept.leadNo}/${encodeURIComponent(leadToAccept.description)}/${leadToAccept.caseNo}/${encodeURIComponent(leadToAccept.caseName)}/status`,          { status: "Pending" },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        
     
       // Add lead to pending leads with default fields if not present
       const newPendingLead = {
         ...leadToAccept,
+        leadStatus: "Pending",
         dueDate: leadToAccept.dueDate || "12/31/2024", // Default due date
         priority: leadToAccept.priority || "Medium", // Default priority
         flags: leadToAccept.flags || [],
@@ -237,10 +283,14 @@ const handleLeadClick = (lead) => {
     
       setLeads((prevLeads) => ({
         ...prevLeads,
-        assignedLeads: prevLeads.assignedLeads.filter((lead) => lead.id !== leadId),
+        assignedLeads: prevLeads.assignedLeads.filter((lead) => lead.leadNo !== leadNo),
         pendingLeads: [...prevLeads.pendingLeads, newPendingLead],
       }));
-    };
+    } catch (error) {
+      console.error("Error updating lead status:", error.response?.data || error);
+      alert("Failed to accept lead.");
+    }
+  };
 
     useEffect(() => {
       const fetchPendingLeadReturns = async () => {
@@ -893,7 +943,7 @@ const handleLeadClick = (lead) => {
       <thead>
         <tr>
           <th style={{ width: "10%" }}>Lead No.</th>
-          <th>Lead Description</th>
+          <th>Lead Log Summary</th>
           <th style={{ width: "10%" }}>Due Date</th>
           <th style={{ width: "8%" }}>Priority</th>
           <th style={{ width: "8%" }}>Days Left</th>
@@ -1153,7 +1203,7 @@ const handleLeadClick = (lead) => {
       <thead>
         <tr>
         <th style={{ width: "10%" }}>Lead No.</th>
-          <th>Lead Description</th>
+          <th>Lead Log Summary</th>
           <th style={{ width: "10%" }}>Due Date</th>
           <th style={{ width: "8%" }}>Priority</th>
           <th style={{ width: "8%" }}>Days Left</th>
@@ -1189,7 +1239,7 @@ const handleLeadClick = (lead) => {
           .map((lead) => (
             <tr key={lead.id}>
 
-              <td>{lead.leadNo }</td>
+              <td>{lead.leadNo}</td>
               <td>{lead.description}</td>
               <td>{lead.dueDate}</td>
               <td>{lead.priority}</td>
@@ -1250,14 +1300,14 @@ const handleLeadClick = (lead) => {
               <thead>
                 <tr>
                   <th style={{ width: "10%" }}>Lead No.</th>
-                  <th>Lead Description</th>
+                  <th>Lead Log Summary</th>
                   <th style={{ width: "12%" }}></th>
                 </tr>
               </thead>
               <tbody>
                 {leads.pendingLeadReturns.map((lead) => (
                     <tr key={lead.id}>
-                      <td>{lead.id}</td>
+                      <td>{lead.leadNo }</td>
                       <td>{lead.description}</td>
                       <td>
                         <button
@@ -1323,8 +1373,8 @@ const handleLeadClick = (lead) => {
       <thead>
         <tr>
           <th style={{ width: "10%" }}>Lead No.</th>
-          <th>Lead Description</th>
-          <th style={{ width: "10%" }}>Lead Status</th>
+          <th>Lead Log Summary</th>
+          <th style={{ width: "12%" }}>Lead Status</th>
           <th style={{ width: "12%" }}></th> {/* Empty header for buttons column */}
         </tr>
       </thead>

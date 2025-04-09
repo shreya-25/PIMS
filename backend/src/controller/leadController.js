@@ -12,6 +12,7 @@ const createLead = async (req, res) => {
         subNumber,
         associatedSubNumbers,    // <-- Array of numbers
         assignedDate,
+        completedDate,
         assignedTo,              // <-- Array of strings
         assignedBy,
         summary,
@@ -20,7 +21,8 @@ const createLead = async (req, res) => {
         dueDate,
         priority,
         caseName,
-        caseNo
+        caseNo,
+        accessLevel
       } = req.body;
   
       // Pass them directly into the new Lead object
@@ -31,6 +33,7 @@ const createLead = async (req, res) => {
         subNumber,
         associatedSubNumbers,
         assignedDate,
+        completedDate,
         assignedTo,
         assignedBy,
         summary,
@@ -39,18 +42,19 @@ const createLead = async (req, res) => {
         dueDate,
         priority,
         caseName,
-        caseNo
+        caseNo,
+        accessLevel
       });
   
       await newLead.save();
       res.status(201).json(newLead);
       
           // Update the corresponding case with the new subNumber if not already present
-    const caseDoc = await Case.findById(caseNo);
-    if (caseDoc && !caseDoc.subNumbers.includes(subNumber)) {
-      caseDoc.subNumbers.push(subNumber);
-      await caseDoc.save();
-    }
+    // const caseDoc = await Case.findById(caseNo);
+    // if (caseDoc && !caseDoc.subNumbers.includes(subNumber)) {
+    //   caseDoc.subNumbers.push(subNumber);
+    //   await caseDoc.save();
+    // }
     } catch (err) {
       console.error("Error creating lead:", err.message);
       res.status(500).json({ message: "Something went wrong" });
@@ -144,5 +148,145 @@ const getLeadsforHierarchy = async (req, res) => {
   }
 };
 
+const getAssociatedSubNumbers = async (req, res) => {
+  try {
+    const { caseNo, caseName } = req.params;
 
-module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy };
+    const leads = await Lead.find({ caseNo, caseName });
+    const uniqueSubNumbers = [...new Set(leads.flatMap(lead => lead.subNumber || []))];
+
+    res.status(200).json({ associatedSubNumbers: uniqueSubNumbers });
+  } catch (err) {
+    console.error("Error fetching subnumbers:", err.message);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+
+
+const updateLeadStatus = async (req, res) => {
+  try {
+    const { leadNo, leadName, caseNo, caseName } = req.params;
+    const { status } = req.body;
+
+    const lead = await Lead.findOne({
+      leadNo: Number(leadNo),
+      description: leadName,
+      caseNo,
+      caseName,
+    });
+
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found" });
+    }
+
+    lead.leadStatus = status;
+    await lead.save();
+
+    res.status(200).json({ message: "Status updated successfully", lead });
+  } catch (err) {
+    console.error("Error updating lead status:", err.message);
+    res.status(500).json({ message: "Server error while updating lead status" });
+  }
+};
+
+exports.updateLeadLRStatus = async (req, res) => {
+  const { leadNo, leadName, caseNo, caseName, lRStatus } = req.body;
+
+  try {
+    const lead = await Lead.findOne({
+      leadNo,
+      leadName,
+      caseNo,
+      caseName,
+    });
+
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found" });
+    }
+
+    // Assuming the `assignedBy` field exists and has `lRStatus`
+    lead.assignedBy.lRStatus = lRStatus;
+
+    await lead.save();
+
+    return res.status(200).json({ message: "Lead status updated successfully" });
+  } catch (error) {
+    console.error("Error updating lead status:", error);
+    return res.status(500).json({ message: "Server error updating lead status" });
+  }
+};
+
+const updateLRStatusToPending = async (req, res) => {
+  try {
+    const { leadNo, description, caseName, caseNo } = req.body;
+
+    if (!leadNo || !description || !caseName || !caseNo) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    const updatedDoc = await LeadReturn.findOneAndUpdate(
+      {
+        leadNo,
+        description,
+        caseName,
+        caseNo,
+      },
+      {
+        $set: {
+          "assignedTo.lRStatus": "Pending",
+        },
+      },
+      { new: true }
+    );
+
+    if (!updatedDoc) {
+      return res.status(404).json({ message: "Lead return not found." });
+    }
+
+    res.status(200).json(updatedDoc);
+  } catch (err) {
+    console.error("Error updating lead return status:", err.message);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+const searchLeadsByKeyword = async (req, res) => {
+  try {
+    const { caseNo, caseName, keyword } = req.query;
+    
+    if (!caseNo || !caseName || !keyword) {
+      return res.status(400).json({ message: "caseNo, caseName, and keyword are required." });
+    }
+    
+    // Create a case-insensitive regex for the keyword
+    const regex = new RegExp(keyword, "i");
+    
+    // Find leads matching the case and keyword in description or summary
+
+    const leads = await Lead.find({
+      caseNo, // ensure this is the same type as stored (if it's a string, it should be fine)
+      caseName: { $regex: new RegExp(`^${caseName}$`, "i") },
+      $or: [
+        { description: { $regex: new RegExp(keyword, "i") } },
+        { summary: { $regex: new RegExp(keyword, "i") } }
+      ]
+    });
+    
+    
+    res.status(200).json(leads);
+  } catch (err) {
+    console.error("Error searching leads:", err.message);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+
+
+
+module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword };
+
+
+
+
+
+

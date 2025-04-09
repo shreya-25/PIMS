@@ -4,12 +4,14 @@ html, body {
   padding: 0;
   height: 100%; /* or 100vh */
   width: 100%;
+  font-family: Arial, sans-serif;
 }
 
 .lead-review-page {
   display: flex;
   flex-direction: column;
   min-height: 100vh; 
+  font-family: Arial, sans-serif;
 }
 
 

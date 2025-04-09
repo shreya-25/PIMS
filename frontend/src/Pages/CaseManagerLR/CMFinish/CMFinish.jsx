@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect, useRef} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from '../../../components/Navbar/Navbar';
 import "./CMFinish.css";
@@ -6,6 +6,10 @@ import FootBar1 from '../../../components/FootBar1/FootBar1';
 import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+// import { Report, generatePDF } from "../../Report/Report";
+import pdfRef from "../../refStore";
 
 export const CMFinish = () => {
   useEffect(() => {
@@ -18,7 +22,15 @@ export const CMFinish = () => {
       };
     }, []);
   const navigate = useNavigate();
+  const localPdfRef = useRef(null);
+  const { selectedCase, selectedLead, leadInstructions, leadReturns} = useContext(CaseContext);
+
+
   const location = useLocation();
+  const getCasePageRoute = () => {
+    if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
+    return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
+};
       
         const formatDate = (dateString) => {
           if (!dateString) return "";
@@ -38,10 +50,6 @@ export const CMFinish = () => {
         const [leadEnclosures, setLeadEnclosures] = useState([]);
         const [leadEvidences, setLeadEvidences] = useState([]);
 
-        const { selectedCase, selectedLead, leadInstructions, leadReturns } = useContext(CaseContext);
-
-        console.log("LD", leadInstructions);
-
         useEffect(() => {
           if (leadInstructions) {
             setLeadInstruction(leadInstructions);
@@ -54,9 +62,12 @@ export const CMFinish = () => {
           }
         }, [leadReturns]);
 
+        console.log("LD", leadReturns);
+
 
 
         const [selectedReports, setSelectedReports] = useState({
+          FullReport: false,
           leadInstruction: false,
           leadReturn: false,
           leadPersons: false,
@@ -71,10 +82,23 @@ export const CMFinish = () => {
         });
 
         const toggleReportSection = (sectionKey) => {
-          setSelectedReports((prev) => ({
-            ...prev,
-            [sectionKey]: !prev[sectionKey],
-          }));
+          if (sectionKey === "FullReport") {
+            setSelectedReports((prev) => {
+              // Toggle the full report value
+              const newValue = !prev.FullReport;
+              // Create a new state object where all keys are set to newValue
+              const updated = {};
+              Object.keys(prev).forEach((key) => {
+                updated[key] = newValue;
+              });
+              return updated;
+            });
+          } else {
+            setSelectedReports((prev) => ({
+              ...prev,
+              [sectionKey]: !prev[sectionKey],
+            }));
+          }
         };
 
         const token = localStorage.getItem("token");
@@ -92,11 +116,20 @@ export const CMFinish = () => {
               leadReturn: selectedReports.leadReturn ? leadReturn : null,
               leadPersons: selectedReports.leadPersons ? leadPersons : null,
               leadVehicles: selectedReports.leadVehicles ? leadVehicles : null,
-              // etc. for the rest
+              leadEnclosures: selectedReports.leadEnclosures ? leadVehicles : null,
+              leadEvidence: selectedReports.leadEvidence ? leadVehicles : null,
+              leadPictures: selectedReports.leadPictures ? leadVehicles : null,
+              leadAudio: selectedReports.leadAudio ? leadVehicles : null,
+              leadVideos: selectedReports.leadVideos ? leadVehicles : null,
+              leadScratchpad: selectedReports.leadScratchpad ? leadVehicles : null,
+              leadTimeline: selectedReports.leadTimeline ? leadVehicles : null,
       
               // Also pass along which sections are selected
               selectedReports,
+              leadInstructions
             };
+
+            // generatePDF(pdfRef.current);
       
             // Call your Node server endpoint
             const response = await axios.post("http://localhost:5000/api/report/generate", body, {
@@ -108,7 +141,7 @@ export const CMFinish = () => {
             // Create a blob and open in a new browser tab OR force download
       const file = new Blob([response.data], { type: "application/pdf" });
       const fileURL = URL.createObjectURL(file);
-      window.open(fileURL); // Opens in a new tab for printing/previewing
+      window.open(fileURL); 
 
     } catch (error) {
       console.error("Failed to generate report", error);
@@ -154,61 +187,66 @@ export const CMFinish = () => {
 
       <div className="LRI_Content">
        <div className="sideitem">
-                    <ul className="sidebar-list">
-                   {/* Lead Management Dropdown */}
-                   <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
-                            {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▼" : "▲" }
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-              View Lead Log
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-              Officer Management
-            </li>
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
-            </li>
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-              View Lead Hierarchy
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              Generate Report
-            </li> */}
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-              View Timeline Entries
-            </li>
-            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+       <ul className="sidebar-list">
+                   
+                   <li className="sidebar-item">Case Information</li>
+         <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
+         <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+             New Lead
+           </li>                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
+                      <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
+                      <li className="sidebar-item active" >View Lead Return</li>
+                      <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
+             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+             View Lead Log
+           </li>
+           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+             Officer Management
+           </li> */}
+           <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+             View/Add Case Notes
+           </li>
+           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+             View Lead Hierarchy
+           </li>
+           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+             Generate Report
+           </li> */}
+           <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+             View Flagged Leads
+           </li>
+           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+             View Timeline Entries
+           </li>
+           {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+           <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+           <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
 
-         
-          </ul>
-        )}
-                    </ul>
+         </ul>
                 </div>
                 <div className="left-content">
+
+                  {/* Hidden Report Preview Container (positioned offscreen) */}
+                  {/* <div
+                      ref={pdfRef}
+                      style={{
+                        position: "absolute",
+                        top: "-10000px",
+                        left: "-10000px",
+                        width: "2000px", // A4 width at 96 DPI
+                        padding: "20px",
+                        backgroundColor: "white",
+                        fontFamily: "Arial",
+                        whiteSpace: "normal",
+                        wordBreak: "break-word",
+                        color: "black",
+                       
+                      }}
+                      >
+                      <Report />
+                      </div> */}
+
    
 
 
@@ -223,22 +261,20 @@ export const CMFinish = () => {
 
         {/* Logged Information */}
         <div className="timeline-form-sec">
+
+        <div className="finish-content">
         <div className="logged-info">
+        <div className="info-item">
+            <label>Assigned Date:</label>
+            <input type="date" value ="03/12/2024" readOnly />
+          </div>
           <div className="info-item">
-            <label>Logged:</label>
+            <label>Last Updated By:</label>
             <input type="text" value="Officer 1" readOnly />
           </div>
           <div className="info-item">
-            <label>Assigned To:</label>
-            <input type="text" value="Officer 1" readOnly />
-          </div>
-          <div className="info-item">
-            <label>Last Updated:</label>
+            <label>Last Updated Date:</label>
             <input type="date" />
-          </div>
-          <div className="info-item">
-            <label>Assigned By:</label>
-            <input type="text" value="Officer 5" readOnly />
           </div>
           <div className="info-item">
             <label>Completed Date:</label>
@@ -247,67 +283,173 @@ export const CMFinish = () => {
         </div>
 
         {/* Reports and Destination */}
-        <div className="reports-destination">
-          <div className="report-options">
-            <h4>Reports:</h4>
-            <div className="report-column">
-              <label>
-                <input type="checkbox" name="report"  checked={selectedReports.leadInstruction}
-              onChange={() => toggleReportSection("leadInstruction")} /> Lead Instruction
+        <h2>Generate Report</h2>
+<div className="reports-destination-lr">
+  <table className="report-table">
+    <thead>
+      <tr>
+        <th>Report Section</th>
+        <th>Options</th>
+      </tr>
+    </thead>
+    <tbody>
+      {/* Standard Report Row */}
+      <tr>
+        <td>Standard Report</td>
+        <td>
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              name="report"
+              checked={selectedReports.FullReport}
+              onChange={() => toggleReportSection("FullReport")}
+            />
+            Full Report
+          </label>
+        </td>
+      </tr>
+
+      {/* Custom Report Row */}
+      <tr>
+        <td>Custom Report</td>
+        <td>
+          <div className="checkbox-grid">
+            <div className="checkbox-col">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadInstruction}
+                  onChange={() => toggleReportSection("leadInstruction")}
+                />
+                Lead Instruction
               </label>
-              <label>
-                <input type="checkbox" name="report" checked={selectedReports.leadReturn}
-              onChange={() => toggleReportSection("leadReturn")} /> Lead Returns
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadReturn}
+                  onChange={() => toggleReportSection("leadReturn")}
+                />
+                Lead Returns
               </label>
-              <label>
-                <input type="checkbox" name="report" checked={selectedReports.leadPersons}
-              onChange={() => toggleReportSection("leadPersons")} /> Lead Persons
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadPersons}
+                  onChange={() => toggleReportSection("leadPersons")}
+                />
+                Lead Persons
               </label>
-              <label>
-                <input type="checkbox" name="report"  checked={selectedReports.leadEnclosures}
-              onChange={() => toggleReportSection("leadVehicles")} /> Lead Vehicles
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadVehicles}
+                  onChange={() => toggleReportSection("leadVehicles")}
+                />
+                Lead Vehicles
               </label>
-              <label>
-                <input type="checkbox" name="report"  checked={selectedReports.leadEvidence}
-              onChange={() => toggleReportSection("leadEnclosures")} /> Lead Enclosures
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadEnclosures}
+                  onChange={() => toggleReportSection("leadEnclosures")}
+                />
+                Lead Enclosures
               </label>
-              <label>
-                <input type="checkbox" name="report" checked={selectedReports.leadPictures}
-              onChange={() => toggleReportSection("leadEvidence")} /> Lead Evidences
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadEvidence}
+                  onChange={() => toggleReportSection("leadEvidence")}
+                />
+                Lead Evidences
               </label>
             </div>
-            <div className="report-column">
-              <label>
-                <input type="checkbox" name="report" checked={selectedReports.leadPictures}
-              onChange={() => toggleReportSection("leadPictures")}/> Lead Pictures
+            <div className="checkbox-col">
+            
+             
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadPictures}
+                  onChange={() => toggleReportSection("leadPictures")}
+                />
+                Lead Pictures
               </label>
-              <label>
-                <input type="checkbox" name="report"   checked={selectedReports.leadAudio}
-              onChange={() => toggleReportSection("leadAudio")}/> Lead Audio Description
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadAudio}
+                  onChange={() => toggleReportSection("leadAudio")}
+                />
+                Lead Audio Description
               </label>
-              <label>
-                <input type="checkbox" name="report"  checked={selectedReports.leadVideos}
-              onChange={() => toggleReportSection("leadVideos")} /> Lead Videos Description
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadVideos}
+                  onChange={() => toggleReportSection("leadVideos")}
+                />
+                Lead Videos Description
               </label>
-              <label>
-                <input type="checkbox" name="report" checked={selectedReports.leadScratchpad}
-              onChange={() => toggleReportSection("leadScratchpad")} /> Lead Scratchpad Entries
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadScratchpad}
+                  onChange={() => toggleReportSection("leadScratchpad")}
+                />
+                Lead Scratchpad Entries
               </label>
-              <label>
-                <input type="checkbox" name="report" checked={selectedReports.leadTimeline}
-              onChange={() => toggleReportSection("leadTimeline")} /> Lead Timeline Entries
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="report"
+                  checked={selectedReports.leadTimeline}
+                  onChange={() => toggleReportSection("leadTimeline")}
+                />
+                Lead Timeline Entries
               </label>
             </div>
           </div>
-          <div className="destination-options">
-            <h4>Destination:</h4>
-            <label>
-              <input type="radio" name="destination" className="dest-op-class" /> Print
-            </label>
-            <label>
-              <input type="radio" name="destination" className="dest-op-class" /> Preview
-            </label>
-          </div>
+        </td>
+      </tr>
+
+      {/* Destination Row */}
+      <tr>
+        <td>Destination</td>
+        <td>
+          <label className="radio-label">
+            <input
+              type="radio"
+              name="destination"
+              className="dest-op-class"
+            />
+            Print
+          </label>
+          <label className="radio-label">
+            <input
+              type="radio"
+              name="destination"
+              className="dest-op-class"
+            />
+            Preview
+          </label>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
         </div>
         </div>
 

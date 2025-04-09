@@ -57,6 +57,22 @@ exports.createCase = async (req, res) => {
             return res.status(400).json({ message: "Username is required to assign Case Manager" });
         }
 
+                // Ensure the user is authenticated and available in request
+        if (!req.user || !req.user.name) {
+            return res.status(401).json({ message: "Unauthorized: User details not found" });
+        }
+        // Validate required fields
+        if (!caseNo || !caseName || !Array.isArray(selectedOfficers) || selectedOfficers.length === 0) {
+            return res.status(400).json({ message: "caseNo, caseName, and selectedOfficers are required" });
+          }
+          
+
+        // Ensure unique case number
+        const existingCase = await Case.findOne({ caseNo });
+        if (existingCase) {
+            return res.status(400).json({ message: "Case number already exists. Please use a unique caseNo." });
+        }
+
         // ✅ Automatically assign the given `username` as `Case Manager`
         const assignedOfficers = [
             {
