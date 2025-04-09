@@ -26,6 +26,11 @@
   right: 15px;
 }
 
+select.input-field option[value=""] {
+  /* color: #999;  */
+  color: red;
+}
+
 /* Form group styling */
 .form-group {
   margin-bottom: 15px;

@@ -4,12 +4,12 @@ import "./Comment.css";
 const Comment = () => {
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState([
-    {
-      id: 1,
-      author: "Officer 916",
-      timestamp: "03/12/25 10:08 PM",
-      text: "Please add the interview details of the bank officer",
-    },
+    // {
+    //   id: 1,
+    //   author: "Officer 916",
+    //   timestamp: "03/12/25 10:08 PM",
+    //   text: "Please add the interview details of the bank officer",
+    // },
   ]);
   const [editingId, setEditingId] = useState(null);
   const [editedComment, setEditedComment] = useState("");

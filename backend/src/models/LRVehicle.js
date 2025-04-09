@@ -24,7 +24,7 @@ const lrVehicleSchema = new mongoose.Schema(
         enteredBy: { type: String, required: true },
         caseName: { type: String, required: true },
         caseNo: { type: Number, required: true },
-        leadReturnId: { type: Number, required: true },
+        leadReturnId: { type: String, required: true },
         enteredDate: { type: Date, required: true },
 
         // Vehicle Information

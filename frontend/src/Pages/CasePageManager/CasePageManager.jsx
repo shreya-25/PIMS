@@ -82,7 +82,7 @@ export const CasePageManager = () => {
         // Remove lead from assignedLeads and add it to pendingLeads
         setLeads((prevLeads) => {
           const updatedAssignedLeads = prevLeads.assignedLeads.filter(
-            (l) => l.id !== lead.id
+            (l) => l.leadNo !== lead.leadNo
           );
           const updatedPendingLeads = [...prevLeads.pendingLeads, lead];
           return {
@@ -94,13 +94,29 @@ export const CasePageManager = () => {
       }
     };
     
-    const acceptLead = (leadId) => {
-      const leadToAccept = leads.assignedLeads.find((lead) => lead.id === leadId);
+    const acceptLead = async (leadNo) => {
+      const leadToAccept = leads.assignedLeads.find((lead) => lead.leadNo === leadNo);
       if (!leadToAccept) return;
+
+      try {
+        const token = localStorage.getItem("token");
+    
+        // Update the lead status in the database to "Pending"
+        await axios.patch(
+          `http://localhost:5000/api/lead/${leadToAccept.leadNo}/${leadToAccept.caseNo}/${encodeURIComponent(leadToAccept.caseName)}/status`,
+          { status: "Pending" },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
     
       // Add lead to pending leads with default fields if not present
       const newPendingLead = {
         ...leadToAccept,
+        leadStatus: "Pending",
         dueDate: leadToAccept.dueDate || "12/31/2024", // Default due date
         priority: leadToAccept.priority || "Medium", // Default priority
         flags: leadToAccept.flags || [],
@@ -109,12 +125,15 @@ export const CasePageManager = () => {
     
       setLeads((prevLeads) => ({
         ...prevLeads,
-        assignedLeads: prevLeads.assignedLeads.filter((lead) => lead.id !== leadId),
+        assignedLeads: prevLeads.assignedLeads.filter((lead) => lead.leadNo !== leadNo),
         pendingLeads: [...prevLeads.pendingLeads, newPendingLead],
       }));
-    };
+    } catch (error) {
+      console.error("Error updating lead status:", error.response?.data || error);
+      alert("Failed to accept lead.");
+    }
+  };
     
-    const isMainStreetThreat = caseDetails?.title === "Main Street Murder";
     
       
     const [leads, setLeads] = useState({
@@ -195,9 +214,21 @@ export const CasePageManager = () => {
   
           // Ensure `data` is an array, or default to an empty array
           const leadsArray = Array.isArray(data) ? data : [];
+
+          const filteredLeadsArray = leadsArray.filter((lead) => {
+            if (
+              lead.accessLevel === "Only Case Manager and Assignees" &&
+              !lead.assignedTo?.includes(signedInOfficer) &&
+              lead.assignedBy !== signedInOfficer
+            ) {
+              return false;
+            }
+            return true;
+          });
+        
   
           // ✅ Filter and map assigned and pending leads
-          const assignedLeads = leadsArray
+          const assignedLeads = filteredLeadsArray
             .filter(lead => lead.leadStatus === "Assigned")
             .map(lead => ({
               id: lead.leadNo,
@@ -211,7 +242,7 @@ export const CasePageManager = () => {
               caseNo: String(lead.caseNo) // Ensure string format
             }));
   
-          const pendingLeads = leadsArray
+          const pendingLeads = filteredLeadsArray
             .filter(lead => lead.leadStatus === "Pending")
             .map(lead => ({
               id: lead.leadNo,
@@ -230,7 +261,7 @@ export const CasePageManager = () => {
   
           setLeads((prev) => ({
             ...prev,
-            allLeads: leadsArray,
+            allLeads: filteredLeadsArray,
             assignedLeads: assignedLeads,
             pendingLeads: pendingLeads
           }));
@@ -243,9 +274,7 @@ export const CasePageManager = () => {
   
 
     const handleTabClick = (tab) => {
-      if (!isMainStreetThreat) {
           setActiveTab(tab);
-      }
   };
 
     const handleGenerateLead = () => {
@@ -636,8 +665,11 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
 
        
                                  {/* Lead Management Dropdown */}
-                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+
+
+                                 <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
+                                 <li className="sidebar-item active" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Case Page {leadDropdownOpen ?  "▲": "▼"}
         </li>
         {leadDropdownOpen && (
           <ul className="dropdown-list1">
@@ -651,7 +683,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
             <span className="sidebar-text">
               {tab === "assignedLeads" && "Assigned Leads"}
               {tab === "pendingLeads" && "Accepted Leads"}
-              {tab === "pendingLeadReturns" && "Lead Returns fro Review"}
+              {tab === "pendingLeadReturns" && "Lead Returns for Review"}
               {tab === "allLeads" && "All Leads"}
             </span>
             <span className="sidebar-number">
@@ -663,24 +695,21 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           </div>
   </li>
 ))}
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               View Lead Chain of Custody
             </li> */}
           </ul>
         )} 
 
-                            {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▼" : "▲" }
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+<li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
+              New Lead
+            </li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" >View Lead Return</li>
+            <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
+
+
+<li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
               View Lead Log
             </li>
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
@@ -706,9 +735,8 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
 
-         
-          </ul>
-        )}
+
+       
 
                     </ul>
                 </div>
@@ -752,31 +780,31 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("assignedLeads")}
                         >
-                            Assigned Leads: {isMainStreetThreat ? 0 : leads.assignedLeads.length}
+                            Assigned Leads: {leads.assignedLeads.length}
                         </span>
                         <span
                             className={`hoverable ${activeTab === "pendingLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("pendingLeads")}
                           >
-                            Accepted Leads: {isMainStreetThreat ? 0 : leads.pendingLeads.length}
+                            Accepted Leads: {leads.pendingLeads.length}
                           </span>
                         <span
                             className={`hoverable ${activeTab === "pendingLeadReturns" ? "active" : ""}`}
                             onClick={() => handleTabClick("pendingLeadReturns")}
                         >
-                            Lead Returns for Review: {isMainStreetThreat ? 0 : leads.pendingLeadReturns.length}
+                            Lead Returns for Review: {leads.pendingLeadReturns.length}
                         </span>
                         <span
                             className={`hoverable ${activeTab === "allLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("allLeads")}
                         >
-                            All Leads: {isMainStreetThreat ? 0 : leads.allLeads.length}
+                            All Leads: {leads.allLeads.length}
                         </span>
                     </div>
                   
 
                     {/* Tab Content */}
-                    {!isMainStreetThreat ? (
+                
                     <div className="content-section">
                     {activeTab === "assignedLeads" && (
   <div className="assigned-leads">
@@ -983,7 +1011,8 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
         </tr>
       </thead>
       <tbody>
-        {leads.assignedLeads
+      {leads.assignedLeads.length > 0 ? (
+        leads.assignedLeads
           .filter(
             (lead) =>
               lead.description
@@ -1023,12 +1052,13 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
               <td>
                 <button
                   className="view-btn1"
-                  // onClick={() =>
+                  onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.description} } )}
+
                   // }
                 >
                   View
                 </button>
-                <button
+                {/* <button
                   className="accept-btn"
                   onClick={() => {
                     if (
@@ -1039,10 +1069,17 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                   }}
                 >
                   Accept
-                </button>
+                </button> */}
               </td>
             </tr>
-          ))}
+           ))
+          ) : (
+            <tr>
+              <td colSpan="7" style={{ textAlign: 'center' }}>
+                No Assigned Leads Available
+              </td>
+            </tr>
+          )}
       </tbody>
     </table>
   </div>
@@ -1257,7 +1294,8 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
         </tr>
       </thead>
       <tbody>
-        {leads.pendingLeads
+      {leads.pendingLeads.length > 0 ? (
+        leads.pendingLeads
           .filter(
             (lead) =>
               lead.description
@@ -1304,7 +1342,14 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                 </button>
               </td>
             </tr>
-          ))}
+             ))
+            ) : (
+              <tr>
+                <td colSpan="8" style={{ textAlign: 'center' }}>
+                  No Accepted Leads Available
+                </td>
+              </tr>
+            )}
       </tbody>
     </table>
   </div>
@@ -1364,7 +1409,8 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                 </tr>
               </thead>
               <tbody>
-                {leads.pendingLeadReturns.map((lead) => (
+                {leads.pendingLeadReturns.length > 0 ? (
+                leads.pendingLeadReturns.map((lead) => (
                     <tr key={lead.id}>
                       <td>{lead.id}</td>
                       <td>{lead.description}</td>
@@ -1379,7 +1425,14 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                             </button>
                       </td>
                     </tr>
-                  ))}
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="3" style={{ textAlign: 'center' }}>
+                          No Pending Lead Returns Available
+                        </td>
+                      </tr>
+                    )}
               </tbody>
             </table>
             
@@ -1452,7 +1505,8 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
         </tr>
       </thead>
       <tbody>
-        {leads.allLeads.map((lead) => (
+      {leads.allLeads.length > 0 ? (
+       leads.allLeads.map((lead) => (
           <tr key={lead.id}>
             <td>{lead.leadNo} </td>
             <td>{lead.description}</td>
@@ -1466,7 +1520,13 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
               </button>
             </td>
           </tr>
-        ))}
+        ))  ) : (
+          <tr>
+            <td colSpan="4" style={{ textAlign: 'center' }}>
+              No Leads Available
+            </td>
+          </tr>
+        )}
       </tbody>
     </table>
   </div>
@@ -1478,10 +1538,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
   pageSize={pageSize}
   onPageSizeChange={setPageSize} // Update page size state
 />
-                    </div> ): (
-                        <div className="no-leads-message">
-                        </div>
-                    )}
+                    </div> 
                 {/* </div> */}
                 {/* <div className="gotomainpagebtn">
                    <button className="mainpagebtn"onClick={() => handleNavigation("/HomePage")}>Go to Home Page</button>

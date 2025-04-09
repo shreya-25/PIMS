@@ -32,6 +32,7 @@ export const LeadLog = () => {
   const navigate = useNavigate(); // Initialize the navigate function
 
   const loggedInOfficer =  localStorage.getItem("loggedInUser");
+  console.log(loggedInOfficer);
   const token = localStorage.getItem('token') || '';
 
   const getFormattedDate = () => {
@@ -66,13 +67,24 @@ export const LeadLog = () => {
             return response.json();
           })
           .then((data) => {
-            console.log("✅ Fetched Leads Data:", data); // 🔍 Debug API response
-    
-            // Ensure `data` is an array, or default to an empty array
+            console.log("✅ Fetched Leads Data:", data);
+          
             const leadsArray = Array.isArray(data) ? data : [];
-    
-            setLeadLogData(leadsArray);
+          
+            const filteredLeads = leadsArray.filter((lead) => {
+              if (
+                lead.accessLevel === "Only Case Manager and Assignees" &&
+                !lead.assignedTo?.includes(loggedInOfficer) &&
+                lead.assignedBy !== loggedInOfficer
+              ) {
+                return false; // hide this lead
+              }
+              return true;
+            });
+          
+            setLeadLogData(filteredLeads);
           })
+          
           .catch((error) => {
             console.error("❌ Error fetching leads:", error.message);
           });
@@ -88,6 +100,10 @@ export const LeadLog = () => {
 
 
   const handleLeadClick = (lead) => {
+    setSelectedLead({
+      leadNo: lead.leadNo,
+      leadName: lead.description,
+    });
     navigate("/LeadReview", { state: { lead } }); // Navigate to lead details page with lead data
   };
 

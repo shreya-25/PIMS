@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const caseSchema = new mongoose.Schema(
     {
         caseNo: { type: String, required: true, unique: true },
-        caseName: { type: String, required: true },
+        caseName: { type: String, required: true, unique: true },
         assignedOfficers: [
             {
                 name: { type: String, required: true },

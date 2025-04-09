@@ -13,5 +13,7 @@ router.get("/officer-leads", verifyToken, getLeadReturnResultsByOfficer);
 
 router.get("/:leadNo/:leadName/:caseNo/:caseName",verifyToken, getLeadReturnResultByLeadNoandLeadName)
 
+// router.delete("/delete/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId", deleteLeadReturnResult);
+
 module.exports = router;
 
