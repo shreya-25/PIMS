@@ -63,6 +63,7 @@ import { ChainOfCustody } from './Pages/ChainOfCustody/ChainOfCustody';
 import { Chatbot } from './Pages/Admin/Chatbot';
 // import { Report} from './Pages/Report/Report'
 // import {ReportWrapper} from './Pages/Report/ReportWrapper'
+import { LeadsDeskTestExecSummary} from './Pages/LeadsDeskTest/LeadsDeskTestExecSummary';
 
 function App() {
   return (
@@ -125,6 +126,7 @@ function App() {
         <Route path="/LeadReview" element = {<LeadReview />} />
         <Route path="/LeadsDesk" element= {<LeadsDesk />} />
         <Route path="/LeadsDeskTest" element= {<LeadsDeskTest />} />
+        <Route path="/LeadsDeskTestExecSummary" element= {<LeadsDeskTestExecSummary />} />
         <Route path="/LeadsDeskContent" element= {<LeadsDeskContent />} />
         <Route path="/ChainOfCustody" element= {<ChainOfCustody />} />
         <Route path="/Chatbot" element= {<Chatbot />} />
