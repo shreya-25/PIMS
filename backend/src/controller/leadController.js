@@ -260,11 +260,13 @@ const searchLeadsByKeyword = async (req, res) => {
     
     // Create a case-insensitive regex for the keyword
     const regex = new RegExp(keyword, "i");
+
+    // const numericCaseNo = Number(caseNo);
     
     // Find leads matching the case and keyword in description or summary
 
     const leads = await Lead.find({
-      caseNo, // ensure this is the same type as stored (if it's a string, it should be fine)
+      caseNo,
       caseName: { $regex: new RegExp(`^${caseName}$`, "i") },
       $or: [
         { description: { $regex: new RegExp(keyword, "i") } },

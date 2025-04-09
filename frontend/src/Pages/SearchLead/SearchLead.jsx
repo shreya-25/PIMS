@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect, useRef } from "react";
 import Navbar from "../../components/Navbar/Navbar";
 import "./SearchLead.css";
 import Pagination from "../../components/Pagination/Pagination";
@@ -6,7 +6,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
 
-// Sample lead data for matching
 const sampleLeads = [
   {
     id: "Lead45",
@@ -51,11 +50,36 @@ export const SearchLead = () => {
   const [staticRows, setStaticRows] = useState(initialStaticRows);
   const [dynamicRows, setDynamicRows] = useState([]); // Dynamic rows managed separately
   const [matchingLeads, setMatchingLeads] = useState([]);
+   const [searchTerm, setSearchTerm] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
       const [pageSize, setPageSize] = useState(50);
       const totalPages = 10; // Change based on your data
       const totalEntries = 100;
+
+  // Sample lead data for matching
+const { selectedCase } = useContext(CaseContext);
+ const [leadsData, setLeadsData] = useState([]);
+
+ console.log(selectedCase);
+
+const handleSearch = async () => {
+ try {
+   const token = localStorage.getItem("token");
+   const response = await axios.get("http://localhost:5000/api/lead/search", {
+     params: {
+       caseNo: selectedCase.caseNo,
+       caseName: selectedCase.caseName,
+       keyword: searchTerm,  // searchTerm is the input value from the user
+     },
+     headers: { Authorization: `Bearer ${token}` },
+   });
+   // Update your state with the results
+   setLeadsData(response.data);
+ } catch (error) {
+   console.error("Error fetching search results:", error);
+ }
+};
 
   // Handles input changes for static or dynamic rows
   const handleInputChange = (index, field, value, isDynamic = false) => {
@@ -92,34 +116,35 @@ export const SearchLead = () => {
   };
 
   // Search function to filter matching leads
-  const handleSearch = () => {
-    const combinedRows = [...staticRows, ...dynamicRows];
+  // const handleSearch = () => {
+  //   const combinedRows = [...staticRows, ...dynamicRows];
 
-    const filteredLeads = sampleLeads.filter((lead) => {
-      return combinedRows.some((row) => {
-        const value = row.value.toLowerCase();
-        switch (row.field) {
-          case "Lead Number":
-            return lead.id.toLowerCase().includes(value);
-          case "Keyword":
-          case "Lead Name":
-            return lead.name.toLowerCase().includes(value);
-          case "Assigned To":
-            return lead.assignedOfficers.toLowerCase().includes(value);
-          default:
-            return false;
-        }
-      });
-    });
+  //   const filteredLeads = sampleLeads.filter((lead) => {
+  //     return combinedRows.some((row) => {
+  //       const value = row.value.toLowerCase();
+  //       switch (row.field) {
+  //         case "Lead Number":
+  //           return lead.id.toLowerCase().includes(value);
+  //         case "Keyword":
+  //         case "Lead Name":
+  //           return lead.name.toLowerCase().includes(value);
+  //         case "Assigned To":
+  //           return lead.assignedOfficers.toLowerCase().includes(value);
+  //         default:
+  //           return false;
+  //       }
+  //     });
+  //   });
 
-    setMatchingLeads(filteredLeads);
-  };
+  //   setMatchingLeads(filteredLeads);
+  // };
 
       const location = useLocation();
       const { caseDetails } = location.state || {};
 
         const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
         const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+        const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
       
         const onShowCaseSelector = (route) => {
           navigate(route, { state: { caseDetails } });
@@ -209,6 +234,40 @@ export const SearchLead = () => {
 </div>
 
       <div className="main-content-searchlead">
+
+
+     
+            <div className="search-page-bar">
+              <div className="search-bar-page">
+                <div className="search-container1">
+                  <i className="fa-solid fa-magnifying-glass"></i>
+                  <input type="text" className="search-input1" placeholder="Search Lead" 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      console.log("Enter pressed, calling handleSearch");
+                      handleSearch();
+                    }
+                  }} />
+                </div>
+              </div>
+              </div>
+
+                {/* Advanced Search Toggle Button */}
+            <div className="advanced-search-toggle">
+              <button
+                className="save-btn1"
+                onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+              >
+                {showAdvancedSearch ? "Advanced Search" : "Advanced Search"}
+              </button>
+            </div>
+          
+
+       {/* Conditionally Render Advanced Search Section */}
+       {showAdvancedSearch && (
+              <>
         <table className="search-table">
           <thead>
             <tr>
@@ -355,6 +414,9 @@ export const SearchLead = () => {
             Search
           </button>
         </div>
+
+        </>
+       )}
 
         <div className="results-section">
   <p className="results-title">Matching Leads</p>
