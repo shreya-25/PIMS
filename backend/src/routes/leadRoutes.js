@@ -25,7 +25,7 @@ router.patch('/:leadNo/:leadName/:caseNo/:caseName/status', verifyToken, updateL
 
 router.get('/associatedSubNumbers/:caseNo/:caseName', getAssociatedSubNumbers);
 
-router.get("/search", verifyToken, getLeadsByCase);
+router.get("/search", verifyToken, searchLeadsByKeyword);
 
 
 // API to get the maximum lead number

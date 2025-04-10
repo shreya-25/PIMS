@@ -54,14 +54,22 @@ export const ViewTimeline = () => {
       },
       
   ]);
-  const [filteredEntries, setFilteredEntries] = useState(originalEntries);
   const [locations, setLocations] = useState([]);
   const [selectedLocations, setSelectedLocations] = useState([]); // To hold selected locations
+  const [timelineEntries, setTimelineEntries] = useState([]);
 
   
   const handleViewDetails = (leadNo) => {
     navigate(`/lead/${leadNo}`); // Navigate to the detailed view of the lead
   };
+
+  const formatTimeRange = (startTime, endTime) => {
+    const options = { hour: "2-digit", minute: "2-digit", hour12: false };
+    const start = new Date(startTime).toLocaleTimeString([], options);
+    const end = new Date(endTime).toLocaleTimeString([], options);
+    return `${start} to ${end}`;
+  };
+  
   const [filters, setFilters] = useState({
     flag: "",
     location: [],
@@ -83,58 +91,91 @@ const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const onShowCaseSelector = (route) => {
     navigate(route, { state: { caseDetails } });
 };
+const [filteredEntries, setFilteredEntries] = useState([]);
+   // Fetch timeline entries when component mounts or when case details change.
+   useEffect(() => {
+    // Determine case details from either the context or location state.
+    const caseNo = (caseDetails && caseDetails.caseNo) || (selectedCase && selectedCase.caseNo);
+    const caseName = (caseDetails && caseDetails.caseName) || (selectedCase && selectedCase.caseName);
 
+    if (!caseNo || !caseName) return;
 
+    // Construct the URL, encoding the case name for URL safety.
+    const endpoint = `http://localhost:5000/api/timeline/case/${caseNo}/${encodeURIComponent(caseName)}`;
+
+    const token = localStorage.getItem("token");
+  console.log("Token:", token);
+
+    axios.get(endpoint, {
+      headers: {
+          Authorization: `Bearer ${token}`,
+      },
+    })
+    .then((response) => {
+      console.log("Fetched timeline entries:", response.data);
+      // Assume response.data is an array of timeline entries
+      // Sort them in ascending order by combining date and eventStartTime.
+      const sortedEntries = response.data.sort((a, b) => {
+        return new Date(a.date + "T" + a.eventStartTime) - new Date(b.date + "T" + b.eventStartTime);
+      });
+      setTimelineEntries(sortedEntries);
+      setFilteredEntries(sortedEntries); 
+    })
+    .catch((error) => {
+      console.error("Error fetching timeline entries:", error);
+    });
+  }, [caseDetails, selectedCase]);
+
+  // Extract unique locations from the fetched timeline entries (if needed for filtering)
   useEffect(() => {
-    // Extract unique locations for the checkboxes
-    const uniqueLocations = [
-      ...new Set(originalEntries.map((entry) => entry.location)),
-    ];
+    const uniqueLocations = [...new Set(timelineEntries.map((entry) => entry.location))];
     setLocations(uniqueLocations);
-  }, [originalEntries]);
+  }, [timelineEntries]);
 
+  // Function to handle location checkbox changes
   const handleLocationChange = (location) => {
-    setSelectedLocations((prev) =>
-      prev.includes(location)
-        ? prev.filter((loc) => loc !== location) // Remove if already selected
-        : [...prev, location] // Add if not selected
-    );
+    setFilters((prev) => {
+      const locArr = prev.location.includes(location)
+        ? prev.location.filter((loc) => loc !== location)
+        : [...prev.location, location];
+      return { ...prev, location: locArr };
+    });
   };
 
+  // This function handles the filtering of timeline entries (unchanged)
   const handleFilter = () => {
-    let filtered = [...originalEntries];
+    let filtered = [...timelineEntries];
 
     // Filter by flag
     if (filters.flag === "Flagged") {
       filtered = filtered.filter((entry) => entry.flag);
     } else if (filters.flag === "None") {
       filtered = filtered.filter((entry) => !entry.flag);
-    } else if (filters.flag && filters.flag !== "All") {
+    } else if (filters.flag && filters.flag !== "All Entries") {
       filtered = filtered.filter((entry) => entry.flag === filters.flag);
     }
 
-        // Filter by selected locations
-        if (filters.location.length > 0) {
-            filtered = filtered.filter((entry) => filters.location.includes(entry.location));
-          }
-     // Filter by date range
-     if (filters.startDate || filters.endDate) {
-        filtered = filtered.filter((entry) => {
-          const entryDate = new Date(entry.date);
-          const startDate = filters.startDate ? new Date(filters.startDate) : null;
-          const endDate = filters.endDate ? new Date(filters.endDate) : null;
-  
-          if (startDate && endDate) {
-            return entryDate >= startDate && entryDate <= endDate;
-          } else if (startDate) {
-            return entryDate >= startDate;
-          } else if (endDate) {
-            return entryDate <= endDate;
-          }
-          return true;
-        });
-      }
-  
+    // Filter by selected locations
+    if (filters.location.length > 0) {
+      filtered = filtered.filter((entry) => filters.location.includes(entry.location));
+    }
+
+    // Filter by date range
+    if (filters.startDate || filters.endDate) {
+      filtered = filtered.filter((entry) => {
+        const entryDate = new Date(entry.date);
+        const startDate = filters.startDate ? new Date(filters.startDate) : null;
+        const endDate = filters.endDate ? new Date(filters.endDate) : null;
+        if (startDate && endDate) {
+          return entryDate >= startDate && entryDate <= endDate;
+        } else if (startDate) {
+          return entryDate >= startDate;
+        } else if (endDate) {
+          return entryDate <= endDate;
+        }
+        return true;
+      });
+    }
 
     // Filter by time range
     if (filters.startTime && filters.endTime) {
@@ -147,11 +188,11 @@ const [showLocationDropdown, setShowLocationDropdown] = useState(false);
     setFilteredEntries(filtered);
   };
 
+  // Sort the timeline entries by date and event start time
   const handleSort = () => {
     const sorted = [...filteredEntries].sort((a, b) => {
-      const dateA = new Date(a.date + "T" + a.timeRange.split(" - ")[0]);
-      const dateB = new Date(b.date + "T" + b.timeRange.split(" - ")[0]);
-
+      const dateA = new Date(a.date + "T" + a.eventStartTime);
+      const dateB = new Date(b.date + "T" + b.eventStartTime);
       return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
     });
     setFilteredEntries(sorted);
@@ -256,21 +297,22 @@ const [showLocationDropdown, setShowLocationDropdown] = useState(false);
               <div className="timeline-marker-horizontal"></div>
               <div className="timeline-content-horizontal">
                 <div className="timeline-datetime">
-                  <p className="timeline-date">{formatDate(entry.date)}</p>
-                  <p className="timeline-time">{entry.timeRange}</p>
+                  <p className="timeline-date">{formatDate(entry.eventStartDate)} - {formatDate(entry.eventEndDate)}</p>
+                  <p className="timeline-time">{formatTimeRange(entry.eventStartTime, entry.eventEndTime)}</p>
                 </div>
                 <h3
                   className="timeline-lead-horizontal"
                   onClick={() => handleViewDetails(entry.leadNo)}
                 >
-                  {entry.leadNo}
+                  Lead {entry.leadNo}
                 </h3>
-                <p className="timeline-location">{entry.location}</p>
-                {entry.flag && (
-                    <p className="timeline-flag">
-                        <span className="red-flag">🚩</span> {entry.flag}
-                    </p>
+                <p className="timeline-location">{entry.eventLocation}</p>
+                {entry.timelineFlag && entry.timelineFlag.length > 0 && (
+                  <p className="timeline-flag">
+                    <span className="red-flag">🚩</span> {entry.timelineFlag.join(', ')}
+                  </p>
                 )}
+
                 <p className="timeline-description">{entry.description}</p>
               </div>
             </div>
