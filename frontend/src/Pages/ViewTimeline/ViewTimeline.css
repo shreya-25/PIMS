@@ -83,16 +83,17 @@
   }
   
   .timeline-date {
-    font-weight: bold;
-    font-size: 16px;
+    /* font-weight: bold; */
+    font-size: 20px;
     color: #393d42;
     margin: 0;
   }
   
   .timeline-time {
-    font-size: 14px;
+    font-size: 20px;
+    font-weight: 700;
     color: #393d42;
-    margin: 0;
+    margin-top: 10px;
   }
   
   .timeline-lead-horizontal {

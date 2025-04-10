@@ -40,7 +40,7 @@ export const SearchLead = () => {
   const navigate = useNavigate();
 
   // Initial static rows (3 rows)
-  const initialStaticRows = Array(3).fill({
+  const initialStaticRows = Array(1).fill({
     junction: "And",
     field: "",
     evaluator: "",
@@ -57,8 +57,10 @@ export const SearchLead = () => {
       const totalPages = 10; // Change based on your data
       const totalEntries = 100;
 
+        const { selectedCase, setSelectedLead } = useContext(CaseContext);
+      
+
   // Sample lead data for matching
-const { selectedCase } = useContext(CaseContext);
  const [leadsData, setLeadsData] = useState([]);
 
  console.log(selectedCase);
@@ -92,6 +94,16 @@ const handleSearch = async () => {
       updatedRows[index][field] = value;
       setStaticRows(updatedRows);
     }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date)) return "";
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const year = date.getFullYear().toString().slice(-2);
+    return `${month}/${day}/${year}`;
   };
 
   // Clears static row content (does not remove it)
@@ -148,6 +160,24 @@ const handleSearch = async () => {
       
         const onShowCaseSelector = (route) => {
           navigate(route, { state: { caseDetails } });
+      };
+
+      const handleLeadClick = (lead) => {
+        setSelectedLead({
+            leadNo: lead.leadNo,
+            incidentNo: lead.incidentNo,
+            leadName: lead.description,
+            dueDate: lead.dueDate || "N/A",
+            priority: lead.priority || "Medium",
+            flags: lead.flags || [],
+            assignedOfficers: lead.assignedOfficers || [],
+            leadStatus: lead.leadStatus,
+            caseName: lead.caseName,
+            caseNo: lead.caseNo
+        });
+      
+        // Navigate to Lead Review Page
+        navigate("/leadReview", { state: { leadDetails: lead, caseDetails: selectedCase } });
       };
         
 
@@ -424,27 +454,36 @@ const handleSearch = async () => {
   <table className="results-table">
     <thead>
       <tr>
-        <th>Lead Number and Name</th>
-        <th>Due Date</th>
-        <th>Priority</th>
-        <th>Remaining Days</th>
-        <th>Flags</th>
-        <th>Assigned Officers</th>
-        <th>Actions</th>
+        <th style={{ width: "10%" }}>Lead No.</th>
+        <th>Lead Name</th>
+        <th style={{ width: "10%" }}>Due Date</th>
+        <th style={{ width: "8%" }}>Priority</th>
+        <th style={{ width: "10%" }}>Flags</th>
+        <th style={{ width: "15%" }}>Assigned Officers</th>
+        <th style={{ width: "12%" }}>Actions</th>
       </tr>
     </thead>
     <tbody>
-      {matchingLeads.length > 0 ? (
-        matchingLeads.map((lead, index) => (
+      {leadsData.length > 0 ? (
+        leadsData.map((lead, index) => (
           <tr key={index}>
-            <td>{lead.id}: {lead.name}</td>
-            <td>{lead.dueDate}</td>
-            <td>{lead.priority}</td>
-            <td>{lead.remainingDays}</td>
-            <td>{lead.flags}</td>
-            <td>{lead.assignedOfficers}</td>
+            <td>{lead.leadNo}</td>
+            <td>{lead.description}</td>
+            <td>{formatDate(lead.dueDate) || "NA"}</td>
+            <td>{lead.priority || "NA"}</td>
+            <td>{lead.associatedFlags || "NA"}</td>
+            <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
+              {/* {lead.assignedOfficers.join(", ")} */}
+              {lead.assignedTo.map((officer, index) => (
+                <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
+              ))}
+              </td>
             <td>
-              <button className="view-btn" onClick={() => navigate(`/lead/${lead.id}`)}>View</button>
+              <button className="save-btn1" 
+              //  onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.description} } )}>
+              onClick={() => handleLeadClick(lead)}>
+              {/* onClick={() => navigate(`/lead/${lead.id}`)} */}
+              View</button>
             </td>
           </tr>
         ))
