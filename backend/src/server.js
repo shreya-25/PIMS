@@ -87,6 +87,7 @@ const LEvRoutes = require("./routes/LEvRoutes.js");
 const LRPRoutes = require("./routes/LRPRoutes.js");
 const LRARoutes = require("./routes/LRARoutes.js");
 const LRViRoutes = require("./routes/LRViRoutes.js");
+const LRTimelineRoutes = require("./routes/LRTimelineRoute.js");
 const { dbConnect } = require("./config/dbConnect"); // Import dbConnect properly
 const path = require('path');
 
@@ -128,6 +129,7 @@ app.use("/api/lrevidence", LEvRoutes);
 app.use("/api/lrpicture", LRPRoutes);
 app.use("/api/lraudio", LRARoutes);
 app.use("/api/lrvideo", LRViRoutes);
+app.use("/api/timeline", LRTimelineRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'temp_uploads')));
 
 app.use("/api/report", reportRoutes); // For report generation

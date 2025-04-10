@@ -251,8 +251,12 @@ const updateLRStatusToPending = async (req, res) => {
   }
 };
 const searchLeadsByKeyword = async (req, res) => {
+  console.log("Inside searchLeadsByKeyword");
   try {
     const { caseNo, caseName, keyword } = req.query;
+
+    console.log("Received query:", caseNo, caseName, keyword);
+
     
     if (!caseNo || !caseName || !keyword) {
       return res.status(400).json({ message: "caseNo, caseName, and keyword are required." });
@@ -260,8 +264,6 @@ const searchLeadsByKeyword = async (req, res) => {
     
     // Create a case-insensitive regex for the keyword
     const regex = new RegExp(keyword, "i");
-
-    // const numericCaseNo = Number(caseNo);
     
     // Find leads matching the case and keyword in description or summary
 
