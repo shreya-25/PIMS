@@ -21,6 +21,7 @@ export const LRPerson1 = () => {
 const location = useLocation();
     const [formData, setFormData] = useState({
       dateEntered: "",
+      leadReturnId: "",
       lastName: "",
       firstName: "",
       mi: "",
@@ -76,6 +77,36 @@ const [miscDetails, setMiscDetails] = useState([
 
     const handlePrevPage = () => {
     navigate('/LRInstruction'); // Replace '/nextpage' with the actual next page route
+  };
+
+
+  // Function to handle saving the entry to the database.
+  const handleSave = async () => {
+    // Replace with your actual token or retrieve it dynamically
+    const token = 'YOUR_TOKEN_HERE';
+
+    try {
+      const response = await fetch('http://localhost:5000/api/lrperson/lrperson', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert('Entry saved successfully');
+        // Optionally, you can update state or navigate to another page here.
+      } else {
+        const errorMessage = await response.text();
+        alert('Failed to save entry: ' + errorMessage);
+      }
+    } catch (error) {
+      console.error("Error saving entry:", error);
+      alert('An error occurred while saving the entry.');
+    }
   };
   
   return (
@@ -180,7 +211,17 @@ const [miscDetails, setMiscDetails] = useState([
                 <input
                   type="date"
                   value={formData.dateEntered}
+                  className="input-large"
                   onChange={(e) => handleChange("dateEntered", e.target.value)}
+                />
+              </td>
+              <td>Lead Return Id</td>
+              <td>
+                <input
+                  type="leadReturn"
+                  value={formData.leadReturn}
+                  className="input-large"
+                  onChange={(e) => handleChange("leadReturn", e.target.value)}
                 />
               </td>
             </tr>
@@ -229,10 +270,9 @@ const [miscDetails, setMiscDetails] = useState([
                   onChange={(e) => handleChange("cellNumber", e.target.value)}
                 />
               </td>
-            </tr>
-            <tr>
+
               <td>Business Name</td>
-              <td colSpan="3">
+              <td>
                 <input
                   type="text"
                   value={formData.businessName}
@@ -298,37 +338,30 @@ const [miscDetails, setMiscDetails] = useState([
             </tr>
             <tr>
               <td>Zip Code</td>
-              <td colSpan="3">
+              <td colSpan="1">
                 <input
                   type="text"
                   value={formData.zipCode}
                   onChange={(e) => handleChange("zipCode", e.target.value)}
                 />
               </td>
+              <td>Age</td>
+              <td><input type="text" /></td>
+
             </tr>
-          </tbody>
-        </table>
-        
-        <table className="person-table2">
-          <tbody>
-            {/* First Row */}
+
             <tr>
               <td>SSN</td>
               <td><input type="text" /></td>
-              <td>Age</td>
+              
+              <td>Occupation</td>
               <td><input type="text" /></td>
             </tr>
 
-            {/* Second Row */}
-            <tr>
+                {/* Second Row */}
+                <tr>
               <td>Email</td>
               <td colSpan="3"><input type="email" /></td>
-            </tr>
-
-            {/* Third Row */}
-            <tr>
-              <td>Occupation</td>
-              <td colSpan="3"><input type="text" /></td>
             </tr>
 
             {/* Fourth Row */}
@@ -409,10 +442,9 @@ const [miscDetails, setMiscDetails] = useState([
                   ></textarea>
                 </td>
               </tr>
-              
-            ))}
+                  ))}
           </tbody>
-                </table>
+        </table>
               </td>
             </tr>
           </tbody>
@@ -422,7 +454,7 @@ const [miscDetails, setMiscDetails] = useState([
         {/* Buttons */}
         <div className="form-buttons">
        
-          <button className="save-btn1">Save</button>
+          <button className="save-btn1" onClick={handleSave}>Save</button>
           {/* <button className="cancel-btn">Cancel</button> */}
         </div>
       {/* </div> */}
