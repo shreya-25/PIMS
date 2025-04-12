@@ -167,7 +167,6 @@ const getAssociatedSubNumbers = async (req, res) => {
 const updateLeadStatus = async (req, res) => {
   try {
     const { leadNo, leadName, caseNo, caseName } = req.params;
-    const { status } = req.body;
 
     const lead = await Lead.findOne({
       leadNo: Number(leadNo),
@@ -180,7 +179,8 @@ const updateLeadStatus = async (req, res) => {
       return res.status(404).json({ message: "Lead not found" });
     }
 
-    lead.leadStatus = status;
+    // Set leadStatus as "pending" by default
+    lead.leadStatus = "Pending";
     await lead.save();
 
     res.status(200).json({ message: "Status updated successfully", lead });
@@ -189,6 +189,7 @@ const updateLeadStatus = async (req, res) => {
     res.status(500).json({ message: "Server error while updating lead status" });
   }
 };
+
 
 exports.updateLeadLRStatus = async (req, res) => {
   const { leadNo, leadName, caseNo, caseName, lRStatus } = req.body;
