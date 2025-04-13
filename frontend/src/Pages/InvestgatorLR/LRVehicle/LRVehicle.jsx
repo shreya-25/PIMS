@@ -22,6 +22,14 @@ export const LRVehicle = () => {
 
   const navigate = useNavigate(); // Initialize useNavigate hook
     const location = useLocation();
+    const [username, setUsername] = useState("");
+    
+    useEffect(() => {
+       const loggedInUser = localStorage.getItem("loggedInUser");
+       if (loggedInUser) {
+         setUsername(loggedInUser);
+       }
+      })
    const { leadDetails, caseDetails } = location.state || {};
       const [loading, setLoading] = useState(true);
       const [error, setError] = useState("");
@@ -46,10 +54,10 @@ export const LRVehicle = () => {
     
 
   const [vehicles, setVehicles] = useState([
-    {  returnId: 1,dateEntered: "01/01/2024", year: "2023", make: "Honda", model: "Accord",color: "Blue", vin: "123456", plate: "XYZ-1234", state: "NY" },
-    {  returnId: 1,dateEntered: "01/05/2024", year: "2022", make: "Toyota", model: "Camry", color: "Black",vin: "654321", plate: "ABC-5678", state: "CA" },
-    { returnId: 2, dateEntered: "01/10/2024", year: "2021", make: "Ford", model: "F-150", color: "White",vin: "789012", plate: "DEF-9101", state: "TX" },
-    {  returnId: 2,dateEntered: "01/15/2024", year: "2024", make: "Tesla", model: "Model 3", color: "Red",vin: "345678", plate: "TES-2024", state: "FL" },
+    // {  returnId: 1,dateEntered: "01/01/2024", year: "2023", make: "Honda", model: "Accord",color: "Blue", vin: "123456", plate: "XYZ-1234", state: "NY" },
+    // {  returnId: 1,dateEntered: "01/05/2024", year: "2022", make: "Toyota", model: "Camry", color: "Black",vin: "654321", plate: "ABC-5678", state: "CA" },
+    // { returnId: 2, dateEntered: "01/10/2024", year: "2021", make: "Ford", model: "F-150", color: "White",vin: "789012", plate: "DEF-9101", state: "TX" },
+    // {  returnId: 2,dateEntered: "01/15/2024", year: "2024", make: "Tesla", model: "Model 3", color: "Red",vin: "345678", plate: "TES-2024", state: "FL" },
   ]);
    const [vehicleModalData, setVehicleModalData] = useState({
         leadNo: "",
@@ -60,7 +68,7 @@ export const LRVehicle = () => {
         leadsDeskCode: "",
       });
       
-                    const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
         
  const openVehicleModal = (leadNo, description, caseNo, caseName, leadReturnId, leadsDeskCode) => {
       setVehicleModalData({
@@ -86,6 +94,7 @@ export const LRVehicle = () => {
       setShowVehicleModal(false);
     };
     const [showVehicleModal, setShowVehicleModal] = useState(false);
+
     
   const [vehicleData, setVehicleData] = useState({
     year: '',
@@ -99,6 +108,7 @@ export const LRVehicle = () => {
     primaryColor: '',
     secondaryColor: '',
     state: '',
+    leadReturnId:'',
     information: '',
   });
 
@@ -110,37 +120,130 @@ export const LRVehicle = () => {
     navigate(route); // Navigate to the respective page
   };
 
-  const handleAddVehicle = () => {
-    const newVehicle = {
-      dateEntered: new Date().toLocaleDateString(),
+  useEffect(() => {
+    if (
+      selectedLead?.leadNo &&
+      selectedLead?.leadName &&
+      selectedCase?.caseNo &&
+      selectedCase?.caseName
+    ) {
+      fetchVehicles();
+    }
+  }, [selectedLead, selectedCase]);
+  
+
+  // const handleAddVehicle = () => {
+  //   const newVehicle = {
+  //     dateEntered: new Date().toLocaleDateString(),
+  //     year: vehicleData.year,
+  //     make: vehicleData.make,
+  //     model: vehicleData.model,
+  //     color: vehicleData.color,
+  //     vn: vehicleData.vin,
+  //     plate: vehicleData.plate,
+  //     state: vehicleData.state,
+  //   };
+
+  //   // Add the new vehicle to the list
+  //   setVehicles([...vehicles, newVehicle]);
+
+  //   // Clear the form fields
+  //   setVehicleData({
+  //     year: '',
+  //     make: '',
+  //     model: '',
+  //     plate: '',
+  //     category: '',
+  //     type: '',
+  //     color:'',
+  //     vin: '',
+  //     primaryColor: '',
+  //     secondaryColor: '',
+  //     state: '',
+  //     information: '',
+  //   });
+  // };
+
+  const handleAddVehicle = async () => {
+    const token = localStorage.getItem("token");
+  
+    const payload = {
+      leadNo: selectedLead?.leadNo,
+      description: selectedLead?.leadName,
+      caseNo: selectedCase?.caseNo,
+      caseName: selectedCase?.caseName,
+      enteredBy: username, // Replace with real user
+      enteredDate: new Date().toISOString(),
+      leadReturnId: vehicleData.leadReturnId, // You may fetch/set this dynamically
       year: vehicleData.year,
       make: vehicleData.make,
       model: vehicleData.model,
-      color: vehicleData.color,
-      vn: vehicleData.vin,
       plate: vehicleData.plate,
+      vin: vehicleData.vin,
       state: vehicleData.state,
+      category: vehicleData.category,
+      type: vehicleData.type,
+      primaryColor: vehicleData.primaryColor,
+      secondaryColor: vehicleData.secondaryColor,
+      information: vehicleData.information,
+      additionalData: {} // Add any extra info if needed
     };
 
-    // Add the new vehicle to the list
-    setVehicles([...vehicles, newVehicle]);
-
-    // Clear the form fields
-    setVehicleData({
-      year: '',
-      make: '',
-      model: '',
-      plate: '',
-      category: '',
-      type: '',
-      color:'',
-      vin: '',
-      primaryColor: '',
-      secondaryColor: '',
-      state: '',
-      information: '',
-    });
+    console.log(payload);
+  
+    try {
+      const res = await axios.post("http://localhost:5000/api/lrvehicle/lrvehicle", payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      alert("Vehicle added successfully");
+      fetchVehicles(); // Refresh the list
+    } catch (err) {
+      console.error("Error adding vehicle:", err);
+      alert("Failed to add vehicle.");
+    }
   };
+
+  const fetchVehicles = async () => {
+    const token = localStorage.getItem("token");
+    const leadNo = selectedLead.leadNo;
+    const leadName = encodeURIComponent(selectedLead.leadName);
+    const caseNo = selectedCase.caseNo;
+    const caseName = encodeURIComponent(selectedCase.caseName);
+  
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/lrvehicle/lrvehicle/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const mapped = res.data.map((vehicle) => ({
+        returnId: vehicle.leadReturnId,
+        dateEntered: formatDate(vehicle.enteredDate),
+        year: vehicle.year,
+        make: vehicle.make,
+        model: vehicle.model,
+        color: vehicle.primaryColor || "Gray",
+        vin: vehicle.vin,
+        plate: vehicle.plate,
+        state: vehicle.state,
+      }));
+  
+      setVehicles(mapped);
+      setError("");
+    } catch (err) {
+      console.error("Error fetching vehicle records:", err);
+      setError("Failed to fetch vehicles.");
+    }
+  };
+  
+  
 
 
 
@@ -339,6 +442,12 @@ export const LRVehicle = () => {
               value={vehicleData.state}
               onChange={(e) => handleChange('state', e.target.value)}
             />
+            <label>Lead Return Id:</label>
+            <input
+              type="text"
+              value={vehicleData.leadReturnId}
+              onChange={(e) => handleChange('leadReturnId', e.target.value)}
+            />
           </div>
           <div className="form-row1">
             <label>Information:</label>
@@ -347,6 +456,15 @@ export const LRVehicle = () => {
               onChange={(e) => handleChange('information', e.target.value)}
             ></textarea>
           </div>
+          {/* <div className="form-row1">
+            <label>Date Entered *</label>
+            <input
+                  type="date"
+                  value={vehicleData.dateEntered}
+                  className="input-large"
+                  onChange={(e) => handleChange("dateEntered", e.target.value)}
+                />
+          </div> */}
           </div>
         </div>
         {/* Buttons */}

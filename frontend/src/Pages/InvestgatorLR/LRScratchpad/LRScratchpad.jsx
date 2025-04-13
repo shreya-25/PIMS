@@ -21,6 +21,8 @@ export const LRScratchpad = () => {
       }, []);
   const navigate = useNavigate();
    const location = useLocation();
+       const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);  
+   
         
           const formatDate = (dateString) => {
             if (!dateString) return "";
@@ -44,48 +46,108 @@ export const LRScratchpad = () => {
 
   // Sample scratchpad data
   const [notes, setNotes] = useState([
-    {
-      dateEntered: "12/01/2024",
-      returnId:1,
-      enteredBy: "John Smith",
-      text: "Initial observations of the case.",
-    },
-    {
-      dateEntered: "12/02/2024",
-      returnId:2,
-      enteredBy: "Jane Doe",
-      text: "Follow-up notes on interviews conducted.",
-    },
   ]);
 
   // State to manage form data
   const [noteData, setNoteData] = useState({
     text: "",
+    returnId: "",
   });
 
   const handleInputChange = (field, value) => {
     setNoteData({ ...noteData, [field]: value });
   };
 
-  const handleAddNote = () => {
+  const handleAddNote = async () => {
+    if (!noteData.text) {
+      alert("Please enter a note.");
+      return;
+    }
+  
     const newNote = {
-      dateEntered: new Date().toLocaleDateString(),
-      enteredBy: "John Smith", // Replace with actual user
+      leadNo: selectedLead?.leadNo,
+      description: selectedLead?.leadName,
+      assignedTo: {},
+      assignedBy: {}, 
+      enteredBy: localStorage.getItem("loggedInUser"),
+      caseName: selectedCase?.caseName,
+      caseNo: selectedCase?.caseNo,
+      leadReturnId: noteData.returnId, // Default or fetched
+      enteredDate: new Date().toISOString(),
       text: noteData.text,
     };
-
-    // Add new note to the list
-    setNotes([...notes, newNote]);
-
-    // Clear form fields
-    setNoteData({
-      text: "",
-    });
+  
+    const token = localStorage.getItem("token");
+  
+    try {
+      const res = await axios.post("http://localhost:5000/api/scratchpad/create", newNote, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      setNotes((prev) => [
+        ...prev,
+        {
+          ...res.data,
+          dateEntered: formatDate(res.data.enteredDate),
+          returnId: res.data.leadReturnId,
+        },
+      ]);
+  
+      setNoteData({ text: "" });
+    } catch (err) {
+      console.error("Error saving scratchpad note:", err.message);
+      alert("Failed to save note.");
+    }
   };
+  
 
   const handleNavigation = (route) => {
     navigate(route);
   };
+
+  const fetchNotes = async () => {
+    const token = localStorage.getItem("token");
+  
+    const leadNo = selectedLead?.leadNo;
+    const leadName = encodeURIComponent(selectedLead?.leadName);
+    const caseNo = selectedCase?.caseNo;
+    const caseName = encodeURIComponent(selectedCase?.caseName);
+  
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/scratchpad/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const formatted = res.data.map((note) => ({
+        ...note,
+        dateEntered: formatDate(note.enteredDate),
+        returnId: note.leadReturnId,
+      }));
+  
+      setNotes(formatted);
+    } catch (error) {
+      console.error("Error fetching scratchpad notes:", error);
+    }
+  };
+  
+  useEffect(() => {
+    if (
+      selectedLead?.leadNo &&
+      selectedLead?.leadName &&
+      selectedCase?.caseNo &&
+      selectedCase?.caseName
+    ) {
+      fetchNotes();
+    }
+  }, [selectedLead, selectedCase]);
+  
 
   return (
     <div className="lrscratchpad-container">
@@ -190,6 +252,14 @@ export const LRScratchpad = () => {
             placeholder="Write your note here"
           ></textarea>
         </div>
+        <div className="scratchpad-form">
+            <label>Associated Return Id:</label>
+            <input
+              type="returnId"
+              value={noteData.returnId}
+              onChange={(e) => handleInputChange("returnId", e.target.value)}
+            />
+          </div>
         <div className="form-buttons-scratchpad">
         <button className="save-btn1" onClick={handleAddNote}>Add Note</button>
         </div>

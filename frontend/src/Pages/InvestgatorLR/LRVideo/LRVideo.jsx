@@ -21,6 +21,18 @@ export const LRVideo = () => {
       }, []);
   const navigate = useNavigate();
   const location = useLocation();
+  const [file, setFile] = useState(null);
+  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+  
+
+  const handleFileChange = (event) => {
+    const selectedFile = event.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setVideoData({ ...videoData, videoSrc: URL.createObjectURL(selectedFile) }); // preview
+    }
+  };
+  
       
         const formatDate = (dateString) => {
           if (!dateString) return "";
@@ -37,21 +49,6 @@ export const LRVideo = () => {
 
   // Sample video data
   const [videos, setVideos] = useState([
-    {
-      dateEntered: "12/01/2024",
-      returnId: 1,
-      dateVideoRecorded: "12/01/2024",
-      description: "Surveillance video of the incident.",
-      videoSrc: `${process.env.PUBLIC_URL}/Materials/video1.mp4`
-    
-    },
-    {
-      dateEntered: "12/02/2024",
-      returnId: 2,
-      dateVideoRecorded: "12/02/2024",
-      description: "Witness interview recording.",
-      videoSrc: `${process.env.PUBLIC_URL}/Materials/video2.mp4`
-    },
   ]);
 
   // State to manage form data
@@ -59,38 +56,69 @@ export const LRVideo = () => {
     dateVideoRecorded: "",
     description: "",
     videoSrc: "",
+    leadReturnId: "",
   });
 
   const handleInputChange = (field, value) => {
     setVideoData({ ...videoData, [field]: value });
   };
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const videoUrl = URL.createObjectURL(file);
-      setVideoData({ ...videoData, videoSrc: videoUrl });
+  const handleAddVideo = async () => {
+    if (!file || !videoData.dateVideoRecorded || !videoData.description || !videoData.leadReturnId) {
+      alert("Please fill in all required fields and select a file.");
+      return;
+    }
+  
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("leadNo", selectedLead?.leadNo);
+    formData.append("description", selectedLead?.leadName);
+    formData.append("enteredBy", localStorage.getItem("loggedInUser"));
+    formData.append("caseName", selectedCase?.caseName);
+    formData.append("caseNo", selectedCase?.caseNo);
+    formData.append("leadReturnId", videoData.leadReturnId);
+    formData.append("enteredDate", new Date().toISOString());
+    formData.append("dateVideoRecorded", videoData.dateVideoRecorded);
+    formData.append("videoDescription", videoData.description);
+  
+    const token = localStorage.getItem("token");
+  
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/lrvideo/upload",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const savedVideo = response.data.video;
+      setVideos((prev) => [
+        ...prev,
+        {
+          dateEntered: formatDate(savedVideo.enteredDate),
+          returnId: savedVideo.leadReturnId,
+          dateVideoRecorded: formatDate(savedVideo.dateVideoRecorded),
+          description: savedVideo.videoDescription,
+          videoSrc: `http://localhost:5000/uploads/${savedVideo.filename}`,
+        },
+      ]);
+  
+      setVideoData({
+        dateVideoRecorded: "",
+        description: "",
+        videoSrc: "",
+        leadReturnId: "",
+      });
+      setFile(null);
+    } catch (error) {
+      console.error("Error uploading video:", error);
+      alert("Failed to upload video.");
     }
   };
-
-  const handleAddVideo = () => {
-    const newVideo = {
-      dateEntered: new Date().toLocaleDateString(),
-      dateVideoRecorded: videoData.dateVideoRecorded,
-      description: videoData.description,
-      videoSrc: videoData.videoSrc || "/Materials/default-video.mp4", // Default video if not provided
-    };
-
-    // Add new video to the list
-    setVideos([...videos, newVideo]);
-
-    // Clear form fields
-    setVideoData({
-      dateVideoRecorded: "",
-      description: "",
-      videoSrc: "",
-    });
-  };
+  
 
   const handleNavigation = (route) => {
     navigate(route);
@@ -103,6 +131,48 @@ export const LRVideo = () => {
                       navigate(route, { state: { caseDetails } });
                   };
 
+                  useEffect(() => {
+                    if (
+                      selectedLead?.leadNo &&
+                      selectedLead?.leadName &&
+                      selectedCase?.caseNo &&
+                      selectedCase?.caseName
+                    ) {
+                      fetchVideos();
+                    }
+                  }, [selectedLead, selectedCase]);
+                  
+                  const fetchVideos = async () => {
+                    const token = localStorage.getItem("token");
+                    const leadNo = selectedLead?.leadNo;
+                    const leadName = encodeURIComponent(selectedLead?.leadName);
+                    const caseNo = selectedCase?.caseNo;
+                    const caseName = encodeURIComponent(selectedCase?.caseName);
+                  
+                    try {
+                      const res = await axios.get(
+                        `http://localhost:5000/api/lrvideo/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+                        {
+                          headers: {
+                            Authorization: `Bearer ${token}`,
+                          },
+                        }
+                      );
+                  
+                      const mappedVideos = res.data.map((video) => ({
+                        dateEntered: formatDate(video.enteredDate),
+                        returnId: video.leadReturnId,
+                        dateVideoRecorded: formatDate(video.dateVideoRecorded),
+                        description: video.videoDescription,
+                        videoSrc: `http://localhost:5000/uploads/${video.filename}`,
+                      }));
+                  
+                      setVideos(mappedVideos);
+                    } catch (error) {
+                      console.error("Error fetching videos:", error);
+                    }
+                  };
+                  
   return (
     <div className="lrvideos-container">
       {/* Navbar */}
@@ -205,6 +275,15 @@ export const LRVideo = () => {
               value={videoData.dateVideoRecorded}
               className="evidence-head"
               onChange={(e) => handleInputChange("dateVideoRecorded", e.target.value)}
+            />
+          </div>
+          <div className="form-row-video">
+            <label className="evidence-head">Lead Return Id:</label>
+            <input
+              type="text"
+              value={videoData.leadReturnId}
+              className="evidence-head"
+              onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
             />
           </div>
           <div className="form-row-video">
