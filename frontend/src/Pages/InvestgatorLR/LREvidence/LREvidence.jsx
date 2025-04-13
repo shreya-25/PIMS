@@ -20,6 +20,8 @@ export const LREvidence = () => {
       }, []);
   const navigate = useNavigate(); // Initialize navigate hook
   const location = useLocation();
+  const [loading, setLoading] = useState(true);
+      const [error, setError] = useState("");
       const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);  
   
   
@@ -57,14 +59,14 @@ export const LREvidence = () => {
   // ]);
 
   const [evidences, setEvidences] = useState([
-    {
-      dateEntered: "",
-      returnId:'',
-      type: "",
-      collectionDate: "",
-      disposedDate: "",
-      disposition: "",
-    }
+    // {
+    //   dateEntered: "",
+    //   returnId:'',
+    //   type: "",
+    //   collectionDate: "",
+    //   disposedDate: "",
+    //   disposition: "",
+    // }
   ]);
 
 
@@ -79,27 +81,6 @@ export const LREvidence = () => {
 
   const handleInputChange = (field, value) => {
     setEvidenceData({ ...evidenceData, [field]: value });
-  };
-
-  const handleAddEvidence = () => {
-    const newEvidence = {
-      dateEntered: new Date().toLocaleDateString(),
-      collectionDate: evidenceData.collectionDate,
-      disposedDate: evidenceData.disposedDate,
-      type: evidenceData.type,
-      disposition: evidenceData.disposition,
-    };
-
-    // Add new evidence to the list
-    // setEvidence([...evidence, newEvidence]);
-
-    // Clear form fields
-    setEvidenceData({
-      collectionDate: "",
-      disposedDate: "",
-      type: "",
-      disposition: "",
-    });
   };
 
   const handleNavigation = (route) => {
@@ -127,7 +108,7 @@ export const LREvidence = () => {
     formData.append("enteredBy", localStorage.getItem("loggedInUser"));
     formData.append("caseName", selectedLead.caseName);
     formData.append("caseNo", selectedLead.caseNo);
-    formData.append("leadReturnId", evidenceData.returnId); // Example value; update as needed
+    formData.append("leadReturnId", evidenceData.leadReturnId); // Example value; update as needed
     formData.append("enteredDate", new Date().toISOString());
     formData.append("type", evidenceData.type);
     formData.append("envidenceDescription", evidenceData.evidence);
@@ -165,6 +146,59 @@ export const LREvidence = () => {
     }
   };
 
+  useEffect(() => {
+    if (
+      selectedLead?.leadNo &&
+      selectedLead?.leadName &&
+      selectedCase?.caseNo &&
+      selectedCase?.caseName
+    ) {
+      fetchEvidences();
+    }
+  }, [selectedLead, selectedCase]);
+  const fetchEvidences = async () => {
+    const token = localStorage.getItem("token");
+  
+    const leadNo = selectedLead.leadNo;
+    const leadName = encodeURIComponent(selectedLead.leadName); // encode to handle spaces
+    const caseNo = selectedCase.caseNo;
+    const caseName = encodeURIComponent(selectedCase.caseName);
+  
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/lrevidence/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const mappedEvidences = res.data.map((enc) => ({
+        dateEntered: formatDate(enc.enteredDate),
+        type: enc.type,
+        enclosure: enc.enclosureDescription,
+        returnId: enc.leadReturnId,
+        originalName: enc.originalName,
+        collectionDate: formatDate(enc.collectionDate),
+        disposedDate: formatDate(enc.disposedDate),
+        disposition: enc.disposition
+      }));
+  
+      setEvidences(mappedEvidences);
+      setLoading(false);
+      setError("");
+    } catch (err) {
+      console.error("Error fetching evidences:", err);
+      setError("Failed to load evidences");
+      setLoading(false);
+    }
+  };
+   // Handle file selection
+   const handleFileChange = (event) => {
+    setFile(event.target.files[0]);
+    console.log("Selected file:", event.target.files[0]);
+  };
   
 
   return (
@@ -284,6 +318,13 @@ export const LREvidence = () => {
             
               onChange={(e) => handleInputChange("disposedDate", e.target.value)}
             />
+            <label className="evidence-head">Return Id:</label>
+            <input
+              type="leadReturnId"
+              value={evidenceData.leadReturnId}
+            
+              onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
+            />
           </div>
           <div className="form-row-evidence">
             <label className="evidence-head">Type:</label>
@@ -301,10 +342,14 @@ export const LREvidence = () => {
               onChange={(e) => handleInputChange("disposition", e.target.value)}
             ></textarea>
           </div>
+          <div className="form-row-evidence">
+            <label>Upload File:</label>
+            <input type="file" onChange={handleFileChange} />
+          </div>
         </div>
         </div>
         <div className="form-buttons">
-          <button className="save-btn1" onClick={handleAddEvidence}>Add Evidence</button>
+          <button className="save-btn1" onClick={handleSaveEvidence}>Add Evidence</button>
         </div>  
 
             {/* Evidence Table */}

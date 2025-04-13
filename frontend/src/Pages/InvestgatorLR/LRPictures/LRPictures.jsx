@@ -19,6 +19,10 @@ export const LRPictures = () => {
       }, []);
   const navigate = useNavigate();
     const location = useLocation();
+  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+  const [file, setFile] = useState(null);
+
+  
     const formatDate = (dateString) => {
       if (!dateString) return "";
       const date = new Date(dateString);
@@ -68,6 +72,7 @@ export const LRPictures = () => {
     datePictureTaken: "",
     description: "",
     image: "",
+    leadReturnId: "",
   });
 
   const handleInputChange = (field, value) => {
@@ -75,35 +80,125 @@ export const LRPictures = () => {
   };
 
   const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setPictureData({ ...pictureData, image: imageUrl });
+    const selectedFile = event.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setPictureData({ ...pictureData, image: URL.createObjectURL(selectedFile) }); // for preview
     }
   };
+  
 
-  const handleAddPicture = () => {
-    const newPicture = {
-      dateEntered: new Date().toLocaleDateString(),
-      datePictureTaken: pictureData.datePictureTaken,
-      description: pictureData.description,
-      image: pictureData.image || `${process.env.PUBLIC_URL}/Materials/default-image.jpg`, // Default image if not provided
-    };
-
-    // Add new picture to the list
-    setPictures([...pictures, newPicture]);
-
-    // Clear form fields
-    setPictureData({
-      datePictureTaken: "",
-      description: "",
-      image: "",
-    });
+  const handleAddPicture = async () => {
+    const formData = new FormData();
+  
+    // Validate required fields
+    if (!file || !pictureData.datePictureTaken || !pictureData.description) {
+      alert("Please fill in all required fields and select a file.");
+      return;
+    }
+  
+    // Append image file
+    formData.append("file", file);
+  
+    // Append textual fields
+    formData.append("leadNo", selectedLead?.leadNo);
+    formData.append("description", selectedLead?.leadName);
+    formData.append("enteredBy", localStorage.getItem("loggedInUser"));
+    formData.append("caseName", selectedCase?.caseName);
+    formData.append("caseNo", selectedCase?.caseNo);
+    formData.append("leadReturnId", pictureData.returnId || "1"); // Use returnId from formData if applicable
+    formData.append("enteredDate", new Date().toISOString());
+    formData.append("datePictureTaken", pictureData.datePictureTaken);
+    formData.append("pictureDescription", pictureData.description);
+  
+    const token = localStorage.getItem("token");
+  
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/lrpicture/upload",
+        formData,
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const savedPicture = response.data.picture;
+  
+      // Add newly saved picture to the table list
+      setPictures(prev => [
+        ...prev,
+        {
+          dateEntered: formatDate(savedPicture.enteredDate),
+          returnId: savedPicture.leadReturnId,
+          datePictureTaken: formatDate(savedPicture.datePictureTaken),
+          description: savedPicture.pictureDescription,
+          image: `http://localhost:5000/uploads/${savedPicture.filename}`
+        }
+      ]);
+  
+      // Clear form
+      setPictureData({
+        datePictureTaken: "",
+        description: "",
+        image: "",
+      });
+      setFile(null);
+    } catch (error) {
+      console.error("Error uploading picture:", error);
+      alert("Failed to upload picture.");
+    }
   };
+  
 
   const handleNavigation = (route) => {
     navigate(route);
   };
+
+  useEffect(() => {
+    if (
+      selectedLead?.leadNo &&
+      selectedLead?.leadName &&
+      selectedCase?.caseNo &&
+      selectedCase?.caseName
+    ) {
+      fetchPictures();
+    }
+  }, [selectedLead, selectedCase]);
+  
+  const fetchPictures = async () => {
+    const token = localStorage.getItem("token");
+  
+    const leadNo = selectedLead.leadNo;
+    const leadName = encodeURIComponent(selectedLead.leadName);
+    const caseNo = selectedCase.caseNo;
+    const caseName = encodeURIComponent(selectedCase.caseName);
+  
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/lrpicture/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const mappedPictures = res.data.map((pic) => ({
+        dateEntered: formatDate(pic.enteredDate),
+        returnId: pic.leadReturnId,
+        datePictureTaken: formatDate(pic.datePictureTaken),
+        description: pic.pictureDescription,
+          image: `http://localhost:5000/uploads/${pic.filename}`
+      }));
+  
+      setPictures(mappedPictures);
+    } catch (error) {
+      console.error("Error fetching pictures:", error);
+    }
+  };
+  
 
   return (
     <div className="lrpictures-container">
@@ -211,6 +306,15 @@ export const LRPictures = () => {
               value={pictureData.datePictureTaken}
                className="evidence-head"
               onChange={(e) => handleInputChange("datePictureTaken", e.target.value)}
+            />
+          </div>
+          <div className="form-row-pic">
+            <label  className="evidence-head">Lead Return Id:</label>
+            <input
+              type="leadReturnId"
+              value={pictureData.leadReturnId}
+               className="evidence-head"
+              onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
             />
           </div>
           <div className="form-row-pic">

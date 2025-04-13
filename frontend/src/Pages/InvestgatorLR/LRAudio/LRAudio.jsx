@@ -19,6 +19,8 @@ export const LRAudio = () => {
       }, []);
   const navigate = useNavigate();
    const location = useLocation();
+  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+   const [file, setFile] = useState(null);
     
       const formatDate = (dateString) => {
         if (!dateString) return "";
@@ -35,20 +37,6 @@ export const LRAudio = () => {
 
   // Sample audio data
   const [audioFiles, setAudioFiles] = useState([
-    {
-      dateEntered: "12/01/2024",
-      returnId: 1,
-      dateAudioRecorded: "12/01/2024",
-      description: "Audio recording of the witness interview.",
-      audioSrc: "/assets/sample-audio.mp3", // Replace with actual audio path
-    },
-    {
-      dateEntered: "12/02/2024",
-      returnId: 2,
-      dateAudioRecorded: "12/02/2024",
-      description: "Recording from the crime scene.",
-      audioSrc: "/assets/sample-audio2.mp3", // Replace with actual audio path
-    },
   ]);
 
   // State to manage form data
@@ -56,6 +44,7 @@ export const LRAudio = () => {
     dateAudioRecorded: "",
     description: "",
     audioSrc: "",
+    leadReturnId: "",
   });
 
   const handleInputChange = (field, value) => {
@@ -63,31 +52,76 @@ export const LRAudio = () => {
   };
 
   const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const audioUrl = URL.createObjectURL(file);
+    const selectedFile = event.target.files[0];
+    if (selectedFile) {
+      const audioUrl = URL.createObjectURL(selectedFile);
+      setFile(selectedFile); // ✅ This was missing
       setAudioData({ ...audioData, audioSrc: audioUrl });
     }
   };
+  
 
-  const handleAddAudio = () => {
-    const newAudio = {
-      dateEntered: new Date().toLocaleDateString(),
-      dateAudioRecorded: audioData.dateAudioRecorded,
-      description: audioData.description,
-      audioSrc: audioData.audioSrc || "/Materials/default-audio.mp3", // Default audio if not provided
-    };
-
-    // Add new audio to the list
-    setAudioFiles([...audioFiles, newAudio]);
-
-    // Clear form fields
-    setAudioData({
-      dateAudioRecorded: "",
-      description: "",
-      audioSrc: "",
-    });
+  const handleAddAudio = async () => {
+    const formData = new FormData();
+  
+    // Validation
+    if (!file ||  !audioData.leadReturnId || !audioData.dateAudioRecorded || !audioData.description) {
+      alert("Please fill in all required fields and select a file.");
+      return;
+    }
+  
+    // File and fields
+    formData.append("file", file);
+    formData.append("leadNo", selectedLead?.leadNo);
+    formData.append("description", selectedLead?.leadName);
+    formData.append("enteredBy", localStorage.getItem("loggedInUser"));
+    formData.append("caseName", selectedCase?.caseName);
+    formData.append("caseNo", selectedCase?.caseNo);
+    formData.append("leadReturnId", audioData.leadReturnId);
+    formData.append("enteredDate", new Date().toISOString());
+    formData.append("dateAudioRecorded", audioData.dateAudioRecorded);
+    formData.append("audioDescription", audioData.description);
+  
+    const token = localStorage.getItem("token");
+  
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/lraudio/upload",
+        formData,
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const savedAudio = response.data.audio;
+  
+      setAudioFiles((prev) => [
+        ...prev,
+        {
+          dateEntered: formatDate(savedAudio.enteredDate),
+          returnId: savedAudio.leadReturnId,
+          dateAudioRecorded: formatDate(savedAudio.dateAudioRecorded),
+          description: savedAudio.audioDescription,
+          audioSrc: `http://localhost:5000/uploads/${savedAudio.filename}`,
+        },
+      ]);
+  
+      // Reset form
+      setAudioData({
+        dateAudioRecorded: "",
+        description: "",
+        audioSrc: "",
+        leadReturnId: "",
+      });
+      setFile(null);
+    } catch (error) {
+      console.error("Error uploading audio:", error);
+      alert("Failed to upload audio.");
+    }
   };
+  
 
   const handleNavigation = (route) => {
     navigate(route);
@@ -98,6 +132,50 @@ export const LRAudio = () => {
                   const onShowCaseSelector = (route) => {
                     navigate(route, { state: { caseDetails } });
                 };
+
+                const fetchAudioFiles = async () => {
+                  const token = localStorage.getItem("token");
+                
+                  const leadNo = selectedLead?.leadNo;
+                  const leadName = encodeURIComponent(selectedLead?.leadName);
+                  const caseNo = selectedCase?.caseNo;
+                  const caseName = encodeURIComponent(selectedCase?.caseName);
+                
+                  try {
+                    const res = await axios.get(
+                      `http://localhost:5000/api/lraudio/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+                      {
+                        headers: {
+                          Authorization: `Bearer ${token}`,
+                        },
+                      }
+                    );
+                
+                    const mappedAudios = res.data.map((audio) => ({
+                      dateEntered: formatDate(audio.enteredDate),
+                      returnId: audio.leadReturnId,
+                      dateAudioRecorded: formatDate(audio.dateAudioRecorded),
+                      description: audio.audioDescription,
+                      audioSrc: `http://localhost:5000/uploads/${audio.filename}`,
+                    }));
+                
+                    setAudioFiles(mappedAudios);
+                  } catch (error) {
+                    console.error("Error fetching audios:", error);
+                  }
+                };
+
+                useEffect(() => {
+                  if (
+                    selectedLead?.leadNo &&
+                    selectedLead?.leadName &&
+                    selectedCase?.caseNo &&
+                    selectedCase?.caseName
+                  ) {
+                    fetchAudioFiles();
+                  }
+                }, [selectedLead, selectedCase]);
+                
 
   return (
     <div className="lraudio-container">
@@ -204,6 +282,15 @@ export const LRAudio = () => {
               value={audioData.dateAudioRecorded}
               className="evidence-head"
               onChange={(e) => handleInputChange("dateAudioRecorded", e.target.value)}
+            />
+          </div>
+          <div className="form-row-audio">
+            <label className="evidence-head">Lead Return Id:</label>
+            <input
+              type="text"
+              value={audioData.leadReturnId}
+              className="evidence-head"
+              onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
             />
           </div>
           <div className="form-row-audio">

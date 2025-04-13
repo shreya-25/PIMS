@@ -49,7 +49,7 @@ export const LREnclosures = () => {
 
   // Sample enclosures data
   const [enclosures, setEnclosures] = useState([
-    { returnId:'',dateEntered: "", type: "", enclosure: "" },
+    // { returnId:'',dateEntered: "", type: "", enclosure: "" },
     // { returnId:2, dateEntered: "12/03/2024", type: "Evidence", enclosure: "Photo Evidence" },
   ]);
 
@@ -146,6 +146,53 @@ export const LREnclosures = () => {
   const handleNavigation = (route) => {
     navigate(route); // Navigate to respective page
   };
+
+  useEffect(() => {
+    if (
+      selectedLead?.leadNo &&
+      selectedLead?.leadName &&
+      selectedCase?.caseNo &&
+      selectedCase?.caseName
+    ) {
+      fetchEnclosures();
+    }
+  }, [selectedLead, selectedCase]);
+  const fetchEnclosures = async () => {
+    const token = localStorage.getItem("token");
+  
+    const leadNo = selectedLead.leadNo;
+    const leadName = encodeURIComponent(selectedLead.leadName); // encode to handle spaces
+    const caseNo = selectedCase.caseNo;
+    const caseName = encodeURIComponent(selectedCase.caseName);
+  
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/lrenclosure/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const mappedEnclosures = res.data.map((enc) => ({
+        dateEntered: formatDate(enc.enteredDate),
+        type: enc.type,
+        enclosure: enc.enclosureDescription,
+        returnId: enc.leadReturnId,
+        originalName: enc.originalName
+      }));
+  
+      setEnclosures(mappedEnclosures);
+      setLoading(false);
+      setError("");
+    } catch (err) {
+      console.error("Error fetching enclosures:", err);
+      setError("Failed to load enclosures");
+      setLoading(false);
+    }
+  };
+  
 
   return (
     <div className="lrenclosures-container">
@@ -292,13 +339,14 @@ export const LREnclosures = () => {
         </div>
 
               {/* Enclosures Table */}
-              {/* <table className="leads-table">
+              <table className="leads-table">
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th>Associated Return Id </th>
+              <th>Return Id </th>
               <th>Type</th>
               <th>Enclosure</th>
+              <th>File Name</th>
               <th></th>
             </tr>
           </thead>
@@ -306,10 +354,11 @@ export const LREnclosures = () => {
           {enclosures.length > 0 ? (
             enclosures.map((enclosure, index) => (
               <tr key={index}>
-                <td>{enclosure.enteredDate}</td>
+                <td>{enclosure.dateEntered}</td>
                 <td>{enclosure.returnId}</td>
                 <td>{enclosure.type}</td>
                 <td>{enclosure.enclosure}</td>
+                <td>{enclosure.originalName}</td>
                 <td>
                   <div classname = "lr-table-btn">
                   <button>
@@ -333,12 +382,12 @@ export const LREnclosures = () => {
               </tr>
                    ))) : (
                     <tr>
-                      <td colSpan="4" style={{ textAlign: 'center' }}>
+                      <td colSpan="5" style={{ textAlign: 'center' }}>
                         No Enclosures Available
                       </td>
                     </tr>)}
           </tbody>
-        </table> */}
+        </table>
         <Comment/>
       </div>
       </div>
