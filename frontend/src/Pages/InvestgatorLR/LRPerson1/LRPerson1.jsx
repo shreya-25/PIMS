@@ -19,6 +19,14 @@ export const LRPerson1 = () => {
         }, []);
     const navigate = useNavigate(); // Initialize useNavigate hook
 const location = useLocation();
+const [username, setUsername] = useState("");
+
+useEffect(() => {
+   const loggedInUser = localStorage.getItem("loggedInUser");
+   if (loggedInUser) {
+     setUsername(loggedInUser);
+   }
+  })
     const [formData, setFormData] = useState({
       dateEntered: "",
       leadReturnId: "",
@@ -80,11 +88,47 @@ const [miscDetails, setMiscDetails] = useState([
   };
 
 
-  // Function to handle saving the entry to the database.
   const handleSave = async () => {
-    // Replace with your actual token or retrieve it dynamically
-    const token = 'YOUR_TOKEN_HERE';
+    const token = localStorage.getItem("token");
+  
+    const payload = {
+      leadNo: selectedLead?.leadNo,
+      description: selectedLead?.leadName,
+      caseNo: selectedCase?.caseNo,
+      caseName: selectedCase?.caseName,
+      enteredBy: username, 
+      enteredDate: formData.dateEntered,
+      leadReturnId: formData.leadReturnId,
+  
+      lastName: formData.lastName,
+      firstName: formData.firstName,
+      middleInitial: formData.mi,
+      suffix: formData.suffix,
+      cellNumber: formData.cellNumber,
+      businessName: formData.businessName,
+      address: {
+        street1: formData.street1,
+        street2: formData.street2,
+        building: formData.building,
+        apartment: formData.apartment,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipCode,
+      },
+  
+      // Optional: Extend this with other fields once you connect them in your form
+      // ssn: formData.ssn,
+      // age: formData.age,
+      // email: formData.email,
+      // occupation: formData.occupation,
+      // personType: formData.personType,
+      // etc...
+  
+      additionalData: miscDetails, // Store all misc rows
+    };
 
+    console.log(payload);
+  
     try {
       const response = await fetch('http://localhost:5000/api/lrperson/lrperson', {
         method: 'POST',
@@ -92,13 +136,12 @@ const [miscDetails, setMiscDetails] = useState([
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
-
+  
       if (response.ok) {
         const data = await response.json();
         alert('Entry saved successfully');
-        // Optionally, you can update state or navigate to another page here.
       } else {
         const errorMessage = await response.text();
         alert('Failed to save entry: ' + errorMessage);
@@ -108,6 +151,7 @@ const [miscDetails, setMiscDetails] = useState([
       alert('An error occurred while saving the entry.');
     }
   };
+  
   
   return (
     <div className="person-page">
@@ -206,7 +250,7 @@ const [miscDetails, setMiscDetails] = useState([
         <table className="person-table2">
           <tbody>
             <tr>
-              <td>Date Entered</td>
+              <td>Date Entered *</td>
               <td>
                 <input
                   type="date"
@@ -215,18 +259,18 @@ const [miscDetails, setMiscDetails] = useState([
                   onChange={(e) => handleChange("dateEntered", e.target.value)}
                 />
               </td>
-              <td>Lead Return Id</td>
+              <td>Lead Return Id *</td>
               <td>
                 <input
                   type="leadReturn"
-                  value={formData.leadReturn}
+                  value={formData.leadReturnId}
                   className="input-large"
-                  onChange={(e) => handleChange("leadReturn", e.target.value)}
+                  onChange={(e) => handleChange("leadReturnId", e.target.value)}
                 />
               </td>
             </tr>
             <tr>
-              <td>Last Name</td>
+              <td>Last Name *</td>
               <td>
                 <input
                   type="text"
@@ -234,7 +278,7 @@ const [miscDetails, setMiscDetails] = useState([
                   onChange={(e) => handleChange("lastName", e.target.value)}
                 />
               </td>
-              <td>First Name</td>
+              <td>First Name *</td>
               <td>
                 <input
                   type="text"
