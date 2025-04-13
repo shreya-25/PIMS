@@ -59,10 +59,10 @@ export const LRPerson = () => {
                 };
 
     const [persons, setPersons] = useState([
-      { returnId: 1,dateEntered: "01/01/2024", name: "John Doe", phoneNo: "123-456-7890", address: "123 Main St, NY" },
-      {  returnId: 1, dateEntered: "01/05/2024", name: "Jane Smith", phoneNo: "987-654-3210", address: "456 Elm St, CA" },
-      {  returnId: 2,dateEntered: "01/10/2024", name: "Mike Johnson", phoneNo: "555-789-1234", address: "789 Pine St, TX" },
-      { returnId: 2,dateEntered: "01/15/2024", name: "Emily Davis", phoneNo: "111-222-3333", address: "321 Maple St, FL" },
+      // { returnId: 1,dateEntered: "01/01/2024", name: "John Doe", phoneNo: "123-456-7890", address: "123 Main St, NY" },
+      // {  returnId: 1, dateEntered: "01/05/2024", name: "Jane Smith", phoneNo: "987-654-3210", address: "456 Elm St, CA" },
+      // {  returnId: 2,dateEntered: "01/10/2024", name: "Mike Johnson", phoneNo: "555-789-1234", address: "789 Pine St, TX" },
+      // { returnId: 2,dateEntered: "01/15/2024", name: "Emily Davis", phoneNo: "111-222-3333", address: "321 Maple St, FL" },
     ]);
   
     const [selectedRow, setSelectedRow] = useState(null);
@@ -94,6 +94,18 @@ export const LRPerson = () => {
         setSelectedRow(null);
       }
     };
+
+    useEffect(() => {
+      if (
+        selectedCase?.caseNo &&
+        selectedCase?.caseName &&
+        selectedLead?.leadNo &&
+        selectedLead?.leadName
+      ) {
+        fetchPersons();
+      }
+    }, [selectedCase, selectedLead]);
+    
   
   
   const [leadData, setLeadData] = useState({
@@ -147,6 +159,51 @@ export const LRPerson = () => {
     const handlePrevPage = () => {
     navigate('/LRInstruction'); // Replace '/nextpage' with the actual next page route
   };
+
+  const fetchPersons = async () => {
+    const token = localStorage.getItem("token");
+  
+    const caseNo = selectedCase.caseNo;
+    const caseName = encodeURIComponent(selectedCase.caseName); // encode if contains spaces
+    const leadNo = selectedLead.leadNo;
+    const leadName = encodeURIComponent(selectedLead.leadName);
+  
+    console.log("About to hit");
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/lrperson/lrperson/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log(res);
+  
+      // Map response to desired format
+      const mappedPersons = res.data.map((person) => ({
+        returnId: person.leadReturnId,
+        dateEntered: new Date(person.enteredDate).toLocaleDateString(),
+        name: `${person.firstName} ${person.lastName}`,
+        phoneNo: person.cellNumber || "N/A",
+        address:
+          person.address?.street1 &&
+          `${person.address.street1}, ${person.address.city || ""}, ${person.address.state || ""}`,
+        leadReturnId: person.leadReturnId,
+      }));
+  
+      setPersons(mappedPersons);
+      setError("");
+      setLoading(false);
+      console.log("map person", mappedPersons);
+    } catch (err) {
+      console.error("Error fetching person records:", err);
+      setError("Failed to fetch persons.");
+      setLoading(false);
+    }
+  };
+  
   
   return (
     <div className="person-page">
