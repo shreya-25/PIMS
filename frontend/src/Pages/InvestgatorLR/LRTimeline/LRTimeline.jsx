@@ -21,6 +21,7 @@ export const LRTimeline = () => {
       }, []);
   const navigate = useNavigate();
    const location = useLocation();
+   const { selectedCase, selectedLead } = useContext(CaseContext);
         
           const formatDate = (dateString) => {
             if (!dateString) return "";
@@ -40,26 +41,29 @@ export const LRTimeline = () => {
     };
   
   const [timelineEntries, setTimelineEntries] = useState([
-    {
-      date: '01/01/2024',
-      returnId:1,
-      timeRange: '10:30 AM - 12:00 PM',
-      location: '123 Main St, NY',
-      description: 'Suspect spotted leaving crime scene',
-      flags: ['High Priority'],
-    },
-    {
-      date: '01/05/2024',
-      returnId:2,
-      timeRange: '2:00 PM - 3:30 PM',
-      location: '456 Elm St, CA',
-      description: 'Suspect was going to the airport',
-      flags: [],
-    },
+    // {
+    //   date: '01/01/2024',
+    //   returnId:1,
+    //   timeRange: '10:30 AM - 12:00 PM',
+    //   location: '123 Main St, NY',
+    //   description: 'Suspect spotted leaving crime scene',
+    //   flags: ['High Priority'],
+    // },
+    // {
+    //   date: '01/05/2024',
+    //   returnId:2,
+    //   timeRange: '2:00 PM - 3:30 PM',
+    //   location: '456 Elm St, CA',
+    //   description: 'Suspect was going to the airport',
+    //   flags: [],
+    // },
   ]);
 
   const [newEntry, setNewEntry] = useState({
     date: '',
+    leadReturnId: '',
+    eventStartDate: '',
+    eventEndDate: '',
     startTime: '',
     endTime: '',
     location: '',
@@ -79,30 +83,132 @@ export const LRTimeline = () => {
     setNewEntry({ ...newEntry, [field]: value });
   };
 
-  const handleAddEntry = () => {
-    if (newEntry.date && newEntry.startTime && newEntry.endTime && newEntry.location && newEntry.description) {
-      const formattedEntry = {
-        date: newEntry.date,
-        timeRange: `${newEntry.startTime} - ${newEntry.endTime}`,
-        location: newEntry.location,
-        description: newEntry.description,
-        flags: newEntry.flag ? [newEntry.flag] : [],
-      };
-      setTimelineEntries([...timelineEntries, formattedEntry]);
-      setNewEntry({
-        date: '',
-        startTime: '',
-        endTime: '',
-        location: '',
-        description: '',
-        flag: '',
-      });
+  useEffect(() => {
+    if (
+      selectedLead?.leadNo &&
+      selectedLead?.leadName &&
+      selectedCase?.caseNo &&
+      selectedCase?.caseName
+    ) {
+      fetchTimelineEntries();
+    }
+  }, [selectedLead, selectedCase]);
+  
+  const fetchTimelineEntries = async () => {
+    const token = localStorage.getItem("token");
+  
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/timeline/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log("response:", res);
+  
+      const mapped = res.data.map((entry) => ({
+        date: formatDate(entry.eventDate),
+        returnId: entry.leadReturnId,
+        timeRange: formatTimeRangeNY(entry.eventStartTime, entry.eventEndTime),
+
+        location: entry.eventLocation,
+        description: entry.eventDescription,
+        flags: entry.timelineFlag || [],
+      }));
+  
+      setTimelineEntries(mapped);
+    } catch (err) {
+      console.error("Error fetching timeline entries:", err);
     }
   };
+  
+  const formatTimeRangeNY = (startTime, endTime) => {
+    const options = {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "America/New_York",
+    };
+  
+    const start = new Date(startTime).toLocaleTimeString("en-US", options);
+    const end = new Date(endTime).toLocaleTimeString("en-US", options);
+  
+    return `${start} - ${end}`;
+  };
+  
+
+  const handleAddEntry = async () => {
+    if (!newEntry.date || !newEntry.eventStartDate || !newEntry.eventEndDate ||  !newEntry.startTime || !newEntry.endTime || !newEntry.location || !newEntry.description) {
+      alert("Please fill in all required fields.");
+      return;
+    }
+  
+    const token = localStorage.getItem("token");
+  
+    const payload = {
+      leadNo: selectedLead?.leadNo,
+      description: selectedLead?.leadName,
+      assignedTo: selectedLead?.assignedTo || {},
+      assignedBy: selectedLead?.assignedBy || {},
+      enteredBy: localStorage.getItem("loggedInUser"),
+      caseName: selectedCase?.caseName,
+      caseNo: selectedCase?.caseNo,
+      leadReturnId: newEntry.leadReturnId,
+      enteredDate: new Date().toISOString(),
+      eventDate: newEntry.date,
+      eventStartDate: newEntry.eventStartDate,
+      eventEndDate: newEntry.eventEndDate,
+      eventStartTime: combineDateTime(newEntry.date, newEntry.startTime),
+      eventEndTime: combineDateTime(newEntry.date, newEntry.endTime),
+      eventLocation: newEntry.location,
+      eventDescription: newEntry.description,
+      timelineFlag: newEntry.flag ? [newEntry.flag] : [],
+    };
+  
+    try {
+      const res = await axios.post("http://localhost:5000/api/timeline/create", payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      const saved = res.data.timeline;
+      setTimelineEntries((prev) => [
+        ...prev,
+        {
+          date: formatDate(saved.eventDate),
+          returnId: saved.leadReturnId,
+          timeRange: formatTimeRangeNY(saved.eventStartTime, saved.eventEndTime),
+          location: saved.eventLocation,
+          description: saved.eventDescription,
+          flags: saved.timelineFlag || [],
+        },
+      ]);
+  
+      // Reset form
+      setNewEntry({
+        date: "",
+        startTime: "",
+        endTime: "",
+        location: "",
+        description: "",
+        flag: "",
+      });
+    } catch (err) {
+      console.error("Error saving timeline entry:", err);
+      alert("Failed to add timeline entry.");
+    }
+  };
+  
 
   const handleDeleteEntry = (index) => {
     const updatedEntries = timelineEntries.filter((_, i) => i !== index);
     setTimelineEntries(updatedEntries);
+  };
+  const combineDateTime = (dateStr, timeStr) => {
+    return new Date(`${dateStr}T${timeStr}`);
   };
 
   const handleEditEntry = (index) => {
@@ -222,31 +328,49 @@ export const LRTimeline = () => {
         <div className="timeline-form-sec">
           <h3>Add/Edit Entry</h3>
           <div className="timeline-form">
-            <label>Date</label>
+            <label>Date *</label>
             <input
               type="date"
               value={newEntry.date}
               onChange={(e) => handleInputChange('date', e.target.value)}
             />
-            <label>Start Time</label>
+            <label>Lead Return Id *</label>
+            <input
+              type="text"
+              value={newEntry.leadReturnId}
+              onChange={(e) => handleInputChange('leadReturnId', e.target.value)}
+            />
+             <label> Event Start Date *</label>
+            <input
+              type="date"
+              value={newEntry.eventStartDate}
+              onChange={(e) => handleInputChange('eventStartDate', e.target.value)}
+            />
+            <label> Event End Date *</label>
+            <input
+              type="date"
+              value={newEntry.eventEndDate}
+              onChange={(e) => handleInputChange('eventEndDate', e.target.value)}
+            />
+            <label>Start Time *</label>
             <input
               type="time"
               value={newEntry.startTime}
               onChange={(e) => handleInputChange('startTime', e.target.value)}
             />
-            <label>End Time</label>
+            <label>End Time *</label>
             <input
               type="time"
               value={newEntry.endTime}
               onChange={(e) => handleInputChange('endTime', e.target.value)}
             />
-            <label>Location</label>
+            <label>Location *</label>
             <input
               type="text"
               value={newEntry.location}
               onChange={(e) => handleInputChange('location', e.target.value)}
             />
-            <label>Description</label>
+            <label>Description *</label>
             <textarea
               rows="3"
               value={newEntry.description}
@@ -325,7 +449,7 @@ export const LRTimeline = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="no-timeline">No timelines found during investigation.</td>
+                  <td colSpan="7">No timelines found during investigation.</td>
                 </tr>
               )}
             </tbody>

@@ -99,12 +99,12 @@ const fetchLeadHierarchyFullDetails = async (leadNo, caseNo, caseName, token, ch
 };
 
 export const LeadsDeskTestExecSummary = () => {
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "auto";
-    };
-  }, []);
+  // useEffect(() => {
+  //   document.body.style.overflow = "hidden";
+  //   return () => {
+  //     document.body.style.overflow = "auto";
+  //   };
+  // }, []);
 
   const navigate = useNavigate();
   const pdfRef = useRef();
@@ -328,6 +328,7 @@ export const LeadsDeskTestExecSummary = () => {
 
   const [selectStartLead1, setSelectStartLead1] = useState("");
 const [selectEndLead2, setSelectEndLead2] = useState("");
+const [visibleChainsCount, setVisibleChainsCount] = useState(2);
 
 // This function will run when the user clicks "Show Leads"
 const handleShowLeadsInRange = () => {
@@ -406,17 +407,40 @@ const handleShowLeadsInRange = () => {
     const leadNumbers = chain.map((l) => l.leadNo);
     const displayedNumbers = expanded ? leadNumbers : leadNumbers.slice(0, 2);
   
-    return (
-      <div key={chainIndex} style={{ marginBottom: "10px" }}>
-        <strong>Chain #{chainIndex + 1}:</strong> {displayedNumbers.join(", ")}
-        {leadNumbers.length > 2 && (
-          <button className = "show-more-btn" onClick={() => setExpanded(!expanded)} style={{ marginLeft: "10px" }}>
-            {expanded ? "Show Less" : "Show More"}
-          </button>
-        )}
-      </div>
-    );
-  };
+  //   return (
+  //     <div key={chainIndex} style={{ marginBottom: "10px" }}>
+  //       <strong>Chain #{chainIndex + 1}:</strong> {displayedNumbers.join(", ")}
+  //       {leadNumbers.length > 2 && (
+  //         // <button className = "show-more-btn" onClick={() => setExpanded(!expanded)} style={{ marginLeft: "10px" }}>
+  //         //   {expanded ? "Show Less" : "Show More"}
+  //         // </button>
+  //          <button className = "show-more-btn" onClick={() => setExpanded(!expanded)} style={{ marginLeft: "10px" }}>
+  //            {expanded ? "▲" : "▼"}
+  //         </button>
+  //       )}
+  //     </div>
+  //   );
+  // };
+
+  return (
+    <div
+      key={chainIndex}
+      style={{
+        marginBottom: "10px",
+        cursor: "pointer",
+        width: "100%",
+        display: "flex",
+        justifyContent: "flex-start",
+        alignItems: "center"
+      }}
+      onClick={() => setExpanded(!expanded)}
+    >
+      <strong>Chain #{chainIndex + 1}:</strong> {displayedNumbers.join(", ")}{" "}
+      {/* {leadNumbers.length > 2 && (expanded ? "▲" : "▼")} */}
+      {leadNumbers.length > 2 && (expanded ? "" : "")}
+    </div>
+  );
+};
 
     // New state for the executive summary file
     const [execSummaryFile, setExecSummaryFile] = useState(null);
@@ -866,14 +890,8 @@ const handleShowLeadsInRange = () => {
           </ul>
         </div>
 
-        <div className="exec-summary-sec">
-          <h3>Executive Summary</h3>
-        <textarea className= "summary-input" placeholder="Type here..."></textarea>
-        <button className="save-btn1">Save</button>
-        </div>
-
-        <div className="left-content-execSummary">
-
+        <div className="right-sec">
+          <div className="header-ld">
         <div className="case-header">
             <h2>LEADS DESK</h2>
           </div>
@@ -882,6 +900,24 @@ const handleShowLeadsInRange = () => {
               CASE: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
             </h1>
           </div>
+          </div>
+       <div className="down-content"> 
+        <div className="exec-summary-sec">
+          <h3>Executive Summary</h3>
+        <textarea className= "summary-input" placeholder="Type here..."></textarea>
+        <button className="save-btn1">Save</button>
+        </div>
+
+        <div className="left-content-execSummary">
+
+        {/* <div className="case-header">
+            <h2>LEADS DESK</h2>
+          </div>
+          <div className="center-section-ld">
+            <h1>
+              CASE: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
+            </h1>
+          </div> */}
 
           <div className="bottom-sec-ldExecSummary" id="main-content">
             <div className="case-summary-ld">
@@ -991,14 +1027,74 @@ const handleShowLeadsInRange = () => {
 
             {hierarchyLeadsData.length > 0 ? (
               <>
-                <h3>Hierarchy for Lead {hierarchyLeadInput}:</h3>
-                {/* {hierarchyChains.map((chain, idx) => {
-                  const chainStr = chain.map((l) => l.leadNo).join(",");
-                  return <div key={idx}>Chain #{idx + 1}: {chainStr}</div>;
-                })} */}
-                {hierarchyChains.map((chain, idx) => (
-                  <HierarchyChain key={idx} chain={chain} chainIndex={idx} />
-                ))}
+                {/* <h3 style={{ textAlign: "left" }}>Hierarchy for Lead {hierarchyLeadInput}:</h3>
+
+                {
+                  hierarchyChains.slice(0, visibleChainsCount).map((chain, idx) => (
+                    <HierarchyChain key={idx} chain={chain} chainIndex={idx} />
+                  ))
+                }
+
+<div style={{ marginTop: "10px" }}>
+      {visibleChainsCount < hierarchyChains.length && (
+        <button
+          className="show-more-chains-btn"
+          onClick={() => setVisibleChainsCount(prev => prev + 5)}
+          style={{ marginRight: "10px", color: "grey", backgroundColor:"whitesmoke" }}
+        >
+          Load More Chains
+        </button>
+      )}
+      {visibleChainsCount > 2 && (
+        <button
+          className="show-more-chains-btn"
+          onClick={() => setVisibleChainsCount(2)}
+        >
+          Load Less Chains
+        </button>
+      )}
+    </div> */}
+
+<div style={{ width: "100%", alignSelf: "flex-start", textAlign: "left" }}>
+  <h3 style={{ width: "100%", alignSelf: "flex-start", textAlign: "left" }}>Hierarchy for Lead {hierarchyLeadInput}:</h3>
+  {hierarchyChains.slice(0, visibleChainsCount).map((chain, idx) => (
+    <HierarchyChain key={idx} chain={chain} chainIndex={idx} />
+  ))}
+  <div style={{ marginTop: "10px", textAlign: "left" }}>
+    {visibleChainsCount < hierarchyChains.length && (
+      <button
+        className="show-more-chains-btn"
+        onClick={() => setVisibleChainsCount(prev => prev + 5)}
+        style={{
+          marginLeft: "-20px",
+          color: "grey",
+          background: "none",
+          border: "none",
+          cursor: "pointer"
+        }}
+      >
+        Load More Chains
+      </button>
+    )}
+    {visibleChainsCount > 2 && (
+      <button
+        className="show-more-chains-btn"
+        onClick={() => setVisibleChainsCount(2)}
+        style={{
+          // marginRight: "10px",
+          marginLeft: "-20px",
+          color: "grey",
+          background: "none",
+          border: "none",
+          cursor: "pointer"
+        }}
+      >
+        Load Less Chains
+      </button>
+    )}
+  </div>
+</div>
+
 
                 {renderLeads(hierarchyLeadsData)}
               </>
@@ -1016,7 +1112,7 @@ const handleShowLeadsInRange = () => {
                 </div> */}
               </>
             )}
-          </div>
+            </div>
 
           <div className="last-sec">
             <div className="btn-sec-ld">
@@ -1029,6 +1125,8 @@ const handleShowLeadsInRange = () => {
             </div>
             <FootBar onPrevious={() => navigate(-1)} />
           </div>
+        </div>
+        </div>  
         </div>
       </div>
     </div>

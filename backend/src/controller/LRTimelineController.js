@@ -89,4 +89,29 @@ const getTimelinesByCase = async (req, res) => {
     }
 };
 
-module.exports = { createLRTimeline, getTimelinesByCase };
+const getLRTimelineByDetails = async (req, res) => {
+    try {
+        const { leadNo, leadName, caseNo, caseName } = req.params;
+
+        const query = {
+            leadNo: Number(leadNo),
+            description: leadName,
+            caseNo,
+            caseName
+        };
+
+        const timeline = await LRTimeline.find(query);
+
+        if (timeline.length === 0) {
+            return res.status(404).json({ message: "No timeline entries found." });
+        }
+
+        res.status(200).json(timeline);
+    } catch (err) {
+        console.error("Error fetching LRTimeline records:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+
+module.exports = { createLRTimeline, getTimelinesByCase, getLRTimelineByDetails };
