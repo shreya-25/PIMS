@@ -7,6 +7,8 @@ import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import PersonModal from "../../components/PersonModal/PersonModel";
 import CaseHeaderSection from "../../components/CaseHeaderSection/CaseHeaderSection";
+
+import ExecSummaryModal from "../../components/ExecSummaryModal/ExecSummaryModal";
 import VehicleModal from "../../components/VehicleModal/VehicleModel";
 import Pagination from "../../components/Pagination/Pagination";
 import { jsPDF } from "jspdf"; // if still used elsewhere
@@ -116,6 +118,8 @@ export const LeadsDeskTestExecSummary = () => {
   const [hierarchyLeadsData, setHierarchyLeadsData] = useState([]);
   const [hierarchyChains, setHierarchyChains] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showExecFileModal, setShowExecFileModal] = useState(false);
+  const [execSummaryFile, setExecSummaryFile] = useState(null);
 
 
   // Modal states
@@ -171,6 +175,19 @@ export const LeadsDeskTestExecSummary = () => {
     setShowMediaModal(true);
   };
   const closeMediaModal = () => setShowMediaModal(false);
+
+  const handleExecSummaryOptionSelect = (option, file) => {
+    if (option === "upload") {
+      setExecSummaryFile(file);
+      handleRunReportWithSummary();
+    } else {
+      setExecSummaryFile(null);
+      handleRunReport();
+    }
+    console.log("Executive Summary Option Selected:", option, file);
+    // handleRunReportWithSummary();
+  };
+
 
   // ------------------ Show Hierarchy / Show All Leads ------------------
   const handleShowHierarchy = async () => {
@@ -442,9 +459,6 @@ const handleShowLeadsInRange = () => {
   );
 };
 
-    // New state for the executive summary file
-    const [execSummaryFile, setExecSummaryFile] = useState(null);
-    const [showExecFileModal, setShowExecFileModal] = useState(false);
 
     // Handler to capture the file input
     const handleExecSummaryFileChange = (e) => {
@@ -1119,7 +1133,7 @@ const handleShowLeadsInRange = () => {
               <button className="save-btn1" onClick={handleRunReport}>
                 Run Report
               </button>
-              <button className="save-btn1" onClick={handleRunReportWithSummary}>
+              <button className="save-btn1"  onClick={() => setShowExecFileModal(true)}>
                 Run Report with Summary
               </button>
             </div>
@@ -1129,6 +1143,13 @@ const handleShowLeadsInRange = () => {
         </div>  
         </div>
       </div>
+
+       {/* Render the ExecSummaryModal */}
+       <ExecSummaryModal
+        isOpen={showExecFileModal}
+        onClose={() => setShowExecFileModal(false)}
+        onSelectOption={handleExecSummaryOptionSelect}
+      />
     </div>
   );
 };
