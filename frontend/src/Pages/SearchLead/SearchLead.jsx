@@ -7,33 +7,33 @@ import axios from "axios";
 import { CaseContext } from "../CaseContext";
 
 const sampleLeads = [
-  {
-    id: "Lead45",
-    name: "Collect Audio Records from Dispatcher",
-    dueDate: "12/25/2024",
-    priority: "High",
-    remainingDays: 0,
-    flags: "Important",
-    assignedOfficers: "Officer 1, Officer 3",
-  },
-  {
-    id: "Lead20",
-    name: "Interview Mr. John",
-    dueDate: "12/31/2024",
-    priority: "Medium",
-    remainingDays: 0,
-    flags: "None",
-    assignedOfficers: "Officer 2",
-  },
-  {
-    id: "Lead84",
-    name: "Collect Evidence from 63 Mudray Street",
-    dueDate: "12/29/2024",
-    priority: "Low",
-    remainingDays: 0,
-    flags: "None",
-    assignedOfficers: "Officer 4",
-  },
+  // {
+  //   id: "Lead45",
+  //   name: "Collect Audio Records from Dispatcher",
+  //   dueDate: "12/25/2024",
+  //   priority: "High",
+  //   remainingDays: 0,
+  //   flags: "Important",
+  //   assignedOfficers: "Officer 1, Officer 3",
+  // },
+  // {
+  //   id: "Lead20",
+  //   name: "Interview Mr. John",
+  //   dueDate: "12/31/2024",
+  //   priority: "Medium",
+  //   remainingDays: 0,
+  //   flags: "None",
+  //   assignedOfficers: "Officer 2",
+  // },
+  // {
+  //   id: "Lead84",
+  //   name: "Collect Evidence from 63 Mudray Street",
+  //   dueDate: "12/29/2024",
+  //   priority: "Low",
+  //   remainingDays: 0,
+  //   flags: "None",
+  //   assignedOfficers: "Officer 4",
+  // },
 ];
 
 export const SearchLead = () => {
@@ -65,23 +65,111 @@ export const SearchLead = () => {
 
  console.log(selectedCase);
 
+  // Function to filter fetched leads using advanced search criteria
+  const applyAdvancedFilters = (leads) => {
+    // Combine static and dynamic rows; filter out any rows with an empty field or value
+    const combinedRows = [...staticRows, ...dynamicRows].filter(
+      (row) => row.field && row.value.trim() !== ""
+    );
+    // If no filter criteria is provided, return the full lead list.
+    if (combinedRows.length === 0) return leads;
+
+    // Filter leads by checking each row's criterion against each lead.
+    return leads.filter((lead) => {
+      // Initially assume the lead satisfies every filter
+      let satisfiesAll = true;
+
+      // Iterate over each filter row. Here we assume that all conditions must be met (logical AND)
+      combinedRows.forEach((row) => {
+        const filterValue = row.value.toLowerCase().trim();
+        let leadValue = "";
+
+        // Map the filter field to the corresponding lead property.
+        switch (row.field) {
+          case "Lead Number":
+            leadValue = lead.leadNo ? lead.leadNo.toLowerCase() : "";
+            break;
+          case "Priority":
+            leadValue = lead.priority ? lead.priority.toLowerCase() : "";
+            break;
+          case "Due Date":
+            // Use the same display format as formatDate (or compare ISO strings if preferred)
+            leadValue = lead.dueDate ? formatDate(lead.dueDate).toLowerCase() : "";
+            break;
+          case "Flag":
+            // Assuming 'associatedFlags' holds flag information as a string
+            leadValue = lead.associatedFlags ? lead.associatedFlags.toLowerCase() : "";
+            break;
+          case "Keyword":
+          case "Lead Name":
+            // Compare the description if using keyword or name
+            leadValue = lead.description ? lead.description.toLowerCase() : "";
+            break;
+          case "Assigned To":
+            // Join assigned officers into a single string for comparison
+            leadValue = lead.assignedTo ? lead.assignedTo.join(" ").toLowerCase() : "";
+            break;
+          // Add additional cases as needed
+          default:
+            leadValue = "";
+        }
+
+        // Check the criterion using the evaluator ("equals" or "contains")
+        if (row.evaluator === "equals") {
+          if (leadValue !== filterValue) {
+            satisfiesAll = false;
+          }
+        } else if (row.evaluator === "contains") {
+          if (!leadValue.includes(filterValue)) {
+            satisfiesAll = false;
+          }
+        }
+      });
+
+      return satisfiesAll;
+    });
+  };
+
+
+// Updated handleSearch: first fetch from API, then apply advanced filters
 const handleSearch = async () => {
- try {
-   const token = localStorage.getItem("token");
-   const response = await axios.get("http://localhost:5000/api/lead/search", {
-     params: {
-       caseNo: selectedCase.caseNo,
-       caseName: selectedCase.caseName,
-       keyword: searchTerm,  // searchTerm is the input value from the user
-     },
-     headers: { Authorization: `Bearer ${token}` },
-   });
-   // Update your state with the results
-   setLeadsData(response.data);
- } catch (error) {
-   console.error("Error fetching search results:", error);
- }
+  try {
+    const token = localStorage.getItem("token");
+
+    // Combine advanced rows from static and dynamic arrays
+    const advancedRows = [
+      ...staticRows,
+      ...dynamicRows,
+    ].filter((row) => row.field && row.value.trim() !== "");
+
+    let fieldParam = "";
+    let keywordParam = "";
+
+    if (advancedRows.length > 0) {
+      // For simplicity, use the first advanced row for backend filtering.
+      fieldParam = advancedRows[0].field;
+      keywordParam = advancedRows[0].value;
+    } else {
+      keywordParam = searchTerm.trim() ? searchTerm : "";
+    }
+
+    const response = await axios.get("http://localhost:5000/api/lead/search", {
+      params: {
+        caseNo: selectedCase.caseNo,
+        caseName: selectedCase.caseName,
+        keyword: keywordParam,
+        field: fieldParam,
+      },
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    console.log("Fetched leads:", response.data);
+    setLeadsData(response.data);
+  } catch (error) {
+    console.error("Error fetching search results:", error);
+  }
 };
+
 
   // Handles input changes for static or dynamic rows
   const handleInputChange = (index, field, value, isDynamic = false) => {

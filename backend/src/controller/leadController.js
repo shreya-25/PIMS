@@ -254,36 +254,86 @@ const updateLRStatusToPending = async (req, res) => {
 const searchLeadsByKeyword = async (req, res) => {
   console.log("Inside searchLeadsByKeyword");
   try {
-    const { caseNo, caseName, keyword } = req.query;
+    // Expect these query parameters from the client.
+    const { caseNo, caseName, keyword, field } = req.query;
+    console.log("Received query:", caseNo, caseName, keyword, field);
 
-    console.log("Received query:", caseNo, caseName, keyword);
-
-    
-    if (!caseNo || !caseName || !keyword) {
-      return res.status(400).json({ message: "caseNo, caseName, and keyword are required." });
+    // Validate required fields.
+    if (!caseNo || !caseName) {
+      return res.status(400).json({ message: "caseNo and caseName are required." });
     }
     
-    // Create a case-insensitive regex for the keyword
-    const regex = new RegExp(keyword, "i");
+    // Use the provided keyword or default to an empty string.
+    const searchKeyword = keyword || "";
     
-    // Find leads matching the case and keyword in description or summary
-
-    const leads = await Lead.find({
+    // Build the common part of the query using case info.
+    const baseQuery = {
       caseNo,
-      caseName: { $regex: new RegExp(`^${caseName}$`, "i") },
-      $or: [
-        { description: { $regex: new RegExp(keyword, "i") } },
-        { summary: { $regex: new RegExp(keyword, "i") } }
-      ]
-    });
+      caseName: { $regex: new RegExp(`^${caseName}$`, "i") }
+    };
+
+    let query;
+    // If the client provided a specific 'field' parameter,
+    // build the query accordingly.
+    if (field) {
+      switch (field) {
+        case "Lead Number":
+          // For lead number, expect an exact match.
+          query = { ...baseQuery, leadNo: searchKeyword };
+          break;
+        case "Priority":
+          // Use a regex to perform a case‑insensitive search on priority.
+          query = { ...baseQuery, priority: { $regex: new RegExp(searchKeyword, "i") } };
+          break;
+        case "Due Date":
+          // For due date, you might choose regex (for partial matches) or exact match.
+          // Here, we use regex. Adjust the logic if you need proper date comparisons.
+          query = { ...baseQuery, dueDate: { $regex: new RegExp(searchKeyword, "i") } };
+          break;
+        case "Remaining Days":
+          // For numeric fields, convert the keyword to a number.
+          const numericKeyword = Number(searchKeyword);
+          if (isNaN(numericKeyword)) {
+            return res.status(400).json({ message: "Invalid value for Remaining Days." });
+          }
+          query = { ...baseQuery, remainingDays: numericKeyword };
+          break;
+        default:
+          // If an unsupported field is provided, fall back to default search.
+          query = {
+            ...baseQuery,
+            $or: [
+              { description: { $regex: new RegExp(searchKeyword, "i") } },
+              { summary: { $regex: new RegExp(searchKeyword, "i") } }
+            ]
+          };
+      }
+    } else {
+      // Without a 'field' parameter, default behavior:
+      // - If keyword matches the lead number pattern, search by leadNo.
+      // - Else search the description and summary fields.
+      if (searchKeyword.match(/^Lead\d+$/i)) {
+        query = { ...baseQuery, leadNo: searchKeyword };
+      } else {
+        query = {
+          ...baseQuery,
+          $or: [
+            { description: { $regex: new RegExp(searchKeyword, "i") } },
+            { summary: { $regex: new RegExp(searchKeyword, "i") } }
+          ]
+        };
+      }
+    }
     
-    
+    // Execute the query.
+    const leads = await Lead.find(query);
     res.status(200).json(leads);
   } catch (err) {
     console.error("Error searching leads:", err.message);
     res.status(500).json({ message: "Something went wrong" });
   }
 };
+
 
 
 

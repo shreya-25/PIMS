@@ -89,6 +89,7 @@ const LRARoutes = require("./routes/LRARoutes.js");
 const LRViRoutes = require("./routes/LRViRoutes.js");
 const LRTimelineRoutes = require("./routes/LRTimelineRoute.js");
 const LRScratchpadRoutes = require("./routes/LRScratchpadRoutes");
+const CommentRoutes = require("./routes/CommentRoutes.js");
 const { dbConnect } = require("./config/dbConnect"); // Import dbConnect properly
 const path = require('path');
 
@@ -132,6 +133,7 @@ app.use("/api/lraudio", LRARoutes);
 app.use("/api/lrvideo", LRViRoutes);
 app.use("/api/timeline", LRTimelineRoutes);
 app.use("/api/scratchpad", LRScratchpadRoutes);
+app.use("/api/comment", CommentRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'temp_uploads')));
 
 app.use("/api/report", reportRoutes); // For report generation
