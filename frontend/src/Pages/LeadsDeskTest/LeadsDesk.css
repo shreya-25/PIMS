@@ -47,6 +47,21 @@ body{
   width: 20%;
 }
 
+.down-content
+{
+  display: flex;
+  margin-top: -10px;
+}
+
+.right-sec
+{
+  width: 100%;
+}
+.header-ld
+{
+  margin-top: -50px;
+}
+
 /* .search-button
 {
   width: 30%;
