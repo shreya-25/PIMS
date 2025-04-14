@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
-const Comment = new mongoose.Schema(
+const CommentSchema = new mongoose.Schema(
     {
         leadNo: { type: Number, required: true },
         description: { type: String, required: true },
