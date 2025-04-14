@@ -453,8 +453,8 @@ const handleShowLeadsInRange = () => {
       onClick={() => setExpanded(!expanded)}
     >
       <strong>Chain #{chainIndex + 1}:</strong> {displayedNumbers.join(", ")}{" "}
-      {/* {leadNumbers.length > 2 && (expanded ? "▲" : "▼")} */}
-      {leadNumbers.length > 2 && (expanded ? "" : "")}
+      {leadNumbers.length > 2 && (expanded ? "▲ Expand" : "▼")}
+      {/* {leadNumbers.length > 2 && (expanded ? "" : "")} */}
     </div>
   );
 };

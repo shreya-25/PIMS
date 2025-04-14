@@ -245,6 +245,44 @@ const handleGenerateLead = async () => {
 
     if (response.status === 201) {
       alert("Lead successfully added!");
+
+      const token = localStorage.getItem("token");
+      const notificationPayload = {
+        notificationId: Date.now().toString(), // Use timestamp as a unique ID; customize if needed
+        assignedBy: username, // the logged-in user creates the lead
+        assignedTo: assignedOfficer, // send notification to the selected officers
+        action1: "assigned a new lead related to the case", // action text; change as needed
+        post1: caseDetails.title, // you might want to use the case title or lead summary here
+        leadNo: leadNumber,         // include lead details if desired
+        leadName: leadDescription,      // or leave empty as per your requirements
+        caseNo: caseDetails.id,     // using the case ID
+        caseName: caseDetails.title,
+        caseStatus: "Open",
+        unread: true,
+        accepted: false,
+        time: new Date().toISOString(),
+      };
+
+      // Send notification using axios
+      try {
+        const notifResponse = await axios.post(
+          "http://localhost:5000/api/notifications",
+          notificationPayload,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        console.log("Notification sent successfully:", notifResponse.data);
+      } catch (notifError) {
+        console.error(
+          "Error sending notification:",
+          notifError.response ? notifError.response.data : notifError.message
+        );
+        // Optionally show a user alert or handle notification errors as needed.
+      }
       navigate(-1); // Navigate to Lead Log page
     }
   } catch (error) {
