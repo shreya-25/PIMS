@@ -22,7 +22,11 @@ const createLead = async (req, res) => {
         priority,
         caseName,
         caseNo,
-        accessLevel
+        accessLevel,
+        submittedDate,
+        approvedDate,
+        returnedDate,
+
       } = req.body;
   
       // Pass them directly into the new Lead object
@@ -43,7 +47,10 @@ const createLead = async (req, res) => {
         priority,
         caseName,
         caseNo,
-        accessLevel
+        accessLevel,
+        submittedDate,
+        approvedDate,
+        returnedDate,
       });
   
       await newLead.save();
