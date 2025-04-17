@@ -606,6 +606,66 @@ const handleShowLeadsInRange = () => {
 
     const token = localStorage.getItem("token");
     if (useWebpageSummary) {
+      try {
+        // Build payload. You may adjust the payload structure as required by your backend.
+        const payload = {
+          user: "Officer 916", // Or get from auth context
+          reportTimestamp: new Date().toLocaleString(),
+          // For a full report, pass the entire leadsData and caseSummary.
+          leadsData,
+          caseSummary: typedSummary,
+          // Here, you could also include selectedReports if you want sections toggled.
+          selectedReports: { FullReport: true },
+        };
+        // Call your backend endpoint (adjust the URL if needed)
+        const response = await axios.post(
+          "http://localhost:5000/api/report/generateCase",
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            responseType: "blob", // Expect a PDF blob back
+          }
+        );
+        // Create a blob URL and open in a new tab
+        const file = new Blob([response.data], { type: "application/pdf" });
+        const fileURL = URL.createObjectURL(file);
+        window.open(fileURL, "_blank");
+      } catch (error) {
+        console.error("Failed to generate report", error);
+        alert("Error generating PDF");
+      }
+  }
+
+  else if (useFileUpload && execSummaryFile) {
+    // try {
+    //   const formData = new FormData();
+    //   formData.append("user", "Officer 916");
+    //   formData.append("reportTimestamp", new Date().toLocaleString());
+    //   formData.append("leadsData", JSON.stringify(leadsData));
+    //   // The *file* goes here:
+    //   formData.append("execSummaryFile", execSummaryFile);
+  
+    //   const response = await axios.post(
+    //     "http://localhost:5000/api/report/generateCaseExecSummary",
+    //     formData,
+    //     {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //         "Content-Type": "multipart/form-data",
+    //       },
+    //       responseType: "blob",
+    //     }
+    //   );
+    //   const file = new Blob([response.data], { type: "application/pdf" });
+    //   window.open(URL.createObjectURL(file), "_blank");
+    // } catch (err) {
+    //   console.error("Error generating PDF with upload:", err);
+    //   alert("Failed to generate report with uploaded summary");
+    // }
+
     try {
       // Build payload. You may adjust the payload structure as required by your backend.
       const payload = {
@@ -613,7 +673,6 @@ const handleShowLeadsInRange = () => {
         reportTimestamp: new Date().toLocaleString(),
         // For a full report, pass the entire leadsData and caseSummary.
         leadsData,
-        caseSummary: typedSummary,
         // Here, you could also include selectedReports if you want sections toggled.
         selectedReports: { FullReport: true },
       };
@@ -638,40 +697,7 @@ const handleShowLeadsInRange = () => {
       alert("Error generating PDF");
     }
   }
-
-  else if (useFileUpload && execSummaryFile) {
-    try {
-      // Build payload. You may adjust the payload structure as required by your backend.
-      const payload = {
-        user: "Officer 916", // Or get from auth context
-        reportTimestamp: new Date().toLocaleString(),
-        // For a full report, pass the entire leadsData and caseSummary.
-        leadsData,
-        execSummaryFile: execSummaryFile,
-        selectedReports: { FullReport: true },
-      };
-      // Call your backend endpoint (adjust the URL if needed)
-      const response = await axios.post(
-        "http://localhost:5000/api/report/generateCaseExecSummary",
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          responseType: "blob", // Expect a PDF blob back
-        }
-      );
-      // Create a blob URL and open in a new tab
-      const file = new Blob([response.data], { type: "application/pdf" });
-      const fileURL = URL.createObjectURL(file);
-      window.open(fileURL, "_blank");
-    } catch (error) {
-      console.error("Failed to generate report", error);
-      alert("Error generating PDF");
-    }
-  }
-
+  
   };
 
   
