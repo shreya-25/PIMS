@@ -111,7 +111,7 @@ export const CaseScratchpad = () => {
               Officer Management
             </li> */}
               {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+            <li className="sidebar-item active" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
             </li>)}
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
