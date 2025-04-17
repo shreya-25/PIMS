@@ -9,6 +9,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import Pagination from "../../components/Pagination/Pagination";
+import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
+import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
+
+
 
 
 export const CasePageManager = () => {
@@ -45,6 +49,28 @@ export const CasePageManager = () => {
     const handleNavigation = (route) => {
       navigate(route); // Navigate to respective page
     };
+
+    const [showSelectModal, setShowSelectModal] = useState(false);
+
+const handleNavigateToLeadReturn = () => {
+  // if (!leads.pendingLeadReturns.length) {
+  //   alert("No lead returns available to continue.");
+  //   return;
+  // }
+  setShowSelectModal(true);
+};
+
+const handleSelectLead = (lead) => {
+  setSelectedLead({
+    leadNo: lead.id,
+    leadName: lead.description,
+    caseName: lead.caseName,
+    caseNo: lead.caseNo,
+  });
+
+  setShowSelectModal(false);
+  navigate("/CMInstruction", { state: { caseDetails: selectedCase, leadDetails: lead } });
+};
 
     const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
@@ -721,7 +747,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
             </li>
             <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => navigate('/CMInstruction')} >View Lead Return</li>
+            <li className="sidebar-item"   onClick={handleNavigateToLeadReturn} >View Lead Return</li>
 
 
 <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
@@ -753,9 +779,16 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
 
             <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
 
-       
-
                     </ul>
+
+                    {showSelectModal && (
+      <SelectLeadModal
+        leads={leads.pendingLeadReturns}
+        onSelect={handleSelectLead}
+        onClose={() => setShowSelectModal(false)}
+      />
+    )}
+    
                 </div>
                 <div className="left-content">
 

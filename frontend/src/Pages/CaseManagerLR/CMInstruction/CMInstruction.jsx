@@ -16,14 +16,14 @@ export const CMInstruction = () => {
       const [error, setError] = useState("");
     
         const { caseDetails, leadDetails } = location.state || {};
-        console.log(caseDetails, leadDetails);
+        console.log("check", caseDetails, leadDetails);
 
 
         const handleLRClick = () => {
           navigate("/CMReturn", { state: {caseDetails, leadDetails } });
         };
 
-          const { selectedCase, selectedLead, setSelectedLead, leadInstructions, setLeadInstructions } = useContext(CaseContext);
+          const { selectedCase, selectedLead, setSelectedLead,setSelectedCase, leadInstructions, setLeadInstructions } = useContext(CaseContext);
 
           const formatDate = (dateString) => {
             if (!dateString) return "";
@@ -34,6 +34,7 @@ export const CMInstruction = () => {
             const year = date.getFullYear().toString().slice(-2);
             return `${month}/${day}/${year}`;
           };
+          console.log("Case Context", selectedCase, selectedLead);
 
   
   const [leadData, setLeadData] = useState({
@@ -127,6 +128,23 @@ export const CMInstruction = () => {
     fetchLeadData();
   }, [selectedLead, setLeadInstructions]);
 
+  useEffect(() => {
+    if (caseDetails && leadDetails) {
+  
+      setSelectedLead({
+        leadNo: leadDetails.leadNo,
+        leadName: leadDetails.leadName,
+        caseNo: leadDetails.caseNo,
+        caseName: leadDetails.caseName,
+      });
+      setSelectedCase({
+        caseNo: caseDetails.caseNo,
+        caseName: caseDetails.caseName,
+      });
+    }
+  }, [leadDetails, caseDetails, setSelectedLead, setSelectedCase]);
+  
+
   const handleGenerateLead = () => {
     const { leadNumber, leadSummary, assignedDate, assignedOfficer, assignedBy } = leadData;
   
@@ -214,7 +232,7 @@ export const CMInstruction = () => {
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
             <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
@@ -324,7 +342,7 @@ export const CMInstruction = () => {
       <tr>
 
         <th style={{ width: "10%" }}>Lead No.</th>
-          <th style={{ width: "10%" }}>Incident No.</th>
+          <th style={{ width: "10%" }}>Case No.</th>
           <th style={{ width: "10%" }}>Subnumber</th>
           <th style={{ width: "8%" }}>Assigned Date</th>
       </tr>
@@ -332,7 +350,7 @@ export const CMInstruction = () => {
       <tbody>
       <tr>
       <td>{selectedLead.leadNo} </td>
-        <td>{leadData.incidentNo}</td>
+        <td>{leadData.caseNo}</td>
         <td>{leadData.subNumber}</td>
         <td>{formatDate(leadData.assignedDate)} </td>
 

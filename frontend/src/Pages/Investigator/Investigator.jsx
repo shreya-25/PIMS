@@ -9,6 +9,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import Pagination from "../../components/Pagination/Pagination";
+import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 
 
 export const Investigator = () => {
