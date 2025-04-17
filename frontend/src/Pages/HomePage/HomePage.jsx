@@ -138,12 +138,25 @@ const handleCaseClick = (caseDetails) => {
 
   // Navigate to the appropriate page based on role
   if (caseDetails.role === "Investigator") {
+    localStorage.setItem("role", "Investigator");
+    setSelectedCase({
+      caseNo: caseDetails.id,
+      caseName: caseDetails.title,
+      role: caseDetails.role
+    });
     navigate("/Investigator", { state: { caseDetails } });
   } else if (caseDetails.role === "Case Manager") {
+    localStorage.setItem("role", "Case Manager");
+    setSelectedCase({
+      caseNo: caseDetails.id,
+      caseName: caseDetails.title,
+      role: caseDetails.role
+    });
     navigate("/CasePageManager", { state: { caseDetails } });
   }
 };
 
+console.log(localStorage);
 
 
 const handleLRClick = (lead) => {
