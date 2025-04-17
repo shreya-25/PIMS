@@ -681,7 +681,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
        
                                  {/* Lead Management Dropdown */}
 
-
+                                 <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
                                  <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
                                  <li className="sidebar-item active" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
           Case Page {leadDropdownOpen ?  "▲": "▼"}
@@ -719,9 +719,9 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
 <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
               New Lead
             </li>
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" >View Lead Return</li>
-            <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
+            <li className="sidebar-item" onClick={() => navigate('/CMInstruction')} >View Lead Return</li>
 
 
 <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
@@ -748,8 +748,10 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
             {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
 
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>
+
+            <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
 
        
 
