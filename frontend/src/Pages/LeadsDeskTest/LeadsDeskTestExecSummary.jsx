@@ -7,6 +7,7 @@ import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import PersonModal from "../../components/PersonModal/PersonModel";
 import CaseHeaderSection from "../../components/CaseHeaderSection/CaseHeaderSection";
+import ReactQuill from "react-quill";
 
 import ExecSummaryModal from "../../components/ExecSummaryModal/ExecSummaryModal";
 import VehicleModal from "../../components/VehicleModal/VehicleModel";
@@ -460,7 +461,7 @@ const handleShowLeadsInRange = () => {
   //   setIsEditing(false);
   //   alert("Report Saved!");
   // };
-
+  const [value, setValue] = useState("");
   const handleSearch = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -1079,7 +1080,7 @@ const handleShowLeadsInRange = () => {
 </div>
 {/* ===== End New Options ===== */}
 
-
+{/* <ReactQuill theme="snow" value={value} onChange={setValue} /> */}
 {/* now your main textarea becomes your “webpage” input */}
 <textarea
   className="summary-input"
