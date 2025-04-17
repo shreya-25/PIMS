@@ -50,7 +50,7 @@ const Case = require("../models/case");
 
 exports.createCase = async (req, res) => {
     try {
-        const { caseNo, caseName, caseSummary, selectedOfficers, username } = req.body;
+        const { caseNo, caseName, caseSummary, selectedOfficers, username, executiveCaseSummary } = req.body;
 
         // ✅ Ensure `username` is provided
         if (!username) {
@@ -90,6 +90,7 @@ exports.createCase = async (req, res) => {
             caseNo,
             caseName,
             caseSummary,
+            executiveCaseSummary,
             assignedOfficers,  // Now contains Case Manager + Investigators
             caseStatus: "Ongoing" // Default status
         });
@@ -309,4 +310,67 @@ exports.rejectCase = async (req, res) => {
     }
   };
   
+  
+exports.updateExecutiveCaseSummary = async (req, res) => {
+  try {
+    const { caseNo, caseName, executiveCaseSummary } = req.body;
+
+    // Validate inputs
+    if (
+        typeof caseNo !== "string" ||
+        caseNo.trim() === "" ||
+        typeof caseName !== "string" ||
+        caseName.trim() === "" ||
+        typeof executiveCaseSummary !== "string"
+      ) {
+        return res.status(400).json({
+          message:
+            "caseNo (string), caseName (string) and executiveCaseSummary (string) are all required",
+        });
+      }
+
+    // Find the case by its caseNo + caseName
+    const existingCase = await Case.findOne({ caseNo, caseName });
+    if (!existingCase) {
+      return res.status(404).json({ message: "Case not found" });
+    }
+
+    // Update the executive summary field
+    existingCase.executiveCaseSummary = executiveCaseSummary;
+    await existingCase.save();
+
+    return res.status(200).json({
+      message: "Executive case summary updated successfully",
+      data: existingCase,
+    });
+  } catch (err) {
+    console.error("Error updating executive case summary:", err);
+    return res
+      .status(500)
+      .json({ message: "Error updating summary", error: err.message });
+  }
+};
+
+// controllers/caseController.js
+
+// GET /api/cases/executive-summary/:caseNo
+exports.getExecutiveCaseSummary = async (req, res) => {
+    try {
+      const { caseNo } = req.params;
+      if (!caseNo) {
+        return res.status(400).json({ message: "caseNo is required" });
+      }
+      const caseDoc = await Case.findOne({ caseNo });
+      if (!caseDoc) {
+        return res.status(404).json({ message: "Case not found" });
+      }
+      return res.status(200).json({
+        caseNo: caseDoc.caseNo,
+        executiveCaseSummary: caseDoc.executiveCaseSummary || "",
+      });
+    } catch (err) {
+      console.error("Error fetching executive summary:", err);
+      return res.status(500).json({ message: "Server error", error: err.message });
+    }
+  };
   

@@ -1508,7 +1508,7 @@ const addCase = (newCase) => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" style={{ textAlign: 'center' }}>
+                    <td colSpan="4" style={{ textAlign: 'center' }}>
                       No Pending Lead Returns Available
                     </td>
                   </tr>

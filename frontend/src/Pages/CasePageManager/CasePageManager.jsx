@@ -1090,7 +1090,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
            ))
           ) : (
             <tr>
-              <td colSpan="7" style={{ textAlign: 'center' }}>
+              <td colSpan="8" style={{ textAlign: 'center' }}>
                 No Assigned Leads Available
               </td>
             </tr>

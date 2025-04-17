@@ -2038,7 +2038,6 @@ async function mergeWithWordFileAtStart(pdfKitBuffer, wordPdfPath) {
 async function generateCaseReportwithExecSummary(req, res) {
   const { user, reportTimestamp, leadsData, caseSummary, selectedReports } = req.body;
   const includeAll = selectedReports && selectedReports.FullReport;
-
   try {
     // Create the PDFDocument instance.
     const doc = new PDFDocument({ size: "LETTER", margins: { top: 0, bottom: 0, left: 50, right: 50 }});
@@ -2099,11 +2098,11 @@ async function generateCaseReportwithExecSummary(req, res) {
 
     // ---------- (Optional) Case Summary Block ----------
     // Uncomment to include a case summary
-    // if (caseSummary) {
-    //   doc.font("Helvetica-Bold").fontSize(11).text("Case Summary:", 50, currentY);
-    //   currentY += 20;
-    //   currentY = drawTextBox(doc, 50, currentY, 512, "", caseSummary);
-    // }
+    if (caseSummary) {
+      doc.font("Helvetica-Bold").fontSize(11).text("Executive Case Summary:", 50, currentY);
+      currentY += 20;
+      currentY = drawTextBox(doc, 50, currentY, 512, "", caseSummary);
+    }
 
     // ---------- Iterate Over Leads ----------
     if (leadsData && leadsData.length > 0) {

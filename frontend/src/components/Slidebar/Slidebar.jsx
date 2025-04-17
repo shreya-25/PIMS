@@ -11,6 +11,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
     managerName: "",
     investigators: [], // Store selected investigators
     summary: "",
+    executiveCaseSummary:"",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -127,6 +128,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
       caseName: caseDetails.title,
       role: "Case Manager",
       caseSummary: caseDetails.summary,
+      executiveCaseSummary: caseDetails.executiveCaseSummary,
       username: caseDetails.managerName,
       selectedOfficers: caseDetails.investigators.map((name) => ({ name })),
     };
@@ -177,6 +179,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
         managerName: "",
         investigators: [],
         summary: "",
+        executiveCaseSummary: "",
         status: "Ongoing"
       });
   
