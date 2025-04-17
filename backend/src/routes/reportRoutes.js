@@ -6,6 +6,9 @@ const { generateCaseReport } = require("../controller/leadreportCaseController .
 const { generateCaseReportwithExecSummary } = require("../controller/leadreportCaseControllerExecSummary.js");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
+const getUploadMiddleware = require("../middleware/upload");
+const upload = require("../middleware/upload-disk");
+
 
 const router = express.Router();
 
@@ -14,10 +17,18 @@ router.post("/generate", verifyToken, roleMiddleware("CaseManager"), generateRep
 
 router.post("/generateCase", verifyToken, roleMiddleware("CaseManager"), generateCaseReport);
 
-router.post("/generateCaseExecSummary", verifyToken, roleMiddleware("CaseManager"), generateCaseReportwithExecSummary);
+// router.post("/generateCaseExecSummary", verifyToken, roleMiddleware("CaseManager"), generateCaseReportwithExecSummary);
 
 // New test route (no authentication) for testing PDF download
 // For testing purposes, the route is GET, not POST and also the URL is http://localhost:5000/api/report/test
 // router.get("/test", generateTestReport);
+
+router.post(
+  "/generateCaseExecSummary",
+  verifyToken,
+//   upload.single("execSummaryFile"),
+ generateCaseReportwithExecSummary
+);
+
 
 module.exports = router;
