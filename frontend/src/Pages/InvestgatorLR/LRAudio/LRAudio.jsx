@@ -312,11 +312,11 @@ export const LRAudio = () => {
            <table className="leads-table">
           <thead>
             <tr>
-              <th>Date Entered</th>
-              <th> Associated Return Id </th>
+              <th style={{ width: "11%" }}>Date Entered</th>
+              <th style={{ width: "10%" }}>Return Id </th>
               <th>Date Audio Recorded</th>
               <th>Description</th>
-              <th></th>
+              <th style={{ width: "13%" }}></th>
             </tr>
           </thead>
           <tbody>
@@ -350,7 +350,7 @@ export const LRAudio = () => {
             ))}
           </tbody>
         </table>
-        <Comment/>
+        <Comment tag="Audio" />
       </div>
       </div>
 

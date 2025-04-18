@@ -44,20 +44,20 @@ export const CMTimeline = () => {
     };
   
   const [timelineEntries, setTimelineEntries] = useState([
-    {
-      date: '01/01/24',
-      timeRange: '10:30 AM - 12:00 PM',
-      location: '123 Main St, NY',
-      description: 'Suspect spotted leaving crime scene',
-      flags: ['High Priority'],
-    },
-    {
-      date: '01/05/24',
-      timeRange: '2:00 PM - 3:30 PM',
-      location: '456 Elm St, CA',
-      description: 'Suspect was going to the airport',
-      flags: [],
-    },
+    // {
+    //   date: '01/01/24',
+    //   timeRange: '10:30 AM - 12:00 PM',
+    //   location: '123 Main St, NY',
+    //   description: 'Suspect spotted leaving crime scene',
+    //   flags: ['High Priority'],
+    // },
+    // {
+    //   date: '01/05/24',
+    //   timeRange: '2:00 PM - 3:30 PM',
+    //   location: '456 Elm St, CA',
+    //   description: 'Suspect was going to the airport',
+    //   flags: [],
+    // },
   ]);
 
   const [newEntry, setNewEntry] = useState({
@@ -107,6 +107,17 @@ export const CMTimeline = () => {
     setTimelineEntries(updatedEntries);
   };
 
+  const formatTime = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    let h = d.getHours(), m = d.getMinutes();
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    m = m.toString().padStart(2, "0");
+    return `${h}:${m} ${ampm}`;
+  };
+  
+
   const handleEditEntry = (index) => {
     const entryToEdit = timelineEntries[index];
     setNewEntry({
@@ -136,6 +147,49 @@ export const CMTimeline = () => {
                     if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
                     return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
                 };
+
+  // Fetch enclosures from backend when component mounts or when selectedLead/selectedCase update
+  useEffect(() => {
+    const fetchTimeline = async () => {
+      if (!selectedLead?.leadNo || !selectedCase?.caseNo) {
+        console.warn("Missing selected lead or case");
+        setTimelineEntries([]);
+        return;
+      }
+  
+      try {
+        const token = localStorage.getItem("token");
+        const leadNo   = selectedLead.leadNo;
+        const leadName = encodeURIComponent(selectedLead.leadName);
+        const caseNo   = encodeURIComponent(selectedCase.caseNo);
+        const caseName =
+          encodeURIComponent(selectedLead.caseName || selectedCase.caseName);
+  
+        const { data } = await axios.get(
+          `http://localhost:5000/api/timeline/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+  
+        const arr = Array.isArray(data) ? data : [];
+        const normalized = arr.map((e) => ({
+          date:        formatDate(e.eventDate),
+          returnId:   e.leadReturnId,
+          timeRange:   `${formatTime(e.eventStartTime)} - ${formatTime(e.eventEndTime)}`,
+          location:    e.eventLocation,
+          description: e.eventDescription,
+          flags:       Array.isArray(e.timelineFlag) ? e.timelineFlag : [],
+        }));
+  
+        setTimelineEntries(normalized);
+  
+      } catch (err) {
+        console.error("Error fetching timeline:", err);
+      }
+    };
+  
+    fetchTimeline();
+  }, [selectedLead, selectedCase]);
+  
 
   return (
     <div className="timeline-container">
@@ -262,10 +316,10 @@ export const CMTimeline = () => {
             <thead>
               <tr>
                 <th style={{ width: "9%" }}>Event Date</th>
+                <th style={{ width: "10%" }}>Return ID</th>
                 <th style={{ width: "15%" }}>Event Time Range</th>
                 <th style={{ width: "13%" }}>Event Location</th>
                 <th>Event Description</th>
-                <th style={{ width: "10%" }}>Flags</th>
                 <th style={{ width: "14%" }}>Access</th>
                 <th style={{ width: "14%" }}>Additional Details</th>
 
@@ -273,13 +327,20 @@ export const CMTimeline = () => {
             </thead>
             <tbody>
               {timelineEntries.length > 0 ? (
-                timelineEntries.map((entry, index) => (
-                  <tr key={index}>
+                timelineEntries.map((entry, i) => (
+                  <tr key={i}>
                     <td>{entry.date}</td>
+                    <td>{entry.returnId}</td>
                     <td>{entry.timeRange}</td>
                     <td>{entry.location}</td>
                     <td>{entry.description}</td>
-                    <td>{entry.flags.join(', ')}</td>
+                     {/* <td>{formatDate(e.eventDate)}</td>
+      <td>
+        {`${formatTime(e.eventStartTime)} - ${formatTime(e.eventEndTime)}`}
+      </td>
+      <td>{e.eventLocation}</td>
+      <td>{e.eventDescription}</td>
+      <td>{(e.timelineFlag || []).join(", ")}</td> */}
                     <td>
         <select
           value={ "Case Manager"}

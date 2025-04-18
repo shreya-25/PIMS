@@ -312,13 +312,13 @@ export const CMVehicle = () => {
           <thead>
             <tr>
               <th style={{ width: "10%" }}>Date Entered</th>
-              <th style={{ width: "16%" }}>Associated Return ID</th>
+              <th style={{ width: "9%" }}>Return ID</th>
               {/* <th>Year</th> */}
               <th>Make</th>
               <th>Model</th>
               <th>Color</th>
               <th>State</th>
-              <th style={{ width: "14%" }}>Access</th>
+              <th style={{ width: "15%" }}>Access</th>
               <th style={{ width: "15%" }}>Additional Details</th>
               {/* <th></th> */}
             </tr>

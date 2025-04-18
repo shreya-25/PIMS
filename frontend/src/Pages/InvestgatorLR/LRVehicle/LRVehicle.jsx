@@ -229,7 +229,7 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
         year: vehicle.year,
         make: vehicle.make,
         model: vehicle.model,
-        color: vehicle.primaryColor || "Gray",
+        color: vehicle.primaryColor,
         vin: vehicle.vin,
         plate: vehicle.plate,
         state: vehicle.state,
@@ -347,19 +347,19 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
         <div className = "timeline-form-sec">
         <div className="vehicle-form">
           <div className="form-row4">
-            <label>Year:</label>
+          <label>Return Id*</label>
             <input
               type="text"
-              value={vehicleData.year}
-              onChange={(e) => handleChange('year', e.target.value)}
+              value={vehicleData.leadReturnId}
+              onChange={(e) => handleChange('leadReturnId', e.target.value)}
             />
-            <label>Make:</label>
+            <label>Entered Date*</label>
             <input
               type="text"
-              value={vehicleData.make}
-              onChange={(e) => handleChange('make', e.target.value)}
+              value= {formatDate(new Date().toISOString())}
+              onChange={(e) => handleChange('enteredDate', e.target.value)}
             />
-            <label>Model:</label>
+            <label>Model</label>
             <input
               type="text"
               value={vehicleData.model}
@@ -374,19 +374,19 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
             /> */}
           
           <div className="form-row4">
-            <label>Plate:</label>
+            <label>Plate</label>
             <input
               type="text"
               value={vehicleData.plate}
               onChange={(e) => handleChange('plate', e.target.value)}
             />
-            <label>Category:</label>
+            <label>Category</label>
             <input
               type="text"
               value={vehicleData.category}
               onChange={(e) => handleChange('category', e.target.value)}
             />
-            <label>Type:</label>
+            <label>Type</label>
             <input
               type="text"
               value={vehicleData.type}
@@ -394,43 +394,51 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
             />
           </div>
           <div className="form-row4">
-            <label>VIN:</label>
+            <label>VIN</label>
             <input
               type="text"
               value={vehicleData.vn}
               onChange={(e) => handleChange('vn', e.target.value)}
             />
-            <label>Primary Color:</label>
+             <label>Year</label>
             <input
               type="text"
-              value={vehicleData.primaryColor}
-              onChange={(e) => handleChange('primaryColor', e.target.value)}
+              value={vehicleData.year}
+              onChange={(e) => handleChange('year', e.target.value)}
             />
-            <label>Second Color:</label>
+            <label>Make</label>
             <input
               type="text"
-              value={vehicleData.secondaryColor}
-              onChange={(e) => handleChange('secondaryColor', e.target.value)}
+              value={vehicleData.make}
+              onChange={(e) => handleChange('make', e.target.value)}
             />
+           
           </div>
-        </div>
-        <div className="vehicle-form">
-          <div className="form-row2">
-            <label>State:</label>
+          <div className="form-row4">
+          <label>State</label>
             <input
               type="text"
               value={vehicleData.state}
               onChange={(e) => handleChange('state', e.target.value)}
             />
-            <label>Lead Return Id:</label>
+             <label>Main Color</label>
             <input
               type="text"
-              value={vehicleData.leadReturnId}
-              onChange={(e) => handleChange('leadReturnId', e.target.value)}
+              value={vehicleData.primaryColor}
+              onChange={(e) => handleChange('primaryColor', e.target.value)}
             />
+            <label>Second Color</label>
+            <input
+              type="text"
+              value={vehicleData.secondaryColor}
+              onChange={(e) => handleChange('secondaryColor', e.target.value)}
+            />
+           
           </div>
+        </div>
+        <div className="vehicle-form">
           <div className="form-row1">
-            <label>Information:</label>
+            <label>Information</label>
             <textarea
               value={vehicleData.information}
               onChange={(e) => handleChange('information', e.target.value)}
@@ -464,13 +472,12 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
             <tr>
               <th style={{ width: "12%" }}>Date Entered</th>
               <th style={{ width: "10%" }}>Return Id</th>
-              <th>Year</th>
               <th>Make</th>
               <th>Model</th>
               <th>Color</th>
               <th>State</th>
               <th style={{ width: "15%" }}>Additional Details</th>
-              <th style={{ width: "12%" }}></th>
+              <th style={{ width: "14%" }}></th>
             </tr>
           </thead>
           <tbody>
@@ -478,7 +485,6 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
       <tr key={index}>
         <td>{vehicle.dateEntered}</td>
         <td>{vehicle.returnId}</td>
-        <td>{vehicle.year}</td>
         <td>{vehicle.make}</td>
         <td>{vehicle.model}</td>
         <td style={{ textAlign: 'center' }}>

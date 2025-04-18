@@ -149,6 +149,16 @@ app.get('/test', (req, res) => {
     res.send({ message: 'Server is still alive!' });
   });
 
+  // in your server.js (or wherever you mount express.static)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.pdf')) {
+      res.setHeader('Content-Disposition', 'inline; filename="' + path.basename(filePath) + '"');
+    }
+  }
+}));
+
+
 
 // Log MongoDB connection string (for debugging, remove in production)
 console.log(process.env.MONGO_URI);
