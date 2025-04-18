@@ -368,9 +368,11 @@ export const LRPerson = () => {
 
       {/* Bottom Buttons */}
       <div className="bottom-buttons">
-      <button onClick={() => handleNavigation('/LRPerson1')} className="save-btn1">Add Person</button>
+      <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+      onClick={() => handleNavigation('/LRPerson1')} className="save-btn1">Add Person</button>
       </div>
-      <Comment/>
+      <Comment tag = "person"/>
 </div>
 </div>
       <FootBar

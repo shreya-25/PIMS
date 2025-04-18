@@ -457,7 +457,9 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
         </div>
         {/* Buttons */}
         <div className="form-buttons">
-        <button className="save-btn1" onClick={handleAddVehicle}>
+        <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+        className="save-btn1" onClick={handleAddVehicle}>
             Add Vehicle
           </button>
           {/* <button className="back-btn">Back</button>
@@ -522,7 +524,8 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
   />
   <td>
                   <div classname = "lr-table-btn">
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
@@ -530,7 +533,8 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
                   // onClick={() => handleEditReturn(ret)}
                 />
                   </button>
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
