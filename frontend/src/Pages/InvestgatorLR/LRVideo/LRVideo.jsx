@@ -248,7 +248,7 @@ export const LRVideo = () => {
         <h4 className="evidence-form-h4">Enter Video Details</h4>
         <div className="video-form">
           <div className="form-row-video">
-            <label className="evidence-head">Date Video Recorded:</label>
+            <label className="evidence-head">Date Video Recorded*</label>
             <input
               type="date"
               value={videoData.dateVideoRecorded}
@@ -257,7 +257,7 @@ export const LRVideo = () => {
             />
           </div>
           <div className="form-row-video">
-            <label className="evidence-head">Lead Return Id:</label>
+            <label className="evidence-head">Lead Return Id*</label>
             <input
               type="text"
               value={videoData.leadReturnId}
@@ -266,7 +266,7 @@ export const LRVideo = () => {
             />
           </div>
           <div className="form-row-video">
-            <label className="evidence-head">Description:</label>
+            <label className="evidence-head">Description*</label>
             <textarea
               value={videoData.description}
               className="evidence-head"
@@ -274,7 +274,7 @@ export const LRVideo = () => {
             ></textarea>
           </div>
           <div className="form-row-video">
-            <label className="evidence-head">Upload Video:</label>
+            <label className="evidence-head">Upload Video*</label>
             <input type="file" accept="video/*" className="evidence-head" onChange={handleFileChange} />
           </div>
         </div>

@@ -284,21 +284,21 @@ export const LREvidence = () => {
         <h4 className="evidence-form-h4">Enter Evidence Details</h4>
         <div className="evidence-form">
           <div className="form-row-evidence">
-            <label  className="evidence-head">Collection Date:</label>
+            <label  className="evidence-head">Collection Date</label>
             <input
               type="date"
               value={evidenceData.collectionDate}
              
               onChange={(e) => handleInputChange("collectionDate", e.target.value)}
             />
-            <label className="evidence-head">Disposed Date:</label>
+            <label className="evidence-head">Disposed Date</label>
             <input
               type="date"
               value={evidenceData.disposedDate}
             
               onChange={(e) => handleInputChange("disposedDate", e.target.value)}
             />
-            <label className="evidence-head">Return Id:</label>
+            <label className="evidence-head">Return Id*</label>
             <input
               type="leadReturnId"
               value={evidenceData.leadReturnId}
@@ -307,7 +307,7 @@ export const LREvidence = () => {
             />
           </div>
           <div className="form-row-evidence">
-            <label className="evidence-head">Type:</label>
+            <label className="evidence-head">Type</label>
             <input
               type="text"
               value={evidenceData.type}
@@ -316,14 +316,14 @@ export const LREvidence = () => {
             />
           </div>
           <div className="form-row-evidence">
-            <label className="evidence-head">Disposition:</label>
+            <label className="evidence-head">Disposition</label>
             <textarea
               value={evidenceData.disposition}
               onChange={(e) => handleInputChange("disposition", e.target.value)}
             ></textarea>
           </div>
           <div className="form-row-evidence">
-            <label>Upload File:</label>
+            <label>Upload File*</label>
             <input type="file" onChange={handleFileChange} />
           </div>
         </div>
