@@ -432,7 +432,7 @@ export const LRTimeline = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7">No timelines found during investigation.</td>
+                  <td colSpan="6">No timelines found during investigation.</td>
                 </tr>
               )}
             </tbody>

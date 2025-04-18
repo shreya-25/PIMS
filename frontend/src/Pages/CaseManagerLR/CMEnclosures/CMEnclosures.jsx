@@ -273,7 +273,7 @@ export const CMEnclosures = () => {
               </tr>
             ))) : (
               <tr>
-                <td colSpan="4" style={{ textAlign: 'center' }}>
+                <td colSpan="5" style={{ textAlign: 'center' }}>
                   No Enclosures Available
                 </td>
               </tr>)}
