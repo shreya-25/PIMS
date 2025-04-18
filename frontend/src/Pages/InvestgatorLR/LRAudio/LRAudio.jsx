@@ -257,7 +257,7 @@ export const LRAudio = () => {
         <h4 className="evidence-form-h4">Enter Audio Details</h4>
         <div className="audio-form">
           <div className="form-row-audio">
-            <label className="evidence-head">Date Audio Recorded:</label>
+            <label className="evidence-head">Date Audio Recorded*</label>
             <input
               type="date"
               value={audioData.dateAudioRecorded}
@@ -266,7 +266,7 @@ export const LRAudio = () => {
             />
           </div>
           <div className="form-row-audio">
-            <label className="evidence-head">Lead Return Id:</label>
+            <label className="evidence-head">Return Id*</label>
             <input
               type="text"
               value={audioData.leadReturnId}
@@ -275,7 +275,7 @@ export const LRAudio = () => {
             />
           </div>
           <div className="form-row-audio">
-            <label className="evidence-head">Description:</label>
+            <label className="evidence-head">Description</label>
             <textarea
               value={audioData.description}
               className="evidence-head"
@@ -283,7 +283,7 @@ export const LRAudio = () => {
             ></textarea>
           </div>
           <div className="form-row-audio">
-            <label className="evidence-head">Upload Audio:</label>
+            <label className="evidence-head">Upload Audio*</label>
             
             <input type="file" accept="audio/*" className="evidence-head" onChange={handleFileChange} />
           </div>
