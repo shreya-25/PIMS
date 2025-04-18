@@ -36,9 +36,35 @@ useEffect(() => {
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+    const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
+    const isDisabled = leadStatus === "In Review" || leadStatus === "Completed";
+
   
-  
+    useEffect(() => {
+      const fetchLeadStatus = async () => {
+        try {
+          const token = localStorage.getItem("token");
+    
+          const response = await axios.get(
+            `http://localhost:5000/api/lead/${selectedLead?.leadNo}/${selectedCase?.caseNo}`,
+            {
+              headers: { Authorization: `Bearer ${token}` }
+            }
+          );
+    
+          const status = response.data.leadStatus;
+          setLeadStatus(status); // ✅ Store in context
+          setLoading(false);
+        } catch (err) {
+          console.error("Failed to fetch lead status", err);
+          setError("Could not load lead status");
+        }
+      };
+    
+      if (selectedLead?.leadNo && selectedCase?.caseNo) {
+        fetchLeadStatus();
+      }
+    }, [selectedLead, selectedCase, leadStatus, setLeadStatus]);
 
   // Sample returns data
   const [returns, setReturns] = useState([
@@ -48,6 +74,7 @@ useEffect(() => {
 
   ]);
 
+  console.log("Lead Status from context:", leadStatus);
   
 
   useEffect(() => {
@@ -87,7 +114,14 @@ useEffect(() => {
 
 
   // State for managing form input
-  const [returnData, setReturnData] = useState({ results: "" });
+
+  const [returnData, setReturnData] = useState({
+    results: "",
+    leadReturnId: "",
+    enteredDate: todayDate,
+    enteredBy: username
+  });
+  
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
 
@@ -199,59 +233,80 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
     const token = localStorage.getItem("token");
   
     try {
-      // Fetch existing lead returns to determine the next ID
-      const response = await axios.get(`http://localhost:5000/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
-        selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-    
+      if (editMode && editId) {
+        // Update existing return
+        const updateData = { leadReturnResult: returnData.results };
+        const response = await axios.patch(
+          `http://localhost:5000/api/leadReturnResult/update/${selectedLead.leadNo}/${selectedLead.caseNo}/${editId}`,
+          updateData,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
   
-      const existingReturns = response.data || [];
-      console.log("data existing", response.data);
-      
-      // Determine the next sequential leadReturnId
-      const nextLeadReturnId = existingReturns.length + 1;
-      // Fetch the latest assignedTo and assignedBy from the most recent return
-    const latestReturn = existingReturns.length > 0 ? existingReturns[existingReturns.length - 1] : null;
+        const updatedReturn = response.data;
+        const updatedList = returns.map((ret) =>
+          ret.leadReturnId === editId ? updatedReturn : ret
+        );
+        setReturns(updatedList);
+        setEditMode(false);
+        setEditId(null);
+      } else {
+        // Add new return
+        const response = await axios.get(`http://localhost:5000/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
+          selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+  
+        const existingReturns = response.data || [];
+        const latestReturn = existingReturns.length > 0 ? existingReturns[existingReturns.length - 1] : null;
+  
+        const assignedTo = latestReturn ? latestReturn.assignedTo : { assignees: [officerName], lRStatus: "Pending" };
+        const assignedBy = latestReturn ? latestReturn.assignedBy : { assignee: officerName, lRStatus: "Pending" };
+  
+        const nextNumericId = maxReturnId + 1;
+        const newReturnId = numberToAlphabet(nextNumericId);
 
-    const assignedTo = latestReturn ? latestReturn.assignedTo : { assignees: [officerName], lRStatus: "Pending" };
-    const assignedBy = latestReturn ? latestReturn.assignedBy : { assignee: officerName, lRStatus: "Pending" };
+        const newReturn = {
+          leadNo: selectedLead?.leadNo,
+          description: selectedLead?.leadName,
+          enteredDate: new Date().toISOString(),
+          enteredBy: officerName,
+          caseName: selectedLead?.caseName,
+          caseNo: selectedLead?.caseNo,
+          leadReturnId: newReturnId,
+          leadReturnResult: returnData.results,
+          assignedTo,
+          assignedBy,
+        };
+  
+        const createResponse = await axios.post(
+          "http://localhost:5000/api/leadReturnResult/create",
+          newReturn,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+  
+      //   setReturns([...existingReturns, createResponse.data]);
+      // }
+  
+      // setReturnData({ results: "" });
+      // Update return list and maxReturnId
+  const updatedReturns = [...returns, createResponse.data];
+  setReturns(updatedReturns);
+  setMaxReturnId(nextNumericId); // <- update the counter
 
-  
-      const newReturn = {
-        leadNo: selectedLead?.leadNo,
-        description: selectedLead?.leadName,
-        enteredDate: new Date().toISOString(),
-        enteredBy: officerName,
-        caseName: selectedLead?.caseName,
-        caseNo: selectedLead?.caseNo,
-        leadReturnId: nextReturnId, // Sequentially generated ID
-        leadReturnResult: returnData.results,
-        assignedTo,
-        assignedBy,
-      };
-
-      console.log("New return created:", newReturn);
-  
-      // Send a POST request to create a new return
-      const createResponse = await axios.post(
-        "http://localhost:5000/api/leadReturnResult/create",
-        newReturn,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-  
-      console.log("New return created:", createResponse.data);
-  
-      // Update the local state with the new return
-      setReturns([...existingReturns, createResponse.data]);
-  
-      // Reset input field
-      setReturnData({ results: "" });
+  // Update the next ID in the return form
+  setReturnData({
+    results: "",
+    leadReturnId: numberToAlphabet(nextNumericId + 1),
+    enteredDate: todayDate,
+    enteredBy: username
+  });
+}
     } catch (err) {
-      console.error("Error creating return:", err);
-      alert("Failed to add return. Please try again.");
+      console.error("Error saving return:", err);
+      alert("Failed to save return. Please try again.");
     }
   };
+  
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -263,16 +318,40 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
   };
   
   const handleEditReturn = (ret) => {
-    setReturnData({ results: ret.results });
+    setReturnData({ results: ret.leadReturnResult,
+      leadReturnId: ret.leadReturnId,
+      enteredDate: formatDate(ret.enteredDate),
+      enteredBy: ret.enteredBy });
     setEditMode(true);
-    setEditId(ret.id);
+    setEditId(ret.leadReturnId);
   };
 
-  const handleDeleteReturn = (id) => {
-    if (window.confirm("Are you sure you want to delete this return?")) {
-      setReturns(returns.filter((ret) => ret.id !== id));
+  // setReturnData({
+  //   results: "",
+  //   leadReturnId: nextReturnId,
+  //   enteredDate: todayDate,
+  //   enteredBy: username
+  // });
+  
+  
+
+  const handleDeleteReturn = async (leadReturnId) => {
+    if (!window.confirm("Are you sure you want to delete this return?")) return;
+  
+    const token = localStorage.getItem("token");
+  
+    try {
+      await axios.delete(`http://localhost:5000/api/leadReturnResult/delete/${selectedLead.leadNo}/${selectedLead.caseNo}/${leadReturnId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+  
+      setReturns((prev) => prev.filter((ret) => ret.leadReturnId !== leadReturnId));
+    } catch (err) {
+      console.error("Error deleting return:", err);
+      alert("Failed to delete return.");
     }
   };
+  
 
   const handleNavigation = (route) => {
     navigate(route);
@@ -372,27 +451,17 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
 
       <div className="form-row4">
             <label>Return Id*</label>
-            <input
-                      type="text"
-                      value={nextReturnId}
-                      readOnly
-                    />
+            <input type="text" value={returnData.leadReturnId || nextReturnId} readOnly />
           </div>
           <div className="form-row4">
             <label>Date Entered*</label>
-            <input
-                      type="text"
-                      value={todayDate}
-                      readOnly
-                    />
+            <input type="text" value={returnData.enteredDate || todayDate} readOnly />
+
           </div>
           <div className="form-row4">
             <label>Entered By*</label>
-            <input
-                      type="text"
-                      value={username}
-                      readOnly
-                    />
+            <input type="text" value={returnData.enteredBy || username} readOnly />
+
           </div>
         </div>
         
@@ -414,7 +483,9 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
       </div>
 
       <div className="form-buttons-return">
-        <button className="save-btn1" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Return"}</button>
+      <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+        className="save-btn1" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Return"}</button>
         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
@@ -440,7 +511,7 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
               <td>{ret.leadReturnResult}</td>
                 <td>
                   <div classname = "lr-table-btn">
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
@@ -448,12 +519,12 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
                   onClick={() => handleEditReturn(ret)}
                 />
                   </button>
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  onClick={() => handleDeleteReturn(ret.id)}
+                  onClick={() => handleDeleteReturn(ret.leadReturnId)}
                 />
                   </button>
                   </div>
@@ -463,7 +534,7 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
           </tbody>
         </table>
 
-        <Comment/>
+        <Comment tag= "Return"/>
 
         </div>
         </div>

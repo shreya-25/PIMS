@@ -1,6 +1,5 @@
 const express = require("express");
-const { createLeadReturn, getLeadsReturnByOfficer,  updateLRStatusToPending, updateLeadReturn,
-    deleteLeadReturn } = require("../controller/leadReturnController");
+const { createLeadReturn, getLeadsReturnByOfficer,  updateLRStatusToPending } = require("../controller/leadReturnController");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
 
@@ -13,11 +12,5 @@ router.post("/create", verifyToken, createLeadReturn);
 router.get("/officer-leads", verifyToken, getLeadsReturnByOfficer);
 
 router.put("/set-lrstatus-pending", verifyToken, updateLRStatusToPending);
-
-// Update arbitrary fields on a specific LeadReturn
-router.put("/:id", auth, updateLeadReturn);
-
-// Delete a specific LeadReturn
-router.delete("/:id", auth, deleteLeadReturn);
 
 module.exports = router;

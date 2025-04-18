@@ -289,7 +289,9 @@ export const LRAudio = () => {
           </div>
         </div>
         <div className="form-buttons-audio">
-          <button className="save-btn1" onClick={handleAddAudio}>Add Audio</button>
+        <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+          className="save-btn1" onClick={handleAddAudio}>Add Audio</button>
          </div>
          {/* Uploaded Audio Preview */}
          <div className="uploaded-audio">
@@ -328,7 +330,8 @@ export const LRAudio = () => {
                 <td>{audio.description}</td>
                 <td>
                   <div classname = "lr-table-btn">
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
@@ -336,7 +339,8 @@ export const LRAudio = () => {
                   // onClick={() => handleEditReturn(ret)}
                 />
                   </button>
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"

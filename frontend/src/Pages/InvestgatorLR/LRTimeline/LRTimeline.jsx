@@ -376,7 +376,9 @@ export const LRTimeline = () => {
               <button className="customer-btn" onClick={handleAddFlag}>Add Flag</button>
             </div>
 
-            <button className="customer-btn" onClick={handleAddEntry}>Add Entry</button>
+            <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+            className="customer-btn" onClick={handleAddEntry}>Add Entry</button>
           </div>
         </div>
 
@@ -406,7 +408,8 @@ export const LRTimeline = () => {
                     </td> */}
                     <td>
                   <div classname = "lr-table-btn">
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
@@ -414,7 +417,8 @@ export const LRTimeline = () => {
                   onClick={() => handleEditEntry(index)}
                 />
                   </button>
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"

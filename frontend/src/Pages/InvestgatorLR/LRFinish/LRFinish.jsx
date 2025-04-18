@@ -648,7 +648,9 @@ const handleNavigationToInstruction = () => {
           <button className="save-btn1" onClick={runReport}>
             Run Report
           </button>
-          <button className="save-btn1" onClick={handleSubmitReport}>
+          <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+          className="save-btn1" onClick={handleSubmitReport}>
             Submit Report
           </button>
         </div>

@@ -245,7 +245,9 @@ export const LRScratchpad = () => {
           ></textarea>
         </div>
         <div className="form-buttons-scratchpad">
-        <button className="save-btn1" onClick={handleAddNote}>Add Note</button>
+        <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+        className="save-btn1" onClick={handleAddNote}>Add Note</button>
         </div>
         </div>
 
@@ -269,7 +271,8 @@ export const LRScratchpad = () => {
                 <td>{note.text}</td>
                 <td>
                   <div classname = "lr-table-btn">
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
@@ -277,7 +280,8 @@ export const LRScratchpad = () => {
                   // onClick={() => handleEditReturn(ret)}
                 />
                   </button>
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"

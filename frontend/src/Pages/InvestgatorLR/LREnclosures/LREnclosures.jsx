@@ -311,7 +311,9 @@ export const LREnclosures = () => {
         </div>
           {/* Action Buttons */}
           <div className="form-buttons">
-          <button className="save-btn1" onClick={handleSaveEnclosure}>Add Enclosure</button>
+          <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+          className="save-btn1" onClick={handleSaveEnclosure}>Add Enclosure</button>
           {/* <button className="back-btn" onClick={() => handleNavigation("/LRVehicle")}>Back</button>
           <button className="next-btn" onClick={() => handleNavigation("/LREvidence")}>Next</button>
           <button className="save-btn">Save</button>
@@ -341,7 +343,8 @@ export const LREnclosures = () => {
                 <td>{enclosure.originalName}</td>
                 <td>
                   <div classname = "lr-table-btn">
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
@@ -349,7 +352,8 @@ export const LREnclosures = () => {
                   // onClick={() => handleEditReturn(ret)}
                 />
                   </button>
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
