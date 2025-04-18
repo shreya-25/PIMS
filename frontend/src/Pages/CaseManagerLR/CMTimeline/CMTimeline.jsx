@@ -356,7 +356,7 @@ export const CMTimeline = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="no-timeline">No timelines found during investigation.</td>
+                  <td colSpan="7" className="no-timeline">No timelines found during investigation.</td>
                 </tr>
               )}
             </tbody>
