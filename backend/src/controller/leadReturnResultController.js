@@ -86,6 +86,52 @@ const getLeadReturnResultByLeadNoandLeadName = async (req, res) => {
     }
 };
 
+// Update a specific lead return result entry
+const updateLeadReturnResult = async (req, res) => {
+    try {
+        const { leadNo, caseNo, leadReturnId } = req.params;
+        const updateData = req.body;
+
+        const updatedResult = await LeadReturnResult.findOneAndUpdate(
+            { leadNo: Number(leadNo), caseNo, leadReturnId },
+            updateData,
+            { new: true }
+        );
+
+        if (!updatedResult) {
+            return res.status(404).json({ message: "Lead return result not found." });
+        }
+
+        res.status(200).json(updatedResult);
+    } catch (err) {
+        console.error("Error updating lead return result:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+// Delete a specific lead return result entry
+const deleteLeadReturnResult = async (req, res) => {
+    try {
+        const { leadNo, caseNo, leadReturnId } = req.params;
+
+        const deletedResult = await LeadReturnResult.findOneAndDelete({
+            leadNo: Number(leadNo),
+            caseNo,
+            leadReturnId
+        });
+
+        if (!deletedResult) {
+            return res.status(404).json({ message: "Lead return result not found." });
+        }
+
+        res.status(200).json({ message: "Lead return result deleted successfully." });
+    } catch (err) {
+        console.error("Error deleting lead return result:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
 
 // module.exports = { createLeadReturnResult, getLeadReturnResultsByOfficer, getLeadReturnResultByLeadNoandLeadName };
-module.exports = { createLeadReturnResult, getLeadReturnResultsByOfficer, getLeadReturnResultByLeadNoandLeadName};
+module.exports = { createLeadReturnResult, getLeadReturnResultsByOfficer, getLeadReturnResultByLeadNoandLeadName, updateLeadReturnResult,
+    deleteLeadReturnResult};

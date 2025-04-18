@@ -130,6 +130,8 @@ export const CMFinish = () => {
             };
 
             // generatePDF(pdfRef.current);
+            console.log("📤 Report Data Sent to Backend:", JSON.stringify(body, null, 2));
+
       
             // Call your Node server endpoint
             const response = await axios.post("http://localhost:5000/api/report/generate", body, {

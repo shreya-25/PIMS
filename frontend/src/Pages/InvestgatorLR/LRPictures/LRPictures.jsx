@@ -310,7 +310,9 @@ export const LRPictures = () => {
           </div>
         </div>
         <div className="form-buttons">
-          <button className="save-btn1" onClick={handleAddPicture}>Add Picture</button>
+        <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+           className="save-btn1" onClick={handleAddPicture}>Add Picture</button>
         </div>
         {/* Uploaded Pictures Preview */}
         <div className="uploaded-pictures">
@@ -347,7 +349,8 @@ export const LRPictures = () => {
                 <td>{picture.description}</td>
                 <td>
                   <div classname = "lr-table-btn">
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
@@ -355,7 +358,8 @@ export const LRPictures = () => {
                   // onClick={() => handleEditReturn(ret)}
                 />
                   </button>
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"

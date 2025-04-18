@@ -279,7 +279,9 @@ export const LRVideo = () => {
           </div>
         </div>
         <div className="form-buttons-video">
-        <button className="save-btn1" onClick={handleAddVideo}>Add Video</button>
+        <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+        className="save-btn1" onClick={handleAddVideo}>Add Video</button>
         </div>
 
         {/* Uploaded Video Preview */}
@@ -322,7 +324,8 @@ export const LRVideo = () => {
                 <td>{video.description}</td>
                 <td>
                   <div classname = "lr-table-btn">
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
@@ -330,7 +333,8 @@ export const LRVideo = () => {
                   // onClick={() => handleEditReturn(ret)}
                 />
                   </button>
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"

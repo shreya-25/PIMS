@@ -329,7 +329,9 @@ export const LREvidence = () => {
         </div>
         </div>
         <div className="form-buttons">
-          <button className="save-btn1" onClick={handleSaveEvidence}>Add Evidence</button>
+        <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+           className="save-btn1" onClick={handleSaveEvidence}>Add Evidence</button>
         </div>  
 
             {/* Evidence Table */}
@@ -356,7 +358,8 @@ export const LREvidence = () => {
                 <td>{item.disposition}</td>
                 <td>
                   <div classname = "lr-table-btn">
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
@@ -364,7 +367,8 @@ export const LREvidence = () => {
                   // onClick={() => handleEditReturn(ret)}
                 />
                   </button>
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
@@ -378,7 +382,7 @@ export const LREvidence = () => {
             ))}
           </tbody>
         </table>
-        <Comment/>
+        <Comment tag = "Evidence"/>
         </div>
         </div>
 
