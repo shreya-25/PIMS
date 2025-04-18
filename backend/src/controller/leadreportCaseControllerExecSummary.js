@@ -2107,8 +2107,17 @@ async function generateCaseReportwithExecSummary(req, res) {
     // ---------- Iterate Over Leads ----------
     if (leadsData && leadsData.length > 0) {
       leadsData.forEach((lead) => {
-        currentY = ensureSpace(doc, currentY, 60);
+        currentY = ensureSpace(doc, currentY, 100);
+        currentY += 10;
         doc.font("Helvetica-Bold").fontSize(12).text(`Lead No. ${lead.leadNo} Details:`, 50, currentY);
+      // leadsData.forEach((lead, index) => {
+      //   if (index > 0) {
+      //     doc.addPage();               // Start every lead on a new page
+      //     currentY = doc.page.margins.top;  // Reset Y position
+      //   }
+      
+        doc.font("Helvetica-Bold").fontSize(12).text(`Lead No. ${lead.leadNo} Details:`, 50, currentY);
+      
         currentY += 20;
 
         // Draw the structured lead details.
