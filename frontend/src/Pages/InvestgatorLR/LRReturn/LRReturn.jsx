@@ -371,7 +371,7 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
       <div className = "content-to-add-first-row">
 
       <div className="form-row4">
-            <label>Return Id:</label>
+            <label>Return Id*</label>
             <input
                       type="text"
                       value={nextReturnId}
@@ -379,7 +379,7 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
                     />
           </div>
           <div className="form-row4">
-            <label>Date Entered:</label>
+            <label>Date Entered*</label>
             <input
                       type="text"
                       value={todayDate}
@@ -387,7 +387,7 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
                     />
           </div>
           <div className="form-row4">
-            <label>Entered By:</label>
+            <label>Entered By*</label>
             <input
                       type="text"
                       value={username}

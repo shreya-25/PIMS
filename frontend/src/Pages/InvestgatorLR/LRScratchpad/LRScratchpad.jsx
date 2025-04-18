@@ -228,7 +228,15 @@ export const LRScratchpad = () => {
 <div className = "content-subsection">
         {/* Scratchpad Form */}
         <div className = "timeline-form-sec">
-        <h4 className="evidence-form-h4">Add New Note</h4>
+        <div className="scratchpad-form">
+            <label>Return Id*</label>
+            <input
+              type="returnId"
+              value={noteData.returnId}
+              onChange={(e) => handleInputChange("returnId", e.target.value)}
+            />
+          </div>
+        <h4 className="evidence-form-h4">Add New Note*</h4>
         <div className="scratchpad-form">
           <textarea
             value={noteData.text}
@@ -236,14 +244,6 @@ export const LRScratchpad = () => {
             placeholder="Write your note here"
           ></textarea>
         </div>
-        <div className="scratchpad-form">
-            <label>Return Id:</label>
-            <input
-              type="returnId"
-              value={noteData.returnId}
-              onChange={(e) => handleInputChange("returnId", e.target.value)}
-            />
-          </div>
         <div className="form-buttons-scratchpad">
         <button className="save-btn1" onClick={handleAddNote}>Add Note</button>
         </div>
