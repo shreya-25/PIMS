@@ -301,12 +301,12 @@ export const LRPerson = () => {
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th style={{ width: "16%" }}>Associated Return Id </th>
+              <th style={{ width: "10%" }}>Return Id </th>
               <th>Name</th>
               <th>Phone No</th>
               <th>Address</th>
               <th style={{ width: "14%" }}>Additional Details</th>
-              <th style={{ width: "12%" }}></th>
+              <th style={{ width: "14%" }}></th>
             </tr>
           </thead>
           <tbody>

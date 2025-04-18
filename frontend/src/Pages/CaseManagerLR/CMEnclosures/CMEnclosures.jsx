@@ -42,8 +42,8 @@ export const CMEnclosures = () => {
 
   // Sample enclosures data
   const [enclosures, setEnclosures] = useState([
-    { dateEntered: "", leadReturnType: "", type: "", enclosure: "" },
-    { dateEntered: "12/03/2024", leadReturnId: "1", type: "Evidence", enclosure: "Photo Evidence" },
+    // { dateEntered: "", leadReturnType: "", type: "", enclosure: "" },
+    // { dateEntered: "12/03/2024", leadReturnId: "1", type: "Evidence", enclosure: "Photo Evidence" },
   ]);
 
 
@@ -247,10 +247,10 @@ export const CMEnclosures = () => {
           <thead>
             <tr>
               <th style={{ width: "10%" }}>Date Entered</th>
-              <th style={{ width: "16%" }}>Associated Return Id</th>
+              <th style={{ width: "9%" }}>Return ID</th>
               <th style={{ width: "10%" }}>Type</th>
               <th>Enclosure Description</th>
-              <th style={{ width: "14%" }}>Access</th>
+              <th style={{ width: "15%" }}>Access</th>
             </tr>
           </thead>
           <tbody>

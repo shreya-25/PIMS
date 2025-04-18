@@ -75,6 +75,7 @@ export const LRScratchpad = () => {
       leadReturnId: noteData.returnId, // Default or fetched
       enteredDate: new Date().toISOString(),
       text: noteData.text,
+      type: "Lead"
     };
   
     const token = localStorage.getItem("token");
@@ -125,13 +126,16 @@ export const LRScratchpad = () => {
         }
       );
   
-      const formatted = res.data.map((note) => ({
+    
+      const formatted = res.data
+      .filter((note) => note.type === "Lead") // ✅ Filter by type === 'Lead'
+      .map((note) => ({
         ...note,
         dateEntered: formatDate(note.enteredDate),
         returnId: note.leadReturnId,
       }));
-  
-      setNotes(formatted);
+
+    setNotes(formatted);
     } catch (error) {
       console.error("Error fetching scratchpad notes:", error);
     }
@@ -216,7 +220,7 @@ export const LRScratchpad = () => {
 
         {/* Center Section */}
         <div className="case-header">
-          <h2 className="">SCRATCHPAD INFORMATION</h2>
+          <h2 className="">NOTES</h2>
         </div>
 
         <div className = "LRI-content-section">
@@ -233,7 +237,7 @@ export const LRScratchpad = () => {
           ></textarea>
         </div>
         <div className="scratchpad-form">
-            <label>Associated Return Id:</label>
+            <label>Return Id:</label>
             <input
               type="returnId"
               value={noteData.returnId}
@@ -250,7 +254,7 @@ export const LRScratchpad = () => {
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th> Associated Return Id </th>
+              <th>Return Id </th>
               <th>Entered By</th>
               <th>Text</th>
               <th></th>

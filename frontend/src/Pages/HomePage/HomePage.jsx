@@ -16,8 +16,6 @@ import { useContext } from "react";
 import Pagination from "../../components/Pagination/Pagination";
 
 
-
-
 export const HomePage = () => {
 
   const [activeTab, setActiveTab] = useState("cases"); // Default tab
@@ -425,14 +423,6 @@ useEffect(() => {
 
   fetchPendingLeads();
 }, [signedInOfficer]);
-
-
-
-
-
-
-
-
 
   const addPendingLead = (newLead) => {
     setLeads((prevLeads) => ({

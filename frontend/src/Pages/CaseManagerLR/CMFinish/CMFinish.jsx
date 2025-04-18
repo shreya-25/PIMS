@@ -148,6 +148,38 @@ export const CMFinish = () => {
       alert("Error generating PDF");
     }
   };
+
+  const submitReturnAndUpdate = async (newStatus) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!selectedLead || !selectedCase) {
+        alert("No lead or case selected!");
+        return;
+      }
+  
+      // --- 2) Update the leadStatus to either Complete or Pending ---
+      const statusRes = await axios.put(
+        `http://localhost:5000/api/lead/status/${newStatus}`,           // "/status/complete" or "/status/pending"
+        {
+          leadNo:     selectedLead.leadNo,
+          description: selectedLead.leadName,
+          caseNo:     selectedCase.caseNo,
+          caseName:   selectedCase.caseName
+        },
+        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }}
+      );
+  
+      if (statusRes.status === 200) {
+        alert(`Lead Return submitted and status set to '${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}'`);
+      } else {
+        alert("Return submitted but status update failed");
+      }
+  
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong");
+    }
+  };
       
 
   const handleNavigation = (route) => {
@@ -455,8 +487,8 @@ export const CMFinish = () => {
         {/* Buttons */}
         <div className="form-buttons-finish">
           <button className="save-btn1" onClick={handleRunReport}>Run Report</button>
-          <button className="save-btn1">Approve</button>
-          <button className="save-btn1">Return</button>
+          <button className="save-btn1"  onClick={() => submitReturnAndUpdate("complete")} >Approve</button>
+          <button className="save-btn1"  onClick={() => submitReturnAndUpdate("pending")}>Return</button>
         </div>
 
      </div>
