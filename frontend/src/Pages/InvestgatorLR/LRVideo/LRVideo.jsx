@@ -306,11 +306,11 @@ export const LRVideo = () => {
             <table className="leads-table">
           <thead>
             <tr>
-              <th>Date Entered</th>
-              <th> Associated Return Id </th>
+              <th style={{ width: "12%" }}>Date Entered</th>
+              <th style={{ width: "10%" }}> Return Id </th>
               <th>Date Video Recorded</th>
               <th>Description</th>
-              <th></th>
+              <th style={{ width: "13%" }}></th>
             </tr>
           </thead>
           <tbody>
@@ -344,7 +344,7 @@ export const LRVideo = () => {
             ))}
           </tbody>
         </table>
-        <Comment/>
+        <Comment tag="Video" />
         </div>
         {/* Action Buttons */}
         {/* <div className="form-buttons-video">

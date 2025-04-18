@@ -428,7 +428,7 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
             <th style={{ width: "13%" }}>Date Entered</th>
             <th style={{ width: "9%" }}>Entered By</th>
             <th>Results</th>
-            <th style={{ width: "12%" }}></th>
+            <th style={{ width: "14%" }}></th>
           </tr>
         </thead>
         <tbody>

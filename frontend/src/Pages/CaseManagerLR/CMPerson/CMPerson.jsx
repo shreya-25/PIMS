@@ -43,29 +43,42 @@ export const CMPerson = () => {
       const [loading, setLoading] = useState(true);
       const [error, setError] = useState("");
         const { selectedCase, selectedLead, setSelectedLead, leadPerson, setLeadPerson } = useContext(CaseContext);
-      
-    // State to control the modal
         const [showPersonModal, setShowPersonModal] = useState(false);
+        const [personModalData, setPersonModalData] = useState(null);
+
+        
+    // State to control the modal
+        // const [showPersonModal, setShowPersonModal] = useState(false);
     
-        // We’ll store the leadReturn info we need for the modal
-        const [personModalData, setPersonModalData] = useState({
-          leadNo: "",
-          description: "",
-          caseNo: "",
-          caseName: "",
-          leadReturnId: "",
-        });
+        // // We’ll store the leadReturn info we need for the modal
+        // const [personModalData, setPersonModalData] = useState({
+        //   leadNo: "",
+        //   description: "",
+        //   caseNo: "",
+        //   caseName: "",
+        //   leadReturnId: "",
+        // });
 
          // Function to open the modal, passing the needed data
-    const openPersonModal = (leadNo, description, caseNo, caseName, leadReturnId) => {
-      setPersonModalData({ leadNo, description, caseNo, caseName, leadReturnId });
-      setShowPersonModal(true);
-    };
+    // const openPersonModal = (leadNo, description, caseNo, caseName, leadReturnId) => {
+    //   setPersonModalData({ leadNo, description, caseNo, caseName, leadReturnId });
+    //   setShowPersonModal(true);
+    // };
+
+     // Open modal with the clicked person’s full data
+  const openPersonModal = (person) => {
+    setPersonModalData(person);
+    setShowPersonModal(true);
+  };
+  const closePersonModal = () => {
+    setShowPersonModal(false);
+    setPersonModalData(null);
+  };
   
     // Function to close the modal
-    const closePersonModal = () => {
-      setShowPersonModal(false);
-    };
+    // const closePersonModal = () => {
+    //   setShowPersonModal(false);
+    // };
 
     const [persons, setPersons] = useState([
       { leadReturnId: "", dateEntered: "", name: "", phoneNo: "", address: "" },
@@ -318,8 +331,8 @@ export const CMPerson = () => {
         <table className="leads-table">
           <thead>
             <tr>
-            <th style={{ width: "16%" }}>Associated Return ID</th>
-              <th>Date Entered</th>
+            <th>Date Entered</th>
+            <th style={{ width: "8%" }}>Return ID</th>
               <th>Name</th>
               <th>Phone No</th>
               <th>Address</th>
@@ -336,8 +349,9 @@ export const CMPerson = () => {
       className={selectedRow === index ? "selected-row" : ""}
       onClick={() => setSelectedRow(index)}
     >
+        <td>{formatDate(person.enteredDate)}</td>
       <td>{person.leadReturnId}</td>
-      <td>{formatDate(person.enteredDate)}</td>
+    
       <td>
         {person.firstName
           ? `${person.firstName || ''}, ${person.lastName || ''}`
@@ -358,15 +372,14 @@ export const CMPerson = () => {
           <option value="Everyone">Everyone</option>
         </select>
       </td>
-      <td>  <button className="download-btn" onClick={() =>
-                              openPersonModal(
-                                selectedLead.leadNo,
-                                selectedLead.description,
-                                selectedCase.caseNo,
-                                selectedCase.caseName,
-                                person.leadReturnId
-                              )
-                            }>View</button></td>
+      <td>
+                        <button
+                          className="download-btn"
+                          onClick={() => openPersonModal(person)}
+                        >
+                          View
+                        </button>
+                      </td>
                             {/* <td>
         <div className="lr-table-btn">
           <button className="save-btn1" >Edit</button>
@@ -389,6 +402,15 @@ export const CMPerson = () => {
       </div> */}
 
 <Comment/>
+
+  {/* ====== PersonModal Popup ====== */}
+  {showPersonModal && personModalData && (
+        <PersonModal
+          show={showPersonModal}
+          onClose={closePersonModal}
+          data={personModalData}
+        />
+      )}
 </div>
 </div>
 

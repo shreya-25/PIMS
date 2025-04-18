@@ -383,13 +383,12 @@ export const LRTimeline = () => {
           <table  className="leads-table">
             <thead>
               <tr>
-                <th >Event Date</th>
-                <th style={{ width: "14%" }}> Return Id </th>
+                <th style={{ width: "10%" }} >Event Date</th>
+                <th style={{ width: "10%" }}> Return Id </th>
                 <th style={{ width: "15%" }}>Event Time Range</th>
-                <th>Event Location</th>
-                <th style={{ width: "15%" }}>Event Description</th>
-                <th>Flags</th>
-                <th></th>
+                <th style={{ width: "15%" }}>Event Location</th>
+                <th >Event Description</th>
+                <th style={{ width: "13%" }}></th>
               </tr>
             </thead>
             <tbody>
@@ -401,7 +400,6 @@ export const LRTimeline = () => {
                     <td>{entry.timeRange}</td>
                     <td>{entry.location}</td>
                     <td>{entry.description}</td>
-                    <td>{entry.flags.join(', ')}</td>
                     {/* <td>
                       <button className="btn-edit" onClick={() => handleEditEntry(index)}>Edit</button>
                       <button className="btn-delete" onClick={() => handleDeleteEntry(index)}>Delete</button>

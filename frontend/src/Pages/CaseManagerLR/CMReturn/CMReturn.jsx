@@ -249,8 +249,9 @@ const { leadDetails, caseDetails } = location.state || {};
       <table className="leads-table">
         <thead>
           <tr>
+          <th style={{ width: "10%" }}>Date Entered</th>
             <th style={{ width: "10%" }}>Return ID</th>
-            <th style={{ width: "10%" }}>Date Entered</th>
+           
             <th style={{ width: "9%" }}>Entered By</th>
             <th>Results</th>
             <th style={{ width: "15%" , fontSize: "20px" }}>Access</th>
@@ -261,8 +262,8 @@ const { leadDetails, caseDetails } = location.state || {};
   {returns.length > 0 ? (
   returns.map((ret, index) => ( 
     <tr key={ret.id || index}>
+          <td>{formatDate(ret.enteredDate)}</td>
       <td>{ret.leadReturnId}</td>
-      <td>{formatDate(ret.enteredDate)}</td>
       <td>{ret.enteredBy}</td>
       <td>{ret.leadReturnResult}</td>
       <td>

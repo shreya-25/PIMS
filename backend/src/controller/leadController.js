@@ -341,11 +341,108 @@ const searchLeadsByKeyword = async (req, res) => {
   }
 };
 
+const setLeadStatusToInReview = async (req, res) => {
+  try {
+    const { leadNo, description, caseName, caseNo } = req.body;
+
+    if (!leadNo || !description || !caseName || !caseNo) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    const lead = await Lead.findOne({
+      leadNo,
+      description,
+      caseName,
+      caseNo,
+    });
+
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found." });
+    }
+
+    lead.leadStatus = "In Review";
+    await lead.save();
+
+    console.log(`✅ [DEBUG] Lead ${leadNo} status set to 'In Review' for case ${caseName} (${caseNo})`);
+
+
+    return res.status(200).json({ message: "Lead status set to 'In Review'.", lead });
+  } catch (err) {
+    console.error("Error updating lead status to 'In Review':", err.message);
+    return res.status(500).json({ message: "Something went wrong while updating status." });
+  }
+};
+
+const setLeadStatusToComplete = async (req, res) => {
+  try {
+    const { leadNo, description, caseName, caseNo } = req.body;
+
+    if (!leadNo || !description || !caseName || !caseNo) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    const lead = await Lead.findOne({
+      leadNo,
+      description,
+      caseName,
+      caseNo,
+    });
+
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found." });
+    }
+
+    lead.leadStatus = "Completed";
+    await lead.save();
+
+    console.log(`✅ [DEBUG] Lead ${leadNo} status set to 'Completed' for case ${caseName} (${caseNo})`);
+
+
+    return res.status(200).json({ message: "Lead status set to 'Completed'.", lead });
+  } catch (err) {
+    console.error("Error updating lead status to 'Completed':", err.message);
+    return res.status(500).json({ message: "Something went wrong while updating status." });
+  }
+};
+
+const setLeadStatusToPending = async (req, res) => {
+  try {
+    const { leadNo, description, caseName, caseNo } = req.body;
+
+    if (!leadNo || !description || !caseName || !caseNo) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    const lead = await Lead.findOne({
+      leadNo,
+      description,
+      caseName,
+      caseNo,
+    });
+
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found." });
+    }
+
+    lead.leadStatus = "Completed";
+    await lead.save();
+
+    console.log(`✅ [DEBUG] Lead ${leadNo} status set to 'Completed' for case ${caseName} (${caseNo})`);
+
+
+    return res.status(200).json({ message: "Lead status set to 'Completed'.", lead });
+  } catch (err) {
+    console.error("Error updating lead status to 'Completed':", err.message);
+    return res.status(500).json({ message: "Something went wrong while updating status." });
+  }
+};
 
 
 
 
-module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword };
+module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword , setLeadStatusToInReview, 
+  setLeadStatusToComplete, setLeadStatusToPending
+};
 
 
 
