@@ -68,7 +68,7 @@ select.input-field option[value=""] {
 
 select.input-field {
   appearance: none; /* Remove default arrow styling */
-  background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23999' d='M2 0L0 2h4z'/%3E%3C/svg%3E") no-repeat right 10px top 50%;
+  /* background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23999' d='M2 0L0 2h4z'/%3E%3C/svg%3E") no-repeat right 10px top 50%; */
   background-size: 8px 10px;
   padding-right: 30px; /* Space for dropdown arrow */
 }
