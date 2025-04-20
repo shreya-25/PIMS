@@ -19,8 +19,17 @@ export const LRPerson1 = () => {
         }, []);
     const navigate = useNavigate(); // Initialize useNavigate hook
 const location = useLocation();
+const [username, setUsername] = useState("");
+
+useEffect(() => {
+   const loggedInUser = localStorage.getItem("loggedInUser");
+   if (loggedInUser) {
+     setUsername(loggedInUser);
+   }
+  })
     const [formData, setFormData] = useState({
       dateEntered: "",
+      leadReturnId: "",
       lastName: "",
       firstName: "",
       mi: "",
@@ -77,6 +86,72 @@ const [miscDetails, setMiscDetails] = useState([
     const handlePrevPage = () => {
     navigate('/LRInstruction'); // Replace '/nextpage' with the actual next page route
   };
+
+
+  const handleSave = async () => {
+    const token = localStorage.getItem("token");
+  
+    const payload = {
+      leadNo: selectedLead?.leadNo,
+      description: selectedLead?.leadName,
+      caseNo: selectedCase?.caseNo,
+      caseName: selectedCase?.caseName,
+      enteredBy: username, 
+      enteredDate: formData.dateEntered,
+      leadReturnId: formData.leadReturnId,
+  
+      lastName: formData.lastName,
+      firstName: formData.firstName,
+      middleInitial: formData.mi,
+      suffix: formData.suffix,
+      cellNumber: formData.cellNumber,
+      businessName: formData.businessName,
+      address: {
+        street1: formData.street1,
+        street2: formData.street2,
+        building: formData.building,
+        apartment: formData.apartment,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipCode,
+      },
+  
+      // Optional: Extend this with other fields once you connect them in your form
+      // ssn: formData.ssn,
+      // age: formData.age,
+      // email: formData.email,
+      // occupation: formData.occupation,
+      // personType: formData.personType,
+      // etc...
+  
+      additionalData: miscDetails, // Store all misc rows
+    };
+
+    console.log(payload);
+  
+    try {
+      const response = await fetch('http://localhost:5000/api/lrperson/lrperson', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+  
+      if (response.ok) {
+        const data = await response.json();
+        alert('Entry saved successfully');
+      } else {
+        const errorMessage = await response.text();
+        alert('Failed to save entry: ' + errorMessage);
+      }
+    } catch (error) {
+      console.error("Error saving entry:", error);
+      alert('An error occurred while saving the entry.');
+    }
+  };
+  
   
   return (
     <div className="person-page">
@@ -126,43 +201,40 @@ const [miscDetails, setMiscDetails] = useState([
 
        <div className="LRI_Content">
        <div className="sideitem">
-       <ul className="sidebar-list">
-                   
-                   <li className="sidebar-item">Case Information</li>
-         <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
-         <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-             New Lead
-           </li>                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
-                      <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                      <li className="sidebar-item active" >View Lead Return</li>
-                      <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
-             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-             View Lead Log
-           </li>
-           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-             Officer Management
-           </li> */}
-           <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-             View/Add Case Notes
-           </li>
-           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-             View Lead Hierarchy
-           </li>
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-             Generate Report
-           </li> */}
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-             View Flagged Leads
-           </li>
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-             View Timeline Entries
-           </li>
-           {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li> */}
+              {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Add/View Case Notes
+            </li>)}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li> */}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
 
-           <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-           <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-         </ul>
                 </div>
                 <div className="left-content">
    
@@ -175,17 +247,27 @@ const [miscDetails, setMiscDetails] = useState([
         <table className="person-table2">
           <tbody>
             <tr>
-              <td>Date Entered</td>
+              <td>Date Entered *</td>
               <td>
                 <input
                   type="date"
                   value={formData.dateEntered}
+                  className="input-large"
                   onChange={(e) => handleChange("dateEntered", e.target.value)}
+                />
+              </td>
+              <td>Lead Return Id *</td>
+              <td>
+                <input
+                  type="leadReturn"
+                  value={formData.leadReturnId}
+                  className="input-large"
+                  onChange={(e) => handleChange("leadReturnId", e.target.value)}
                 />
               </td>
             </tr>
             <tr>
-              <td>Last Name</td>
+              <td>Last Name *</td>
               <td>
                 <input
                   type="text"
@@ -193,7 +275,7 @@ const [miscDetails, setMiscDetails] = useState([
                   onChange={(e) => handleChange("lastName", e.target.value)}
                 />
               </td>
-              <td>First Name</td>
+              <td>First Name *</td>
               <td>
                 <input
                   type="text"
@@ -229,10 +311,9 @@ const [miscDetails, setMiscDetails] = useState([
                   onChange={(e) => handleChange("cellNumber", e.target.value)}
                 />
               </td>
-            </tr>
-            <tr>
+
               <td>Business Name</td>
-              <td colSpan="3">
+              <td>
                 <input
                   type="text"
                   value={formData.businessName}
@@ -298,37 +379,30 @@ const [miscDetails, setMiscDetails] = useState([
             </tr>
             <tr>
               <td>Zip Code</td>
-              <td colSpan="3">
+              <td colSpan="1">
                 <input
                   type="text"
                   value={formData.zipCode}
                   onChange={(e) => handleChange("zipCode", e.target.value)}
                 />
               </td>
+              <td>Age</td>
+              <td><input type="text" /></td>
+
             </tr>
-          </tbody>
-        </table>
-        
-        <table className="person-table2">
-          <tbody>
-            {/* First Row */}
+
             <tr>
               <td>SSN</td>
               <td><input type="text" /></td>
-              <td>Age</td>
+              
+              <td>Occupation</td>
               <td><input type="text" /></td>
             </tr>
 
-            {/* Second Row */}
-            <tr>
+                {/* Second Row */}
+                <tr>
               <td>Email</td>
               <td colSpan="3"><input type="email" /></td>
-            </tr>
-
-            {/* Third Row */}
-            <tr>
-              <td>Occupation</td>
-              <td colSpan="3"><input type="text" /></td>
             </tr>
 
             {/* Fourth Row */}
@@ -409,10 +483,9 @@ const [miscDetails, setMiscDetails] = useState([
                   ></textarea>
                 </td>
               </tr>
-              
-            ))}
+                  ))}
           </tbody>
-                </table>
+        </table>
               </td>
             </tr>
           </tbody>
@@ -422,7 +495,7 @@ const [miscDetails, setMiscDetails] = useState([
         {/* Buttons */}
         <div className="form-buttons">
        
-          <button className="save-btn1">Save</button>
+          <button className="save-btn1" onClick={handleSave}>Save</button>
           {/* <button className="cancel-btn">Cancel</button> */}
         </div>
       {/* </div> */}

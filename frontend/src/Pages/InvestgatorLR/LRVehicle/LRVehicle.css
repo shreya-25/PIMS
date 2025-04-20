@@ -61,7 +61,7 @@
   .form-row1 {
     display: flex;
     justify-content: flex-start;
-    gap: 45px;
+    gap: 30px;
   }
   .form-row2 {
     display: flex;

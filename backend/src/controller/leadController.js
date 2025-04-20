@@ -22,7 +22,11 @@ const createLead = async (req, res) => {
         priority,
         caseName,
         caseNo,
-        accessLevel
+        accessLevel,
+        submittedDate,
+        approvedDate,
+        returnedDate,
+
       } = req.body;
   
       // Pass them directly into the new Lead object
@@ -43,7 +47,10 @@ const createLead = async (req, res) => {
         priority,
         caseName,
         caseNo,
-        accessLevel
+        accessLevel,
+        submittedDate,
+        approvedDate,
+        returnedDate,
       });
   
       await newLead.save();
@@ -167,7 +174,6 @@ const getAssociatedSubNumbers = async (req, res) => {
 const updateLeadStatus = async (req, res) => {
   try {
     const { leadNo, leadName, caseNo, caseName } = req.params;
-    const { status } = req.body;
 
     const lead = await Lead.findOne({
       leadNo: Number(leadNo),
@@ -180,7 +186,8 @@ const updateLeadStatus = async (req, res) => {
       return res.status(404).json({ message: "Lead not found" });
     }
 
-    lead.leadStatus = status;
+    // Set leadStatus as "pending" by default
+    lead.leadStatus = "Pending";
     await lead.save();
 
     res.status(200).json({ message: "Status updated successfully", lead });
@@ -189,6 +196,7 @@ const updateLeadStatus = async (req, res) => {
     res.status(500).json({ message: "Server error while updating lead status" });
   }
 };
+
 
 exports.updateLeadLRStatus = async (req, res) => {
   const { leadNo, leadName, caseNo, caseName, lRStatus } = req.body;
@@ -251,28 +259,81 @@ const updateLRStatusToPending = async (req, res) => {
   }
 };
 const searchLeadsByKeyword = async (req, res) => {
+  console.log("Inside searchLeadsByKeyword");
   try {
-    const { caseNo, caseName, keyword } = req.query;
-    
-    if (!caseNo || !caseName || !keyword) {
-      return res.status(400).json({ message: "caseNo, caseName, and keyword are required." });
+    // Expect these query parameters from the client.
+    const { caseNo, caseName, keyword, field } = req.query;
+    console.log("Received query:", caseNo, caseName, keyword, field);
+
+    // Validate required fields.
+    if (!caseNo || !caseName) {
+      return res.status(400).json({ message: "caseNo and caseName are required." });
     }
     
-    // Create a case-insensitive regex for the keyword
-    const regex = new RegExp(keyword, "i");
+    // Use the provided keyword or default to an empty string.
+    const searchKeyword = keyword || "";
     
-    // Find leads matching the case and keyword in description or summary
+    // Build the common part of the query using case info.
+    const baseQuery = {
+      caseNo,
+      caseName: { $regex: new RegExp(`^${caseName}$`, "i") }
+    };
 
-    const leads = await Lead.find({
-      caseNo, // ensure this is the same type as stored (if it's a string, it should be fine)
-      caseName: { $regex: new RegExp(`^${caseName}$`, "i") },
-      $or: [
-        { description: { $regex: new RegExp(keyword, "i") } },
-        { summary: { $regex: new RegExp(keyword, "i") } }
-      ]
-    });
+    let query;
+    // If the client provided a specific 'field' parameter,
+    // build the query accordingly.
+    if (field) {
+      switch (field) {
+        case "Lead Number":
+          // For lead number, expect an exact match.
+          query = { ...baseQuery, leadNo: searchKeyword };
+          break;
+        case "Priority":
+          // Use a regex to perform a case‑insensitive search on priority.
+          query = { ...baseQuery, priority: { $regex: new RegExp(searchKeyword, "i") } };
+          break;
+        case "Due Date":
+          // For due date, you might choose regex (for partial matches) or exact match.
+          // Here, we use regex. Adjust the logic if you need proper date comparisons.
+          query = { ...baseQuery, dueDate: { $regex: new RegExp(searchKeyword, "i") } };
+          break;
+        case "Remaining Days":
+          // For numeric fields, convert the keyword to a number.
+          const numericKeyword = Number(searchKeyword);
+          if (isNaN(numericKeyword)) {
+            return res.status(400).json({ message: "Invalid value for Remaining Days." });
+          }
+          query = { ...baseQuery, remainingDays: numericKeyword };
+          break;
+        default:
+          // If an unsupported field is provided, fall back to default search.
+          query = {
+            ...baseQuery,
+            $or: [
+              { description: { $regex: new RegExp(searchKeyword, "i") } },
+              { summary: { $regex: new RegExp(searchKeyword, "i") } }
+            ]
+          };
+      }
+    } else {
+      // Without a 'field' parameter, default behavior:
+      // - If keyword matches the lead number pattern, search by leadNo.
+      // - Else search the description and summary fields.
+      if (searchKeyword.match(/^Lead\d+$/i)) {
+        query = { ...baseQuery, leadNo: searchKeyword };
+      } else {
+        query = {
+          ...baseQuery,
+          $or: [
+            { description: { $regex: new RegExp(searchKeyword, "i") } },
+            { summary: { $regex: new RegExp(searchKeyword, "i") } }
+          ]
+        };
+      }
+    }
     
-    
+    // Execute the query.
+    const leads = await Lead.find(query);
     res.status(200).json(leads);
   } catch (err) {
     console.error("Error searching leads:", err.message);
@@ -280,10 +341,108 @@ const searchLeadsByKeyword = async (req, res) => {
   }
 };
 
+const setLeadStatusToInReview = async (req, res) => {
+  try {
+    const { leadNo, description, caseName, caseNo } = req.body;
+
+    if (!leadNo || !description || !caseName || !caseNo) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    const lead = await Lead.findOne({
+      leadNo,
+      description,
+      caseName,
+      caseNo,
+    });
+
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found." });
+    }
+
+    lead.leadStatus = "In Review";
+    await lead.save();
+
+    console.log(`✅ [DEBUG] Lead ${leadNo} status set to 'In Review' for case ${caseName} (${caseNo})`);
+
+
+    return res.status(200).json({ message: "Lead status set to 'In Review'.", lead });
+  } catch (err) {
+    console.error("Error updating lead status to 'In Review':", err.message);
+    return res.status(500).json({ message: "Something went wrong while updating status." });
+  }
+};
+
+const setLeadStatusToComplete = async (req, res) => {
+  try {
+    const { leadNo, description, caseName, caseNo } = req.body;
+
+    if (!leadNo || !description || !caseName || !caseNo) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    const lead = await Lead.findOne({
+      leadNo,
+      description,
+      caseName,
+      caseNo,
+    });
+
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found." });
+    }
+
+    lead.leadStatus = "Completed";
+    await lead.save();
+
+    console.log(`✅ [DEBUG] Lead ${leadNo} status set to 'Completed' for case ${caseName} (${caseNo})`);
+
+
+    return res.status(200).json({ message: "Lead status set to 'Completed'.", lead });
+  } catch (err) {
+    console.error("Error updating lead status to 'Completed':", err.message);
+    return res.status(500).json({ message: "Something went wrong while updating status." });
+  }
+};
+
+const setLeadStatusToPending = async (req, res) => {
+  try {
+    const { leadNo, description, caseName, caseNo } = req.body;
+
+    if (!leadNo || !description || !caseName || !caseNo) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    const lead = await Lead.findOne({
+      leadNo,
+      description,
+      caseName,
+      caseNo,
+    });
+
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found." });
+    }
+
+    lead.leadStatus = "Completed";
+    await lead.save();
+
+    console.log(`✅ [DEBUG] Lead ${leadNo} status set to 'Completed' for case ${caseName} (${caseNo})`);
+
+
+    return res.status(200).json({ message: "Lead status set to 'Completed'.", lead });
+  } catch (err) {
+    console.error("Error updating lead status to 'Completed':", err.message);
+    return res.status(500).json({ message: "Something went wrong while updating status." });
+  }
+};
 
 
 
-module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword };
+
+module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword , setLeadStatusToInReview, 
+  setLeadStatusToComplete, setLeadStatusToPending
+};
 
 
 

@@ -119,7 +119,7 @@ export default function Attachment({ attachments = [] }) {
                 </div>
               </div>
             </div>
-            <div className="attachment-right">
+            {/* <div className="attachment-right">
               <a href={file.url} target="_blank" rel="noopener noreferrer">
                 <button className="icon-button">
                   <img
@@ -129,7 +129,6 @@ export default function Attachment({ attachments = [] }) {
                   />
                 </button>
               </a>
-              {/* Optionally add a print button or other actions */}
               <button className="icon-button">
                 <img
                   src={`${process.env.PUBLIC_URL}/Materials/printer.png`}
@@ -137,7 +136,7 @@ export default function Attachment({ attachments = [] }) {
                   className="icon-image"
                 />
               </button>
-            </div>
+            </div> */}
           </li>
         ))}
       </ul>

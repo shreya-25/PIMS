@@ -23,19 +23,50 @@ router.get("/", verifyToken, async (req, res) => {
     }
 });
 
+router.put(
+  "/executive-summary",
+  verifyToken,
+  async (req, res) => {
+    try {
+      await caseController.updateExecutiveCaseSummary(req, res);
+    } catch (error) {
+      console.error("Router error in executive-summary:", error);
+      res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+  }
+);
+
+// routes/caseRoutes.js
+
+// … other imports …
+router.get(
+  "/executive-summary/:caseNo",
+  verifyToken,
+  (req, res) => caseController.getExecutiveCaseSummary(req, res)
+);
+
+// Get cases assigned to a specific officer (Authenticated)
+router.get("/cases-by-officer", verifyToken, async (req, res) => {
+  try {
+      await caseController.getCasesByOfficer(req, res);
+  } catch (error) {
+      res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+});
+
+router.get("/summary/:caseNo", verifyToken, async (req, res) => {
+  try {
+    await caseController.getCaseSummaryByCaseNo(req, res);
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+});
+
+
 // Get a specific case by ID (Authenticated)
 router.get("/:id", verifyToken, async (req, res) => {
     try {
         await caseController.getCaseById(req, res);
-    } catch (error) {
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-});
-
-// Get cases assigned to a specific officer (Authenticated)
-router.get("/cases-by-officer", verifyToken, async (req, res) => {
-    try {
-        await caseController.getCasesByOfficer(req, res);
     } catch (error) {
         res.status(500).json({ message: "Internal Server Error", error: error.message });
     }
@@ -63,14 +94,6 @@ router.delete("/:id", verifyToken, async (req, res) => {
 router.put("/:id/reject", verifyToken, async (req, res) => {
     try {
       await caseController.rejectCase(req, res);
-    } catch (error) {
-      res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-  });
-
-  router.get("/summary/:caseNo", verifyToken, async (req, res) => {
-    try {
-      await caseController.getCaseSummaryByCaseNo(req, res);
     } catch (error) {
       res.status(500).json({ message: "Internal Server Error", error: error.message });
     }

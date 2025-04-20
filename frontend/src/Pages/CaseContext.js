@@ -35,6 +35,14 @@ export const CaseProvider = ({ children }) => {
 
     const [leadInstructions, setLeadInstructions] = useState(null);
     const [leadReturns, setLeadReturns] = useState(null);
+    const [leadPersons, setleadPersons] = useState(null);
+    const [leadVehicles, setleadVehicles] = useState(null);
+    const [leadEnclosures, setleadEnclosures] = useState(null);
+    const [leadEvidence, setleadEvidence] = useState(null);
+    const [leadPictures, setleadPictures] = useState(null);
+    const [leadAudio, setleadAudio] = useState(null);
+    const [leadVideos, setleadVideos] = useState(null);
+    const [leadStatus, setLeadStatus] = useState("");
 
     // Persist case details when updated
     useEffect(() => {
@@ -75,7 +83,8 @@ export const CaseProvider = ({ children }) => {
             leadInstructions, setLeadInstructions,
             leadReturns, setLeadReturns,
             selectedReports, setSelectedReports,
-            withAutoRefresh,
+            withAutoRefresh, leadStatus,         
+            setLeadStatus 
         }}>
             {children}
         </CaseContext.Provider>

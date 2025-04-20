@@ -247,41 +247,39 @@ export const CMVehicle = () => {
 
        <div className="LRI_Content">
       <div className="sideitem">
-      <li className="sidebar-item">Case Information</li>
-          <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
-          <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
-                       <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                       <li className="sidebar-item active" >View Lead Return</li>
-                       <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
-              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-              View Lead Log
-            </li>
+      <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
             </li> */}
+              {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              View/Add Case Notes
-            </li>
+              Add/View Case Notes
+            </li>)}
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
             </li> */}
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-              View Timeline Entries
-            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
             {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
-
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-        
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
         </div>
 
                 <div className="left-content">
@@ -314,13 +312,13 @@ export const CMVehicle = () => {
           <thead>
             <tr>
               <th style={{ width: "10%" }}>Date Entered</th>
-              <th style={{ width: "16%" }}>Associated Return ID</th>
+              <th style={{ width: "9%" }}>Return ID</th>
               {/* <th>Year</th> */}
               <th>Make</th>
               <th>Model</th>
               <th>Color</th>
               <th>State</th>
-              <th style={{ width: "14%" }}>Access</th>
+              <th style={{ width: "15%" }}>Access</th>
               <th style={{ width: "15%" }}>Additional Details</th>
               {/* <th></th> */}
             </tr>

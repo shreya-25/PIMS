@@ -9,6 +9,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import Pagination from "../../components/Pagination/Pagination";
+import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 
 
 export const Investigator = () => {
@@ -24,7 +25,9 @@ export const Investigator = () => {
     const [remainingDaysFilter, setRemainingDaysFilter] = useState("");
   const [flagsFilter, setFlagsFilter] = useState("");
   const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
-  const { selectedCase, setSelectedLead } = useContext(CaseContext);
+  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+
+  console.log("case context", selectedCase);
 
   const [leads, setLeads] = useState({
     assignedLeads: [
@@ -83,7 +86,7 @@ export const Investigator = () => {
 
 const handleLeadClick = (lead) => {
   setSelectedLead({
-    leadNo: lead.leadNo,
+    leadNo: lead.leadNo || lead.id,
     incidentNo: lead.incidentNo,
     leadName: lead.description,
     dueDate: lead.dueDate || "N/A",
@@ -195,6 +198,21 @@ const handleLeadClick = (lead) => {
                caseName: lead.caseName,
                caseNo: String(lead.caseNo) // Ensure string format
              }));
+
+             const LRInReview = filteredLeadsArray
+             .filter(lead => lead.leadStatus === "In Review")
+             .map(lead => ({
+               id: lead.leadNo,
+               description: lead.description,
+               dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
+               priority: lead.priority || "Medium",
+               flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [], // Ensure array
+               assignedOfficers: Array.isArray(lead.assignedTo) ? lead.assignedTo : [], // Ensure array
+               leadStatus: lead.leadStatus,
+               caseName: lead.caseName,
+               caseNo: String(lead.caseNo) // Ensure string format
+             }));
+   
    
            console.log("✅ Assigned Leads:", assignedLeads);
            console.log("✅ Pending Leads:", pendingLeads);
@@ -203,7 +221,8 @@ const handleLeadClick = (lead) => {
              ...prev,
              allLeads: filteredLeadsArray,
              assignedLeads: assignedLeads,
-             pendingLeads: pendingLeads
+             pendingLeads: pendingLeads,
+             pendingLeadReturns: LRInReview
            }));
          })
          .catch((error) => {
@@ -252,16 +271,18 @@ const handleLeadClick = (lead) => {
     //     pendingLeads: [...prevLeads.pendingLeads, newPendingLead],
     //   }));
     // };
-
-    const acceptLead = async (leadNo) => {
-      const leadToAccept = leads.assignedLeads.find((lead) => lead.leadNo === leadNo);
-      if (!leadToAccept) return;
-
+    const acceptLead = async (leadNo, description) => {
+      console.log("Accept button clicked for lead:", leadNo);
+    
       try {
         const token = localStorage.getItem("token");
+        const url = `http://localhost:5000/api/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`;
+        console.log("PUT request URL:", url);
     
-        await axios.patch(
-`http://localhost:5000/api/lead/${leadToAccept.leadNo}/${encodeURIComponent(leadToAccept.description)}/${leadToAccept.caseNo}/${encodeURIComponent(leadToAccept.caseName)}/status`,          { status: "Pending" },
+        // Call the database update endpoint via a PUT request.
+        const response = await axios.put(
+          url,
+          {}, // No payload; the backend sets the status to "Pending" automatically.
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -269,79 +290,95 @@ const handleLeadClick = (lead) => {
             },
           }
         );
-        
+        console.log("PUT request succeeded. Response data:", response.data);
     
-      // Add lead to pending leads with default fields if not present
-      const newPendingLead = {
-        ...leadToAccept,
-        leadStatus: "Pending",
-        dueDate: leadToAccept.dueDate || "12/31/2024", // Default due date
-        priority: leadToAccept.priority || "Medium", // Default priority
-        flags: leadToAccept.flags || [],
-        assignedOfficers: leadToAccept.assignedOfficers || ["Unassigned"],
-      };
+        // Build a new pending lead object from the function parameters and default values.
+        const newPendingLead = {
+          id: leadNo,
+          leadNo: leadNo,
+          description: description,
+          leadStatus: "Pending",
+          dueDate: "NA",          // Default due date (adjust if needed)
+          priority: "NA",         // Default priority (adjust if needed)
+          flags: [],              // Defaults to empty array
+          assignedOfficers: ["Unassigned"], // Default assigned officer
+        };
     
-      setLeads((prevLeads) => ({
-        ...prevLeads,
-        assignedLeads: prevLeads.assignedLeads.filter((lead) => lead.leadNo !== leadNo),
-        pendingLeads: [...prevLeads.pendingLeads, newPendingLead],
-      }));
-    } catch (error) {
-      console.error("Error updating lead status:", error.response?.data || error);
-      alert("Failed to accept lead.");
-    }
-  };
+        // Update your local state: remove the accepted lead from assignedLeads and add it to pendingLeads.
+        setLeads((prevLeads) => {
+          const updatedAssignedLeads = prevLeads.assignedLeads.filter(
+            (lead) => Number(lead.id) !== Number(leadNo)
+          );
+          const updatedPendingLeads = [...prevLeads.pendingLeads, newPendingLead];
+          console.log(
+            "Updating leads state. New assignedLeads length:",
+            updatedAssignedLeads.length,
+            "New pendingLeads length:",
+            updatedPendingLeads.length
+          );
+          return {
+            ...prevLeads,
+            assignedLeads: updatedAssignedLeads,
+            pendingLeads: updatedPendingLeads,
+          };
+        });
+      } catch (error) {
+        console.error("Error updating lead status:", error.response?.data || error);
+        alert("Failed to accept lead.");
+      }
+    };
+    
 
-    useEffect(() => {
-      const fetchPendingLeadReturns = async () => {
-          try {
-              const token = localStorage.getItem("token");
-              if (!token) {
-                  console.error("❌ No token found. User is not authenticated.");
-                  return;
-              }
+  //   useEffect(() => {
+  //     const fetchPendingLeadReturns = async () => {
+  //         try {
+  //             const token = localStorage.getItem("token");
+  //             if (!token) {
+  //                 console.error("❌ No token found. User is not authenticated.");
+  //                 return;
+  //             }
   
-              if (!selectedCase?.caseNo || !selectedCase?.caseName) {
-                  console.error("⚠️ No valid case details provided.");
-                  return;
-              }
+  //             if (!selectedCase?.caseNo || !selectedCase?.caseName) {
+  //                 console.error("⚠️ No valid case details provided.");
+  //                 return;
+  //             }
   
-              console.log("🔍 Fetching pending lead returns for exact case:", selectedCase);
+  //             console.log("🔍 Fetching pending lead returns for exact case:", selectedCase);
   
-              // ✅ Fetch all lead returns assigned to or assigned by the officer
-              const leadsResponse = await axios.get("http://localhost:5000/api/leadreturn/officer-leads", {
-                  headers: {
-                      Authorization: `Bearer ${token}`,
-                      "Content-Type": "application/json",
-                  }
-              });
+  //             // ✅ Fetch all lead returns assigned to or assigned by the officer
+  //             const leadsResponse = await axios.get("http://localhost:5000/api/leadreturn/officer-leads", {
+  //                 headers: {
+  //                     Authorization: `Bearer ${token}`,
+  //                     "Content-Type": "application/json",
+  //                 }
+  //             });
   
-              // ✅ Filter pending lead returns that match the exact case details (caseNo & caseName)
-              const pendingLeadReturns = leadsResponse.data.filter(lead => 
-                  lead.assignedBy.lRStatus === "Pending"
-                  &&
-                  lead.caseNo === selectedCase.caseNo &&   // Match exact case number
-                  lead.caseName === selectedCase.caseName // Match exact case name
-              ).map(lead => ({
-                  id: lead.leadNo,
-                  description: lead.description,
-                  caseName: lead.caseName,
-                  caseNo: lead.caseNo,
-              }));
+  //             // ✅ Filter pending lead returns that match the exact case details (caseNo & caseName)
+  //             const pendingLeadReturns = leadsResponse.data.filter(lead => 
+  //                 lead.assignedBy.lRStatus === "Pending"
+  //                 &&
+  //                 lead.caseNo === selectedCase.caseNo &&   // Match exact case number
+  //                 lead.caseName === selectedCase.caseName // Match exact case name
+  //             ).map(lead => ({
+  //                 id: lead.leadNo,
+  //                 description: lead.description,
+  //                 caseName: lead.caseName,
+  //                 caseNo: lead.caseNo,
+  //             }));
   
-              // ✅ Update state with filtered pending lead returns
-              setLeads(prevLeads => ({
-                  ...prevLeads,
-                  pendingLeadReturns: pendingLeadReturns
-              }));
+  //             // ✅ Update state with filtered pending lead returns
+  //             setLeads(prevLeads => ({
+  //                 ...prevLeads,
+  //                 pendingLeadReturns: pendingLeadReturns
+  //             }));
   
-          } catch (error) {
-              console.error("Error fetching pending lead returns:", error.response?.data || error);
-          }
-      };
+  //         } catch (error) {
+  //             console.error("Error fetching pending lead returns:", error.response?.data || error);
+  //         }
+  //     };
   
-      fetchPendingLeadReturns();
-  }, [signedInOfficer, selectedCase]);
+  //     fetchPendingLeadReturns();
+  // }, [signedInOfficer, selectedCase]);
 
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
   const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
@@ -623,24 +660,10 @@ const handleLeadClick = (lead) => {
 
                 <div className="sideitem">
                     <ul className="sidebar-list">
-                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
-                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
-                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
-                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
-                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
-                        <li className="sidebar-item">Generate Report</li>
-                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
-
-                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
-
-       
-                                 {/* Lead Management Dropdown */}
-                                 <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
+                    <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+                    <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>   
+                                 <li className="sidebar-item active" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Case Page {leadDropdownOpen ?  "▼" : "▲"}
         </li>
         {leadDropdownOpen && (
           <ul className="dropdown-list1">
@@ -665,41 +688,39 @@ const handleLeadClick = (lead) => {
             </span>
           </div>
   </li>
-))}
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-          </ul>
+))}          </ul>
         )} 
 
-                            {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▼" : "▲" }
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-              View Lead Log
-            </li>
+{selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => navigate('/LRInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li> */}
+              {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Case Scratchpad
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Add/View Case Notes
+            </li>)}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-              View Timeline Entries
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
-
+            </li> */}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-         
-          </ul>
-        )}
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
 
                     </ul>
                 </div>
@@ -728,12 +749,12 @@ const handleLeadClick = (lead) => {
                           >
                             Pending Leads: {leads.pendingLeads.length}
                           </span>
-                        {/* <span
+                        <span
                             className={`hoverable ${activeTab === "pendingLeadReturns" ? "active" : ""}`}
                             onClick={() => handleTabClick("pendingLeadReturns")}
                         >
-                            Pending Lead Returns: {leads.pendingLeadReturns.length}
-                        </span> */}
+                            Lead Returns In Review: {leads.pendingLeadReturns.length}
+                        </span>
                         <span
                             className={`hoverable ${activeTab === "allLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("allLeads")}
@@ -994,7 +1015,7 @@ const handleLeadClick = (lead) => {
               <td>
                 <button
                   className="view-btn1"
-                  // onClick={() =>
+                  onClick={() => handleLeadClick(lead)}
                   // }
                 >
                   View
@@ -1005,7 +1026,7 @@ const handleLeadClick = (lead) => {
                     if (
                       window.confirm(`Do you want to accept this lead?`)
                     ) {
-                      acceptLead(lead.id);
+                      acceptLead(lead.id, lead.description );
                     }
                   }}
                 >
@@ -1239,7 +1260,7 @@ const handleLeadClick = (lead) => {
           .map((lead) => (
             <tr key={lead.id}>
 
-              <td>{lead.leadNo}</td>
+              <td>{lead.id}</td>
               <td>{lead.description}</td>
               <td>{lead.dueDate}</td>
               <td>{lead.priority}</td>

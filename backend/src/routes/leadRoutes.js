@@ -1,5 +1,7 @@
 const express = require("express");
-const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, searchLeadsByKeyword } = require("../controller/leadController");
+const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, searchLeadsByKeyword, setLeadStatusToInReview,
+  setLeadStatusToComplete, setLeadStatusToPending
+ } = require("../controller/leadController");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
 const Lead = require("../models/lead");
@@ -20,12 +22,18 @@ router.get("/assignedTo-leads", verifyToken, getLeadsForAssignedToOfficer);
 router.get("/lead/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLeadsByLeadNoandLeadName);
 router.get("/lead/:leadNo/:caseNo/:caseName", verifyToken, getLeadsforHierarchy);
 
-router.patch('/:leadNo/:leadName/:caseNo/:caseName/status', verifyToken, updateLeadStatus);
+router.put('/:leadNo/:leadName/:caseNo/:caseName', verifyToken, updateLeadStatus);
 
 
 router.get('/associatedSubNumbers/:caseNo/:caseName', getAssociatedSubNumbers);
 
-router.get("/search", verifyToken, getLeadsByCase);
+router.get("/search", verifyToken, searchLeadsByKeyword);
+
+router.put("/status/in-review", verifyToken, setLeadStatusToInReview);
+
+router.put("/status/complete", verifyToken, setLeadStatusToComplete);
+
+router.put("/status/pending", verifyToken, setLeadStatusToPending);
 
 
 // API to get the maximum lead number

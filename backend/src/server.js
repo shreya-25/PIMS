@@ -87,6 +87,9 @@ const LEvRoutes = require("./routes/LEvRoutes.js");
 const LRPRoutes = require("./routes/LRPRoutes.js");
 const LRARoutes = require("./routes/LRARoutes.js");
 const LRViRoutes = require("./routes/LRViRoutes.js");
+const LRTimelineRoutes = require("./routes/LRTimelineRoute.js");
+const LRScratchpadRoutes = require("./routes/LRScratchpadRoutes");
+const CommentRoutes = require("./routes/CommentRoutes.js");
 const { dbConnect } = require("./config/dbConnect"); // Import dbConnect properly
 const path = require('path');
 
@@ -128,6 +131,9 @@ app.use("/api/lrevidence", LEvRoutes);
 app.use("/api/lrpicture", LRPRoutes);
 app.use("/api/lraudio", LRARoutes);
 app.use("/api/lrvideo", LRViRoutes);
+app.use("/api/timeline", LRTimelineRoutes);
+app.use("/api/scratchpad", LRScratchpadRoutes);
+app.use("/api/comment", CommentRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'temp_uploads')));
 
 app.use("/api/report", reportRoutes); // For report generation
@@ -142,6 +148,16 @@ app.get("/", (req, res) => {
 app.get('/test', (req, res) => {
     res.send({ message: 'Server is still alive!' });
   });
+
+  // in your server.js (or wherever you mount express.static)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.pdf')) {
+      res.setHeader('Content-Disposition', 'inline; filename="' + path.basename(filePath) + '"');
+    }
+  }
+}));
+
 
 
 // Log MongoDB connection string (for debugging, remove in production)

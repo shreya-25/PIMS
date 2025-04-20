@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect, useRef } from "react";
 import Navbar from "../../components/Navbar/Navbar";
 import "./SearchLead.css";
 import Pagination from "../../components/Pagination/Pagination";
@@ -6,42 +6,41 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
 
-// Sample lead data for matching
 const sampleLeads = [
-  {
-    id: "Lead45",
-    name: "Collect Audio Records from Dispatcher",
-    dueDate: "12/25/2024",
-    priority: "High",
-    remainingDays: 0,
-    flags: "Important",
-    assignedOfficers: "Officer 1, Officer 3",
-  },
-  {
-    id: "Lead20",
-    name: "Interview Mr. John",
-    dueDate: "12/31/2024",
-    priority: "Medium",
-    remainingDays: 0,
-    flags: "None",
-    assignedOfficers: "Officer 2",
-  },
-  {
-    id: "Lead84",
-    name: "Collect Evidence from 63 Mudray Street",
-    dueDate: "12/29/2024",
-    priority: "Low",
-    remainingDays: 0,
-    flags: "None",
-    assignedOfficers: "Officer 4",
-  },
+  // {
+  //   id: "Lead45",
+  //   name: "Collect Audio Records from Dispatcher",
+  //   dueDate: "12/25/2024",
+  //   priority: "High",
+  //   remainingDays: 0,
+  //   flags: "Important",
+  //   assignedOfficers: "Officer 1, Officer 3",
+  // },
+  // {
+  //   id: "Lead20",
+  //   name: "Interview Mr. John",
+  //   dueDate: "12/31/2024",
+  //   priority: "Medium",
+  //   remainingDays: 0,
+  //   flags: "None",
+  //   assignedOfficers: "Officer 2",
+  // },
+  // {
+  //   id: "Lead84",
+  //   name: "Collect Evidence from 63 Mudray Street",
+  //   dueDate: "12/29/2024",
+  //   priority: "Low",
+  //   remainingDays: 0,
+  //   flags: "None",
+  //   assignedOfficers: "Officer 4",
+  // },
 ];
 
 export const SearchLead = () => {
   const navigate = useNavigate();
 
   // Initial static rows (3 rows)
-  const initialStaticRows = Array(3).fill({
+  const initialStaticRows = Array(1).fill({
     junction: "And",
     field: "",
     evaluator: "",
@@ -51,11 +50,126 @@ export const SearchLead = () => {
   const [staticRows, setStaticRows] = useState(initialStaticRows);
   const [dynamicRows, setDynamicRows] = useState([]); // Dynamic rows managed separately
   const [matchingLeads, setMatchingLeads] = useState([]);
+   const [searchTerm, setSearchTerm] = useState("");
 
     const [currentPage, setCurrentPage] = useState(1);
       const [pageSize, setPageSize] = useState(50);
       const totalPages = 10; // Change based on your data
       const totalEntries = 100;
+
+        const { selectedCase, setSelectedLead } = useContext(CaseContext);
+      
+
+  // Sample lead data for matching
+ const [leadsData, setLeadsData] = useState([]);
+
+ console.log(selectedCase);
+
+  // Function to filter fetched leads using advanced search criteria
+  const applyAdvancedFilters = (leads) => {
+    // Combine static and dynamic rows; filter out any rows with an empty field or value
+    const combinedRows = [...staticRows, ...dynamicRows].filter(
+      (row) => row.field && row.value.trim() !== ""
+    );
+    // If no filter criteria is provided, return the full lead list.
+    if (combinedRows.length === 0) return leads;
+
+    // Filter leads by checking each row's criterion against each lead.
+    return leads.filter((lead) => {
+      // Initially assume the lead satisfies every filter
+      let satisfiesAll = true;
+
+      // Iterate over each filter row. Here we assume that all conditions must be met (logical AND)
+      combinedRows.forEach((row) => {
+        const filterValue = row.value.toLowerCase().trim();
+        let leadValue = "";
+
+        // Map the filter field to the corresponding lead property.
+        switch (row.field) {
+          case "Lead Number":
+            leadValue = lead.leadNo ? lead.leadNo.toLowerCase() : "";
+            break;
+          case "Priority":
+            leadValue = lead.priority ? lead.priority.toLowerCase() : "";
+            break;
+          case "Due Date":
+            // Use the same display format as formatDate (or compare ISO strings if preferred)
+            leadValue = lead.dueDate ? formatDate(lead.dueDate).toLowerCase() : "";
+            break;
+          case "Flag":
+            // Assuming 'associatedFlags' holds flag information as a string
+            leadValue = lead.associatedFlags ? lead.associatedFlags.toLowerCase() : "";
+            break;
+          case "Keyword":
+          case "Lead Name":
+            // Compare the description if using keyword or name
+            leadValue = lead.description ? lead.description.toLowerCase() : "";
+            break;
+          case "Assigned To":
+            // Join assigned officers into a single string for comparison
+            leadValue = lead.assignedTo ? lead.assignedTo.join(" ").toLowerCase() : "";
+            break;
+          // Add additional cases as needed
+          default:
+            leadValue = "";
+        }
+
+        // Check the criterion using the evaluator ("equals" or "contains")
+        if (row.evaluator === "equals") {
+          if (leadValue !== filterValue) {
+            satisfiesAll = false;
+          }
+        } else if (row.evaluator === "contains") {
+          if (!leadValue.includes(filterValue)) {
+            satisfiesAll = false;
+          }
+        }
+      });
+
+      return satisfiesAll;
+    });
+  };
+
+
+// Updated handleSearch: first fetch from API, then apply advanced filters
+const handleSearch = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    // Combine advanced rows from static and dynamic arrays
+    const advancedRows = [
+      ...staticRows,
+      ...dynamicRows,
+    ].filter((row) => row.field && row.value.trim() !== "");
+
+    let fieldParam = "";
+    let keywordParam = "";
+
+    if (advancedRows.length > 0) {
+      // For simplicity, use the first advanced row for backend filtering.
+      fieldParam = advancedRows[0].field;
+      keywordParam = advancedRows[0].value;
+    } else {
+      keywordParam = searchTerm.trim() ? searchTerm : "";
+    }
+
+    const response = await axios.get("http://localhost:5000/api/lead/search", {
+      params: {
+        caseNo: selectedCase.caseNo,
+        caseName: selectedCase.caseName,
+        keyword: keywordParam,
+        field: fieldParam,
+      },
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    console.log("Fetched leads:", response.data);
+    setLeadsData(response.data);
+  } catch (error) {
+    console.error("Error fetching search results:", error);
+  }
+};
+
 
   // Handles input changes for static or dynamic rows
   const handleInputChange = (index, field, value, isDynamic = false) => {
@@ -68,6 +182,16 @@ export const SearchLead = () => {
       updatedRows[index][field] = value;
       setStaticRows(updatedRows);
     }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date)) return "";
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const year = date.getFullYear().toString().slice(-2);
+    return `${month}/${day}/${year}`;
   };
 
   // Clears static row content (does not remove it)
@@ -92,37 +216,56 @@ export const SearchLead = () => {
   };
 
   // Search function to filter matching leads
-  const handleSearch = () => {
-    const combinedRows = [...staticRows, ...dynamicRows];
+  // const handleSearch = () => {
+  //   const combinedRows = [...staticRows, ...dynamicRows];
 
-    const filteredLeads = sampleLeads.filter((lead) => {
-      return combinedRows.some((row) => {
-        const value = row.value.toLowerCase();
-        switch (row.field) {
-          case "Lead Number":
-            return lead.id.toLowerCase().includes(value);
-          case "Keyword":
-          case "Lead Name":
-            return lead.name.toLowerCase().includes(value);
-          case "Assigned To":
-            return lead.assignedOfficers.toLowerCase().includes(value);
-          default:
-            return false;
-        }
-      });
-    });
+  //   const filteredLeads = sampleLeads.filter((lead) => {
+  //     return combinedRows.some((row) => {
+  //       const value = row.value.toLowerCase();
+  //       switch (row.field) {
+  //         case "Lead Number":
+  //           return lead.id.toLowerCase().includes(value);
+  //         case "Keyword":
+  //         case "Lead Name":
+  //           return lead.name.toLowerCase().includes(value);
+  //         case "Assigned To":
+  //           return lead.assignedOfficers.toLowerCase().includes(value);
+  //         default:
+  //           return false;
+  //       }
+  //     });
+  //   });
 
-    setMatchingLeads(filteredLeads);
-  };
+  //   setMatchingLeads(filteredLeads);
+  // };
 
       const location = useLocation();
       const { caseDetails } = location.state || {};
 
         const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
         const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+        const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
       
         const onShowCaseSelector = (route) => {
           navigate(route, { state: { caseDetails } });
+      };
+
+      const handleLeadClick = (lead) => {
+        setSelectedLead({
+            leadNo: lead.leadNo,
+            incidentNo: lead.incidentNo,
+            leadName: lead.description,
+            dueDate: lead.dueDate || "N/A",
+            priority: lead.priority || "Medium",
+            flags: lead.flags || [],
+            assignedOfficers: lead.assignedOfficers || [],
+            leadStatus: lead.leadStatus,
+            caseName: lead.caseName,
+            caseNo: lead.caseNo
+        });
+      
+        // Navigate to Lead Review Page
+        navigate("/leadReview", { state: { leadDetails: lead, caseDetails: selectedCase } });
       };
         
 
@@ -133,72 +276,41 @@ export const SearchLead = () => {
             {/* Sidebar */}
             <div className="sideitem">
                     <ul className="sidebar-list">
-                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
-                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
-                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
-                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
-                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
-                        <li className="sidebar-item">Generate Report</li>
-                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
-
-                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
-
-                           {/* Lead Management Dropdown */}
-                           <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
-
-                            {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▼" : "▲" }
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-              View Lead Log
-            </li>
+                    
+                    <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+            <li className="sidebar-item active"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
             </li> */}
+              {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Case Scratchpad
-            </li>
+              Add/View Case Notes
+            </li>)}
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
             </li> */}
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-              View Timeline Entries
-            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
             {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
-
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-         
-          </ul>
-        )}
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
+       
 
                     </ul>
                 </div>
@@ -209,6 +321,40 @@ export const SearchLead = () => {
 </div>
 
       <div className="main-content-searchlead">
+
+
+     
+            <div className="search-page-bar">
+              <div className="search-bar-page">
+                <div className="search-container1">
+                  <i className="fa-solid fa-magnifying-glass"></i>
+                  <input type="text" className="search-input1" placeholder="Search Lead" 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      console.log("Enter pressed, calling handleSearch");
+                      handleSearch();
+                    }
+                  }} />
+                </div>
+              </div>
+              </div>
+
+                {/* Advanced Search Toggle Button */}
+            <div className="advanced-search-toggle">
+              <button
+                className="save-btn1"
+                onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+              >
+                {showAdvancedSearch ? "Advanced Search" : "Advanced Search"}
+              </button>
+            </div>
+          
+
+       {/* Conditionally Render Advanced Search Section */}
+       {showAdvancedSearch && (
+              <>
         <table className="search-table">
           <thead>
             <tr>
@@ -356,33 +502,45 @@ export const SearchLead = () => {
           </button>
         </div>
 
+        </>
+       )}
+
         <div className="results-section">
   <p className="results-title">Matching Leads</p>
   <div className="result-line"></div>
   <table className="results-table">
     <thead>
       <tr>
-        <th>Lead Number and Name</th>
-        <th>Due Date</th>
-        <th>Priority</th>
-        <th>Remaining Days</th>
-        <th>Flags</th>
-        <th>Assigned Officers</th>
-        <th>Actions</th>
+        <th style={{ width: "10%" }}>Lead No.</th>
+        <th>Lead Name</th>
+        <th style={{ width: "10%" }}>Due Date</th>
+        <th style={{ width: "8%" }}>Priority</th>
+        <th style={{ width: "10%" }}>Flags</th>
+        <th style={{ width: "15%" }}>Assigned Officers</th>
+        <th style={{ width: "12%" }}>Actions</th>
       </tr>
     </thead>
     <tbody>
-      {matchingLeads.length > 0 ? (
-        matchingLeads.map((lead, index) => (
+      {leadsData.length > 0 ? (
+        leadsData.map((lead, index) => (
           <tr key={index}>
-            <td>{lead.id}: {lead.name}</td>
-            <td>{lead.dueDate}</td>
-            <td>{lead.priority}</td>
-            <td>{lead.remainingDays}</td>
-            <td>{lead.flags}</td>
-            <td>{lead.assignedOfficers}</td>
+            <td>{lead.leadNo}</td>
+            <td>{lead.description}</td>
+            <td>{formatDate(lead.dueDate) || "NA"}</td>
+            <td>{lead.priority || "NA"}</td>
+            <td>{lead.associatedFlags || "NA"}</td>
+            <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
+              {/* {lead.assignedOfficers.join(", ")} */}
+              {lead.assignedTo.map((officer, index) => (
+                <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
+              ))}
+              </td>
             <td>
-              <button className="view-btn" onClick={() => navigate(`/lead/${lead.id}`)}>View</button>
+              <button className="save-btn1" 
+              //  onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.description} } )}>
+              onClick={() => handleLeadClick(lead)}>
+              {/* onClick={() => navigate(`/lead/${lead.id}`)} */}
+              View</button>
             </td>
           </tr>
         ))
