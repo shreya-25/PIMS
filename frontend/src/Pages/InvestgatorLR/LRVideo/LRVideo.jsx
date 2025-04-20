@@ -21,6 +21,18 @@ export const LRVideo = () => {
       }, []);
   const navigate = useNavigate();
   const location = useLocation();
+  const [file, setFile] = useState(null);
+  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+  
+
+  const handleFileChange = (event) => {
+    const selectedFile = event.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setVideoData({ ...videoData, videoSrc: URL.createObjectURL(selectedFile) }); // preview
+    }
+  };
+  
       
         const formatDate = (dateString) => {
           if (!dateString) return "";
@@ -37,21 +49,6 @@ export const LRVideo = () => {
 
   // Sample video data
   const [videos, setVideos] = useState([
-    {
-      dateEntered: "12/01/2024",
-      returnId: 1,
-      dateVideoRecorded: "12/01/2024",
-      description: "Surveillance video of the incident.",
-      videoSrc: `${process.env.PUBLIC_URL}/Materials/video1.mp4`
-    
-    },
-    {
-      dateEntered: "12/02/2024",
-      returnId: 2,
-      dateVideoRecorded: "12/02/2024",
-      description: "Witness interview recording.",
-      videoSrc: `${process.env.PUBLIC_URL}/Materials/video2.mp4`
-    },
   ]);
 
   // State to manage form data
@@ -59,38 +56,69 @@ export const LRVideo = () => {
     dateVideoRecorded: "",
     description: "",
     videoSrc: "",
+    leadReturnId: "",
   });
 
   const handleInputChange = (field, value) => {
     setVideoData({ ...videoData, [field]: value });
   };
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const videoUrl = URL.createObjectURL(file);
-      setVideoData({ ...videoData, videoSrc: videoUrl });
+  const handleAddVideo = async () => {
+    if (!file || !videoData.dateVideoRecorded || !videoData.description || !videoData.leadReturnId) {
+      alert("Please fill in all required fields and select a file.");
+      return;
+    }
+  
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("leadNo", selectedLead?.leadNo);
+    formData.append("description", selectedLead?.leadName);
+    formData.append("enteredBy", localStorage.getItem("loggedInUser"));
+    formData.append("caseName", selectedCase?.caseName);
+    formData.append("caseNo", selectedCase?.caseNo);
+    formData.append("leadReturnId", videoData.leadReturnId);
+    formData.append("enteredDate", new Date().toISOString());
+    formData.append("dateVideoRecorded", videoData.dateVideoRecorded);
+    formData.append("videoDescription", videoData.description);
+  
+    const token = localStorage.getItem("token");
+  
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/lrvideo/upload",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const savedVideo = response.data.video;
+      setVideos((prev) => [
+        ...prev,
+        {
+          dateEntered: formatDate(savedVideo.enteredDate),
+          returnId: savedVideo.leadReturnId,
+          dateVideoRecorded: formatDate(savedVideo.dateVideoRecorded),
+          description: savedVideo.videoDescription,
+          videoSrc: `http://localhost:5000/uploads/${savedVideo.filename}`,
+        },
+      ]);
+  
+      setVideoData({
+        dateVideoRecorded: "",
+        description: "",
+        videoSrc: "",
+        leadReturnId: "",
+      });
+      setFile(null);
+    } catch (error) {
+      console.error("Error uploading video:", error);
+      alert("Failed to upload video.");
     }
   };
-
-  const handleAddVideo = () => {
-    const newVideo = {
-      dateEntered: new Date().toLocaleDateString(),
-      dateVideoRecorded: videoData.dateVideoRecorded,
-      description: videoData.description,
-      videoSrc: videoData.videoSrc || "/Materials/default-video.mp4", // Default video if not provided
-    };
-
-    // Add new video to the list
-    setVideos([...videos, newVideo]);
-
-    // Clear form fields
-    setVideoData({
-      dateVideoRecorded: "",
-      description: "",
-      videoSrc: "",
-    });
-  };
+  
 
   const handleNavigation = (route) => {
     navigate(route);
@@ -103,6 +131,48 @@ export const LRVideo = () => {
                       navigate(route, { state: { caseDetails } });
                   };
 
+                  useEffect(() => {
+                    if (
+                      selectedLead?.leadNo &&
+                      selectedLead?.leadName &&
+                      selectedCase?.caseNo &&
+                      selectedCase?.caseName
+                    ) {
+                      fetchVideos();
+                    }
+                  }, [selectedLead, selectedCase]);
+                  
+                  const fetchVideos = async () => {
+                    const token = localStorage.getItem("token");
+                    const leadNo = selectedLead?.leadNo;
+                    const leadName = encodeURIComponent(selectedLead?.leadName);
+                    const caseNo = selectedCase?.caseNo;
+                    const caseName = encodeURIComponent(selectedCase?.caseName);
+                  
+                    try {
+                      const res = await axios.get(
+                        `http://localhost:5000/api/lrvideo/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+                        {
+                          headers: {
+                            Authorization: `Bearer ${token}`,
+                          },
+                        }
+                      );
+                  
+                      const mappedVideos = res.data.map((video) => ({
+                        dateEntered: formatDate(video.enteredDate),
+                        returnId: video.leadReturnId,
+                        dateVideoRecorded: formatDate(video.dateVideoRecorded),
+                        description: video.videoDescription,
+                        videoSrc: `http://localhost:5000/uploads/${video.filename}`,
+                      }));
+                  
+                      setVideos(mappedVideos);
+                    } catch (error) {
+                      console.error("Error fetching videos:", error);
+                    }
+                  };
+                  
   return (
     <div className="lrvideos-container">
       {/* Navbar */}
@@ -130,60 +200,39 @@ export const LRVideo = () => {
 
       <div className="LRI_Content">
        <div className="sideitem">
-                    <ul className="sidebar-list">
-                     {/* Lead Management Dropdown */}
-                     <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
+       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
-                            {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▼" : "▲" }
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-              View Lead Log
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
-            </li>
+            </li> */}
+              {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
-            </li>
+            </li>)}
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
             </li> */}
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-              View Timeline Entries
-            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
             {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
-
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-         
-          </ul>
-        )}
-
-                    </ul>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
                 </div>
                 <div className="left-content">
         <div className="case-header">
@@ -199,7 +248,7 @@ export const LRVideo = () => {
         <h4 className="evidence-form-h4">Enter Video Details</h4>
         <div className="video-form">
           <div className="form-row-video">
-            <label className="evidence-head">Date Video Recorded:</label>
+            <label className="evidence-head">Date Video Recorded*</label>
             <input
               type="date"
               value={videoData.dateVideoRecorded}
@@ -208,7 +257,16 @@ export const LRVideo = () => {
             />
           </div>
           <div className="form-row-video">
-            <label className="evidence-head">Description:</label>
+            <label className="evidence-head">Lead Return Id*</label>
+            <input
+              type="text"
+              value={videoData.leadReturnId}
+              className="evidence-head"
+              onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
+            />
+          </div>
+          <div className="form-row-video">
+            <label className="evidence-head">Description*</label>
             <textarea
               value={videoData.description}
               className="evidence-head"
@@ -216,12 +274,14 @@ export const LRVideo = () => {
             ></textarea>
           </div>
           <div className="form-row-video">
-            <label className="evidence-head">Upload Video:</label>
+            <label className="evidence-head">Upload Video*</label>
             <input type="file" accept="video/*" className="evidence-head" onChange={handleFileChange} />
           </div>
         </div>
         <div className="form-buttons-video">
-        <button className="save-btn1" onClick={handleAddVideo}>Add Video</button>
+        <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+        className="save-btn1" onClick={handleAddVideo}>Add Video</button>
         </div>
 
         {/* Uploaded Video Preview */}
@@ -248,11 +308,11 @@ export const LRVideo = () => {
             <table className="leads-table">
           <thead>
             <tr>
-              <th>Date Entered</th>
-              <th> Associated Return Id </th>
+              <th style={{ width: "12%" }}>Date Entered</th>
+              <th style={{ width: "10%" }}> Return Id </th>
               <th>Date Video Recorded</th>
               <th>Description</th>
-              <th></th>
+              <th style={{ width: "13%" }}></th>
             </tr>
           </thead>
           <tbody>
@@ -264,7 +324,8 @@ export const LRVideo = () => {
                 <td>{video.description}</td>
                 <td>
                   <div classname = "lr-table-btn">
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
@@ -272,7 +333,8 @@ export const LRVideo = () => {
                   // onClick={() => handleEditReturn(ret)}
                 />
                   </button>
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
@@ -286,7 +348,7 @@ export const LRVideo = () => {
             ))}
           </tbody>
         </table>
-        <Comment/>
+        <Comment tag="Video" />
         </div>
         {/* Action Buttons */}
         {/* <div className="form-buttons-video">

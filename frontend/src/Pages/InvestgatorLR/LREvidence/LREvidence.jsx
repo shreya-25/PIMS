@@ -20,6 +20,8 @@ export const LREvidence = () => {
       }, []);
   const navigate = useNavigate(); // Initialize navigate hook
   const location = useLocation();
+  const [loading, setLoading] = useState(true);
+      const [error, setError] = useState("");
       const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);  
   
   
@@ -57,14 +59,14 @@ export const LREvidence = () => {
   // ]);
 
   const [evidences, setEvidences] = useState([
-    {
-      dateEntered: "",
-      returnId:'',
-      type: "",
-      collectionDate: "",
-      disposedDate: "",
-      disposition: "",
-    }
+    // {
+    //   dateEntered: "",
+    //   returnId:'',
+    //   type: "",
+    //   collectionDate: "",
+    //   disposedDate: "",
+    //   disposition: "",
+    // }
   ]);
 
 
@@ -79,27 +81,6 @@ export const LREvidence = () => {
 
   const handleInputChange = (field, value) => {
     setEvidenceData({ ...evidenceData, [field]: value });
-  };
-
-  const handleAddEvidence = () => {
-    const newEvidence = {
-      dateEntered: new Date().toLocaleDateString(),
-      collectionDate: evidenceData.collectionDate,
-      disposedDate: evidenceData.disposedDate,
-      type: evidenceData.type,
-      disposition: evidenceData.disposition,
-    };
-
-    // Add new evidence to the list
-    // setEvidence([...evidence, newEvidence]);
-
-    // Clear form fields
-    setEvidenceData({
-      collectionDate: "",
-      disposedDate: "",
-      type: "",
-      disposition: "",
-    });
   };
 
   const handleNavigation = (route) => {
@@ -127,7 +108,7 @@ export const LREvidence = () => {
     formData.append("enteredBy", localStorage.getItem("loggedInUser"));
     formData.append("caseName", selectedLead.caseName);
     formData.append("caseNo", selectedLead.caseNo);
-    formData.append("leadReturnId", evidenceData.returnId); // Example value; update as needed
+    formData.append("leadReturnId", evidenceData.leadReturnId); // Example value; update as needed
     formData.append("enteredDate", new Date().toISOString());
     formData.append("type", evidenceData.type);
     formData.append("envidenceDescription", evidenceData.evidence);
@@ -165,6 +146,59 @@ export const LREvidence = () => {
     }
   };
 
+  useEffect(() => {
+    if (
+      selectedLead?.leadNo &&
+      selectedLead?.leadName &&
+      selectedCase?.caseNo &&
+      selectedCase?.caseName
+    ) {
+      fetchEvidences();
+    }
+  }, [selectedLead, selectedCase]);
+  const fetchEvidences = async () => {
+    const token = localStorage.getItem("token");
+  
+    const leadNo = selectedLead.leadNo;
+    const leadName = encodeURIComponent(selectedLead.leadName); // encode to handle spaces
+    const caseNo = selectedCase.caseNo;
+    const caseName = encodeURIComponent(selectedCase.caseName);
+  
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/lrevidence/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const mappedEvidences = res.data.map((enc) => ({
+        dateEntered: formatDate(enc.enteredDate),
+        type: enc.type,
+        enclosure: enc.enclosureDescription,
+        returnId: enc.leadReturnId,
+        originalName: enc.originalName,
+        collectionDate: formatDate(enc.collectionDate),
+        disposedDate: formatDate(enc.disposedDate),
+        disposition: enc.disposition
+      }));
+  
+      setEvidences(mappedEvidences);
+      setLoading(false);
+      setError("");
+    } catch (err) {
+      console.error("Error fetching evidences:", err);
+      setError("Failed to load evidences");
+      setLoading(false);
+    }
+  };
+   // Handle file selection
+   const handleFileChange = (event) => {
+    setFile(event.target.files[0]);
+    console.log("Selected file:", event.target.files[0]);
+  };
   
 
   return (
@@ -194,59 +228,39 @@ export const LREvidence = () => {
 
       <div className="LRI_Content">
        <div className="sideitem">
-                    <ul className="sidebar-list">
-                     {/* Lead Management Dropdown */}
-                     <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
+       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
-                            {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▼" : "▲" }
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-              View Lead Log
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
-            </li>
+            </li> */}
+              {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
-            </li>
+            </li>)}
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
             </li> */}
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-              View Timeline Entries
-            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
             {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
-
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-         
-          </ul>
-        )}
-                    </ul>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
                 </div>
                 <div className="left-content">
      
@@ -270,23 +284,30 @@ export const LREvidence = () => {
         <h4 className="evidence-form-h4">Enter Evidence Details</h4>
         <div className="evidence-form">
           <div className="form-row-evidence">
-            <label  className="evidence-head">Collection Date:</label>
+            <label  className="evidence-head">Collection Date</label>
             <input
               type="date"
               value={evidenceData.collectionDate}
              
               onChange={(e) => handleInputChange("collectionDate", e.target.value)}
             />
-            <label className="evidence-head">Disposed Date:</label>
+            <label className="evidence-head">Disposed Date</label>
             <input
               type="date"
               value={evidenceData.disposedDate}
             
               onChange={(e) => handleInputChange("disposedDate", e.target.value)}
             />
+            <label className="evidence-head">Return Id*</label>
+            <input
+              type="leadReturnId"
+              value={evidenceData.leadReturnId}
+            
+              onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
+            />
           </div>
           <div className="form-row-evidence">
-            <label className="evidence-head">Type:</label>
+            <label className="evidence-head">Type</label>
             <input
               type="text"
               value={evidenceData.type}
@@ -295,16 +316,22 @@ export const LREvidence = () => {
             />
           </div>
           <div className="form-row-evidence">
-            <label className="evidence-head">Disposition:</label>
+            <label className="evidence-head">Disposition</label>
             <textarea
               value={evidenceData.disposition}
               onChange={(e) => handleInputChange("disposition", e.target.value)}
             ></textarea>
           </div>
+          <div className="form-row-evidence">
+            <label>Upload File*</label>
+            <input type="file" onChange={handleFileChange} />
+          </div>
         </div>
         </div>
         <div className="form-buttons">
-          <button className="save-btn1" onClick={handleAddEvidence}>Add Evidence</button>
+        <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+           className="save-btn1" onClick={handleSaveEvidence}>Add Evidence</button>
         </div>  
 
             {/* Evidence Table */}
@@ -331,7 +358,8 @@ export const LREvidence = () => {
                 <td>{item.disposition}</td>
                 <td>
                   <div classname = "lr-table-btn">
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
@@ -339,7 +367,8 @@ export const LREvidence = () => {
                   // onClick={() => handleEditReturn(ret)}
                 />
                   </button>
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
@@ -353,7 +382,7 @@ export const LREvidence = () => {
             ))}
           </tbody>
         </table>
-        <Comment/>
+        <Comment tag = "Evidence"/>
         </div>
         </div>
 

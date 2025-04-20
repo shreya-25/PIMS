@@ -859,88 +859,945 @@
 // module.exports = { generateCaseReport };
 
 
+// const libre = require('libreoffice-convert');
+// const mammoth = require("mammoth");
+// const puppeteer = require("puppeteer");
+// const path = require('path');
+// const fs = require('fs');
+
+// // function convertDocxToPdf(inputFilePath, outputFilePath) {
+// //   return new Promise((resolve, reject) => {
+// //     // Read the DOCX file into a buffer
+// //     const fileBuffer = fs.readFileSync(inputFilePath);
+// //     // Set the output format to PDF
+// //     const extend = '.pdf';
+// //     // Convert the file
+// //     libre.convert(fileBuffer, extend, undefined, (err, done) => {
+// //       if (err) {
+// //         return reject(`Error converting file: ${err}`);
+// //       }
+// //       // Write the resulting PDF buffer to the output file
+// //       fs.writeFileSync(outputFilePath, done);
+// //       resolve(outputFilePath);
+// //     });
+// //   });
+// // }
+
+// // async function convertDocxToPdf(inputPath, outputPath) {
+// //   try {
+// //     // Convert DOCX to HTML using mammoth
+// //     const { value: html } = await mammoth.convertToHtml({ path: inputPath });
+    
+// //     // Optionally, write the HTML to a file for debugging
+// //     // fs.writeFileSync(path.join(__dirname, 'output.html'), html);
+    
+// //     // Launch Puppeteer to render the HTML and generate a PDF
+// //     const browser = await puppeteer.launch();
+// //     const page = await browser.newPage();
+    
+// //     // Set the HTML content
+// //     await page.setContent(html, { waitUntil: "networkidle0" });
+    
+// //     // Create PDF file
+// //     await page.pdf({ path: outputPath, format: "Letter", printBackground: true });
+    
+// //     await browser.close();
+// //     console.log(`PDF conversion complete! File saved at: ${outputPath}`);
+// //   } catch (error) {
+// //     console.error("Error during conversion:", error);
+// //   }
+// // }
+
+// async function convertDocxToPdf(inputPath, outputPath, user, reportTimestamp) {
+//   try {
+//     // Convert DOCX to HTML using Mammoth.
+//     const { value: htmlContent } = await mammoth.convertToHtml({ path: inputPath });
+    
+//     // Resolve absolute path for the logo and create a file URL.
+//     const logoPath = path.join(__dirname, "../../../frontend/public/Materials/newpolicelogo.png");
+//     const logoUrl = `file://${logoPath}`;
+
+//     // Build an HTML template that replicates your PDFKit header on the first page.
+//     // Note: Removing 'position: fixed' so the header flows as a normal block element.
+//     const html = `
+//       <!DOCTYPE html>
+//       <html>
+//         <head>
+//           <meta charset="utf-8">
+//           <style>
+//             /* Set page margins to match PDFDocument margin (50px) */
+//             @page { margin: 50px; }
+//             body {
+//               margin: 0;
+//               padding: 0;
+//               font-family: Helvetica, Arial, sans-serif;
+//             }
+//             /* Header styled as a normal block element */
+//             .header {
+//               width: 100%;
+//               height: 80px;
+//               background-color: #003366;
+//               /* ensure the header is printed only on the first page */
+//               page-break-after: always;
+//               /* remove fixed positioning to avoid repeating header on subsequent pages */
+//             }
+//             /* Logo: positioned within the header using floats */
+//             .header-logo {
+//               float: left;
+//               margin: calc((80px - 70px)/2) 10px calc((80px - 70px)/2) 10px;
+//               width: 70px;
+//               height: 70px;
+//             }
+//             /* Title and details centered */
+//             .header-text {
+//               text-align: center;
+//               color: white;
+//               /* use line-height to approximate vertical alignment */
+//               padding-top: 10px;
+//             }
+//             .header-text .title {
+//               font-size: 14px;
+//               font-weight: bold;
+//               line-height: 1.2;
+//             }
+//             .header-text .details {
+//               font-size: 10px;
+//               line-height: 1.2;
+//             }
+//             /* Main content starts on a new page (since the header block forces a page break). */
+//             main {
+//               /* It will appear on the second page if the header + page-break takes the full page;
+//                  If you prefer content right after the header on the same page, remove the page-break-after rule */
+//               margin-top: 0;
+//             }
+//           </style>
+//         </head>
+//         <body>
+//           <!-- Header section that will appear only on the first page -->
+//           <div class="header">
+//             <img src="${logoUrl}" alt="Logo" class="header-logo" />
+//             <div class="header-text">
+//               <div class="title">Final Case Report</div>
+//               <div class="details">
+//                 Generated by: ${user} | Timestamp: ${reportTimestamp}
+//               </div>
+//             </div>
+//           </div>
+//           <!-- The rest of the content -->
+//           <main>
+//             ${htmlContent}
+//           </main>
+//         </body>
+//       </html>
+//     `;
+    
+//     // Launch Puppeteer to render the HTML and generate a PDF.
+//     const browser = await puppeteer.launch();
+//     const page = await browser.newPage();
+    
+//     // Set the HTML content and wait until the network is idle.
+//     await page.setContent(html, { waitUntil: "networkidle0" });
+    
+//     // Create the PDF with matching margins.
+//     await page.pdf({
+//       path: outputPath,
+//       format: "Letter",
+//       printBackground: true,
+//       margin: {
+//         top: '50px',
+//         bottom: '50px',
+//         left: '50px',
+//         right: '50px'
+//       }
+//     });
+    
+//     await browser.close();
+//     console.log(`PDF conversion complete! File saved at: ${outputPath}`);
+//   } catch (error) {
+//     console.error("Error during conversion:", error);
+//   }
+// }
+
+
+
+// const PDFDocument = require("pdfkit");
+// const { PDFDocument: PDFLibDocument } = require("pdf-lib");
+
+// async function mergeWithWordFileAtStart(pdfKitBuffer, wordPdfPath) {
+//   // Load the main PDF (generated by PDFKit)
+//   const mainDoc = await PDFLibDocument.load(pdfKitBuffer);
+//   // Read and load the external PDF (converted from the Word file)
+//   const externalBuffer = fs.readFileSync(wordPdfPath);
+//   const externalDoc = await PDFLibDocument.load(externalBuffer);
+
+//   // Copy every page from externalDoc
+//   const externalPages = await mainDoc.copyPages(
+//     externalDoc,
+//     externalDoc.getPageIndices()
+//   );
+//   // Insert the external pages at the beginning of mainDoc
+//   // (We insert in reverse order to preserve the original order)
+//   for (let i = externalPages.length - 1; i >= 0; i--) {
+//     mainDoc.insertPage(0, externalPages[i]);
+//   }
+
+//   // Save and return the merged PDF as a Buffer
+//   const mergedPdfBytes = await mainDoc.save();
+//   return Buffer.from(mergedPdfBytes);
+// }
+
+// /* ---------------------------------------
+//    Helper: measureRowHeight, drawHeaderRow,
+//    drawSingleRow for row-splitting
+// -----------------------------------------*/
+// function measureRowHeight(doc, row, headers, colWidths, padding = 5) {
+//   let maxHeight = 20; // or your chosen minRowHeight
+//   headers.forEach((header, i) => {
+//     const cellText = row[header] || "";
+//     const cellHeight = doc.heightOfString(cellText, {
+//       width: colWidths[i] - 2 * padding,
+//       align: "left",
+//     });
+//     const fullHeight = cellHeight + 2 * padding;
+//     if (fullHeight > maxHeight) {
+//       maxHeight = fullHeight;
+//     }
+//   });
+//   return maxHeight;
+// }
+
+// function drawHeaderRow(doc, startX, startY, headers, colWidths, padding = 5) {
+//   doc.font("Helvetica-Bold").fontSize(10);
+//   let currentX = startX;
+//   const headerHeight = 20;
+//   headers.forEach((header, i) => {
+//     doc.strokeColor("#999999");
+//     doc.rect(currentX, startY, colWidths[i], headerHeight).stroke();
+//     doc.text(header, currentX + padding, startY + padding, {
+//       width: colWidths[i] - 2 * padding,
+//       align: "left",
+//     });
+//     currentX += colWidths[i];
+//   });
+//   return startY + headerHeight;
+// }
+
+// function drawSingleRow(doc, startX, startY, row, headers, colWidths, rowHeight, padding = 5) {
+//   doc.font("Helvetica").fontSize(10);
+//   let currentX = startX;
+//   headers.forEach((header, i) => {
+//     const cellText = row[header] || "";
+//     doc.strokeColor("#999999");
+//     doc.rect(currentX, startY, colWidths[i], rowHeight).stroke();
+//     doc.text(cellText, currentX + padding, startY + padding, {
+//       width: colWidths[i] - 2 * padding,
+//       align: "left",
+//     });
+//     currentX += colWidths[i];
+//   });
+//   return startY + rowHeight;
+// }
+
+// /* ---------------------------------------
+//    Helper: ensureSpace
+// -----------------------------------------*/
+// function ensureSpace(doc, currentY, estimatedHeight = 100) {
+//   if (currentY + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
+//     doc.addPage();
+//     return doc.page.margins.top;
+//   }
+//   return currentY;
+// }
+
+// /* ---------------------------------------
+//    Other small helpers: formatDate, 
+//    drawTable, drawTextBox, etc.
+// -----------------------------------------*/
+// function formatDate(dateString) {
+//   if (!dateString) return "";
+//   const date = new Date(dateString);
+//   if (isNaN(date)) return "";
+//   const month = (date.getMonth() + 1).toString().padStart(2, "0");
+//   const day = date.getDate().toString().padStart(2, "0");
+//   const year = date.getFullYear().toString().slice(-2);
+//   return `${month}/${day}/${year}`;
+// }
+
+// // Basic table that does NOT split rows across pages
+// function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
+//   const minRowHeight = 20;
+//   doc.font("Helvetica-Bold").fontSize(10);
+
+//   let currentY = startY;
+//   const headerHeight = 20;
+//   let currentX = startX;
+
+//   // Draw header row
+//   headers.forEach((header, i) => {
+//     doc.strokeColor("#999999");
+//     doc.rect(currentX, currentY, colWidths[i], headerHeight).stroke();
+//     doc.text(header, currentX + padding, currentY + padding, {
+//       width: colWidths[i] - 2 * padding,
+//       align: "left",
+//     });
+//     currentX += colWidths[i];
+//   });
+//   currentY += headerHeight;
+
+//   // Body rows
+//   doc.font("Helvetica").fontSize(10);
+//   rows.forEach((row) => {
+//     let maxHeight = minRowHeight;
+//     currentX = startX;
+//     // measure
+//     headers.forEach((header, i) => {
+//       const cellText = row[header] || "";
+//       const cellHeight = doc.heightOfString(cellText, {
+//         width: colWidths[i] - 2 * padding,
+//         align: "left",
+//       });
+//       const rowNeeded = cellHeight + 2 * padding;
+//       if (rowNeeded > maxHeight) maxHeight = rowNeeded;
+//     });
+//     // draw
+//     headers.forEach((header, i) => {
+//       const cellText = row[header] || "";
+//       doc.strokeColor("#999999");
+//       doc.rect(currentX, currentY, colWidths[i], maxHeight).stroke();
+//       doc.text(cellText, currentX + padding, currentY + padding, {
+//         width: colWidths[i] - 2 * padding,
+//         align: "left",
+//       });
+//       currentX += colWidths[i];
+//     });
+//     currentY += maxHeight;
+//   });
+
+//   return currentY;
+// }
+
+// // "Row Splitting" version
+// function drawTableWithRowSplitting(doc, startX, startY, headers, rows, colWidths) {
+//   let currentY = startY;
+//   // Draw header row first
+//   currentY = drawHeaderRow(doc, startX, currentY, headers, colWidths);
+
+//   // For each body row:
+//   for (const row of rows) {
+//     // Measure row height
+//     const rowHeight = measureRowHeight(doc, row, headers, colWidths);
+//     // If it doesn't fit, add a new page
+//     if (currentY + rowHeight > doc.page.height - doc.page.margins.bottom) {
+//       doc.addPage();
+//       currentY = doc.page.margins.top;
+//       // re-draw header
+//       currentY = drawHeaderRow(doc, startX, currentY, headers, colWidths);
+//     }
+//     // Draw the row
+//     currentY = drawSingleRow(doc, startX, currentY, row, headers, colWidths, rowHeight);
+//   }
+
+//   return currentY;
+// }
+
+// // Suppose personTables is an array of "headers" arrays. We have to handle nextTable properly:
+// function hasNextTable(i, tables) {
+//   return (i + 1 < tables.length);
+// }
+
+// function measureTableHeight(table) {
+//   // This is just a placeholder. 
+//   // In reality, you might measure it by building a row and calling doc.heightOfString 
+//   // or replicate the logic in measureRowHeight. For now, maybe we just guess 50 again.
+//   return 50;
+// }
+
+// // Simple text box
+// function drawTextBox(doc, x, y, width, title, content) {
+//   const paddingX = 5;
+//   const paddingY = 10;
+//   const titleHeight = title ? 15 : 0;
+//   doc.font("Helvetica").fontSize(12);
+
+//   // Calculate text height
+//   const contentHeight = doc.heightOfString(content, {
+//     width: width - 2 * paddingX,
+//     align: "justify",
+//   });
+//   const boxHeight = titleHeight + contentHeight + 2 * paddingY;
+
+//   // Draw box border
+//   doc.save();
+//   doc.lineWidth(1);
+//   doc.strokeColor("#999999");
+//   doc.roundedRect(x, y, width, boxHeight, 2).stroke();
+//   doc.restore();
+
+//   // Title
+//   if (title) {
+//     doc.font("Helvetica-Bold").fontSize(10).text(title, x + paddingX, y + paddingY);
+//   }
+
+//   // Content
+//   doc.font("Helvetica").fontSize(10).text(content, x + paddingX, y + paddingY + titleHeight, {
+//     width: width - 2 * paddingX,
+//     align: "justify",
+//   });
+
+//   return y + boxHeight + 20;
+// }
+
+// /* ---------------------------------------
+//    Your "structured" lead detail drawing
+// -----------------------------------------*/
+// function drawStructuredLeadDetails(doc, x, y, lead) {
+//   const colWidths = [130, 130, 130, 122];
+//   const rowHeight = 20;
+//   const padding = 5;
+
+//   // Header Row
+//   const headers = ["Lead Number:", "Lead Origin:", "Assigned Date:", "Completed Date:"];
+//   const values = [
+//     lead.leadNo || "N/A",
+//     lead.parentLeadNo ? lead.parentLeadNo.join(", ") : "N/A",
+//     lead.assignedDate ? formatDate(lead.assignedDate) : "N/A",
+//     lead.completedDate ? formatDate(lead.completedDate) : "N/A",
+//   ];
+
+//   let currX = x;
+
+//   // Grey background cells
+//   for (let i = 0; i < headers.length; i++) {
+//     doc.rect(currX, y, colWidths[i], rowHeight).fillAndStroke("#f5f5f5", "#ccc");
+//     doc.fillColor("#000")
+//       .font("Helvetica-Bold")
+//       .fontSize(11)
+//       .text(headers[i], currX + padding, y + 5);
+//     currX += colWidths[i];
+//   }
+
+//   y += rowHeight;
+//   currX = x;
+
+//   // Values row
+//   for (let i = 0; i < values.length; i++) {
+//     doc.rect(currX, y, colWidths[i], rowHeight).stroke();
+//     doc.font("Helvetica").fontSize(12).text(values[i], currX + padding, y + 5);
+//     currX += colWidths[i];
+//   }
+
+//   // Second Row - Assigned Officers
+//   y += rowHeight;
+//   doc
+//     .rect(x, y, colWidths.reduce((a, b) => a + b, 0), rowHeight)
+//     .fillAndStroke("#f5f5f5", "#ccc");
+//   doc
+//     .font("Helvetica-Bold")
+//     .fontSize(11)
+//     .fillColor("#000")
+//     .text("Assigned Officers:", x + padding, y + 5);
+
+//   const officersText = lead.assignedTo?.join(", ") || "N/A";
+//   doc.font("Helvetica").fontSize(12).text(officersText, x + 130 + padding, y + 5);
+
+//   return y + rowHeight + 20;
+// }
+
+// /* ---------------------------------------
+//    The main generation function
+// -----------------------------------------*/
+// function generateCaseReportwithExecSummary(req, res) {
+//   const { user, reportTimestamp, leadsData, caseSummary, selectedReports } = req.body;
+//   const includeAll = selectedReports && selectedReports.FullReport;
+
+//   try {
+//     // Create doc
+//     const doc = new PDFDocument({ size: "LETTER", margin: 50 });
+
+//     // Pipe the PDF into the response
+//     res.setHeader("Content-Type", "application/pdf");
+//     res.setHeader("Content-Disposition", "inline; filename=report.pdf");
+//     // doc.pipe(res);
+
+//     const inputPath = path.join(__dirname, 'execSumary.docx');
+// const outputPath = path.join(__dirname, 'output.pdf');
+
+// // convertDocxToPdf(inputPath, outputPath)
+// //   .then((resultPath) => {
+// //     console.log('PDF conversion complete! File saved at:', resultPath);
+// //   })
+// //   .catch((error) => {
+// //     console.error(error);
+// //   });
+// // convertDocxToPdf(inputPath, outputPath);
+// await convertDocxToPdf(
+//   inputPath, outputPath,
+//   "Officer 123",
+//   "10/15/2025, 3:47 AM"
+// );
+
+//     const chunks = [];
+//     doc.on("data", (chunk) => chunks.push(chunk));
+//     doc.on("end", async () => {
+//       // All PDFKit data is in 'chunks'
+//       const pdfKitBuffer = Buffer.concat(chunks);
+
+//       // Specify the path to your external (converted) Word file PDF
+//       const wordPdfPath = path.join(__dirname, "output.pdf");
+      
+//       try {
+//         // Merge the external Word PDF at the beginning of the PDFKit-generated report
+//         const mergedBuffer = await mergeWithWordFileAtStart(pdfKitBuffer, wordPdfPath);
+//         res.setHeader("Content-Type", "application/pdf");
+//         res.setHeader("Content-Disposition", "inline; filename=merged.pdf");
+//         res.send(mergedBuffer);
+//       } catch (err) {
+//         console.error("Merge error:", err);
+//         res.status(500).json({ error: "Failed to merge PDF" });
+//       }
+//     });
+
+//     // -- Header Section --
+//     const headerHeight = 80;
+//     doc.rect(0, 0, doc.page.width, headerHeight).fill("#003366");
+
+//     const logoHeight = 70;
+//     const verticalCenterY = (headerHeight - logoHeight) / 2;
+//     const logoPath = path.join(__dirname, "../../../frontend/public/Materials/newpolicelogo.png");
+//     if (fs.existsSync(logoPath)) {
+//       doc.image(logoPath, 10, verticalCenterY, { width: 70, height: 70 });
+//     }
+
+//     let currentY = headerHeight - 50;
+//     doc.fillColor("white")
+//       .font("Helvetica-Bold")
+//       .fontSize(14)
+//       .text("Final Case Report", 0, currentY, { align: "center" });
+//     currentY = doc.y + 5;
+
+//     doc.fillColor("white").font("Helvetica").fontSize(10);
+//     doc.text(`Generated by: ${user}`, { align: "center" });
+//     doc.text(`Timestamp: ${reportTimestamp}`, { align: "center" });
+//     currentY = doc.y + 20;
+
+//     // Reset color
+//     doc.fillColor("black");
+
+//     // ---------- Case Summary ----------
+//     // if (caseSummary) {
+//     //   doc.font("Helvetica-Bold").fontSize(11).text("Case Summary:", 50, currentY);
+//     //   currentY += 20;
+//     //   currentY = drawTextBox(doc, 50, currentY, 512, "", caseSummary);
+//     // }
+
+//     // ---------- Iterate Over Leads ----------
+//     if (leadsData && leadsData.length > 0) {
+//       leadsData.forEach((lead) => {
+//         // Page check
+//         currentY = ensureSpace(doc, currentY, 60);
+
+//         // LEAD DETAILS
+//         doc.font("Helvetica-Bold").fontSize(12).text(`Lead No. ${lead.leadNo} Details:`, 50, currentY);
+//         currentY += 20;
+
+//         // structured details
+//         // currentY = ensureSpace(doc, currentY, 60);
+//         currentY = drawStructuredLeadDetails(doc, 50, currentY, lead);
+
+//         // optional blocks
+//         if (includeAll && lead.summary) {
+//           currentY = ensureSpace(doc, currentY, 60);
+//           doc.font("Helvetica-Bold").fontSize(11).text("Lead Log Summary:", 50, currentY);
+//           currentY += 20;
+//           // currentY = ensureSpace(doc, currentY, 60);
+//           currentY = drawTextBox(doc, 50, currentY, 512, "", lead.summary);
+//         }
+
+//         if (includeAll && lead.description) {
+//           currentY = ensureSpace(doc, currentY, 60);
+//           doc.font("Helvetica-Bold").fontSize(11).text("Lead Instruction:", 50, currentY);
+//           currentY += 20;
+//           // currentY = ensureSpace(doc, currentY, 60);
+//           currentY = drawTextBox(doc, 50, currentY, 512, "", lead.description);
+//         }
+
+//         // LEAD RETURNS
+//         if (includeAll) {
+//           if (lead.leadReturns && lead.leadReturns.length > 0) {
+//             lead.leadReturns.forEach((lr) => {
+//               // small space check
+//               currentY = ensureSpace(doc, currentY, 100);
+
+//               // 1) Return ID
+//               doc.font("Helvetica-Bold").fontSize(11).text(`Lead Return ID: ${lr.leadReturnId}`, 50, currentY);
+//               currentY += 20;
+//               // currentY = ensureSpace(doc, currentY, 100);
+
+//               currentY = drawTextBox(doc, 50, currentY, 512, "", lr.leadReturnResult || "") + 20;
+
+
+//               // 2) Person Details
+//               if (lr.persons && lr.persons.length > 0) {
+
+//                 currentY = ensureSpace(doc, currentY, 60);
+//                 doc.font("Helvetica-Bold").fontSize(12).text("Person Details:", 50, currentY);
+//                 currentY += 20;
+//                 lr.persons.forEach((person) => {
+//                   const personTables = [
+//                     {
+//                       headers: ["Date Entered", "Name", "Phone #", "Address"],
+//                       widths: [128, 128, 128, 128],
+//                       row: {
+//                         "Date Entered": formatDate(person.enteredDate),
+//                         "Name": person.firstName
+//                           ? `${person.firstName}, ${person.lastName}`
+//                           : "N/A",
+//                         "Phone #": person.cellNumber || "N/A",
+//                         "Address": person.address
+//                           ? `${person.address.street1 || ""}, ${person.address.city || ""}, ` +
+//                             `${person.address.state || ""}, ${person.address.zipCode || ""}`
+//                           : "N/A",
+//                       },
+//                     },
+//                     {
+//                       headers: ["Last Name", "First Name", "Middle Initial", "Cell Number"],
+//                       widths: [128, 128, 128, 128],
+//                       row: {
+//                         "Last Name": person.lastName || "N/A",
+//                         "First Name": person.firstName || "N/A",
+//                         "Middle Initial": person.middleInitial || "",
+//                         "Cell Number": person.cellNumber || "N/A",
+//                       },
+//                     },
+//                     {
+//                       headers: ["Business Name", "Street 1", "Street 2", "Building"],
+//                       widths: [128, 128, 128, 128],
+//                       row: {
+//                         "Business Name": person.businessName || "N/A",
+//                         "Street 1": person.address?.street1 || "N/A",
+//                         "Street 2": person.address?.street2 || "N/A",
+//                         "Building": person.address?.building || "N/A",
+//                       },
+//                     },
+//                     {
+//                       headers: ["Apartment", "City", "State", "Zip Code"],
+//                       widths: [128, 128, 128, 128],
+//                       row: {
+//                         "Apartment": person.address?.apartment || "N/A",
+//                         "City": person.address?.city || "N/A",
+//                         "State": person.address?.state || "N/A",
+//                         "Zip Code": person.address?.zipCode || "N/A",
+//                       },
+//                     },
+//                     {
+//                       headers: ["SSN", "Age", "Email", "Occupation"],
+//                       widths: [128, 128, 128, 128],
+//                       row: {
+//                         "SSN": person.ssn || "N/A",
+//                         "Age": person.age != null ? person.age.toString() : "N/A",
+//                         "Email": person.email || "N/A",
+//                         "Occupation": person.occupation || "N/A",
+//                       },
+//                     },
+//                     {
+//                       headers: ["Person Type", "Condition", "Caution Type", "Sex"],
+//                       widths: [128, 128, 128, 128],
+//                       row: {
+//                         "Person Type": person.personType || "N/A",
+//                         "Condition": person.condition || "N/A",
+//                         "Caution Type": person.cautionType || "N/A",
+//                         "Sex": person.sex || "N/A",
+//                       },
+//                     },
+//                     {
+//                       headers: ["Race", "Ethnicity", "Skin Tone", "Eye Color"],
+//                       widths: [128, 128, 128, 128],
+//                       row: {
+//                         "Race": person.race || "N/A",
+//                         "Ethnicity": person.ethnicity || "N/A",
+//                         "Skin Tone": person.skinTone || "N/A",
+//                         "Eye Color": person.eyeColor || "N/A",
+//                       },
+//                     },
+//                     {
+//                       headers: ["Glasses", "Hair Color", "Height", "Weight"],
+//                       widths: [128, 128, 128, 128],
+//                       row: {
+//                         "Glasses": person.glasses || "N/A",
+//                         "Hair Color": person.hairColor || "N/A",
+//                         "Height": person.height
+//                           ? `${person.height.feet || 0}'${person.height.inches || 0}"`
+//                           : "N/A",
+//                         "Weight": person.weight != null ? person.weight.toString() : "N/A",
+//                       },
+//                     },
+//                   ];
+//                   // const personTables = [
+//                   //   ["Date Entered", "Name", "Phone #", "Address"],
+//                   //   ["Last Name", "First Name", "Middle Initial", "Cell Number"],
+//                   //   ["Business Name", "Street 1", "Street 2", "Building"],
+//                   //   ["Apartment", "City", "State", "Zip Code"],
+//                   //   ["SSN", "Age", "Email", "Occupation"],
+//                   //   ["Person Type", "Condition", "Caution Type", "Sex"],
+//                   //   ["Race", "Ethnicity", "Skin Tone", "Eye Color"],
+//                   //   ["Glasses", "Hair Color", "Height", "Weight"]
+//                   // ];
+//                   // const personWidths = {
+//                   //           "Date Entered": 90,
+//                   //           "Name": 100,
+//                   //           "Phone #": 100,
+//                   //           "Address": 222,
+                          
+//                   //           "Last Name": 90,
+//                   //           "First Name": 100,
+//                   //           "Middle Initial": 100,
+//                   //           "Cell Number": 222,
+                          
+//                   //           "Business Name": 90,
+//                   //           "Street 1": 100,
+//                   //           "Street 2": 100,
+//                   //           "Building": 222,
+                          
+//                   //           "Apartment": 90,
+//                   //           "City": 100,
+//                   //           "State": 100,
+//                   //           "Zip Code": 222,
+                          
+//                   //           "SSN": 90,
+//                   //           "Age": 100,
+//                   //           "Email": 100,
+//                   //           "Occupation": 222,
+                          
+//                   //           "Person Type": 90,
+//                   //           "Condition": 100,
+//                   //           "Caution Type": 100,
+//                   //           "Sex": 222,
+                          
+//                   //           "Race": 90,
+//                   //           "Ethnicity": 100,
+//                   //           "Skin Tone": 100,
+//                   //           "Eye Color": 222,
+                          
+//                   //           "Glasses": 90,
+//                   //           "Hair Color": 100,
+//                   //           "Height": 100,
+//                   //           "Weight": 222,
+//                   //         };
+                          
+            
+//                   // const personData = [
+//                   //   ["03/14/24", "Dan, Hill", "1234567890", "120 3rd St, New York, NY"],
+//                   //   ["Hill", "Dan", "S.", "1234567890"],
+//                   //   ["", "", "", ""],
+//                   //   ["", "", "", ""],
+//                   //   ["", "20", "", ""],
+//                   //   ["", "", "", ""],
+//                   //   ["", "", "", ""],
+//                   //   ["", "", "", ""]
+//                   // ];
+
+//                   currentY = ensureSpace(doc, currentY, 60);
+
+//                   personTables.forEach((tbl) => {
+//                     // Estimate the table height
+//                     const rowHeight = measureRowHeight(doc, tbl.row, tbl.headers, tbl.widths);
+//                     // Add space for header row + some buffer
+//                     const estimatedHeight = rowHeight + 20;
+//                     currentY = ensureSpace(doc, currentY, estimatedHeight);
+
+//                     // Actually draw table with row splitting
+//                     currentY =
+//                       drawTableWithRowSplitting(doc, 50, currentY, tbl.headers, [tbl.row], tbl.widths) +
+//                       20;
+//                   });
+
+                  
+//                   // currentY = ensureSpace(doc, currentY, 60);
+
+//                   // personTables.forEach((headers, i) => {
+                  
+//                   //   currentY = ensureSpace(doc, currentY, 60);
+//                   //   const row = {};
+//                   //   const colWidths = headers.map(header => personWidths[header] || 100);
+//                   //   headers.forEach((h, j) => {
+//                   //     row[h] = personData[i][j];
+//                   //   });
+//                   //   currentY = drawTable(doc, 50, currentY, headers, [row], colWidths) + 20;
+                  
+//                   //   // 3) "After" printing: look ahead to the *next* table
+//                   //   if (hasNextTable(i, personTables)) {
+//                   //     currentY = ensureSpace(doc, currentY, 60);
+//                   //     const nextTableHeaders = personTables[i + 1]; // e.g. the next item in personTables
+//                   //     const neededForNextTable = measureTableHeight(nextTableHeaders);
+//                   //     // If we won't have enough space left for the *next* subtable, start a new page now
+//                   //     // if (currentY + neededForNextTable > doc.page.height - doc.page.margins.bottom) {
+//                   //     //   doc.addPage();
+//                   //     //   currentY = doc.page.margins.top;
+//                   //     // }
+
+
+//                   //   }
+//                   // });
+//                 });
+//               }
+
+//               // 3) Vehicle Details
+//               if (lr.vehicles && lr.vehicles.length > 0) {
+//                 currentY = ensureSpace(doc, currentY, 50);
+//                 doc.font("Helvetica-Bold").fontSize(12).text("Vehicle Details:", 50, currentY);
+//                 currentY += 20;
+
+//                 const vehicleHeaders = ["Date Entered", "Make", "Model", "Plate", "State"];
+//                 const vehicleRows = lr.vehicles.map((vehicle) => ({
+//                   "Date Entered": formatDate(vehicle.enteredDate),
+//                   "Make": vehicle.make || "N/A",
+//                   "Model": vehicle.model || "N/A",
+//                   "Plate": vehicle.plate || "N/A",
+//                   "State": vehicle.state || "N/A",
+//                 }));
+//                 // If you want 5 columns the same width, do e.g. [102, 102, 102, 102, 104]
+//                 currentY = ensureSpace(doc, currentY, 60);
+//                 currentY = drawTable(doc, 50, currentY, vehicleHeaders, vehicleRows, [
+//                   102, 102, 102, 102, 104,
+//                 ]) + 20;
+//               }
+//               // etc...
+//             });
+//           } else {
+//             // No lead returns
+//             // currentY = ensureSpace(doc, currentY, 50);
+//             // const headers = ["Lead Returns"];
+//             // const rows = [{ "Lead Returns": "No Lead Returns Available" }];
+//             // const widths = [512];
+//             // currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+
+//             currentY = ensureSpace(doc, currentY, 60);
+//             doc.font("Helvetica-Bold").fontSize(11).text("Lead Return:", 50, currentY);
+//             currentY += 20;
+//             // currentY = ensureSpace(doc, currentY, 60);
+//             currentY = drawTextBox(doc, 50, currentY, 512, "", "No Lead Returns Available");
+//           }
+//         }
+//       });
+//     } else {
+//       // No leads
+//       doc.text("No leads data available.", 50, currentY);
+//     }
+
+//     // End the PDF
+//     doc.end();
+//     // Note: This is the ONLY place we call doc.end().
+//     // Don’t call it again, or call doc.* after this line!
+//   } catch (error) {
+//     console.error("Error generating PDF:", error);
+//     // In an error scenario, you generally do NOT want to continue writing
+//     // to doc, because that can also cause "write after end" if doc.end() was
+//     // already triggered. You might want to handle it like this:
+//     // doc.end(); // optionally end if you started writing
+//     res.status(500).json({ error: "Failed to generate PDF" });
+//   }
+// }
+
+// module.exports = { generateCaseReportwithExecSummary };
+
+
 const libre = require('libreoffice-convert');
 const mammoth = require("mammoth");
 const puppeteer = require("puppeteer");
 const path = require('path');
 const fs = require('fs');
-
-// function convertDocxToPdf(inputFilePath, outputFilePath) {
-//   return new Promise((resolve, reject) => {
-//     // Read the DOCX file into a buffer
-//     const fileBuffer = fs.readFileSync(inputFilePath);
-//     // Set the output format to PDF
-//     const extend = '.pdf';
-//     // Convert the file
-//     libre.convert(fileBuffer, extend, undefined, (err, done) => {
-//       if (err) {
-//         return reject(`Error converting file: ${err}`);
-//       }
-//       // Write the resulting PDF buffer to the output file
-//       fs.writeFileSync(outputFilePath, done);
-//       resolve(outputFilePath);
-//     });
-//   });
-// }
-
-async function convertDocxToPdf(inputPath, outputPath) {
-  try {
-    // Convert DOCX to HTML using mammoth
-    const { value: html } = await mammoth.convertToHtml({ path: inputPath });
-    
-    // Optionally, write the HTML to a file for debugging
-    // fs.writeFileSync(path.join(__dirname, 'output.html'), html);
-    
-    // Launch Puppeteer to render the HTML and generate a PDF
-    const browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    
-    // Set the HTML content
-    await page.setContent(html, { waitUntil: "networkidle0" });
-    
-    // Create PDF file
-    await page.pdf({ path: outputPath, format: "Letter", printBackground: true });
-    
-    await browser.close();
-    console.log(`PDF conversion complete! File saved at: ${outputPath}`);
-  } catch (error) {
-    console.error("Error during conversion:", error);
-  }
-}
-
-
 const PDFDocument = require("pdfkit");
 const { PDFDocument: PDFLibDocument } = require("pdf-lib");
 
-async function mergeWithWordFileAtStart(pdfKitBuffer, wordPdfPath) {
-  // Load the main PDF (generated by PDFKit)
-  const mainDoc = await PDFLibDocument.load(pdfKitBuffer);
-  // Read and load the external PDF (converted from the Word file)
-  const externalBuffer = fs.readFileSync(wordPdfPath);
-  const externalDoc = await PDFLibDocument.load(externalBuffer);
+/* ==============================
+   PDF Drawing Helper Functions
+   ============================== */
 
-  // Copy every page from externalDoc
-  const externalPages = await mainDoc.copyPages(
-    externalDoc,
-    externalDoc.getPageIndices()
-  );
-  // Insert the external pages at the beginning of mainDoc
-  // (We insert in reverse order to preserve the original order)
-  for (let i = externalPages.length - 1; i >= 0; i--) {
-    mainDoc.insertPage(0, externalPages[i]);
-  }
+// Basic drawTable helper for tables that do not split rows
+function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
+  const minRowHeight = 20;
+  doc.font("Helvetica-Bold").fontSize(10);
 
-  // Save and return the merged PDF as a Buffer
-  const mergedPdfBytes = await mainDoc.save();
-  return Buffer.from(mergedPdfBytes);
+  let currentY = startY;
+  const headerHeight = 20;
+  let currentX = startX;
+
+  // Draw header row
+  headers.forEach((header, i) => {
+    doc.strokeColor("#999999");
+    doc.rect(currentX, currentY, colWidths[i], headerHeight).stroke();
+    doc.text(header, currentX + padding, currentY + padding, {
+      width: colWidths[i] - 2 * padding,
+      align: "left",
+    });
+    currentX += colWidths[i];
+  });
+  currentY += headerHeight;
+
+  // Body rows
+  doc.font("Helvetica").fontSize(10);
+  rows.forEach((row) => {
+    let maxHeight = minRowHeight;
+    currentX = startX;
+    // Measure each cell’s height to determine the maximum needed row height
+    headers.forEach((header, i) => {
+      const cellText = row[header] || "";
+      const cellHeight = doc.heightOfString(cellText, {
+        width: colWidths[i] - 2 * padding,
+        align: "left",
+      });
+      const rowNeeded = cellHeight + 2 * padding;
+      if (rowNeeded > maxHeight) maxHeight = rowNeeded;
+    });
+    // Draw each cell with the calculated height
+    headers.forEach((header, i) => {
+      const cellText = row[header] || "";
+      doc.strokeColor("#999999");
+      doc.rect(currentX, currentY, colWidths[i], maxHeight).stroke();
+      doc.text(cellText, currentX + padding, currentY + padding, {
+        width: colWidths[i] - 2 * padding,
+        align: "left",
+      });
+      currentX += colWidths[i];
+    });
+    currentY += maxHeight;
+  });
+
+  return currentY;
 }
 
-/* ---------------------------------------
-   Helper: measureRowHeight, drawHeaderRow,
-   drawSingleRow for row-splitting
------------------------------------------*/
+function drawTextBox(doc, x, y, width, title, content) {
+  const paddingX = 5;  // Left and Right padding
+  const paddingY = 10; // Top and Bottom padding
+  const titleHeight = title ? 15 : 0;
+  doc.font("Helvetica").fontSize(12);
+
+  const contentHeight = doc.heightOfString(content, {
+    width: width - 2 * paddingX,
+    align: "justify",
+  });
+  const boxHeight = titleHeight + contentHeight + 2 * paddingY;
+
+  doc.save();
+  doc.lineWidth(1);
+  doc.strokeColor("#999999");
+  doc.roundedRect(x, y, width, boxHeight, 2).stroke();
+  doc.restore();
+
+  if (title) {
+    doc.font("Helvetica-Bold").fontSize(10).text(title, x + paddingX, y + paddingY);
+  }
+  doc.font("Helvetica").fontSize(10).text(content, x + paddingX, y + paddingY + titleHeight, {
+    width: width - 2 * paddingX,
+    align: "justify",
+  });
+
+  return y + boxHeight + 20;
+}
+
+// Helpers for row splitting in tables:
 function measureRowHeight(doc, row, headers, colWidths, padding = 5) {
-  let maxHeight = 20; // or your chosen minRowHeight
+  let maxHeight = 20; 
   headers.forEach((header, i) => {
     const cellText = row[header] || "";
     const cellHeight = doc.heightOfString(cellText, {
@@ -987,9 +1844,23 @@ function drawSingleRow(doc, startX, startY, row, headers, colWidths, rowHeight, 
   return startY + rowHeight;
 }
 
-/* ---------------------------------------
-   Helper: ensureSpace
------------------------------------------*/
+function drawTableWithRowSplitting(doc, startX, startY, headers, rows, colWidths) {
+  let currentY = startY;
+  // Draw header
+  currentY = drawHeaderRow(doc, startX, currentY, headers, colWidths);
+  // Draw each row
+  for (const row of rows) {
+    const rowHeight = measureRowHeight(doc, row, headers, colWidths);
+    if (currentY + rowHeight > doc.page.height - doc.page.margins.bottom) {
+      doc.addPage();
+      currentY = doc.page.margins.top;
+      currentY = drawHeaderRow(doc, startX, currentY, headers, colWidths);
+    }
+    currentY = drawSingleRow(doc, startX, currentY, row, headers, colWidths, rowHeight);
+  }
+  return currentY;
+}
+
 function ensureSpace(doc, currentY, estimatedHeight = 100) {
   if (currentY + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
     doc.addPage();
@@ -998,10 +1869,6 @@ function ensureSpace(doc, currentY, estimatedHeight = 100) {
   return currentY;
 }
 
-/* ---------------------------------------
-   Other small helpers: formatDate, 
-   drawTable, drawTextBox, etc.
------------------------------------------*/
 function formatDate(dateString) {
   if (!dateString) return "";
   const date = new Date(dateString);
@@ -1012,139 +1879,12 @@ function formatDate(dateString) {
   return `${month}/${day}/${year}`;
 }
 
-// Basic table that does NOT split rows across pages
-function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
-  const minRowHeight = 20;
-  doc.font("Helvetica-Bold").fontSize(10);
-
-  let currentY = startY;
-  const headerHeight = 20;
-  let currentX = startX;
-
-  // Draw header row
-  headers.forEach((header, i) => {
-    doc.strokeColor("#999999");
-    doc.rect(currentX, currentY, colWidths[i], headerHeight).stroke();
-    doc.text(header, currentX + padding, currentY + padding, {
-      width: colWidths[i] - 2 * padding,
-      align: "left",
-    });
-    currentX += colWidths[i];
-  });
-  currentY += headerHeight;
-
-  // Body rows
-  doc.font("Helvetica").fontSize(10);
-  rows.forEach((row) => {
-    let maxHeight = minRowHeight;
-    currentX = startX;
-    // measure
-    headers.forEach((header, i) => {
-      const cellText = row[header] || "";
-      const cellHeight = doc.heightOfString(cellText, {
-        width: colWidths[i] - 2 * padding,
-        align: "left",
-      });
-      const rowNeeded = cellHeight + 2 * padding;
-      if (rowNeeded > maxHeight) maxHeight = rowNeeded;
-    });
-    // draw
-    headers.forEach((header, i) => {
-      const cellText = row[header] || "";
-      doc.strokeColor("#999999");
-      doc.rect(currentX, currentY, colWidths[i], maxHeight).stroke();
-      doc.text(cellText, currentX + padding, currentY + padding, {
-        width: colWidths[i] - 2 * padding,
-        align: "left",
-      });
-      currentX += colWidths[i];
-    });
-    currentY += maxHeight;
-  });
-
-  return currentY;
-}
-
-// "Row Splitting" version
-function drawTableWithRowSplitting(doc, startX, startY, headers, rows, colWidths) {
-  let currentY = startY;
-  // Draw header row first
-  currentY = drawHeaderRow(doc, startX, currentY, headers, colWidths);
-
-  // For each body row:
-  for (const row of rows) {
-    // Measure row height
-    const rowHeight = measureRowHeight(doc, row, headers, colWidths);
-    // If it doesn't fit, add a new page
-    if (currentY + rowHeight > doc.page.height - doc.page.margins.bottom) {
-      doc.addPage();
-      currentY = doc.page.margins.top;
-      // re-draw header
-      currentY = drawHeaderRow(doc, startX, currentY, headers, colWidths);
-    }
-    // Draw the row
-    currentY = drawSingleRow(doc, startX, currentY, row, headers, colWidths, rowHeight);
-  }
-
-  return currentY;
-}
-
-// Suppose personTables is an array of "headers" arrays. We have to handle nextTable properly:
-function hasNextTable(i, tables) {
-  return (i + 1 < tables.length);
-}
-
-function measureTableHeight(table) {
-  // This is just a placeholder. 
-  // In reality, you might measure it by building a row and calling doc.heightOfString 
-  // or replicate the logic in measureRowHeight. For now, maybe we just guess 50 again.
-  return 50;
-}
-
-// Simple text box
-function drawTextBox(doc, x, y, width, title, content) {
-  const paddingX = 5;
-  const paddingY = 10;
-  const titleHeight = title ? 15 : 0;
-  doc.font("Helvetica").fontSize(12);
-
-  // Calculate text height
-  const contentHeight = doc.heightOfString(content, {
-    width: width - 2 * paddingX,
-    align: "justify",
-  });
-  const boxHeight = titleHeight + contentHeight + 2 * paddingY;
-
-  // Draw box border
-  doc.save();
-  doc.lineWidth(1);
-  doc.strokeColor("#999999");
-  doc.roundedRect(x, y, width, boxHeight, 2).stroke();
-  doc.restore();
-
-  // Title
-  if (title) {
-    doc.font("Helvetica-Bold").fontSize(10).text(title, x + paddingX, y + paddingY);
-  }
-
-  // Content
-  doc.font("Helvetica").fontSize(10).text(content, x + paddingX, y + paddingY + titleHeight, {
-    width: width - 2 * paddingX,
-    align: "justify",
-  });
-
-  return y + boxHeight + 20;
-}
-
-/* ---------------------------------------
-   Your "structured" lead detail drawing
------------------------------------------*/
 function drawStructuredLeadDetails(doc, x, y, lead) {
   const colWidths = [130, 130, 130, 122];
   const rowHeight = 20;
   const padding = 5;
 
-  // Header Row
+  // Header row
   const headers = ["Lead Number:", "Lead Origin:", "Assigned Date:", "Completed Date:"];
   const values = [
     lead.leadNo || "N/A",
@@ -1154,83 +1894,174 @@ function drawStructuredLeadDetails(doc, x, y, lead) {
   ];
 
   let currX = x;
-
-  // Grey background cells
   for (let i = 0; i < headers.length; i++) {
     doc.rect(currX, y, colWidths[i], rowHeight).fillAndStroke("#f5f5f5", "#ccc");
-    doc.fillColor("#000")
-      .font("Helvetica-Bold")
-      .fontSize(11)
-      .text(headers[i], currX + padding, y + 5);
+    doc.fillColor("#000").font("Helvetica-Bold").fontSize(11).text(headers[i], currX + padding, y + 5);
     currX += colWidths[i];
   }
-
   y += rowHeight;
   currX = x;
-
-  // Values row
   for (let i = 0; i < values.length; i++) {
     doc.rect(currX, y, colWidths[i], rowHeight).stroke();
     doc.font("Helvetica").fontSize(12).text(values[i], currX + padding, y + 5);
     currX += colWidths[i];
   }
-
-  // Second Row - Assigned Officers
   y += rowHeight;
-  doc
-    .rect(x, y, colWidths.reduce((a, b) => a + b, 0), rowHeight)
+  doc.rect(x, y, colWidths.reduce((a, b) => a + b, 0), rowHeight)
     .fillAndStroke("#f5f5f5", "#ccc");
-  doc
-    .font("Helvetica-Bold")
-    .fontSize(11)
-    .fillColor("#000")
-    .text("Assigned Officers:", x + padding, y + 5);
-
+  doc.font("Helvetica-Bold").fontSize(11).fillColor("#000").text("Assigned Officers:", x + padding, y + 5);
   const officersText = lead.assignedTo?.join(", ") || "N/A";
   doc.font("Helvetica").fontSize(12).text(officersText, x + 130 + padding, y + 5);
-
   return y + rowHeight + 20;
 }
 
-/* ---------------------------------------
-   The main generation function
------------------------------------------*/
-function generateCaseReportwithExecSummary(req, res) {
+/* ==============================
+   DOCX-to-PDF Conversion Functions
+   ============================== */
+
+async function convertDocxToPdf(inputPath, outputPath, user, reportTimestamp) {
+  try {
+    // Convert DOCX to HTML using Mammoth.
+    const { value: htmlContent } = await mammoth.convertToHtml({ path: inputPath });
+    
+    // Resolve absolute path for the logo and create a file URL.
+    const logoPath = path.join(__dirname, "../../../frontend/public/Materials/newpolicelogo.png");
+
+    // Read the image file and convert to base64.
+const logoBuffer = fs.readFileSync(logoPath);
+const logoBase64 = logoBuffer.toString('base64');
+const ext = path.extname(logoPath).substring(1); // e.g. 'png'
+const logoUrl = `data:image/${ext};base64,${logoBase64}`;
+
+    // Build an HTML template replicating the PDFKit header.
+    const html = `
+      <!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      /* Set only left and right margins to 50px; top and bottom are 0 */
+      @page { margin: 0; }
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Helvetica, Arial, sans-serif;
+      }
+      /* Header will now start at the very top of the physical page */
+      .header {
+        width: 100%;
+        height: 100px;
+        background-color: #003366;
+      }
+      .header-logo {
+        float: left;
+        margin: calc((80px - 70px) / 2) 10px calc((80px - 70px) / 2) 10px;
+        width: 80px;
+        height: 80px;
+      }
+      .header-text {
+        text-align: center;
+        color: white;
+        padding-top: 30px;
+      }
+      .header-text .title {
+        font-size: 16px;
+        font-weight: bold;
+        line-height: 1.2;
+      }
+      .header-text .details {
+        font-size: 14px;
+        line-height: 1.2;
+      }
+      /* If you want the main content to start after the header,
+         you can add a margin-top to main equal to the header’s height. */
+      main {
+        margin: 0 50px 0 50px; /* top: 80px, left/right: 50px, bottom: 0 */
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <img src="${logoUrl}" alt="Logo" class="header-logo" />
+      <div class="header-text">
+        <div class="title">Final Case Report</div>
+        <div class="details">
+          Generated by: ${user} | Timestamp: ${reportTimestamp}
+        </div>
+      </div>
+    </div>
+    <main>
+      ${htmlContent}
+    </main>
+  </body>
+</html>
+
+    `;
+    
+    // Launch Puppeteer to render the HTML and generate a PDF.
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "networkidle0" });
+    await page.pdf({
+      path: outputPath,
+      format: "Letter",
+      printBackground: true,
+      margin: { top: '0px', bottom: '0px', left: '0px', right: '0px' }
+    });
+    await browser.close();
+    console.log(`PDF conversion complete! File saved at: ${outputPath}`);
+  } catch (error) {
+    console.error("Error during conversion:", error);
+  }
+}
+
+async function mergeWithWordFileAtStart(pdfKitBuffer, wordPdfPath) {
+  // Load the main PDF (generated by PDFKit)
+  const mainDoc = await PDFLibDocument.load(pdfKitBuffer);
+  // Read and load the external PDF (converted from the Word file)
+  const externalBuffer = fs.readFileSync(wordPdfPath);
+  const externalDoc = await PDFLibDocument.load(externalBuffer);
+  // Copy every page from the external PDF and insert at the beginning
+  const externalPages = await mainDoc.copyPages(externalDoc, externalDoc.getPageIndices());
+  for (let i = externalPages.length - 1; i >= 0; i--) {
+    mainDoc.insertPage(0, externalPages[i]);
+  }
+  const mergedPdfBytes = await mainDoc.save();
+  return Buffer.from(mergedPdfBytes);
+}
+
+/* ==============================
+   Main PDF Generation Function
+   ============================== */
+
+// Note: The function is now declared as async.
+async function generateCaseReportwithExecSummary(req, res) {
   const { user, reportTimestamp, leadsData, caseSummary, selectedReports } = req.body;
   const includeAll = selectedReports && selectedReports.FullReport;
-
   try {
-    // Create doc
-    const doc = new PDFDocument({ size: "LETTER", margin: 50 });
+    // Create the PDFDocument instance.
+    const doc = new PDFDocument({ size: "LETTER", margins: { top: 0, bottom: 0, left: 50, right: 50 }});
 
-    // Pipe the PDF into the response
+    // Set response headers.
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline; filename=report.pdf");
-    // doc.pipe(res);
 
+    // Define paths for DOCX conversion.
     const inputPath = path.join(__dirname, 'execSumary.docx');
-const outputPath = path.join(__dirname, 'output.pdf');
+    const outputPath = path.join(__dirname, 'output.pdf');
 
-// convertDocxToPdf(inputPath, outputPath)
-//   .then((resultPath) => {
-//     console.log('PDF conversion complete! File saved at:', resultPath);
-//   })
-//   .catch((error) => {
-//     console.error(error);
-//   });
-convertDocxToPdf(inputPath, outputPath);
+    // Use await since convertDocxToPdf returns a promise.
+    await convertDocxToPdf(inputPath, outputPath, "Officer 123", "10/15/2025, 3:47 AM");
 
+    // Collect PDFKit output chunks.
     const chunks = [];
     doc.on("data", (chunk) => chunks.push(chunk));
     doc.on("end", async () => {
-      // All PDFKit data is in 'chunks'
       const pdfKitBuffer = Buffer.concat(chunks);
-
-      // Specify the path to your external (converted) Word file PDF
       const wordPdfPath = path.join(__dirname, "output.pdf");
       
       try {
-        // Merge the external Word PDF at the beginning of the PDFKit-generated report
+        // Merge the external Word PDF at the beginning.
         const mergedBuffer = await mergeWithWordFileAtStart(pdfKitBuffer, wordPdfPath);
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", "inline; filename=merged.pdf");
@@ -1241,88 +2072,84 @@ convertDocxToPdf(inputPath, outputPath);
       }
     });
 
-    // -- Header Section --
-    const headerHeight = 80;
-    doc.rect(0, 0, doc.page.width, headerHeight).fill("#003366");
+    // ---------- Header Section ----------
+    // const headerHeight = 80;
+    // doc.rect(0, 0, doc.page.width, headerHeight).fill("#003366");
+    // const logoHeight = 70;
+    // const verticalCenterY = (headerHeight - logoHeight) / 2;
+    // const logoPath = path.join(__dirname, "../../../frontend/public/Materials/newpolicelogo.png");
+    // if (fs.existsSync(logoPath)) {
+    //   doc.image(logoPath, 10, verticalCenterY, { width: 70, height: 70 });
+    // }
+    // let currentY = headerHeight - 50;
+    // doc.fillColor("white")
+    //   .font("Helvetica-Bold")
+    //   .fontSize(14)
+    //   .text("Final Case Report", 0, currentY, { align: "center" });
+    // currentY = doc.y + 5;
+    // doc.fillColor("white").font("Helvetica").fontSize(10);
+    // doc.text(`Generated by: ${user}`, { align: "center" });
+    // doc.text(`Timestamp: ${reportTimestamp}`, { align: "center" });
+    // currentY = doc.y + 20;
+    // doc.fillColor("black");
 
-    const logoHeight = 70;
-    const verticalCenterY = (headerHeight - logoHeight) / 2;
-    const logoPath = path.join(__dirname, "../../../frontend/public/Materials/newpolicelogo.png");
-    if (fs.existsSync(logoPath)) {
-      doc.image(logoPath, 10, verticalCenterY, { width: 70, height: 70 });
-    }
-
-    let currentY = headerHeight - 50;
-    doc.fillColor("white")
-      .font("Helvetica-Bold")
-      .fontSize(14)
-      .text("Final Case Report", 0, currentY, { align: "center" });
-    currentY = doc.y + 5;
-
-    doc.fillColor("white").font("Helvetica").fontSize(10);
-    doc.text(`Generated by: ${user}`, { align: "center" });
-    doc.text(`Timestamp: ${reportTimestamp}`, { align: "center" });
-    currentY = doc.y + 20;
-
-    // Reset color
+    let currentY = 80;
     doc.fillColor("black");
 
-    // ---------- Case Summary ----------
-    // if (caseSummary) {
-    //   doc.font("Helvetica-Bold").fontSize(11).text("Case Summary:", 50, currentY);
-    //   currentY += 20;
-    //   currentY = drawTextBox(doc, 50, currentY, 512, "", caseSummary);
-    // }
+    // ---------- (Optional) Case Summary Block ----------
+    // Uncomment to include a case summary
+    if (caseSummary) {
+      doc.font("Helvetica-Bold").fontSize(11).text("Executive Case Summary:", 50, currentY);
+      currentY += 20;
+      currentY = drawTextBox(doc, 50, currentY, 512, "", caseSummary);
+    }
 
     // ---------- Iterate Over Leads ----------
     if (leadsData && leadsData.length > 0) {
       leadsData.forEach((lead) => {
-        // Page check
-        currentY = ensureSpace(doc, currentY, 60);
-
-        // LEAD DETAILS
+        currentY = ensureSpace(doc, currentY, 100);
+        currentY += 10;
         doc.font("Helvetica-Bold").fontSize(12).text(`Lead No. ${lead.leadNo} Details:`, 50, currentY);
+      // leadsData.forEach((lead, index) => {
+      //   if (index > 0) {
+      //     doc.addPage();               // Start every lead on a new page
+      //     currentY = doc.page.margins.top;  // Reset Y position
+      //   }
+      
+        doc.font("Helvetica-Bold").fontSize(12).text(`Lead No. ${lead.leadNo} Details:`, 50, currentY);
+      
         currentY += 20;
 
-        // structured details
-        // currentY = ensureSpace(doc, currentY, 60);
+        // Draw the structured lead details.
         currentY = drawStructuredLeadDetails(doc, 50, currentY, lead);
 
-        // optional blocks
+        // Optional: Lead Log Summary.
         if (includeAll && lead.summary) {
           currentY = ensureSpace(doc, currentY, 60);
           doc.font("Helvetica-Bold").fontSize(11).text("Lead Log Summary:", 50, currentY);
           currentY += 20;
-          // currentY = ensureSpace(doc, currentY, 60);
           currentY = drawTextBox(doc, 50, currentY, 512, "", lead.summary);
         }
 
+        // Optional: Lead Instruction.
         if (includeAll && lead.description) {
           currentY = ensureSpace(doc, currentY, 60);
           doc.font("Helvetica-Bold").fontSize(11).text("Lead Instruction:", 50, currentY);
           currentY += 20;
-          // currentY = ensureSpace(doc, currentY, 60);
           currentY = drawTextBox(doc, 50, currentY, 512, "", lead.description);
         }
 
-        // LEAD RETURNS
+        // ---------- LEAD RETURNS ----------
         if (includeAll) {
           if (lead.leadReturns && lead.leadReturns.length > 0) {
             lead.leadReturns.forEach((lr) => {
-              // small space check
               currentY = ensureSpace(doc, currentY, 100);
-
-              // 1) Return ID
               doc.font("Helvetica-Bold").fontSize(11).text(`Lead Return ID: ${lr.leadReturnId}`, 50, currentY);
               currentY += 20;
-              // currentY = ensureSpace(doc, currentY, 100);
-
               currentY = drawTextBox(doc, 50, currentY, 512, "", lr.leadReturnResult || "") + 20;
 
-
-              // 2) Person Details
+              // PERSON DETAILS within each return.
               if (lr.persons && lr.persons.length > 0) {
-
                 currentY = ensureSpace(doc, currentY, 60);
                 doc.font("Helvetica-Bold").fontSize(12).text("Person Details:", 50, currentY);
                 currentY += 20;
@@ -1333,14 +2160,9 @@ convertDocxToPdf(inputPath, outputPath);
                       widths: [128, 128, 128, 128],
                       row: {
                         "Date Entered": formatDate(person.enteredDate),
-                        "Name": person.firstName
-                          ? `${person.firstName}, ${person.lastName}`
-                          : "N/A",
+                        "Name": person.firstName ? `${person.firstName}, ${person.lastName}` : "N/A",
                         "Phone #": person.cellNumber || "N/A",
-                        "Address": person.address
-                          ? `${person.address.street1 || ""}, ${person.address.city || ""}, ` +
-                            `${person.address.state || ""}, ${person.address.zipCode || ""}`
-                          : "N/A",
+                        "Address": person.address ? `${person.address.street1 || ""}, ${person.address.city || ""}, ${person.address.state || ""}, ${person.address.zipCode || ""}` : "N/A",
                       },
                     },
                     {
@@ -1352,185 +2174,26 @@ convertDocxToPdf(inputPath, outputPath);
                         "Middle Initial": person.middleInitial || "",
                         "Cell Number": person.cellNumber || "N/A",
                       },
-                    },
-                    {
-                      headers: ["Business Name", "Street 1", "Street 2", "Building"],
-                      widths: [128, 128, 128, 128],
-                      row: {
-                        "Business Name": person.businessName || "N/A",
-                        "Street 1": person.address?.street1 || "N/A",
-                        "Street 2": person.address?.street2 || "N/A",
-                        "Building": person.address?.building || "N/A",
-                      },
-                    },
-                    {
-                      headers: ["Apartment", "City", "State", "Zip Code"],
-                      widths: [128, 128, 128, 128],
-                      row: {
-                        "Apartment": person.address?.apartment || "N/A",
-                        "City": person.address?.city || "N/A",
-                        "State": person.address?.state || "N/A",
-                        "Zip Code": person.address?.zipCode || "N/A",
-                      },
-                    },
-                    {
-                      headers: ["SSN", "Age", "Email", "Occupation"],
-                      widths: [128, 128, 128, 128],
-                      row: {
-                        "SSN": person.ssn || "N/A",
-                        "Age": person.age != null ? person.age.toString() : "N/A",
-                        "Email": person.email || "N/A",
-                        "Occupation": person.occupation || "N/A",
-                      },
-                    },
-                    {
-                      headers: ["Person Type", "Condition", "Caution Type", "Sex"],
-                      widths: [128, 128, 128, 128],
-                      row: {
-                        "Person Type": person.personType || "N/A",
-                        "Condition": person.condition || "N/A",
-                        "Caution Type": person.cautionType || "N/A",
-                        "Sex": person.sex || "N/A",
-                      },
-                    },
-                    {
-                      headers: ["Race", "Ethnicity", "Skin Tone", "Eye Color"],
-                      widths: [128, 128, 128, 128],
-                      row: {
-                        "Race": person.race || "N/A",
-                        "Ethnicity": person.ethnicity || "N/A",
-                        "Skin Tone": person.skinTone || "N/A",
-                        "Eye Color": person.eyeColor || "N/A",
-                      },
-                    },
-                    {
-                      headers: ["Glasses", "Hair Color", "Height", "Weight"],
-                      widths: [128, 128, 128, 128],
-                      row: {
-                        "Glasses": person.glasses || "N/A",
-                        "Hair Color": person.hairColor || "N/A",
-                        "Height": person.height
-                          ? `${person.height.feet || 0}'${person.height.inches || 0}"`
-                          : "N/A",
-                        "Weight": person.weight != null ? person.weight.toString() : "N/A",
-                      },
-                    },
+                    }
                   ];
-                  // const personTables = [
-                  //   ["Date Entered", "Name", "Phone #", "Address"],
-                  //   ["Last Name", "First Name", "Middle Initial", "Cell Number"],
-                  //   ["Business Name", "Street 1", "Street 2", "Building"],
-                  //   ["Apartment", "City", "State", "Zip Code"],
-                  //   ["SSN", "Age", "Email", "Occupation"],
-                  //   ["Person Type", "Condition", "Caution Type", "Sex"],
-                  //   ["Race", "Ethnicity", "Skin Tone", "Eye Color"],
-                  //   ["Glasses", "Hair Color", "Height", "Weight"]
-                  // ];
-                  // const personWidths = {
-                  //           "Date Entered": 90,
-                  //           "Name": 100,
-                  //           "Phone #": 100,
-                  //           "Address": 222,
-                          
-                  //           "Last Name": 90,
-                  //           "First Name": 100,
-                  //           "Middle Initial": 100,
-                  //           "Cell Number": 222,
-                          
-                  //           "Business Name": 90,
-                  //           "Street 1": 100,
-                  //           "Street 2": 100,
-                  //           "Building": 222,
-                          
-                  //           "Apartment": 90,
-                  //           "City": 100,
-                  //           "State": 100,
-                  //           "Zip Code": 222,
-                          
-                  //           "SSN": 90,
-                  //           "Age": 100,
-                  //           "Email": 100,
-                  //           "Occupation": 222,
-                          
-                  //           "Person Type": 90,
-                  //           "Condition": 100,
-                  //           "Caution Type": 100,
-                  //           "Sex": 222,
-                          
-                  //           "Race": 90,
-                  //           "Ethnicity": 100,
-                  //           "Skin Tone": 100,
-                  //           "Eye Color": 222,
-                          
-                  //           "Glasses": 90,
-                  //           "Hair Color": 100,
-                  //           "Height": 100,
-                  //           "Weight": 222,
-                  //         };
-                          
-            
-                  // const personData = [
-                  //   ["03/14/24", "Dan, Hill", "1234567890", "120 3rd St, New York, NY"],
-                  //   ["Hill", "Dan", "S.", "1234567890"],
-                  //   ["", "", "", ""],
-                  //   ["", "", "", ""],
-                  //   ["", "20", "", ""],
-                  //   ["", "", "", ""],
-                  //   ["", "", "", ""],
-                  //   ["", "", "", ""]
-                  // ];
-
-                  currentY = ensureSpace(doc, currentY, 60);
 
                   personTables.forEach((tbl) => {
-                    // Estimate the table height
-                    const rowHeight = measureRowHeight(doc, tbl.row, tbl.headers, tbl.widths);
-                    // Add space for header row + some buffer
-                    const estimatedHeight = rowHeight + 20;
-                    currentY = ensureSpace(doc, currentY, estimatedHeight);
-
-                    // Actually draw table with row splitting
-                    currentY =
-                      drawTableWithRowSplitting(doc, 50, currentY, tbl.headers, [tbl.row], tbl.widths) +
-                      20;
+                    const estimatedHeights = tbl.headers.map((header, i) => {
+                      const cellText = tbl.row[header] || "";
+                      return doc.heightOfString(cellText, { width: tbl.widths[i] - 10, align: "left" }) + 10;
+                    });
+                    const estimatedTableHeight = Math.max(...estimatedHeights) + 20;
+                    currentY = ensureSpace(doc, currentY, estimatedTableHeight);
+                    currentY = drawTableWithRowSplitting(doc, 50, currentY, tbl.headers, [tbl.row], tbl.widths) + 20;
                   });
-
-                  
-                  // currentY = ensureSpace(doc, currentY, 60);
-
-                  // personTables.forEach((headers, i) => {
-                  
-                  //   currentY = ensureSpace(doc, currentY, 60);
-                  //   const row = {};
-                  //   const colWidths = headers.map(header => personWidths[header] || 100);
-                  //   headers.forEach((h, j) => {
-                  //     row[h] = personData[i][j];
-                  //   });
-                  //   currentY = drawTable(doc, 50, currentY, headers, [row], colWidths) + 20;
-                  
-                  //   // 3) "After" printing: look ahead to the *next* table
-                  //   if (hasNextTable(i, personTables)) {
-                  //     currentY = ensureSpace(doc, currentY, 60);
-                  //     const nextTableHeaders = personTables[i + 1]; // e.g. the next item in personTables
-                  //     const neededForNextTable = measureTableHeight(nextTableHeaders);
-                  //     // If we won't have enough space left for the *next* subtable, start a new page now
-                  //     // if (currentY + neededForNextTable > doc.page.height - doc.page.margins.bottom) {
-                  //     //   doc.addPage();
-                  //     //   currentY = doc.page.margins.top;
-                  //     // }
-
-
-                  //   }
-                  // });
                 });
               }
 
-              // 3) Vehicle Details
+              // VEHICLE DETAILS for each return.
               if (lr.vehicles && lr.vehicles.length > 0) {
                 currentY = ensureSpace(doc, currentY, 50);
                 doc.font("Helvetica-Bold").fontSize(12).text("Vehicle Details:", 50, currentY);
                 currentY += 20;
-
                 const vehicleHeaders = ["Date Entered", "Make", "Model", "Plate", "State"];
                 const vehicleRows = lr.vehicles.map((vehicle) => ({
                   "Date Entered": formatDate(vehicle.enteredDate),
@@ -1539,45 +2202,25 @@ convertDocxToPdf(inputPath, outputPath);
                   "Plate": vehicle.plate || "N/A",
                   "State": vehicle.state || "N/A",
                 }));
-                // If you want 5 columns the same width, do e.g. [102, 102, 102, 102, 104]
                 currentY = ensureSpace(doc, currentY, 60);
-                currentY = drawTable(doc, 50, currentY, vehicleHeaders, vehicleRows, [
-                  102, 102, 102, 102, 104,
-                ]) + 20;
+                currentY = drawTable(doc, 50, currentY, vehicleHeaders, vehicleRows, [102, 102, 102, 102, 104]) + 20;
               }
-              // etc...
             });
           } else {
-            // No lead returns
-            // currentY = ensureSpace(doc, currentY, 50);
-            // const headers = ["Lead Returns"];
-            // const rows = [{ "Lead Returns": "No Lead Returns Available" }];
-            // const widths = [512];
-            // currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
-
             currentY = ensureSpace(doc, currentY, 60);
             doc.font("Helvetica-Bold").fontSize(11).text("Lead Return:", 50, currentY);
             currentY += 20;
-            // currentY = ensureSpace(doc, currentY, 60);
             currentY = drawTextBox(doc, 50, currentY, 512, "", "No Lead Returns Available");
           }
         }
       });
     } else {
-      // No leads
       doc.text("No leads data available.", 50, currentY);
     }
 
-    // End the PDF
     doc.end();
-    // Note: This is the ONLY place we call doc.end().
-    // Don’t call it again, or call doc.* after this line!
   } catch (error) {
     console.error("Error generating PDF:", error);
-    // In an error scenario, you generally do NOT want to continue writing
-    // to doc, because that can also cause "write after end" if doc.end() was
-    // already triggered. You might want to handle it like this:
-    // doc.end(); // optionally end if you started writing
     res.status(500).json({ error: "Failed to generate PDF" });
   }
 }

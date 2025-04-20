@@ -40,20 +40,20 @@ export const CMEvidence = () => {
 
   // Sample evidence data
   const [evidence, setEvidence] = useState([
-    {
-      dateEntered: "12/01/2024",
-      type: "Physical",
-      collectionDate: "12/01/2024",
-      disposedDate: "12/03/2024",
-      disposition: "Stored",
-    },
-    {
-      dateEntered: "12/02/2024",
-      type: "Digital",
-      collectionDate: "12/02/2024",
-      disposedDate: "12/04/2024",
-      disposition: "Archived",
-    },
+    // {
+    //   dateEntered: "12/01/2024",
+    //   type: "Physical",
+    //   collectionDate: "12/01/2024",
+    //   disposedDate: "12/03/2024",
+    //   disposition: "Stored",
+    // },
+    // {
+    //   dateEntered: "12/02/2024",
+    //   type: "Digital",
+    //   collectionDate: "12/02/2024",
+    //   disposedDate: "12/04/2024",
+    //   disposition: "Archived",
+    // },
   ]);
 
   // State to manage form data
@@ -63,10 +63,18 @@ export const CMEvidence = () => {
     type: "",
     disposition: "",
   });
+    const [file, setFile] = useState(null);
+  
 
   const handleInputChange = (field, value) => {
     setEvidenceData({ ...evidenceData, [field]: value });
   };
+
+   // Handle file selection
+   const handleFileChange = (event) => {
+    setFile(event.target.files[0]);
+  };
+
 
   const handleAddEvidence = () => {
     const newEvidence = {
@@ -108,6 +116,36 @@ export const CMEvidence = () => {
                 navigate(route, { state: { caseDetails } });
             };
 
+  // Fetch enclosures from backend when component mounts or when selectedLead/selectedCase update
+  useEffect(() => {
+    const fetchEvidences = async () => {
+      if (!selectedLead || !selectedCase) {
+        console.warn("Missing selected lead or case details");
+        return;
+      }
+      // Build URL using selectedLead and selectedCase; URL-encode values that may have spaces
+      const leadNo = selectedLead.leadNo;
+      const leadName = encodeURIComponent(selectedLead.leadName);
+      const caseNo = encodeURIComponent(selectedLead.caseNo);
+      // Here, assuming caseName is in selectedLead or selectedCase; adjust as needed.
+      const caseName = encodeURIComponent(selectedLead.caseName || selectedCase.caseName);
+      const token = localStorage.getItem("token");
+
+      const url = `http://localhost:5000/api/lrevidence/${leadNo}/${leadName}/${caseNo}/${caseName}`;
+      try {
+        const response = await axios.get(url, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        console.log("Fetched enclosures:", response.data);
+        setEvidence(response.data);
+      } catch (error) {
+        console.error("Error fetching enclosures:", error);
+      }
+    };
+
+    fetchEvidences();
+  }, [selectedLead, selectedCase]);
+
   return (
     <div className="lrevidence-container">
       {/* Navbar */}
@@ -137,40 +175,39 @@ export const CMEvidence = () => {
        <div className="sideitem">
                     <ul className="sidebar-list">
                         
-                    <li className="sidebar-item">Case Information</li>
-         <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
-         <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-             New Lead
-           </li>                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
-                      <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                      <li className="sidebar-item active" >View Lead Return</li>
-                      <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
-             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-             View Lead Log
-           </li>
-           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-             Officer Management
-           </li> */}
-           <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-             View/Add Case Notes
-           </li>
-           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-             View Lead Hierarchy
-           </li>
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-             Generate Report
-           </li> */}
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-             View Flagged Leads
-           </li>
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-             View Timeline Entries
-           </li>
-           {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
-
-           <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-           <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
+                    <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li> */}
+              {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Add/View Case Notes
+            </li>)}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li> */}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
          </ul>
                 </div>
                 <div className="left-content">
@@ -237,20 +274,22 @@ export const CMEvidence = () => {
           <thead>
             <tr>
               <th>Date Entered</th>
+              <th>Return ID</th>
               <th>Type</th>
               <th>Collection Date</th>
               <th>Disposed Date</th>
               <th>Disposition</th>
-              <th style={{ width: "14%" }}>Access</th>
+              <th style={{ width: "15%" }}>Access</th>
             </tr>
           </thead>
           <tbody>
             {evidence.map((item, index) => (
               <tr key={index}>
-                <td>{item.dateEntered}</td>
+                <td>{formatDate(item.enteredDate)}</td>
+                <td>{item.leadReturnId}</td>
                 <td>{item.type}</td>
-                <td>{item.collectionDate}</td>
-                <td>{item.disposedDate}</td>
+                <td>{formatDate(item.collectionDate)}</td>
+                <td>{formatDate(item.disposedDate)}</td>
                 <td>{item.disposition}</td>
                 <td>
         <select
@@ -265,7 +304,15 @@ export const CMEvidence = () => {
             ))}
           </tbody>
         </table>
-        <Attachment />
+         {/* <Attachment /> */}
+               <Attachment attachments={evidence.map(e => ({
+                   name: e.originalName || e.filename,
+                   // Optionally include size and date if available:
+                   size: e.size || "N/A",
+                   date: e.enteredDate ? new Date(e.enteredDate).toLocaleString() : "N/A",
+                   // Build a URL to view/download the file
+                   url: `http://localhost:5000/uploads/${e.filename}`
+                 }))} />
         <Comment/>
         </div>
         </div>

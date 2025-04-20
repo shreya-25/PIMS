@@ -295,10 +295,41 @@ function generateReport(req, res) {
         doc.addPage();
         currentY = doc.page.margins.top;
       }
-      doc.font("Helvetica-Bold").fontSize(12).text("Lead Return ID: 1", 50, currentY);
-      currentY += 20;
-      currentY = drawTextBox(doc, 50, currentY, 512, "", "Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos. Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.");
+      // doc.font("Helvetica-Bold").fontSize(12).text("Lead Return ID: 1", 50, currentY);
+      // currentY += 20;
+      // currentY = drawTextBox(doc, 50, currentY, 512, "", "Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos. Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.");
+      doc.font("Helvetica-Bold").fontSize(12).text("Lead Return Details", 50, currentY);
+  currentY += 20;
 
+  if (leadReturn?.length > 0) {
+    leadReturn.forEach((entry, idx) => {
+      doc.font("Helvetica-Bold").fontSize(11).text(`Lead Return ID: ${entry.leadReturnId}`, 50, currentY);
+      currentY += 20;
+
+      const dateEntered = formatDate(entry.dateEntered);
+      const enteredBy = entry.enteredBy || "N/A";
+      const leadText = entry.leadReturn || "N/A";
+
+      currentY = drawTable(
+        doc,
+        50,
+        currentY,
+        ["Date Entered", "Entered By"],
+        [{ "Date Entered": dateEntered, "Entered By": enteredBy }],
+        [180, 332]
+      ) + 10;
+
+      currentY = drawTextBox(doc, 50, currentY, 512, "Return Summary", leadText);
+
+      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        currentY = doc.page.margins.top;
+      }
+    });
+  } else {
+    doc.font("Helvetica").fontSize(11).text("No lead return data available.", 50, currentY);
+    currentY += 20;
+  }
     }
 
     if (includeAll || leadPersons) {
@@ -395,7 +426,7 @@ function generateReport(req, res) {
       currentY = drawTable(doc, 50, currentY, ["Date Entered", "Year", "Make", "Model", "Plate", "Category", "VIN"], [{ "Date Entered": "03/14/24","Year": "2019", "Make": "Toyota", "Model": "Corolla", "Plate": "XYZ1234", "Category": "Bike", "VIN": "" }], [90, 70, 70, 70, 70, 70, 72]) + 20;
       currentY = drawTable(doc, 50, currentY, ["Type", "State", "Primary Color", "Secondary Color","Additional Information"], [{ "Type": "", "State": "NY", "Primary Color": "Blue", "Secondary Color": "Yellow", "Additional Information": "" }], [90, 90, 80, 120, 132]) + 20;
 
-      currentY = drawHardcodedContent(doc, currentY);
+      // currentY = drawHardcodedContent(doc, currentY);
     }
 
     if (includeAll || leadEnclosures) {

@@ -130,6 +130,8 @@ export const CMFinish = () => {
             };
 
             // generatePDF(pdfRef.current);
+            console.log("📤 Report Data Sent to Backend:", JSON.stringify(body, null, 2));
+
       
             // Call your Node server endpoint
             const response = await axios.post("http://localhost:5000/api/report/generate", body, {
@@ -146,6 +148,38 @@ export const CMFinish = () => {
     } catch (error) {
       console.error("Failed to generate report", error);
       alert("Error generating PDF");
+    }
+  };
+
+  const submitReturnAndUpdate = async (newStatus) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!selectedLead || !selectedCase) {
+        alert("No lead or case selected!");
+        return;
+      }
+  
+      // --- 2) Update the leadStatus to either Complete or Pending ---
+      const statusRes = await axios.put(
+        `http://localhost:5000/api/lead/status/${newStatus}`,           // "/status/complete" or "/status/pending"
+        {
+          leadNo:     selectedLead.leadNo,
+          description: selectedLead.leadName,
+          caseNo:     selectedCase.caseNo,
+          caseName:   selectedCase.caseName
+        },
+        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }}
+      );
+  
+      if (statusRes.status === 200) {
+        alert(`Lead Return submitted and status set to '${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}'`);
+      } else {
+        alert("Return submitted but status update failed");
+      }
+  
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong");
     }
   };
       
@@ -188,41 +222,39 @@ export const CMFinish = () => {
       <div className="LRI_Content">
        <div className="sideitem">
        <ul className="sidebar-list">
-                   
-                   <li className="sidebar-item">Case Information</li>
-         <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
-         <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-             New Lead
-           </li>                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
-                      <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                      <li className="sidebar-item active" >View Lead Return</li>
-                      <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
-             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-             View Lead Log
-           </li>
-           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-             Officer Management
-           </li> */}
-           <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-             View/Add Case Notes
-           </li>
-           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-             View Lead Hierarchy
-           </li>
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-             Generate Report
-           </li> */}
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-             View Flagged Leads
-           </li>
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-             View Timeline Entries
-           </li>
-           {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
-
-           <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-           <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
+       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li> */}
+              {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Add/View Case Notes
+            </li>)}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li> */}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
          </ul>
                 </div>
                 <div className="left-content">
@@ -457,8 +489,8 @@ export const CMFinish = () => {
         {/* Buttons */}
         <div className="form-buttons-finish">
           <button className="save-btn1" onClick={handleRunReport}>Run Report</button>
-          <button className="save-btn1">Approve</button>
-          <button className="save-btn1">Return</button>
+          <button className="save-btn1"  onClick={() => submitReturnAndUpdate("complete")} >Approve</button>
+          <button className="save-btn1"  onClick={() => submitReturnAndUpdate("pending")}>Return</button>
         </div>
 
      </div>
