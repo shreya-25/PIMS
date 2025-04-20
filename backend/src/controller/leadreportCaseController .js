@@ -1163,11 +1163,11 @@ function generateCaseReport(req, res) {
     doc.fillColor("black");
 
     // ---------- Case Summary ----------
-    // if (caseSummary) {
-    //   doc.font("Helvetica-Bold").fontSize(11).text("Case Summary:", 50, currentY);
-    //   currentY += 20;
-    //   currentY = drawTextBox(doc, 50, currentY, 512, "", caseSummary);
-    // }
+    if (caseSummary) {
+      doc.font("Helvetica-Bold").fontSize(11).text("Executive Case Summary:", 50, currentY);
+      currentY += 20;
+      currentY = drawTextBox(doc, 50, currentY, 512, "", caseSummary);
+    }
 
     // ---------- Iterate Over Leads ----------
     if (leadsData && leadsData.length > 0) {

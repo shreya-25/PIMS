@@ -59,10 +59,10 @@ export const LRPerson = () => {
                 };
 
     const [persons, setPersons] = useState([
-      { returnId: 1,dateEntered: "01/01/2024", name: "John Doe", phoneNo: "123-456-7890", address: "123 Main St, NY" },
-      {  returnId: 1, dateEntered: "01/05/2024", name: "Jane Smith", phoneNo: "987-654-3210", address: "456 Elm St, CA" },
-      {  returnId: 2,dateEntered: "01/10/2024", name: "Mike Johnson", phoneNo: "555-789-1234", address: "789 Pine St, TX" },
-      { returnId: 2,dateEntered: "01/15/2024", name: "Emily Davis", phoneNo: "111-222-3333", address: "321 Maple St, FL" },
+      // { returnId: 1,dateEntered: "01/01/2024", name: "John Doe", phoneNo: "123-456-7890", address: "123 Main St, NY" },
+      // {  returnId: 1, dateEntered: "01/05/2024", name: "Jane Smith", phoneNo: "987-654-3210", address: "456 Elm St, CA" },
+      // {  returnId: 2,dateEntered: "01/10/2024", name: "Mike Johnson", phoneNo: "555-789-1234", address: "789 Pine St, TX" },
+      // { returnId: 2,dateEntered: "01/15/2024", name: "Emily Davis", phoneNo: "111-222-3333", address: "321 Maple St, FL" },
     ]);
   
     const [selectedRow, setSelectedRow] = useState(null);
@@ -94,6 +94,18 @@ export const LRPerson = () => {
         setSelectedRow(null);
       }
     };
+
+    useEffect(() => {
+      if (
+        selectedCase?.caseNo &&
+        selectedCase?.caseName &&
+        selectedLead?.leadNo &&
+        selectedLead?.leadName
+      ) {
+        fetchPersons();
+      }
+    }, [selectedCase, selectedLead]);
+    
   
   
   const [leadData, setLeadData] = useState({
@@ -147,6 +159,51 @@ export const LRPerson = () => {
     const handlePrevPage = () => {
     navigate('/LRInstruction'); // Replace '/nextpage' with the actual next page route
   };
+
+  const fetchPersons = async () => {
+    const token = localStorage.getItem("token");
+  
+    const caseNo = selectedCase.caseNo;
+    const caseName = encodeURIComponent(selectedCase.caseName); // encode if contains spaces
+    const leadNo = selectedLead.leadNo;
+    const leadName = encodeURIComponent(selectedLead.leadName);
+  
+    console.log("About to hit");
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/lrperson/lrperson/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log(res);
+  
+      // Map response to desired format
+      const mappedPersons = res.data.map((person) => ({
+        returnId: person.leadReturnId,
+        dateEntered: new Date(person.enteredDate).toLocaleDateString(),
+        name: `${person.firstName} ${person.lastName}`,
+        phoneNo: person.cellNumber || "N/A",
+        address:
+          person.address?.street1 &&
+          `${person.address.street1}, ${person.address.city || ""}, ${person.address.state || ""}`,
+        leadReturnId: person.leadReturnId,
+      }));
+  
+      setPersons(mappedPersons);
+      setError("");
+      setLoading(false);
+      console.log("map person", mappedPersons);
+    } catch (err) {
+      console.error("Error fetching person records:", err);
+      setError("Failed to fetch persons.");
+      setLoading(false);
+    }
+  };
+  
   
   return (
     <div className="person-page">
@@ -197,60 +254,39 @@ export const LRPerson = () => {
 
        <div className="LRI_Content">
       <div className="sideitem">
-                    <ul className="sidebar-list">
-                    {/* Lead Management Dropdown */}
-                    <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
+      <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
-                            {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▼" : "▲" }
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-              View Lead Log
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
-            </li>
+            </li> */}
+              {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
-            </li>
+            </li>)}
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
             </li> */}
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-              View Timeline Entries
-            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
             {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
-
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-         
-          </ul>
-        )}
-
-                    </ul>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
                 </div>
 
                 <div className="left-content">
@@ -265,12 +301,12 @@ export const LRPerson = () => {
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th style={{ width: "16%" }}>Associated Return Id </th>
+              <th style={{ width: "10%" }}>Return Id </th>
               <th>Name</th>
               <th>Phone No</th>
               <th>Address</th>
               <th style={{ width: "14%" }}>Additional Details</th>
-              <th style={{ width: "12%" }}></th>
+              <th style={{ width: "14%" }}></th>
             </tr>
           </thead>
           <tbody>
@@ -332,9 +368,11 @@ export const LRPerson = () => {
 
       {/* Bottom Buttons */}
       <div className="bottom-buttons">
-      <button onClick={() => handleNavigation('/LRPerson1')} className="save-btn1">Add Person</button>
+      <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+      onClick={() => handleNavigation('/LRPerson1')} className="save-btn1">Add Person</button>
       </div>
-      <Comment/>
+      <Comment tag = "person"/>
 </div>
 </div>
       <FootBar

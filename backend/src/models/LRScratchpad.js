@@ -3,8 +3,8 @@ const { Schema } = mongoose;
 
 const lrScratchpadSchema = new mongoose.Schema(
     {
-        leadNo: { type: Number, required: true },
-        description: { type: String, required: true },
+        leadNo: { type: Number },
+        description: { type: String},
         assignedTo: {
             assignees: [{ type: String }],
             lRStatus: { 
@@ -24,9 +24,10 @@ const lrScratchpadSchema = new mongoose.Schema(
         enteredBy: { type: String, required: true },
         caseName: { type: String, required: true },
         caseNo: { type: String, required: true },
-        leadReturnId: { type: String, required: true },
+        leadReturnId: { type: String },
         enteredDate: { type: Date, required: true },
         text: { type: String, required: true},
+        type: { type: String, required: true, enum: ["Case", "Lead"]}
        
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields

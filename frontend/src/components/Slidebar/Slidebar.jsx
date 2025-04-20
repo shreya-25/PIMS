@@ -11,6 +11,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
     managerName: "",
     investigators: [], // Store selected investigators
     summary: "",
+    executiveCaseSummary:"",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -127,6 +128,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
       caseName: caseDetails.title,
       role: "Case Manager",
       caseSummary: caseDetails.summary,
+      executiveCaseSummary: caseDetails.executiveCaseSummary,
       username: caseDetails.managerName,
       selectedOfficers: caseDetails.investigators.map((name) => ({ name })),
     };
@@ -177,10 +179,49 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
         managerName: "",
         investigators: [],
         summary: "",
+        executiveCaseSummary: "",
         status: "Ongoing"
       });
   
       setIsSidebarOpen(false);
+
+      // Now send a notification to all assigned officers
+    // Build a notification object using case details:
+    const notificationPayload = {
+      notificationId: Date.now().toString(), // using timestamp as a unique id; customize as needed
+      assignedBy: caseDetails.managerName,
+      assignedTo: caseDetails.investigators, // list of usernames (officers)
+      action1: "assigned a new case",
+      post1: caseDetails.title,
+      leadNo: "",
+      leadName: "",
+      caseNo: caseDetails.number,
+      caseName: caseDetails.title,
+      caseStatus: "Open",
+      unread: true,
+      accepted: false,
+      time: new Date().toISOString(),
+    };
+
+    // Send notification (assumes your server is running on port 5000)
+    const notifResponse = await fetch("http://localhost:5000/api/notifications", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(notificationPayload),
+    });
+    
+    const notifData = await notifResponse.json();
+    
+    if (!notifResponse.ok) {
+      console.error("Notification error:", notifData);
+      // Optionally, notify the user that notification sending failed
+    } else {
+      console.log("Notification sent successfully:", notifData);
+    }
+
 
     } catch (err) {
       setError(err.message);

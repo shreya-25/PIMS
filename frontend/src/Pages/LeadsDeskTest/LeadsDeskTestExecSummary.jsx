@@ -7,6 +7,9 @@ import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import PersonModal from "../../components/PersonModal/PersonModel";
 import CaseHeaderSection from "../../components/CaseHeaderSection/CaseHeaderSection";
+import ReactQuill from "react-quill";
+
+import ExecSummaryModal from "../../components/ExecSummaryModal/ExecSummaryModal";
 import VehicleModal from "../../components/VehicleModal/VehicleModel";
 import Pagination from "../../components/Pagination/Pagination";
 import { jsPDF } from "jspdf"; // if still used elsewhere
@@ -99,12 +102,12 @@ const fetchLeadHierarchyFullDetails = async (leadNo, caseNo, caseName, token, ch
 };
 
 export const LeadsDeskTestExecSummary = () => {
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "auto";
-    };
-  }, []);
+  // useEffect(() => {
+  //   document.body.style.overflow = "hidden";
+  //   return () => {
+  //     document.body.style.overflow = "auto";
+  //   };
+  // }, []);
 
   const navigate = useNavigate();
   const pdfRef = useRef();
@@ -116,8 +119,70 @@ export const LeadsDeskTestExecSummary = () => {
   const [hierarchyLeadsData, setHierarchyLeadsData] = useState([]);
   const [hierarchyChains, setHierarchyChains] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showExecFileModal, setShowExecFileModal] = useState(false);
+  const [execSummaryFile, setExecSummaryFile] = useState(null);
+
+  const [useFileUpload, setUseFileUpload] = useState(false);
+  const [useWebpageSummary, setUseWebpageSummary] = useState(true);
+  const [webpageUrl, setWebpageUrl] = useState("");
+  const [typedSummary, setTypedSummary] = useState("");
+  const saveTimeout = useRef(null);
+
+   // Save to backend
+   const saveExecutiveSummary = async () => {
+    if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+    const token = localStorage.getItem("token");
+    try {
+      await axios.put(
+        "http://localhost:5000/api/cases/executive-summary",
+        {
+          caseNo: selectedCase.caseNo,
+          caseName: selectedCase.caseName,
+          executiveCaseSummary: typedSummary,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      console.log("Executive summary saved");
+    } catch (err) {
+      console.error("Failed to save executive summary", err);
+    }
+  };
+
+  // Manual save button handler
+  const handleSaveClick = () => {
+    saveExecutiveSummary();
+  };
+
+  // Auto–save after 2s of inactivity
+  useEffect(() => {
+    if (!useWebpageSummary) return;
+    // reset timer on every keystroke
+    clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+      saveExecutiveSummary();
+    }, 2000);
+
+    // cleanup on unmount or next keystroke
+    return () => clearTimeout(saveTimeout.current);
+  }, [typedSummary, useWebpageSummary, selectedCase.caseNo, selectedCase.caseName]);
 
 
+  useEffect(() => {
+    if (!selectedCase?.caseNo) return;
+    const token = localStorage.getItem("token");
+  
+    axios
+      .get(
+        `http://localhost:5000/api/cases/executive-summary/${selectedCase.caseNo}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      .then(({ data }) => {
+        setTypedSummary(data.executiveCaseSummary);
+        setUseWebpageSummary(true);    // ensure the textarea is enabled
+      })
+      .catch((err) => console.error("Failed to load exec summary", err));
+  }, [selectedCase.caseNo]);
+  
   // Modal states
   const [showPersonModal, setShowPersonModal] = useState(false);
   const [personModalData, setPersonModalData] = useState({
@@ -171,6 +236,19 @@ export const LeadsDeskTestExecSummary = () => {
     setShowMediaModal(true);
   };
   const closeMediaModal = () => setShowMediaModal(false);
+
+  const handleExecSummaryOptionSelect = (option, file) => {
+    if (option === "upload") {
+      setExecSummaryFile(file);
+      handleRunReportWithSummary();
+    } else {
+      setExecSummaryFile(null);
+      handleRunReport();
+    }
+    console.log("Executive Summary Option Selected:", option, file);
+    // handleRunReportWithSummary();
+  };
+
 
   // ------------------ Show Hierarchy / Show All Leads ------------------
   const handleShowHierarchy = async () => {
@@ -328,6 +406,7 @@ export const LeadsDeskTestExecSummary = () => {
 
   const [selectStartLead1, setSelectStartLead1] = useState("");
 const [selectEndLead2, setSelectEndLead2] = useState("");
+const [visibleChainsCount, setVisibleChainsCount] = useState(2);
 
 // This function will run when the user clicks "Show Leads"
 const handleShowLeadsInRange = () => {
@@ -378,11 +457,11 @@ const handleShowLeadsInRange = () => {
   const handleCaseSummaryChange = (e) => setCaseSummary(e.target.value);
   const handleEditClick = () => setIsEditing(true);
   
-  const handleSaveClick = () => {
-    setIsEditing(false);
-    alert("Report Saved!");
-  };
-
+  // const handleSaveClick = () => {
+  //   setIsEditing(false);
+  //   alert("Report Saved!");
+  // };
+  const [value, setValue] = useState("");
   const handleSearch = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -406,21 +485,41 @@ const handleShowLeadsInRange = () => {
     const leadNumbers = chain.map((l) => l.leadNo);
     const displayedNumbers = expanded ? leadNumbers : leadNumbers.slice(0, 2);
   
-    return (
-      <div key={chainIndex} style={{ marginBottom: "10px" }}>
-        <strong>Chain #{chainIndex + 1}:</strong> {displayedNumbers.join(", ")}
-        {leadNumbers.length > 2 && (
-          <button className = "show-more-btn" onClick={() => setExpanded(!expanded)} style={{ marginLeft: "10px" }}>
-            {expanded ? "Show Less" : "Show More"}
-          </button>
-        )}
-      </div>
-    );
-  };
+  //   return (
+  //     <div key={chainIndex} style={{ marginBottom: "10px" }}>
+  //       <strong>Chain #{chainIndex + 1}:</strong> {displayedNumbers.join(", ")}
+  //       {leadNumbers.length > 2 && (
+  //         // <button className = "show-more-btn" onClick={() => setExpanded(!expanded)} style={{ marginLeft: "10px" }}>
+  //         //   {expanded ? "Show Less" : "Show More"}
+  //         // </button>
+  //          <button className = "show-more-btn" onClick={() => setExpanded(!expanded)} style={{ marginLeft: "10px" }}>
+  //            {expanded ? "▲" : "▼"}
+  //         </button>
+  //       )}
+  //     </div>
+  //   );
+  // };
 
-    // New state for the executive summary file
-    const [execSummaryFile, setExecSummaryFile] = useState(null);
-    const [showExecFileModal, setShowExecFileModal] = useState(false);
+  return (
+    <div
+      key={chainIndex}
+      style={{
+        marginBottom: "10px",
+        cursor: "pointer",
+        width: "100%",
+        display: "flex",
+        justifyContent: "flex-start",
+        alignItems: "center"
+      }}
+      onClick={() => setExpanded(!expanded)}
+    >
+      <strong>Chain #{chainIndex + 1}:</strong> {displayedNumbers.join(", ")}{" "}
+      {leadNumbers.length > 2 && (expanded ? "▲ Expand" : "▼")}
+      {/* {leadNumbers.length > 2 && (expanded ? "" : "")} */}
+    </div>
+  );
+};
+
 
     // Handler to capture the file input
     const handleExecSummaryFileChange = (e) => {
@@ -443,7 +542,7 @@ const handleShowLeadsInRange = () => {
         reportTimestamp: new Date().toLocaleString(),
         // For a full report, pass the entire leadsData and caseSummary.
         leadsData,
-        caseSummary,
+        caseSummary: typedSummary,
         // Here, you could also include selectedReports if you want sections toggled.
         selectedReports: { FullReport: true },
       };
@@ -507,6 +606,67 @@ const handleShowLeadsInRange = () => {
     // }
 
     const token = localStorage.getItem("token");
+    if (useWebpageSummary) {
+      try {
+        // Build payload. You may adjust the payload structure as required by your backend.
+        const payload = {
+          user: "Officer 916", // Or get from auth context
+          reportTimestamp: new Date().toLocaleString(),
+          // For a full report, pass the entire leadsData and caseSummary.
+          leadsData,
+          caseSummary: typedSummary,
+          // Here, you could also include selectedReports if you want sections toggled.
+          selectedReports: { FullReport: true },
+        };
+        // Call your backend endpoint (adjust the URL if needed)
+        const response = await axios.post(
+          "http://localhost:5000/api/report/generateCase",
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            responseType: "blob", // Expect a PDF blob back
+          }
+        );
+        // Create a blob URL and open in a new tab
+        const file = new Blob([response.data], { type: "application/pdf" });
+        const fileURL = URL.createObjectURL(file);
+        window.open(fileURL, "_blank");
+      } catch (error) {
+        console.error("Failed to generate report", error);
+        alert("Error generating PDF");
+      }
+  }
+
+  else if (useFileUpload && execSummaryFile) {
+    // try {
+    //   const formData = new FormData();
+    //   formData.append("user", "Officer 916");
+    //   formData.append("reportTimestamp", new Date().toLocaleString());
+    //   formData.append("leadsData", JSON.stringify(leadsData));
+    //   // The *file* goes here:
+    //   formData.append("execSummaryFile", execSummaryFile);
+  
+    //   const response = await axios.post(
+    //     "http://localhost:5000/api/report/generateCaseExecSummary",
+    //     formData,
+    //     {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //         "Content-Type": "multipart/form-data",
+    //       },
+    //       responseType: "blob",
+    //     }
+    //   );
+    //   const file = new Blob([response.data], { type: "application/pdf" });
+    //   window.open(URL.createObjectURL(file), "_blank");
+    // } catch (err) {
+    //   console.error("Error generating PDF with upload:", err);
+    //   alert("Failed to generate report with uploaded summary");
+    // }
+
     try {
       // Build payload. You may adjust the payload structure as required by your backend.
       const payload = {
@@ -514,7 +674,6 @@ const handleShowLeadsInRange = () => {
         reportTimestamp: new Date().toLocaleString(),
         // For a full report, pass the entire leadsData and caseSummary.
         leadsData,
-        caseSummary,
         // Here, you could also include selectedReports if you want sections toggled.
         selectedReports: { FullReport: true },
       };
@@ -538,6 +697,8 @@ const handleShowLeadsInRange = () => {
       console.error("Failed to generate report", error);
       alert("Error generating PDF");
     }
+  }
+  
   };
 
   
@@ -849,7 +1010,7 @@ const handleShowLeadsInRange = () => {
       <Navbar />
 
       <div className="main-content-ld-ExecSummary">
-        <div className="sideitem">
+        {/* <div className="sideitem">
           <ul className="sidebar-list">
             <li className="sidebar-item">Case Information</li>
             <li className="sidebar-item" onClick={() => navigate("/CasePageManager")}>Case Page</li>
@@ -864,24 +1025,102 @@ const handleShowLeadsInRange = () => {
             <li className="sidebar-item active" onClick={() => navigate("/LeadsDesk")}>View Leads Desk</li>
             <li className="sidebar-item" onClick={() => navigate("/HomePage")}>Go to Home Page</li>
           </ul>
-        </div>
+        </div> */}
 
+        <div className="right-sec">
+          <div className="header-ld-exec">
+        <div className="case-header-ldExecSummary">
+            <h2>GENERATE REPORT</h2>
+          </div>
+          <div className="center-section-ldExecSummary">
+            <h1>
+              CASE: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
+            </h1>
+          </div>
+          </div>
+       <div className="down-content"> 
         <div className="exec-summary-sec">
           <h3>Executive Summary</h3>
-        <textarea className= "summary-input" placeholder="Type here..."></textarea>
-        <button className="save-btn1">Save</button>
+        {/* <textarea className= "summary-input" placeholder="Type here..."></textarea>
+        <button className="save-btn1">Save</button> */}
+        {/* ======= New Options Row ======= */}
+      <div style={{ marginBottom: 16 }}>
+        <label className="report-option-label">
+          <input
+            type="checkbox"
+            checked={useFileUpload}
+            onChange={() => {
+              setUseFileUpload(u => !u);
+              if (useWebpageSummary) setUseWebpageSummary(false);
+            }}
+          />{" "}
+          Add an executive summary (upload file)
+        </label>
+        {useFileUpload && (
+          <input
+            type="file"
+            accept=".doc,.docx,.pdf"
+            onChange={handleExecSummaryFileChange}
+          />
+        )}
+
+        <span style={{ margin: "0 100px", fontWeight: "bold" }}>OR</span>
+
+        <label  className="report-option-label">
+    <input
+      type="checkbox"
+      checked={useWebpageSummary}
+      onChange={() => {
+        setUseWebpageSummary(w => !w);
+        if (useFileUpload) setUseFileUpload(false);
+      }}
+    />{" "}
+    Type executive summary directly
+  </label>
+</div>
+{/* ===== End New Options ===== */}
+
+{/* <ReactQuill theme="snow" value={value} onChange={setValue} /> */}
+{/* now your main textarea becomes your “webpage” input */}
+<textarea
+  className="summary-input"
+  placeholder="Type here..."
+  value={typedSummary}
+  onChange={e => setTypedSummary(e.target.value)}
+  disabled={!useWebpageSummary}
+  style={{ opacity: useWebpageSummary ? 1 : 0.5 }}
+/>
+<div className="saveandreportsec">
+<button className="save-btn1"style = {{width: "40%"}}
+onClick={handleSaveClick}
+disabled={!useWebpageSummary} >Save</button>
+<button className="save-btn1" style = {{width: "40%"}} onClick={handleRunReportWithSummary}>
+                Run Report
+              </button>
+              </div>
+
+{/* <div className="last-sec">
+            <div className="btn-sec-ld">
+              <button className="save-btn1" onClick={handleRunReport}>
+                Run Report
+              </button>
+              <button className="save-btn1"  onClick={() => setShowExecFileModal(true)}>
+                Run Report with Summary
+              </button>
+            </div>
+          </div> */}
         </div>
 
         <div className="left-content-execSummary">
 
-        <div className="case-header">
+        {/* <div className="case-header">
             <h2>LEADS DESK</h2>
           </div>
           <div className="center-section-ld">
             <h1>
               CASE: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
             </h1>
-          </div>
+          </div> */}
 
           <div className="bottom-sec-ldExecSummary" id="main-content">
             <div className="case-summary-ld">
@@ -991,14 +1230,74 @@ const handleShowLeadsInRange = () => {
 
             {hierarchyLeadsData.length > 0 ? (
               <>
-                <h3>Hierarchy for Lead {hierarchyLeadInput}:</h3>
-                {/* {hierarchyChains.map((chain, idx) => {
-                  const chainStr = chain.map((l) => l.leadNo).join(",");
-                  return <div key={idx}>Chain #{idx + 1}: {chainStr}</div>;
-                })} */}
-                {hierarchyChains.map((chain, idx) => (
-                  <HierarchyChain key={idx} chain={chain} chainIndex={idx} />
-                ))}
+                {/* <h3 style={{ textAlign: "left" }}>Hierarchy for Lead {hierarchyLeadInput}:</h3>
+
+                {
+                  hierarchyChains.slice(0, visibleChainsCount).map((chain, idx) => (
+                    <HierarchyChain key={idx} chain={chain} chainIndex={idx} />
+                  ))
+                }
+
+<div style={{ marginTop: "10px" }}>
+      {visibleChainsCount < hierarchyChains.length && (
+        <button
+          className="show-more-chains-btn"
+          onClick={() => setVisibleChainsCount(prev => prev + 5)}
+          style={{ marginRight: "10px", color: "grey", backgroundColor:"whitesmoke" }}
+        >
+          Load More Chains
+        </button>
+      )}
+      {visibleChainsCount > 2 && (
+        <button
+          className="show-more-chains-btn"
+          onClick={() => setVisibleChainsCount(2)}
+        >
+          Load Less Chains
+        </button>
+      )}
+    </div> */}
+
+<div style={{ width: "100%", alignSelf: "flex-start", textAlign: "left" }}>
+  <h3 style={{ width: "100%", alignSelf: "flex-start", textAlign: "left" }}>Hierarchy for Lead {hierarchyLeadInput}:</h3>
+  {hierarchyChains.slice(0, visibleChainsCount).map((chain, idx) => (
+    <HierarchyChain key={idx} chain={chain} chainIndex={idx} />
+  ))}
+  <div style={{ marginTop: "10px", textAlign: "left" }}>
+    {visibleChainsCount < hierarchyChains.length && (
+      <button
+        className="show-more-chains-btn"
+        onClick={() => setVisibleChainsCount(prev => prev + 5)}
+        style={{
+          marginLeft: "-20px",
+          color: "grey",
+          background: "none",
+          border: "none",
+          cursor: "pointer"
+        }}
+      >
+        Load More Chains
+      </button>
+    )}
+    {visibleChainsCount > 2 && (
+      <button
+        className="show-more-chains-btn"
+        onClick={() => setVisibleChainsCount(2)}
+        style={{
+          // marginRight: "10px",
+          marginLeft: "-20px",
+          color: "grey",
+          background: "none",
+          border: "none",
+          cursor: "pointer"
+        }}
+      >
+        Load Less Chains
+      </button>
+    )}
+  </div>
+</div>
+
 
                 {renderLeads(hierarchyLeadsData)}
               </>
@@ -1016,21 +1315,18 @@ const handleShowLeadsInRange = () => {
                 </div> */}
               </>
             )}
-          </div>
-
-          <div className="last-sec">
-            <div className="btn-sec-ld">
-              <button className="save-btn1" onClick={handleRunReport}>
-                Run Report
-              </button>
-              <button className="save-btn1" onClick={handleRunReportWithSummary}>
-                Run Report with Summary
-              </button>
             </div>
-            <FootBar onPrevious={() => navigate(-1)} />
-          </div>
+        </div>
+        </div>  
         </div>
       </div>
+
+       {/* Render the ExecSummaryModal */}
+       <ExecSummaryModal
+        isOpen={showExecFileModal}
+        onClose={() => setShowExecFileModal(false)}
+        onSelectOption={handleExecSummaryOptionSelect}
+      />
     </div>
   );
 };

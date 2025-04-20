@@ -22,6 +22,14 @@ export const LRVehicle = () => {
 
   const navigate = useNavigate(); // Initialize useNavigate hook
     const location = useLocation();
+    const [username, setUsername] = useState("");
+    
+    useEffect(() => {
+       const loggedInUser = localStorage.getItem("loggedInUser");
+       if (loggedInUser) {
+         setUsername(loggedInUser);
+       }
+      })
    const { leadDetails, caseDetails } = location.state || {};
       const [loading, setLoading] = useState(true);
       const [error, setError] = useState("");
@@ -46,10 +54,10 @@ export const LRVehicle = () => {
     
 
   const [vehicles, setVehicles] = useState([
-    {  returnId: 1,dateEntered: "01/01/2024", year: "2023", make: "Honda", model: "Accord",color: "Blue", vin: "123456", plate: "XYZ-1234", state: "NY" },
-    {  returnId: 1,dateEntered: "01/05/2024", year: "2022", make: "Toyota", model: "Camry", color: "Black",vin: "654321", plate: "ABC-5678", state: "CA" },
-    { returnId: 2, dateEntered: "01/10/2024", year: "2021", make: "Ford", model: "F-150", color: "White",vin: "789012", plate: "DEF-9101", state: "TX" },
-    {  returnId: 2,dateEntered: "01/15/2024", year: "2024", make: "Tesla", model: "Model 3", color: "Red",vin: "345678", plate: "TES-2024", state: "FL" },
+    // {  returnId: 1,dateEntered: "01/01/2024", year: "2023", make: "Honda", model: "Accord",color: "Blue", vin: "123456", plate: "XYZ-1234", state: "NY" },
+    // {  returnId: 1,dateEntered: "01/05/2024", year: "2022", make: "Toyota", model: "Camry", color: "Black",vin: "654321", plate: "ABC-5678", state: "CA" },
+    // { returnId: 2, dateEntered: "01/10/2024", year: "2021", make: "Ford", model: "F-150", color: "White",vin: "789012", plate: "DEF-9101", state: "TX" },
+    // {  returnId: 2,dateEntered: "01/15/2024", year: "2024", make: "Tesla", model: "Model 3", color: "Red",vin: "345678", plate: "TES-2024", state: "FL" },
   ]);
    const [vehicleModalData, setVehicleModalData] = useState({
         leadNo: "",
@@ -60,7 +68,7 @@ export const LRVehicle = () => {
         leadsDeskCode: "",
       });
       
-                    const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
         
  const openVehicleModal = (leadNo, description, caseNo, caseName, leadReturnId, leadsDeskCode) => {
       setVehicleModalData({
@@ -86,6 +94,7 @@ export const LRVehicle = () => {
       setShowVehicleModal(false);
     };
     const [showVehicleModal, setShowVehicleModal] = useState(false);
+
     
   const [vehicleData, setVehicleData] = useState({
     year: '',
@@ -99,6 +108,7 @@ export const LRVehicle = () => {
     primaryColor: '',
     secondaryColor: '',
     state: '',
+    leadReturnId:'',
     information: '',
   });
 
@@ -110,37 +120,130 @@ export const LRVehicle = () => {
     navigate(route); // Navigate to the respective page
   };
 
-  const handleAddVehicle = () => {
-    const newVehicle = {
-      dateEntered: new Date().toLocaleDateString(),
+  useEffect(() => {
+    if (
+      selectedLead?.leadNo &&
+      selectedLead?.leadName &&
+      selectedCase?.caseNo &&
+      selectedCase?.caseName
+    ) {
+      fetchVehicles();
+    }
+  }, [selectedLead, selectedCase]);
+  
+
+  // const handleAddVehicle = () => {
+  //   const newVehicle = {
+  //     dateEntered: new Date().toLocaleDateString(),
+  //     year: vehicleData.year,
+  //     make: vehicleData.make,
+  //     model: vehicleData.model,
+  //     color: vehicleData.color,
+  //     vn: vehicleData.vin,
+  //     plate: vehicleData.plate,
+  //     state: vehicleData.state,
+  //   };
+
+  //   // Add the new vehicle to the list
+  //   setVehicles([...vehicles, newVehicle]);
+
+  //   // Clear the form fields
+  //   setVehicleData({
+  //     year: '',
+  //     make: '',
+  //     model: '',
+  //     plate: '',
+  //     category: '',
+  //     type: '',
+  //     color:'',
+  //     vin: '',
+  //     primaryColor: '',
+  //     secondaryColor: '',
+  //     state: '',
+  //     information: '',
+  //   });
+  // };
+
+  const handleAddVehicle = async () => {
+    const token = localStorage.getItem("token");
+  
+    const payload = {
+      leadNo: selectedLead?.leadNo,
+      description: selectedLead?.leadName,
+      caseNo: selectedCase?.caseNo,
+      caseName: selectedCase?.caseName,
+      enteredBy: username, // Replace with real user
+      enteredDate: new Date().toISOString(),
+      leadReturnId: vehicleData.leadReturnId, // You may fetch/set this dynamically
       year: vehicleData.year,
       make: vehicleData.make,
       model: vehicleData.model,
-      color: vehicleData.color,
-      vn: vehicleData.vin,
       plate: vehicleData.plate,
+      vin: vehicleData.vin,
       state: vehicleData.state,
+      category: vehicleData.category,
+      type: vehicleData.type,
+      primaryColor: vehicleData.primaryColor,
+      secondaryColor: vehicleData.secondaryColor,
+      information: vehicleData.information,
+      additionalData: {} // Add any extra info if needed
     };
 
-    // Add the new vehicle to the list
-    setVehicles([...vehicles, newVehicle]);
-
-    // Clear the form fields
-    setVehicleData({
-      year: '',
-      make: '',
-      model: '',
-      plate: '',
-      category: '',
-      type: '',
-      color:'',
-      vin: '',
-      primaryColor: '',
-      secondaryColor: '',
-      state: '',
-      information: '',
-    });
+    console.log(payload);
+  
+    try {
+      const res = await axios.post("http://localhost:5000/api/lrvehicle/lrvehicle", payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      alert("Vehicle added successfully");
+      fetchVehicles(); // Refresh the list
+    } catch (err) {
+      console.error("Error adding vehicle:", err);
+      alert("Failed to add vehicle.");
+    }
   };
+
+  const fetchVehicles = async () => {
+    const token = localStorage.getItem("token");
+    const leadNo = selectedLead.leadNo;
+    const leadName = encodeURIComponent(selectedLead.leadName);
+    const caseNo = selectedCase.caseNo;
+    const caseName = encodeURIComponent(selectedCase.caseName);
+  
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/lrvehicle/lrvehicle/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const mapped = res.data.map((vehicle) => ({
+        returnId: vehicle.leadReturnId,
+        dateEntered: formatDate(vehicle.enteredDate),
+        year: vehicle.year,
+        make: vehicle.make,
+        model: vehicle.model,
+        color: vehicle.primaryColor,
+        vin: vehicle.vin,
+        plate: vehicle.plate,
+        state: vehicle.state,
+      }));
+  
+      setVehicles(mapped);
+      setError("");
+    } catch (err) {
+      console.error("Error fetching vehicle records:", err);
+      setError("Failed to fetch vehicles.");
+    }
+  };
+  
+  
 
 
 
@@ -195,59 +298,39 @@ export const LRVehicle = () => {
 
        <div className="LRI_Content">
       <div className="sideitem">
-                    <ul className="sidebar-list">
-                   {/* Lead Management Dropdown */}
-                   <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
+      <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
-                            {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▼" : "▲" }
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-              View Lead Log
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
-            </li>
+            </li> */}
+              {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
-            </li>
+            </li>)}
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
             </li> */}
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-              View Timeline Entries
-            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
             {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
-
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-         
-          </ul>
-        )}
-                    </ul>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
                 </div>
 
                 <div className="left-content">
@@ -264,19 +347,19 @@ export const LRVehicle = () => {
         <div className = "timeline-form-sec">
         <div className="vehicle-form">
           <div className="form-row4">
-            <label>Year:</label>
+          <label>Return Id*</label>
             <input
               type="text"
-              value={vehicleData.year}
-              onChange={(e) => handleChange('year', e.target.value)}
+              value={vehicleData.leadReturnId}
+              onChange={(e) => handleChange('leadReturnId', e.target.value)}
             />
-            <label>Make:</label>
+            <label>Entered Date*</label>
             <input
               type="text"
-              value={vehicleData.make}
-              onChange={(e) => handleChange('make', e.target.value)}
+              value= {formatDate(new Date().toISOString())}
+              onChange={(e) => handleChange('enteredDate', e.target.value)}
             />
-            <label>Model:</label>
+            <label>Model</label>
             <input
               type="text"
               value={vehicleData.model}
@@ -291,19 +374,19 @@ export const LRVehicle = () => {
             /> */}
           
           <div className="form-row4">
-            <label>Plate:</label>
+            <label>Plate</label>
             <input
               type="text"
               value={vehicleData.plate}
               onChange={(e) => handleChange('plate', e.target.value)}
             />
-            <label>Category:</label>
+            <label>Category</label>
             <input
               type="text"
               value={vehicleData.category}
               onChange={(e) => handleChange('category', e.target.value)}
             />
-            <label>Type:</label>
+            <label>Type</label>
             <input
               type="text"
               value={vehicleData.type}
@@ -311,47 +394,72 @@ export const LRVehicle = () => {
             />
           </div>
           <div className="form-row4">
-            <label>VIN:</label>
+            <label>VIN</label>
             <input
               type="text"
               value={vehicleData.vn}
               onChange={(e) => handleChange('vn', e.target.value)}
             />
-            <label>Primary Color:</label>
+             <label>Year</label>
             <input
               type="text"
-              value={vehicleData.primaryColor}
-              onChange={(e) => handleChange('primaryColor', e.target.value)}
+              value={vehicleData.year}
+              onChange={(e) => handleChange('year', e.target.value)}
             />
-            <label>Second Color:</label>
+            <label>Make</label>
             <input
               type="text"
-              value={vehicleData.secondaryColor}
-              onChange={(e) => handleChange('secondaryColor', e.target.value)}
+              value={vehicleData.make}
+              onChange={(e) => handleChange('make', e.target.value)}
             />
+           
           </div>
-        </div>
-        <div className="vehicle-form">
-          <div className="form-row2">
-            <label>State:</label>
+          <div className="form-row4">
+          <label>State</label>
             <input
               type="text"
               value={vehicleData.state}
               onChange={(e) => handleChange('state', e.target.value)}
             />
+             <label>Main Color</label>
+            <input
+              type="text"
+              value={vehicleData.primaryColor}
+              onChange={(e) => handleChange('primaryColor', e.target.value)}
+            />
+            <label>Second Color</label>
+            <input
+              type="text"
+              value={vehicleData.secondaryColor}
+              onChange={(e) => handleChange('secondaryColor', e.target.value)}
+            />
+           
           </div>
+        </div>
+        <div className="vehicle-form">
           <div className="form-row1">
-            <label>Information:</label>
+            <label>Information</label>
             <textarea
               value={vehicleData.information}
               onChange={(e) => handleChange('information', e.target.value)}
             ></textarea>
           </div>
+          {/* <div className="form-row1">
+            <label>Date Entered *</label>
+            <input
+                  type="date"
+                  value={vehicleData.dateEntered}
+                  className="input-large"
+                  onChange={(e) => handleChange("dateEntered", e.target.value)}
+                />
+          </div> */}
           </div>
         </div>
         {/* Buttons */}
         <div className="form-buttons">
-        <button className="save-btn1" onClick={handleAddVehicle}>
+        <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+        className="save-btn1" onClick={handleAddVehicle}>
             Add Vehicle
           </button>
           {/* <button className="back-btn">Back</button>
@@ -366,13 +474,12 @@ export const LRVehicle = () => {
             <tr>
               <th style={{ width: "12%" }}>Date Entered</th>
               <th style={{ width: "10%" }}>Return Id</th>
-              <th>Year</th>
               <th>Make</th>
               <th>Model</th>
               <th>Color</th>
               <th>State</th>
               <th style={{ width: "15%" }}>Additional Details</th>
-              <th style={{ width: "12%" }}></th>
+              <th style={{ width: "14%" }}></th>
             </tr>
           </thead>
           <tbody>
@@ -380,7 +487,6 @@ export const LRVehicle = () => {
       <tr key={index}>
         <td>{vehicle.dateEntered}</td>
         <td>{vehicle.returnId}</td>
-        <td>{vehicle.year}</td>
         <td>{vehicle.make}</td>
         <td>{vehicle.model}</td>
         <td style={{ textAlign: 'center' }}>
@@ -418,7 +524,8 @@ export const LRVehicle = () => {
   />
   <td>
                   <div classname = "lr-table-btn">
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
@@ -426,7 +533,8 @@ export const LRVehicle = () => {
                   // onClick={() => handleEditReturn(ret)}
                 />
                   </button>
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"

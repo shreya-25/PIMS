@@ -7,13 +7,23 @@
   
   .main-content-searchlead {
     text-align: center;
-    margin-top: 30px;
     width: 80%;
     align-items: center;
     margin-left: 10%;
-    margin-top: 5%;
+    margin-top: 30px;
   }
-  
+  .search-page-bar
+  {
+    width: 100%;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .search-bar-page
+  {
+    width: 100%;
+  }
   .searchlead-title {
     font-size: 28px;
     font-weight: bold;
@@ -26,6 +36,7 @@
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 30px;
+    margin-top: 20px;
   }
   
   .search-table th,

@@ -19,6 +19,8 @@ export const LRAudio = () => {
       }, []);
   const navigate = useNavigate();
    const location = useLocation();
+  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+   const [file, setFile] = useState(null);
     
       const formatDate = (dateString) => {
         if (!dateString) return "";
@@ -35,20 +37,6 @@ export const LRAudio = () => {
 
   // Sample audio data
   const [audioFiles, setAudioFiles] = useState([
-    {
-      dateEntered: "12/01/2024",
-      returnId: 1,
-      dateAudioRecorded: "12/01/2024",
-      description: "Audio recording of the witness interview.",
-      audioSrc: "/assets/sample-audio.mp3", // Replace with actual audio path
-    },
-    {
-      dateEntered: "12/02/2024",
-      returnId: 2,
-      dateAudioRecorded: "12/02/2024",
-      description: "Recording from the crime scene.",
-      audioSrc: "/assets/sample-audio2.mp3", // Replace with actual audio path
-    },
   ]);
 
   // State to manage form data
@@ -56,6 +44,7 @@ export const LRAudio = () => {
     dateAudioRecorded: "",
     description: "",
     audioSrc: "",
+    leadReturnId: "",
   });
 
   const handleInputChange = (field, value) => {
@@ -63,31 +52,76 @@ export const LRAudio = () => {
   };
 
   const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const audioUrl = URL.createObjectURL(file);
+    const selectedFile = event.target.files[0];
+    if (selectedFile) {
+      const audioUrl = URL.createObjectURL(selectedFile);
+      setFile(selectedFile); // ✅ This was missing
       setAudioData({ ...audioData, audioSrc: audioUrl });
     }
   };
+  
 
-  const handleAddAudio = () => {
-    const newAudio = {
-      dateEntered: new Date().toLocaleDateString(),
-      dateAudioRecorded: audioData.dateAudioRecorded,
-      description: audioData.description,
-      audioSrc: audioData.audioSrc || "/Materials/default-audio.mp3", // Default audio if not provided
-    };
-
-    // Add new audio to the list
-    setAudioFiles([...audioFiles, newAudio]);
-
-    // Clear form fields
-    setAudioData({
-      dateAudioRecorded: "",
-      description: "",
-      audioSrc: "",
-    });
+  const handleAddAudio = async () => {
+    const formData = new FormData();
+  
+    // Validation
+    if (!file ||  !audioData.leadReturnId || !audioData.dateAudioRecorded || !audioData.description) {
+      alert("Please fill in all required fields and select a file.");
+      return;
+    }
+  
+    // File and fields
+    formData.append("file", file);
+    formData.append("leadNo", selectedLead?.leadNo);
+    formData.append("description", selectedLead?.leadName);
+    formData.append("enteredBy", localStorage.getItem("loggedInUser"));
+    formData.append("caseName", selectedCase?.caseName);
+    formData.append("caseNo", selectedCase?.caseNo);
+    formData.append("leadReturnId", audioData.leadReturnId);
+    formData.append("enteredDate", new Date().toISOString());
+    formData.append("dateAudioRecorded", audioData.dateAudioRecorded);
+    formData.append("audioDescription", audioData.description);
+  
+    const token = localStorage.getItem("token");
+  
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/lraudio/upload",
+        formData,
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const savedAudio = response.data.audio;
+  
+      setAudioFiles((prev) => [
+        ...prev,
+        {
+          dateEntered: formatDate(savedAudio.enteredDate),
+          returnId: savedAudio.leadReturnId,
+          dateAudioRecorded: formatDate(savedAudio.dateAudioRecorded),
+          description: savedAudio.audioDescription,
+          audioSrc: `http://localhost:5000/uploads/${savedAudio.filename}`,
+        },
+      ]);
+  
+      // Reset form
+      setAudioData({
+        dateAudioRecorded: "",
+        description: "",
+        audioSrc: "",
+        leadReturnId: "",
+      });
+      setFile(null);
+    } catch (error) {
+      console.error("Error uploading audio:", error);
+      alert("Failed to upload audio.");
+    }
   };
+  
 
   const handleNavigation = (route) => {
     navigate(route);
@@ -98,6 +132,50 @@ export const LRAudio = () => {
                   const onShowCaseSelector = (route) => {
                     navigate(route, { state: { caseDetails } });
                 };
+
+                const fetchAudioFiles = async () => {
+                  const token = localStorage.getItem("token");
+                
+                  const leadNo = selectedLead?.leadNo;
+                  const leadName = encodeURIComponent(selectedLead?.leadName);
+                  const caseNo = selectedCase?.caseNo;
+                  const caseName = encodeURIComponent(selectedCase?.caseName);
+                
+                  try {
+                    const res = await axios.get(
+                      `http://localhost:5000/api/lraudio/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+                      {
+                        headers: {
+                          Authorization: `Bearer ${token}`,
+                        },
+                      }
+                    );
+                
+                    const mappedAudios = res.data.map((audio) => ({
+                      dateEntered: formatDate(audio.enteredDate),
+                      returnId: audio.leadReturnId,
+                      dateAudioRecorded: formatDate(audio.dateAudioRecorded),
+                      description: audio.audioDescription,
+                      audioSrc: `http://localhost:5000/uploads/${audio.filename}`,
+                    }));
+                
+                    setAudioFiles(mappedAudios);
+                  } catch (error) {
+                    console.error("Error fetching audios:", error);
+                  }
+                };
+
+                useEffect(() => {
+                  if (
+                    selectedLead?.leadNo &&
+                    selectedLead?.leadName &&
+                    selectedCase?.caseNo &&
+                    selectedCase?.caseName
+                  ) {
+                    fetchAudioFiles();
+                  }
+                }, [selectedLead, selectedCase]);
+                
 
   return (
     <div className="lraudio-container">
@@ -126,60 +204,41 @@ export const LRAudio = () => {
 
       <div className="LRI_Content">
        <div className="sideitem">
-                    <ul className="sidebar-list">
-                    {/* Lead Management Dropdown */}
-                    <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
+     
+       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
-                            {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▼" : "▲" }
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-              View Lead Log
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
-            </li>
+            </li> */}
+              {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
-            </li>
+            </li>)}
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
             </li> */}
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-              View Timeline Entries
-            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
             {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
-
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
 
-         
-          </ul>
-        )}
-
-                    </ul>
                 </div>
                 <div className="left-content">
 
@@ -198,7 +257,7 @@ export const LRAudio = () => {
         <h4 className="evidence-form-h4">Enter Audio Details</h4>
         <div className="audio-form">
           <div className="form-row-audio">
-            <label className="evidence-head">Date Audio Recorded:</label>
+            <label className="evidence-head">Date Audio Recorded*</label>
             <input
               type="date"
               value={audioData.dateAudioRecorded}
@@ -207,7 +266,16 @@ export const LRAudio = () => {
             />
           </div>
           <div className="form-row-audio">
-            <label className="evidence-head">Description:</label>
+            <label className="evidence-head">Return Id*</label>
+            <input
+              type="text"
+              value={audioData.leadReturnId}
+              className="evidence-head"
+              onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
+            />
+          </div>
+          <div className="form-row-audio">
+            <label className="evidence-head">Description</label>
             <textarea
               value={audioData.description}
               className="evidence-head"
@@ -215,13 +283,15 @@ export const LRAudio = () => {
             ></textarea>
           </div>
           <div className="form-row-audio">
-            <label className="evidence-head">Upload Audio:</label>
+            <label className="evidence-head">Upload Audio*</label>
             
             <input type="file" accept="audio/*" className="evidence-head" onChange={handleFileChange} />
           </div>
         </div>
         <div className="form-buttons-audio">
-          <button className="save-btn1" onClick={handleAddAudio}>Add Audio</button>
+        <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+          className="save-btn1" onClick={handleAddAudio}>Add Audio</button>
          </div>
          {/* Uploaded Audio Preview */}
          <div className="uploaded-audio">
@@ -244,11 +314,11 @@ export const LRAudio = () => {
            <table className="leads-table">
           <thead>
             <tr>
-              <th>Date Entered</th>
-              <th> Associated Return Id </th>
+              <th style={{ width: "11%" }}>Date Entered</th>
+              <th style={{ width: "10%" }}>Return Id </th>
               <th>Date Audio Recorded</th>
               <th>Description</th>
-              <th></th>
+              <th style={{ width: "13%" }}></th>
             </tr>
           </thead>
           <tbody>
@@ -260,7 +330,8 @@ export const LRAudio = () => {
                 <td>{audio.description}</td>
                 <td>
                   <div classname = "lr-table-btn">
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
@@ -268,7 +339,8 @@ export const LRAudio = () => {
                   // onClick={() => handleEditReturn(ret)}
                 />
                   </button>
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
@@ -282,7 +354,7 @@ export const LRAudio = () => {
             ))}
           </tbody>
         </table>
-        <Comment/>
+        <Comment tag="Audio" />
       </div>
       </div>
 

@@ -42,8 +42,8 @@ export const CMEnclosures = () => {
 
   // Sample enclosures data
   const [enclosures, setEnclosures] = useState([
-    { dateEntered: "", leadReturnType: "", type: "", enclosure: "" },
-    { dateEntered: "12/03/2024", leadReturnId: "1", type: "Evidence", enclosure: "Photo Evidence" },
+    // { dateEntered: "", leadReturnType: "", type: "", enclosure: "" },
+    // { dateEntered: "12/03/2024", leadReturnId: "1", type: "Evidence", enclosure: "Photo Evidence" },
   ]);
 
 
@@ -156,41 +156,39 @@ export const CMEnclosures = () => {
 
       <div className="LRI_Content">
        <div className="sideitem">
-       <li className="sidebar-item">Case Information</li>
-          <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
-          <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
-                       <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                       <li className="sidebar-item active" >View Lead Return</li>
-                       <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
-              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-              View Lead Log
-            </li>
+       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
             </li> */}
+              {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              View/Add Case Notes
-            </li>
+              Add/View Case Notes
+            </li>)}
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
             </li> */}
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-              View Timeline Entries
-            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
             {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
-
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-        
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
         </div>
 
     
@@ -249,10 +247,10 @@ export const CMEnclosures = () => {
           <thead>
             <tr>
               <th style={{ width: "10%" }}>Date Entered</th>
-              <th style={{ width: "16%" }}>Associated Return Id</th>
+              <th style={{ width: "9%" }}>Return ID</th>
               <th style={{ width: "10%" }}>Type</th>
               <th>Enclosure Description</th>
-              <th style={{ width: "14%" }}>Access</th>
+              <th style={{ width: "15%" }}>Access</th>
             </tr>
           </thead>
           <tbody>
@@ -275,7 +273,7 @@ export const CMEnclosures = () => {
               </tr>
             ))) : (
               <tr>
-                <td colSpan="4" style={{ textAlign: 'center' }}>
+                <td colSpan="5" style={{ textAlign: 'center' }}>
                   No Enclosures Available
                 </td>
               </tr>)}

@@ -19,6 +19,10 @@ export const LRPictures = () => {
       }, []);
   const navigate = useNavigate();
     const location = useLocation();
+  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+  const [file, setFile] = useState(null);
+
+  
     const formatDate = (dateString) => {
       if (!dateString) return "";
       const date = new Date(dateString);
@@ -40,27 +44,27 @@ export const LRPictures = () => {
 
   // Default pictures data
   const [pictures, setPictures] = useState([
-    {
-      dateEntered: "2024-12-01",
-      returnId:1,
-      datePictureTaken: "2024-11-25",
-      description: "Picture of the crime scene from Main Street.",
-      image: "/Materials/pict1.jpeg", // Path to your default image
-    },
-    {
-      dateEntered: "2024-12-02",
-      returnId:1,
-      datePictureTaken: "2024-11-26",
-      description: "Vehicle involved in the robbery.",
-      image: "/Materials/pict2.jpg", // Path to your default image
-    },
-    {
-      dateEntered: "2024-12-03",
-      returnId:2,
-      datePictureTaken: "2024-11-27",
-      description: "Evidence collected at the crime location.",
-      image: "/Materials/pict3.jpg", // Path to your default image
-    },
+    // {
+    //   dateEntered: "2024-12-01",
+    //   returnId:1,
+    //   datePictureTaken: "2024-11-25",
+    //   description: "Picture of the crime scene from Main Street.",
+    //   image: "/Materials/pict1.jpeg", // Path to your default image
+    // },
+    // {
+    //   dateEntered: "2024-12-02",
+    //   returnId:1,
+    //   datePictureTaken: "2024-11-26",
+    //   description: "Vehicle involved in the robbery.",
+    //   image: "/Materials/pict2.jpg", // Path to your default image
+    // },
+    // {
+    //   dateEntered: "2024-12-03",
+    //   returnId:2,
+    //   datePictureTaken: "2024-11-27",
+    //   description: "Evidence collected at the crime location.",
+    //   image: "/Materials/pict3.jpg", // Path to your default image
+    // },
   ]);
 
   // State to manage form data
@@ -68,6 +72,7 @@ export const LRPictures = () => {
     datePictureTaken: "",
     description: "",
     image: "",
+    leadReturnId: "",
   });
 
   const handleInputChange = (field, value) => {
@@ -75,35 +80,125 @@ export const LRPictures = () => {
   };
 
   const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setPictureData({ ...pictureData, image: imageUrl });
+    const selectedFile = event.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setPictureData({ ...pictureData, image: URL.createObjectURL(selectedFile) }); // for preview
     }
   };
+  
 
-  const handleAddPicture = () => {
-    const newPicture = {
-      dateEntered: new Date().toLocaleDateString(),
-      datePictureTaken: pictureData.datePictureTaken,
-      description: pictureData.description,
-      image: pictureData.image || `${process.env.PUBLIC_URL}/Materials/default-image.jpg`, // Default image if not provided
-    };
-
-    // Add new picture to the list
-    setPictures([...pictures, newPicture]);
-
-    // Clear form fields
-    setPictureData({
-      datePictureTaken: "",
-      description: "",
-      image: "",
-    });
+  const handleAddPicture = async () => {
+    const formData = new FormData();
+  
+    // Validate required fields
+    if (!file || !pictureData.datePictureTaken || !pictureData.description) {
+      alert("Please fill in all required fields and select a file.");
+      return;
+    }
+  
+    // Append image file
+    formData.append("file", file);
+  
+    // Append textual fields
+    formData.append("leadNo", selectedLead?.leadNo);
+    formData.append("description", selectedLead?.leadName);
+    formData.append("enteredBy", localStorage.getItem("loggedInUser"));
+    formData.append("caseName", selectedCase?.caseName);
+    formData.append("caseNo", selectedCase?.caseNo);
+    formData.append("leadReturnId", pictureData.leadReturnId || "");
+    formData.append("enteredDate", new Date().toISOString());
+    formData.append("datePictureTaken", pictureData.datePictureTaken);
+    formData.append("pictureDescription", pictureData.description);
+  
+    const token = localStorage.getItem("token");
+  
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/lrpicture/upload",
+        formData,
+        {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const savedPicture = response.data.picture;
+  
+      // Add newly saved picture to the table list
+      setPictures(prev => [
+        ...prev,
+        {
+          dateEntered: formatDate(savedPicture.enteredDate),
+          returnId: savedPicture.leadReturnId,
+          datePictureTaken: formatDate(savedPicture.datePictureTaken),
+          description: savedPicture.pictureDescription,
+          image: `http://localhost:5000/uploads/${savedPicture.filename}`
+        }
+      ]);
+  
+      // Clear form
+      setPictureData({
+        datePictureTaken: "",
+        description: "",
+        image: "",
+      });
+      setFile(null);
+    } catch (error) {
+      console.error("Error uploading picture:", error);
+      alert("Failed to upload picture.");
+    }
   };
+  
 
   const handleNavigation = (route) => {
     navigate(route);
   };
+
+  useEffect(() => {
+    if (
+      selectedLead?.leadNo &&
+      selectedLead?.leadName &&
+      selectedCase?.caseNo &&
+      selectedCase?.caseName
+    ) {
+      fetchPictures();
+    }
+  }, [selectedLead, selectedCase]);
+  
+  const fetchPictures = async () => {
+    const token = localStorage.getItem("token");
+  
+    const leadNo = selectedLead.leadNo;
+    const leadName = encodeURIComponent(selectedLead.leadName);
+    const caseNo = selectedCase.caseNo;
+    const caseName = encodeURIComponent(selectedCase.caseName);
+  
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/lrpicture/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const mappedPictures = res.data.map((pic) => ({
+        dateEntered: formatDate(pic.enteredDate),
+        returnId: pic.leadReturnId,
+        datePictureTaken: formatDate(pic.datePictureTaken),
+        description: pic.pictureDescription,
+          image: `http://localhost:5000/uploads/${pic.filename}`
+      }));
+  
+      setPictures(mappedPictures);
+    } catch (error) {
+      console.error("Error fetching pictures:", error);
+    }
+  };
+  
 
   return (
     <div className="lrpictures-container">
@@ -132,60 +227,39 @@ export const LRPictures = () => {
 
       <div className="LRI_Content">
        <div className="sideitem">
-                    <ul className="sidebar-list">
-                   {/* Lead Management Dropdown */}
-                   <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
+       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
-                            {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▼" : "▲" }
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-              View Lead Log
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
-            </li>
+            </li> */}
+              {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
-            </li>
+            </li>)}
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
             </li> */}
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-              View Timeline Entries
-            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
             {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
-
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-         
-          </ul>
-        )}
-
-                    </ul>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
                 </div>
                 <div className="left-content">
 
@@ -214,6 +288,15 @@ export const LRPictures = () => {
             />
           </div>
           <div className="form-row-pic">
+            <label  className="evidence-head">Lead Return Id:</label>
+            <input
+              type="leadReturnId"
+              value={pictureData.leadReturnId}
+               className="evidence-head"
+              onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
+            />
+          </div>
+          <div className="form-row-pic">
             <label  className="evidence-head">Description:</label>
             <textarea
               value={pictureData.description}
@@ -227,7 +310,9 @@ export const LRPictures = () => {
           </div>
         </div>
         <div className="form-buttons">
-          <button className="save-btn1" onClick={handleAddPicture}>Add Picture</button>
+        <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+           className="save-btn1" onClick={handleAddPicture}>Add Picture</button>
         </div>
         {/* Uploaded Pictures Preview */}
         <div className="uploaded-pictures">
@@ -264,7 +349,8 @@ export const LRPictures = () => {
                 <td>{picture.description}</td>
                 <td>
                   <div classname = "lr-table-btn">
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
@@ -272,7 +358,8 @@ export const LRPictures = () => {
                   // onClick={() => handleEditReturn(ret)}
                 />
                   </button>
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"

@@ -65,36 +65,85 @@ export const LRFinish = () => {
     }
   }, [leadReturns]);
 
+  // const handleSubmitReport = async () => {
+  //   try {
+  //     const token = localStorage.getItem("token");
+  
+  //     // Ensure that a lead and case are selected (adjust as needed)
+  //     if (!selectedLead || !selectedCase) {
+  //       alert("No lead or case selected!");
+  //       return;
+  //     }
+  
+  //     // Build the request body for the Lead Return entry.
+  //     // Replace the hardcoded values or use state/form values as necessary.
+  //     const body = {
+  //       leadNo: selectedLead.leadNo,
+  //       description: selectedLead.leadName, // You might get this from an input field.
+  //       caseNo: selectedCase.caseNo,
+  //       caseName: selectedCase.caseName,
+  //       submittedDate: new Date(), // Today's date
+  //       // The assignedTo object: override its status to "Submitted"
+  //       assignedTo: {
+  //         assignees: ["Officer 916", "Officer 91"], // Replace with your dynamic data
+  //         lRStatus: "Submitted"
+  //       },
+  //       // The assignedBy object: override its status to "Pending"
+  //       assignedBy: {
+  //         assignee: "Officer 912", // Replace with your dynamic data
+  //         lRStatus: "Pending"
+  //       }
+  //     };
+  
+  //     const response = await axios.post(
+  //       "http://localhost:5000/api/leadReturn/create",
+  //       body,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           "Content-Type": "application/json"
+  //         }
+  //       }
+  //     );
+  
+  //     if (response.status === 201) {
+  //       alert("Lead Return submitted successfully");
+  //       // Optionally, navigate to another page or update your state
+  //     } else {
+  //       alert("Failed to create Lead Return");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error submitting Lead Return:", error);
+  //     alert("Error submitting Lead Return");
+  //   }
+  // };
+
   const handleSubmitReport = async () => {
     try {
       const token = localStorage.getItem("token");
   
-      // Ensure that a lead and case are selected (adjust as needed)
       if (!selectedLead || !selectedCase) {
         alert("No lead or case selected!");
         return;
       }
   
-      // Build the request body for the Lead Return entry.
-      // Replace the hardcoded values or use state/form values as necessary.
       const body = {
         leadNo: selectedLead.leadNo,
-        description: selectedLead.leadName, // You might get this from an input field.
+        description: selectedLead.leadName,
         caseNo: selectedCase.caseNo,
         caseName: selectedCase.caseName,
-        submittedDate: new Date(), // Today's date
-        // The assignedTo object: override its status to "Submitted"
+        submittedDate: new Date(),
         assignedTo: {
-          assignees: ["Officer 916", "Officer 91"], // Replace with your dynamic data
+          assignees: ["Officer 916", "Officer 91"],
           lRStatus: "Submitted"
         },
-        // The assignedBy object: override its status to "Pending"
         assignedBy: {
-          assignee: "Officer 912", // Replace with your dynamic data
+          assignee: "Officer 912",
           lRStatus: "Pending"
         }
       };
   
+      // Step 1: Submit the LeadReturn
       const response = await axios.post(
         "http://localhost:5000/api/leadReturn/create",
         body,
@@ -107,16 +156,39 @@ export const LRFinish = () => {
       );
   
       if (response.status === 201) {
-        alert("Lead Return submitted successfully");
-        // Optionally, navigate to another page or update your state
+        // Step 2: Update lead status to 'In Review' via PUT
+        const statusResponse = await axios.put(
+          "http://localhost:5000/api/lead/status/in-review",
+          {
+            leadNo: selectedLead.leadNo,
+            description: selectedLead.leadName,
+            caseNo: selectedCase.caseNo,
+            caseName: selectedCase.caseName
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+  
+        if (statusResponse.status === 200) {
+          alert("Lead Return submitted and status set to 'In Review'");
+        } else {
+          alert("Lead Return submitted but status update failed.");
+        }
       } else {
-        alert("Failed to create Lead Return");
+        alert("Failed to submit Lead Return");
       }
     } catch (error) {
-      console.error("Error submitting Lead Return:", error);
-      alert("Error submitting Lead Return");
+      console.error("Error during Lead Return submission or status update:", error);
+      alert("Something went wrong while submitting the report.");
     }
   };
+  
+
+  
   
   
 
@@ -329,43 +401,40 @@ const handleNavigationToInstruction = () => {
 
       <div className="LRI_Content">
        <div className="sideitem">
-       <ul className="sidebar-list">
-                   
-                   <li className="sidebar-item">Case Information</li>
-         <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
-         <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-             New Lead
-           </li>                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
-                      <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                      <li className="sidebar-item active" >View Lead Return</li>
-                      <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
-             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-             View Lead Log
-           </li>
-           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-             Officer Management
-           </li> */}
-           <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-             View/Add Case Notes
-           </li>
-           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-             View Lead Hierarchy
-           </li>
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-             Generate Report
-           </li> */}
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-             View Flagged Leads
-           </li>
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-             View Timeline Entries
-           </li>
-           {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
-
-           <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-           <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-         </ul>
+       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li> */}
+              {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Add/View Case Notes
+            </li>)}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li> */}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
+   
                 </div>
                 <div className="left-content">
    
@@ -579,7 +648,9 @@ const handleNavigationToInstruction = () => {
           <button className="save-btn1" onClick={runReport}>
             Run Report
           </button>
-          <button className="save-btn1" onClick={handleSubmitReport}>
+          <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+          className="save-btn1" onClick={handleSubmitReport}>
             Submit Report
           </button>
         </div>

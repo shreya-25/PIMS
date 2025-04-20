@@ -49,7 +49,7 @@ export const LREnclosures = () => {
 
   // Sample enclosures data
   const [enclosures, setEnclosures] = useState([
-    { returnId:'',dateEntered: "", type: "", enclosure: "" },
+    // { returnId:'',dateEntered: "", type: "", enclosure: "" },
     // { returnId:2, dateEntered: "12/03/2024", type: "Evidence", enclosure: "Photo Evidence" },
   ]);
 
@@ -147,6 +147,53 @@ export const LREnclosures = () => {
     navigate(route); // Navigate to respective page
   };
 
+  useEffect(() => {
+    if (
+      selectedLead?.leadNo &&
+      selectedLead?.leadName &&
+      selectedCase?.caseNo &&
+      selectedCase?.caseName
+    ) {
+      fetchEnclosures();
+    }
+  }, [selectedLead, selectedCase]);
+  const fetchEnclosures = async () => {
+    const token = localStorage.getItem("token");
+  
+    const leadNo = selectedLead.leadNo;
+    const leadName = encodeURIComponent(selectedLead.leadName); // encode to handle spaces
+    const caseNo = selectedCase.caseNo;
+    const caseName = encodeURIComponent(selectedCase.caseName);
+  
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/lrenclosure/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+  
+      const mappedEnclosures = res.data.map((enc) => ({
+        dateEntered: formatDate(enc.enteredDate),
+        type: enc.type,
+        enclosure: enc.enclosureDescription,
+        returnId: enc.leadReturnId,
+        originalName: enc.originalName
+      }));
+  
+      setEnclosures(mappedEnclosures);
+      setLoading(false);
+      setError("");
+    } catch (err) {
+      console.error("Error fetching enclosures:", err);
+      setError("Failed to load enclosures");
+      setLoading(false);
+    }
+  };
+  
+
   return (
     <div className="lrenclosures-container">
       {/* Navbar */}
@@ -174,60 +221,40 @@ export const LREnclosures = () => {
 
       <div className="LRI_Content">
        <div className="sideitem">
-                    <ul className="sidebar-list">
-                    {/* Lead Management Dropdown */}
-                    <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
+       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )} 
-                            {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Management {caseDropdownOpen ? "▼" : "▲" }
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list1">
-              <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-              <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-              View Lead Log
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
-            </li>
+            </li> */}
+              {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
-            </li>
+            </li>)}
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
               View Lead Hierarchy
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
             </li> */}
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-              View Timeline Entries
-            </li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
             {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
-
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
 
-         
-          </ul>
-        )}
-
-                    </ul>
                 </div>
                 <div className="left-content">
      
@@ -284,7 +311,9 @@ export const LREnclosures = () => {
         </div>
           {/* Action Buttons */}
           <div className="form-buttons">
-          <button className="save-btn1" onClick={handleSaveEnclosure}>Add Enclosure</button>
+          <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+
+          className="save-btn1" onClick={handleSaveEnclosure}>Add Enclosure</button>
           {/* <button className="back-btn" onClick={() => handleNavigation("/LRVehicle")}>Back</button>
           <button className="next-btn" onClick={() => handleNavigation("/LREvidence")}>Next</button>
           <button className="save-btn">Save</button>
@@ -292,13 +321,14 @@ export const LREnclosures = () => {
         </div>
 
               {/* Enclosures Table */}
-              {/* <table className="leads-table">
+              <table className="leads-table">
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th>Associated Return Id </th>
+              <th>Return Id </th>
               <th>Type</th>
               <th>Enclosure</th>
+              <th>File Name</th>
               <th></th>
             </tr>
           </thead>
@@ -306,13 +336,15 @@ export const LREnclosures = () => {
           {enclosures.length > 0 ? (
             enclosures.map((enclosure, index) => (
               <tr key={index}>
-                <td>{enclosure.enteredDate}</td>
+                <td>{enclosure.dateEntered}</td>
                 <td>{enclosure.returnId}</td>
                 <td>{enclosure.type}</td>
                 <td>{enclosure.enclosure}</td>
+                <td>{enclosure.originalName}</td>
                 <td>
                   <div classname = "lr-table-btn">
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
@@ -320,7 +352,8 @@ export const LREnclosures = () => {
                   // onClick={() => handleEditReturn(ret)}
                 />
                   </button>
-                  <button>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
@@ -333,12 +366,12 @@ export const LREnclosures = () => {
               </tr>
                    ))) : (
                     <tr>
-                      <td colSpan="4" style={{ textAlign: 'center' }}>
+                      <td colSpan="5" style={{ textAlign: 'center' }}>
                         No Enclosures Available
                       </td>
                     </tr>)}
           </tbody>
-        </table> */}
+        </table>
         <Comment/>
       </div>
       </div>

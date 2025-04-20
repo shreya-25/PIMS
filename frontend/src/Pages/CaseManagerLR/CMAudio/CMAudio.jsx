@@ -8,9 +8,6 @@ import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import Attachment from "../../../components/Attachment/Attachment";
 
-
-
-
 export const CMAudio = () => {
   useEffect(() => {
       // Apply style when component mounts
@@ -23,6 +20,9 @@ export const CMAudio = () => {
     }, []);
   const navigate = useNavigate();
   const location = useLocation();
+  const { selectedCase, selectedLead, leadInstructions, leadReturns} = useContext(CaseContext);
+
+
   
     const formatDate = (dateString) => {
       if (!dateString) return "";
@@ -39,19 +39,21 @@ export const CMAudio = () => {
 
   // Sample audio data
   const [audioFiles, setAudioFiles] = useState([
-    {
-      dateEntered: "12/01/2024",
-      dateAudioRecorded: "12/01/2024",
-      description: "Audio recording of the witness interview.",
-      audioSrc: "/assets/sample-audio.mp3", // Replace with actual audio path
-    },
-    {
-      dateEntered: "12/02/2024",
-      dateAudioRecorded: "12/02/2024",
-      description: "Recording from the crime scene.",
-      audioSrc: "/assets/sample-audio2.mp3", // Replace with actual audio path
-    },
+    // {
+    //   dateEntered: "12/01/2024",
+    //   dateAudioRecorded: "12/01/2024",
+    //   description: "Audio recording of the witness interview.",
+    //   audioSrc: "/assets/sample-audio.mp3", // Replace with actual audio path
+    // },
+    // {
+    //   dateEntered: "12/02/2024",
+    //   dateAudioRecorded: "12/02/2024",
+    //   description: "Recording from the crime scene.",
+    //   audioSrc: "/assets/sample-audio2.mp3", // Replace with actual audio path
+    // },
   ]);
+
+    const [file, setFile] = useState(null);
 
   // State to manage form data
   const [audioData, setAudioData] = useState({
@@ -91,6 +93,36 @@ export const CMAudio = () => {
     });
   };
 
+  useEffect(() => {
+    const fetchAudios = async () => {
+      if (!selectedLead || !selectedCase) {
+        console.warn("Missing selected lead or case details");
+        return;
+      }
+      // Build URL using selectedLead and selectedCase; URL-encode values that may have spaces
+      const leadNo = selectedLead.leadNo;
+      const leadName = encodeURIComponent(selectedLead.leadName);
+      const caseNo = encodeURIComponent(selectedLead.caseNo);
+      // Here, assuming caseName is in selectedLead or selectedCase; adjust as needed.
+      const caseName = encodeURIComponent(selectedLead.caseName || selectedCase.caseName);
+      const token = localStorage.getItem("token");
+
+      const url = `http://localhost:5000/api/lraudio/${leadNo}/${leadName}/${caseNo}/${caseName}`;
+      try {
+        const response = await axios.get(url, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        console.log("Fetched audios:", response.data);
+        setAudioFiles(response.data);
+      } catch (error) {
+        console.error("Error fetching audios:", error);
+      }
+    };
+
+    fetchAudios();
+  }, [selectedLead, selectedCase]);
+
+
   const handleNavigation = (route) => {
     navigate(route);
   };
@@ -98,8 +130,6 @@ export const CMAudio = () => {
     if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
     return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
 };
-  const { selectedCase, selectedLead, leadInstructions, leadReturns} = useContext(CaseContext);
-
 
    const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
                 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
@@ -136,44 +166,42 @@ export const CMAudio = () => {
       <div className="LRI_Content">
       <div className="sideitem">
        <ul className="sidebar-list">
-                   
-                   <li className="sidebar-item">Case Information</li>
-         <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
-         <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-             New Lead
-           </li>                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
-                      <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                      <li className="sidebar-item active" >View Lead Return</li>
-                      <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
-             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-             View Lead Log
-           </li>
-           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-             Officer Management
-           </li> */}
-           <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-             View/Add Case Notes
-           </li>
-           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-             View Lead Hierarchy
-           </li>
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-             Generate Report
-           </li> */}
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-             View Flagged Leads
-           </li>
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-             View Timeline Entries
-           </li>
-           {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
-
-           <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-           <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
+       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li> */}
+              {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Add/View Case Notes
+            </li>)}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li> */}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
          </ul>
-                </div>
-                <div className="left-content">
+       </div>
+      <div className="left-content">
 
 
 
@@ -234,7 +262,8 @@ export const CMAudio = () => {
           <thead>
             <tr>
               <th style={{ width: "10%" }}>Date Entered</th>
-              <th style={{ width: "16%" }}>Date Audio Recorded</th>
+              <th style={{ width: "10%" }}>Return ID</th>
+              <th style={{ width: "18%" }}>Date Audio Recorded</th>
               <th>Description</th>
               <th style={{ width: "15%" }}>Access</th>
             </tr>
@@ -242,8 +271,9 @@ export const CMAudio = () => {
           <tbody>
             {audioFiles.map((audio, index) => (
               <tr key={index}>
-                <td>{audio.dateEntered}</td>
-                <td>{audio.dateAudioRecorded}</td>
+                <td>{formatDate(audio.enteredDate)}</td>
+                <td>{audio.returnId || "A"}</td>
+                <td>{formatDate(audio.dateAudioRecorded)}</td>
                 <td>{audio.description}</td>
                 <td>
         <select
@@ -259,9 +289,17 @@ export const CMAudio = () => {
           </tbody>
         </table>
 
-        <Attachment/>
+       <Attachment attachments={audioFiles.map(e => ({
+                  name: e.originalName || e.filename,
+                  // Optionally include size and date if available:
+                  size: e.size || "N/A",
+                  date: e.enteredDate ? new Date(e.enteredDate).toLocaleString() : "N/A",
+                  // Build a URL to view/download the file
+                  url: `http://localhost:5000/uploads/${e.filename}`
+                }))} />
+      
 
-      <Comment/>
+      <Comment tag="Audio" />
       </div>
       </div>
       

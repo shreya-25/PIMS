@@ -16,31 +16,31 @@ import { useContext } from "react";
 import Pagination from "../../components/Pagination/Pagination";
 
 
-
-
 export const HomePage = () => {
 
   const [activeTab, setActiveTab] = useState("cases"); // Default tab
-  const [sortField, setSortField] = useState(""); // Sorting field
-  const [filterText, setFilterText] = useState(""); // Filter text
-  const [filterPopupVisible, setFilterPopupVisible] = useState(false);
+  const [sortField, setSortField] = useState(""); 
+  const [filterText, setFilterText] = useState("");
+  // const [filterPopupVisible, setFilterPopupVisible] = useState(false);
   const [filterSortPopupVisible, setFilterSortPopupVisible] = useState(false); // State for popup visibility
   const [selectedPriority, setSelectedPriority] = useState(""); // State for priority filter
   const [sortOrder, setSortOrder] = useState(""); // State for sort order
   const [remainingDaysFilter, setRemainingDaysFilter] = useState("");
 const [flagsFilter, setFlagsFilter] = useState("");
 const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
-const [newInvestigator, setNewInvestigator] = useState("");
+// const [newInvestigator, setNewInvestigator] = useState("");
+const [appliedFilters, setAppliedFilters] = useState({});
+
 
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(50);
-    const totalPages = 10; // Change based on your data
+    const totalPages = 10;
     const totalEntries = 100;
   
 
 
 const [showCaseSelector, setShowCaseSelector] = useState(false);
-  const [navigateTo, setNavigateTo] = useState(""); // Target page
+  const [navigateTo, setNavigateTo] = useState(""); 
 
   const { setSelectedCase, setToken, withAutoRefresh } = useContext(CaseContext);
 
@@ -50,10 +50,10 @@ const [showSort, setShowSort] = useState(false);
 
 
 
-  const handleShowCaseSelector = (targetPage) => {
-    setNavigateTo(targetPage);
-    setShowCaseSelector(true);
-  };
+  // const handleShowCaseSelector = (targetPage) => {
+  //   setNavigateTo(targetPage);
+  //   setShowCaseSelector(true);
+  // };
 
   // Function to close CaseSelector
   const handleCloseCaseSelector = () => {
@@ -136,12 +136,25 @@ const handleCaseClick = (caseDetails) => {
 
   // Navigate to the appropriate page based on role
   if (caseDetails.role === "Investigator") {
+    localStorage.setItem("role", "Investigator");
+    setSelectedCase({
+      caseNo: caseDetails.id,
+      caseName: caseDetails.title,
+      role: caseDetails.role
+    });
     navigate("/Investigator", { state: { caseDetails } });
   } else if (caseDetails.role === "Case Manager") {
+    localStorage.setItem("role", "Case Manager");
+    setSelectedCase({
+      caseNo: caseDetails.id,
+      caseName: caseDetails.title,
+      role: caseDetails.role
+    });
     navigate("/CasePageManager", { state: { caseDetails } });
   }
 };
 
+console.log(localStorage);
 
 
 const handleLRClick = (lead) => {
@@ -411,14 +424,6 @@ useEffect(() => {
   fetchPendingLeads();
 }, [signedInOfficer]);
 
-
-
-
-
-
-
-
-
   const addPendingLead = (newLead) => {
     setLeads((prevLeads) => ({
       ...prevLeads,
@@ -471,6 +476,36 @@ useEffect(() => {
     }));
   };
  
+
+  const handleCaseSort = (field, order) => {
+    setSortField(field);
+    setSortOrder(order);
+  
+    setCases((prevCases) => {
+      return [...prevCases].sort((a, b) => {
+        let aField = a;
+        let bField = b;
+  
+        // Convert Case No to numbers for accurate sorting
+        if (field === "Case No") {
+          aField = parseInt(a.id, 10);
+          bField = parseInt(b.id, 10);
+        } else if (field === "Case Name") {
+          aField = a.title.toLowerCase();
+          bField = b.title.toLowerCase();
+        } else if (field === "Role") {
+          aField = a.role.toLowerCase();
+          bField = b.role.toLowerCase();
+        }
+  
+        if (aField < bField) return order === "asc" ? -1 : 1;
+        if (aField > bField) return order === "asc" ? 1 : -1;
+        return 0;
+      });
+    });
+  };
+  
+  
 
 
   // Adding a case to the list
@@ -614,12 +649,18 @@ const addCase = (newCase) => {
       label: "Role",
       options: ["Case Manager", "Investigator"],
     },
+    {
+      name: "Status",
+      label: "Case Status",
+      options: ["Ongoing", "Closed"],
+    },
   ];
 
   const handleFilterApply = (filters) => {
-    console.log("Applied Filters:", filters);
-    // Perform filtering logic here (e.g., API call, state update)
+    console.log("✅ Applied Filters:", filters);
+    setAppliedFilters(filters);
   };
+  
 
   const [sortedData, setSortedData] = useState([]);
   const data = [
@@ -771,7 +812,7 @@ const addCase = (newCase) => {
             <button className="close-popup-btn" onClick={() => setShowSort(false)}>
               &times;
             </button>
-            <Sort columns={["Lead Number", "Lead Name", "Priority", "Flag"]} onApplySort={handleSort} />
+            <Sort columns={["Case No", "Case Name", "Lead Number", "Lead Name", "Priority", "Flag"]} onApplySort={handleCaseSort} />
           </div>
           </div>
       )}
@@ -786,8 +827,34 @@ const addCase = (newCase) => {
                 </tr>
               </thead>
               <tbody>
-                {cases.length > 0 ? (
-                  cases.map((c) => (
+                {cases.length > 0 ? ( cases.filter((c) => {
+    const { CaseNumber, CaseName, Role, Status } = appliedFilters;
+    const matchesCaseNo = !CaseNumber || c.id.toString() === CaseNumber;
+    const matchesCaseName = !CaseName || c.title === CaseName;
+    const matchesRole = !Role || c.role === Role;
+    const matchesStatus = !Status || c.status === Status; 
+
+    return matchesCaseNo && matchesCaseName && matchesRole && matchesStatus;
+  }) 
+
+  .sort((a, b) => {
+    if (!sortField || !sortOrder) return 0;
+
+    let aField = sortField === "Case No" ? a.id.toString() : a.title?.toLowerCase();
+    let bField = sortField === "Case No" ? b.id.toString() : b.title?.toLowerCase();
+
+    if (sortField === "Role") {
+      aField = a.role?.toLowerCase();
+      bField = b.role?.toLowerCase();
+    }
+
+    if (!aField || !bField) return 0;
+
+    return sortOrder === "asc"
+      ? aField.localeCompare(bField)
+      : bField.localeCompare(aField);
+  })
+                  .map((c) => (
                     <tr key={c.id}>
                       <td>{c.id}</td>
                       <td>{c.title}</td>
@@ -1295,13 +1362,22 @@ const addCase = (newCase) => {
       <tbody>
         {leads.length > 0 ? (
           leads.pendingLeads
-          .filter(
-            (lead) =>
-              lead.description
-                .toLowerCase()
-                .includes(filterText.toLowerCase()) &&
-              (!selectedPriority || lead.priority === selectedPriority)
-          )
+          .filter((lead) => {
+            const leadNoMatch = !appliedFilters.leadNumber || lead.id.toString() === appliedFilters.leadNumber;
+            const leadNameMatch = !appliedFilters.leadName || lead.description === appliedFilters.leadName;
+            const dueDateMatch = !appliedFilters.dueDate || lead.dueDate === appliedFilters.dueDate;
+            const officerMatch = !appliedFilters.assignedOfficers || lead.assignedOfficers.includes(appliedFilters.assignedOfficers);
+            const caseMatch = !appliedFilters.CaseName || lead.caseName === appliedFilters.CaseName;
+        
+            return (
+              leadNoMatch &&
+              leadNameMatch &&
+              dueDateMatch &&
+              officerMatch &&
+              caseMatch
+            );
+          })
+        
           .sort((a, b) => {
             if (!sortField || !sortOrder) return 0;
             if (sortField === "remainingDays") {
@@ -1435,7 +1511,7 @@ const addCase = (newCase) => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" style={{ textAlign: 'center' }}>
+                    <td colSpan="4" style={{ textAlign: 'center' }}>
                       No Pending Lead Returns Available
                     </td>
                   </tr>

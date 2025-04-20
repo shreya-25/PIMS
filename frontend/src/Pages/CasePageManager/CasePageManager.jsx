@@ -9,6 +9,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import Pagination from "../../components/Pagination/Pagination";
+import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
+import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
+
+
 
 
 export const CasePageManager = () => {
@@ -45,6 +49,28 @@ export const CasePageManager = () => {
     const handleNavigation = (route) => {
       navigate(route); // Navigate to respective page
     };
+
+    const [showSelectModal, setShowSelectModal] = useState(false);
+
+const handleNavigateToLeadReturn = () => {
+  // if (!leads.pendingLeadReturns.length) {
+  //   alert("No lead returns available to continue.");
+  //   return;
+  // }
+  setShowSelectModal(true);
+};
+
+const handleSelectLead = (lead) => {
+  setSelectedLead({
+    leadNo: lead.id,
+    leadName: lead.description,
+    caseName: lead.caseName,
+    caseNo: lead.caseNo,
+  });
+
+  setShowSelectModal(false);
+  navigate("/CMInstruction", { state: { caseDetails: selectedCase, leadDetails: lead } });
+};
 
     const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
@@ -255,6 +281,20 @@ export const CasePageManager = () => {
               caseName: lead.caseName,
               caseNo: String(lead.caseNo) // Ensure string format
             }));
+
+            const LRInReview = filteredLeadsArray
+            .filter(lead => lead.leadStatus === "In Review")
+            .map(lead => ({
+              id: lead.leadNo,
+              description: lead.description,
+              dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
+              priority: lead.priority || "Medium",
+              flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [], // Ensure array
+              assignedOfficers: Array.isArray(lead.assignedTo) ? lead.assignedTo : [], // Ensure array
+              leadStatus: lead.leadStatus,
+              caseName: lead.caseName,
+              caseNo: String(lead.caseNo) // Ensure string format
+            }));
   
           console.log("✅ Assigned Leads:", assignedLeads);
           console.log("✅ Pending Leads:", pendingLeads);
@@ -263,7 +303,8 @@ export const CasePageManager = () => {
             ...prev,
             allLeads: filteredLeadsArray,
             assignedLeads: assignedLeads,
-            pendingLeads: pendingLeads
+            pendingLeads: pendingLeads,
+            pendingLeadReturns: LRInReview
           }));
         })
         .catch((error) => {
@@ -298,56 +339,56 @@ export const CasePageManager = () => {
   };
 
 
-  useEffect(() => {
-    const fetchPendingLeadReturns = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                console.error("❌ No token found. User is not authenticated.");
-                return;
-            }
+//   useEffect(() => {
+//     const fetchPendingLeadReturns = async () => {
+//         try {
+//             const token = localStorage.getItem("token");
+//             if (!token) {
+//                 console.error("❌ No token found. User is not authenticated.");
+//                 return;
+//             }
 
-            if (!selectedCase?.caseNo || !selectedCase?.caseName) {
-                console.error("⚠️ No valid case details provided.");
-                return;
-            }
+//             if (!selectedCase?.caseNo || !selectedCase?.caseName) {
+//                 console.error("⚠️ No valid case details provided.");
+//                 return;
+//             }
 
-            console.log("🔍 Fetching pending lead returns for exact case:", caseDetails);
+//             console.log("🔍 Fetching pending lead returns for exact case:", caseDetails);
 
-            // ✅ Fetch all lead returns assigned to or assigned by the officer
-            const leadsResponse = await axios.get("http://localhost:5000/api/leadreturn/officer-leads", {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                }
-            });
+//             // ✅ Fetch all lead returns assigned to or assigned by the officer
+//             const leadsResponse = await axios.get("http://localhost:5000/api/leadreturn/officer-leads", {
+//                 headers: {
+//                     Authorization: `Bearer ${token}`,
+//                     "Content-Type": "application/json",
+//                 }
+//             });
 
-            // ✅ Filter pending lead returns that match the exact case details (caseNo & caseName)
-            const pendingLeadReturns = leadsResponse.data.filter(lead => 
-                lead.assignedBy.lRStatus === "Pending"
-                &&
-                lead.caseNo === selectedCase.caseNo &&   // Match exact case number
-                lead.caseName === selectedCase.caseName // Match exact case name
-            ).map(lead => ({
-                id: lead.leadNo,
-                description: lead.description,
-                caseName: lead.caseName,
-                caseNo: lead.caseNo,
-            }));
+//             // ✅ Filter pending lead returns that match the exact case details (caseNo & caseName)
+//             const pendingLeadReturns = leadsResponse.data.filter(lead => 
+//                 lead.assignedBy.lRStatus === "Pending"
+//                 &&
+//                 lead.caseNo === selectedCase.caseNo &&   // Match exact case number
+//                 lead.caseName === selectedCase.caseName // Match exact case name
+//             ).map(lead => ({
+//                 id: lead.leadNo,
+//                 description: lead.description,
+//                 caseName: lead.caseName,
+//                 caseNo: lead.caseNo,
+//             }));
 
-            // ✅ Update state with filtered pending lead returns
-            setLeads(prevLeads => ({
-                ...prevLeads,
-                pendingLeadReturns: pendingLeadReturns
-            }));
+//             // ✅ Update state with filtered pending lead returns
+//             setLeads(prevLeads => ({
+//                 ...prevLeads,
+//                 pendingLeadReturns: pendingLeadReturns
+//             }));
 
-        } catch (error) {
-            console.error("Error fetching pending lead returns:", error.response?.data || error);
-        }
-    };
+//         } catch (error) {
+//             console.error("Error fetching pending lead returns:", error.response?.data || error);
+//         }
+//     };
 
-    fetchPendingLeadReturns();
-}, [signedInOfficer, selectedCase]);
+//     fetchPendingLeadReturns();
+// }, [signedInOfficer, selectedCase]);
 
 
 // useEffect(() => {
@@ -666,7 +707,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
        
                                  {/* Lead Management Dropdown */}
 
-
+                                 <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
                                  <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
                                  <li className="sidebar-item active" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
           Case Page {leadDropdownOpen ?  "▲": "▼"}
@@ -704,9 +745,9 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
 <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
               New Lead
             </li>
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" >View Lead Return</li>
-            <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
+            <li className="sidebar-item"   onClick={handleNavigateToLeadReturn} >View Lead Return</li>
 
 
 <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
@@ -733,12 +774,21 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
             {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
 
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>
 
-       
+            <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
 
                     </ul>
+
+                    {showSelectModal && (
+      <SelectLeadModal
+        leads={leads.pendingLeadReturns}
+        onSelect={handleSelectLead}
+        onClose={() => setShowSelectModal(false)}
+      />
+    )}
+    
                 </div>
                 <div className="left-content">
 
@@ -1075,7 +1125,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
            ))
           ) : (
             <tr>
-              <td colSpan="7" style={{ textAlign: 'center' }}>
+              <td colSpan="8" style={{ textAlign: 'center' }}>
                 No Assigned Leads Available
               </td>
             </tr>

@@ -204,41 +204,52 @@ const onShowCaseSelector = (route) => {
       <div className="sideitem">
       <ul className="sidebar-list">
                    
-                   <li className="sidebar-item">Case Information</li>
-         <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
-         <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-             New Lead
-           </li>                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
-                      <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                      <li className="sidebar-item"onClick={() => navigate('/LRInstruction')} >View Lead Return</li>
-                      <li className="sidebar-item active" >View Lead Review</li>
-                      <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
-             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-             View Lead Log
-           </li>
-           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-             Officer Management
-           </li> */}
-           <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-             View/Add Case Notes
-           </li>
-           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-             View Lead Hierarchy
-           </li>
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-             Generate Report
-           </li> */}
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-             View Flagged Leads
-           </li>
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-             View Timeline Entries
-           </li>
-           {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+      <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item active" onClick={() => navigate('/leadReview')}>Lead Information</li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
 
-           <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTest", { state: { caseDetails } } )} >View Leads Desk</li>
-           <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+          
+            <li
+  className="sidebar-item"
+  onClick={() =>
+    selectedCase.role === "Investigator"
+      ? navigate("/LRInstruction")
+      : navigate("/CMInstruction")
+  }
+>
+  View Lead Return
+</li>
 
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li> */}
+              {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Add/View Case Notes
+            </li>)}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li> */}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
+       
          </ul>
         </div>
 

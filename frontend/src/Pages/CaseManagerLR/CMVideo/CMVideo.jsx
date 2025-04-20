@@ -8,9 +8,6 @@ import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import Attachment from "../../../components/Attachment/Attachment";
 
-
-
-
 export const CMVideo = () => {
   useEffect(() => {
       // Apply style when component mounts
@@ -23,6 +20,8 @@ export const CMVideo = () => {
     }, []);
   const navigate = useNavigate();
   const location = useLocation();
+    const [file, setFile] = useState(null);
+
     
       const formatDate = (dateString) => {
         if (!dateString) return "";
@@ -45,19 +44,19 @@ export const CMVideo = () => {
 
   // Sample video data
   const [videos, setVideos] = useState([
-    {
-      dateEntered: "12/01/24",
-      dateVideoRecorded: "12/01/24",
-      description: "Surveillance video of the incident.",
-      videoSrc: `${process.env.PUBLIC_URL}/Materials/video1.mp4`
+    // {
+    //   dateEntered: "12/01/24",
+    //   dateVideoRecorded: "12/01/24",
+    //   description: "Surveillance video of the incident.",
+    //   videoSrc: `${process.env.PUBLIC_URL}/Materials/video1.mp4`
     
-    },
-    {
-      dateEntered: "12/02/24",
-      dateVideoRecorded: "12/02/24",
-      description: "Witness interview recording.",
-      videoSrc: `${process.env.PUBLIC_URL}/Materials/video2.mp4`
-    },
+    // },
+    // {
+    //   dateEntered: "12/02/24",
+    //   dateVideoRecorded: "12/02/24",
+    //   description: "Witness interview recording.",
+    //   videoSrc: `${process.env.PUBLIC_URL}/Materials/video2.mp4`
+    // },
   ]);
 
   // State to manage form data
@@ -98,6 +97,37 @@ export const CMVideo = () => {
     });
   };
 
+  // Fetch enclosures from backend when component mounts or when selectedLead/selectedCase update
+  useEffect(() => {
+    const fetchVideos = async () => {
+      if (!selectedLead || !selectedCase) {
+        console.warn("Missing selected lead or case details");
+        return;
+      }
+      // Build URL using selectedLead and selectedCase; URL-encode values that may have spaces
+      const leadNo = selectedLead.leadNo;
+      const leadName = encodeURIComponent(selectedLead.leadName);
+      const caseNo = encodeURIComponent(selectedLead.caseNo);
+      // Here, assuming caseName is in selectedLead or selectedCase; adjust as needed.
+      const caseName = encodeURIComponent(selectedLead.caseName || selectedCase.caseName);
+      const token = localStorage.getItem("token");
+
+      const url = `http://localhost:5000/api/lrvideo/${leadNo}/${leadName}/${caseNo}/${caseName}`;
+      try {
+        const response = await axios.get(url, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        console.log("Fetched videos:", response.data);
+        setVideos(response.data);
+      } catch (error) {
+        console.error("Error fetching videos:", error);
+      }
+    };
+
+    fetchVideos();
+  }, [selectedLead, selectedCase]);
+
+
   const handleNavigation = (route) => {
     navigate(route);
   };
@@ -137,40 +167,40 @@ export const CMVideo = () => {
       <div className="sideitem">
        <ul className="sidebar-list">
                    
-                   <li className="sidebar-item">Case Information</li>
-         <li className="sidebar-item" onClick={() => navigate(getCasePageRoute())}>Case Page</li>
-         <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-             New Lead
-           </li>                       {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead</li> */}
-                      <li className="sidebar-item" onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                      <li className="sidebar-item active" >View Lead Return</li>
-                      <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
-             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-             View Lead Log
-           </li>
-           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-             Officer Management
-           </li> */}
-           <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-             View/Add Case Notes
-           </li>
-           {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-             View Lead Hierarchy
-           </li>
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-             Generate Report
-           </li> */}
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-             View Flagged Leads
-           </li>
-           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-             View Timeline Entries
-           </li>
-           {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
 
-           <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-           <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
+              Officer Management
+            </li> */}
+              {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Add/View Case Notes
+            </li>)}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
+              View Lead Hierarchy
+            </li> */}
+            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
+              Generate Report
+            </li> */}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
+            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
          </ul>
                 </div>
                 <div className="left-content">
@@ -235,7 +265,8 @@ export const CMVideo = () => {
           <thead>
             <tr>
               <th style={{ width: "10%" }}>Date Entered</th>
-              <th style={{ width: "16%" }}>Date Video Recorded</th>
+              <th style={{ width: "10%" }}>Return ID</th>
+              <th style={{ width: "18%" }}>Date Video Recorded</th>
               <th>Description</th>
               <th style={{ width: "15%" }}>Access</th>
             </tr>
@@ -243,8 +274,9 @@ export const CMVideo = () => {
           <tbody>
             {videos.map((video, index) => (
               <tr key={index}>
-                <td>{video.dateEntered}</td>
-                <td>{video.dateVideoRecorded}</td>
+                <td>{formatDate(video.enteredDate)}</td>
+                <td>{video.leadReturnId}</td>
+                <td>{formatDate(video.dateVideoRecorded)}</td>
                 <td>{video.description}</td>
                 <td>
         <select
@@ -259,9 +291,17 @@ export const CMVideo = () => {
             ))}
           </tbody>
         </table>
-        <Attachment />
+         <Attachment attachments={videos.map(e => ({
+                    name: e.originalName || e.filename,
+                    // Optionally include size and date if available:
+                    size: e.size || "N/A",
+                    date: e.enteredDate ? new Date(e.enteredDate).toLocaleString() : "N/A",
+                    // Build a URL to view/download the file
+                    url: `http://localhost:5000/uploads/${e.filename}`
+                  }))} />
+        
 
-      <Comment/>
+        <Comment tag="Video" />
       </div>
 
      </div>
