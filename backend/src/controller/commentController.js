@@ -1,6 +1,6 @@
 // comment.controller.js
 
-const Comment = require("../models/comment"); // Ensure the model path is correct
+const Comment = require("../models/Comment"); // Ensure the model path is correct
 
 // Create a new comment entry
 const createComment = async (req, res) => {
