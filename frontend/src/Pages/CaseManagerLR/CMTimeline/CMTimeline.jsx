@@ -7,6 +7,7 @@ import FootBar from '../../../components/FootBar/FootBar';
 import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
+import api, { BASE_URL } from "../../../api";
 
 
 
@@ -165,8 +166,8 @@ export const CMTimeline = () => {
         const caseName =
           encodeURIComponent(selectedLead.caseName || selectedCase.caseName);
   
-        const { data } = await axios.get(
-          `http://localhost:5000/api/timeline/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+        const { data } = await api.get(
+          `/api/timeline/${leadNo}/${leadName}/${caseNo}/${caseName}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
   

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { CaseContext } from "../../Pages/CaseContext";
 import { useContext } from "react";
 import "./Slidebar.css";
+import api from "../../api"
 
 export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -42,7 +43,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
     const fetchUsers = async () => {
       const token = localStorage.getItem("token");
       try {
-        const response = await fetch("http://localhost:5000/api/users/usernames", {
+        const response = await api.get("/api/users/usernames", {
           // headers: {
           //   Authorization: `Bearer ${token}`,
           // },
@@ -137,8 +138,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
     const token = localStorage.getItem("token");
   
     try {
-      const response = await fetch("http://localhost:5000/api/cases", {
-        method: "POST",
+      const response = await api.post("/api/cases", {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`, // Add Authorization Header
@@ -204,8 +204,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
     };
 
     // Send notification (assumes your server is running on port 5000)
-    const notifResponse = await fetch("http://localhost:5000/api/notifications", {
-      method: "POST",
+    const notifResponse = await api.post("/api/notifications", {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,

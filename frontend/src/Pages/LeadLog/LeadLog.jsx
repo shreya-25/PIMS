@@ -7,6 +7,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import Pagination from "../../components/Pagination/Pagination";
+import api from "../../api"; // adjust the path as needed
+
 
 
 
@@ -52,44 +54,83 @@ export const LeadLog = () => {
   };
 
 
+  // useEffect(() => {
+  //     if (caseDetails?.id && caseDetails?.title) {
+  //       fetch(`http://localhost:5000/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`, {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //           'Content-Type': 'application/json'
+  //         },
+  //       })
+  //         .then((response) => {
+  //           if (!response.ok) {
+  //             throw new Error(`HTTP error! status: ${response.status}`);
+  //           }
+  //           return response.json();
+  //         })
+  //         .then((data) => {
+  //           console.log("✅ Fetched Leads Data:", data);
+          
+  //           const leadsArray = Array.isArray(data) ? data : [];
+          
+  //           const filteredLeads = leadsArray.filter((lead) => {
+  //             if (
+  //               lead.accessLevel === "Only Case Manager and Assignees" &&
+  //               !lead.assignedTo?.includes(loggedInOfficer) &&
+  //               lead.assignedBy !== loggedInOfficer
+  //             ) {
+  //               return false; // hide this lead
+  //             }
+  //             return true;
+  //           });
+          
+  //           setLeadLogData(filteredLeads);
+  //         })
+          
+  //         .catch((error) => {
+  //           console.error("❌ Error fetching leads:", error.message);
+  //         });
+  //     }
+  //   }, [selectedCase, token]);
+
   useEffect(() => {
+    const fetchLeadLog = async () => {
       if (caseDetails?.id && caseDetails?.title) {
-        fetch(`http://localhost:5000/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-        })
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
+        try {
+          const token = localStorage.getItem("token");
+  
+          const response = await api.get(
+            `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
             }
-            return response.json();
-          })
-          .then((data) => {
-            console.log("✅ Fetched Leads Data:", data);
-          
-            const leadsArray = Array.isArray(data) ? data : [];
-          
-            const filteredLeads = leadsArray.filter((lead) => {
-              if (
-                lead.accessLevel === "Only Case Manager and Assignees" &&
-                !lead.assignedTo?.includes(loggedInOfficer) &&
-                lead.assignedBy !== loggedInOfficer
-              ) {
-                return false; // hide this lead
-              }
-              return true;
-            });
-          
-            setLeadLogData(filteredLeads);
-          })
-          
-          .catch((error) => {
-            console.error("❌ Error fetching leads:", error.message);
+          );
+  
+          const leadsArray = Array.isArray(response.data)
+            ? response.data
+            : [];
+  
+          const filteredLeads = leadsArray.filter((lead) => {
+            return !(
+              lead.accessLevel === "Only Case Manager and Assignees" &&
+              !lead.assignedTo?.includes(loggedInOfficer) &&
+              lead.assignedBy !== loggedInOfficer
+            );
           });
+  
+          setLeadLogData(filteredLeads);
+          console.log("✅ Fetched Leads Data:", response.data);
+        } catch (error) {
+          console.error("❌ Error fetching leads:", error.message);
+        }
       }
-    }, [selectedCase, token]);
+    };
+  
+    fetchLeadLog();
+  }, [selectedCase, token, loggedInOfficer]);
+  
     
   
 

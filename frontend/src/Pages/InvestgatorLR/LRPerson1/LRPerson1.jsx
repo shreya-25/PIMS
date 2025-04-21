@@ -5,6 +5,8 @@ import FootBar from '../../../components/FootBar/FootBar';
 import Navbar from '../../../components/Navbar/Navbar';
 import './LRPerson1.css';
 import { CaseContext } from "../../CaseContext";
+import api, { BASE_URL } from "../../../api";
+
 
 
 export const LRPerson1 = () => {
@@ -130,8 +132,7 @@ const [miscDetails, setMiscDetails] = useState([
     console.log(payload);
   
     try {
-      const response = await fetch('http://localhost:5000/api/lrperson/lrperson', {
-        method: 'POST',
+      const response = await api.post('/api/lrperson/lrperson', {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`

@@ -7,6 +7,7 @@ import FootBar from '../../../components/FootBar/FootBar';
 import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
+import api, { BASE_URL } from "../../../api";
 
 
 
@@ -97,9 +98,9 @@ export const CMScratchpad = () => {
       const caseName = encodeURIComponent(selectedLead.caseName || selectedCase.caseName);
       const token = localStorage.getItem("token");
 
-      const url = `http://localhost:5000/api/scratchpad/${leadNo}/${leadName}/${caseNo}/${caseName}`;
+      const url = `/api/scratchpad/${leadNo}/${leadName}/${caseNo}/${caseName}`;
       try {
-        const response = await axios.get(url, {
+        const response = await api.get(url, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         console.log("Fetched Notes:", response.data);

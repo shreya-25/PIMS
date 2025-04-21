@@ -6,6 +6,7 @@ import FootBar from '../../../components/FootBar/FootBar';
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import Comment from "../../../components/Comment/Comment";
+import api, { BASE_URL } from "../../../api";
 
 
 
@@ -121,8 +122,8 @@ export const LREnclosures = () => {
     }
     
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/lrenclosure/upload",
+      const response = await api.post(
+        "/api/lrenclosure/upload",
         formData,
         { 
           headers: { 
@@ -166,8 +167,8 @@ export const LREnclosures = () => {
     const caseName = encodeURIComponent(selectedCase.caseName);
   
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/lrenclosure/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+      const res = await api.get(
+        `/api/lrenclosure/${leadNo}/${leadName}/${caseNo}/${caseName}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

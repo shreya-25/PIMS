@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import '../Login.css';
 import axios from "axios";
 import { Link, useNavigate } from 'react-router-dom';
+import api from "../../api"; // adjust the path as needed
+
 
 export function Login() {
   const [username, setUsername] = useState('');
@@ -17,7 +19,7 @@ export function Login() {
         console.log("Attempting login for:", username);
 
         
-        const response = await axios.post("https://pims-backend.onrender.com/api/auth/login", {
+        const response = await api.post("/api/auth/login", {
             username,
             password,
         });

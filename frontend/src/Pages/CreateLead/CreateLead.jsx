@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'; // Import useNavigate for naviga
 import Navbar from '../../components/Navbar/Navbar'; // Import your Navbar component
 import './CreateLead.css'; // Create this CSS file for styling
 import { CaseContext } from "../CaseContext";
-
+import api from "../../api";
 
 
 export const CreateLead = () => {
@@ -87,8 +87,8 @@ useEffect(() => {
       const { id: caseNo, title: caseName } = caseDetails;
 
       // Otherwise, fetch the max lead number using the caseNo and caseName.
-      const response = await axios.get(
-        `http://localhost:5000/api/lead/maxLeadNumber?caseNo=${selectedCase.caseNo}&caseName=${encodeURIComponent(selectedCase.caseName)}`
+      const response = await api.get(
+        `/api/lead/maxLeadNumber?caseNo=${selectedCase.caseNo}&caseName=${encodeURIComponent(selectedCase.caseName)}`
       );
       const maxLeadNo = response.data.maxLeadNo || 0;
       const newLeadNumber = maxLeadNo + 1;
@@ -217,8 +217,8 @@ const handleGenerateLead = async () => {
   } = leadData;
 
   try {
-    const response = await axios.post(
-      "http://localhost:5000/api/lead/create", // Replace with your backend endpoint
+    const response = await api.post(
+      "/api/lead/create", // Replace with your backend endpoint
       {
         caseName:  caseDetails.title,
         caseNo: caseDetails.id,
@@ -265,8 +265,8 @@ const handleGenerateLead = async () => {
 
       // Send notification using axios
       try {
-        const notifResponse = await axios.post(
-          "http://localhost:5000/api/notifications",
+        const notifResponse = await api.post(
+          "/api/notifications",
           notificationPayload,
           {
             headers: {
@@ -308,8 +308,8 @@ const [availableCaseSubNumbers, setAvailableCaseSubNumbers] = useState([]); // T
     try {
       if (caseDetails && caseDetails.id) {
         const token = localStorage.getItem("token");
-        const response = await axios.get(
-          `http://localhost:5000/api/cases/${caseDetails.id}/subNumbers`,
+        const response = await api.get(
+          `/api/cases/${caseDetails.id}/subNumbers`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setAvailableCaseSubNumbers(response.data.subNumbers);
@@ -331,7 +331,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
      try {
        if (caseDetails && caseDetails.id) {
          const token = localStorage.getItem("token");
-         const response = await axios.get(`http://localhost:5000/api/cases/summary/${caseDetails.id}`, {
+         const response = await api.get(`/api/cases/summary/${caseDetails.id}`, {
            headers: { Authorization: `Bearer ${token}` }
          });
          // Update case summary if data is received
@@ -354,7 +354,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
     const fetchUsernames = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:5000/api/users/usernames", {
+        const response = await api.get("/api/users/usernames", {
           // headers: {
           //   Authorization: `Bearer ${token}`
           // }
@@ -374,8 +374,8 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
       try {
         if (caseDetails && caseDetails.id && caseDetails.title) {
           const token = localStorage.getItem("token");
-          const response = await axios.get(
-            `http://localhost:5000/api/lead/associatedSubNumbers/${caseDetails.id}/${encodeURIComponent(caseDetails.title)}`,
+          const response = await api.get(
+            `/api/lead/associatedSubNumbers/${caseDetails.id}/${encodeURIComponent(caseDetails.title)}`,
             {
               headers: { Authorization: `Bearer ${token}` },
             }
