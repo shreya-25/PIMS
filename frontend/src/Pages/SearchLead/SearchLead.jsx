@@ -153,7 +153,7 @@ const handleSearch = async () => {
       keywordParam = searchTerm.trim() ? searchTerm : "";
     }
 
-    const response = await axios.get("http://localhost:5000/api/lead/search", {
+    const response = await axios.get("https://pims-backend.onrender.com/api/lead/search", {
       params: {
         caseNo: selectedCase.caseNo,
         caseName: selectedCase.caseName,
