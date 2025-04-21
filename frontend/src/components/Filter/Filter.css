@@ -61,23 +61,3 @@
 .filter-buttonNC:hover {
     background-color: rgb(96, 96, 179);
 }
-
-
-/* .filter-container > * {
-    flex-shrink: 0;
-} */
-
-/* @media (max-width: 768px) {
-    .filter-container {
-        flex-wrap: wrap; 
-        justify-content: center;
-    }
-
-    .filter-dropdown {
-        width: 130px; 
-    }
-
-    .filter-button {
-        width: auto;
-    }
-} */

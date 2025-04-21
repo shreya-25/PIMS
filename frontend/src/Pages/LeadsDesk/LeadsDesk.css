@@ -121,8 +121,7 @@ body{
 
 
 .table-label {
-  width: 15%; /* fixed narrower width for labels */
-  /* font-weight: bold; */
+  width: 15%;
   color: #555;
 }
 
@@ -202,12 +201,7 @@ body{
 
 .main-content-ld {
   display: flex;
-  /* grid-template-columns: 1fr auto 1fr;  */
-  /* gap: 20px; */
   align-items: flex-start;
-  /* margin: 0px 0px 0px 0px; */
-  /* padding: 0 20px; */
-  /* min-height: 20%; */
   height: 100vh; /* Ensures full-page height */
   overflow: hidden; /* Prevents extra scrollbar */
   margin-bottom: 50px;
