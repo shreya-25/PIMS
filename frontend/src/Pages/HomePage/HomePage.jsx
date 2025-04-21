@@ -88,7 +88,7 @@ const [showSort, setShowSort] = useState(false);
           return;
         }
 
-        const response = await axios.get("http://localhost:5000/api/cases", {
+        const response = await axios.get("https://pims-backend.onrender.com/api/cases", {
           headers: {
             Authorization: `Bearer ${token}`, // ✅ Pass token in Authorization header
             "Content-Type": "application/json",
@@ -277,7 +277,7 @@ const [leads, setLeads] = useState({
             }
 
             // ✅ Fetch all lead returns assigned to or assigned by the officer
-            const leadsResponse = await axios.get("http://localhost:5000/api/leadreturn/officer-leads", {
+            const leadsResponse = await axios.get("https://pims-backend.onrender.com/api/leadreturn/officer-leads", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json",
@@ -287,7 +287,7 @@ const [leads, setLeads] = useState({
             console.log("✅ API Response (Lead Returns):", leadsResponse.data); // Debugging log
 
             // ✅ Fetch all cases with their statuses
-            const casesResponse = await axios.get("http://localhost:5000/api/cases", {
+            const casesResponse = await axios.get("https://pims-backend.onrender.com/api/cases", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json",
@@ -359,7 +359,7 @@ useEffect(() => {
           }
 
           // ✅ Fetch all assigned leads
-          const leadsResponse = await axios.get("http://localhost:5000/api/lead/assignedTo-leads", {
+          const leadsResponse = await axios.get("https://pims-backend.onrender.com/api/lead/assignedTo-leads", {
               headers: {
                   Authorization: `Bearer ${token}`,
                   "Content-Type": "application/json",
@@ -369,7 +369,7 @@ useEffect(() => {
           console.log("✅ API Response (Assigned Leads):", leadsResponse.data); // Debugging log
 
           // ✅ Fetch all cases with their statuses
-          const casesResponse = await axios.get("http://localhost:5000/api/cases", {
+          const casesResponse = await axios.get("https://pims-backend.onrender.com/api/cases", {
               headers: {
                   Authorization: `Bearer ${token}`,
                   "Content-Type": "application/json",

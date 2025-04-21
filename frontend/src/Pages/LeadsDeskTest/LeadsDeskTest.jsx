@@ -30,7 +30,7 @@ const formatDate = (dateString) => {
 const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
   try {
     const { data: leadData } = await axios.get(
-      `http://localhost:5000/api/lead/lead/${leadNo}/${caseNo}/${encodeURIComponent(caseName)}`,
+      `https://pims-backend.onrender.com/api/lead/lead/${leadNo}/${caseNo}/${encodeURIComponent(caseName)}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     if (!leadData || leadData.length === 0) {
@@ -39,7 +39,7 @@ const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
     }
     const lead = leadData[0];
     const { data: returnsData } = await axios.get(
-      `http://localhost:5000/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}`,
+      `https://pims-backend.onrender.com/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     const leadReturns = await Promise.all(
@@ -48,7 +48,7 @@ const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
         let vehicles = [];
         try {
           const { data: personsData } = await axios.get(
-            `http://localhost:5000/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}/${lr.leadReturnId}`,
+            `https://pims-backend.onrender.com/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}/${lr.leadReturnId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           persons = personsData;
@@ -57,7 +57,7 @@ const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
         }
         try {
           const { data: vehiclesData } = await axios.get(
-            `http://localhost:5000/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}/${lr.leadReturnId}`,
+            `https://pims-backend.onrender.com/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}/${lr.leadReturnId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           vehicles = vehiclesData;
@@ -274,7 +274,7 @@ export const LeadsDeskTest = () => {
       const token = localStorage.getItem("token");
       try {
         const { data: leads } = await axios.get(
-          `http://localhost:5000/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+          `https://pims-backend.onrender.com/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const leadsWithDetails = await Promise.all(
@@ -282,7 +282,7 @@ export const LeadsDeskTest = () => {
             let leadReturns = [];
             try {
               const { data: returnsData } = await axios.get(
-                `http://localhost:5000/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+                `https://pims-backend.onrender.com/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
                 { headers: { Authorization: `Bearer ${token}` } }
               );
               leadReturns = await Promise.all(
@@ -291,7 +291,7 @@ export const LeadsDeskTest = () => {
                   let vehicles = [];
                   try {
                     const { data: personsData } = await axios.get(
-                      `http://localhost:5000/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/${leadReturn.leadReturnId}`,
+                      `https://pims-backend.onrender.com/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/${leadReturn.leadReturnId}`,
                       { headers: { Authorization: `Bearer ${token}` } }
                     );
                     persons = personsData;
@@ -300,7 +300,7 @@ export const LeadsDeskTest = () => {
                   }
                   try {
                     const { data: vehiclesData } = await axios.get(
-                      `http://localhost:5000/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/${leadReturn.leadReturnId}`,
+                      `https://pims-backend.onrender.com/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/${leadReturn.leadReturnId}`,
                       { headers: { Authorization: `Bearer ${token}` } }
                     );
                     vehicles = vehiclesData;
@@ -360,7 +360,7 @@ const handleShowLeadsInRange = () => {
         if (selectedCase && selectedCase.caseNo) {
           const token = localStorage.getItem("token");
           const response = await axios.get(
-            `http://localhost:5000/api/cases/summary/${selectedCase.caseNo}`,
+            `https://pims-backend.onrender.com/api/cases/summary/${selectedCase.caseNo}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           if (response.data) {
@@ -386,7 +386,7 @@ const handleShowLeadsInRange = () => {
   const handleSearch = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get("http://localhost:5000/api/lead/search", {
+      const response = await axios.get("https://pims-backend.onrender.com/api/lead/search", {
         params: {
           caseNo: selectedCase.caseNo,
           caseName: selectedCase.caseName,
@@ -449,7 +449,7 @@ const handleShowLeadsInRange = () => {
       };
       // Call your backend endpoint (adjust the URL if needed)
       const response = await axios.post(
-        "http://localhost:5000/api/report/generateCase",
+        "https://pims-backend.onrender.com/api/report/generateCase",
         payload,
         {
           headers: {
@@ -520,7 +520,7 @@ const handleShowLeadsInRange = () => {
       };
       // Call your backend endpoint (adjust the URL if needed)
       const response = await axios.post(
-        "http://localhost:5000/api/report/generateCaseExecSummary",
+        "https://pims-backend.onrender.com/api/report/generateCaseExecSummary",
         payload,
         {
           headers: {

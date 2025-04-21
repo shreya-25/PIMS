@@ -617,7 +617,7 @@ export const ViewTimeline = () => {
     if (!caseNo || !caseName) return;
 
     // Construct URL and get token
-    const endpoint = `http://localhost:5000/api/timeline/case/${caseNo}/${encodeURIComponent(caseName)}`;
+    const endpoint = `https://pims-backend.onrender.com/api/timeline/case/${caseNo}/${encodeURIComponent(caseName)}`;
     const token = localStorage.getItem("token");
 
     axios.get(endpoint, {
