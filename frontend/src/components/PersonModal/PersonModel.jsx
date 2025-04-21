@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "./PersonModal.css"; // Ensure this file contains the CSS for styling
+import api from "../../api"
 
 const PersonModal = ({
   isOpen,
@@ -25,8 +26,8 @@ const PersonModal = ({
       setError(null);
       try {
         const token = localStorage.getItem("token") || "";
-        const { data } = await axios.get(
-          `http://localhost:5000/api/lrperson/lrperson/${leadNo}/${encodeURIComponent(
+        const { data } = await api.get(
+          `/api/lrperson/lrperson/${leadNo}/${encodeURIComponent(
             description
           )}/${caseNo}/${encodeURIComponent(caseName)}/${leadReturnId}`,
           {

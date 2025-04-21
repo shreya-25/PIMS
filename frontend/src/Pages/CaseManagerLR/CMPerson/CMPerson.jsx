@@ -8,6 +8,7 @@ import './CMPerson.css';
 import axios from "axios";
 import FootBar from '../../../components/FootBar/FootBar';
 import PersonModal from "../../../components/PersonModal/PersonModel";
+import api, { BASE_URL } from "../../../api";
 
 
 export const CMPerson = () => {
@@ -95,7 +96,7 @@ export const CMPerson = () => {
           if (selectedLead?.leadNo && selectedLead?.leadName && selectedLead?.caseNo && selectedLead?.caseName)  {
             const token = localStorage.getItem("token");
   
-            const response = await axios.get(`http://localhost:5000/api/lrperson/lrperson/${selectedLead.leadNo}/${encodeURIComponent(
+            const response = await api.get(`/api/lrperson/lrperson/${selectedLead.leadNo}/${encodeURIComponent(
               selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
                 headers: { Authorization: `Bearer ${token}` }
               });

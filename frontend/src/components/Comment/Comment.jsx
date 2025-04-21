@@ -227,6 +227,7 @@
 // src/components/Comment/Comment.jsx
 import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
+import api from "../../api"
 import { CaseContext } from "../../Pages/CaseContext";
 import "./Comment.css";
 
@@ -253,7 +254,7 @@ export default function Comment({ tag }) {
     const fetchComments = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/api/comment", {
+        const res = await api.get("/api/comment", {
           params: {
             caseNo: selectedCase.caseNo,
             caseName: selectedCase.caseName,
@@ -287,7 +288,7 @@ export default function Comment({ tag }) {
         enteredDate: new Date(),
         comment: commentText,
       };
-      const res = await axios.post("http://localhost:5000/api/comment", body, {
+      const res = await api.post("/api/comment", body, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setComments((c) => [res.data, ...c]);
@@ -308,8 +309,8 @@ export default function Comment({ tag }) {
   const saveEdit = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.put(
-        `http://localhost:5000/api/comment/${id}`,
+      const res = await api.put(
+        `/api/comment/${id}`,
         { comment: editedComment },
         { headers: { Authorization: `Bearer ${token}` } }
       );

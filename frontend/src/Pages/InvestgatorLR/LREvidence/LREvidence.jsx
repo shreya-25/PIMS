@@ -6,6 +6,8 @@ import { CaseContext } from "../../CaseContext";
 import Comment from "../../../components/Comment/Comment";
 import React, { useContext, useState, useEffect} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
+import api, { BASE_URL } from "../../../api";
+
 
 
 export const LREvidence = () => {
@@ -124,8 +126,8 @@ export const LREvidence = () => {
     }
     
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/lrevidence/upload",
+      const response = await api.post(
+        "/api/lrevidence/upload",
         formData,
         { 
           headers: { 
@@ -165,8 +167,8 @@ export const LREvidence = () => {
     const caseName = encodeURIComponent(selectedCase.caseName);
   
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/lrevidence/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+      const res = await api.get(
+        `/api/lrevidence/${leadNo}/${leadName}/${caseNo}/${caseName}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

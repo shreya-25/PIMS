@@ -6,6 +6,7 @@ import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import React, { useContext, useState, useEffect} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
+import api, { BASE_URL } from "../../../api";
 
 export const LRAudio = () => {
     useEffect(() => {
@@ -85,8 +86,8 @@ export const LRAudio = () => {
     const token = localStorage.getItem("token");
   
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/lraudio/upload",
+      const response = await api.post(
+        "/api/lraudio/upload",
         formData,
         {
           headers: {
@@ -104,7 +105,7 @@ export const LRAudio = () => {
           returnId: savedAudio.leadReturnId,
           dateAudioRecorded: formatDate(savedAudio.dateAudioRecorded),
           description: savedAudio.audioDescription,
-          audioSrc: `http://localhost:5000/uploads/${savedAudio.filename}`,
+          audioSrc: `${BASE_URL}/uploads/${savedAudio.filename}`,
         },
       ]);
   
@@ -142,8 +143,8 @@ export const LRAudio = () => {
                   const caseName = encodeURIComponent(selectedCase?.caseName);
                 
                   try {
-                    const res = await axios.get(
-                      `http://localhost:5000/api/lraudio/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+                    const res = await api.get(
+                      `/api/lraudio/${leadNo}/${leadName}/${caseNo}/${caseName}`,
                       {
                         headers: {
                           Authorization: `Bearer ${token}`,
@@ -156,7 +157,7 @@ export const LRAudio = () => {
                       returnId: audio.leadReturnId,
                       dateAudioRecorded: formatDate(audio.dateAudioRecorded),
                       description: audio.audioDescription,
-                      audioSrc: `http://localhost:5000/uploads/${audio.filename}`,
+                      audioSrc: `${BASE_URL}/uploads/${audio.filename}`,
                     }));
                 
                     setAudioFiles(mappedAudios);

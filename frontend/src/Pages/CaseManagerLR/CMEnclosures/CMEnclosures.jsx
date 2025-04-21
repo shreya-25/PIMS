@@ -7,6 +7,7 @@ import { CaseContext } from "../../CaseContext";
 import FootBar from '../../../components/FootBar/FootBar';
 import Comment from "../../../components/Comment/Comment";
 import Attachment from "../../../components/Attachment/Attachment";
+import api, { BASE_URL } from "../../../api";
 
 
 
@@ -101,9 +102,9 @@ export const CMEnclosures = () => {
       const caseName = encodeURIComponent(selectedLead.caseName || selectedCase.caseName);
       const token = localStorage.getItem("token");
 
-      const url = `http://localhost:5000/api/lrenclosure/${leadNo}/${leadName}/${caseNo}/${caseName}`;
+      const url = `/api/lrenclosure/${leadNo}/${leadName}/${caseNo}/${caseName}`;
       try {
-        const response = await axios.get(url, {
+        const response = await api.get(url, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         console.log("Fetched enclosures:", response.data);
@@ -286,7 +287,7 @@ export const CMEnclosures = () => {
             size: e.size || "N/A",
             date: e.enteredDate ? new Date(e.enteredDate).toLocaleString() : "N/A",
             // Build a URL to view/download the file
-            url: `http://localhost:5000/uploads/${e.filename}`
+            url: `http://${BASE_URL}/uploads/${e.filename}`
           }))} />
 
        <Comment/>

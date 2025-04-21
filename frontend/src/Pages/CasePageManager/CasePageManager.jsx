@@ -11,7 +11,7 @@ import { CaseContext } from "../CaseContext";
 import Pagination from "../../components/Pagination/Pagination";
 import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
-
+import api, { BASE_URL } from "../../api";
 
 
 
@@ -128,8 +128,8 @@ const handleSelectLead = (lead) => {
         const token = localStorage.getItem("token");
     
         // Update the lead status in the database to "Pending"
-        await axios.patch(
-          `http://localhost:5000/api/lead/${leadToAccept.leadNo}/${leadToAccept.caseNo}/${encodeURIComponent(leadToAccept.caseName)}/status`,
+        await api.patch(
+          `/api/lead/${leadToAccept.leadNo}/${leadToAccept.caseNo}/${encodeURIComponent(leadToAccept.caseName)}/status`,
           { status: "Pending" },
           {
             headers: {
@@ -220,98 +220,87 @@ const handleSelectLead = (lead) => {
   //       });
   //   }
   // }, [caseDetails, token]);
-
+  
   useEffect(() => {
-    if (selectedCase?.caseNo && selectedCase?.caseName) {
-      fetch(`http://localhost:5000/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-      })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+    const fetchLeadsForCase = async () => {
+      if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+  
+      try {
+        const token = localStorage.getItem("token");
+        const response = await api.get(
+          `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           }
-          return response.json();
-        })
-        .then((data) => {
-          console.log("✅ Fetched Leads Data:", data); // 🔍 Debug API response
+        );
   
-          // Ensure `data` is an array, or default to an empty array
-          const leadsArray = Array.isArray(data) ? data : [];
-
-          const filteredLeadsArray = leadsArray.filter((lead) => {
-            if (
-              lead.accessLevel === "Only Case Manager and Assignees" &&
-              !lead.assignedTo?.includes(signedInOfficer) &&
-              lead.assignedBy !== signedInOfficer
-            ) {
-              return false;
-            }
-            return true;
-          });
-        
+        const data = response.data;
+        console.log("✅ Fetched Leads Data:", data);
   
-          // ✅ Filter and map assigned and pending leads
-          const assignedLeads = filteredLeadsArray
-            .filter(lead => lead.leadStatus === "Assigned")
-            .map(lead => ({
-              id: lead.leadNo,
-              description: lead.description,
-              dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
-              priority: lead.priority || "Medium",
-              flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [], // Ensure array
-              assignedOfficers: Array.isArray(lead.assignedTo) ? lead.assignedTo : [], // Ensure array
-              leadStatus: lead.leadStatus,
-              caseName: lead.caseName,
-              caseNo: String(lead.caseNo) // Ensure string format
-            }));
+        const leadsArray = Array.isArray(data) ? data : [];
   
-          const pendingLeads = filteredLeadsArray
-            .filter(lead => lead.leadStatus === "Pending")
-            .map(lead => ({
-              id: lead.leadNo,
-              description: lead.description,
-              dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
-              priority: lead.priority || "Medium",
-              flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [], // Ensure array
-              assignedOfficers: Array.isArray(lead.assignedTo) ? lead.assignedTo : [], // Ensure array
-              leadStatus: lead.leadStatus,
-              caseName: lead.caseName,
-              caseNo: String(lead.caseNo) // Ensure string format
-            }));
-
-            const LRInReview = filteredLeadsArray
-            .filter(lead => lead.leadStatus === "In Review")
-            .map(lead => ({
-              id: lead.leadNo,
-              description: lead.description,
-              dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
-              priority: lead.priority || "Medium",
-              flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [], // Ensure array
-              assignedOfficers: Array.isArray(lead.assignedTo) ? lead.assignedTo : [], // Ensure array
-              leadStatus: lead.leadStatus,
-              caseName: lead.caseName,
-              caseNo: String(lead.caseNo) // Ensure string format
-            }));
-  
-          console.log("✅ Assigned Leads:", assignedLeads);
-          console.log("✅ Pending Leads:", pendingLeads);
-  
-          setLeads((prev) => ({
-            ...prev,
-            allLeads: filteredLeadsArray,
-            assignedLeads: assignedLeads,
-            pendingLeads: pendingLeads,
-            pendingLeadReturns: LRInReview
-          }));
-        })
-        .catch((error) => {
-          console.error("❌ Error fetching leads:", error.message);
+        const filteredLeadsArray = leadsArray.filter((lead) => {
+          if (
+            lead.accessLevel === "Only Case Manager and Assignees" &&
+            !lead.assignedTo?.includes(signedInOfficer) &&
+            lead.assignedBy !== signedInOfficer
+          ) {
+            return false;
+          }
+          return true;
         });
-    }
-  }, [caseDetails, token]);
+  
+        const mapLead = (lead) => ({
+          id: lead.leadNo,
+          description: lead.description,
+          dueDate: lead.dueDate
+            ? new Date(lead.dueDate).toISOString().split("T")[0]
+            : "N/A",
+          priority: lead.priority || "Medium",
+          flags: Array.isArray(lead.associatedFlags)
+            ? lead.associatedFlags
+            : [],
+          assignedOfficers: Array.isArray(lead.assignedTo)
+            ? lead.assignedTo
+            : [],
+          leadStatus: lead.leadStatus,
+          caseName: lead.caseName,
+          caseNo: String(lead.caseNo),
+        });
+  
+        const assignedLeads = filteredLeadsArray
+          .filter((lead) => lead.leadStatus === "Assigned")
+          .map(mapLead);
+  
+        const pendingLeads = filteredLeadsArray
+          .filter((lead) => lead.leadStatus === "Pending")
+          .map(mapLead);
+  
+        const LRInReview = filteredLeadsArray
+          .filter((lead) => lead.leadStatus === "In Review")
+          .map(mapLead);
+  
+        console.log("✅ Assigned Leads:", assignedLeads);
+        console.log("✅ Pending Leads:", pendingLeads);
+        console.log("✅ Lead Returns In Review:", LRInReview);
+  
+        setLeads((prev) => ({
+          ...prev,
+          allLeads: filteredLeadsArray,
+          assignedLeads,
+          pendingLeads,
+          pendingLeadReturns: LRInReview,
+        }));
+      } catch (error) {
+        console.error("❌ Error fetching leads:", error.message);
+      }
+    };
+  
+    fetchLeadsForCase();
+  }, [selectedCase, signedInOfficer]);
+  
   
 
     const handleTabClick = (tab) => {
@@ -529,7 +518,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
       try {
         if (selectedCase && selectedCase.caseNo) {
           const token = localStorage.getItem("token");
-          const response = await axios.get(`http://localhost:5000/api/cases/summary/${selectedCase.caseNo}`, {
+          const response = await api.get(`/api/cases/summary/${selectedCase.caseNo}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           // Update case summary if data is received

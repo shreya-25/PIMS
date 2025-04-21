@@ -8,6 +8,8 @@ import { CaseContext } from "../../CaseContext";
 import { useDataContext } from "../../Context/DataContext"; // Import Context
 import { useLocation, useNavigate } from 'react-router-dom';
 import Comment from "../../../components/Comment/Comment";
+import api, { BASE_URL } from "../../../api";
+
 
 export const LRVehicle = () => {
     useEffect(() => {
@@ -192,7 +194,7 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
     console.log(payload);
   
     try {
-      const res = await axios.post("http://localhost:5000/api/lrvehicle/lrvehicle", payload, {
+      const res = await api.post("/api/lrvehicle/lrvehicle", payload, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -214,8 +216,8 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
     const caseName = encodeURIComponent(selectedCase.caseName);
   
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/lrvehicle/lrvehicle/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+      const res = await api.get(
+        `/api/lrvehicle/lrvehicle/${leadNo}/${leadName}/${caseNo}/${caseName}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

@@ -490,6 +490,8 @@ import Navbar from "../../components/Navbar/Navbar";
 import "./ViewTimeline.css";
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
+import api from "../../api"; // adjust the path as needed
+
 
 // Helper function to convert 12-hour format (with AM/PM) to 24-hour format.
 // If the passed-in string is already in 24-hour format, it returns it unchanged.
@@ -617,10 +619,10 @@ export const ViewTimeline = () => {
     if (!caseNo || !caseName) return;
 
     // Construct URL and get token
-    const endpoint = `https://pims-backend.onrender.com/api/timeline/case/${caseNo}/${encodeURIComponent(caseName)}`;
+    const endpoint = `/api/timeline/case/${caseNo}/${encodeURIComponent(caseName)}`;
     const token = localStorage.getItem("token");
 
-    axios.get(endpoint, {
+    api.get(endpoint, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

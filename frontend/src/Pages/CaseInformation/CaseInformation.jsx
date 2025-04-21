@@ -4,6 +4,7 @@ import Navbar from '../../components/Navbar/Navbar';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './CaseInformation.css'; // Custom CSS
 import { CaseContext } from "../CaseContext";
+import api from "../../api";
 
 
 export const CaseInformation = () => {
@@ -143,8 +144,7 @@ export const CaseInformation = () => {
       const token = localStorage.getItem('token');
 
       // Call the backend endpoint using the case number and include the token in the headers.
-      const response = await fetch(`http://localhost:5000/api/cases/1001/reject`, {
-        method: "PUT",
+      const response = await api.put(`/api/cases/1001/reject`, {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
@@ -183,7 +183,7 @@ export const CaseInformation = () => {
      try {
        if (caseDetails && caseDetails.id) {
          const token = localStorage.getItem("token");
-         const response = await axios.get(`http://localhost:5000/api/cases/summary/${selectedCase.caseNo}`, {
+         const response = await api.get(`/api/cases/summary/${selectedCase.caseNo}`, {
            headers: { Authorization: `Bearer ${token}` }
          });
          // Update case summary if data is received

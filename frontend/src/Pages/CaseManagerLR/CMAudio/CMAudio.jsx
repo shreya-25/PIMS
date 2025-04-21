@@ -7,6 +7,9 @@ import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import Attachment from "../../../components/Attachment/Attachment";
+import api, { BASE_URL } from "../../../api";
+
+
 
 export const CMAudio = () => {
   useEffect(() => {
@@ -107,9 +110,9 @@ export const CMAudio = () => {
       const caseName = encodeURIComponent(selectedLead.caseName || selectedCase.caseName);
       const token = localStorage.getItem("token");
 
-      const url = `http://localhost:5000/api/lraudio/${leadNo}/${leadName}/${caseNo}/${caseName}`;
+      const url = `/api/lraudio/${leadNo}/${leadName}/${caseNo}/${caseName}`;
       try {
-        const response = await axios.get(url, {
+        const response = await api.get(url, {
           headers: { "Authorization": `Bearer ${token}` }
         });
         console.log("Fetched audios:", response.data);
@@ -295,7 +298,7 @@ export const CMAudio = () => {
                   size: e.size || "N/A",
                   date: e.enteredDate ? new Date(e.enteredDate).toLocaleString() : "N/A",
                   // Build a URL to view/download the file
-                  url: `http://localhost:5000/uploads/${e.filename}`
+                  url: `${BASE_URL}/uploads/${e.filename}`
                 }))} />
       
 

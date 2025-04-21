@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "./VehicleModal.css"; // Ensure this file contains the CSS for styling
+import api from "../../api"
 
 const VehicleModal = ({
   isOpen,
@@ -25,7 +26,7 @@ const VehicleModal = ({
       try {
         const token = localStorage.getItem("token") || "";
         const { data } = await axios.get(
-          `http://localhost:5000/api/lrvehicle/lrvehicle/${leadNo}/${encodeURIComponent(description)}/${caseNo}/${encodeURIComponent(caseName)}/${leadReturnId}`, // Updated endpoint with leadsDeskCode
+          `/api/lrvehicle/lrvehicle/${leadNo}/${encodeURIComponent(description)}/${caseNo}/${encodeURIComponent(caseName)}/${leadReturnId}`, // Updated endpoint with leadsDeskCode
           {
             headers: { Authorization: `Bearer ${token}` },
           }

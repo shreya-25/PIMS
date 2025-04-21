@@ -7,6 +7,8 @@ import FootBar from '../../../components/FootBar/FootBar';
 import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
+import api, { BASE_URL } from "../../../api";
+
 
 
 export const LRTimeline = () => {
@@ -98,8 +100,8 @@ export const LRTimeline = () => {
     const token = localStorage.getItem("token");
   
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/timeline/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+      const res = await api.get(
+        `/api/timeline/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -168,7 +170,7 @@ export const LRTimeline = () => {
     };
   
     try {
-      const res = await axios.post("http://localhost:5000/api/timeline/create", payload, {
+      const res = await api.post("/api/timeline/create", payload, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

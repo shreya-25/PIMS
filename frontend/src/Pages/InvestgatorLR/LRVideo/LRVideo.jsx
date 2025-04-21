@@ -6,6 +6,8 @@ import FootBar from '../../../components/FootBar/FootBar';
 import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
+import api, { BASE_URL } from "../../../api";
+
 
 
 
@@ -84,8 +86,8 @@ export const LRVideo = () => {
     const token = localStorage.getItem("token");
   
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/lrvideo/upload",
+      const response = await api.post(
+        "/api/lrvideo/upload",
         formData,
         {
           headers: {
@@ -102,7 +104,7 @@ export const LRVideo = () => {
           returnId: savedVideo.leadReturnId,
           dateVideoRecorded: formatDate(savedVideo.dateVideoRecorded),
           description: savedVideo.videoDescription,
-          videoSrc: `http://localhost:5000/uploads/${savedVideo.filename}`,
+          videoSrc: `${BASE_URL}/uploads/${savedVideo.filename}`,
         },
       ]);
   
@@ -150,8 +152,8 @@ export const LRVideo = () => {
                     const caseName = encodeURIComponent(selectedCase?.caseName);
                   
                     try {
-                      const res = await axios.get(
-                        `http://localhost:5000/api/lrvideo/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+                      const res = await api.get(
+                        `/api/lrvideo/${leadNo}/${leadName}/${caseNo}/${caseName}`,
                         {
                           headers: {
                             Authorization: `Bearer ${token}`,
@@ -164,7 +166,7 @@ export const LRVideo = () => {
                         returnId: video.leadReturnId,
                         dateVideoRecorded: formatDate(video.dateVideoRecorded),
                         description: video.videoDescription,
-                        videoSrc: `http://localhost:5000/uploads/${video.filename}`,
+                        videoSrc: `${BASE_URL}/uploads/${video.filename}`,
                       }));
                   
                       setVideos(mappedVideos);

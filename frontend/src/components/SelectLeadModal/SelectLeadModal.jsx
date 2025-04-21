@@ -3,6 +3,7 @@ import "./SelectLeadModal.css";
 import axios from "axios";
 import { CaseContext } from "../../Pages/CaseContext";
 import { useNavigate } from "react-router-dom";
+import api from "../../api"
 
 const SelectLeadModal = ({ onSelect, onClose }) => {
   const { selectedCase, setSelectedCase } = useContext(CaseContext);
@@ -22,8 +23,8 @@ const SelectLeadModal = ({ onSelect, onClose }) => {
 
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get(
-          `http://localhost:5000/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
+        const response = await api.get(
+          `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
