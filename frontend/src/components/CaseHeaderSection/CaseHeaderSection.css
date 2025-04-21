@@ -2,13 +2,12 @@
     /* Ensures the entire section is laid out side-by-side */
     display: flex;
     align-items: flex-start;
-    font-size: 20px;  /* <--- 20px font size as requested */
-    gap: 2rem;       /* Space between left and right columns */
+    font-size: 20px;  
+    gap: 2rem;       
     padding: 1rem;
     width: 100%;
   }
   
-  /* ----- Left Column ----- */
   .left-column {
     display: flex;
     flex-direction: column;
@@ -30,7 +29,7 @@
     background-color: #ddd;
   }
   
-  /* ----- Right Column ----- */
+
   .right-column {
     display: flex;
     flex-direction: column;
@@ -46,8 +45,6 @@
   
   /* The two gray squares */
   .square {
-    /* width: 50px;
-    height: 50px; */
     background-color: #cccccc9d;
   }
   
@@ -58,7 +55,6 @@
     background-color: #000;
   }
   
-  /* Dark button (Show All Leads / Show Hierarchy) */
   .dark-btn {
     background-color: #333;
     color: #fff;
@@ -80,7 +76,7 @@
     padding: 6px 8px;
     border-radius: 4px;
     background-color: #fff;
-    /* gap: 5px; */
+
   }
   
   /* Magnifying glass icon (FontAwesome or similar) */
