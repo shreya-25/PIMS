@@ -7,6 +7,8 @@ import Navbar from '../../../components/Navbar/Navbar';
 import './LRInstruction.css';
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
+import api, { BASE_URL } from "../../../api";
+
 
 
 
@@ -128,7 +130,7 @@ export const LRInstruction = () => {
             const token = localStorage.getItem("token");
             console.log("localstorage data",localStorage.getItem("token"));
   
-            const response = await axios.get(`http://localhost:5000/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(
+            const response = await api.get(`/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(
               selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
                 headers: { Authorization: `Bearer ${token}` }
               });

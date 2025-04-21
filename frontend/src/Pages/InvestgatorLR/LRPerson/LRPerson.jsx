@@ -9,6 +9,8 @@ import Comment from "../../../components/Comment/Comment";
 
 import Navbar from '../../../components/Navbar/Navbar';
 import './LRPerson.css';
+import api, { BASE_URL } from "../../../api";
+
 
 export const LRPerson = () => {
     useEffect(() => {
@@ -170,8 +172,8 @@ export const LRPerson = () => {
   
     console.log("About to hit");
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/lrperson/lrperson/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+      const res = await api.get(
+        `/api/lrperson/lrperson/${leadNo}/${leadName}/${caseNo}/${caseName}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

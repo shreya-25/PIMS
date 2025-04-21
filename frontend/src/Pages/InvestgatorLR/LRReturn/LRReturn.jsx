@@ -6,6 +6,7 @@ import "./LRReturn.css";
 import FootBar from '../../../components/FootBar/FootBar';
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
+import api, { BASE_URL } from "../../../api";
 
 
 export const LRReturn = () => {
@@ -45,8 +46,8 @@ useEffect(() => {
         try {
           const token = localStorage.getItem("token");
     
-          const response = await axios.get(
-            `http://localhost:5000/api/lead/${selectedLead?.leadNo}/${selectedCase?.caseNo}`,
+          const response = await api.get(
+            `/api/lead/${selectedLead?.leadNo}/${selectedCase?.caseNo}`,
             {
               headers: { Authorization: `Bearer ${token}` }
             }
@@ -83,7 +84,7 @@ useEffect(() => {
         if (selectedLead?.leadNo && selectedLead?.leadName && selectedLead?.caseNo && selectedLead?.caseName) {
           const token = localStorage.getItem("token");
 
-          const response = await axios.get(`http://localhost:5000/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
+          const response = await api.get(`/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
             selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
               headers: { Authorization: `Bearer ${token}` }
             });
@@ -166,8 +167,8 @@ useEffect(() => {
         selectedLead?.caseName
       ) {
         const token = localStorage.getItem("token");
-        const response = await axios.get(
-          `http://localhost:5000/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
+        const response = await api.get(
+          `/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
             selectedLead.leadName
           )}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -236,8 +237,8 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
       if (editMode && editId) {
         // Update existing return
         const updateData = { leadReturnResult: returnData.results };
-        const response = await axios.patch(
-          `http://localhost:5000/api/leadReturnResult/update/${selectedLead.leadNo}/${selectedLead.caseNo}/${editId}`,
+        const response = await api.patch(
+          `/api/leadReturnResult/update/${selectedLead.leadNo}/${selectedLead.caseNo}/${editId}`,
           updateData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -251,7 +252,7 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
         setEditId(null);
       } else {
         // Add new return
-        const response = await axios.get(`http://localhost:5000/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
+        const response = await api.get(`/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
           selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
@@ -278,8 +279,8 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
           assignedBy,
         };
   
-        const createResponse = await axios.post(
-          "http://localhost:5000/api/leadReturnResult/create",
+        const createResponse = await api.post(
+          "/api/leadReturnResult/create",
           newReturn,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -341,7 +342,7 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
     const token = localStorage.getItem("token");
   
     try {
-      await axios.delete(`http://localhost:5000/api/leadReturnResult/delete/${selectedLead.leadNo}/${selectedLead.caseNo}/${leadReturnId}`, {
+      await api.delete(`/api/leadReturnResult/delete/${selectedLead.leadNo}/${selectedLead.caseNo}/${leadReturnId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
   

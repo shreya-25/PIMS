@@ -14,6 +14,8 @@ import VehicleModal from "../../components/VehicleModal/VehicleModel";
 import Pagination from "../../components/Pagination/Pagination";
 import { jsPDF } from "jspdf"; // if still used elsewhere
 import html2canvas from "html2canvas";
+import api from "../../api"; // adjust the path as needed
+
 
 import "./LeadsDeskExecSummary.css";
 
@@ -32,8 +34,8 @@ const formatDate = (dateString) => {
 // ---------- Fetch one lead (with returns, persons, vehicles) ----------
 const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
   try {
-    const { data: leadData } = await axios.get(
-      `http://localhost:5000/api/lead/lead/${leadNo}/${caseNo}/${encodeURIComponent(caseName)}`,
+    const { data: leadData } = await api.get(
+      `/api/lead/lead/${leadNo}/${caseNo}/${encodeURIComponent(caseName)}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     if (!leadData || leadData.length === 0) {
@@ -41,8 +43,8 @@ const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
       return null;
     }
     const lead = leadData[0];
-    const { data: returnsData } = await axios.get(
-      `http://localhost:5000/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}`,
+    const { data: returnsData } = await api.get(
+      `/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     const leadReturns = await Promise.all(
@@ -50,8 +52,8 @@ const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
         let persons = [];
         let vehicles = [];
         try {
-          const { data: personsData } = await axios.get(
-            `http://localhost:5000/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}/${lr.leadReturnId}`,
+          const { data: personsData } = await api.get(
+            `/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}/${lr.leadReturnId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           persons = personsData;
@@ -59,8 +61,8 @@ const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
           console.error(`Error fetching persons for leadReturn ${lr.leadReturnId}`, err);
         }
         try {
-          const { data: vehiclesData } = await axios.get(
-            `http://localhost:5000/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}/${lr.leadReturnId}`,
+          const { data: vehiclesData } = await api.get(
+            `/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}/${lr.leadReturnId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           vehicles = vehiclesData;
@@ -133,8 +135,8 @@ export const LeadsDeskTestExecSummary = () => {
     if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
     const token = localStorage.getItem("token");
     try {
-      await axios.put(
-        "http://localhost:5000/api/cases/executive-summary",
+      await api.put(
+        "/api/cases/executive-summary",
         {
           caseNo: selectedCase.caseNo,
           caseName: selectedCase.caseName,
@@ -171,9 +173,9 @@ export const LeadsDeskTestExecSummary = () => {
     if (!selectedCase?.caseNo) return;
     const token = localStorage.getItem("token");
   
-    axios
+    api
       .get(
-        `http://localhost:5000/api/cases/executive-summary/${selectedCase.caseNo}`,
+        `/api/cases/executive-summary/${selectedCase.caseNo}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       .then(({ data }) => {
@@ -351,16 +353,16 @@ export const LeadsDeskTestExecSummary = () => {
       if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
       const token = localStorage.getItem("token");
       try {
-        const { data: leads } = await axios.get(
-          `http://localhost:5000/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+        const { data: leads } = await api.get(
+          `/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const leadsWithDetails = await Promise.all(
           leads.map(async (lead) => {
             let leadReturns = [];
             try {
-              const { data: returnsData } = await axios.get(
-                `http://localhost:5000/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+              const { data: returnsData } = await api.get(
+                `/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
                 { headers: { Authorization: `Bearer ${token}` } }
               );
               leadReturns = await Promise.all(
@@ -368,8 +370,8 @@ export const LeadsDeskTestExecSummary = () => {
                   let persons = [];
                   let vehicles = [];
                   try {
-                    const { data: personsData } = await axios.get(
-                      `http://localhost:5000/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/${leadReturn.leadReturnId}`,
+                    const { data: personsData } = await api.get(
+                      `/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/${leadReturn.leadReturnId}`,
                       { headers: { Authorization: `Bearer ${token}` } }
                     );
                     persons = personsData;
@@ -377,8 +379,8 @@ export const LeadsDeskTestExecSummary = () => {
                     console.error(`Error fetching persons for LeadReturn ${leadReturn.leadReturnId}`, err);
                   }
                   try {
-                    const { data: vehiclesData } = await axios.get(
-                      `http://localhost:5000/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/${leadReturn.leadReturnId}`,
+                    const { data: vehiclesData } = await api.get(
+                      `/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/${leadReturn.leadReturnId}`,
                       { headers: { Authorization: `Bearer ${token}` } }
                     );
                     vehicles = vehiclesData;
@@ -438,8 +440,8 @@ const handleShowLeadsInRange = () => {
       try {
         if (selectedCase && selectedCase.caseNo) {
           const token = localStorage.getItem("token");
-          const response = await axios.get(
-            `http://localhost:5000/api/cases/summary/${selectedCase.caseNo}`,
+          const response = await api.get(
+            `/api/cases/summary/${selectedCase.caseNo}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           if (response.data) {
@@ -465,7 +467,7 @@ const handleShowLeadsInRange = () => {
   const handleSearch = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get("http://localhost:5000/api/lead/search", {
+      const response = await api.get("/api/lead/search", {
         params: {
           caseNo: selectedCase.caseNo,
           caseName: selectedCase.caseName,
@@ -547,8 +549,8 @@ const handleShowLeadsInRange = () => {
         selectedReports: { FullReport: true },
       };
       // Call your backend endpoint (adjust the URL if needed)
-      const response = await axios.post(
-        "http://localhost:5000/api/report/generateCase",
+      const response = await api.post(
+        "/api/report/generateCase",
         payload,
         {
           headers: {
@@ -619,8 +621,8 @@ const handleShowLeadsInRange = () => {
           selectedReports: { FullReport: true },
         };
         // Call your backend endpoint (adjust the URL if needed)
-        const response = await axios.post(
-          "http://localhost:5000/api/report/generateCase",
+        const response = await api.post(
+          "/api/report/generateCase",
           payload,
           {
             headers: {
@@ -678,8 +680,8 @@ const handleShowLeadsInRange = () => {
         selectedReports: { FullReport: true },
       };
       // Call your backend endpoint (adjust the URL if needed)
-      const response = await axios.post(
-        "http://localhost:5000/api/report/generateCaseExecSummary",
+      const response = await api.post(
+        "/api/report/generateCaseExecSummary",
         payload,
         {
           headers: {

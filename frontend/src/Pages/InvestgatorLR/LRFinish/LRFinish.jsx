@@ -6,6 +6,8 @@ import "./LRFinish.css";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import Comment from "../../../components/Comment/Comment";
+import api, { BASE_URL } from "../../../api";
+
 
 export const LRFinish = () => {
     useEffect(() => {
@@ -144,8 +146,8 @@ export const LRFinish = () => {
       };
   
       // Step 1: Submit the LeadReturn
-      const response = await axios.post(
-        "http://localhost:5000/api/leadReturn/create",
+      const response = await api.post(
+        "/api/leadReturn/create",
         body,
         {
           headers: {
@@ -157,8 +159,8 @@ export const LRFinish = () => {
   
       if (response.status === 201) {
         // Step 2: Update lead status to 'In Review' via PUT
-        const statusResponse = await axios.put(
-          "http://localhost:5000/api/lead/status/in-review",
+        const statusResponse = await api.put(
+          "/api/lead/status/in-review",
           {
             leadNo: selectedLead.leadNo,
             description: selectedLead.leadName,
@@ -237,7 +239,7 @@ export const LRFinish = () => {
       };
 
       // Call your Node server endpoint
-      const response = await axios.post("http://localhost:5000/api/report/generate", body, {
+      const response = await api.post("/api/report/generate", body, {
         responseType: "blob", // so we get the PDF back as a blob
         headers: {
           Authorization: `Bearer ${token}`, // Must match your verifyToken strategy
@@ -270,7 +272,7 @@ const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
   const fetchLeadInstruction = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get("http://localhost:5000/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}", {
+      const response = await api.get("/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}", {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log("Fetched LRInstruction data:", response.data);

@@ -8,6 +8,7 @@ import Comment from "../../../components/Comment/Comment";
 import { CaseContext } from "../../CaseContext";
 import FootBar from '../../../components/FootBar/FootBar';
 import VehicleModal from "../../../components/VehicleModal/VehicleModel";
+import api, { BASE_URL } from "../../../api";
 
 
 
@@ -107,7 +108,7 @@ export const CMVehicle = () => {
         if (selectedLead?.leadNo && selectedLead?.leadName && selectedLead?.caseNo && selectedLead?.caseName) {
           const token = localStorage.getItem("token");
 
-          const response = await axios.get(`http://localhost:5000/api/lrvehicle/lrvehicle/${selectedLead.leadNo}/${encodeURIComponent(
+          const response = await api.get(`/api/lrvehicle/lrvehicle/${selectedLead.leadNo}/${encodeURIComponent(
             selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
               headers: { Authorization: `Bearer ${token}` }
             });

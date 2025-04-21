@@ -10,6 +10,8 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 // import { Report, generatePDF } from "../../Report/Report";
 import pdfRef from "../../refStore";
+import api, { BASE_URL } from "../../../api";
+
 
 export const CMFinish = () => {
   useEffect(() => {
@@ -134,7 +136,7 @@ export const CMFinish = () => {
 
       
             // Call your Node server endpoint
-            const response = await axios.post("http://localhost:5000/api/report/generate", body, {
+            const response = await api.post("/api/report/generate", body, {
               responseType: "blob", // so we get the PDF back as a blob
               headers: {
                 Authorization: `Bearer ${token}`, // Must match your verifyToken strategy
@@ -160,8 +162,8 @@ export const CMFinish = () => {
       }
   
       // --- 2) Update the leadStatus to either Complete or Pending ---
-      const statusRes = await axios.put(
-        `http://localhost:5000/api/lead/status/${newStatus}`,           // "/status/complete" or "/status/pending"
+      const statusRes = await api.put(
+        `/api/lead/status/${newStatus}`,           // "/status/complete" or "/status/pending"
         {
           leadNo:     selectedLead.leadNo,
           description: selectedLead.leadName,

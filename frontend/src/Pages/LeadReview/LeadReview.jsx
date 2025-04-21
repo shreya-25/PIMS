@@ -9,6 +9,8 @@ import './LeadReview.css';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
+import api from "../../api"; // adjust the path as needed
+
 
 
 export const LeadReview = () => {
@@ -91,7 +93,7 @@ const onShowCaseSelector = (route) => {
           const token = localStorage.getItem("token");
           console.log("localstorage data",localStorage.getItem("token"));
 
-          const response = await axios.get(`http://localhost:5000/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(
+          const response = await api.get(`/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(
             selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, {
               headers: { Authorization: `Bearer ${token}` }
             });
@@ -175,7 +177,7 @@ const onShowCaseSelector = (route) => {
      try {
        if (selectedCase && selectedCase.caseNo) {
          const token = localStorage.getItem("token");
-         const response = await axios.get(`http://localhost:5000/api/cases/summary/${selectedCase.caseNo}`, {
+         const response = await api.get(`/api/cases/summary/${selectedCase.caseNo}`, {
            headers: { Authorization: `Bearer ${token}` }
          });
          // Update case summary if data is received

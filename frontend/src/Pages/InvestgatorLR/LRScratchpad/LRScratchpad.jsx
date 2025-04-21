@@ -7,6 +7,8 @@ import FootBar from '../../../components/FootBar/FootBar';
 import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
+import api, { BASE_URL } from "../../../api";
+
 
 
 export const LRScratchpad = () => {
@@ -81,7 +83,7 @@ export const LRScratchpad = () => {
     const token = localStorage.getItem("token");
   
     try {
-      const res = await axios.post("http://localhost:5000/api/scratchpad/create", newNote, {
+      const res = await api.post("/api/scratchpad/create", newNote, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -117,8 +119,8 @@ export const LRScratchpad = () => {
     const caseName = encodeURIComponent(selectedCase?.caseName);
   
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/scratchpad/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+      const res = await api.get(
+        `/api/scratchpad/${leadNo}/${leadName}/${caseNo}/${caseName}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

@@ -5,6 +5,8 @@ import Pagination from "../../components/Pagination/Pagination";
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
+import api from "../../api"; // adjust the path as needed
+
 
 const sampleLeads = [
   // {
@@ -153,7 +155,7 @@ const handleSearch = async () => {
       keywordParam = searchTerm.trim() ? searchTerm : "";
     }
 
-    const response = await axios.get("https://pims-backend.onrender.com/api/lead/search", {
+    const response = await api.get("/api/lead/search", {
       params: {
         caseNo: selectedCase.caseNo,
         caseName: selectedCase.caseName,

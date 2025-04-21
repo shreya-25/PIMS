@@ -6,6 +6,8 @@ import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import React, { useContext, useState, useEffect} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
+import api, { BASE_URL } from "../../../api";
+
 
 export const LRPictures = () => {
     useEffect(() => {
@@ -114,8 +116,8 @@ export const LRPictures = () => {
     const token = localStorage.getItem("token");
   
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/lrpicture/upload",
+      const response = await api.post(
+        "/api/lrpicture/upload",
         formData,
         {
           headers: {
@@ -134,7 +136,7 @@ export const LRPictures = () => {
           returnId: savedPicture.leadReturnId,
           datePictureTaken: formatDate(savedPicture.datePictureTaken),
           description: savedPicture.pictureDescription,
-          image: `http://localhost:5000/uploads/${savedPicture.filename}`
+          image: `${BASE_URL}/uploads/${savedPicture.filename}`
         }
       ]);
   
@@ -176,8 +178,8 @@ export const LRPictures = () => {
     const caseName = encodeURIComponent(selectedCase.caseName);
   
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/lrpicture/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+      const res = await api.get(
+        `/api/lrpicture/${leadNo}/${leadName}/${caseNo}/${caseName}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -190,7 +192,7 @@ export const LRPictures = () => {
         returnId: pic.leadReturnId,
         datePictureTaken: formatDate(pic.datePictureTaken),
         description: pic.pictureDescription,
-          image: `http://localhost:5000/uploads/${pic.filename}`
+          image: `${BASE_URL}/uploads/${pic.filename}`
       }));
   
       setPictures(mappedPictures);
