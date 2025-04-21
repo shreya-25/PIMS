@@ -103,10 +103,32 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(cors({ origin: "http://localhost:3000",
-    methods: ["GET", "POST","PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
- }));
+// app.use(cors({ origin: ["http://localhost:3000","https://inquisitive-profiterole-e40491.netlify.app", "https://ephemeral-churros-459728.netlify.app"],
+//     methods: ["GET", "POST","PUT", "PATCH", "DELETE", "OPTIONS"],
+//   allowedHeaders: ["Content-Type", "Authorization"],
+//  }));
+
+const allowedLocal = "http://localhost:3000";
+app.use(cors({
+  origin: (origin, callback) => {
+    // allow requests like curl or mobile apps with no origin
+    if (!origin) return callback(null, true);
+
+    // allow localhost or any netlify.app preview/prod domain
+    if (
+      origin === allowedLocal ||
+      /\.netlify\.app$/.test(origin)
+    ) {
+      return callback(null, true);
+    }
+
+    callback(new Error(`CORS blocked: ${origin}`));
+  },
+  methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type","Authorization"],
+  credentials: true
+}));
+
 
 
  app.options('*', cors());
