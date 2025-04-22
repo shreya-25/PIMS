@@ -1489,3 +1489,61 @@
     color: white;
   }
 }
+
+/* Scrollable table wrapper for small screens */
+.table-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* Optional: Better appearance for scrollbars */
+.table-scroll-container::-webkit-scrollbar {
+  height: 8px;
+}
+.table-scroll-container::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 4px;
+}
+
+/* Responsive tweaks */
+/* @media (max-width: 768px) {
+  .leads-table {
+    min-width: 1000px; 
+  }
+
+  .leads-table th,
+  .leads-table td {
+    font-size: 16px;
+    padding: 8px;
+  }
+} */
+
+
+/* #################### Responsive Table Design  ############################*/
+
+/* 🔄 Scroll container */
+.table-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
+}
+
+.leads-table {
+  table-layout: fixed;
+  border-collapse: collapse;
+  width: 1200px; /* ✅ fixed width to match full screen layout */
+  min-width: 1200px; /* ✅ ensures it doesn't shrink */
+}
+
+
+/* ✅ Ensure wrapping inside columns */
+.leads-table th,
+.leads-table td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: left;
+  font-size: 16px;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}

@@ -111,21 +111,6 @@
     width: 90%
   }
   
-  .view-btnNC
-  {
-    margin-left: 90%;
-  }
-
-  .view-btnNC {
-    /* background-color: #007bffde; */
-    background-color: #404142de;
-    color: #fff;
-  }
-  
-  .view-btnNC:hover {
-    background-color: #787a7c;
-  }
-  
   .notification-content {
     display: flex;
     justify-content: space-between;
@@ -135,38 +120,46 @@
 
 .notification-text {
     /* flex-grow: 1; */
-    width: 75%;
+    width: 85%;
     margin-right: 10px;
+    /* background-color: red; */
 }
 
-.view-btnNC {
-    background-color: #404142de;
+.buttons-container
+{
+  width: 20%;
+  display: flex;
+  align-items:center;
+  justify-content: center;
+  gap: 10px;
+  /* background-color: green; */
+}
+
+.view-btnNC,.accept-btnNC  {
     color: #fff;
-    border: none;
-    padding: 8px 12px;
     cursor: pointer;
     font-size: 20px;
-    margin-left: auto; /* Ensures the button is always pushed to the right */
     width: 100px;
-    height: 45px;
-    /* margin: 10px; */
+    height: 45px; 
+    padding: 5px;
+  
+}
+
+.view-btnNC
+{
+  background-color: #404142de;
 }
 
 .view-btnNC:hover {
     background-color: #787a7c;
 }
 
-.accept-btnNC {
+.accept-btnNC
+{
   background-color: rgba(25, 58, 73, 0.795);
-  color: #fff;
-  border: none;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 20px;
-  margin-left: 10px; 
-  width: 100px;
-  height: 45px;
 }
+
+
 
 .accept-btnNC:hover {
   background-color: rgba(25, 58, 73, 0.459);
@@ -202,3 +195,103 @@
   font-size: 18px;
 }
 
+/* Mobile phones */
+@media (max-width: 768px) {
+
+  .buttons-container {
+    display: flex;
+    flex-direction: column; 
+    gap: 10px;             
+    width: 100%;
+  }
+
+  .view-btnNC,
+  .accept-btnNC {
+    width: 100%;
+    font-size: 16px;
+    height: 42px;
+  }
+  .notification-bar {
+    width: 95%;
+    height: auto;
+    margin: 10px;
+    padding: 10px;
+  }
+
+  .notification-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .notification-text {
+    width: 80%;
+    margin-right: 0;
+    margin-bottom: 10px;
+  }
+
+  .buttons-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 20%;
+    justify-content: flex-start;
+  }
+
+  .view-btnNC,
+  .accept-btnNC {
+    width: 48%;
+    font-size: 16px;
+    height: 40px;
+  }
+
+  .clickable-header {
+    font-size: 18px;
+  }
+
+  .message-box {
+    font-size: 16px;
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .notification-content p,
+  .time {
+    font-size: 16px;
+  }
+}
+
+/* Tablets and small laptops */
+@media (max-width: 1500px) {
+
+  .buttons-container {
+    display: flex;
+    flex-direction: column; 
+    gap: 10px;              
+    width: 20%;
+  }
+
+  .view-btnNC,
+  .accept-btnNC {
+    width: 100%;           
+    font-size: 16px;
+    height: 42px;
+  }
+
+  .notification-bar {
+    width: 90%;
+  }
+
+  .notification-text {
+    width: 100%;
+  }
+
+  .view-btnNC,
+  .accept-btnNC {
+    font-size: 18px;
+    width: 100px;
+  }
+
+  .message-box {
+    width: 100%;
+  }
+}

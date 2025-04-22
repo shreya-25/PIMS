@@ -1043,7 +1043,8 @@ const handleLeadClick = (lead) => {
     )}
 
 
-    <table className="leads-table">
+<div className="table-scroll-container">
+<table className="leads-table" style={{ minWidth: "1000px" }}>
       <thead>
         <tr>
           <th style={{ width: "10%" }}>Lead No.</th>
@@ -1120,6 +1121,7 @@ const handleLeadClick = (lead) => {
           ))}
       </tbody>
     </table>
+    </div>
     <Pagination
   currentPage={currentPage}
   totalEntries={totalEntries}  // Automatically calculate total entries
@@ -1303,7 +1305,8 @@ const handleLeadClick = (lead) => {
     )}
 
 
-    <table className="leads-table">
+<div className="table-scroll-container">
+<table className="leads-table" style={{ minWidth: "1000px" }}>
       <thead>
         <tr>
         <th style={{ width: "10%" }}>Lead No.</th>
@@ -1368,6 +1371,7 @@ const handleLeadClick = (lead) => {
       </tbody>
 
     </table>
+    </div>
     <Pagination
   currentPage={currentPage}
   totalEntries={totalEntries}  // Automatically calculate total entries
@@ -1400,7 +1404,8 @@ const handleLeadClick = (lead) => {
                     </button>
                   </div>
     
-    <table className="pending-lr-table">
+                  <div className="table-scroll-container">
+                  <table className="leads-table" style={{ minWidth: "1000px" }}>
               <thead>
                 <tr>
                   <th style={{ width: "10%" }}>Lead No.</th>
@@ -1427,6 +1432,7 @@ const handleLeadClick = (lead) => {
                   ))}
               </tbody>
             </table>
+            </div>
             <Pagination
   currentPage={currentPage}
   totalEntries={totalEntries}  // Automatically calculate total entries
@@ -1473,13 +1479,14 @@ const handleLeadClick = (lead) => {
                     </button>
                   </div>
 
-    <table className="all-lead-table">
+                  <div className="table-scroll-container">
+                  <table className="leads-table" style={{ minWidth: "1000px" }}>
       <thead>
         <tr>
           <th style={{ width: "10%" }}>Lead No.</th>
           <th>Lead Log Summary</th>
           <th style={{ width: "12%" }}>Lead Status</th>
-          <th style={{ width: "12%" }}></th> {/* Empty header for buttons column */}
+          <th style={{ width: "14%" }}></th> {/* Empty header for buttons column */}
         </tr>
       </thead>
       <tbody>
@@ -1500,6 +1507,7 @@ const handleLeadClick = (lead) => {
         ))}
       </tbody>
     </table>
+    </div>
     <Pagination
   currentPage={currentPage}
   totalEntries={totalEntries}  // Automatically calculate total entries

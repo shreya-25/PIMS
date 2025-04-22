@@ -1035,18 +1035,18 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
       </div>
     )}
 
-
-    <table className="leads-table">
+<div className="table-scroll-container">
+    <table className="leads-table" style={{ minWidth: "1000px" }}>
       <thead>
         <tr>
-        <th style={{ width: "10%" }}>Lead No.</th>
-          <th>Lead Description</th>
+        <th style={{ width: "8%" }}>Lead No.</th>
+          <th style={{ width: "20%" }}>Lead Description</th>
           <th style={{ width: "10%" }}>Due Date</th>
           <th style={{ width: "8%" }}>Priority</th>
           <th style={{ width: "8%" }}>Days Left</th>
-          <th style={{ width: "6%" }}>Flags</th>
-          <th style={{ width: "15%" }}>Assigned Officers</th>
-          <th style={{ width: "12%" }}></th>
+          <th style={{ width: "8%" }}>Flags</th>
+          <th style={{ width: "13%" }}>Assigned Officers</th>
+          <th style={{ width: "15%" }}></th>
         </tr>
       </thead>
       <tbody>
@@ -1121,6 +1121,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           )}
       </tbody>
     </table>
+    </div>
   </div>
 )}
 
@@ -1319,7 +1320,8 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
       </div>
     )}
 
-    <table className="leads-table">
+<div className="table-scroll-container">
+<table className="leads-table" style={{ minWidth: "1000px" }}>
       <thead>
         <tr>
           <th style={{ width: "10%" }}>Lead No.</th>
@@ -1391,6 +1393,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
             )}
       </tbody>
     </table>
+    </div>
   </div>
 )}
 
@@ -1439,7 +1442,8 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           </div>
       )}
 
-    <table className="leads-table">
+<div className="table-scroll-container">
+<table className="leads-table" style={{ minWidth: "1000px" }}>
               <thead>
                 <tr>
                   <th style={{ width: "10%" }}>Lead No.</th>
@@ -1474,6 +1478,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                     )}
               </tbody>
             </table>
+            </div>
             
   </div>
 )}  
@@ -1534,7 +1539,8 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           </div>
       )}
 
-    <table className="leads-table">
+<div className="table-scroll-container">
+<table className="leads-table" style={{ minWidth: "1000px" }}>
       <thead>
         <tr>
           <th style={{ width: "10%" }}>Lead No.</th>
@@ -1568,6 +1574,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
         )}
       </tbody>
     </table>
+    </div>
   </div>
 )}
 <Pagination
