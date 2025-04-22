@@ -1,0 +1,40 @@
+// src/hooks/useTokenExpiryRedirect.js
+import { useEffect } from "react";
+import jwt_decode from "jwt-decode";
+import { useNavigate } from "react-router-dom";
+
+const useTokenExpiryRedirect = (token) => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!token) {
+      navigate("/"); // No token? Redirect
+      return;
+    }
+
+    try {
+      const decoded = jwt_decode(token);
+      const currentTime = Date.now() / 1000;
+
+      if (decoded.exp < currentTime) {
+        // Token already expired
+        localStorage.removeItem("token");
+        navigate("/");
+      } else {
+        const timeout = (decoded.exp - currentTime) * 1000;
+        const timer = setTimeout(() => {
+          localStorage.removeItem("token");
+          navigate("/");
+        }, timeout);
+
+        return () => clearTimeout(timer); // Cleanup
+      }
+    } catch (err) {
+      console.error("Invalid token", err);
+      localStorage.removeItem("token");
+      navigate("/");
+    }
+  }, [token, navigate]);
+};
+
+export default useTokenExpiryRedirect;
