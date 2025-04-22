@@ -39,30 +39,52 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  // useEffect(() => {
+  //   const fetchUsers = async () => {
+  //     const token = localStorage.getItem("token");
+  //     try {
+  //       const response = await api.get("/api/users/usernames", {
+  //         // headers: {
+  //         //   Authorization: `Bearer ${token}`,
+  //         // },
+  //       });
+  
+  //       const data = await response.json();
+  
+  //       if (!response.ok) {
+  //         throw new Error(data.message || "Failed to fetch users");
+  //       }
+  
+  //       setAllUsers(data.usernames); // assuming your API returns a list of user objects
+  //     } catch (error) {
+  //       console.error("❌ Error fetching users:", error);
+  //     }
+  //   };
+  
+  //   fetchUsers();
+  // }, []);
+
   useEffect(() => {
     const fetchUsers = async () => {
-      const token = localStorage.getItem("token");
+      setError(null);
+      setLoading(true);
       try {
-        const response = await api.get("/api/users/usernames", {
-          // headers: {
-          //   Authorization: `Bearer ${token}`,
-          // },
+        const token = localStorage.getItem("token");
+        const { data } = await api.get("/api/users/usernames", {
+          // headers: { Authorization: `Bearer ${token}` }
         });
-  
-        const data = await response.json();
-  
-        if (!response.ok) {
-          throw new Error(data.message || "Failed to fetch users");
-        }
-  
-        setAllUsers(data.usernames); // assuming your API returns a list of user objects
-      } catch (error) {
-        console.error("❌ Error fetching users:", error);
+        setAllUsers(data.usernames);
+      } catch (err) {
+        console.error("❌ Error fetching users:", err);
+        setError("Could not load user list");
+      } finally {
+        setLoading(false);
       }
     };
   
     fetchUsers();
   }, []);
+  
 
   // const toggleDropdown = () => {
   //   setDropdownOpen(!dropdownOpen);
