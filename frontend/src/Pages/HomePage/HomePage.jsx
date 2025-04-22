@@ -818,13 +818,14 @@ const addCase = (newCase) => {
           </div>
       )}
 
-        <table className="leads-table">
+<div className="table-scroll-container">
+<table className="leads-table" style={{ minWidth: "1000px" }}>
               <thead>
                 <tr>
                   <th style={{ width: "10%" }}>Case No.</th>
-                  <th>Case Name</th>
-                  <th style={{ width: "12%" }}>Role</th>
-                  <th style={{ width: "10%" }}></th>
+                  <th style={{ width: "35%" }}>Case Name</th>
+                  <th style={{ width: "15%" }}>Role</th>
+                  <th style={{ width: "15%" }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -878,6 +879,7 @@ const addCase = (newCase) => {
                   </tr>)}
               </tbody>
             </table>
+            </div>
             {/* {cases.map((c) => (
               <div key={c.id} className="case-item">
                 <span
@@ -1349,7 +1351,8 @@ const addCase = (newCase) => {
     )}
 
 
-    <table className="leads-table">
+<div className="table-scroll-container">
+<table className="leads-table" style={{ minWidth: "1000px" }}>
       <thead>
         <tr>
           <th style={{ width: "10%" }}>Lead No.</th>
@@ -1425,6 +1428,7 @@ const addCase = (newCase) => {
         )}
       </tbody>
     </table>
+    </div>
 
     <Pagination
   currentPage={currentPage}
@@ -1482,7 +1486,8 @@ const addCase = (newCase) => {
 
 
 
-    <table className="leads-table">
+<div className="table-scroll-container">
+<table className="leads-table" style={{ minWidth: "1000px" }}>
               <thead>
                 <tr>
                   <th style={{ width: "10%" }}>Lead No.</th>
@@ -1519,6 +1524,7 @@ const addCase = (newCase) => {
                 )}
               </tbody>
             </table>
+            </div>
             <Pagination
   currentPage={currentPage}
   totalEntries={totalEntries}  // Automatically calculate total entries
