@@ -160,11 +160,21 @@ app.use('/uploads', express.static(path.join(__dirname, 'temp_uploads')));
 
 app.use("/api/report", reportRoutes); // For report generation
 
+if (process.env.NODE_ENV === 'production') {
+  const buildPath = path.join(__dirname, '..', '..', 'frontend', 'build');
+  app.use(express.static(buildPath));
+
+  // All other GET requests not handled by API go to React’s index.html
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(buildPath, 'index.html'));
+  });
+}
+
 
 // Default Route
-app.get("/", (req, res) => {
-    res.send("Server is ready");
-});
+// app.get("/", (req, res) => {
+//     res.send("Server is ready");
+// });
 
 
 app.get('/test', (req, res) => {
