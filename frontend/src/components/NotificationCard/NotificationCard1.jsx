@@ -3,6 +3,8 @@ import "./NotificationCard.css";
 import SearchBar from "../Searchbar/Searchbar";
 import axios from "axios"; 
 import { useNavigate } from "react-router-dom";
+import api from "../../api"
+
 
 const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
   const [unreadNotifications, setUnreadNotifications] = useState([]);
@@ -17,7 +19,7 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
   const fetchUnreadNotifications = async () => {
     try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:5000/api/notifications/user/${signedInOfficer}`);
+        const response = await api.get(`/api/notifications/user/${signedInOfficer}`);
 
         // const newUnread = response.data.filter(notification => notification.unread ||  !notification.accepted);
         const allNotifications = response.data;
@@ -49,7 +51,7 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
   const fetchOpenCaseNotifications = async () => {
     try {
         setLoading(true);
-        const response = await axios.get(`http://localhost:5000/api/notifications/open/user/${signedInOfficer}`);
+        const response = await api.get(`/api/notifications/open/user/${signedInOfficer}`);
         const sortedNotifications = response.data.sort((a, b) => new Date(b.time) - new Date(a.time));
 
         setOpenCaseNotifications(sortedNotifications);
@@ -95,7 +97,7 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
         console.log("🔹 Marking notification as read:", notificationId);
 
         // ✅ API request to mark as read
-        await axios.put(`http://localhost:5000/api/notifications/mark-read/${notificationId}`, { unread: false });
+        await api.put(`/api/notifications/mark-read/${notificationId}`, { unread: false });
 
         // ✅ Remove from "New Notifications"
         if(notification.action1.includes("assigned a new case") || notification.action1.includes("assigned a new lead"))
@@ -187,7 +189,7 @@ const handleAccept = async (_id) => {
       console.log("🔹 Sending request with notificationId:", notificationId);
 
       // ✅ Make API request to accept lead
-      const response = await axios.put(`http://localhost:5000/api/notifications/accept/${notificationId}`, {});
+      const response = await api.put(`/api/notifications/accept/${notificationId}`, {});
 
       console.log("✅ Case accepted successfully", response.data);
 
