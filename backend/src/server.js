@@ -108,16 +108,21 @@ app.use(express.json());
 //   allowedHeaders: ["Content-Type", "Authorization"],
 //  }));
 
-const allowedLocal = "http://localhost:3000";
+const allowedOrigins = [
+  "http://localhost:3000",                            // dev
+  /\.netlify\.app$/,                                  // any Netlify preview or prod
+  /\.herokuapp\.com$/                                 // any Heroku app
+];
+
 app.use(cors({
   origin: (origin, callback) => {
-    // allow requests like curl or mobile apps with no origin
+    // allow tools (no Origin header)
     if (!origin) return callback(null, true);
 
-    // allow localhost or any netlify.app preview/prod domain
+    // allow exact strings or regex matches
     if (
-      origin === allowedLocal ||
-      /\.netlify\.app$/.test(origin)
+      allowedOrigins.includes(origin) ||
+      allowedOrigins.some(o => o instanceof RegExp && o.test(origin))
     ) {
       return callback(null, true);
     }
