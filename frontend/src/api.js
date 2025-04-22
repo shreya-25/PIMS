@@ -1,7 +1,7 @@
 
 import axios from "axios";
 
-const BASE_URL = "https://pims-backend.onrender.com"; // or localhost for dev
+const BASE_URL = "https://localhost:5000"; // or localhost for dev
 
 const api = axios.create({
   baseURL: BASE_URL,
