@@ -487,7 +487,7 @@ export const CMFinish = () => {
         </div>
         </div>
 
-        <Comment/>
+        <Comment tag= "Finish"/>
         {/* Buttons */}
         <div className="form-buttons-finish">
           <button className="save-btn1" onClick={handleRunReport}>Run Report</button>

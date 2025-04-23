@@ -242,7 +242,7 @@ export const CMScratchpad = () => {
           </tbody>
         </table>
 
-        <Comment/>
+        <Comment tag= "Scratchpad"/>
 
       </div>
       </div>

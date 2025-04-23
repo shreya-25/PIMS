@@ -302,7 +302,7 @@ export const CMPictures = () => {
                    url: `${BASE_URL}/uploads/${e.filename}`
                  }))} />
        
-       <Comment/>
+       <Comment tag= "Pictures"/>
        </div>
     </div>
      

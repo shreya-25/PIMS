@@ -373,7 +373,7 @@ export const LREnclosures = () => {
                     </tr>)}
           </tbody>
         </table>
-        <Comment/>
+        <Comment tag= "Enclosures"/>
       </div>
       </div>
       <FootBar
