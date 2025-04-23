@@ -105,7 +105,7 @@ export const CMEnclosures = () => {
       const url = `/api/lrenclosure/${leadNo}/${leadName}/${caseNo}/${caseName}`;
       try {
         const response = await api.get(url, {
-          headers: { "Authorization": `Bearer ${token}` }
+          headers: {  "Content-Type": undefined,   "Authorization": `Bearer ${token}` }
         });
         console.log("Fetched enclosures:", response.data);
         setEnclosures(response.data);

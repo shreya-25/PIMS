@@ -131,6 +131,7 @@ export const LREvidence = () => {
         formData,
         { 
           headers: { 
+            "Content-Type": undefined,  
             // "Content-Type": "multipart/form-data",
             "Authorization": `Bearer ${token}`  // Add token here
           } 
@@ -171,6 +172,7 @@ export const LREvidence = () => {
         `/api/lrevidence/${leadNo}/${leadName}/${caseNo}/${caseName}`,
         {
           headers: {
+            "Content-Type": undefined,  
             Authorization: `Bearer ${token}`,
           },
         }

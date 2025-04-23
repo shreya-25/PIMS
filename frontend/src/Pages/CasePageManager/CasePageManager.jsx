@@ -747,10 +747,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
               setShowSelectModal(true);
             }}>Lead Information</li>
             <li className="sidebar-item"
-             onClick={() => {
-              setPendingRoute("/SearchLead");
-              setShowSelectModal(true);
-            }}
+             onClick={() => onShowCaseSelector("/SearchLead")}
           >Search Lead</li>
             <li className="sidebar-item"    
             onClick={() => {
@@ -784,19 +781,21 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
             </li> */}
-            <li className="sidebar-item"
-             onClick={() => {
-              setPendingRoute("/FlaggedLead");
-              setShowSelectModal(true);
-            }} >
+            <li className="sidebar-item"    
+            onClick={() => navigate("/FlaggedLead")}>
               View Flagged Leads
             </li>
-            <li className="sidebar-item"  onClick={() => {
+            {/* <li className="sidebar-item"  onClick={() => {
               setPendingRoute("/ViewTimeline");
               setShowSelectModal(true);
             }}>
               View Timeline Entries
+            </li> */}
+
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+            View Timeline Entries
             </li>
+
             {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
             <li className="sidebar-item" 
