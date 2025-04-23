@@ -26,8 +26,8 @@ export default class ErrorBoundary extends React.Component {
       return (
         <div style={{ padding: 20, textAlign: 'center' }}>
           <h1>😞 Oops—something went wrong.</h1>
-          <p>{this.state.error?.message || 'Unknown error.'}</p>
-          <button onClick={this.handleGoBack}>Go Back</button>
+          {/* <p>{this.state.error?.message || 'Unknown error.'}</p> */}
+          <button classNAme = "save-btn1" onClick={this.handleGoBack}>Go Back</button>
         </div>
       );
     }
