@@ -34,9 +34,10 @@ export const CasePageManager = () => {
 
     const [showFilter, setShowFilter] = useState(false);
   const [showSort, setShowSort] = useState(false);
+  const [pendingRoute, setPendingRoute]   = useState(null);
   
 
-  const { selectedCase, setSelectedLead } = useContext(CaseContext);
+  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
 
 
     const [activeTab, setActiveTab] = useState("allLeads"); // Default to All Leads tab
@@ -62,14 +63,21 @@ const handleNavigateToLeadReturn = () => {
 
 const handleSelectLead = (lead) => {
   setSelectedLead({
-    leadNo: lead.id,
+    leadNo: lead.leadNo,
     leadName: lead.description,
     caseName: lead.caseName,
     caseNo: lead.caseNo,
   });
 
   setShowSelectModal(false);
-  navigate("/CMInstruction", { state: { caseDetails: selectedCase, leadDetails: lead } });
+  navigate(pendingRoute, {
+    state: {
+      caseDetails: selectedCase,
+      leadDetails: lead
+    }
+  });
+  
+  setPendingRoute(null);
 };
 
     const [currentPage, setCurrentPage] = useState(1);
@@ -733,14 +741,37 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
 <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
               New Lead
             </li>
-            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item"   onClick={handleNavigateToLeadReturn} >View Lead Return</li>
+            <li className="sidebar-item" 
+             onClick={() => {
+              setPendingRoute("/leadReview");
+              setShowSelectModal(true);
+            }}>Lead Information</li>
+            <li className="sidebar-item"
+             onClick={() => {
+              setPendingRoute("/SearchLead");
+              setShowSelectModal(true);
+            }}
+          >Search Lead</li>
+            <li className="sidebar-item"    
+            onClick={() => {
+              setPendingRoute("/CMInstruction");
+              setShowSelectModal(true);
+            }} >View Lead Return</li>
 
 
 <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
               View Lead Log
             </li>
+
+{/* <li
+              className="sidebar-item"
+              onClick={() => {
+                setPendingRoute("/LeadLog");
+                setShowSelectModal(true);
+              }}
+            >
+              View Lead Log
+            </li> */}
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
             </li> */}
@@ -753,25 +784,54 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
             </li> */}
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
+            <li className="sidebar-item"
+             onClick={() => {
+              setPendingRoute("/FlaggedLead");
+              setShowSelectModal(true);
+            }} >
               View Flagged Leads
             </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
+            <li className="sidebar-item"  onClick={() => {
+              setPendingRoute("/ViewTimeline");
+              setShowSelectModal(true);
+            }}>
               View Timeline Entries
             </li>
             {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
 
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            <li className="sidebar-item" 
+            // onClick={() => {
+            //   setPendingRoute("/LeadsDesk");
+            //   setShowSelectModal(true);
+            // }}
+            onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}
+             >View Leads Desk</li>
 
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>
+            <li className="sidebar-item" 
+            //  onClick={() => {
+            //   setPendingRoute("/LeadsDeskTestExecSummary");
+            //   setShowSelectModal(true);
+            // }}
+            
+            onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}
+            
+            >Generate Report</li>
 
-            <li className="sidebar-item"onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>View Lead Chain of Custody</li>
+            <li className="sidebar-item"
+
+              onClick={() => {
+                setPendingRoute("/ChainOfCustody");
+                setShowSelectModal(true);
+              }}
+            
+            // onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}
+            >View Lead Chain of Custody</li>
 
                     </ul>
 
                     {showSelectModal && (
       <SelectLeadModal
-        leads={leads.pendingLeadReturns}
+        leads={leads.allLeads}
         onSelect={handleSelectLead}
         onClose={() => setShowSelectModal(false)}
       />
