@@ -135,7 +135,7 @@ export const CMEvidence = () => {
       const url = `/api/lrevidence/${leadNo}/${leadName}/${caseNo}/${caseName}`;
       try {
         const response = await axios.get(url, {
-          headers: { "Authorization": `Bearer ${token}` }
+          headers: { "Content-Type": undefined,   "Authorization": `Bearer ${token}` }
         });
         console.log("Fetched enclosures:", response.data);
         setEvidence(response.data);

@@ -91,6 +91,7 @@ export const LRAudio = () => {
         formData,
         {
           headers: {
+            "Content-Type": undefined,  
             "Authorization": `Bearer ${token}`,
           },
         }
@@ -147,6 +148,7 @@ export const LRAudio = () => {
                       `/api/lraudio/${leadNo}/${leadName}/${caseNo}/${caseName}`,
                       {
                         headers: {
+                          "Content-Type": undefined,  
                           Authorization: `Bearer ${token}`,
                         },
                       }

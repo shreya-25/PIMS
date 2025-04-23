@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import './CaseInformation.css'; // Custom CSS
 import { CaseContext } from "../CaseContext";
 import api from "../../api";
+import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
 
 
 export const CaseInformation = () => {
@@ -12,7 +13,10 @@ export const CaseInformation = () => {
     const location = useLocation();
     const { caseDetails } = location.state || {};
 
-    const { selectedCase } = useContext(CaseContext);
+     const [showSelectModal, setShowSelectModal] = useState(false);
+       const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+     
+
     
     
     const handleHomeClick = () => {
@@ -25,11 +29,19 @@ export const CaseInformation = () => {
     const [dateTimeFrom, setDateTimeFrom] = useState('');
     const [dateTimeTo, setDateTimeTo] = useState('');
     const [recentLocation, setRecentLocation] = useState('');
+     const [pendingRoute, setPendingRoute]   = useState(null);
 
     // Offenses can be an array if you want multiple offenses
     const [offenses, setOffenses] = useState([
       { statute: '', desc: '', attemptCommit: '', counts: '' },
     ]);
+
+        const [leads, setLeads] = useState({
+          assignedLeads: [],
+          pendingLeads: [],
+          pendingLeadReturns: [],
+          allLeads: [],
+     } );
 
     // You can allow multiple Subjects; for demonstration, we'll set 3
     const [subjects, setSubjects] = useState([
@@ -167,6 +179,25 @@ export const CaseInformation = () => {
     }
   };
 
+  const handleSelectLead = (lead) => {
+    setSelectedLead({
+      leadNo: lead.leadNo,
+      leadName: lead.description,
+      caseName: lead.caseName,
+      caseNo: lead.caseNo,
+    });
+  
+    setShowSelectModal(false);
+    navigate(pendingRoute, {
+      state: {
+        caseDetails: selectedCase,
+        leadDetails: lead
+      }
+    });
+    
+    setPendingRoute(null);
+  };
+
   const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
   const [execCaseSummary, setExecCaseSummary] = useState('');
   const [inputMethod, setInputMethod] = useState('direct'); // 'direct' or 'upload'
@@ -212,7 +243,11 @@ export const CaseInformation = () => {
             <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
             {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+<li className="sidebar-item" 
+             onClick={() => {
+              setPendingRoute("/leadReview");
+              setShowSelectModal(true);
+            }}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
             <li className="sidebar-item" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
@@ -242,6 +277,14 @@ export const CaseInformation = () => {
 )}
 
           </ul>
+          
+          {showSelectModal && (
+      <SelectLeadModal
+        leads={leads.allLeads}
+        onSelect={handleSelectLead}
+        onClose={() => setShowSelectModal(false)}
+      />
+    )}
         </div>
 
           {/* Main Content: Replicate the Police Report Fields */}

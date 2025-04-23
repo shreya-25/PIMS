@@ -113,7 +113,7 @@ export const CMAudio = () => {
       const url = `/api/lraudio/${leadNo}/${leadName}/${caseNo}/${caseName}`;
       try {
         const response = await api.get(url, {
-          headers: { "Authorization": `Bearer ${token}` }
+          headers: {  "Content-Type": undefined,  "Authorization": `Bearer ${token}` }
         });
         console.log("Fetched audios:", response.data);
         setAudioFiles(response.data);

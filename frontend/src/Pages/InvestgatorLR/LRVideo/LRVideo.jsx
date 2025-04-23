@@ -91,6 +91,7 @@ export const LRVideo = () => {
         formData,
         {
           headers: {
+            "Content-Type": undefined,  
             Authorization: `Bearer ${token}`,
           },
         }
@@ -156,6 +157,7 @@ export const LRVideo = () => {
                         `/api/lrvideo/${leadNo}/${leadName}/${caseNo}/${caseName}`,
                         {
                           headers: {
+                            "Content-Type": undefined,  
                             Authorization: `Bearer ${token}`,
                           },
                         }

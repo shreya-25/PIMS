@@ -71,8 +71,10 @@ export const LREnclosures = () => {
 
    // Handle file selection
    const handleFileChange = (event) => {
-    setFile(event.target.files[0]);
-    console.log("Selected file:", event.target.files[0]);
+    console.log("event.target.files:", event.target.files);
+    const selected = event.target.files[0];
+    console.log("selected file:", selected);
+    setFile(selected);
   };
   const handleAddEnclosure = () => {
     const newEnclosure = {
@@ -127,6 +129,7 @@ export const LREnclosures = () => {
         formData,
         { 
           headers: { 
+            "Content-Type": undefined,   
             // "Content-Type": "multipart/form-data",
             "Authorization": `Bearer ${token}`  // Add token here
           } 
@@ -141,6 +144,12 @@ export const LREnclosures = () => {
       setFile(null);
     } catch (error) {
       console.error("Error saving enclosure:", error);
+      if (error.response) {
+        console.error("Upload failed with status", error.response.status);
+        console.error("Response body:", error.response.data);
+      } else {
+        console.error("Network or client error:", error);
+      }
     }
   };
 
@@ -171,6 +180,7 @@ export const LREnclosures = () => {
         `/api/lrenclosure/${leadNo}/${leadName}/${caseNo}/${caseName}`,
         {
           headers: {
+            "Content-Type": undefined,   
             Authorization: `Bearer ${token}`,
           },
         }

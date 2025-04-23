@@ -126,7 +126,7 @@ export const CMPictures = () => {
       const url = `/api/lrpicture/${leadNo}/${leadName}/${caseNo}/${caseName}`;
       try {
         const response = await api.get(url, {
-          headers: { "Authorization": `Bearer ${token}` }
+          headers: {  "Content-Type": undefined,  "Authorization": `Bearer ${token}` }
         });
         console.log("Fetched pict:", response.data);
         setPictures(response.data);
