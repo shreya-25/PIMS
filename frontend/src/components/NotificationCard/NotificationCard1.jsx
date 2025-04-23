@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
+import { CaseContext } from "../../Pages/CaseContext";
 import "./NotificationCard.css";
 import SearchBar from "../Searchbar/Searchbar";
 import axios from "axios"; 
@@ -14,6 +15,7 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
   const [showSearchBar, setShowSearchBar] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { setSelectedCase } = useContext(CaseContext);
   const navigate = useNavigate();
 
   const fetchUnreadNotifications = async () => {
@@ -27,8 +29,8 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
         const newUnread = allNotifications.filter((notification) => {
           // Check if `action1` mentions a new case or lead
           const isNewCaseOrLead =
-            notification.action1.includes("assigned a new case") ||
-            notification.action1.includes("assigned a new lead");
+            notification.action1.includes("assigned you to a new case") ||
+            notification.action1.includes("assigned you to a new lead");
           
           // If it's a new case or lead: return notifications that are unread OR not accepted
           // Otherwise: return notifications that are unread
@@ -67,10 +69,10 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
   }, [signedInOfficer]);
 
   const getNotificationType = (notification) => {
-    if (notification.action1.includes("assigned a new case")) {
+    if (notification.action1.includes("assigned you to a new case")) {
       return { letter: "C", color: "blue" }; // Case: Blue Circle
     }
-    if (notification.action1.includes("assigned a new lead")) {
+    if (notification.action1.includes("assigned you to a new lead")) {
       return { letter: "L", color: "green" }; // Lead: Green Circle
     }
     if (notification.action1.includes("returned a lead")) {
@@ -81,83 +83,81 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
 
   const handleView = async (_id) => {
     try {
-        console.log("🔹 Received _id in handleView:", _id);
-
-        if (!_id) return console.error("❌ Error: `_id` is undefined.");
-
-        // ✅ Find notification in "New Notifications"
-        const notification = unreadNotifications.find(n => n._id === _id);
-
-        if (!notification) return console.error("❌ Error: No matching notification found in New Notifications.");
-
-        const { notificationId } = notification;
-
-        if (!notificationId) return console.error("❌ Error: `notificationId` is undefined.");
-
-        console.log("🔹 Marking notification as read:", notificationId);
-
-        // ✅ API request to mark as read
-        await api.put(`/api/notifications/mark-read/${notificationId}`, { unread: false });
-
-        // ✅ Remove from "New Notifications"
-        if(notification.action1.includes("assigned a new case") || notification.action1.includes("assigned a new lead"))
-        {
-          if (notification.accepted) {
-            setUnreadNotifications((prev) => prev.filter((n) => n._id !== _id));
-          }
+      console.log("🔹 Received _id in handleView:", _id);
+      if (!_id) return console.error("❌ Error: `_id` is undefined.");
+  
+      // Find the notification
+      const notification = unreadNotifications.find(n => n._id === _id);
+      if (!notification) {
+        return console.error("❌ Error: No matching notification found in New Notifications.");
       }
-      else
-          {
-          setUnreadNotifications((prev) => prev.filter((n) => n._id !== _id));
-          }
+  
+      const { notificationId } = notification;
+      if (!notificationId) {
+        return console.error("❌ Error: `notificationId` is undefined.");
+      }
+  
+      // Determine role
+      const role = signedInOfficer === notification.assignedBy
+        ? "Case Manager"
+        : "Investigator";
+  
+      // Persist role
+      localStorage.setItem("role", role);
+      console.log(localStorage);
+  
+      console.log("🔹 Marking notification as read:", notificationId);
+      await api.put(`/api/notifications/mark-read/${notificationId}`, { unread: false });
+  
+      // Remove from unread list
+      setUnreadNotifications(prev =>
+        prev.filter(n => n._id !== _id)
+      );
+  
+      // Navigate
+      const baseState = {
+        // caseDetails: {
+        //   id: notification.caseNo,
+        //   title: notification.caseName,
+        //   role, 
+        //   // only add lead fields if present
+        //   ...(notification.leadNo ? {
+        //     leadNo: notification.leadNo,
+        //     leadName: notification.leadName
+        //   } : {})
+        // }
+        caseNo:   notification.caseNo,
+        caseName: notification.caseName,
+        role,
+        ...(notification.leadNo && {
+          leadNo:   notification.leadNo,
+          leadName: notification.leadName})
+      };
 
-        // ✅ Do NOT add to "View All Notifications" yet
-        // Only redirect based on type
-        if (notification.action1.includes("assigned a new case")) {
-          navigate(`/CaseInformation`, {
-            state: {
-              caseDetails: {
-                id: notification.caseNo,
-                title: notification.caseName
-              }
-            },
-          });
-        } else if (notification.action1.includes("assigned a new lead")) {
-          // navigate(`/Investigator`), {
-          //   state: {
-          //     caseDetails: {
-          //       id: notification.caseNo,
-          //       title: notification.caseName
-          //     }
-          //   },
-          // });
-          navigate(`/LeadReview`, {
-            state: {
-              caseDetails: {
-                id: notification.caseNo,
-                title: notification.caseName,
-                leadNo: notification.leadNo,
-                leadName: notification.leadName
-              }
-            },
-          });
-        } else {
-          navigate(`/LRInstructions`, {
-            state: {
-              caseDetails: {
-                id: notification.caseNo,
-                title: notification.caseName,
-                leadNo: notification.leadNo,
-                leadName: notification.leadName
-              }
-            },
-          });
-        }
+      setSelectedCase(baseState);
 
+      localStorage.setItem("selectedCase", JSON.stringify(baseState));
+
+      console.log("selectedCase", baseState);
+  
+      if (notification.action1.includes("assigned you to a new case")) {
+        navigate("/CaseInformation", { state: baseState });
+      }
+      else if (notification.action1.includes("assigned you to a new lead")) {
+        navigate("/LeadReview", { state: baseState });
+      }
+      else {
+        navigate("/LRInstructions", { state: baseState });
+      }
+  
     } catch (error) {
-        console.error("❌ Error marking notification as read:", error.response ? error.response.data : error);
+      console.error(
+        "❌ Error marking notification as read:",
+        error.response?.data || error
+      );
     }
-};
+  };
+  
 
 
 const handleAccept = async (_id) => {
@@ -268,8 +268,8 @@ const handleAccept = async (_id) => {
                       View
                   </button>
 
-                  {(notification.action1.includes("assigned a new lead") ||
-                    notification.action1.includes("assigned a new case")) && (
+                  {(notification.action1.includes("assigned you to a new lead") ||
+                    notification.action1.includes("assigned you to a new case")) && (
                     <button
                       className={`accept-btnNC ${notification.accepted ? "accepted-btnNC" : ""}`}
                       onClick={() => handleAccept(notification._id)}
@@ -311,8 +311,8 @@ const handleAccept = async (_id) => {
                 <button className="view-btnNC" onClick={() => handleView(notification._id)}>View</button>
 
 
-                  {(notification.action1.includes("assigned a new lead") ||
-                    notification.action1.includes("assigned a new case")) && (
+                  {(notification.action1.includes("assigned you to a new lead") ||
+                    notification.action1.includes("assigned you to a new case")) && (
                       <button
                       className={`accept-btnNC ${notification.accepted ? 'accepted-btnNC' : ''}`}
                       disabled={notification.accepted}
