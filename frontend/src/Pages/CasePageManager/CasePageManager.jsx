@@ -446,7 +446,6 @@ const handleSelectLead = (lead) => {
 //   fetchPendingLeads();
 // }, [signedInOfficer, caseDetails]);
 
-
 const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
 

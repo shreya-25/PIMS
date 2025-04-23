@@ -55,7 +55,7 @@ export const LeadReview = () => {
 
 
   // Default case summary if no data is passed
-  const defaultCaseSummary = "Initial findings indicate that the suspect was last seen near the crime scene at 9:45 PM. Witness statements collected. Awaiting forensic reports and CCTV footage analysis.";
+  const defaultCaseSummary = "";
   // For demonstration, we store lead-related data
   const [leadData, setLeadData] = useState({
     leadNumber: '',
@@ -69,6 +69,8 @@ export const LeadReview = () => {
     assignedBy: '',
     leadDescription: '',
     assignedTo: [],
+    caseNo: '',
+    caseName: "",
     // caseName: 'Main Street Theft',
     // caseSummary: defaultCaseSummary,
   });
@@ -85,7 +87,7 @@ const onShowCaseSelector = (route) => {
   navigate(route, { state: { caseDetails } });
 };
 
-
+console.log("SL, SC", selectedLead, selectedCase);
   useEffect(() => {
     const fetchLeadData = async () => {
       try {
@@ -315,13 +317,24 @@ const onShowCaseSelector = (route) => {
                   </td>
                 </tr> */}
                 <tr>
-                  <td className="info-label">Incident Number:</td>
+                  <td className="info-label">Case Number:</td>
                   <td>
                     <input
                       type="text"
                       className="input-field"
-                      value={leadData.incidentNo}
-                      onChange={(e) => handleInputChange('incidentNumber', e.target.value)}
+                      value={leadData.caseNo}
+                      onChange={(e) => handleInputChange('caseNo', e.target.value)}
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <td className="info-label">Case Name:</td>
+                  <td>
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={leadData.caseName}
+                      onChange={(e) => handleInputChange('caseName', e.target.value)}
                     />
                   </td>
                 </tr>
@@ -342,7 +355,7 @@ const onShowCaseSelector = (route) => {
                     <input
                       type="text"
                       className="input-field"
-                      value={formatDate(leadData.assignedDate)}
+                      value={formatDate(selectedLead.assignedDate)}
                       onChange={(e) => handleInputChange('assignedDate', e.target.value)}
                       placeholder="MM/DD/YY"
                     />

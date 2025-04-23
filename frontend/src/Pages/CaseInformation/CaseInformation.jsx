@@ -16,7 +16,7 @@ export const CaseInformation = () => {
     
     
     const handleHomeClick = () => {
-      navigate("/Homepage"); // Replace "/" with the actual home page route if different
+      navigate("/Homepage"); 
     };
 
     // Example state fields mirroring the police report sections
@@ -66,7 +66,7 @@ export const CaseInformation = () => {
     const [reviewedDate, setReviewedDate] = useState('');
 
     // Example summary handling (like your existing code):
-    const defaultCaseSummary = "Initial findings indicate that the suspect was last seen near the crime scene at 9:45 PM. Witness statements collected. Awaiting forensic reports and CCTV footage analysis.";
+    const defaultCaseSummary = "";
   
 
     const handleSaveClick = () => {
@@ -178,28 +178,24 @@ export const CaseInformation = () => {
   }
 
   const [isEditing, setIsEditing] = useState(false); // Controls whether the textarea is editable
-  useEffect(() => {
-   const fetchCaseSummary = async () => {
-     try {
-       if (caseDetails && caseDetails.id) {
-         const token = localStorage.getItem("token");
-         const response = await api.get(`/api/cases/summary/${selectedCase.caseNo}`, {
-           headers: { Authorization: `Bearer ${token}` }
-         });
-         // Update case summary if data is received
-         console.log("Response data:", response.data);
-         if (response.data) {
-           setCaseSummary(response.data.summary );
-         }
-       }
-     } catch (error) {
-       console.error("Error fetching case summary:", error);
-     }
-   };
+   // Fetch summary any time caseNo changes
+   useEffect(() => {
+    if (!selectedCase.caseNo) return;
 
-   fetchCaseSummary();
- }, [caseDetails]);
-
+    (async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const resp = await api.get(
+          `/api/cases/summary/${selectedCase.caseNo}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        console.log('Fetched summary:', resp.data);
+        setCaseSummary(resp.data.summary || '');
+      } catch (err) {
+        console.error('Error fetching case summary:', err);
+      }
+    })();
+  }, [selectedCase.caseNo]);
 
 
     return (
@@ -252,9 +248,11 @@ export const CaseInformation = () => {
           <div className="left-content">
             <div className="case-header">
             {
-                        <h1>
-                          Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
-                        </h1>
+              <h1>
+              Case: {selectedCase?.caseNo ?? "N/A"} |{" "}
+              {(selectedCase?.caseName || "Unknown Case").toUpperCase()}
+            </h1>
+            
                     }
             </div>
 
