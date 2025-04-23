@@ -94,7 +94,7 @@ function App() {
         <Route path="/LRReturn" element={<ProtectedLayout> <LRReturn /> </ProtectedLayout>} />
         <Route path="/LRPerson" element={<ProtectedLayout> <LRPerson /> </ProtectedLayout>} />
         <Route path="/LRPerson1" element={<ProtectedLayout> <LRPerson1 /> </ProtectedLayout>} />
-        <Route path="/LRPerson2" element={<LRPerson2 />} />
+        <Route path="/LRPerson2" element={<ProtectedLayout>  <LRPerson2 />  </ProtectedLayout>} />
         <Route path="/LRVehicle" element={<ProtectedLayout> <LRVehicle /> </ProtectedLayout>} />
         <Route path="/LREnclosures" element={<ProtectedLayout> <LREnclosures /> </ProtectedLayout> } />
         <Route path="/LREvidence" element={<ProtectedLayout> <LREvidence /> </ProtectedLayout> } />
@@ -103,32 +103,32 @@ function App() {
         <Route path="/LRVideo" element={<ProtectedLayout> <LRVideo /> </ProtectedLayout> } />
         <Route path="/LRFinish" element={<ProtectedLayout> <LRFinish /> </ProtectedLayout> } />
         <Route path="/LRScratchpad" element={<ProtectedLayout>  <LRScratchpad /> </ProtectedLayout> } />
-        <Route path="/SearchLead" element={<SearchLead />} />
-        <Route path="/LRTimeline" element={<LRTimeline />} />
-        <Route path="/ViewTimeline" element={<ViewTimeline />} />
-        <Route path="/AdminCM" element={<AdminCM />} />
-        <Route path="/AdminCM1" element={<AdminCM1 />} />
-        <Route path="/AdminUR" element={<AdminUR />} />
-        <Route path="/AdminSC" element={<AdminSC />} />
-        <Route path="/AdminSP" element={<AdminSP />} />
-        <Route path="/AdminDB" element={<AdminDB />} />
-        <Route path="/OfficerManagement" element={<OfficerManagement />} />
-        <Route path="/LeadInfo" element={<LeadInfo />} />
-        <Route path="/CMInstruction" element={<CMInstruction />} />
-        <Route path="/CMReturn" element={<CMReturn />} />
-        <Route path="/CMPerson" element={<CMPerson />} />
-        <Route path="/CMPerson1" element={<CMPerson1 />} />
-        <Route path="/CMPerson2" element={<CMPerson2 />} />
-        <Route path="/CMVehicle" element={<CMVehicle />} />
-        <Route path="/CMEnclosures" element={<CMEnclosures />} />
-        <Route path="/CMEvidence" element={<CMEvidence />} />
-        <Route path="/CMPictures" element={<CMPictures />} />
-        <Route path="/CMAudio" element={<CMAudio />} />
-        <Route path="/CMVideo" element={<CMVideo />} />
-        <Route path="/CMFinish" element={<CMFinish />} />
-        <Route path="/CMScratchpad" element={<CMScratchpad />} />
-        <Route path="/CMTimeline" element={<CMTimeline />} />
-        <Route path="/AdminDashboard" element={<AdminDashboard />} />
+        <Route path="/SearchLead" element={<ProtectedLayout>   <SearchLead /> </ProtectedLayout>} />
+        <Route path="/LRTimeline" element={<ProtectedLayout><LRTimeline /> </ProtectedLayout>} />
+        <Route path="/ViewTimeline" element={<ProtectedLayout> <ViewTimeline /> </ProtectedLayout>} />
+        <Route path="/AdminCM" element={<ProtectedLayout> <AdminCM /> </ProtectedLayout>} />
+        <Route path="/AdminCM1" element={<ProtectedLayout>  <AdminCM1 />  </ProtectedLayout>} />
+        <Route path="/AdminUR" element={<ProtectedLayout> <AdminUR /> </ProtectedLayout>} />
+        <Route path="/AdminSC" element={<ProtectedLayout>  <AdminSC />  </ProtectedLayout>} />
+        <Route path="/AdminSP" element={<ProtectedLayout> <AdminSP />  </ProtectedLayout>} />
+        <Route path="/AdminDB" element={<ProtectedLayout> <AdminDB /> </ProtectedLayout>} />
+        <Route path="/OfficerManagement" element={<ProtectedLayout>  <OfficerManagement />  </ProtectedLayout>} />
+        <Route path="/LeadInfo" element={<ProtectedLayout>  <LeadInfo />  </ProtectedLayout>} />
+        <Route path="/CMInstruction" element={<ProtectedLayout>   <CMInstruction />   </ProtectedLayout>} />
+        <Route path="/CMReturn" element={<ProtectedLayout>  <CMReturn />  </ProtectedLayout>} />
+        <Route path="/CMPerson" element={<ProtectedLayout>  <CMPerson />  </ProtectedLayout>} />
+        <Route path="/CMPerson1" element={<ProtectedLayout>  <CMPerson1 />  </ProtectedLayout>} />
+        <Route path="/CMPerson2" element={<ProtectedLayout>  <CMPerson2 />  </ProtectedLayout>} />
+        <Route path="/CMVehicle" element={<ProtectedLayout> <CMVehicle /> </ProtectedLayout>} />
+        <Route path="/CMEnclosures" element={<ProtectedLayout>  <CMEnclosures />  </ProtectedLayout>} />
+        <Route path="/CMEvidence" element={<ProtectedLayout> <CMEvidence /> </ProtectedLayout>} />
+        <Route path="/CMPictures" element={<ProtectedLayout> <CMPictures /> </ProtectedLayout>} />
+        <Route path="/CMAudio" element={<ProtectedLayout>  <CMAudio />  </ProtectedLayout>} />
+        <Route path="/CMVideo" element={<ProtectedLayout>  <CMVideo />  </ProtectedLayout>} />
+        <Route path="/CMFinish" element={<ProtectedLayout> <CMFinish /> </ProtectedLayout>} />
+        <Route path="/CMScratchpad" element={<ProtectedLayout> <CMScratchpad /> </ProtectedLayout>} />
+        <Route path="/CMTimeline" element={<ProtectedLayout> <CMTimeline /> </ProtectedLayout>} />
+        <Route path="/AdminDashboard" element={<ProtectedLayout> <AdminDashboard /> </ProtectedLayout>} />
         <Route path="/CaseInformation" element={<ProtectedLayout>  <CaseInformation /> </ProtectedLayout> } />
         <Route path="/LeadReview" element = {<ProtectedLayout> <LeadReview /> </ProtectedLayout> } />
         <Route path="/LeadsDesk" element= {<ProtectedLayout>  <LeadsDesk /> </ProtectedLayout> } />

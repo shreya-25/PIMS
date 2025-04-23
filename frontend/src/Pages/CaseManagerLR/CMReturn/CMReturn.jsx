@@ -296,7 +296,7 @@ const { leadDetails, caseDetails } = location.state || {};
       </table>
 
 
-      <Comment/>
+       <Comment tag= "Return"/>
       </div>
 
 </div>

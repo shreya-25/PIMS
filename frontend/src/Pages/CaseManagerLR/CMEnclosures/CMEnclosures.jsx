@@ -290,7 +290,7 @@ export const CMEnclosures = () => {
             url: `http://${BASE_URL}/uploads/${e.filename}`
           }))} />
 
-       <Comment/>
+        <Comment tag= "Enclosures"/>
       </div>
       </div>
      

@@ -314,7 +314,7 @@ export const CMEvidence = () => {
                    // Build a URL to view/download the file
                    url: `${BASE_URL}/uploads/${e.filename}`
                  }))} />
-        <Comment/>
+         <Comment tag= "Evidence"/>
         </div>
         </div>
       <FootBar

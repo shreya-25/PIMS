@@ -297,7 +297,7 @@ export const LRScratchpad = () => {
             ))}
           </tbody>
         </table>
-        <Comment/>
+        <Comment tag= "Scratchpad"/>
 
 </div>
 

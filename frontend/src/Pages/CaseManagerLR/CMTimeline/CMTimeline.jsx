@@ -362,7 +362,7 @@ export const CMTimeline = () => {
               )}
             </tbody>
           </table>
-        <Comment/>
+          <Comment tag= "Timeline"/>
         </div>
 </div>
 
