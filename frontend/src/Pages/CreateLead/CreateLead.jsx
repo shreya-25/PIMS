@@ -57,7 +57,7 @@ useEffect(() => {
     accessLevel: 'Everyone',
   });
 
- const { selectedCase, setSelectedLead } = useContext(CaseContext);
+ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -184,7 +184,7 @@ useEffect(() => {
   //   }
   // };
 
-
+console.log("SC and Sl", selectedCase, selectedLead);
 const handleGenerateLead = async () => {
 
   const originNumbers = leadData.leadOrigin
@@ -427,7 +427,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
 <li className="sidebar-item active" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
             <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => navigate('/CMInstruction',  { state: { caseDetails } } )}>View Lead Return</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
