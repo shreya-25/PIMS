@@ -4,6 +4,7 @@ import ReactDOM from "react-dom";
 // import { BrowserRouter, Routes, Route } from "react-router-dom";
 import useTokenExpiryRedirect from "./useTokenExpiryRedirect";
 import {BrowserRouter as Router, Routes, Route} from 'react-router-dom';
+import ErrorBoundary from './ErrorBoundary';
 import {Login} from './Pages/Login/Login';
 import {LoginAdmin} from './Pages/LoginAdmin/LoginAdmin';
 import {Register} from './Pages/Register/Register';
@@ -73,6 +74,7 @@ function App() {
 
   useTokenExpiryRedirect(); 
   return (
+    <ErrorBoundary>
       <Routes>
         {/* Define the route for Login */}
         <Route path="/" element={<Login />} />
@@ -137,6 +139,7 @@ function App() {
         <Route path="/Chatbot" element= {<ProtectedLayout>  <Chatbot /> </ProtectedLayout> } />
         {/* <Route path ="/Report" element= {<Report />} /> */}
       </Routes>
+      </ErrorBoundary>
   );
 }
   // return <Login />;
