@@ -121,6 +121,7 @@ export const LRPictures = () => {
         formData,
         {
           headers: {
+            "Content-Type": undefined,  
             "Authorization": `Bearer ${token}`,
           },
         }
@@ -182,6 +183,7 @@ export const LRPictures = () => {
         `/api/lrpicture/${leadNo}/${leadName}/${caseNo}/${caseName}`,
         {
           headers: {
+            "Content-Type": undefined,  
             Authorization: `Bearer ${token}`,
           },
         }

@@ -117,7 +117,7 @@ export const CMVideo = () => {
       const url = `/api/lrvideo/${leadNo}/${leadName}/${caseNo}/${caseName}`;
       try {
         const response = await api.get(url, {
-          headers: { "Authorization": `Bearer ${token}` }
+          headers: {  "Content-Type": undefined,  "Authorization": `Bearer ${token}` }
         });
         console.log("Fetched videos:", response.data);
         setVideos(response.data);
