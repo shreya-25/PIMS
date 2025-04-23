@@ -21,6 +21,10 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
   overflow-y: auto;
   animation: fadeIn 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .modal-box h3 {
@@ -39,6 +43,7 @@
   overflow-y: auto;
   border: 1px solid #413f3f63;
   border-radius: 10px;
+  width:100%;
 }
 
 .lead-option {
