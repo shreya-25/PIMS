@@ -375,7 +375,7 @@ export const LRPictures = () => {
             ))}
           </tbody>
         </table>
-        <Comment/>
+        <Comment tag= "Pictures"/>
        </div>
     </div>
     

@@ -374,7 +374,7 @@ export const LRPerson = () => {
 
       onClick={() => handleNavigation('/LRPerson1')} className="save-btn1">Add Person</button>
       </div>
-      <Comment tag = "person"/>
+      <Comment tag = "Person"/>
 </div>
 </div>
       <FootBar

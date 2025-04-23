@@ -402,7 +402,7 @@ export const CMPerson = () => {
       <button onClick={() => handleNavigation('/CMPerson1')} className="save-btn1">Add Person</button>
       </div> */}
 
-<Comment/>
+ <Comment tag= "Person"/>
 
   {/* ====== PersonModal Popup ====== */}
   {showPersonModal && personModalData && (
