@@ -384,7 +384,7 @@ export const CMVehicle = () => {
   </tbody>
         </table>
 
-      <Comment/>
+        <Comment tag= "Vehicle"/>
 
       </div>
       </div>

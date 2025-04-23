@@ -439,7 +439,7 @@ export const LRTimeline = () => {
               )}
             </tbody>
           </table>
-          <Comment/>
+          <Comment tag= "Timeline"/>
         </div>
         </div>
       {/* <div className="form-buttons-timeline">

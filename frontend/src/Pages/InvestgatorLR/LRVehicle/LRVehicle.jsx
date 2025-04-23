@@ -550,7 +550,7 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
     ))}
   </tbody>
         </table>
-        <Comment/>
+        <Comment tag= "Vehicle"/>
 
 </div>
 </div>
