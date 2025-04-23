@@ -1,6 +1,8 @@
 import './App.css';
 import React from 'react';
 import ReactDOM from "react-dom";
+// import { BrowserRouter, Routes, Route } from "react-router-dom";
+import useTokenExpiryRedirect from "./useTokenExpiryRedirect";
 import {BrowserRouter as Router, Routes, Route} from 'react-router-dom';
 import {Login} from './Pages/Login/Login';
 import {LoginAdmin} from './Pages/LoginAdmin/LoginAdmin';
@@ -64,38 +66,41 @@ import { Chatbot } from './Pages/Admin/Chatbot';
 // import { Report} from './Pages/Report/Report'
 // import {ReportWrapper} from './Pages/Report/ReportWrapper'
 import { LeadsDeskTestExecSummary} from './Pages/LeadsDeskTest/LeadsDeskTestExecSummary';
+import ProtectedLayout from './protectedLayout';
+
 
 function App() {
+
+  useTokenExpiryRedirect(); 
   return (
-    <Router>
       <Routes>
         {/* Define the route for Login */}
         <Route path="/" element={<Login />} />
         <Route path="/LoginAdmin" element={<LoginAdmin />} />
         <Route path="/Register" element={<Register />} />
         <Route path="/RegisterAdmin" element={<RegisterAdmin />} />
-        <Route path="/HomePage" element={<HomePage />} />
-        <Route path="/CasePageManager" element={<CasePageManager />} />
-        <Route path="/Investigator" element={<Investigator />} />
-        <Route path="/CreateLead" element={<CreateLead />} />
-        <Route path="/leadlog" element={<LeadLog />} />
-        <Route path="/FlaggedLead" element={<FlaggedLead />} />
+        <Route path="/HomePage" element={<ProtectedLayout> <HomePage /> </ProtectedLayout>} />
+        <Route path="/CasePageManager" element={<ProtectedLayout><CasePageManager /> </ProtectedLayout>} />
+        <Route path="/Investigator" element={<ProtectedLayout> <Investigator /> </ProtectedLayout>} />
+        <Route path="/CreateLead" element={<ProtectedLayout> <CreateLead /> </ProtectedLayout>} />
+        <Route path="/leadlog" element={<ProtectedLayout> <LeadLog /> </ProtectedLayout>} />
+        <Route path="/FlaggedLead" element={<ProtectedLayout> <FlaggedLead /> </ProtectedLayout>} />
         <Route path="/LeadHierarchy1" element={<LeadHierarchy1 />} />
-        <Route path="/CaseScratchpad" element={<CaseScratchpad />} />
-        <Route path="/LeadReturn" element={<LeadReturn />} />
-        <Route path="/LRInstruction" element={<LRInstruction />} />
-        <Route path="/LRReturn" element={<LRReturn />} />
-        <Route path="/LRPerson" element={<LRPerson />} />
-        <Route path="/LRPerson1" element={<LRPerson1 />} />
+        <Route path="/CaseScratchpad" element={<ProtectedLayout> <CaseScratchpad /> </ProtectedLayout>} />
+        <Route path="/LeadReturn" element={<ProtectedLayout> <LeadReturn /> </ProtectedLayout>} />
+        <Route path="/LRInstruction" element={<ProtectedLayout> <LRInstruction /> </ProtectedLayout>} />
+        <Route path="/LRReturn" element={<ProtectedLayout> <LRReturn /> </ProtectedLayout>} />
+        <Route path="/LRPerson" element={<ProtectedLayout> <LRPerson /> </ProtectedLayout>} />
+        <Route path="/LRPerson1" element={<ProtectedLayout> <LRPerson1 /> </ProtectedLayout>} />
         <Route path="/LRPerson2" element={<LRPerson2 />} />
-        <Route path="/LRVehicle" element={<LRVehicle />} />
-        <Route path="/LREnclosures" element={<LREnclosures />} />
-        <Route path="/LREvidence" element={<LREvidence />} />
-        <Route path="/LRPictures" element={<LRPictures />} />
-        <Route path="/LRAudio" element={<LRAudio />} />
-        <Route path="/LRVideo" element={<LRVideo />} />
-        <Route path="/LRFinish" element={<LRFinish />} />
-        <Route path="/LRScratchpad" element={<LRScratchpad />} />
+        <Route path="/LRVehicle" element={<ProtectedLayout> <LRVehicle /> </ProtectedLayout>} />
+        <Route path="/LREnclosures" element={<ProtectedLayout> <LREnclosures /> </ProtectedLayout> } />
+        <Route path="/LREvidence" element={<ProtectedLayout> <LREvidence /> </ProtectedLayout> } />
+        <Route path="/LRPictures" element={<ProtectedLayout>  <LRPictures /> </ProtectedLayout> } />
+        <Route path="/LRAudio" element={<ProtectedLayout> <LRAudio /> </ProtectedLayout> } />
+        <Route path="/LRVideo" element={<ProtectedLayout> <LRVideo /> </ProtectedLayout> } />
+        <Route path="/LRFinish" element={<ProtectedLayout> <LRFinish /> </ProtectedLayout> } />
+        <Route path="/LRScratchpad" element={<ProtectedLayout>  <LRScratchpad /> </ProtectedLayout> } />
         <Route path="/SearchLead" element={<SearchLead />} />
         <Route path="/LRTimeline" element={<LRTimeline />} />
         <Route path="/ViewTimeline" element={<ViewTimeline />} />
@@ -122,17 +127,16 @@ function App() {
         <Route path="/CMScratchpad" element={<CMScratchpad />} />
         <Route path="/CMTimeline" element={<CMTimeline />} />
         <Route path="/AdminDashboard" element={<AdminDashboard />} />
-        <Route path="/CaseInformation" element={<CaseInformation />} />
-        <Route path="/LeadReview" element = {<LeadReview />} />
-        <Route path="/LeadsDesk" element= {<LeadsDesk />} />
-        <Route path="/LeadsDeskTest" element= {<LeadsDeskTest />} />
-        <Route path="/LeadsDeskTestExecSummary" element= {<LeadsDeskTestExecSummary />} />
-        <Route path="/LeadsDeskContent" element= {<LeadsDeskContent />} />
-        <Route path="/ChainOfCustody" element= {<ChainOfCustody />} />
-        <Route path="/Chatbot" element= {<Chatbot />} />
+        <Route path="/CaseInformation" element={<ProtectedLayout>  <CaseInformation /> </ProtectedLayout> } />
+        <Route path="/LeadReview" element = {<ProtectedLayout> <LeadReview /> </ProtectedLayout> } />
+        <Route path="/LeadsDesk" element= {<ProtectedLayout>  <LeadsDesk /> </ProtectedLayout> } />
+        <Route path="/LeadsDeskTest" element= {<ProtectedLayout>  <LeadsDeskTest /> </ProtectedLayout> } />
+        <Route path="/LeadsDeskTestExecSummary" element= {<ProtectedLayout>  <LeadsDeskTestExecSummary /> </ProtectedLayout> } />
+        <Route path="/LeadsDeskContent" element= {<ProtectedLayout>  <LeadsDeskContent /> </ProtectedLayout> } />
+        <Route path="/ChainOfCustody" element= {<ProtectedLayout>  <ChainOfCustody /> </ProtectedLayout> } />
+        <Route path="/Chatbot" element= {<ProtectedLayout>  <Chatbot /> </ProtectedLayout> } />
         {/* <Route path ="/Report" element= {<Report />} /> */}
       </Routes>
-    </Router>
   );
 }
   // return <Login />;
