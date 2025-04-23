@@ -10,6 +10,18 @@ const api = axios.create({
   },
 });
 
+// api.interceptors.response.use(
+//   res => res,
+//   err => {
+//     if (err.response?.status === 401) {
+//       localStorage.removeItem("token");
+//       // send them to login:
+//       window.location.href = "/login";
+//     }
+//     return Promise.reject(err);
+//   }
+// );
+
 export { BASE_URL }; // 👈 Export it separately
 export default api;
 

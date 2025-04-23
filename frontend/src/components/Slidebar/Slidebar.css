@@ -28,7 +28,6 @@
 
 select.input-field option[value=""] {
   /* color: #999;  */
-  color: red;
 }
 
 /* Form group styling */
