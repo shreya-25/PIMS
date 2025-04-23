@@ -18,7 +18,6 @@ const caseDetails = location.state?.caseDetails || {}; // Get case details
 const leadDetails =  location.state?.leadDetails || {}; // Get case details
 const leadOrigin = location.state?.leadOrigin || null; // Directly assign leadOrigin
 const { id: caseID, title: caseName } = caseDetails;  // Extract Case ID & Case Title
-
 console.log(caseDetails, leadDetails, leadOrigin);
 
 const formatDate = (dateString) => {
@@ -220,8 +219,8 @@ const handleGenerateLead = async () => {
     const response = await api.post(
       "/api/lead/create", // Replace with your backend endpoint
       {
-        caseName:  caseDetails.title,
-        caseNo: caseDetails.id,
+        caseName:  selectedCase.caseName,
+        caseNo: selectedCase.caseNo,
         leadNo: leadNumber,
         parentLeadNo: originNumbers,
         incidentNo: incidentNumber,
@@ -251,12 +250,14 @@ const handleGenerateLead = async () => {
         notificationId: Date.now().toString(), // Use timestamp as a unique ID; customize if needed
         assignedBy: username, // the logged-in user creates the lead
         assignedTo: assignedOfficer, // send notification to the selected officers
-        action1: "assigned a new lead related to the case", // action text; change as needed
-        post1: caseDetails.title, // you might want to use the case title or lead summary here
+        action1: "assigned you to a new lead ", // action text; change as needed
+        post1: `${leadNumber}: ${leadDescription}`, // you might want to use the case title or lead summary here
+        action2:"related to the case",
+        post2: `${selectedCase.caseNo}: ${selectedCase.caseName}`,
         leadNo: leadNumber,         // include lead details if desired
         leadName: leadDescription,      // or leave empty as per your requirements
-        caseNo: caseDetails.id,     // using the case ID
-        caseName: caseDetails.title,
+        caseNo: selectedCase.caseName,     // using the case ID
+        caseName: selectedCase.caseNo,
         caseStatus: "Open",
         unread: true,
         accepted: false,
@@ -452,8 +453,6 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
     View Lead Chain of Custody
   </li>
 )}
-       
-
                     </ul>
                 </div>
 
@@ -500,10 +499,9 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
                 <input
                   type="text"
                   className="input-field"
-                  value={caseDetails?.title
-                     || 'Bank Robbery Investigation'} // Display selected case name or an empty string
+                  value={selectedCase.caseName}
                   onChange={(e) => handleInputChange('caseName', e.target.value)} // Update 'caseName' in leadData
-                  placeholder="Enter Case Name"
+                  placeholder=""
     />
               </td>
             </tr>
