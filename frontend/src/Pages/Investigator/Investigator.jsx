@@ -11,6 +11,7 @@ import { CaseContext } from "../CaseContext";
 import Pagination from "../../components/Pagination/Pagination";
 import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 import api from "../../api";
+import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
 
 
 
@@ -28,6 +29,8 @@ export const Investigator = () => {
   const [flagsFilter, setFlagsFilter] = useState("");
   const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
   const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+   const [showSelectModal, setShowSelectModal] = useState(false);
+    const [pendingRoute, setPendingRoute]   = useState(null);
 
   console.log("case context", selectedCase);
 
@@ -550,6 +553,25 @@ const handleLeadClick = (lead) => {
         setActiveTab(tab);
     };
 
+    const handleSelectLead = (lead) => {
+      setSelectedLead({
+        leadNo: lead.leadNo,
+        leadName: lead.description,
+        caseName: lead.caseName,
+        caseNo: lead.caseNo,
+      });
+    
+      setShowSelectModal(false);
+      navigate(pendingRoute, {
+        state: {
+          caseDetails: selectedCase,
+          leadDetails: lead
+        }
+      });
+      
+      setPendingRoute(null);
+    };
+
     const handleGenerateLead = () => {
         navigate('/createlead', { state: { caseDetails } }); // Pass caseDetails as state
     };
@@ -776,9 +798,23 @@ const handleLeadClick = (lead) => {
 
 {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => navigate('/LRInstruction')}>View Lead Return</li>
+<li className="sidebar-item" 
+             onClick={() => {
+              setPendingRoute("/leadReview");
+              setShowSelectModal(true);
+            }}>Lead Information</li>
+            <li className="sidebar-item"
+             onClick={() => {
+              setPendingRoute("/SearchLead");
+              setShowSelectModal(true);
+            }}
+          >Search Lead</li>
+            <li className="sidebar-item"    
+            onClick={() => {
+              setPendingRoute("/CMInstruction");
+              setShowSelectModal(true);
+            }} >View Lead Return</li>
+
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
@@ -793,19 +829,45 @@ const handleLeadClick = (lead) => {
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
             </li> */}
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
+             <li className="sidebar-item"
+             onClick={() => {
+              setPendingRoute("/FlaggedLead");
+              setShowSelectModal(true);
+            }} >
+              View Flagged Leads
+            </li>
+            <li className="sidebar-item"  onClick={() => {
+              setPendingRoute("/ViewTimeline");
+              setShowSelectModal(true);
+            }}>
+              View Timeline Entries
+            </li>
             {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
             {selectedCase.role !== "Investigator" && (
-  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-    View Lead Chain of Custody
-  </li>
+  <li className="sidebar-item"
+
+  onClick={() => {
+    setPendingRoute("/ChainOfCustody");
+    setShowSelectModal(true);
+  }}
+
+// onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}
+>View Lead Chain of Custody</li>
 )}
 
                     </ul>
+
+                    
+                    {showSelectModal && (
+      <SelectLeadModal
+        leads={leads.allLeads}
+        onSelect={handleSelectLead}
+        onClose={() => setShowSelectModal(false)}
+      />
+    )}
                 </div>
                
                 <div className="left-content">
