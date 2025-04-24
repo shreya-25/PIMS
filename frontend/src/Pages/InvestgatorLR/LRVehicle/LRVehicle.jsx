@@ -194,17 +194,34 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
     console.log(payload);
   
     try {
-      const res = await api.post("/api/lrvehicle/lrvehicle", payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // 1) axios.post(url, data, config)
+      const res = await api.post(
+        "/api/lrvehicle/lrvehicle",
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          }
+        }
+      );
   
+      console.log("Server response:", res.data);
       alert("Vehicle added successfully");
-      fetchVehicles(); // Refresh the list
+      fetchVehicles();
     } catch (err) {
-      console.error("Error adding vehicle:", err);
-      alert("Failed to add vehicle.");
+      // 2) Inspect err.response for server rejection
+      if (err.response) {
+        console.error("Server error:", err.response);
+        const msg =
+          err.response.data?.message ||
+          JSON.stringify(err.response.data) ||
+          err.response.statusText;
+        alert(`Failed to add vehicle (${err.response.status}): ${msg}`);
+      } else {
+        console.error("Network or code error:", err);
+        alert(`Error adding vehicle: ${err.message}`);
+      }
     }
   };
 

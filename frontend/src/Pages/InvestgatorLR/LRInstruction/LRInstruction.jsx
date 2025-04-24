@@ -260,8 +260,23 @@ export const LRInstruction = () => {
 <div className="LRI_Content">
        <div className="sideitem">
        <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
-            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>  
+            {/* {selectedCase.role !== "Investigator" && (      
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li> )}  */}
+
+
+                  <li
+  className="sidebar-item"
+  onClick={() =>
+    selectedCase.role === "Investigator"
+      ? navigate("/Investigator")
+      : navigate("/CasePageManager")
+  }
+>
+Case Page
+</li>
+
+
             {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
             <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
