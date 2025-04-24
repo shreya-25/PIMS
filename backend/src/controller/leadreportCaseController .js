@@ -926,6 +926,35 @@ function ensureSpace(doc, currentY, estimatedHeight = 100) {
   return currentY;
 }
 
+
+/**
+ * Measure the full box height, add a page if it won't fit,
+ * then draw the text box.
+ */
+function safeDrawTextBox(doc, x, y, width, title, content) {
+  const paddingX   = 5;
+  const paddingY   = 10;
+  // height consumed by the title line
+  const titleH     = title ? 15 : 0;
+  // wrap and measure the body text
+  const textWidth  = width - 2 * paddingX;
+  const bodyH      = doc.heightOfString(content, {
+    width:  textWidth,
+    align:  "justify"
+  });
+  // total box height
+  const fullH      = titleH + bodyH + 2 * paddingY;
+
+  // if it won't fit, start a new page
+  if (y + fullH > doc.page.height - doc.page.margins.bottom) {
+    doc.addPage();
+    y = doc.page.margins.top;
+  }
+
+  // now draw exactly as before
+  return drawTextBox(doc, x, y, width, title, content);
+}
+
 /* ---------------------------------------
    Other small helpers: formatDate, 
    drawTable, drawTextBox, etc.
@@ -1210,9 +1239,9 @@ function generateCaseReport(req, res) {
               // 1) Return ID
               doc.font("Helvetica-Bold").fontSize(11).text(`Lead Return ID: ${lr.leadReturnId}`, 50, currentY);
               currentY += 20;
-              // currentY = ensureSpace(doc, currentY, 100);
+              currentY = ensureSpace(doc, currentY, 100);
 
-              currentY = drawTextBox(doc, 50, currentY, 512, "", lr.leadReturnResult || "") + 20;
+              currentY = safeDrawTextBox(doc, 50, currentY, 512, "", lr.leadReturnResult || "") + 20;
 
 
               // 2) Person Details

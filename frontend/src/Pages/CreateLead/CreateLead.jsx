@@ -80,16 +80,18 @@ useEffect(() => {
   const fetchMaxLeadNumber = async () => {
     try {
       // Ensure caseDetails exists before proceeding.
-      if (!caseDetails) return;
+      // if (!caseDetails) return;
+      if (!selectedCase.caseNo || !selectedCase.caseName) return;
 
       // Destructure case details
-      const { id: caseNo, title: caseName } = caseDetails;
+      // const { id: caseNo, title: caseName } = caseDetails;
 
       // Otherwise, fetch the max lead number using the caseNo and caseName.
       const response = await api.get(
         `/api/lead/maxLeadNumber?caseNo=${selectedCase.caseNo}&caseName=${encodeURIComponent(selectedCase.caseName)}`
       );
       const maxLeadNo = response.data.maxLeadNo || 0;
+      console.log("Max fetch No", maxLeadNo, selectedCase.caseNo, selectedCase.caseName );
       const newLeadNumber = maxLeadNo + 1;
 
       setLeadData((prevData) => ({
@@ -104,10 +106,10 @@ useEffect(() => {
   };
 
   fetchMaxLeadNumber();
-}, [caseDetails]);
+}, [selectedCase]);
 
 
- 
+ console.log("CD", caseDetails);
 
   // const handleInputChange = (field, value) => {
   //   // Validate leadNumber to allow only numeric values
@@ -511,8 +513,8 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
                 <input
                   type="text"
                   className="input-field"
-                  value={leadData.leadSummary}
-                  onChange={(e) => handleInputChange('leadSummary', e.target.value)}
+                  value={leadData.leadDescription}
+                  onChange={(e) => handleInputChange('leadDescription', e.target.value)}
                   placeholder=""
                 />
               </td>
@@ -522,8 +524,8 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
               <td>
                 <textarea
                   className="textarea-field-cl"
-                  value={leadData.leadDescription}
-                  onChange={(e) => handleInputChange('leadDescription', e.target.value)}
+                  value={leadData.leadSummary}
+                  onChange={(e) => handleInputChange('leadSummary', e.target.value)}
                   placeholder=""
                 ></textarea>
               </td>

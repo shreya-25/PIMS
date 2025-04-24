@@ -326,16 +326,16 @@ export const LRInstruction = () => {
       <tr>
 
         <th style={{ width: "10%" }}>Lead No.</th>
-          <th style={{ width: "10%" }}>Incident No.</th>
-          <th style={{ width: "10%" }}>Subnumber</th>
+          <th style={{ width: "10%" }}>Case No.</th>
+          <th style={{ width: "10%" }}>Assigned By</th>
           <th style={{ width: "8%" }}>Assigned Date</th>
       </tr>
       </thead>
       <tbody>
       <tr>
       <td>{selectedLead.leadNo} </td>
-      <td>{leadData.incidentNo}</td>
-        <td>{leadData.subNumber}</td>
+      <td>{leadData.caseNo}</td>
+      <td> {leadData.assignedBy} </td>
         <td>{formatDate(leadData.assignedDate)} </td>
 
       </tr>
@@ -365,8 +365,8 @@ export const LRInstruction = () => {
                 <input
                   type="text"
                   className="input-field"
-                  value={selectedLead.leadName}
-                  onChange={(e) => handleInputChange('leadSummary', e.target.value)}
+                  value={leadData.summary}
+                  onChange={(e) => handleInputChange('summary', e.target.value)}
                   placeholder="Enter Lead Summary"
                 />
               </td>
@@ -376,7 +376,7 @@ export const LRInstruction = () => {
               <td>
                 <textarea
                   className="input-field"
-                  value={leadData.summary}
+                  value={leadData.description}
                   onChange={(e) => handleInputChange('leadDescription', e.target.value)}
                   placeholder="Enter Lead Description"
                 ></textarea>
@@ -394,6 +394,19 @@ export const LRInstruction = () => {
                   />
                 </td>
               </tr>
+              <tr>
+                  <td >Subnumber:</td>
+                  <td>
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={leadData.subNumber}
+                      onChange={(e) => handleInputChange('subNumber', e.target.value)}
+                      placeholder=""
+                    />
+                  </td>
+                </tr>
+             
               <tr>
   <td >Associated Subnumbers:</td>
   <td>
@@ -478,19 +491,6 @@ export const LRInstruction = () => {
     </div>
   </td>
 </tr>
-
-<tr>
-                  <td >Assigned By:</td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={leadData.assignedBy}
-                      onChange={(e) => handleInputChange('assignedBy', e.target.value)}
-                      placeholder=""
-                    />
-                  </td>
-                </tr>
           </tbody>
         </table>
       </div>

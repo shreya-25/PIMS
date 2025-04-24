@@ -64,7 +64,7 @@ const handleNavigateToLeadReturn = () => {
 const handleSelectLead = (lead) => {
   setSelectedLead({
     leadNo: lead.leadNo,
-    leadName: lead.description,
+    leadName: lead.summary,
     caseName: lead.caseName,
     caseNo: lead.caseNo,
   });
@@ -99,7 +99,8 @@ const handleSelectLead = (lead) => {
           assignedOfficers: lead.assignedOfficers || [],
           leadStatus: lead.leadStatus,
           caseName: lead.caseName,
-          caseNo: lead.caseNo
+          caseNo: lead.caseNo,
+          summary: lead.summary
       });
     
       // Navigate to Lead Review Page
@@ -181,14 +182,15 @@ const handleSelectLead = (lead) => {
   setSelectedLead({
       leadNo: lead.leadNo,
       incidentNo: lead.incidentNo,
-      leadName: lead.description,
+      leadName: lead.summary,
       dueDate: lead.dueDate || "N/A",
       priority: lead.priority || "Medium",
       flags: lead.flags || [],
       assignedOfficers: lead.assignedOfficers || [],
       leadStatus: lead.leadStatus,
       caseName: lead.caseName,
-      caseNo: lead.caseNo
+      caseNo: lead.caseNo,
+      summary: lead.summary
   });
 
   // Navigate to Lead Review Page
@@ -263,6 +265,7 @@ const handleSelectLead = (lead) => {
         const mapLead = (lead) => ({
           id: lead.leadNo,
           description: lead.description,
+          summary: lead.summary,
           dueDate: lead.dueDate
             ? new Date(lead.dueDate).toISOString().split("T")[0]
             : "N/A",
@@ -1097,14 +1100,15 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
     <table className="leads-table" style={{ minWidth: "1000px" }}>
       <thead>
         <tr>
-        <th style={{ width: "8%" }}>Lead No.</th>
-          <th style={{ width: "20%" }}>Lead Description</th>
+
+          <th style={{ width: "10%" }}>Lead No.</th>
+          <th style={{ width: "15%" }}>Lead Log Summary</th>
           <th style={{ width: "10%" }}>Due Date</th>
           <th style={{ width: "8%" }}>Priority</th>
           <th style={{ width: "8%" }}>Days Left</th>
-          <th style={{ width: "8%" }}>Flags</th>
-          <th style={{ width: "13%" }}>Assigned Officers</th>
-          <th style={{ width: "15%" }}></th>
+          <th style={{ width: "6%" }}>Flags</th>
+          <th style={{ width: "15%" }}>Assigned Officers</th>
+          <th style={{ width: "12%" }}></th>
         </tr>
       </thead>
       <tbody>
@@ -1135,7 +1139,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           .map((lead) => (
             <tr key={lead.id}>
               <td>{lead.id}</td>
-              <td>{lead.description}</td>
+              <td>{lead.summary}</td>
               <td>{lead.dueDate || "N/A"}</td>
               <td>{lead.priority || "N/A"}</td>
               <td>{calculateRemainingDays(lead.dueDate) }</td>
@@ -1149,7 +1153,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
               <td>
                 <button
                   className="view-btn1"
-                  onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.description} } )}
+                  onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.summary} } )}
 
                   // }
                 >
@@ -1383,7 +1387,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
       <thead>
         <tr>
           <th style={{ width: "10%" }}>Lead No.</th>
-          <th>Lead Description</th>
+          <th style={{ width: "15%" }}>Lead Log Summary</th>
           <th style={{ width: "10%" }}>Due Date</th>
           <th style={{ width: "8%" }}>Priority</th>
           <th style={{ width: "8%" }}>Days Left</th>
@@ -1420,7 +1424,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           .map((lead) => (
             <tr key={lead.id}>
               <td>{lead.id}</td>
-              <td>{lead.description}</td>
+              <td>{lead.summary}</td>
               <td>{lead.dueDate}</td>
               <td>{lead.priority}</td>
               <td>{calculateRemainingDays(lead.dueDate)}</td>
@@ -1435,7 +1439,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
               <td>
                 <button
                   className="view-btn1"
-                  onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.description} } )}
+                  onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.summary} } )}
                 >
                   View
                 </button>
@@ -1505,7 +1509,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
               <thead>
                 <tr>
                   <th style={{ width: "10%" }}>Lead No.</th>
-                  <th>Lead Description</th>
+                  <th>Lead Log Summary</th>
                   <th style={{ width: "12%" }}></th>
                 </tr>
               </thead>
@@ -1514,7 +1518,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                 leads.pendingLeadReturns.map((lead) => (
                     <tr key={lead.id}>
                       <td>{lead.id}</td>
-                      <td>{lead.description}</td>
+                      <td>{lead.summary}</td>
                       <td>
                         <button
                               className="continue-btn"
@@ -1602,7 +1606,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
       <thead>
         <tr>
           <th style={{ width: "10%" }}>Lead No.</th>
-          <th>Lead Description</th>
+          <th>Lead Log Summary</th>
           <th style={{ width: "10%" }}>Lead Status</th>
           <th style={{ width: "12%" }}></th> {/* Empty header for buttons column */}
         </tr>
@@ -1612,7 +1616,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
        leads.allLeads.map((lead) => (
           <tr key={lead.id}>
             <td>{lead.leadNo} </td>
-            <td>{lead.description}</td>
+            <td>{lead.summary}</td>
             <td>{lead.leadStatus}</td>
             <td>
               <button
