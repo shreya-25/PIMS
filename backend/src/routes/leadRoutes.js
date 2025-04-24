@@ -50,27 +50,26 @@ router.put("/status/pending", verifyToken, setLeadStatusToPending);
 
 
 router.get("/maxLeadNumber", async (req, res) => {
-    try {
-      const { caseNo, caseName } = req.query;
-  
-      if (!caseNo || !caseName) {
-        return res.status(400).json({ message: "caseNo and caseName are required" });
-      }
-  
-      const numericCaseNo = Number(caseNo);
-  
-      // Find the lead with the highest leadNo for the given caseNo and caseName
-      const maxLead = await Lead.findOne({ caseNo: numericCaseNo, caseName: caseName })
-        .sort({ leadNo: -1 })
-        .limit(1);
-  
-      const maxLeadNo = maxLead ? maxLead.leadNo : 0;
-      res.status(200).json({ maxLeadNo });
-    } catch (error) {
-      console.error("Error fetching max lead number:", error);
-      res.status(500).json({ message: "Internal Server Error" });
+  try {
+    const { caseNo, caseName } = req.query;
+
+    if (!caseNo || !caseName) {
+      return res.status(400).json({ message: "caseNo and caseName are required" });
     }
-  });
+
+    // No Number() conversion
+    const maxLead = await Lead
+      .findOne({ caseNo: caseNo, caseName })
+      .sort({ leadNo: -1 })
+      .limit(1);
+
+    const maxLeadNo = maxLead ? maxLead.leadNo : 0;
+    return res.status(200).json({ maxLeadNo });
+  } catch (error) {
+    console.error("Error fetching max lead number:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+});
 
   // router.patch("/updateStatus", verifyToken, leadController.updateLeadLRStatus);
   

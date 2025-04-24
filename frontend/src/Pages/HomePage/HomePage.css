@@ -1531,8 +1531,8 @@
 .leads-table {
   table-layout: fixed;
   border-collapse: collapse;
-  width: 1200px; /* ✅ fixed width to match full screen layout */
-  min-width: 1200px; /* ✅ ensures it doesn't shrink */
+  width: 1000px; /* ✅ fixed width to match full screen layout */
+  min-width: 1000px; /* ✅ ensures it doesn't shrink */
 }
 
 
@@ -1542,7 +1542,7 @@
   padding: 10px;
   border: 1px solid #ddd;
   text-align: left;
-  font-size: 16px;
+  font-size: 20px;
   white-space: normal;
   word-wrap: break-word;
   overflow-wrap: break-word;

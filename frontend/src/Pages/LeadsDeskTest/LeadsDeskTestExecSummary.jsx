@@ -1035,7 +1035,7 @@ const handleShowLeadsInRange = () => {
             <h2>GENERATE REPORT</h2>
           </div>
           <div className="center-section-ldExecSummary">
-            <h1>
+            <h1 onClick={() => navigate("/CasePageManager")} style={{ cursor: 'pointer' }}>
               CASE: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
             </h1>
           </div>

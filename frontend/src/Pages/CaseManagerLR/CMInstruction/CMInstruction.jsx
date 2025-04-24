@@ -345,7 +345,8 @@ export const CMInstruction = () => {
 
         <th style={{ width: "10%" }}>Lead No.</th>
           <th style={{ width: "10%" }}>Case No.</th>
-          <th style={{ width: "10%" }}>Subnumber</th>
+          {/* <th style={{ width: "10%" }}>Subnumber</th> */}
+          <th style={{ width: "10%" }}>Assigned By</th>
           <th style={{ width: "8%" }}>Assigned Date</th>
       </tr>
       </thead>
@@ -353,7 +354,8 @@ export const CMInstruction = () => {
       <tr>
       <td>{selectedLead.leadNo} </td>
         <td>{leadData.caseNo}</td>
-        <td>{leadData.subNumber}</td>
+        {/* <td>{leadData.subNumber}</td> */}
+        <td> {leadData.assignedBy} </td>
         <td>{formatDate(leadData.assignedDate)} </td>
 
       </tr>
@@ -384,8 +386,8 @@ export const CMInstruction = () => {
                 <input
                   type="text"
                   className="input-field"
-                  value={selectedLead.leadName}
-                  onChange={(e) => handleInputChange('leadSummary', e.target.value)}
+                  value={leadData.summary}
+                  onChange={(e) => handleInputChange('summary', e.target.value)}
                   placeholder=""
                 />
               </td>
@@ -395,7 +397,7 @@ export const CMInstruction = () => {
                   <td>
                     <textarea
                       className="textarea-field"
-                      value={leadData.summary}
+                      value={leadData.description}
                       onChange={(e) => handleInputChange('leadDescription', e.target.value)}
                       placeholder=""
                     ></textarea>
@@ -413,6 +415,19 @@ export const CMInstruction = () => {
                   />
                 </td>
               </tr>
+              
+<tr>
+                  <td className="info-label">Subnumber:</td>
+                  <td>
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={leadData.subNumber}
+                      onChange={(e) => handleInputChange('subNumber', e.target.value)}
+                      placeholder=""
+                    />
+                  </td>
+                </tr>
               <tr>
   <td className="info-label">Associated Subnumbers:</td>
   <td>
@@ -497,19 +512,6 @@ export const CMInstruction = () => {
     </div>
   </td>
 </tr>
-
-<tr>
-                  <td className="info-label">Assigned By:</td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={leadData.assignedBy}
-                      onChange={(e) => handleInputChange('assignedBy', e.target.value)}
-                      placeholder=""
-                    />
-                  </td>
-                </tr>
           </tbody>
         </table>
       </div>

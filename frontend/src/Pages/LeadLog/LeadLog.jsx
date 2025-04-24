@@ -95,7 +95,7 @@ export const LeadLog = () => {
 
   useEffect(() => {
     const fetchLeadLog = async () => {
-      if (caseDetails?.id && caseDetails?.title) {
+      if (selectedCase.caseNo && selectedCase.caseName) {
         try {
           const token = localStorage.getItem("token");
   
@@ -584,7 +584,7 @@ const formatDate = (dateString) => {
               <th style={{ width: "10%" }}>Status</th>
               <th style={{ width: "10%" }}>Assigned To</th>
               <th style={{ width: "11%" }}>Date Submitted</th>
-              <th style={{ width: "10%" }}>Date Approved</th>
+              <th style={{ width: "11%" }}>Date Approved</th>
             </tr>
           </thead>
           <tbody>

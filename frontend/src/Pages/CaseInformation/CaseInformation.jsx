@@ -135,7 +135,7 @@ export const CaseInformation = () => {
   const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
   
   const onShowCaseSelector = (route) => {
-    navigate(route, { state: { caseDetails } });
+    navigate(route, { state: { caseDetails, selectedCase, selectedLead } });
   };
 
   const getCasePageRoute = () => {
@@ -249,7 +249,14 @@ export const CaseInformation = () => {
               setShowSelectModal(true);
             }}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            {/* <li className="sidebar-item" onClick={() => navigate('/CMInstruction')}>View Lead Return</li> */}
+
+            <li className="sidebar-item" 
+             onClick={() => {
+              setPendingRoute("/CMInstruction");
+              setShowSelectModal(true);
+            }}>View Lead Return</li>
+
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
