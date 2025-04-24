@@ -1097,6 +1097,7 @@ const formatDate = (dateString) => {
 // ---------- Fetch one lead (with returns, persons, vehicles) ----------
 const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
   try {
+    console.log("🔎 fetchSingleLeadFullDetails ➡️ leadNo:", leadNo);
     const { data: leadData } = await api.get(
       `/api/lead/lead/${leadNo}/${caseNo}/${encodeURIComponent(caseName)}`,
       { headers: { Authorization: `Bearer ${token}` } }
@@ -1325,6 +1326,7 @@ export const LeadsDesk = () => {
 
   // ------------------ Show Hierarchy / Show All Leads ------------------
   const handleShowHierarchy = async () => {
+    console.log("🔍 handleShowHierarchy for leadNo:", hierarchyLeadInput);
     if (!hierarchyLeadInput) return;
     const token = localStorage.getItem("token");
     try {
@@ -1335,6 +1337,7 @@ export const LeadsDesk = () => {
         token,
         []
       );
+      console.log("⛓️ chainResults:", chainResults);
       setHierarchyChains(chainResults);
       const flattened = chainResults.flat();
       const uniqueLeads = [];
@@ -2237,7 +2240,9 @@ const handleShowLeadsInRange = () => {
           <div className="square4"></div>
           <div className="square3"></div>
           </div>
-          <button className="search-button1" onClick={handleShowHierarchy}>
+          <button className="search-button1" 
+          // onClick={() => console.log("🔥 button clicked!")}>
+        onClick={handleShowHierarchy}>
                   Show Hierarchy
                 </button>
         </div>
