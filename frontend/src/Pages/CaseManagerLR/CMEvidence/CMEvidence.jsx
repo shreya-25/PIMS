@@ -118,34 +118,66 @@ export const CMEvidence = () => {
             };
 
   // Fetch enclosures from backend when component mounts or when selectedLead/selectedCase update
+  // useEffect(() => {
+  //   const fetchEvidences = async () => {
+  //     if (!selectedLead || !selectedCase) {
+  //       console.warn("Missing selected lead or case details");
+  //       return;
+  //     }
+  //     // Build URL using selectedLead and selectedCase; URL-encode values that may have spaces
+  //     const leadNo = selectedLead.leadNo;
+  //     const leadName = encodeURIComponent(selectedLead.leadName);
+  //     const caseNo = encodeURIComponent(selectedLead.caseNo);
+  //     // Here, assuming caseName is in selectedLead or selectedCase; adjust as needed.
+  //     const caseName = encodeURIComponent(selectedLead.caseName || selectedCase.caseName);
+  //     const token = localStorage.getItem("token");
+
+  //     const url = `/api/lrevidence/${leadNo}/${leadName}/${caseNo}/${caseName}`;
+  //     try {
+  //       const response = await axios.get(url, {
+  //         headers: { "Content-Type": undefined,   "Authorization": `Bearer ${token}` }
+  //       });
+  //       console.log("Fetched enclosures:", response.data);
+  //       setEvidence(response.data);
+  //     } catch (error) {
+  //       console.error("Error fetching enclosures:", error);
+  //     }
+  //   };
+
+  //   fetchEvidences();
+  // }, [selectedLead, selectedCase]);
+
   useEffect(() => {
     const fetchEvidences = async () => {
-      if (!selectedLead || !selectedCase) {
-        console.warn("Missing selected lead or case details");
+      if (!selectedLead?.leadNo || !selectedCase?.caseNo) {
+        console.warn("fetchEvidences: missing selectedLead or selectedCase");
         return;
       }
-      // Build URL using selectedLead and selectedCase; URL-encode values that may have spaces
-      const leadNo = selectedLead.leadNo;
-      const leadName = encodeURIComponent(selectedLead.leadName);
-      const caseNo = encodeURIComponent(selectedLead.caseNo);
-      // Here, assuming caseName is in selectedLead or selectedCase; adjust as needed.
-      const caseName = encodeURIComponent(selectedLead.caseName || selectedCase.caseName);
-      const token = localStorage.getItem("token");
-
-      const url = `/api/lrevidence/${leadNo}/${leadName}/${caseNo}/${caseName}`;
+  
+      const leadNo    = selectedLead.leadNo;
+      const leadName  = encodeURIComponent(selectedLead.leadName);
+      const caseNo    = encodeURIComponent(selectedCase.caseNo);
+      const caseName  = encodeURIComponent(selectedCase.caseName);
+      const token     = localStorage.getItem("token");
+      const path      = `/api/lrevidence/${leadNo}/${leadName}/${caseNo}/${caseName}`;
+  
+      console.log("📡 CMEvidence fetch →", path);
       try {
-        const response = await axios.get(url, {
-          headers: { "Content-Type": undefined,   "Authorization": `Bearer ${token}` }
+        // use your pre-configured axios instance so the proxy works
+        const response = await api.get(path, {
+          headers: { Authorization: `Bearer ${token}` }
         });
-        console.log("Fetched enclosures:", response.data);
+        console.log("Fetched evidence:", response.data);
         setEvidence(response.data);
-      } catch (error) {
-        console.error("Error fetching enclosures:", error);
+      } catch (err) {
+        // log the real status & response
+        console.error("Error fetching evidence:", err.response || err);
       }
     };
-
+  
     fetchEvidences();
   }, [selectedLead, selectedCase]);
+  
 
   return (
     <div className="lrevidence-container">

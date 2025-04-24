@@ -583,10 +583,10 @@ const handleLeadClick = (lead) => {
         ...prevLeads.pendingLeads,
         {
           ...newLead,
-          dueDate: newLead.dueDate || "12/31/2024", // Default due date
-          priority: newLead.priority || "Medium", // Default priority
+          dueDate: newLead.dueDate, // Default due date
+          priority: newLead.priority, // Default priority
           flags: newLead.flags || [],
-          assignedOfficers: newLead.assignedOfficers || ["Unassigned"], // Default officer
+          assignedOfficers: newLead.assignedOfficers, // Default officer
         },
       ],
     }));
