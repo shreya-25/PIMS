@@ -67,7 +67,7 @@ export const LeadReview = () => {
     dueDate: '',
     summary: '',
     assignedBy: '',
-    leadDescription: '',
+    description: '',
     assignedTo: [],
     caseNo: '',
     caseName: "",
@@ -500,12 +500,23 @@ console.log("SL, SC", selectedLead, selectedCase);
                   </td>
                 </tr>
                 <tr>
+                  <td className="info-label">Lead Log Summary:</td>
+                  <td>
+                    <textarea
+                      className="textarea-field"
+                      value={leadData.description}
+                      onChange={(e) => handleInputChange('description', e.target.value)}
+                      placeholder=""
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr>
                   <td className="info-label">Lead Instruction:</td>
                   <td>
                     <textarea
                       className="textarea-field"
                       value={leadData.summary}
-                      onChange={(e) => handleInputChange('leadDescription', e.target.value)}
+                      onChange={(e) => handleInputChange('summary', e.target.value)}
                       placeholder=""
                     ></textarea>
                   </td>

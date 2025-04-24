@@ -274,7 +274,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
             />
           </div>
           <div className="form-group">
-            <label>Case Title:</label>
+            <label>Case Name:</label>
             <input
               type="text"
               name="title"
