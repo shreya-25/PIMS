@@ -132,24 +132,34 @@ const [miscDetails, setMiscDetails] = useState([
     console.log(payload);
   
     try {
-      const response = await api.post('/api/lrperson/lrperson', {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      // axios.post(url, data, config)
+      const response = await api.post(
+        "/api/lrperson/lrperson",
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        }
+      );
   
-      if (response.ok) {
-        const data = await response.json();
-        alert('Entry saved successfully');
+      // If you get here, status was 2xx:
+      console.log("Saved entry", response.data);
+      alert("Entry saved successfully!");
+    } catch (err) {
+      // err.response exists when the server replied with non-2xx
+      if (err.response) {
+        console.error("Server rejected:", err.response);
+        // Try to pull out a useful message from your API’s JSON error body:
+        const serverMsg = err.response.data?.message
+                        || JSON.stringify(err.response.data);
+        alert(`Failed to save entry: ${serverMsg}`);
       } else {
-        const errorMessage = await response.text();
-        alert('Failed to save entry: ' + errorMessage);
+        // Something went wrong setting up the request
+        console.error("Network or code error:", err);
+        alert(`An error occurred: ${err.message}`);
       }
-    } catch (error) {
-      console.error("Error saving entry:", error);
-      alert('An error occurred while saving the entry.');
     }
   };
   

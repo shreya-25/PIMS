@@ -386,8 +386,8 @@ export const CMInstruction = () => {
                 <input
                   type="text"
                   className="input-field"
-                  value={leadData.summary}
-                  onChange={(e) => handleInputChange('summary', e.target.value)}
+                  value={leadData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
                   placeholder=""
                 />
               </td>
@@ -397,8 +397,8 @@ export const CMInstruction = () => {
                   <td>
                     <textarea
                       className="textarea-field"
-                      value={leadData.description}
-                      onChange={(e) => handleInputChange('leadDescription', e.target.value)}
+                      value={leadData.summary}
+                      onChange={(e) => handleInputChange('summary', e.target.value)}
                       placeholder=""
                     ></textarea>
                   </td>
@@ -411,7 +411,7 @@ export const CMInstruction = () => {
                     className="input-field"
                     value={leadData.parentLeadNo}
                     onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
-                    placeholder=""
+                    placeholder="NA"
                   />
                 </td>
               </tr>
@@ -424,7 +424,7 @@ export const CMInstruction = () => {
                       className="input-field"
                       value={leadData.subNumber}
                       onChange={(e) => handleInputChange('subNumber', e.target.value)}
-                      placeholder=""
+                      placeholder="NA"
                     />
                   </td>
                 </tr>

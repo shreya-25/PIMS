@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect, useRef} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from '../../../components/Navbar/Navbar';
 import "./LREnclosures.css"; // Custom CSS file for Enclosures styling
@@ -22,6 +22,8 @@ export const LREnclosures = () => {
       }, []);
   const navigate = useNavigate(); 
   const location = useLocation();
+  const [formData, setFormData] = useState({ /* your fields */ });
+  const fileInputRef = useRef();
 
   const { leadDetails, caseDetails } = location.state || {};
 
@@ -97,61 +99,148 @@ export const LREnclosures = () => {
     });
   };
 
+   // Helper to get the current list for this lead+case
+   const fetchEnclosuresForLead = async () => {
+    setLoading(true);
+    setError("");
+    const token = localStorage.getItem("token");
+    const leadNo = selectedLead.leadNo;
+    const leadName = encodeURIComponent(selectedLead.leadName);
+    const caseNo = selectedCase.caseNo;
+    const caseName = encodeURIComponent(selectedCase.caseName);
+
+    try {
+      const { data } = await api.get(
+        `/api/lrenclosure/${leadNo}/${leadName}/${caseNo}/${caseName}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // map date & description fields for display
+      const mapped = data.map((enc) => ({
+        dateEntered: new Date(enc.enteredDate).toLocaleDateString(),
+        type: enc.type,
+        enclosure: enc.enclosureDescription,
+        returnId: enc.leadReturnId,
+        originalName: enc.originalName,
+      }));
+
+      setEnclosures(mapped);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load enclosures");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   // Save Enclosure: Build FormData and post to backend including token from localStorage.
+  // const handleSaveEnclosure = async () => {
+  //   const formData = new FormData();
+  //   if (file) {
+  //     formData.append("file", file);
+  //     console.log("file", file);
+  //   }
+
+  //   // Append other required fields
+  //   formData.append("leadNo", selectedLead.leadNo); // Example value; update as needed
+  //   formData.append("description", selectedLead.leadName);
+  //   formData.append("enteredBy", localStorage.getItem("loggedInUser"));
+  //   formData.append("caseName", selectedLead.caseName);
+  //   formData.append("caseNo", selectedLead.caseNo);
+  //   formData.append("leadReturnId", enclosureData.returnId); // Example value; update as needed
+  //   formData.append("enteredDate", new Date().toISOString());
+  //   formData.append("type", enclosureData.type);
+  //   formData.append("enclosureDescription", enclosureData.enclosure);
+
+  //   // Retrieve token from localStorage
+  //   const token = localStorage.getItem("token");
+  //   console.log(token);
+  //   for (const [key, value] of formData.entries()) {
+  //     console.log(`FormData - ${key}:`, value);
+  //   }
+    
+  //   try {
+  //     const response = await api.post(
+  //       "/api/lrenclosure/upload",
+  //       formData,
+  //       { 
+  //         headers: { 
+  //           "Content-Type": undefined,   
+  //           // "Content-Type": "multipart/form-data",
+  //           "Authorization": `Bearer ${token}`  // Add token here
+  //         } 
+  //       }
+  //     );
+  //     console.log("Enclosure saved:", response.data);
+  //     // Optionally update local state with the new enclosure
+  //     setEnclosures([...enclosures, response.data.enclosure]);
+
+  //     // Clear form fields if needed
+  //     setEnclosureData({ type: "", enclosure: "" });
+  //     setFile(null);
+  //   } catch (error) {
+  //     console.error("Error saving enclosure:", error);
+  //     if (error.response) {
+  //       console.error("Upload failed with status", error.response.status);
+  //       console.error("Response body:", error.response.data);
+  //     } else {
+  //       console.error("Network or client error:", error);
+  //     }
+  //   }
+  // };
+
   const handleSaveEnclosure = async () => {
-    const formData = new FormData();
-    if (file) {
-      formData.append("file", file);
-      console.log("file", file);
+    if (!file) {
+      console.warn("No file selected");
+      return;
     }
 
-    // Append other required fields
-    formData.append("leadNo", selectedLead.leadNo); // Example value; update as needed
+    // build the FormData payload
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("leadNo", selectedLead.leadNo);
     formData.append("description", selectedLead.leadName);
     formData.append("enteredBy", localStorage.getItem("loggedInUser"));
-    formData.append("caseName", selectedLead.caseName);
-    formData.append("caseNo", selectedLead.caseNo);
-    formData.append("leadReturnId", enclosureData.returnId); // Example value; update as needed
+    formData.append("caseName", selectedCase.caseName);
+    formData.append("caseNo", selectedCase.caseNo);
+    formData.append("leadReturnId", enclosureData.returnId);
     formData.append("enteredDate", new Date().toISOString());
     formData.append("type", enclosureData.type);
     formData.append("enclosureDescription", enclosureData.enclosure);
 
-    // Retrieve token from localStorage
     const token = localStorage.getItem("token");
-    console.log(token);
-    for (const [key, value] of formData.entries()) {
-      console.log(`FormData - ${key}:`, value);
-    }
-    
+
     try {
-      const response = await api.post(
+      await api.post(
         "/api/lrenclosure/upload",
         formData,
-        { 
-          headers: { 
-            "Content-Type": undefined,   
-            // "Content-Type": "multipart/form-data",
-            "Authorization": `Bearer ${token}`  // Add token here
-          } 
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // no Content-Type here
+          },
+          transformRequest: [(data, headers) => {
+            // remove JSON header so axios auto-sets multipart/form-data boundary
+            delete headers["Content-Type"];
+            return data;
+          }],
         }
       );
-      console.log("Enclosure saved:", response.data);
-      // Optionally update local state with the new enclosure
-      setEnclosures([...enclosures, response.data.enclosure]);
 
-      // Clear form fields if needed
-      setEnclosureData({ type: "", enclosure: "" });
+      // **re-fetch** the entire list so the new one appears immediately
+      await fetchEnclosuresForLead();
+
+      // clear form & file
+      setEnclosureData({ returnId: "", type: "", enclosure: "" });
       setFile(null);
-    } catch (error) {
-      console.error("Error saving enclosure:", error);
-      if (error.response) {
-        console.error("Upload failed with status", error.response.status);
-        console.error("Response body:", error.response.data);
-      } else {
-        console.error("Network or client error:", error);
-      }
+
+      if (fileInputRef.current) fileInputRef.current.value = "";
+
+    } catch (err) {
+      console.error("Upload error:", err.response || err);
     }
   };
+  
 
   const handleNavigation = (route) => {
     navigate(route); // Navigate to respective page
@@ -316,7 +405,14 @@ export const LREnclosures = () => {
           </div>
           <div className="form-row-evidence">
             <label>Upload File:</label>
-            <input type="file" onChange={handleFileChange} />
+           {/* after */}
+<input
+  type="file"
+  name="file"               // match your multer field
+  ref={fileInputRef}        // ← attach the ref here
+  onChange={handleFileChange}
+/>
+
           </div>
         </div>
         </div>
