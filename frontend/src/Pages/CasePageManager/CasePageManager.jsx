@@ -64,7 +64,7 @@ const handleNavigateToLeadReturn = () => {
 const handleSelectLead = (lead) => {
   setSelectedLead({
     leadNo: lead.leadNo,
-    leadName: lead.summary,
+    leadName: lead.description,
     caseName: lead.caseName,
     caseNo: lead.caseNo,
   });
@@ -128,7 +128,7 @@ const handleSelectLead = (lead) => {
         });
       }
     };
-    
+    console.log("SelectedCase", selectedCase);
     const acceptLead = async (leadNo) => {
       const leadToAccept = leads.assignedLeads.find((lead) => lead.leadNo === leadNo);
       if (!leadToAccept) return;
@@ -182,7 +182,7 @@ const handleSelectLead = (lead) => {
   setSelectedLead({
       leadNo: lead.leadNo,
       incidentNo: lead.incidentNo,
-      leadName: lead.summary,
+      leadName: lead.description,
       dueDate: lead.dueDate || "N/A",
       priority: lead.priority || "Medium",
       flags: lead.flags || [],
@@ -1139,7 +1139,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           .map((lead) => (
             <tr key={lead.id}>
               <td>{lead.id}</td>
-              <td>{lead.summary}</td>
+              <td>{lead.description}</td>
               <td>{lead.dueDate || "N/A"}</td>
               <td>{lead.priority || "N/A"}</td>
               <td>{calculateRemainingDays(lead.dueDate) }</td>
@@ -1424,7 +1424,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           .map((lead) => (
             <tr key={lead.id}>
               <td>{lead.id}</td>
-              <td>{lead.summary}</td>
+              <td>{lead.description}</td>
               <td>{lead.dueDate}</td>
               <td>{lead.priority}</td>
               <td>{calculateRemainingDays(lead.dueDate)}</td>
@@ -1518,7 +1518,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                 leads.pendingLeadReturns.map((lead) => (
                     <tr key={lead.id}>
                       <td>{lead.id}</td>
-                      <td>{lead.summary}</td>
+                      <td>{lead.description}</td>
                       <td>
                         <button
                               className="continue-btn"
@@ -1616,7 +1616,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
        leads.allLeads.map((lead) => (
           <tr key={lead.id}>
             <td>{lead.leadNo} </td>
-            <td>{lead.summary}</td>
+            <td>{lead.description}</td>
             <td>{lead.leadStatus}</td>
             <td>
               <button

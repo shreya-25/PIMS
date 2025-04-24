@@ -4,7 +4,7 @@ import FootBar from '../../../components/FootBar/FootBar';
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import Comment from "../../../components/Comment/Comment";
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect, useRef} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import api, { BASE_URL } from "../../../api";
 
@@ -25,6 +25,8 @@ export const LREvidence = () => {
   const [loading, setLoading] = useState(true);
       const [error, setError] = useState("");
       const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);  
+      const fileInputRef = useRef();
+
   
   
      const formatDate = (dateString) => {
@@ -97,55 +99,113 @@ export const LREvidence = () => {
               };
 
    // Save Enclosure: Build FormData and post to backend including token from localStorage.
-  const handleSaveEvidence = async () => {
-    const formData = new FormData();
-    if (file) {
-      formData.append("file", file);
-      console.log("file", file);
-    }
+  // const handleSaveEvidence = async () => {
+  //   const formData = new FormData();
+  //   if (file) {
+  //     formData.append("file", file);
+  //     console.log("file", file);
+  //   }
 
-    // Append other required fields
-    formData.append("leadNo", selectedLead.leadNo); // Example value; update as needed
-    formData.append("description", selectedLead.leadName);
+  //   // Append other required fields
+  //   formData.append("leadNo", selectedLead.leadNo); // Example value; update as needed
+  //   formData.append("description", selectedLead.leadName);
+  //   formData.append("enteredBy", localStorage.getItem("loggedInUser"));
+  //   formData.append("caseName", selectedLead.caseName);
+  //   formData.append("caseNo", selectedLead.caseNo);
+  //   formData.append("leadReturnId", evidenceData.leadReturnId); // Example value; update as needed
+  //   formData.append("enteredDate", new Date().toISOString());
+  //   formData.append("type", evidenceData.type);
+  //   formData.append("envidenceDescription", evidenceData.evidence);
+  //   formData.append("collectionDate", evidenceData.collectionDate);
+  //   formData.append("disposedDate", evidenceData.disposedDate);
+  //   formData.append("disposition", evidenceData.disposition);
+
+  //   // Retrieve token from localStorage
+  //   const token = localStorage.getItem("token");
+  //   console.log(token);
+  //   for (const [key, value] of formData.entries()) {
+  //     console.log(`FormData - ${key}:`, value);
+  //   }
+    
+  //   try {
+  //     const response = await api.post(
+  //       "/api/lrevidence/upload",
+  //       formData,
+  //       { 
+  //         headers: { 
+  //           "Content-Type": undefined,  
+  //           // "Content-Type": "multipart/form-data",
+  //           "Authorization": `Bearer ${token}`  // Add token here
+  //         } 
+  //       }
+  //     );
+  //     console.log("Evidence saved:", response.data);
+  //     // Optionally update local state with the new enclosure
+  //     setEvidences([...evidences, response.data.evidences]);
+
+  //     // Clear form fields if needed
+  //     setEvidenceData({ type: "", evidences: "" });
+  //     setFile(null);
+  //   } catch (error) {
+  //     console.error("Error saving evidence:", error);
+  //   }
+  // };
+
+  const handleSaveEvidence = async () => {
+    // 1. Grab the file from the ref
+    const file = fileInputRef.current?.files[0];
+    if (!file) {
+      alert("Please select a file to upload");
+      return;
+    }
+  
+    // 2. Build FormData with all required fields
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("leadNo", selectedLead.leadNo);
+    formData.append("description", selectedLead.leadName);        // ← required by schema
     formData.append("enteredBy", localStorage.getItem("loggedInUser"));
-    formData.append("caseName", selectedLead.caseName);
-    formData.append("caseNo", selectedLead.caseNo);
-    formData.append("leadReturnId", evidenceData.leadReturnId); // Example value; update as needed
+    formData.append("caseName", selectedCase.caseName);
+    formData.append("caseNo", selectedCase.caseNo);
+    formData.append("leadReturnId", evidenceData.leadReturnId);
     formData.append("enteredDate", new Date().toISOString());
     formData.append("type", evidenceData.type);
-    formData.append("envidenceDescription", evidenceData.evidence);
+    formData.append("evidenceDescription", evidenceData.disposition); // ← fixed typo
     formData.append("collectionDate", evidenceData.collectionDate);
     formData.append("disposedDate", evidenceData.disposedDate);
     formData.append("disposition", evidenceData.disposition);
-
-    // Retrieve token from localStorage
-    const token = localStorage.getItem("token");
-    console.log(token);
-    for (const [key, value] of formData.entries()) {
-      console.log(`FormData - ${key}:`, value);
-    }
-    
+  
+    // 3. POST via your `api` instance, removing the default JSON header
     try {
-      const response = await api.post(
+      const token = localStorage.getItem("token");
+      await api.post(
         "/api/lrevidence/upload",
         formData,
-        { 
-          headers: { 
-            "Content-Type": undefined,  
-            // "Content-Type": "multipart/form-data",
-            "Authorization": `Bearer ${token}`  // Add token here
-          } 
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          transformRequest: [(data, headers) => {
+            delete headers["Content-Type"];
+            return data;
+          }]
         }
       );
-      console.log("Evidence saved:", response.data);
-      // Optionally update local state with the new enclosure
-      setEvidences([...evidences, response.data.evidences]);
-
-      // Clear form fields if needed
-      setEvidenceData({ type: "", evidences: "" });
-      setFile(null);
-    } catch (error) {
-      console.error("Error saving evidence:", error);
+  
+      // 4. Re-fetch the full list (no more `undefined` entries!)
+      await fetchEvidences();
+  
+      // 5. Clear form state and the file-input UI
+      setEvidenceData({
+        leadReturnId: "",
+        collectionDate: "",
+        disposedDate: "",
+        type: "",
+        disposition: "",
+      });
+      fileInputRef.current.value = "";
+  
+    } catch (err) {
+      console.error("Error saving evidence:", err.response || err);
+      alert("Failed to save evidence. Check console for details.");
     }
   };
 
@@ -328,7 +388,12 @@ export const LREvidence = () => {
           </div>
           <div className="form-row-evidence">
             <label>Upload File*</label>
-            <input type="file" onChange={handleFileChange} />
+            <input
+  type="file"
+  name="file"               // match your multer field
+  ref={fileInputRef}        // ← attach the ref here
+  onChange={handleFileChange}
+/>
           </div>
         </div>
         </div>

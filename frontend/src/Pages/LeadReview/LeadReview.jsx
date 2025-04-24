@@ -339,40 +339,41 @@ console.log("SL, SC", selectedLead, selectedCase);
                   </td>
                 </tr>
                 <tr>
-                  <td className="info-label">Subnumber:</td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={leadData.subNumber}
-                    
-                    />
-                  </td>
-                </tr>
-                <tr>
                   <td className="info-label">Assigned Date:</td>
                   <td>
                     <input
                       type="text"
                       className="input-field"
-                      value={formatDate(selectedLead.assignedDate)}
+                      value={formatDate(leadData.assignedDate)}
                       onChange={(e) => handleInputChange('assignedDate', e.target.value)}
                       placeholder="MM/DD/YY"
                     />
                   </td>
                 </tr>
-                {/* <tr>
-                  <td className="info-label">Lead Summary:</td>
+
+                <tr>
+                  <td className="info-label">Lead Log Summary:</td>
                   <td>
-                    <input
-                      type="text"
+                    <textarea
                       className="input-field"
-                      value={leadData.leadSummary}
-                      onChange={(e) => handleInputChange('leadSummary', e.target.value)}
-                      placeholder="Enter Lead Summary"
-                    />
+                      value={leadData.description}
+                      onChange={(e) => handleInputChange('description', e.target.value)}
+                      placeholder=""
+                    ></textarea>
                   </td>
-                </tr> */}
+                </tr>
+                <tr>
+                  <td className="info-label">Lead Instruction:</td>
+                  <td>
+                    <textarea
+                      className="input-field"
+                      value={leadData.summary}
+                      onChange={(e) => handleInputChange('summary', e.target.value)}
+                      placeholder=""
+                    ></textarea>
+                  </td>
+                </tr>
+
                 <tr>
                   <td className="info-label">Lead Origin:</td>
                   <td>
@@ -382,63 +383,6 @@ console.log("SL, SC", selectedLead, selectedCase);
                       value={leadData.parentLeadNo}
                       onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
                       placeholder="NA"
-                    />
-                  </td>
-                </tr>
-
-                {/* Associated Subnumbers */}
-                <tr>
-  <td className="info-label"style={{ width: "30%" }}>Associated Subnumbers:</td>
-  <td>
-    <div className="custom-dropdown">
-      <div
-        className="dropdown-header"
-        onClick={() => setSubDropdownOpen(!subDropdownOpen)}
-      >
-        {associatedSubNumbers.length > 0
-          ? associatedSubNumbers.join(", ")
-          : "Select Subnumbers"}
-        <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
-      </div>
-      {subDropdownOpen && (
-        <div className="dropdown-options">
-          {availableSubNumbers.map((subNum) => (
-            <div key={subNum} className="dropdown-item">
-              <input
-                type="checkbox"
-                id={subNum}
-                value={subNum}
-                checked={associatedSubNumbers.includes(subNum)}
-                onChange={(e) => {
-                  const updatedSubs = e.target.checked
-                    ? [...associatedSubNumbers, e.target.value]
-                    : associatedSubNumbers.filter((num) => num !== e.target.value);
-
-                  setAssociatedSubNumbers(updatedSubs); // Update dropdown selection
-                  setLeadData((prevData) => ({
-                    ...prevData,
-                    associatedSubNumbers: updatedSubs, // Update leadData
-                  }));
-                }}
-              />
-              <label htmlFor={subNum}>{subNum}</label>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  </td>
-</tr>
-
-                {/* Another example date field */}
-                <tr>
-                  <td className="info-label">Due Date:</td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={formatDate(leadData.dueDate)}
-                      placeholder="MM/DD/YY"
                     />
                   </td>
                 </tr>
@@ -499,28 +443,74 @@ console.log("SL, SC", selectedLead, selectedCase);
                     />
                   </td>
                 </tr>
+
+                {/* Another example date field */}
                 <tr>
-                  <td className="info-label">Lead Log Summary:</td>
+                  <td className="info-label">Due Date:</td>
                   <td>
-                    <textarea
-                      className="textarea-field"
-                      value={leadData.description}
-                      onChange={(e) => handleInputChange('description', e.target.value)}
-                      placeholder=""
-                    ></textarea>
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={formatDate(leadData.dueDate)}
+                      placeholder="MM/DD/YY"
+                    />
                   </td>
                 </tr>
                 <tr>
-                  <td className="info-label">Lead Instruction:</td>
+                  <td className="info-label">Subnumber:</td>
                   <td>
-                    <textarea
-                      className="textarea-field"
-                      value={leadData.summary}
-                      onChange={(e) => handleInputChange('summary', e.target.value)}
-                      placeholder=""
-                    ></textarea>
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={leadData.subNumber}
+                    placeholder="NA"
+                    />
                   </td>
                 </tr>
+
+                               {/* Associated Subnumbers */}
+                               <tr>
+  <td className="info-label"style={{ width: "30%" }}>Associated Subnumbers:</td>
+  <td>
+    <div className="custom-dropdown">
+      <div
+        className="dropdown-header"
+        onClick={() => setSubDropdownOpen(!subDropdownOpen)}
+      >
+        {associatedSubNumbers.length > 0
+          ? associatedSubNumbers.join(", ")
+          : "Select Subnumbers"}
+        <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
+      </div>
+      {subDropdownOpen && (
+        <div className="dropdown-options">
+          {availableSubNumbers.map((subNum) => (
+            <div key={subNum} className="dropdown-item">
+              <input
+                type="checkbox"
+                id={subNum}
+                value={subNum}
+                checked={associatedSubNumbers.includes(subNum)}
+                onChange={(e) => {
+                  const updatedSubs = e.target.checked
+                    ? [...associatedSubNumbers, e.target.value]
+                    : associatedSubNumbers.filter((num) => num !== e.target.value);
+
+                  setAssociatedSubNumbers(updatedSubs); // Update dropdown selection
+                  setLeadData((prevData) => ({
+                    ...prevData,
+                    associatedSubNumbers: updatedSubs, // Update leadData
+                  }));
+                }}
+              />
+              <label htmlFor={subNum}>{subNum}</label>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </td>
+</tr>
               </tbody>
             </table>
           </div>
