@@ -17,6 +17,11 @@ const userSchema = new mongoose.Schema({
         required: true,
         enum : ["admin", "CaseManager", "Investigator"],
     },
+    email:
+    {
+        type: String,
+        required: true,
+    }
 }, 
 {
     timestamps: true,
