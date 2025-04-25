@@ -2047,7 +2047,7 @@ async function generateCaseReportwithExecSummary(req, res) {
     res.setHeader("Content-Disposition", "inline; filename=report.pdf");
 
     // Define paths for DOCX conversion.
-    const inputPath = path.join(__dirname, 'execSumary.docx');
+    const inputPath = path.join(__dirname, 'executive_summary.docx');
     const outputPath = path.join(__dirname, 'output.pdf');
 
     // Use await since convertDocxToPdf returns a promise.
