@@ -3,10 +3,10 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const register = async (req, res) => {
     try{
-    const {username, password, role} = req.body;
+    const {username, password, role, email} = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = new User({username, password: hashedPassword, role});
+    const newUser = new User({username, password: hashedPassword, role, email});
     await newUser.save();
     res.status(201).json({message: `User registered with username ${ username}`});
     } catch (err) {
