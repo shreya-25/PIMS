@@ -12,15 +12,15 @@ import api, { BASE_URL } from "../../../api";
 
 
 export const CMPerson = () => {
-   useEffect(() => {
-      // Apply style when component mounts
-      document.body.style.overflow = "hidden";
+  //  useEffect(() => {
+  //     // Apply style when component mounts
+  //     document.body.style.overflow = "hidden";
   
-      return () => {
-        // Reset to default when component unmounts
-        document.body.style.overflow = "auto";
-      };
-    }, []);
+  //     return () => {
+  //       // Reset to default when component unmounts
+  //       document.body.style.overflow = "auto";
+  //     };
+  //   }, []);
 
     const navigate = useNavigate(); // Initialize useNavigate hook
       const location = useLocation();

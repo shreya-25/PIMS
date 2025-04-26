@@ -14,15 +14,15 @@ import api, { BASE_URL } from "../../../api";
 
 export const CMEnclosures = () => {
 
-  useEffect(() => {
-      // Apply style when component mounts
-      document.body.style.overflow = "hidden";
+  // useEffect(() => {
+  //     // Apply style when component mounts
+  //     document.body.style.overflow = "hidden";
   
-      return () => {
-        // Reset to default when component unmounts
-        document.body.style.overflow = "auto";
-      };
-    }, []);
+  //     return () => {
+  //       // Reset to default when component unmounts
+  //       document.body.style.overflow = "auto";
+  //     };
+  //   }, []);
   const navigate = useNavigate(); 
   const location = useLocation();
     const { selectedCase, selectedLead, setSelectedLead, leadReturns, setLeadReturns  } = useContext(CaseContext);

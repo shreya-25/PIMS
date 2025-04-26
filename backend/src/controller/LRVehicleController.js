@@ -93,7 +93,7 @@ const getLRVehicleByDetailsandid = async (req, res) => {
             description: leadName,
             caseNo: caseNo,
             caseName: caseName,
-            leadReturnId: Number(id),
+            leadReturnId: id,
         };
 
         const lrVehicles = await LRVehicle.find(query);
