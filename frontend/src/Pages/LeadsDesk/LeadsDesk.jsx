@@ -1999,11 +1999,12 @@ const handleShowLeadsInRange = () => {
                       <VehicleModal
                         isOpen={showVehicleModal}
                         onClose={closeVehicleModal}
-                        leadNo={vehicleModalData.leadNo}
-                        description={vehicleModalData.description}
-                        caseNo={vehicleModalData.caseNo}
-                        caseName={vehicleModalData.caseName}
-                        leadReturnId={vehicleModalData.leadReturnId}
+                        vehicles={returnItem.vehicles}
+                        // leadNo={vehicleModalData.leadNo}
+                        // description={vehicleModalData.description}
+                        // caseNo={vehicleModalData.caseNo}
+                        // caseName={vehicleModalData.caseName}
+                        // leadReturnId={vehicleModalData.leadReturnId}
                         leadsDeskCode={vehicleModalData.leadsDeskCode}
                       />
                     </tr>

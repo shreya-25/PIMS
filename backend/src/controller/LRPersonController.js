@@ -117,7 +117,7 @@ const getLRPersonByDetailsandid = async (req, res) => {
             description: leadName,
             caseNo: caseNo,
             caseName: caseName,
-            leadReturnId: Number(id),
+            leadReturnId: id,
         };
 
         const lrPersons = await LRPerson.find(query);
