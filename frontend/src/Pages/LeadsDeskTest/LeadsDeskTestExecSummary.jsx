@@ -643,61 +643,31 @@ const handleShowLeadsInRange = () => {
   }
 
   else if (useFileUpload && execSummaryFile) {
-    // try {
-    //   const formData = new FormData();
-    //   formData.append("user", "Officer 916");
-    //   formData.append("reportTimestamp", new Date().toLocaleString());
-    //   formData.append("leadsData", JSON.stringify(leadsData));
-    //   // The *file* goes here:
-    //   formData.append("execSummaryFile", execSummaryFile);
-  
-    //   const response = await axios.post(
-    //     "http://localhost:5000/api/report/generateCaseExecSummary",
-    //     formData,
-    //     {
-    //       headers: {
-    //         Authorization: `Bearer ${token}`,
-    //         "Content-Type": "multipart/form-data",
-    //       },
-    //       responseType: "blob",
-    //     }
-    //   );
-    //   const file = new Blob([response.data], { type: "application/pdf" });
-    //   window.open(URL.createObjectURL(file), "_blank");
-    // } catch (err) {
-    //   console.error("Error generating PDF with upload:", err);
-    //   alert("Failed to generate report with uploaded summary");
-    // }
-
     try {
-      // Build payload. You may adjust the payload structure as required by your backend.
-      const payload = {
-        user: "Officer 916", // Or get from auth context
-        reportTimestamp: new Date().toLocaleString(),
-        // For a full report, pass the entire leadsData and caseSummary.
-        leadsData,
-        // Here, you could also include selectedReports if you want sections toggled.
-        selectedReports: { FullReport: true },
-      };
-      // Call your backend endpoint (adjust the URL if needed)
-      const response = await api.post(
-        "/api/report/generateCaseExecSummary",
-        payload,
+      const formData = new FormData();
+      formData.append("user", "Officer 916");
+      formData.append("reportTimestamp", new Date().toLocaleString());
+      formData.append("leadsData", JSON.stringify(leadsData));
+      formData.append("selectedReports", JSON.stringify({ FullReport: true }));
+      formData.append("execSummaryFile", execSummaryFile);
+  
+      const response = await axios.post(
+        "http://localhost:5000/api/report/generateCaseExecSummary",
+        formData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
+            // "Content-Type": "multipart/form-data",
           },
-          responseType: "blob", // Expect a PDF blob back
+          responseType: "blob",
         }
       );
-      // Create a blob URL and open in a new tab
-      const file = new Blob([response.data], { type: "application/pdf" });
-      const fileURL = URL.createObjectURL(file);
+      const fileBlob = new Blob([response.data], { type: "application/pdf" });
+      const fileURL = URL.createObjectURL(fileBlob);
       window.open(fileURL, "_blank");
-    } catch (error) {
-      console.error("Failed to generate report", error);
-      alert("Error generating PDF");
+    } catch (err) {
+      console.error("Error generating PDF with upload:", err);
+      alert("Failed to generate report with uploaded summary");
     }
   }
   

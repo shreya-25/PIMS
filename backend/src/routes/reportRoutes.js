@@ -26,7 +26,7 @@ router.post("/generateCase", verifyToken, roleMiddleware("CaseManager"), generat
 router.post(
   "/generateCaseExecSummary",
   verifyToken,
-//   upload.single("execSummaryFile"),
+  upload.single("execSummaryFile"),
  generateCaseReportwithExecSummary
 );
 
