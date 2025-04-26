@@ -2036,8 +2036,40 @@ async function mergeWithWordFileAtStart(pdfKitBuffer, wordPdfPath) {
 
 // Note: The function is now declared as async.
 async function generateCaseReportwithExecSummary(req, res) {
-  const { user, reportTimestamp, leadsData, caseSummary, selectedReports } = req.body;
-  const includeAll = selectedReports && selectedReports.FullReport;
+  // const { user, reportTimestamp, leadsData, caseSummary, selectedReports } = req.body;
+
+    // 2) Pull the raw leadsData out of the body
+    const {
+      user,
+      reportTimestamp,
+      leadsData: leadsDataRaw,
+      caseSummary,
+      selectedReports
+    } = req.body;
+  
+    // 3) If it’s a string, parse it back into an array
+    let leadsData = leadsDataRaw;
+    if (typeof leadsData === "string") {
+      try {
+        leadsData = JSON.parse(leadsData);
+      } catch (err) {
+        return res.status(400).json({ error: "Invalid JSON for leadsData" });
+      }
+    }
+  
+    // 4) Guard: now it really must be an array
+    if (!Array.isArray(leadsData)) {
+      return res.status(400).json({ error: "leadsData must be an array" });
+    }
+
+
+    const includeAll = selectedReports && selectedReports.FullReport;
+  // 1) Make sure a file was uploaded
+  if (!req.file || !req.file.path) {
+    return res.status(400).json({ error: "No executive summary file uploaded." });
+  }
+
+
   try {
     // Create the PDFDocument instance.
     const doc = new PDFDocument({ size: "LETTER", margins: { top: 0, bottom: 0, left: 50, right: 50 }});
@@ -2047,8 +2079,11 @@ async function generateCaseReportwithExecSummary(req, res) {
     res.setHeader("Content-Disposition", "inline; filename=report.pdf");
 
     // Define paths for DOCX conversion.
-    const inputPath = path.join(__dirname, 'executive_summary.docx');
-    const outputPath = path.join(__dirname, 'output.pdf');
+    // const inputPath = path.join(__dirname, 'executive_summary.docx');
+    // const outputPath = path.join(__dirname, 'output.pdf');
+    
+    const inputPath  = req.file.path;                     
+    const outputPath = inputPath.replace(/\.\w+$/, ".pdf");    
 
     // Use await since convertDocxToPdf returns a promise.
     await convertDocxToPdf(inputPath, outputPath, "Officer 123", "10/15/2025, 3:47 AM");
@@ -2058,7 +2093,8 @@ async function generateCaseReportwithExecSummary(req, res) {
     doc.on("data", (chunk) => chunks.push(chunk));
     doc.on("end", async () => {
       const pdfKitBuffer = Buffer.concat(chunks);
-      const wordPdfPath = path.join(__dirname, "output.pdf");
+      // const wordPdfPath = path.join(__dirname, "output.pdf");
+      const wordPdfPath = outputPath;
       
       try {
         // Merge the external Word PDF at the beginning.
