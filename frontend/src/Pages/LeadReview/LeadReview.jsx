@@ -10,6 +10,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import api from "../../api"; // adjust the path as needed
+import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
+
 
 
 
@@ -23,6 +25,15 @@ export const LeadReview = () => {
   const leadEntries = location.state?.leadEntries || [];
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+    const [pendingRoute, setPendingRoute]   = useState(null);
+  
+   const [showSelectModal, setShowSelectModal] = useState(false);
+       const [leads, setLeads] = useState({
+            assignedLeads: [],
+            pendingLeads: [],
+            pendingLeadReturns: [],
+            allLeads: [],
+       } );
 
   const { selectedCase, setSelectedLead , selectedLead} = useContext(CaseContext);
 // const leadFromState = location.state?.lead || null;
@@ -127,6 +138,44 @@ console.log("SL, SC", selectedLead, selectedCase);
     fetchLeadData();
   }, [selectedLead, selectedCase]);
 
+  useEffect(() => {
+    const fetchAllLeads = async () => {
+      if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+  
+      try {
+        const token = localStorage.getItem("token");
+        const resp = await api.get(
+          `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+  
+        // assume resp.data is an array
+        let leadsArray = Array.isArray(resp.data) ? resp.data : [];
+  
+        // if user is _not_ a Case Manager, strip out CM-only leads:
+        if (selectedCase.role !== "Case Manager") {
+          leadsArray = leadsArray.filter(
+            (l) => l.accessLevel !== "Only Case Manager and Assignees"
+          );
+        }
+  
+        setLeads((prev) => ({
+          ...prev,
+          allLeads: leadsArray.map((lead) => ({
+            leadNo: lead.leadNo,
+            description: lead.description,
+            leadStatus: lead.leadStatus,
+            // any other fields you need...
+          })),
+        }));
+      } catch (err) {
+        console.error("Error fetching all leads:", err);
+      }
+    };
+  
+    fetchAllLeads();
+  }, [selectedCase])
+
 
   // For subnumbers
   const [availableSubNumbers] = useState([
@@ -135,6 +184,24 @@ console.log("SL, SC", selectedLead, selectedCase);
   const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]);
       const [assignedOfficers, setAssignedOfficers] = useState([]);
   
+      const handleSelectLead = (lead) => {
+        setSelectedLead({
+          leadNo: lead.leadNo,
+          leadName: lead.description,
+          caseName: lead.caseName,
+          caseNo: lead.caseNo,
+        });
+      
+        setShowSelectModal(false);
+        navigate(pendingRoute, {
+          state: {
+            caseDetails: selectedCase,
+            leadDetails: lead
+          }
+        });
+        
+        setPendingRoute(null);
+      };
 
   useEffect(() => {
     if (leadData.associatedSubNumbers) {
@@ -210,23 +277,31 @@ console.log("SL, SC", selectedLead, selectedCase);
                    
       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
             <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
-            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            <li
+  className="sidebar-item"
+  onClick={() =>
+    selectedCase.role === "Investigator"
+      ? navigate("/Investigator")
+      : navigate("/CasePageManager")
+  }
+>
+Case Page
+</li>              
             {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
             <li className="sidebar-item active" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
 
           
-            <li
-  className="sidebar-item"
-  onClick={() =>
-    selectedCase.role === "Investigator"
-      ? navigate("/LRInstruction")
-      : navigate("/CMInstruction")
-  }
->
-  View Lead Return
-</li>
+            <li className="sidebar-item" 
+             onClick={() => {
+              selectedCase.role === "Investigator"
+              ? setPendingRoute("/LRInstruction")
+              : setPendingRoute("/CMInstruction")
+              // setPendingRoute("/CMInstruction");
+              setShowSelectModal(true);
+            }}>View Lead Return</li>
+
 
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
@@ -249,12 +324,24 @@ console.log("SL, SC", selectedLead, selectedCase);
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
             {selectedCase.role !== "Investigator" && (
-  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-    View Lead Chain of Custody
-  </li>
+             <li
+             className="sidebar-item"
+             onClick={() => {
+               setPendingRoute("/ChainOfCustody", { state: { caseDetails } });
+               setShowSelectModal(true);
+             }}
+            >    View Lead Chain of Custody
+              </li>
 )}
        
          </ul>
+            {showSelectModal && (
+               <SelectLeadModal
+                 leads={leads.allLeads}
+                 onSelect={handleSelectLead}
+                 onClose={() => setShowSelectModal(false)}
+               />
+             )}
         </div>
 
         {/* Content Area */}
