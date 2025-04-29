@@ -50,7 +50,18 @@ export const LeadReview = () => {
   ];
   
   // Change this index to highlight the current status dynamically
-  const currentStatusIndex = 1; // Example: Highlighting "Lead Return Submitted"
+  // const currentStatusIndex = 1;
+
+  const statusToIndex = {
+    Assigned:               1,  // maps to "Lead Assigned"
+    Pending:                2,  // maps to "Lead Accepted"
+    "In Review":            3,  // if you also use "In Review"
+    Submitted:              3,  // or map your own submission status here
+    Approved:               4,  // "Lead Approved"
+    Returned:               5,  // "Lead Returned"
+    Completed:              6,  // "Lead Completed"
+  };
+
 
   const formatDate = (dateString) => {
     if (!dateString) return ""; // Handle empty dates
@@ -59,7 +70,8 @@ export const LeadReview = () => {
   
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
     const day = date.getDate().toString().padStart(2, "0");
-    const year = date.getFullYear().toString().slice(-2); // Get last two digits of the year
+    const year = date.getFullYear().toString().slice(-4
+    ); // Get last two digits of the year
   
     return `${month}/${day}/${year}`;
   };
@@ -82,8 +94,9 @@ export const LeadReview = () => {
     assignedTo: [],
     caseNo: '',
     caseName: "",
-    // caseName: 'Main Street Theft',
-    // caseSummary: defaultCaseSummary,
+    leadStatus: '', 
+    assignedTo: [],
+    
   });
 
   const getCasePageRoute = () => {
@@ -122,7 +135,9 @@ console.log("SL, SC", selectedLead, selectedCase);
           if (response.data.length > 0) {
             setLeadData({
               ...response.data[0], 
-              assignedOfficer: response.data[0].assignedOfficer || [] // Ensure array
+              assignedOfficer: response.data[0].assignedOfficer || [],
+              assignedTo: response.data[0].assignedTo || [],
+              leadStatus: response.data[0].leadStatus || ''
             });
           }
           
@@ -138,43 +153,46 @@ console.log("SL, SC", selectedLead, selectedCase);
     fetchLeadData();
   }, [selectedLead, selectedCase]);
 
-  useEffect(() => {
-    const fetchAllLeads = async () => {
-      if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+    // fall back to 0 (“Lead Created”) if you get an unexpected value
+const currentStatusIndex = statusToIndex[leadData.leadStatus] ?? 0;
+
+  // useEffect(() => {
+  //   const fetchAllLeads = async () => {
+  //     if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
   
-      try {
-        const token = localStorage.getItem("token");
-        const resp = await api.get(
-          `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+  //     try {
+  //       const token = localStorage.getItem("token");
+  //       const resp = await api.get(
+  //         `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
+  //         { headers: { Authorization: `Bearer ${token}` } }
+  //       );
   
-        // assume resp.data is an array
-        let leadsArray = Array.isArray(resp.data) ? resp.data : [];
+  //       // assume resp.data is an array
+  //       let leadsArray = Array.isArray(resp.data) ? resp.data : [];
   
-        // if user is _not_ a Case Manager, strip out CM-only leads:
-        if (selectedCase.role !== "Case Manager") {
-          leadsArray = leadsArray.filter(
-            (l) => l.accessLevel !== "Only Case Manager and Assignees"
-          );
-        }
+  //       // if user is _not_ a Case Manager, strip out CM-only leads:
+  //       if (selectedCase.role !== "Case Manager") {
+  //         leadsArray = leadsArray.filter(
+  //           (l) => l.accessLevel !== "Only Case Manager and Assignees"
+  //         );
+  //       }
   
-        setLeads((prev) => ({
-          ...prev,
-          allLeads: leadsArray.map((lead) => ({
-            leadNo: lead.leadNo,
-            description: lead.description,
-            leadStatus: lead.leadStatus,
-            // any other fields you need...
-          })),
-        }));
-      } catch (err) {
-        console.error("Error fetching all leads:", err);
-      }
-    };
+  //       setLeads((prev) => ({
+  //         ...prev,
+  //         allLeads: leadsArray.map((lead) => ({
+  //           leadNo: lead.leadNo,
+  //           description: lead.description,
+  //           leadStatus: lead.leadStatus,
+  //           // any other fields you need...
+  //         })),
+  //       }));
+  //     } catch (err) {
+  //       console.error("Error fetching all leads:", err);
+  //     }
+  //   };
   
-    fetchAllLeads();
-  }, [selectedCase])
+  //   fetchAllLeads();
+  // }, [selectedCase])
 
 
   // For subnumbers
@@ -262,6 +280,12 @@ console.log("SL, SC", selectedLead, selectedCase);
 
    fetchCaseSummary();
  }, [selectedCase]);
+
+ // somewhere at the top of your component
+const dueDateISO = leadData?.dueDate
+? new Date(leadData.dueDate).toISOString().split("T")[0]
+: "";
+
 
 
   return (
@@ -548,12 +572,25 @@ Case Page
                 <tr>
                   <td className="info-label">Due Date:</td>
                   <td>
-                    <input
+                    {/* <input
                       type="text"
                       className="input-field"
+                      // value={leadData.dueDate}
                       value={formatDate(leadData.dueDate)}
                       placeholder="MM/DD/YY"
-                    />
+                      // onChange={e => setDueDate(e.target.value)}
+                    /> */}
+                    <input
+      type="date"
+      className="input-field"
+      value={dueDateISO}
+      onChange={e => {
+        // e.target.value is “YYYY-MM-DD”
+        const newIso = new Date(e.target.value).toISOString();
+        // now update your leadData however you persist it:
+        setLeadData({ ...leadData, dueDate: newIso });
+      }}
+    />
                   </td>
                 </tr>
                 <tr>
@@ -615,7 +652,7 @@ Case Page
             </table>
           </div>
 
-          <div className="lead-tracker-container">
+          {/* <div className="lead-tracker-container">
                   {statuses.map((status, index) => (
                        <div key={index} className="lead-tracker-row" onClick={() => {
                         if (status === "Lead Return Submitted") {
@@ -624,19 +661,19 @@ Case Page
                       }}
                       style={{ cursor: status === "Lead Return Submitted" ? "pointer" : "default" }}
                     >
-                          {/* Circle Indicator */}
+                     
                           <div
                             className={`status-circle ${index <= currentStatusIndex ? "active" : ""}`}
                           >
                             {index <= currentStatusIndex && <span className="status-number">{index + 1}</span>}
                          </div>
 
-                            {/* Connector Line (Except Last Item) */}
+                      
                             {index < statuses.length && (
                               <div className={`status-line ${index < currentStatusIndex ? "active" : ""}`}></div>
                             )}
 
-                            {/* Status Box */}
+                          
                             <div
                               className={`status-text-box ${index === currentStatusIndex ? "highlighted" : ""}`}
                             >
@@ -644,18 +681,31 @@ Case Page
                             </div>
                         </div>
                       ))}
-                </div>
-                </div>
+                </div> */}
 
-          {/* Example "Go to Main Page" button */}
-          {/* <div className="navigation-buttons">
-            <button
-              className="custom-button secondary-button"
-              onClick={() => handleNavigation("/MainPage")}
-            >
-              Go to Main Page
-            </button>
-          </div> */}
+            <div className="lead-tracker-container">
+              {statuses.map((status, idx) => (
+                <div
+                  key={idx}
+                  className="lead-tracker-row"
+                  onClick={() => {
+                    if (status === "Lead Return Submitted") handleNavigation("/CMInstruction");
+                  }}
+                  style={{ cursor: status === "Lead Return Submitted" ? "pointer" : "default" }}
+                >
+                  <div className={`status-circle ${idx <= currentStatusIndex ? "active" : ""}`}>
+                    {idx <= currentStatusIndex && <span className="status-number">{idx + 1}</span>}
+                  </div>
+                  {idx < statuses.length && (
+                    <div className={`status-line ${idx < currentStatusIndex ? "active" : ""}`}></div>
+                  )}
+                  <div className={`status-text-box ${idx === currentStatusIndex ? "highlighted" : ""}`}>
+                    {status}
+                  </div>
+                </div>
+              ))}
+            </div>
+                </div>
         </div>
       </div>
     </div>
