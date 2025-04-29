@@ -302,7 +302,7 @@ const { leadDetails, caseDetails } = location.state || {};
 </div>
 <FootBar
 onPrevious={() => navigate(-1)} // Takes user to the last visited page
-onNext={() => navigate("/LRPerson")} // Takes user to CM Return page
+onNext={() => navigate("/CMPerson")} // Takes user to CM Return page
 />
 </div>
 </div>

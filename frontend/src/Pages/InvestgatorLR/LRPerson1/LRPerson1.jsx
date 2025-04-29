@@ -45,6 +45,23 @@ useEffect(() => {
       city: "",
       state: "",
       zipCode: "",
+      age: '',
+      ssn: '',
+      occupation: '',
+      email: '',
+      personType: '',
+      condition: '',
+      cautionType: '',
+      sex: '',
+      race: '',
+      ethnicity: '',
+      skinTone: '',
+      eyeColor: '',
+      glasses: '',
+      hairColor: '',
+      tattoo: '',
+      scar: '',
+      marks: '',
     });
   
     // Handle form input changes
@@ -118,13 +135,23 @@ const [miscDetails, setMiscDetails] = useState([
         zipCode: formData.zipCode,
       },
   
-      // Optional: Extend this with other fields once you connect them in your form
-      // ssn: formData.ssn,
-      // age: formData.age,
-      // email: formData.email,
-      // occupation: formData.occupation,
-      // personType: formData.personType,
-      // etc...
+      age: formData.age,
+      ssn: formData.ssn,
+      occupation: formData.occupation,
+      email: formData.email,
+      personType: formData.personType,
+      condition: formData.condition,
+      cautionType: formData.cautionType,
+      sex: formData.sex,
+      race: formData.race,
+      ethnicity: formData.ethnicity,
+      skinTone: formData.skinTone,
+      eyeColor: formData.eyeColor,
+      glasses: formData.glasses,
+      hairColor: formData.hairColor,
+      tattoo: formData.tattoo,
+      scar: formData.scar,
+      marks: formData.marks,
   
       additionalData: miscDetails, // Store all misc rows
     };
@@ -183,31 +210,17 @@ const [miscDetails, setMiscDetails] = useState([
           <span className="menu-item" onClick={() => handleNavigation('/LRVehicle')} >
             Vehicles
           </span>
-          <span className="menu-item" >
-            Enclosures
-          </span>
-          <span className="menu-item" >
-            Evidence
-          </span>
-          <span className="menu-item" >
-            Pictures
-          </span>
-          <span className="menu-item" >
-            Audio
-          </span>
-          <span className="menu-item" >
-            Videos
-          </span>
-          <span className="menu-item" >
-            Scratchpad
-          </span>
+          <span className="menu-item" onClick={() => handleNavigation("/LREnclosures")}>Enclosures</span>
+          <span className="menu-item active" onClick={() => handleNavigation("/LREvidence")}>Evidence</span>
+          <span className="menu-item" onClick={() => handleNavigation("/LRPictures")}>Pictures</span>
+          <span className="menu-item" onClick={() => handleNavigation("/LRAudio")}>Audio</span>
+          <span className="menu-item" onClick={() => handleNavigation("/LRVideo")}>Videos</span>
+          <span className="menu-item" onClick={() => handleNavigation("/LRScratchpad")}>Scratchpad</span>
           <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
             Timeline
           </span>
-          <span className="menu-item" >
-            Finish
-          </span>
-         </div>
+          <span className="menu-item" onClick={() => handleNavigation("/LRFinish")}>Finish</span>
+        </div>
        </div>
 
        <div className="LRI_Content">
@@ -418,45 +431,139 @@ const [miscDetails, setMiscDetails] = useState([
 
             {/* Fourth Row */}
             <tr>
-              <td>Person Type</td>
-              <td><select><option>Type</option></select></td>
-              <td>Condition</td>
-              <td><select><option>Condition</option></select></td>
-            </tr>
+                    <td>Person Type</td>
+                    <td>
+                      <select
+                        value={formData.personType}
+                        onChange={(e) => handleChange('personType', e.target.value)}
+                      >
+                        <option value="">Select Type</option>
+                        <option value="Suspect">Suspect</option>
+                        <option value="Victim">Victim</option>
+                        <option value="Witness">Witness</option>
+                        <option value="Officer">Officer</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </td>
+                    <td>Condition</td>
+                    <td>
+                      <select
+                        value={formData.condition}
+                        onChange={(e) => handleChange('condition', e.target.value)}
+                      >
+                        <option value="">Select Condition</option>
+                        <option value="Cooperative">Cooperative</option>
+                        <option value="Uncooperative">Uncooperative</option>
+                        <option value="Injured">Injured</option>
+                        <option value="Deceased">Deceased</option>
+                      </select>
+                    </td>
+                  </tr>
 
             {/* Fifth Row */}
             <tr>
-              <td>Caution Type</td>
-              <td><select><option>Type</option></select></td>
-              <td>Sex</td>
-              <td><select><option>Male</option><option>Female</option></select></td>
-            </tr>
+                    <td>Caution Type</td>
+                    <td>
+                      <select
+                        value={formData.cautionType}
+                        onChange={(e) => handleChange('cautionType', e.target.value)}
+                      >
+                        <option value="">Select Type</option>
+                        <option value="Armed">Armed</option>
+                        <option value="Unarmed">Unarmed</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </td>
+                    <td>Sex</td>
+                    <td>
+                      <select
+                        value={formData.sex}
+                        onChange={(e) => handleChange('sex', e.target.value)}
+                      >
+                        <option value="">Select Sex</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </td>
+                  </tr>
 
             {/* Sixth Row */}
             <tr>
-              <td>Race</td>
-              <td><select><option>Race</option></select></td>
-              <td>Ethnicity</td>
-              <td><select><option>Ethnicity</option></select></td>
-            </tr>
+                    <td>Race</td>
+                    <td>
+                      <select
+                        value={formData.race}
+                        onChange={(e) => handleChange('race', e.target.value)}
+                      >
+                        <option value="">Select Race</option>
+                        <option value="White">White</option>
+                        <option value="Black">Black or African American</option>
+                        <option value="Asian">Asian</option>
+                        <option value="Native American">Native American</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </td>
+                    <td>Ethnicity</td>
+                    <td>
+                      <select
+                        value={formData.ethnicity}
+                        onChange={(e) => handleChange('ethnicity', e.target.value)}
+                      >
+                        <option value="">Select Ethnicity</option>
+                        <option value="Hispanic">Hispanic or Latino</option>
+                        <option value="Non-Hispanic">Not Hispanic or Latino</option>
+                      </select>
+                    </td>
+                  </tr> 
 
             {/* Seventh Row */}
             <tr>
-              <td>Skin Tone</td>
-              <td><select><option>Skin Tone</option></select></td>
-              <td>Eye Color</td>
-              <td><select><option>Eye Color</option></select></td>
-            </tr>
-
-            {/* Eighth Row */}
-            <tr>
-              <td>Glasses</td>
-              <td><select><option>Yes</option><option>No</option></select></td>
-              <td>Hair Color</td>
-              <td><select><option>Hair Color</option></select></td>
-            </tr>
-
-            {/* Ninth Row */}
+                    <td>Skin Tone</td>
+                    <td>
+                      <select value={formData.skinTone} onChange={(e) => handleChange('skinTone', e.target.value)}>
+                        <option value="">Select Skin Tone</option>
+                        <option value="Light">Light</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Dark">Dark</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </td>
+                    <td>Eye Color</td>
+                    <td>
+                      <select value={formData.eyeColor} onChange={(e) => handleChange('eyeColor', e.target.value)}>
+                        <option value="">Select Eye Color</option>
+                        <option value="Brown">Brown</option>
+                        <option value="Blue">Blue</option>
+                        <option value="Green">Green</option>
+                        <option value="Hazel">Hazel</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Glasses</td>
+                    <td>
+                      <select value={formData.glasses} onChange={(e) => handleChange('glasses', e.target.value)}>
+                        <option value="">Select</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </td>
+                    <td>Hair Color</td>
+                    <td>
+                      <select value={formData.hairColor} onChange={(e) => handleChange('hairColor', e.target.value)}>
+                        <option value="">Select Hair Color</option>
+                        <option value="Black">Black</option>
+                        <option value="Brown">Brown</option>
+                        <option value="Blonde">Blonde</option>
+                        <option value="Red">Red</option>
+                        <option value="Gray">Gray</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </td>
+                  </tr>
+                       {/* Ninth Row */}
             <tr>
               <td>Height</td>
               <td>
@@ -467,6 +574,21 @@ const [miscDetails, setMiscDetails] = useState([
               <td><input type="text" /></td>
             </tr>
 
+                  <tr>
+                    <td>Tattoo</td>
+                    <td><input type="text" /></td>
+                    
+                    <td>Scar</td>
+              
+                    <td><input type="text" /></td>
+                    
+                  </tr>
+                  <tr>
+                    <td>Marks</td>
+                    {/* <td colSpan="7"> */}
+                    <td><input type="text" /></td>
+      
+                  </tr>
             {/* Miscellaneous Section */}
             <tr>
               <td colSpan="4">

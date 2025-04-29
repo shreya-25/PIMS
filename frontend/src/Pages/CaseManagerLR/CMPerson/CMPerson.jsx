@@ -417,7 +417,7 @@ export const CMPerson = () => {
 
       <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
-        onNext={() => navigate("/LRVehicle")} // Takes user to CM Return page
+        onNext={() => navigate("/CMVehicle")} // Takes user to CM Return page
       />
     </div>
     </div>
