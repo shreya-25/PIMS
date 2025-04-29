@@ -365,6 +365,19 @@ Case Page
             />
           </div> */}
 
+{ caseDetails?.role === "Investigator" && (
+  <div className="lead-return-div">
+    <h2>Click here to start a lead return</h2>
+    <button
+      className="save-btn1"
+      onClick={() => navigate('/LRInstruction')}
+    >
+      Add Return
+    </button>
+  </div>
+) }
+
+
           {/* Additional Lead Details (Bottom Table) */}
           <div className="form_and_tracker">
           <div className="form-section">

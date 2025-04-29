@@ -222,10 +222,10 @@ const formatDate = (dateString) => {
         <div className="left-content">
 
         <div className="case-header">
-          <h2 className="">FLAGGED LEADS</h2>
+          <h2 className="">WEBPAGE UNDER CONSTRUCTION</h2>
         </div>
         
-      {showFilter && (
+      {/* {showFilter && (
         <div className="popup-overlay">
           <div className="popup-content">
             <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
@@ -234,9 +234,9 @@ const formatDate = (dateString) => {
             <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
             </div>
         </div>
-      )}
+      )} */}
 
-  
+{/*   
       {showSort && (
         <div className="popup-overlay">
           <div className="popup-content">
@@ -246,9 +246,9 @@ const formatDate = (dateString) => {
             <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
             </div>
           </div>
-      )}
+      )} */}
 
-<div className="table-section1">
+{/* <div className="table-section1">
       <div className="table-section">
       <div className="table-controls">
       <div className="search-bar">
@@ -259,7 +259,6 @@ const formatDate = (dateString) => {
         className="search-input1"
         placeholder="Search Lead"
       />
-      {/* <button className="search-button">Search</button> */}
       </div>
       </div>
     <div className="empty-space"></div>
@@ -326,13 +325,13 @@ const formatDate = (dateString) => {
         </table>
         <Pagination
   currentPage={currentPage}
-  totalEntries={totalEntries}  // Automatically calculate total entries
-  onPageChange={setCurrentPage} // Update current page state
+  totalEntries={totalEntries}  
+  onPageChange={setCurrentPage} 
   pageSize={pageSize}
-  onPageSizeChange={setPageSize} // Update page size state
+  onPageSizeChange={setPageSize} 
 />
       </div>
-    </div>
+    </div> */}
     </div>
       </div>
     </div>
