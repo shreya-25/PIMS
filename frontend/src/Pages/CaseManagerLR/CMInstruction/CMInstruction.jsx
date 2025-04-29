@@ -51,6 +51,8 @@ export const CMInstruction = () => {
     assignedBy: '',
     leadDescription: '',
     assignedTo: [],
+    // caseNo:'',
+    // caseName: ''
   });
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
