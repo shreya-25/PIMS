@@ -308,7 +308,7 @@ export const CMAudio = () => {
       
       <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
-        onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
+        onNext={() => navigate("/CMVideo")} // Takes user to CM Return page
       />
       </div>
   </div>

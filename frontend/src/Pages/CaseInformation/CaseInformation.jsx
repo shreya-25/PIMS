@@ -377,7 +377,7 @@ Case Page
             </button>
             </div>
 
-            <div className="case-summary">
+            {/* <div className="case-summary">
       <label className="input-label1">Start Executive Case Summary</label>
       <div>
         <label>
@@ -413,7 +413,7 @@ Case Page
       <button className="save-btn1" onClick={handleSaveClick}>
         Save
       </button>
-    </div>
+    </div> */}
            
         
         </div>

@@ -47,6 +47,14 @@ html, body {
   box-sizing: border-box;
 }
 
+.lead-return-div
+{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
 
 .form_and_tracker
 {

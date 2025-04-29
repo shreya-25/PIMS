@@ -156,7 +156,7 @@ export const CMVideo = () => {
           <span className="menu-item" onClick={() => handleNavigation("/CMEvidence")}>Evidence</span>
           <span className="menu-item" onClick={() => handleNavigation("/CMPictures")}>Pictures</span>
           <span className="menu-item" onClick={() => handleNavigation("/CMAudio")}>Audio</span>
-          <span className="menu-item active" onClick={() => handleNavigation("/CMVideos")}>Videos</span>
+          <span className="menu-item active" onClick={() => handleNavigation("/CMVideo")}>Videos</span>
           <span className="menu-item" onClick={() => handleNavigation("/CMScratchpad")}>Scratchpad</span>
           <span className="menu-item" onClick={() => handleNavigation('/CMTimeline')}>
             Timeline
@@ -309,7 +309,7 @@ export const CMVideo = () => {
      </div>
       <FootBar
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
-        onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
+        onNext={() => navigate("/CMScratchpad")} // Takes user to CM Return page
       />
     </div>
     </div>

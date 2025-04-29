@@ -133,24 +133,17 @@ export const CaseScratchpad = () => {
 )}
 
                 </div>
-        {/* <div className="left-section">
-          <img
-            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
-            alt="Police Department Logo"
-            className="police-logo-cl"
-          />
-        </div> */}
+   
 
         <div className="left-content">
 
         <div className="case-header">
-          <h2 className="">ALL NOTES</h2>
+          {/* <h2 className="">ALL NOTES</h2> */}
+          <h2 className="">WEBPAGE UNDER CONSTRUCTION</h2>
         </div>
 
-      <main className="scratchpad-main">
-        {/* <h1 className="scratchpad-title">ALL SCRATCHPAD ENTRIES</h1> */}
-
-        {/* List of Entries */}
+      {/* <main className="scratchpad-main">
+  
         <div className="entries-list">
           {entries.map((entry) => (
             <div key={entry.id} className="entry-item">
@@ -176,7 +169,6 @@ export const CaseScratchpad = () => {
           ))}
         </div>
 
-        {/* Form to Add or Edit Entry */}
         <div className="scratchpad-content">
           <div className="input-group">
             <div className="input-wrapper">
@@ -210,8 +202,9 @@ export const CaseScratchpad = () => {
           </div>
 
         </div>
-      </main>
+      </main> */}
     </div>
+
     </div>
       </div>
   );
