@@ -507,7 +507,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
              onClick={() => {
               selectedCase.role === "Investigator"
               ? setPendingRoute("/LRInstruction")
-              : setPendingRoute("/CMInstruction")
+              : setPendingRoute("/LRInstruction")
               // setPendingRoute("/CMInstruction");
               setShowSelectModal(true);
             }}>View Lead Return</li>

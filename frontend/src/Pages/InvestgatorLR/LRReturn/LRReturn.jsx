@@ -41,6 +41,7 @@ useEffect(() => {
     const isDisabled = leadStatus === "In Review" || leadStatus === "Completed";
 
   
+    console.log(selectedCase, selectedLead);
     useEffect(() => {
       const fetchLeadStatus = async () => {
         try {
@@ -174,9 +175,14 @@ useEffect(() => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = response.data;
-        setReturns(data);
+        // setReturns(data);
+        const withAccess = data.map(r => ({
+          ...r,
+          access: r.access ?? "Everyone"
+        }));
+        setReturns(withAccess);
         // Determine the highest existing return id (if any) using alphabetToNumber conversion
-        const maxNumericId = data.reduce((max, item) => {
+        const maxNumericId = withAccess.reduce((max, item) => {
           // If leadReturnId is not defined, treat it as 0.
           const numVal = item.leadReturnId ? alphabetToNumber(item.leadReturnId) : 0;
           return Math.max(max, numVal);
@@ -193,6 +199,15 @@ useEffect(() => {
 
   fetchReturnData();
 }, [leadDetails, caseDetails, selectedLead]);
+
+// handler to change access per row
+const handleAccessChange = (idx, newAccess) => {
+  setReturns(rs => {
+    const copy = [...rs];
+    copy[idx] = { ...copy[idx], access: newAccess };
+    return copy;
+  });
+};
 
 // Calculate the next Return No (max return id plus one, converted back to alphabet)
 const nextReturnId = numberToAlphabet(maxReturnId + 1);
@@ -277,6 +292,7 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
           leadReturnResult: returnData.results,
           assignedTo,
           assignedBy,
+          access: returnData.access
         };
   
         const createResponse = await api.post(
@@ -299,7 +315,8 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
     results: "",
     leadReturnId: numberToAlphabet(nextNumericId + 1),
     enteredDate: todayDate,
-    enteredBy: username
+    enteredBy: username,
+    access: "Everyone"
   });
 }
     } catch (err) {
@@ -365,6 +382,8 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
       navigate(route, { state: { caseDetails } });
   };
     
+  const isCaseManager = selectedCase?.role === "Case Manager";
+
 
   return (
     <div className="lrenclosures-container">
@@ -501,11 +520,14 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
             <th style={{ width: "9%" }}>Entered By</th>
             <th>Results</th>
             <th style={{ width: "14%" }}></th>
+            {isCaseManager && (
+              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
+            )}
           </tr>
         </thead>
         <tbody>
-            {returns.map((ret) => (
-              <tr key={ret.id}>
+            {returns.length > 0 ? returns.map((ret, idx) => (
+              <tr key={ret.id || idx}>
                  <td>{ret.leadReturnId}</td>
               <td>{formatDate(ret.enteredDate)}</td>
               <td>{ret.enteredBy}</td>
@@ -530,8 +552,26 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
                   </button>
                   </div>
                 </td>
-              </tr>
-            ))}
+
+                {isCaseManager && (
+          <td>
+            <select
+              value={ret.access}
+              onChange={e => handleAccessChange(idx, e.target.value)}
+            >
+              <option value="Everyone">Everyone</option>
+              <option value="Case Manager">Case Manager Only</option>
+            </select>
+          </td>
+        )}
+      </tr>
+       )) : (
+        <tr>
+          <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign:'center' }}>
+            No Returns Available
+          </td>
+        </tr>
+      )}
           </tbody>
         </table>
 

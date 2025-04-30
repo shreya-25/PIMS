@@ -248,6 +248,18 @@ const { leadDetails, caseDetails } = location.state || {};
 
       <div className = "content-subsection">
 
+      {/* <h3>Click here to add a return</h3> */}
+      <div className="lead-return-div">
+    <h2>Click here to enter a lead return</h2>
+    <button
+      className="save-btn1"
+      onClick={() => navigate('/LRReturn')}
+    >
+      Add Return
+    </button>
+  </div>
+
+
       <table className="leads-table">
         <thead>
           <tr>

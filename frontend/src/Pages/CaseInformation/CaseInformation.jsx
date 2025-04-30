@@ -303,7 +303,7 @@ Case Page
              onClick={() => {
               selectedCase.role === "Investigator"
               ? setPendingRoute("/LRInstruction")
-              : setPendingRoute("/CMInstruction")
+              : setPendingRoute("/LRInstruction")
               // setPendingRoute("/CMInstruction");
               setShowSelectModal(true);
             }}>View Lead Return</li>

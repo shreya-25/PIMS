@@ -153,6 +153,77 @@ export const CMFinish = () => {
     }
   };
 
+  const handleSubmitReport = async () => {
+    try {
+      const token = localStorage.getItem("token");
+  
+      if (!selectedLead || !selectedCase) {
+        alert("No lead or case selected!");
+        return;
+      }
+  
+      const body = {
+        leadNo: selectedLead.leadNo,
+        description: selectedLead.leadName,
+        caseNo: selectedCase.caseNo,
+        caseName: selectedCase.caseName,
+        submittedDate: new Date(),
+        assignedTo: {
+          assignees: ["Officer 916", "Officer 91"],
+          lRStatus: "Submitted"
+        },
+        assignedBy: {
+          assignee: "Officer 912",
+          lRStatus: "Pending"
+        }
+      };
+  
+      // Step 1: Submit the LeadReturn
+      const response = await api.post(
+        "/api/leadReturn/create",
+        body,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+  
+      if (response.status === 201) {
+        // Step 2: Update lead status to 'In Review' via PUT
+        const statusResponse = await api.put(
+          "/api/lead/status/in-review",
+          {
+            leadNo: selectedLead.leadNo,
+            description: selectedLead.leadName,
+            caseNo: selectedCase.caseNo,
+            caseName: selectedCase.caseName
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+  
+        if (statusResponse.status === 200) {
+          alert("Lead Return submitted and status set to 'In Review'");
+        } else {
+          alert("Lead Return submitted but status update failed.");
+        }
+      } else {
+        alert("Failed to submit Lead Return");
+      }
+    } catch (error) {
+      console.error("Error during Lead Return submission or status update:", error);
+      alert("Something went wrong while submitting the report.");
+    }
+  };
+  
+
+
   const submitReturnAndUpdate = async (newStatus) => {
     try {
       const token = localStorage.getItem("token");
@@ -196,13 +267,14 @@ export const CMFinish = () => {
                       navigate(route, { state: { caseDetails } });
                   };
 
+  const isCaseManager = selectedCase?.role === "Case Manager";
 
   return (
     <div className="lrfinish-container">
       <Navbar />
 
       {/* Top Menu */}
-      <div className="top-menu">
+      {/* <div className="top-menu">
         <div className="menu-items">
           <span className="menu-item" onClick={() => handleNavigation("/CMInstruction")}>Instructions</span>
           <span className="menu-item" onClick={() => handleNavigation("/CMReturn")}>Returns</span>
@@ -219,14 +291,68 @@ export const CMFinish = () => {
           </span>
           <span className="menu-item active" onClick={() => handleNavigation("/CMFinish")}>Finish</span>
         </div>
-      </div>
+      </div> */}
 
-      <div className="LRI_Content">
+      {/* <div className="LRI_Content">
        <div className="sideitem">
        <ul className="sidebar-list">
        <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
             <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
             <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+            {selectedCase.role !== "Investigator" && (
+<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
+              {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
+              Add/View Case Notes
+            </li>)}
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            {selectedCase.role !== "Investigator" && (
+  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+    View Lead Chain of Custody
+  </li>
+)}
+         </ul>
+                </div> */}
+
+<div className="top-menu">
+        <div className="menu-items">
+          {[
+            'Instructions', 'Returns', 'Person', 'Vehicles', 'Enclosures', 'Evidence',
+            'Pictures', 'Audio', 'Videos', 'Scratchpad', 'Timeline', 'Finish'
+          ].map((item, index) => (
+            <span
+              key={index}
+              className={`menu-item ${item === 'Timeline' ? 'active' : ''}`}
+              onClick={() => navigate(`/LR${item}`)}
+            >
+              {item}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="LRI_Content">
+       <div className="sideitem">
+       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
+            <li
+  className="sidebar-item"
+  onClick={() =>
+    selectedCase.role === "Investigator"
+      ? navigate("/Investigator")
+      : navigate("/CasePageManager")
+  }
+>
+Case Page
+</li>            
             {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
             <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
@@ -257,7 +383,7 @@ export const CMFinish = () => {
     View Lead Chain of Custody
   </li>
 )}
-         </ul>
+
                 </div>
                 <div className="left-content">
 
@@ -481,6 +607,8 @@ export const CMFinish = () => {
       </tr>
     </tbody>
   </table>
+  <div className="run-sec">
+  <button className="save-btn1" onClick={handleRunReport}>Run Report</button> </div>
 </div>
 
 
@@ -489,17 +617,32 @@ export const CMFinish = () => {
 
         <Comment tag= "Finish"/>
         {/* Buttons */}
+
+        {isCaseManager ?
+        (
         <div className="form-buttons-finish">
-          <button className="save-btn1" onClick={handleRunReport}>Run Report</button>
           <button className="save-btn1"  onClick={() => submitReturnAndUpdate("complete")} >Approve</button>
           <button className="save-btn1"  onClick={() => submitReturnAndUpdate("pending")}>Return</button>
         </div>
+         ) :
+        (
+        <div className="form-buttons-finish">
+          <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
 
-     </div>
-     </div>
+          className="save-btn1" onClick={handleSubmitReport}>
+            Submit Report
+          </button>
+        </div>
+        )
+      }
+
+        </div>
+        </div>
+   
+     
      <FootBar1
         onPrevious={() => navigate(-1)} // Takes user to the last visited page
-        onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
+        onNext={() => navigate("/LRTimelines")} // Takes user to CM Return page
       />
     </div>
     </div>

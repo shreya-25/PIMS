@@ -1,4 +1,3 @@
-
 import FootBar from '../../../components/FootBar/FootBar';
 import React, { useContext, useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -193,9 +192,14 @@ export const LRPerson = () => {
           person.address?.street1 &&
           `${person.address.street1}, ${person.address.city || ""}, ${person.address.state || ""}`,
         leadReturnId: person.leadReturnId,
+        access: "Everyone"
       }));
-  
-      setPersons(mappedPersons);
+
+      const withAccess = mappedPersons.map(r => ({
+        ...r,
+        access: r.access ?? "Everyone"
+      }));
+      setPersons(withAccess);
       setError("");
       setLoading(false);
       console.log("map person", mappedPersons);
@@ -206,6 +210,15 @@ export const LRPerson = () => {
     }
   };
   
+  const handleAccessChange = (idx, newAccess) => {
+    setPersons(rs => {
+      const copy = [...rs];
+      copy[idx] = { ...copy[idx], access: newAccess };
+      return copy;
+    });
+  };
+
+  const isCaseManager = selectedCase?.role === "Case Manager";
   
   return (
     <div className="person-page">
@@ -227,30 +240,16 @@ export const LRPerson = () => {
           <span className="menu-item" onClick={() => handleNavigation('/LRVehicle')} >
             Vehicles
           </span>
-          <span className="menu-item" >
+          <span className="menu-item"onClick={() => handleNavigation('/LREnclosures')} >
             Enclosures
           </span>
-          <span className="menu-item" >
-            Evidence
-          </span>
-          <span className="menu-item" >
-            Pictures
-          </span>
-          <span className="menu-item" >
-            Audio
-          </span>
-          <span className="menu-item" >
-            Videos
-          </span>
-          <span className="menu-item" >
-            Scratchpad
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          <span className="menu-item" >
-            Finish
-          </span>
+          <span className="menu-item" onClick={() => handleNavigation("/LREvidence")}>Evidence</span>
+          <span className="menu-item" onClick={() => handleNavigation("/LRPictures")}>Pictures</span>
+          <span className="menu-item" onClick={() => handleNavigation("/LRAudio")}>Audio</span>
+          <span className="menu-item" onClick={() => handleNavigation("/LRVideos")}>Videos</span>
+          <span className="menu-item" onClick={() => handleNavigation("/LRScratchpad")}>Scratchpad</span>
+          <span className="menu-item" onClick={() => handleNavigation("/LRTimeline")}>Timeline</span>
+          <span className="menu-item" onClick={() => handleNavigation("/LRFinish")}>Finish</span>
          </div>
        </div>
 
@@ -309,10 +308,13 @@ export const LRPerson = () => {
               <th>Address</th>
               <th style={{ width: "14%" }}>Additional Details</th>
               <th style={{ width: "14%" }}></th>
+              {isCaseManager && (
+              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
+            )}
             </tr>
           </thead>
           <tbody>
-            {persons.map((person, index) => (
+            {persons.length > 0 ? persons.map((person, index) => (
               <tr
                 key={index}
                 className={selectedRow === index ? "selected-row" : ""}
@@ -361,8 +363,25 @@ export const LRPerson = () => {
                   </button>
                   </div>
                 </td>
-              </tr>
-            ))}
+                {isCaseManager && (
+          <td>
+            <select
+              value={person.access}
+              onChange={e => handleAccessChange(index, e.target.value)}
+            >
+              <option value="Everyone">Everyone</option>
+              <option value="Case Manager">Case Manager Only</option>
+            </select>
+          </td>
+        )}
+      </tr>
+       )) : (
+        <tr>
+          <td colSpan={isCaseManager ? 8 : 7} style={{ textAlign:'center' }}>
+            No Details Available
+          </td>
+        </tr>
+      )}
           </tbody>
         </table>
         {/* <button onClick={() => handleNavigation('/LRPerson1')} className="save-btn1
