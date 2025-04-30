@@ -161,8 +161,13 @@ export const LRAudio = () => {
                       description: audio.audioDescription,
                       audioSrc: `${BASE_URL}/uploads/${audio.filename}`,
                     }));
+
+                    const withAccess = mappedAudios.map(r => ({
+                      ...r,
+                      access: r.access ?? "Everyone"
+                    }));
                 
-                    setAudioFiles(mappedAudios);
+                    setAudioFiles(withAccess);
                   } catch (error) {
                     console.error("Error fetching audios:", error);
                   }
@@ -178,7 +183,15 @@ export const LRAudio = () => {
                     fetchAudioFiles();
                   }
                 }, [selectedLead, selectedCase]);
-                
+                const isCaseManager = selectedCase?.role === "Case Manager";  
+                const handleAccessChange = (idx, newAccess) => {
+                  setAudioFiles(rs => {
+                    const copy = [...rs];
+                    copy[idx] = { ...copy[idx], access: newAccess };
+                    return copy;
+                  });
+                };
+                      
 
   return (
     <div className="lraudio-container">
@@ -322,10 +335,13 @@ export const LRAudio = () => {
               <th>Date Audio Recorded</th>
               <th>Description</th>
               <th style={{ width: "13%" }}></th>
+              {isCaseManager && (
+              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
+            )}
             </tr>
           </thead>
           <tbody>
-            {audioFiles.map((audio, index) => (
+            {audioFiles.length > 0 ? audioFiles.map((audio, index) => (
               <tr key={index}>
                 <td>{audio.dateEntered}</td>
                 <td>{audio.returnId}</td>
@@ -353,8 +369,25 @@ export const LRAudio = () => {
                   </button>
                   </div>
                 </td>
-              </tr>
-            ))}
+                {isCaseManager && (
+          <td>
+            <select
+              value={audio.access}
+              onChange={e => handleAccessChange(index, e.target.value)}
+            >
+              <option value="Everyone">Everyone</option>
+              <option value="Case Manager">Case Manager Only</option>
+            </select>
+          </td>
+        )}
+      </tr>
+       )) : (
+        <tr>
+          <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign:'center' }}>
+            No Audio Data Available
+          </td>
+        </tr>
+      )}
           </tbody>
         </table>
         <Comment tag="Audio" />

@@ -104,7 +104,7 @@ const handleSelectLead = (lead) => {
       });
     
       // Navigate to Lead Review Page
-      navigate("/CMInstruction", { state: { leadDetails: lead, caseDetails: selectedCase } });
+      navigate("/LRInstruction", { state: { leadDetails: lead, caseDetails: selectedCase } });
     };
 
     
@@ -754,7 +754,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           >Search Lead</li>
             <li className="sidebar-item"    
             onClick={() => {
-              setPendingRoute("/CMInstruction");
+              setPendingRoute("/LRInstruction");
               setShowSelectModal(true);
             }} >View Lead Return</li>
 

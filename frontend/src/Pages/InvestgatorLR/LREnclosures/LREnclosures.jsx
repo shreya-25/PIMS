@@ -282,8 +282,13 @@ export const LREnclosures = () => {
         returnId: enc.leadReturnId,
         originalName: enc.originalName
       }));
+
+      const withAccess = mappedEnclosures.map(r => ({
+        ...r,
+        access: r.access ?? "Everyone"
+      }));
   
-      setEnclosures(mappedEnclosures);
+      setEnclosures(withAccess);
       setLoading(false);
       setError("");
     } catch (err) {
@@ -293,6 +298,15 @@ export const LREnclosures = () => {
     }
   };
   
+  const isCaseManager = selectedCase?.role === "Case Manager";
+  const handleAccessChange = (idx, newAccess) => {
+    setEnclosures(rs => {
+      const copy = [...rs];
+      copy[idx] = { ...copy[idx], access: newAccess };
+      return copy;
+    });
+  };
+
 
   return (
     <div className="lrenclosures-container">
@@ -437,6 +451,9 @@ export const LREnclosures = () => {
               <th>Enclosure</th>
               <th>File Name</th>
               <th></th>
+              {isCaseManager && (
+              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
+            )}
             </tr>
           </thead>
           <tbody>
@@ -470,13 +487,26 @@ export const LREnclosures = () => {
                   </button>
                   </div>
                 </td>
-              </tr>
-                   ))) : (
-                    <tr>
-                      <td colSpan="5" style={{ textAlign: 'center' }}>
-                        No Enclosures Available
-                      </td>
-                    </tr>)}
+              
+                {isCaseManager && (
+          <td>
+            <select
+              value={enclosure.access}
+              onChange={e => handleAccessChange(index, e.target.value)}
+            >
+              <option value="Everyone">Everyone</option>
+              <option value="Case Manager">Case Manager Only</option>
+            </select>
+          </td>
+        )}
+      </tr>
+       ))) : (
+        <tr>
+          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
+            No Enclosures Available
+          </td>
+        </tr>
+      )}
           </tbody>
         </table>
         <Comment tag= "Enclosures"/>

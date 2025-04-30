@@ -248,8 +248,13 @@ export const LREvidence = () => {
         disposedDate: formatDate(enc.disposedDate),
         disposition: enc.disposition
       }));
+
+      const withAccess = mappedEvidences.map(r => ({
+        ...r,
+        access: r.access ?? "Everyone"
+      }));
   
-      setEvidences(mappedEvidences);
+      setEvidences(withAccess);
       setLoading(false);
       setError("");
     } catch (err) {
@@ -263,6 +268,16 @@ export const LREvidence = () => {
     setFile(event.target.files[0]);
     console.log("Selected file:", event.target.files[0]);
   };
+
+  const handleAccessChange = (idx, newAccess) => {
+    setEvidences(rs => {
+      const copy = [...rs];
+      copy[idx] = { ...copy[idx], access: newAccess };
+      return copy;
+    });
+  };
+  const isCaseManager = selectedCase?.role === "Case Manager";
+
   
 
   return (
@@ -414,10 +429,13 @@ export const LREvidence = () => {
               <th>Disposed Date</th>
               <th>Disposition</th>
               <th></th>
+              {isCaseManager && (
+              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
+            )}
             </tr>
           </thead>
           <tbody>
-            {evidences.map((item, index) => (
+            {evidences.length > 0 ?  evidences.map((item, index) => (
               <tr key={index}>
                 <td>{item.dateEntered}</td>
                 <td> {item.returnId} </td>
@@ -447,8 +465,25 @@ export const LREvidence = () => {
                   </button>
                   </div>
                 </td>
-              </tr>
-            ))}
+                {isCaseManager && (
+          <td>
+            <select
+              value={item.access}
+              onChange={e => handleAccessChange(index, e.target.value)}
+            >
+              <option value="Everyone">Everyone</option>
+              <option value="Case Manager">Case Manager Only</option>
+            </select>
+          </td>
+        )}
+      </tr>
+       )) : (
+        <tr>
+          <td colSpan={isCaseManager ? 8 : 7} style={{ textAlign:'center' }}>
+            No Evidences Available
+          </td>
+        </tr>
+      )}
           </tbody>
         </table>
         <Comment tag = "Evidence"/>

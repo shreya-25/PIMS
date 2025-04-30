@@ -119,8 +119,12 @@ export const LRTimeline = () => {
         description: entry.eventDescription,
         flags: entry.timelineFlag || [],
       }));
+      const withAccess = mapped.map(r => ({
+        ...r,
+        access: r.access ?? "Everyone"
+      }));
   
-      setTimelineEntries(mapped);
+      setTimelineEntries(withAccess);
     } catch (err) {
       console.error("Error fetching timeline entries:", err);
     }
@@ -239,7 +243,17 @@ export const LRTimeline = () => {
                       const onShowCaseSelector = (route) => {
                         navigate(route, { state: { caseDetails } });
                     };
-    
+    const isCaseManager = selectedCase?.role === "Case Manager";
+
+    // handler to change access per row
+const handleAccessChange = (idx, newAccess) => {
+  setTimelineEntries(rs => {
+    const copy = [...rs];
+    copy[idx] = { ...copy[idx], access: newAccess };
+    return copy;
+  });
+};
+
 
   return (
     <div className="timeline-container">
@@ -402,6 +416,9 @@ Case Page
                 <th style={{ width: "15%" }}>Event Location</th>
                 <th >Event Description</th>
                 <th style={{ width: "13%" }}></th>
+                {isCaseManager && (
+              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
+            )}
               </tr>
             </thead>
             <tbody>
@@ -439,13 +456,26 @@ Case Page
                   </button>
                   </div>
                 </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6">No timelines found during investigation.</td>
-                </tr>
-              )}
+              
+                {isCaseManager && (
+          <td>
+            <select
+              value={entry.access}
+              onChange={e => handleAccessChange(index, e.target.value)}
+            >
+              <option value="Everyone">Everyone</option>
+              <option value="Case Manager">Case Manager Only</option>
+            </select>
+          </td>
+        )}
+      </tr>
+       ))) : (
+        <tr>
+          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
+            No Timeline Entry Available
+          </td>
+        </tr>
+      )}
             </tbody>
           </table>
           <Comment tag= "Timeline"/>

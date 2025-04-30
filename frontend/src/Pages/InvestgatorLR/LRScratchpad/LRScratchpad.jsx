@@ -136,8 +136,13 @@ export const LRScratchpad = () => {
         dateEntered: formatDate(note.enteredDate),
         returnId: note.leadReturnId,
       }));
+    const withAccess = formatted.map(r => ({
+      ...r,
+      access: r.access ?? "Everyone"
+    }));
 
     setNotes(formatted);
+
     } catch (error) {
       console.error("Error fetching scratchpad notes:", error);
     }
@@ -153,6 +158,16 @@ export const LRScratchpad = () => {
       fetchNotes();
     }
   }, [selectedLead, selectedCase]);
+  
+  const isCaseManager = selectedCase?.role === "Case Manager";
+
+  const handleAccessChange = (idx, newAccess) => {
+    setNotes(rs => {
+      const copy = [...rs];
+      copy[idx] = { ...copy[idx], access: newAccess };
+      return copy;
+    });
+  };
   
 
   return (
@@ -262,10 +277,13 @@ export const LRScratchpad = () => {
               <th>Entered By</th>
               <th>Text</th>
               <th></th>
+              {isCaseManager && (
+              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
+            )}
             </tr>
           </thead>
           <tbody>
-            {notes.map((note, index) => (
+            {notes.length > 0 ? notes.map((note, index) => (
               <tr key={index}>
                 <td>{note.dateEntered}</td>
                 <td> {note.returnId} </td>
@@ -293,8 +311,26 @@ export const LRScratchpad = () => {
                   </button>
                   </div>
                 </td>
-              </tr>
-            ))}
+            
+                {isCaseManager && (
+          <td>
+            <select
+              value={note.access}
+              onChange={e => handleAccessChange(index, e.target.value)}
+            >
+              <option value="Everyone">Everyone</option>
+              <option value="Case Manager">Case Manager Only</option>
+            </select>
+          </td>
+        )}
+      </tr>
+       )) : (
+        <tr>
+          <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign:'center' }}>
+            No Returns Available
+          </td>
+        </tr>
+      )}
           </tbody>
         </table>
         <Comment tag= "Scratchpad"/>

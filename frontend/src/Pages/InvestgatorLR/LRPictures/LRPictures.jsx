@@ -196,13 +196,26 @@ export const LRPictures = () => {
         description: pic.pictureDescription,
           image: `${BASE_URL}/uploads/${pic.filename}`
       }));
+      const withAccess = mappedPictures.map(r => ({
+        ...r,
+        access: r.access ?? "Everyone"
+      }));
   
-      setPictures(mappedPictures);
+      setPictures(withAccess);
     } catch (error) {
       console.error("Error fetching pictures:", error);
     }
   };
-  
+
+  const isCaseManager = selectedCase?.role === "Case Manager";
+  // handler to change access per row
+const handleAccessChange = (idx, newAccess) => {
+  setPictures(rs => {
+    const copy = [...rs];
+    copy[idx] = { ...copy[idx], access: newAccess };
+    return copy;
+  });
+};
 
   return (
     <div className="lrpictures-container">
@@ -338,14 +351,17 @@ export const LRPictures = () => {
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th>Associated Return Id </th>
+              <th>Return Id </th>
               <th>Date Picture Taken</th>
               <th>Description</th>
               <th></th>
+              {isCaseManager && (
+              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
+            )}
             </tr>
           </thead>
           <tbody>
-            {pictures.map((picture, index) => (
+            {pictures.length > 0 ? pictures.map((picture, index) => (
               <tr key={index}>
                 <td>{picture.dateEntered}</td>
                 <td>{picture.returnId}</td>
@@ -373,8 +389,25 @@ export const LRPictures = () => {
                   </button>
                   </div>
                 </td>
-              </tr>
-            ))}
+                {isCaseManager && (
+          <td>
+            <select
+              value={picture.access}
+              onChange={e => handleAccessChange(index, e.target.value)}
+            >
+              <option value="Everyone">Everyone</option>
+              <option value="Case Manager">Case Manager Only</option>
+            </select>
+          </td>
+        )}
+      </tr>
+       )) : (
+        <tr>
+          <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign:'center' }}>
+            No Pictures Available
+          </td>
+        </tr>
+      )}
           </tbody>
         </table>
         <Comment tag= "Pictures"/>
