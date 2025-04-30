@@ -321,7 +321,7 @@ Case Page
              onClick={() => {
               selectedCase.role === "Investigator"
               ? setPendingRoute("/LRInstruction")
-              : setPendingRoute("/CMInstruction")
+              : setPendingRoute("/LRInstruction")
               // setPendingRoute("/CMInstruction");
               setShowSelectModal(true);
             }}>View Lead Return</li>
@@ -689,7 +689,7 @@ Case Page
                   key={idx}
                   className="lead-tracker-row"
                   onClick={() => {
-                    if (status === "Lead Return Submitted") handleNavigation("/CMInstruction");
+                    if (status === "Lead Return Submitted") handleNavigation("/LRInstruction");
                   }}
                   style={{ cursor: status === "Lead Return Submitted" ? "pointer" : "default" }}
                 >

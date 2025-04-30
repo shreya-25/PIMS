@@ -170,12 +170,26 @@ export const LRVideo = () => {
                         description: video.videoDescription,
                         videoSrc: `${BASE_URL}/uploads/${video.filename}`,
                       }));
+
+                      const withAccess = mappedVideos.map(r => ({
+                        ...r,
+                        access: r.access ?? "Everyone"
+                      }));
                   
-                      setVideos(mappedVideos);
+                      setVideos(withAccess);
                     } catch (error) {
                       console.error("Error fetching videos:", error);
                     }
                   };
+
+                  const handleAccessChange = (idx, newAccess) => {
+                    setVideos(rs => {
+                      const copy = [...rs];
+                      copy[idx] = { ...copy[idx], access: newAccess };
+                      return copy;
+                    });
+                  };
+                  const isCaseManager = selectedCase?.role === "Case Manager";              
                   
   return (
     <div className="lrvideos-container">
@@ -317,10 +331,13 @@ export const LRVideo = () => {
               <th>Date Video Recorded</th>
               <th>Description</th>
               <th style={{ width: "13%" }}></th>
+              {isCaseManager && (
+              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
+            )}
             </tr>
           </thead>
           <tbody>
-            {videos.map((video, index) => (
+            {videos.length > 0 ? videos.map((video, index) => (
               <tr key={index}>
                 <td>{video.dateEntered}</td>
                 <td>{video.returnId} </td>
@@ -348,8 +365,26 @@ export const LRVideo = () => {
                   </button>
                   </div>
                 </td>
-              </tr>
-            ))}
+            
+                {isCaseManager && (
+          <td>
+            <select
+              value={video.access}
+              onChange={e => handleAccessChange(index, e.target.value)}
+            >
+              <option value="Everyone">Everyone</option>
+              <option value="Case Manager">Case Manager Only</option>
+            </select>
+          </td>
+        )}
+      </tr>
+       )) : (
+        <tr>
+          <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign:'center' }}>
+            No Video Data Available
+          </td>
+        </tr>
+      )}
           </tbody>
         </table>
         <Comment tag="Video" />

@@ -253,8 +253,13 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
         plate: vehicle.plate,
         state: vehicle.state,
       }));
+
+      const withAccess = mapped.map(r => ({
+        ...r,
+        access: r.access ?? "Everyone"
+      }));
   
-      setVehicles(mapped);
+      setVehicles(withAccess);
       setError("");
     } catch (err) {
       console.error("Error fetching vehicle records:", err);
@@ -262,7 +267,15 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
     }
   };
   
+  const handleAccessChange = (idx, newAccess) => {
+    setVehicles(rs => {
+      const copy = [...rs];
+      copy[idx] = { ...copy[idx], access: newAccess };
+      return copy;
+    });
+  };
   
+  const isCaseManager = selectedCase?.role === "Case Manager";
 
 
 
@@ -499,10 +512,13 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
               <th>State</th>
               <th style={{ width: "15%" }}>Additional Details</th>
               <th style={{ width: "14%" }}></th>
+              {isCaseManager && (
+              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
+            )}
             </tr>
           </thead>
           <tbody>
-    {vehicles.map((vehicle, index) => (
+    {vehicles.length > 0 ? vehicles.map((vehicle, index) => (
       <tr key={index}>
         <td>{vehicle.dateEntered}</td>
         <td>{vehicle.returnId}</td>
@@ -563,8 +579,25 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
                   </button>
                   </div>
                 </td>
+                {isCaseManager && (
+          <td>
+            <select
+              value={vehicle.access}
+              onChange={e => handleAccessChange(index, e.target.value)}
+            >
+              <option value="Everyone">Everyone</option>
+              <option value="Case Manager">Case Manager Only</option>
+            </select>
+          </td>
+        )}
       </tr>
-    ))}
+       )) : (
+        <tr>
+          <td colSpan={isCaseManager ? 9 : 8} style={{ textAlign:'center' }}>
+            No Returns Available
+          </td>
+        </tr>
+      )}
   </tbody>
         </table>
         <Comment tag= "Vehicle"/>
