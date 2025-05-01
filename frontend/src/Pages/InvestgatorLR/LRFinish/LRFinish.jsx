@@ -25,7 +25,7 @@ export const LRFinish = () => {
   //   }, []);
   const navigate = useNavigate();
   const localPdfRef = useRef(null);
-  const { selectedCase, selectedLead, leadInstructions, leadReturns, setLeadReturns} = useContext(CaseContext);
+  const { selectedCase, selectedLead, leadInstructions, leadReturns, leadPersons} = useContext(CaseContext);
 
 
   const location = useLocation();
@@ -47,7 +47,7 @@ export const LRFinish = () => {
         const { leadDetails, caseDetails } = location.state || {};
         const [leadInstruction, setLeadInstruction] = useState({});
         const [leadReturn, setLeadReturn] = useState([]);
-        const [leadPersons, setLeadPersons] = useState([]);
+        // const [leadPersons, setLeadPersons] = useState([]);
         const [leadVehicles, setLeadVehicles] = useState([]);
         const [leadEnclosures, setLeadEnclosures] = useState([]);
         const [leadEvidences, setLeadEvidences] = useState([]);
@@ -64,7 +64,7 @@ export const LRFinish = () => {
             }
            }, [leadReturns]);
 
-        console.log("LD", leadReturns);
+        console.log("LD", leadPersons);
 
 
 
@@ -116,7 +116,7 @@ export const LRFinish = () => {
               // Pass the entire object or only if selected
               leadInstruction: selectedReports.leadInstruction ? leadInstruction : null,
               leadReturn: selectedReports.leadReturn ? leadReturns : null,
-              leadPersons: selectedReports.leadPersons ? leadPersons : null,
+              leadPersons:     selectedReports.leadPersons     ? leadPersons     : null,
               leadVehicles: selectedReports.leadVehicles ? leadVehicles : null,
               leadEnclosures: selectedReports.leadEnclosures ? leadVehicles : null,
               leadEvidence: selectedReports.leadEvidence ? leadVehicles : null,
@@ -130,6 +130,7 @@ export const LRFinish = () => {
               selectedReports,
               leadInstructions,
               leadReturns,
+              leadPersons
             };
 
             // generatePDF(pdfRef.current);

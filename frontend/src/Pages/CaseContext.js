@@ -35,7 +35,7 @@ export const CaseProvider = ({ children }) => {
 
     const [leadInstructions, setLeadInstructions] = useState(null);
     const [leadReturns, setLeadReturns] = useState(null);
-    const [leadPersons, setleadPersons] = useState(null);
+    const [leadPersons, setLeadPersons] = useState(null);
     const [leadVehicles, setleadVehicles] = useState(null);
     const [leadEnclosures, setleadEnclosures] = useState(null);
     const [leadEvidence, setleadEvidence] = useState(null);
@@ -82,6 +82,7 @@ export const CaseProvider = ({ children }) => {
             token, setToken, 
             leadInstructions, setLeadInstructions,
             leadReturns, setLeadReturns,
+            leadPersons, setLeadPersons,
             selectedReports, setSelectedReports,
             withAutoRefresh, leadStatus,         
             setLeadStatus 

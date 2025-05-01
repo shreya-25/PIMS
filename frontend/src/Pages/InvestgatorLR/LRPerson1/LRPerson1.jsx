@@ -61,7 +61,7 @@ useEffect(() => {
       hairColor: '',
       tattoo: '',
       scar: '',
-      marks: '',
+      mark: '',
     });
   
     // Handle form input changes
@@ -151,7 +151,7 @@ const [miscDetails, setMiscDetails] = useState([
       hairColor: formData.hairColor,
       tattoo: formData.tattoo,
       scar: formData.scar,
-      marks: formData.marks,
+      mark: formData.mark,
   
       additionalData: miscDetails, // Store all misc rows
     };
@@ -576,17 +576,26 @@ const [miscDetails, setMiscDetails] = useState([
 
                   <tr>
                     <td>Tattoo</td>
-                    <td><input type="text" /></td>
+                    <td><input type="text"  value={formData.tattoo}
+                    onChange={(e) =>
+                      handleChange("tattoo", e.target.value)
+                    } /></td>
                     
                     <td>Scar</td>
               
-                    <td><input type="text" /></td>
+                    <td><input type="text"  value={formData.scar}
+                    onChange={(e) =>
+                      handleChange("scar", e.target.value)
+                    } /></td>
                     
                   </tr>
                   <tr>
-                    <td>Marks</td>
+                    <td>Mark</td>
                     {/* <td colSpan="7"> */}
-                    <td><input type="text" /></td>
+                    <td><input type="text"  value={formData.mark}
+                    onChange={(e) =>
+                      handleChange("mark", e.target.value)
+                    } /></td>
       
                   </tr>
             {/* Miscellaneous Section */}
