@@ -94,7 +94,7 @@ useEffect(() => {
           console.log("Fetched Lead RR1:", response.data);
 
           setReturns(response.data.length > 0 ? response.data : []);
-
+          setLeadReturns(response.data);
 
           // if (response.data.length > 0) {
           //   setReturns({
@@ -112,7 +112,7 @@ useEffect(() => {
     };
 
     fetchLeadData();
-  }, [leadDetails, caseDetails]);
+  }, [leadDetails, caseDetails, setLeadReturns ]);
 
 
   // State for managing form input

@@ -13,9 +13,9 @@ const upload = require("../middleware/upload-disk");
 const router = express.Router();
 
 // Original secure route for report generation
-router.post("/generate", verifyToken, roleMiddleware("CaseManager"), generateReport);
+router.post("/generate", verifyToken, generateReport);
 
-router.post("/generateCase", verifyToken, roleMiddleware("CaseManager"), generateCaseReport);
+router.post("/generateCase", verifyToken, generateCaseReport);
 
 // router.post("/generateCaseExecSummary", verifyToken, roleMiddleware("CaseManager"), generateCaseReportwithExecSummary);
 
