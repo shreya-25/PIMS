@@ -713,11 +713,22 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
   <td>Due Date *</td>
   <td>
     <input
-      type="text"
+      type="date"
       className="input-field"
       value={leadData.dueDate}
       onChange={(e) => handleInputChange('dueDate', e.target.value)}
-      placeholder="MM/DD/YY"
+      // placeholder="MM/DD/YY"
+      style={{
+        appearance: 'none',
+        WebkitAppearance: 'none',
+        MozAppearance: 'none',
+        border: '1px solid #ccc',
+        padding: '8px',
+        color: '#333',
+        borderRadius: '4px',
+        fontSize: '20px',
+        backgroundColor: 'white',
+      }}
     />
   </td>
 </tr>

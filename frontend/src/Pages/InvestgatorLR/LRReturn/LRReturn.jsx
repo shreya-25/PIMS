@@ -37,7 +37,7 @@ useEffect(() => {
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
+    const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus, setLeadReturns  } = useContext(CaseContext);
     const isDisabled = leadStatus === "In Review" || leadStatus === "Completed";
 
   
@@ -181,6 +181,7 @@ useEffect(() => {
           access: r.access ?? "Everyone"
         }));
         setReturns(withAccess);
+        setLeadReturns(withAccess);
         // Determine the highest existing return id (if any) using alphabetToNumber conversion
         const maxNumericId = withAccess.reduce((max, item) => {
           // If leadReturnId is not defined, treat it as 0.
@@ -308,6 +309,7 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
       // Update return list and maxReturnId
   const updatedReturns = [...returns, createResponse.data];
   setReturns(updatedReturns);
+  setLeadReturns(updatedReturns);
   setMaxReturnId(nextNumericId); // <- update the counter
 
   // Update the next ID in the return form
@@ -363,7 +365,9 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
         headers: { Authorization: `Bearer ${token}` }
       });
   
-      setReturns((prev) => prev.filter((ret) => ret.leadReturnId !== leadReturnId));
+      const filtered = returns.filter(r => r.leadReturnId !== leadReturnId);
+      setReturns(filtered);
+      setLeadReturns(filtered);
     } catch (err) {
       console.error("Error deleting return:", err);
       alert("Failed to delete return.");

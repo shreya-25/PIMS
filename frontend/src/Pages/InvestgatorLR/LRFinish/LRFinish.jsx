@@ -59,10 +59,10 @@ export const LRFinish = () => {
         }, [leadInstructions]);
 
         useEffect(() => {
-          if (leadReturns) {
-            setLeadReturn(leadReturns);
-          }
-        }, [leadReturns]);
+          if (leadReturns && leadReturns.length) {
+             setLeadReturn(leadReturns);
+            }
+           }, [leadReturns]);
 
         console.log("LD", leadReturns);
 
