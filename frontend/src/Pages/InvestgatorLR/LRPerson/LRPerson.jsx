@@ -27,7 +27,7 @@ export const LRPerson = () => {
         const { leadDetails, caseDetails } = location.state || {};
           const [loading, setLoading] = useState(true);
           const [error, setError] = useState("");
-            const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+            const { selectedCase, selectedLead, setSelectedLead, setLeadPersons } = useContext(CaseContext);
 
                 const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
                 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
@@ -181,6 +181,7 @@ export const LRPerson = () => {
       );
 
       console.log(res);
+      const personsFromApi = res.data;
   
       // Map response to desired format
       const mappedPersons = res.data.map((person) => ({
@@ -200,6 +201,7 @@ export const LRPerson = () => {
         access: r.access ?? "Everyone"
       }));
       setPersons(withAccess);
+      setLeadPersons(personsFromApi);
       setError("");
       setLoading(false);
       console.log("map person", mappedPersons);
