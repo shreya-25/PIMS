@@ -306,9 +306,9 @@ function generateReport(req, res) {
       doc.font("Helvetica-Bold").fontSize(11).text(`Lead Return ID: ${entry.leadReturnId}`, 50, currentY);
       currentY += 20;
 
-      const dateEntered = formatDate(entry.dateEntered);
+      const dateEntered = formatDate(entry.enteredDate);
       const enteredBy = entry.enteredBy || "N/A";
-      const leadText = entry.leadReturn || "N/A";
+      const leadText = entry.leadReturnResult || "N/A";
 
       currentY = drawTable(
         doc,

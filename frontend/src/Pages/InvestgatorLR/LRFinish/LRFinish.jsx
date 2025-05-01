@@ -25,7 +25,7 @@ export const LRFinish = () => {
   //   }, []);
   const navigate = useNavigate();
   const localPdfRef = useRef(null);
-  const { selectedCase, selectedLead, leadInstructions, leadReturns} = useContext(CaseContext);
+  const { selectedCase, selectedLead, leadInstructions, leadReturns, setLeadReturns} = useContext(CaseContext);
 
 
   const location = useLocation();
@@ -60,9 +60,9 @@ export const LRFinish = () => {
 
         useEffect(() => {
           if (leadReturns) {
-            setLeadReturn(leadReturns);
+            setLeadReturns(leadReturns);
           }
-        }, [leadReturns]);
+        }, [leadReturns, setLeadReturns]);
 
         console.log("LD", leadReturns);
 
@@ -115,7 +115,7 @@ export const LRFinish = () => {
       
               // Pass the entire object or only if selected
               leadInstruction: selectedReports.leadInstruction ? leadInstruction : null,
-              leadReturn: selectedReports.leadReturn ? leadReturn : null,
+              leadReturn: selectedReports.leadReturn ? leadReturns : null,
               leadPersons: selectedReports.leadPersons ? leadPersons : null,
               leadVehicles: selectedReports.leadVehicles ? leadVehicles : null,
               leadEnclosures: selectedReports.leadEnclosures ? leadVehicles : null,
@@ -128,7 +128,8 @@ export const LRFinish = () => {
       
               // Also pass along which sections are selected
               selectedReports,
-              leadInstructions
+              leadInstructions,
+              leadReturns,
             };
 
             // generatePDF(pdfRef.current);
@@ -147,10 +148,18 @@ export const LRFinish = () => {
       const fileURL = URL.createObjectURL(file);
       window.open(fileURL); 
 
-    } catch (error) {
-      console.error("Failed to generate report", error);
-      alert("Error generating PDF");
+    }  catch (err) {
+      // 4) If it's a blob error, read it as text so you can see the server message
+      if (err.response?.data instanceof Blob) {
+        const text = await err.response.data.text();
+        console.error("📋 Backend error message:", text);
+        alert("Error generating PDF:\n" + text);
+      } else {
+        console.error("AxiosError:", err);
+        alert("Error generating PDF: " + err.message);
+      }
     }
+  
   };
 
   const handleSubmitReport = async () => {
