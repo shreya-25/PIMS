@@ -36,6 +36,9 @@ const createLRPerson = async (req, res) => {
             glasses,
             height,
             weight,
+            scar,
+            tattoo,
+            mark,
             additionalData // Allows additional dynamic fields
         } = req.body;
 
@@ -72,6 +75,9 @@ const createLRPerson = async (req, res) => {
             glasses,
             height,
             weight,
+            scar,
+            tattoo,
+            mark,
             additionalData
         });
 

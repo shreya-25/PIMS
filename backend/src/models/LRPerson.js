@@ -61,6 +61,9 @@ const lrPersonSchema = new mongoose.Schema(
             inches: { type: Number },
         },
         weight: { type: Number },
+        scar:{ type: String },
+        tattoo: { type: String },
+        mark: { type: String },
         additionalData: { type: Schema.Types.Mixed }, 
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields

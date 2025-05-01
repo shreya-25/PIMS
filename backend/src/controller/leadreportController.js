@@ -427,89 +427,205 @@ function generateReport(req, res) {
   }
     }
 
+    // if (includeAll || leadPersons) {
+    //   if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+    //     doc.addPage();
+    //     currentY = doc.page.margins.top;
+    //   }
+    //   doc.font("Helvetica-Bold").fontSize(12).text("Person Details", 50, currentY);
+    //   currentY += 20;
+
+    //   const personTables = [
+    //     ["Date Entered", "Name", "Phone #", "Address"],
+    //     ["Last Name", "First Name", "Middle Initial", "Cell Number"],
+    //     ["Business Name", "Street 1", "Street 2", "Building"],
+    //     ["Apartment", "City", "State", "Zip Code"],
+    //     ["SSN", "Age", "Email", "Occupation"],
+    //     ["Person Type", "Condition", "Caution Type", "Sex"],
+    //     ["Race", "Ethnicity", "Skin Tone", "Eye Color"],
+    //     ["Glasses", "Hair Color", "Height", "Weight"]
+    //   ];
+    //   const personWidths = {
+    //             "Date Entered": 90,
+    //             "Name": 100,
+    //             "Phone #": 100,
+    //             "Address": 222,
+              
+    //             "Last Name": 90,
+    //             "First Name": 100,
+    //             "Middle Initial": 100,
+    //             "Cell Number": 222,
+              
+    //             "Business Name": 90,
+    //             "Street 1": 100,
+    //             "Street 2": 100,
+    //             "Building": 222,
+              
+    //             "Apartment": 90,
+    //             "City": 100,
+    //             "State": 100,
+    //             "Zip Code": 222,
+              
+    //             "SSN": 90,
+    //             "Age": 100,
+    //             "Email": 100,
+    //             "Occupation": 222,
+              
+    //             "Person Type": 90,
+    //             "Condition": 100,
+    //             "Caution Type": 100,
+    //             "Sex": 222,
+              
+    //             "Race": 90,
+    //             "Ethnicity": 100,
+    //             "Skin Tone": 100,
+    //             "Eye Color": 222,
+              
+    //             "Glasses": 90,
+    //             "Hair Color": 100,
+    //             "Height": 100,
+    //             "Weight": 222,
+    //           };
+              
+
+    //   const personData = [
+    //     ["03/14/24", "Dan, Hill", "1234567890", "120 3rd St, New York, NY"],
+    //     ["Hill", "Dan", "S.", "1234567890"],
+    //     ["", "", "", ""],
+    //     ["", "", "", ""],
+    //     ["", "20", "", ""],
+    //     ["", "", "", ""],
+    //     ["", "", "", ""],
+    //     ["", "", "", ""]
+    //   ];
+
+    //   personTables.forEach((headers, i) => {
+    //     if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+    //       doc.addPage();
+    //       currentY = doc.page.margins.top;
+    //     }
+    //     const row = {};
+    //     const colWidths = headers.map(header => personWidths[header] || 100);
+    //     headers.forEach((h, j) => row[h] = personData[i][j]);
+    //     currentY = drawTable(doc, 50, currentY, headers, [row], colWidths) + 20;
+    //   });
+    // }
+
     if (includeAll || leadPersons) {
-      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage();
-        currentY = doc.page.margins.top;
-      }
-      doc.font("Helvetica-Bold").fontSize(12).text("Person Details", 50, currentY);
-      currentY += 20;
-
-      const personTables = [
-        ["Date Entered", "Name", "Phone #", "Address"],
-        ["Last Name", "First Name", "Middle Initial", "Cell Number"],
-        ["Business Name", "Street 1", "Street 2", "Building"],
-        ["Apartment", "City", "State", "Zip Code"],
-        ["SSN", "Age", "Email", "Occupation"],
-        ["Person Type", "Condition", "Caution Type", "Sex"],
-        ["Race", "Ethnicity", "Skin Tone", "Eye Color"],
-        ["Glasses", "Hair Color", "Height", "Weight"]
-      ];
-      const personWidths = {
-                "Date Entered": 90,
-                "Name": 100,
-                "Phone #": 100,
-                "Address": 222,
-              
-                "Last Name": 90,
-                "First Name": 100,
-                "Middle Initial": 100,
-                "Cell Number": 222,
-              
-                "Business Name": 90,
-                "Street 1": 100,
-                "Street 2": 100,
-                "Building": 222,
-              
-                "Apartment": 90,
-                "City": 100,
-                "State": 100,
-                "Zip Code": 222,
-              
-                "SSN": 90,
-                "Age": 100,
-                "Email": 100,
-                "Occupation": 222,
-              
-                "Person Type": 90,
-                "Condition": 100,
-                "Caution Type": 100,
-                "Sex": 222,
-              
-                "Race": 90,
-                "Ethnicity": 100,
-                "Skin Tone": 100,
-                "Eye Color": 222,
-              
-                "Glasses": 90,
-                "Hair Color": 100,
-                "Height": 100,
-                "Weight": 222,
-              };
-              
-
-      const personData = [
-        ["03/14/24", "Dan, Hill", "1234567890", "120 3rd St, New York, NY"],
-        ["Hill", "Dan", "S.", "1234567890"],
-        ["", "", "", ""],
-        ["", "", "", ""],
-        ["", "20", "", ""],
-        ["", "", "", ""],
-        ["", "", "", ""],
-        ["", "", "", ""]
-      ];
-
-      personTables.forEach((headers, i) => {
-        if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-          doc.addPage();
-          currentY = doc.page.margins.top;
+      if (!Array.isArray(leadPersons) || leadPersons.length === 0) {
+        doc.font("Helvetica").fontSize(11)
+           .text("No person data available.", 50, currentY);
+        currentY += 20;
+      } else {
+        // Section header
+        doc.font("Helvetica-Bold").fontSize(12)
+           .text("Person Details", 50, currentY);
+        currentY += 20;
+    
+        // How we’ll group fields into small tables
+        const personTables = [
+          ["Date Entered", "Name", "Phone #", "Address"],
+          ["Last Name", "First Name", "Middle Initial", "Suffix"],
+          ["Cell Number", "Business Name", "SSN", "Age"],
+          ["Email", "Occupation", "Person Type", "Condition"],
+          ["Caution Type", "Sex", "Race", "Ethnicity"],
+          ["Skin Tone", "Eye Color", "Glasses", "Hair Color"],
+          ["Height", "Weight", "Scar", "Tattoo"],
+          ["Mark", "Additional Data"]
+        ];
+        // You can tweak these widths to taste
+        const personWidths = {
+          "Date Entered": 90, "Name": 100,      "Phone #": 100,    "Address": 222,
+          "Last Name": 90,     "First Name": 100,  "Middle Initial": 100,"Suffix": 222,
+          "Cell Number": 90,  "Business Name": 100,"SSN": 100,       "Age": 222,
+          "Email": 90,        "Occupation": 100,  "Person Type": 100, "Condition": 222,
+          "Caution Type": 90, "Sex": 100,          "Race": 100,       "Ethnicity": 222,
+          "Skin Tone": 90,     "Eye Color": 100,    "Glasses": 100,    "Hair Color": 222,
+          "Height": 90,        "Weight": 100,       "Scar": 100,       "Tattoo": 222,
+          "Mark": 80,          "Additional Data": 432
+        };
+    
+        // Helper to pull the right field off your model
+        function getPersonValue(person, header) {
+          switch (header) {
+            case "Date Entered":   return formatDate(person.enteredDate);
+            case "Name":           return `${person.lastName||""}, ${person.firstName||""}`.trim();
+            case "Phone #":        return person.cellNumber || "";
+            case "Address":          return [
+              person.address.building,
+              person.address.apartment && `Apt ${person.address.apartment}`,
+              person.address.street1,
+              person.address.street2,
+              person.address.city,
+              person.address.state,
+              person.address.zipCode
+            ]
+            .filter(Boolean)    // remove undefined or ""
+            .join(", ");
+            case "Last Name":      return person.lastName || "";
+            case "First Name":     return person.firstName || "";
+            case "Middle Initial": return person.middleInitial || "";
+            case "Suffix":         return person.suffix || "";
+            case "Cell Number":    return person.cellNumber || "";
+            case "Business Name":  return person.businessName || "";
+            case "SSN":            return person.ssn || "";
+            case "Age":            return person.age?.toString() || "";
+            case "Email":          return person.email || "";
+            case "Occupation":     return person.occupation || "";
+            case "Person Type":    return person.personType || "";
+            case "Condition":      return person.condition || "";
+            case "Caution Type":   return person.cautionType || "";
+            case "Sex":            return person.sex || "";
+            case "Race":           return person.race || "";
+            case "Ethnicity":      return person.ethnicity || "";
+            case "Skin Tone":      return person.skinTone || "";
+            case "Eye Color":      return person.eyeColor || "";
+            case "Glasses":        return person.glasses || "";
+            case "Hair Color":     return person.hairColor || "";
+            case "Height":         return person.height || "";
+            case "Weight":         return person.weight || "";
+            case "Scar":           return person.scar || "";
+            case "Tattoo":         return person.tattoo || "";
+            case "Mark":           return person.mark || "";
+            case "Additional Data": return (person.additionalData || [])
+            .map(d => [d.description, d.details].filter(Boolean).join(": "))
+            .join("; ");
+            default:               return "";
+          }
         }
-        const row = {};
-        const colWidths = headers.map(header => personWidths[header] || 100);
-        headers.forEach((h, j) => row[h] = personData[i][j]);
-        currentY = drawTable(doc, 50, currentY, headers, [row], colWidths) + 20;
-      });
+    
+        // Loop through each person object
+        leadPersons.forEach((person, pIdx) => {
+          // Label each person if you like
+          doc.font("Helvetica-Bold").fontSize(11)
+             .text(`Person ${pIdx + 1}`, 50, currentY);
+          currentY += 15;
+    
+          // Now draw each mini-table
+          personTables.forEach((headers) => {
+            // page-break check
+            if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+              doc.addPage();
+              currentY = doc.page.margins.top;
+            }
+    
+            // build one row of data
+            const row = {};
+            headers.forEach(h => {
+              row[h] = getPersonValue(person, h);
+            });
+    
+            // compute column widths
+            const colWidths = headers.map(h => personWidths[h] || 100);
+    
+            // draw it
+            currentY = drawTable(doc, 50, currentY, headers, [row], colWidths)
+                     + 20;
+          });
+        });
+      }
     }
+    
 
     if (includeAll || leadVehicles) {
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
