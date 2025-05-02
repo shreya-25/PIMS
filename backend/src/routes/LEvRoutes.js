@@ -1,6 +1,8 @@
 const express = require("express");
 const verifyToken = require("../middleware/authMiddleware");
-const { createLREvidence, getLREvidenceByDetails } = require("../controller/LREvidenceController");
+const { createLREvidence, getLREvidenceByDetails,
+  updateLREvidence,
+  deleteLREvidence } = require("../controller/LREvidenceController");
 const getUploadMiddleware = require("../middleware/upload");
 const upload = require("../middleware/upload-disk");
 
@@ -77,6 +79,21 @@ router.post(
 
 
 router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLREvidenceByDetails);
+
+// Update evidence (with optional file)
+router.put(
+  "/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId/:evidenceDescription",
+  verifyToken,
+  upload.single("file"),
+  updateLREvidence
+);
+
+// Delete evidence
+router.delete(
+  "/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId/:evidenceDescription",
+  verifyToken,
+  deleteLREvidence
+);
 
 
 module.exports = router;

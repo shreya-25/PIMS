@@ -26,6 +26,8 @@ export const LREvidence = () => {
       const [error, setError] = useState("");
       const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);  
       const fileInputRef = useRef();
+      const [editIndex, setEditIndex]         = useState(null);
+      const [originalDesc, setOriginalDesc]   = useState("");
 
   
   
@@ -76,10 +78,12 @@ export const LREvidence = () => {
 
   // State to manage form data
   const [evidenceData, setEvidenceData] = useState({
-    collectionDate: "",
-    disposedDate: "",
-    type: "",
-    disposition: "",
+    leadReturnId:         "",
+   evidenceDescription:  "",
+   collectionDate:       "",
+   disposedDate:         "",
+   type:                 "",
+  disposition:          "",
   });
     const [file, setFile] = useState(null);
 
@@ -170,7 +174,7 @@ export const LREvidence = () => {
     formData.append("leadReturnId", evidenceData.leadReturnId);
     formData.append("enteredDate", new Date().toISOString());
     formData.append("type", evidenceData.type);
-    formData.append("evidenceDescription", evidenceData.disposition); // ← fixed typo
+    formData.append("evidenceDescription", evidenceData.evidenceDescription); // ← fixed typo
     formData.append("collectionDate", evidenceData.collectionDate);
     formData.append("disposedDate", evidenceData.disposedDate);
     formData.append("disposition", evidenceData.disposition);
@@ -241,7 +245,7 @@ export const LREvidence = () => {
       const mappedEvidences = res.data.map((enc) => ({
         dateEntered: formatDate(enc.enteredDate),
         type: enc.type,
-        enclosure: enc.enclosureDescription,
+        evidenceDescription:  enc.evidenceDescription,
         returnId: enc.leadReturnId,
         originalName: enc.originalName,
         collectionDate: formatDate(enc.collectionDate),
@@ -278,6 +282,41 @@ export const LREvidence = () => {
   };
   const isCaseManager = selectedCase?.role === "Case Manager";
 
+  const handleEdit = idx => {
+    const ev = evidences[idx];
+    setEditIndex(idx);
+    setOriginalDesc(ev.evidenceDescription);
+    setEvidenceData({
+      leadReturnId:       ev.returnId,
+      collectionDate:     ev.collectionDate,
+      disposedDate:       ev.disposedDate,
+      type:               ev.type,
+      evidenceDescription: ev.evidenceDescription,
+      disposition:        ev.disposition
+    });
+    fileInputRef.current.value = "";
+  };
+  
+  const handleDelete = async idx => {
+    if (!window.confirm("Delete this evidence?")) return;
+    const ev = evidences[idx];
+    const token = localStorage.getItem("token");
+    const url = `/api/lrevidence/${selectedLead.leadNo}/` +
+                `${encodeURIComponent(selectedLead.leadName)}/` +
+                `${selectedCase.caseNo}/` +
+                `${encodeURIComponent(selectedCase.caseName)}/` +
+                `${ev.returnId}/` +
+                `${encodeURIComponent(ev.evidenceDescription)}`;
+    try {
+      await api.delete(url, { headers:{ Authorization:`Bearer ${token}` } });
+      setEvidences(list => list.filter((_,i)=>i!==idx));
+      alert("Deleted");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete: " + (err.response?.data?.message||err.message));
+    }
+  };
+  
   
 
   return (
@@ -394,13 +433,11 @@ export const LREvidence = () => {
               onChange={(e) => handleInputChange("type", e.target.value)}
             />
           </div>
-          <div className="form-row-evidence">
-            <label className="evidence-head">Disposition</label>
-            <textarea
-              value={evidenceData.disposition}
-              onChange={(e) => handleInputChange("disposition", e.target.value)}
-            ></textarea>
-          </div>
+          <label className="evidence-head">Description</label>
+<textarea
+  value={evidenceData.evidenceDescription}
+  onChange={e => handleInputChange("evidenceDescription", e.target.value)}
+/>
           <div className="form-row-evidence">
             <label>Upload File*</label>
             <input
@@ -427,7 +464,7 @@ export const LREvidence = () => {
               <th>Type</th>
               <th>Collection Date</th>
               <th>Disposed Date</th>
-              <th>Disposition</th>
+              <th>Description</th>
               <th></th>
               {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
@@ -442,7 +479,7 @@ export const LREvidence = () => {
                 <td>{item.type}</td>
                 <td>{item.collectionDate}</td>
                 <td>{item.disposedDate}</td>
-                <td>{item.disposition}</td>
+                <td>{item.evidenceDescription}</td>
                 <td>
                   <div classname = "lr-table-btn">
                   <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
@@ -451,7 +488,7 @@ export const LREvidence = () => {
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
                   className="edit-icon"
-                  // onClick={() => handleEditReturn(ret)}
+                  onClick={() => handleEdit(index)}
                 />
                   </button>
                   <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
@@ -460,7 +497,7 @@ export const LREvidence = () => {
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  // onClick={() => handleDeleteReturn(ret.id)}
+                  onClick={() => handleDelete(index)}
                 />
                   </button>
                   </div>

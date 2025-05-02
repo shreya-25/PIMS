@@ -25,6 +25,10 @@ export const LRVehicle = () => {
   const navigate = useNavigate(); // Initialize useNavigate hook
     const location = useLocation();
     const [username, setUsername] = useState("");
+    const [rawVehicles, setRawVehicles] = useState([]);
+    const [editIndex, setEditIndex] = useState(null);
+
+
     
     useEffect(() => {
        const loggedInUser = localStorage.getItem("loggedInUser");
@@ -97,6 +101,26 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
     };
     const [showVehicleModal, setShowVehicleModal] = useState(false);
 
+    const handleEditVehicle = (idx) => {
+      const v = rawVehicles[idx];
+      setEditIndex(idx);
+      // pre-fill your form fields from the raw document
+      setVehicleData({
+        leadReturnId:  v.leadReturnId,
+        enteredDate:   v.enteredDate.slice(0,10), // YYYY-MM-DD
+        vin:           v.vin,
+        year:          v.year,
+        make:          v.make,
+        model:         v.model,
+        plate:         v.plate,
+        state:         v.state,
+        primaryColor:  v.primaryColor,
+        secondaryColor:v.secondaryColor,
+        category:      v.category,
+        type:          v.type,
+        information:   v.information
+      });
+    };
     
   const [vehicleData, setVehicleData] = useState({
     year: '',
@@ -166,64 +190,118 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
   //   });
   // };
 
-  const handleAddVehicle = async () => {
-    const token = localStorage.getItem("token");
+  // const handleAddVehicle = async () => {
+  //   const token = localStorage.getItem("token");
   
-    const payload = {
-      leadNo: selectedLead?.leadNo,
-      description: selectedLead?.leadName,
-      caseNo: selectedCase?.caseNo,
-      caseName: selectedCase?.caseName,
-      enteredBy: username, // Replace with real user
-      enteredDate: new Date().toISOString(),
-      leadReturnId: vehicleData.leadReturnId, // You may fetch/set this dynamically
-      year: vehicleData.year,
-      make: vehicleData.make,
-      model: vehicleData.model,
-      plate: vehicleData.plate,
-      vin: vehicleData.vin,
-      state: vehicleData.state,
-      category: vehicleData.category,
-      type: vehicleData.type,
-      primaryColor: vehicleData.primaryColor,
-      secondaryColor: vehicleData.secondaryColor,
-      information: vehicleData.information,
-      additionalData: {} // Add any extra info if needed
-    };
+  //   const payload = {
+  //     leadNo: selectedLead?.leadNo,
+  //     description: selectedLead?.leadName,
+  //     caseNo: selectedCase?.caseNo,
+  //     caseName: selectedCase?.caseName,
+  //     enteredBy: username, // Replace with real user
+  //     enteredDate: new Date().toISOString(),
+  //     leadReturnId: vehicleData.leadReturnId, // You may fetch/set this dynamically
+  //     year: vehicleData.year,
+  //     make: vehicleData.make,
+  //     model: vehicleData.model,
+  //     plate: vehicleData.plate,
+  //     vin: vehicleData.vin,
+  //     state: vehicleData.state,
+  //     category: vehicleData.category,
+  //     type: vehicleData.type,
+  //     primaryColor: vehicleData.primaryColor,
+  //     secondaryColor: vehicleData.secondaryColor,
+  //     information: vehicleData.information,
+  //     additionalData: {} // Add any extra info if needed
+  //   };
 
-    console.log(payload);
+  //   console.log(payload);
+  
+  //   try {
+  //     // 1) axios.post(url, data, config)
+  //     const res = await api.post(
+  //       "/api/lrvehicle/lrvehicle",
+  //       payload,
+  //       {
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           "Authorization": `Bearer ${token}`
+  //         }
+  //       }
+  //     );
+  
+  //     console.log("Server response:", res.data);
+  //     alert("Vehicle added successfully");
+  //     fetchVehicles();
+  //   } catch (err) {
+  //     // 2) Inspect err.response for server rejection
+  //     if (err.response) {
+  //       console.error("Server error:", err.response);
+  //       const msg =
+  //         err.response.data?.message ||
+  //         JSON.stringify(err.response.data) ||
+  //         err.response.statusText;
+  //       alert(`Failed to add vehicle (${err.response.status}): ${msg}`);
+  //     } else {
+  //       console.error("Network or code error:", err);
+  //       alert(`Error adding vehicle: ${err.message}`);
+  //     }
+  //   }
+  // };
+
+  const handleSaveVehicle = async () => {
+    const token = localStorage.getItem("token");
+    const payload = {
+      leadNo:        selectedLead.leadNo,
+      description:   selectedLead.leadName,
+      caseNo:        selectedCase.caseNo,
+      caseName:      selectedCase.caseName,
+      enteredBy:     username,
+      enteredDate:   vehicleData.enteredDate || new Date().toISOString(),
+      ...vehicleData
+    };
   
     try {
-      // 1) axios.post(url, data, config)
-      const res = await api.post(
-        "/api/lrvehicle/lrvehicle",
-        payload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          }
-        }
-      );
-  
-      console.log("Server response:", res.data);
-      alert("Vehicle added successfully");
-      fetchVehicles();
-    } catch (err) {
-      // 2) Inspect err.response for server rejection
-      if (err.response) {
-        console.error("Server error:", err.response);
-        const msg =
-          err.response.data?.message ||
-          JSON.stringify(err.response.data) ||
-          err.response.statusText;
-        alert(`Failed to add vehicle (${err.response.status}): ${msg}`);
+      let res;
+      if (editIndex !== null) {
+        // update existing
+        const old = rawVehicles[editIndex];
+        res = await api.put(
+          `/api/lrvehicle/${selectedLead.leadNo}/${selectedCase.caseNo}/${old.leadReturnId}/${old.vin}`,
+          payload,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        // patch local arrays
+        const updatedRaw = [...rawVehicles];
+        updatedRaw[editIndex] = res.data;
+        setRawVehicles(updatedRaw);
       } else {
-        console.error("Network or code error:", err);
-        alert(`Error adding vehicle: ${err.message}`);
+        // create new
+        res = await api.post(
+          "/api/lrvehicle/lrvehicle",
+          payload,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setRawVehicles([res.data, ...rawVehicles]);
       }
+  
+      // rebuild your display array
+      fetchVehicles();  // or you can do your existing map of setVehicles
+      // exit edit mode
+      setEditIndex(null);
+      setVehicleData({
+        year: '', make: '', model: '', plate: '',
+        category: '', type: '', color:'', vin: '',
+        primaryColor:'', secondaryColor:'', state:'',
+        leadReturnId:'', information:''
+      });
+      alert(editIndex!==null ? "Vehicle updated" : "Vehicle added");
+    } catch (err) {
+      console.error(err);
+      alert("Save failed: " + (err.response?.data?.message || err.message));
     }
   };
+  
 
   const fetchVehicles = async () => {
     const token = localStorage.getItem("token");
@@ -242,6 +320,7 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
         }
       );
   
+      setRawVehicles(res.data);
       const mapped = res.data.map((vehicle) => ({
         returnId: vehicle.leadReturnId,
         dateEntered: formatDate(vehicle.enteredDate),
@@ -260,6 +339,7 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
       }));
   
       setVehicles(withAccess);
+
       setError("");
     } catch (err) {
       console.error("Error fetching vehicle records:", err);
@@ -274,6 +354,41 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
       return copy;
     });
   };
+  
+  const handleDeleteVehicle = async (idx) => {
+    if (!window.confirm("Delete this vehicle?")) return;
+    const v = rawVehicles[idx];
+    try {
+      const token = localStorage.getItem("token");
+      await api.delete(
+        `/api/lrvehicle/${selectedLead.leadNo}/${selectedCase.caseNo}/${v.leadReturnId}/${v.vin}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      // 1) remove from rawVehicles
+      const newRaw = rawVehicles.filter((_, i) => i !== idx);
+      setRawVehicles(newRaw);
+  
+      // 2) rebuild your display array in vehicles
+      const newDisplay = newRaw.map(vehicle => ({
+        returnId:   vehicle.leadReturnId,
+        dateEntered: formatDate(vehicle.enteredDate),
+        year:        vehicle.year,
+        make:        vehicle.make,
+        model:       vehicle.model,
+        color:       vehicle.primaryColor,
+        vin:         vehicle.vin,
+        plate:       vehicle.plate,
+        state:       vehicle.state,
+        access:      vehicle.access ?? "Everyone"
+      }));
+      setVehicles(newDisplay);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to delete");
+    }
+  };
+  
+
   
   const isCaseManager = selectedCase?.role === "Case Manager";
 
@@ -426,11 +541,11 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
             />
           </div>
           <div className="form-row4">
-            <label>VIN</label>
+            <label>VIN *</label>
             <input
               type="text"
-              value={vehicleData.vn}
-              onChange={(e) => handleChange('vn', e.target.value)}
+              value={vehicleData.vin}
+              onChange={(e) => handleChange('vin', e.target.value)}
             />
              <label>Year</label>
             <input
@@ -489,11 +604,35 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
         </div>
         {/* Buttons */}
         <div className="form-buttons">
-        <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
-
-        className="save-btn1" onClick={handleAddVehicle}>
+        {/* <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+         className="save-btn1" onClick={handleAddVehicle}>
             Add Vehicle
-          </button>
+          </button> */}
+          <button
+  disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+  className="save-btn1"
+  onClick={handleSaveVehicle}
+>
+  {editIndex !== null ? "Update Vehicle" : "Add Vehicle"}
+</button>
+
+{editIndex !== null && (
+  <button
+    className="cancel-btn"
+    onClick={() => {
+      setEditIndex(null);
+      // reset form
+      setVehicleData({
+        year: '', make: '', model: '', plate: '',
+        category: '', type: '', color:'', vin: '',
+        primaryColor:'', secondaryColor:'', state:'',
+        leadReturnId:'', information:''
+      });
+    }}
+  >
+    Cancel
+  </button>
+)}
           {/* <button className="back-btn">Back</button>
           <button className="next-btn">Next</button>
           <button className="save-btn">Save</button>
@@ -565,7 +704,8 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
                   className="edit-icon"
-                  // onClick={() => handleEditReturn(ret)}
+                  onClick={() => handleEditVehicle(index)}
+
                 />
                   </button>
                   <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
@@ -574,7 +714,7 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  // onClick={() => handleDeleteReturn(ret.id)}
+                  onClick={() => handleDeleteVehicle(index)}
                 />
                   </button>
                   </div>
@@ -594,7 +734,7 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
        )) : (
         <tr>
           <td colSpan={isCaseManager ? 9 : 8} style={{ textAlign:'center' }}>
-            No Returns Available
+            No Vehicle Data Available
           </td>
         </tr>
       )}

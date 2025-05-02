@@ -139,4 +139,71 @@ const getLRPersonByDetailsandid = async (req, res) => {
     }
 };
 
-module.exports = { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid };
+const updateLRPerson = async (req, res) => {
+    try {
+      const {
+        leadNo,
+        caseNo,
+        leadReturnId,
+        firstName,
+        lastName
+      } = req.params;
+      const updateData = req.body;
+  
+      const updated = await LRPerson.findOneAndUpdate(
+        {
+          leadNo:       Number(leadNo),
+          caseNo,
+          leadReturnId,
+          firstName,
+          lastName
+        },
+        updateData,
+        {
+          new: true,
+          runValidators: true
+        }
+      );
+  
+      if (!updated) {
+        return res.status(404).json({ message: "Person not found." });
+      }
+  
+      res.status(200).json(updated);
+    } catch (err) {
+      console.error("Error updating person:", err);
+      res.status(500).json({ message: "Something went wrong." });
+    }
+  };
+  
+  // Delete by composite key
+  const deleteLRPerson = async (req, res) => {
+    try {
+      const {
+        leadNo,
+        caseNo,
+        leadReturnId,
+        firstName,
+        lastName
+      } = req.params;
+  
+      const deleted = await LRPerson.findOneAndDelete({
+        leadNo:       Number(leadNo),
+        caseNo,
+        leadReturnId,
+        firstName,
+        lastName
+      });
+  
+      if (!deleted) {
+        return res.status(404).json({ message: "Person not found." });
+      }
+  
+      res.status(200).json({ message: "Person deleted successfully." });
+    } catch (err) {
+      console.error("Error deleting person:", err);
+      res.status(500).json({ message: "Something went wrong." });
+    }
+  };
+
+module.exports = { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, deleteLRPerson };

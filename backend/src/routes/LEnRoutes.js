@@ -1,6 +1,6 @@
 const express = require("express");
 const verifyToken = require("../middleware/authMiddleware");
-const { createLREnclosure, getLREnclosureByDetails } = require("../controller/LREnclosureController");
+const { createLREnclosure, getLREnclosureByDetails, updateLREnclosure, deleteLREnclosure } = require("../controller/LREnclosureController");
 const getUploadMiddleware = require("../middleware/upload");
 const upload = require("../middleware/upload-disk");
 
@@ -78,5 +78,17 @@ router.post(
 
 router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLREnclosureByDetails);
 
+router.put(
+  "/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId/:enclosureDescription",
+  verifyToken,
+  upload.single("file"),
+  updateLREnclosure
+);
+
+router.delete(
+  "/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId/:enclosureDescription",
+  verifyToken,
+  deleteLREnclosure
+);
 
 module.exports = router;

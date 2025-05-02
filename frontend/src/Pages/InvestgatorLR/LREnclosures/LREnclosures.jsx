@@ -69,7 +69,8 @@ export const LREnclosures = () => {
   };
 
     const [file, setFile] = useState(null);
-  
+    const [editIndex, setEditIndex] = useState(null);
+    const [originalDesc, setOriginalDesc] = useState("");
 
    // Handle file selection
    const handleFileChange = (event) => {
@@ -190,54 +191,156 @@ export const LREnclosures = () => {
   //   }
   // };
 
-  const handleSaveEnclosure = async () => {
-    if (!file) {
-      console.warn("No file selected");
+  // const handleSaveEnclosure = async () => {
+  //   if (!file) {
+  //     console.warn("No file selected");
+  //     return;
+  //   }
+
+  //   // build the FormData payload
+  //   const formData = new FormData();
+  //   formData.append("file", file);
+  //   formData.append("leadNo", selectedLead.leadNo);
+  //   formData.append("description", selectedLead.leadName);
+  //   formData.append("enteredBy", localStorage.getItem("loggedInUser"));
+  //   formData.append("caseName", selectedCase.caseName);
+  //   formData.append("caseNo", selectedCase.caseNo);
+  //   formData.append("leadReturnId", enclosureData.returnId);
+  //   formData.append("enteredDate", new Date().toISOString());
+  //   formData.append("type", enclosureData.type);
+  //   formData.append("enclosureDescription", enclosureData.enclosure);
+
+  //   const token = localStorage.getItem("token");
+
+  //   try {
+  //     await api.post(
+  //       "/api/lrenclosure/upload",
+  //       formData,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`, // no Content-Type here
+  //         },
+  //         transformRequest: [(data, headers) => {
+  //           // remove JSON header so axios auto-sets multipart/form-data boundary
+  //           delete headers["Content-Type"];
+  //           return data;
+  //         }],
+  //       }
+  //     );
+
+  //     // **re-fetch** the entire list so the new one appears immediately
+  //     await fetchEnclosuresForLead();
+
+  //     // clear form & file
+  //     setEnclosureData({ returnId: "", type: "", enclosure: "" });
+  //     setFile(null);
+
+  //     if (fileInputRef.current) fileInputRef.current.value = "";
+
+  //   } catch (err) {
+  //     console.error("Upload error:", err.response || err);
+  //   }
+  // };
+
+  const handleSave = async () => {
+    // must always supply a file when creating; on update it's optional
+    if (editIndex === null && !file) {
+      alert("Please select a file to upload.");
       return;
     }
 
-    // build the FormData payload
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("leadNo", selectedLead.leadNo);
-    formData.append("description", selectedLead.leadName);
-    formData.append("enteredBy", localStorage.getItem("loggedInUser"));
-    formData.append("caseName", selectedCase.caseName);
-    formData.append("caseNo", selectedCase.caseNo);
-    formData.append("leadReturnId", enclosureData.returnId);
-    formData.append("enteredDate", new Date().toISOString());
-    formData.append("type", enclosureData.type);
-    formData.append("enclosureDescription", enclosureData.enclosure);
+    const fd = new FormData();
+    if (file) fd.append("file", file);
+    fd.append("leadNo",   selectedLead.leadNo);
+    fd.append("description", selectedLead.leadName);
+    fd.append("enteredBy",   localStorage.getItem("loggedInUser"));
+    fd.append("caseName",    selectedCase.caseName);
+    fd.append("caseNo",      selectedCase.caseNo);
+    fd.append("leadReturnId",enclosureData.returnId);
+    fd.append("enteredDate", new Date().toISOString());
+    fd.append("type",        enclosureData.type);
+    fd.append("enclosureDescription", enclosureData.enclosure);
 
     const token = localStorage.getItem("token");
 
     try {
-      await api.post(
-        "/api/lrenclosure/upload",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, // no Content-Type here
-          },
+      if (editIndex === null) {
+        // CREATE
+        await api.post("/api/lrenclosure/upload", fd, {
+          headers: { Authorization: `Bearer ${token}` },
           transformRequest: [(data, headers) => {
-            // remove JSON header so axios auto-sets multipart/form-data boundary
             delete headers["Content-Type"];
             return data;
-          }],
-        }
-      );
-
-      // **re-fetch** the entire list so the new one appears immediately
-      await fetchEnclosuresForLead();
-
-      // clear form & file
-      setEnclosureData({ returnId: "", type: "", enclosure: "" });
+          }]
+        });
+        alert("Enclosure added");
+      } else {
+        // UPDATE: must send to PUT /api/lrenclosure/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId/:oldDesc
+        const { leadReturnId } = enclosureData;
+        const url = `/api/lrenclosure/${selectedLead.leadNo}/` +
+                    `${encodeURIComponent(selectedLead.leadName)}/` +
+                    `${selectedCase.caseNo}/` +
+                    `${encodeURIComponent(selectedCase.caseName)}/` +
+                    `${leadReturnId}/` +
+                    `${encodeURIComponent(originalDesc)}`;
+        await api.put(url, fd, {
+          headers: { Authorization: `Bearer ${token}` },
+          transformRequest: [(data, headers) => {
+            delete headers["Content-Type"];
+            return data;
+          }]
+        });
+        alert("Enclosure updated");
+      }
+      // refresh & reset form
+      await fetchEnclosures();
+      setEnclosureData({ returnId:"", type:"", enclosure:"" });
       setFile(null);
-
       if (fileInputRef.current) fileInputRef.current.value = "";
-
+      setEditIndex(null);
+      setOriginalDesc("");
     } catch (err) {
-      console.error("Upload error:", err.response || err);
+      console.error("Save error:", err.response || err);
+      alert("Save failed: " + (err.response?.data?.message || err.message));
+    }
+  };
+
+  // start editing
+  const handleEdit = idx => {
+    const enc = enclosures[idx];
+    setEditIndex(idx);
+    setOriginalDesc(enc.enclosure);
+    setEnclosureData({
+      returnId: enc.returnId,
+      type:     enc.type,
+      enclosure:enc.enclosure
+    });
+    // clear file input so user can choose new one if desired
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // delete
+  const handleDelete = async idx => {
+    if (!window.confirm("Delete this enclosure?")) return;
+    const enc = enclosures[idx];
+    const token = localStorage.getItem("token");
+    try {
+      const url = `/api/lrenclosure/${selectedLead.leadNo}/` +
+                  `${encodeURIComponent(selectedLead.leadName)}/` +
+                  `${selectedCase.caseNo}/` +
+                  `${encodeURIComponent(selectedCase.caseName)}/` +
+                  `${enc.returnId}/` +
+                  `${encodeURIComponent(enc.enclosure)}`;
+      await api.delete(url, {
+        headers:{ Authorization:`Bearer ${token}` }
+      });
+      // remove immediately
+      setEnclosures(list => list.filter((_,i)=>i!==idx));
+      alert("Deleted");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete");
     }
   };
   
@@ -432,14 +535,28 @@ export const LREnclosures = () => {
         </div>
           {/* Action Buttons */}
           <div className="form-buttons">
-          <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
-
-          className="save-btn1" onClick={handleSaveEnclosure}>Add Enclosure</button>
-          {/* <button className="back-btn" onClick={() => handleNavigation("/LRVehicle")}>Back</button>
-          <button className="next-btn" onClick={() => handleNavigation("/LREvidence")}>Next</button>
-          <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button> */}
-        </div>
+              <button
+                disabled={selectedLead?.leadStatus==="In Review" || selectedLead?.leadStatus==="Completed"}
+                onClick={handleSave}
+                className='save-btn1'
+              >
+                {editIndex === null ? "Add Enclosure" : "Save Changes"}
+              </button>
+              {editIndex !== null && (
+                <button 
+                disabled={selectedLead?.leadStatus==="In Review" || selectedLead?.leadStatus==="Completed"}
+                className='save-btn1'
+                onClick={() => {
+                  setEditIndex(null);
+                  setEnclosureData({ returnId:"", type:"", enclosure:"" });
+                  setFile(null);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}>
+                  Cancel
+                </button>
+              )}
+            </div>
+    
 
               {/* Enclosures Table */}
               <table className="leads-table">
@@ -473,7 +590,7 @@ export const LREnclosures = () => {
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
                   className="edit-icon"
-                  // onClick={() => handleEditReturn(ret)}
+                  onClick={()=>handleEdit(index)}
                 />
                   </button>
                   <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
@@ -482,7 +599,7 @@ export const LREnclosures = () => {
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  // onClick={() => handleDeleteReturn(ret.id)}
+                  onClick={()=>handleDelete(index)}
                 />
                   </button>
                   </div>
