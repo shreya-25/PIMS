@@ -1213,20 +1213,20 @@ function generateCaseReport(req, res) {
         currentY = drawStructuredLeadDetails(doc, 50, currentY, lead);
 
         // optional blocks
-        if (includeAll && lead.summary) {
+        if (includeAll && lead.description) {
           currentY = ensureSpace(doc, currentY, 60);
           doc.font("Helvetica-Bold").fontSize(11).text("Lead Log Summary:", 50, currentY);
           currentY += 20;
           // currentY = ensureSpace(doc, currentY, 60);
-          currentY = drawTextBox(doc, 50, currentY, 512, "", lead.summary);
+          currentY = drawTextBox(doc, 50, currentY, 512, "", lead.description);
         }
 
-        if (includeAll && lead.description) {
+        if (includeAll && lead.summary) {
           currentY = ensureSpace(doc, currentY, 60);
           doc.font("Helvetica-Bold").fontSize(11).text("Lead Instruction:", 50, currentY);
           currentY += 20;
           // currentY = ensureSpace(doc, currentY, 60);
-          currentY = drawTextBox(doc, 50, currentY, 512, "", lead.description);
+          currentY = drawTextBox(doc, 50, currentY, 512, "", lead.summary);
         }
 
         // LEAD RETURNS

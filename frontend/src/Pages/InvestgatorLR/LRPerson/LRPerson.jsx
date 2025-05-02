@@ -27,6 +27,7 @@ export const LRPerson = () => {
         const { leadDetails, caseDetails } = location.state || {};
           const [loading, setLoading] = useState(true);
           const [error, setError] = useState("");
+          const [rawPersons, setRawPersons] = useState([]);
             const { selectedCase, selectedLead, setSelectedLead, setLeadPersons } = useContext(CaseContext);
 
                 const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
@@ -72,29 +73,29 @@ export const LRPerson = () => {
       setPersons([...persons, { dateEntered: "", name: "", phoneNo: "", address: "" }]);
     };
   
-    const handleEditPerson = () => {
-      if (selectedRow === null) {
-        alert("Please select a row to edit.");
-        return;
-      }
-      const newName = prompt("Enter new name:", persons[selectedRow].name);
-      if (newName !== null) {
-        const updatedPersons = [...persons];
-        updatedPersons[selectedRow].name = newName;
-        setPersons(updatedPersons);
-      }
-    };
+    // const handleEditPerson = () => {
+    //   if (selectedRow === null) {
+    //     alert("Please select a row to edit.");
+    //     return;
+    //   }
+    //   const newName = prompt("Enter new name:", persons[selectedRow].name);
+    //   if (newName !== null) {
+    //     const updatedPersons = [...persons];
+    //     updatedPersons[selectedRow].name = newName;
+    //     setPersons(updatedPersons);
+    //   }
+    // };
   
-    const handleDeletePerson = () => {
-      if (selectedRow === null) {
-        alert("Please select a row to delete.");
-        return;
-      }
-      if (window.confirm("Are you sure you want to delete this person?")) {
-        setPersons(persons.filter((_, index) => index !== selectedRow));
-        setSelectedRow(null);
-      }
-    };
+    // const handleDeletePerson = () => {
+    //   if (selectedRow === null) {
+    //     alert("Please select a row to delete.");
+    //     return;
+    //   }
+    //   if (window.confirm("Are you sure you want to delete this person?")) {
+    //     setPersons(persons.filter((_, index) => index !== selectedRow));
+    //     setSelectedRow(null);
+    //   }
+    // };
 
     useEffect(() => {
       if (
@@ -182,6 +183,9 @@ export const LRPerson = () => {
 
       console.log(res);
       const personsFromApi = res.data;
+
+      const apiPersons = res.data;         // raw array of LRPerson docs
+      setRawPersons(apiPersons);
   
       // Map response to desired format
       const mappedPersons = res.data.map((person) => ({
@@ -211,6 +215,45 @@ export const LRPerson = () => {
       setLoading(false);
     }
   };
+
+  // Edit: send the raw object to LRPerson1
+const handleEditPerson = (idx) => {
+  const person = rawPersons[idx];
+  navigate("/LRPerson1", {
+    state: {
+      caseDetails,
+      leadDetails,
+      person
+    }
+  });
+};
+
+// Delete: call your DELETE endpoint by composite key
+const handleDeletePerson = async (idx) => {
+  if (!window.confirm("Delete this person?")) return;
+  const p = rawPersons[idx];
+  try {
+    const token = localStorage.getItem("token");
+    await api.delete(
+      `/api/lrperson/${selectedLead.leadNo}/${selectedCase.caseNo}/${p.leadReturnId}/${p.firstName}/${p.lastName}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    // remove from both raw and display
+    const newRaw = rawPersons.filter((_, i) => i !== idx);
+    setRawPersons(newRaw);
+    setPersons(newRaw.map(person => ({
+      returnId:   person.leadReturnId,
+      dateEntered:new Date(person.enteredDate).toLocaleDateString(),
+      name:       `${person.firstName} ${person.lastName}`,
+      phoneNo:    person.cellNumber || "N/A",
+      address:    `${person.address?.street1 || ""}, ${person.address?.city || ""}`,
+      access:     person.access ?? "Everyone"
+    })));
+  } catch (err) {
+    console.error("Delete failed", err);
+    alert("Failed to delete person.");
+  }
+};
   
   const handleAccessChange = (idx, newAccess) => {
     setPersons(rs => {
@@ -352,7 +395,7 @@ export const LRPerson = () => {
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
                   className="edit-icon"
-                  // onClick={() => handleEditReturn(ret)}
+                  onClick={() => handleEditPerson(index)}
                 />
                   </button>
                   <button>
@@ -360,7 +403,7 @@ export const LRPerson = () => {
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  // onClick={() => handleDeleteReturn(ret.id)}
+                  onClick={() => handleDeletePerson(index)}
                 />
                   </button>
                   </div>

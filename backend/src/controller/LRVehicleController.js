@@ -109,4 +109,53 @@ const getLRVehicleByDetailsandid = async (req, res) => {
     }
 };
 
-module.exports = { createLRVehicle, getLRVehicleByDetails, getLRVehicleByDetailsandid };
+// Update a specific LRVehicle entry
+const updateLRVehicle = async (req, res) => {
+    try {
+      const { leadNo, caseNo, leadReturnId, vin } = req.params;
+      const updateData = req.body;
+  
+      const updated = await LRVehicle.findOneAndUpdate(
+        {
+          leadNo:       Number(leadNo),
+          caseNo,
+          leadReturnId,
+          vin            // or whichever unique field you prefer
+        },
+        updateData,
+        { new: true, runValidators: true }
+      );
+  
+      if (!updated) {
+        return res.status(404).json({ message: "Vehicle not found." });
+      }
+      res.status(200).json(updated);
+    } catch (err) {
+      console.error("Error updating vehicle:", err);
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  };
+  
+  // Delete a specific LRVehicle entry
+  const deleteLRVehicle = async (req, res) => {
+    try {
+      const { leadNo, caseNo, leadReturnId, vin } = req.params;
+  
+      const deleted = await LRVehicle.findOneAndDelete({
+        leadNo:       Number(leadNo),
+        caseNo,
+        leadReturnId,
+        vin
+      });
+  
+      if (!deleted) {
+        return res.status(404).json({ message: "Vehicle not found." });
+      }
+      res.status(200).json({ message: "Vehicle deleted successfully." });
+    } catch (err) {
+      console.error("Error deleting vehicle:", err);
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  };
+
+module.exports = { createLRVehicle, getLRVehicleByDetails, getLRVehicleByDetailsandid, updateLRVehicle, deleteLRVehicle  };
