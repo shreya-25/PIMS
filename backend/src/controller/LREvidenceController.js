@@ -27,9 +27,8 @@ const createLREvidence = async (req, res) => {
             enteredDate: req.body.enteredDate,
             collectionDate:req.body.collectionDate,
             disposedDate: req.body.disposedDate,
-            disposition: req.body.disposition,
             type: req.body.type,
-            evidenceDescription:req.body.enclosureDescription,
+            evidenceDescription:req.body.evidenceDescription,
             // fileId, // Store the GridFS file reference here
             filePath: fileLocation,               // Save file path on disk
             originalName: req.file.originalname,  // Save original file name
@@ -77,4 +76,101 @@ const getLREvidenceByDetails = async (req, res) => {
     }
 };
 
-module.exports = { createLREvidence, getLREvidenceByDetails };
+// Update an existing LREvidence (and optionally replace its file)
+const updateLREvidence = async (req, res) => {
+    try {
+      const {
+        leadNo,
+        leadName,
+        caseNo,
+        caseName,
+        leadReturnId,
+        evidenceDescription: oldDesc
+      } = req.params;
+  
+      const ev = await LREvidence.findOne({
+        leadNo: Number(leadNo),
+        description: leadName,
+        caseNo,
+        caseName,
+        leadReturnId,
+        evidenceDescription: oldDesc
+      });
+      if (!ev) {
+        return res.status(404).json({ message: "Evidence not found" });
+      }
+  
+      // If a new file arrived, delete the old one
+      if (req.file && ev.filePath) {
+        try {
+          if (fs.existsSync(ev.filePath)) fs.unlinkSync(ev.filePath);
+        } catch (fsErr) {
+          console.warn("Could not delete old file:", fsErr);
+        }
+        ev.filePath     = req.file.path;
+        ev.originalName = req.file.originalname;
+        ev.filename     = req.file.filename;
+      }
+  
+      // Update metadata
+      ev.leadReturnId       = req.body.leadReturnId;
+      ev.enteredDate        = req.body.enteredDate;
+      ev.collectionDate     = req.body.collectionDate;
+      ev.disposedDate       = req.body.disposedDate;
+      ev.disposition        = req.body.disposition;
+      ev.type               = req.body.type;
+      ev.evidenceDescription = req.body.evidenceDescription;
+      ev.enteredBy          = req.body.enteredBy;
+  
+      await ev.save();
+      return res.json(ev);
+    } catch (err) {
+      console.error("Error updating LREvidence:", err);
+      return res.status(500).json({ message: "Something went wrong" });
+    }
+  };
+  
+  // Delete an evidence by composite key + description
+  const deleteLREvidence = async (req, res) => {
+    try {
+      const {
+        leadNo,
+        leadName,
+        caseNo,
+        caseName,
+        leadReturnId,
+        evidenceDescription
+      } = req.params;
+  
+      const ev = await LREvidence.findOneAndDelete({
+        leadNo: Number(leadNo),
+        description: leadName,
+        caseNo,
+        caseName,
+        leadReturnId,
+        evidenceDescription
+      });
+      if (!ev) {
+        return res.status(404).json({ message: "Evidence not found" });
+      }
+  
+      // Remove the file on disk
+      if (ev.filePath) {
+        try {
+          if (fs.existsSync(ev.filePath)) fs.unlinkSync(ev.filePath);
+        } catch (fsErr) {
+          console.warn("Could not delete file on disk:", fsErr);
+        }
+      }
+  
+      return res.json({ message: "Evidence deleted" });
+    } catch (err) {
+      console.error("Error deleting LREvidence:", err);
+      if (!res.headersSent) {
+        return res.status(500).json({ message: "Something went wrong" });
+      }
+    }
+  };
+  
+
+module.exports = { createLREvidence, getLREvidenceByDetails, updateLREvidence, deleteLREvidence };

@@ -1,4 +1,5 @@
 const LREnclosure = require("../models/LREnclosure");
+const fs = require("fs");
 
 // **Create a new LREnclosure entry with file upload support**
 const createLREnclosure = async (req, res) => {
@@ -74,4 +75,90 @@ const getLREnclosureByDetails = async (req, res) => {
     }
 };
 
-module.exports = { createLREnclosure, getLREnclosureByDetails };
+const updateLREnclosure = async (req, res) => {
+    try {
+      const {
+        leadNo, leadName, caseNo, caseName,
+        leadReturnId, enclosureDescription: oldDesc
+      } = req.params;
+  
+      // 1) Find the existing document
+      const enc = await LREnclosure.findOne({
+        leadNo: Number(leadNo),
+        description: leadName,
+        caseNo, caseName,
+        leadReturnId,
+        enclosureDescription: oldDesc
+      });
+      if (!enc) return res.status(404).json({ message: "Enclosure not found" });
+  
+      // 2) If a new file arrived, delete the old file
+      if (req.file) {
+        if (enc.filePath && fs.existsSync(enc.filePath)) {
+          fs.unlinkSync(enc.filePath);
+        }
+        enc.filePath     = req.file.path;
+        enc.originalName = req.file.originalname;
+        enc.filename     = req.file.filename;
+      }
+  
+      // 3) Update any changed fields
+      enc.leadReturnId         = req.body.leadReturnId;
+      enc.enteredDate          = req.body.enteredDate;
+      enc.type                 = req.body.type;
+      enc.enclosureDescription = req.body.enclosureDescription;
+      enc.enteredBy            = req.body.enteredBy;
+      await enc.save();
+  
+      res.json(enc);
+    } catch (err) {
+      console.error("Error updating LREnclosure:", err);
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  };
+  
+  // Delete an enclosure by composite key + description
+const deleteLREnclosure = async (req, res) => {
+  try {
+    const {
+      leadNo,
+      leadName,
+      caseNo,
+      caseName,
+      leadReturnId,
+      enclosureDescription,
+    } = req.params;
+
+    const enc = await LREnclosure.findOneAndDelete({
+      leadNo: Number(leadNo),
+      description: leadName,
+      caseNo,
+      caseName,
+      leadReturnId,
+      enclosureDescription,
+    });
+    if (!enc) {
+      return res.status(404).json({ message: "Enclosure not found" });
+    }
+
+    // Remove the file on disk (if present)
+    if (enc.filePath) {
+      try {
+        if (fs.existsSync(enc.filePath)) fs.unlinkSync(enc.filePath);
+      } catch (fsErr) {
+        console.warn("Could not delete file on disk:", fsErr);
+      }
+    }
+
+    return res.json({ message: "Enclosure deleted" });
+  } catch (err) {
+    console.error("Error deleting LREnclosure:", err);
+    // Only send if headers aren’t already sent
+    if (!res.headersSent) {
+      return res.status(500).json({ message: "Something went wrong" });
+    }
+  }
+};
+
+
+module.exports = { createLREnclosure, getLREnclosureByDetails, updateLREnclosure, deleteLREnclosure };

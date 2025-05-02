@@ -32,7 +32,7 @@ const lrVehicleSchema = new mongoose.Schema(
         make: { type: String },
         model: { type: String },
         plate: { type: String },
-        vin: { type: String },
+        vin: { type: String , required: true},
         state: { type: String },
         category: { type: String },
         type: { type: String },

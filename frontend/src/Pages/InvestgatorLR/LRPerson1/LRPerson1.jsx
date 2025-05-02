@@ -22,6 +22,15 @@ export const LRPerson1 = () => {
     const navigate = useNavigate(); // Initialize useNavigate hook
 const location = useLocation();
 const [username, setUsername] = useState("");
+  // Handle form input changes
+  const handleChange = (field, value) => {
+    setFormData({ ...formData, [field]: value });
+  };
+  const { leadDetails, caseDetails, person } = location.state || {};
+const { selectedCase, selectedLead, leadInstructions, leadReturns } = useContext(CaseContext);
+const onShowCaseSelector = (route) => {
+  navigate(route, { state: { caseDetails } });
+};
 
 useEffect(() => {
    const loggedInUser = localStorage.getItem("loggedInUser");
@@ -29,55 +38,45 @@ useEffect(() => {
      setUsername(loggedInUser);
    }
   })
-    const [formData, setFormData] = useState({
-      dateEntered: "",
-      leadReturnId: "",
-      lastName: "",
-      firstName: "",
-      mi: "",
-      suffix: "",
-      cellNumber: "",
-      businessName: "",
-      street1: "",
-      street2: "",
-      building: "",
-      apartment: "",
-      city: "",
-      state: "",
-      zipCode: "",
-      age: '',
-      ssn: '',
-      occupation: '',
-      email: '',
-      personType: '',
-      condition: '',
-      cautionType: '',
-      sex: '',
-      race: '',
-      ethnicity: '',
-      skinTone: '',
-      eyeColor: '',
-      glasses: '',
-      hairColor: '',
-      tattoo: '',
-      scar: '',
-      mark: '',
-    });
+
+  const initialForm = {
+    dateEntered:  person?.enteredDate?.slice(0,10)   || "",
+    leadReturnId: person?.leadReturnId                || "",
+    lastName:     person?.lastName                    || "",
+    firstName:    person?.firstName                   || "",
+    mi:           person?.middleInitial                || "",
+    suffix:       person?.suffix                       || "",
+    cellNumber:   person?.cellNumber                   || "",
+    businessName: person?.businessName                 || "",
+    street1:      person?.address?.street1             || "",
+    street2:      person?.address?.street2             || "",
+    building:     person?.address?.building            || "",
+    apartment:    person?.address?.apartment           || "",
+    city:         person?.address?.city                || "",
+    state:        person?.address?.state               || "",
+    zipCode:      person?.address?.zipCode             || "",
+    age:          person?.age                          || "",
+    ssn:          person?.ssn                          || "",
+    occupation:   person?.occupation                   || "",
+    email:        person?.email                        || "",
+    personType:   person?.personType                   || "",
+    condition:    person?.condition                    || "",
+    cautionType:  person?.cautionType                  || "",
+    sex:          person?.sex                          || "",
+    race:         person?.race                         || "",
+    ethnicity:    person?.ethnicity                    || "",
+    skinTone:     person?.skinTone                     || "",
+    eyeColor:     person?.eyeColor                     || "",
+    glasses:      person?.glasses                      || "",
+    hairColor:    person?.hairColor                    || "",
+    tattoo:       person?.tattoo                       || "",
+    scar:         person?.scar                         || "",
+    mark:         person?.mark                         || ""
+  };
   
-    // Handle form input changes
-    const handleChange = (field, value) => {
-      setFormData({ ...formData, [field]: value });
-    };
-    const { leadDetails, caseDetails } = location.state || {};
-  const { selectedCase, selectedLead, leadInstructions, leadReturns } = useContext(CaseContext);
-  const onShowCaseSelector = (route) => {
-    navigate(route, { state: { caseDetails } });
-};
-
-const [miscDetails, setMiscDetails] = useState([
-    { description: "", details: "" },
-  ]);
-
+  const [formData, setFormData]   = useState(initialForm);
+  const [miscDetails, setMiscDetails] = useState(person?.additionalData || []);
+  
   const addNewRow = () => {
     setMiscDetails([...miscDetails, { description: "", details: "" }]);
   };
@@ -158,37 +157,73 @@ const [miscDetails, setMiscDetails] = useState([
 
     console.log(payload);
   
-    try {
-      // axios.post(url, data, config)
-      const response = await api.post(
+  //   try {
+  //     // axios.post(url, data, config)
+  //     const response = await api.post(
+  //       "/api/lrperson/lrperson",
+  //       payload,
+  //       {
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           "Authorization": `Bearer ${token}`,
+  //         },
+  //       }
+  //     );
+  
+  //     // If you get here, status was 2xx:
+  //     console.log("Saved entry", response.data);
+  //     alert("Entry saved successfully!");
+  //   } catch (err) {
+  //     // err.response exists when the server replied with non-2xx
+  //     if (err.response) {
+  //       console.error("Server rejected:", err.response);
+  //       // Try to pull out a useful message from your API’s JSON error body:
+  //       const serverMsg = err.response.data?.message
+  //                       || JSON.stringify(err.response.data);
+  //       alert(`Failed to save entry: ${serverMsg}`);
+  //     } else {
+  //       // Something went wrong setting up the request
+  //       console.error("Network or code error:", err);
+  //       alert(`An error occurred: ${err.message}`);
+  //     }
+  //   }
+  // };
+  try {
+    let response;
+    if (person) {
+      // UPDATE existing record
+      response = await api.put(
+        `/api/lrperson/${selectedLead.leadNo}/` +
+          `${selectedCase.caseNo}/` +
+          `${person.leadReturnId}/` +
+          `${person.firstName}/` +
+          `${person.lastName}`,
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } else {
+      // CREATE new record
+      response = await api.post(
         "/api/lrperson/lrperson",
         payload,
         {
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
+            Authorization: `Bearer ${token}`
+          }
         }
       );
-  
-      // If you get here, status was 2xx:
-      console.log("Saved entry", response.data);
-      alert("Entry saved successfully!");
-    } catch (err) {
-      // err.response exists when the server replied with non-2xx
-      if (err.response) {
-        console.error("Server rejected:", err.response);
-        // Try to pull out a useful message from your API’s JSON error body:
-        const serverMsg = err.response.data?.message
-                        || JSON.stringify(err.response.data);
-        alert(`Failed to save entry: ${serverMsg}`);
-      } else {
-        // Something went wrong setting up the request
-        console.error("Network or code error:", err);
-        alert(`An error occurred: ${err.message}`);
-      }
     }
-  };
+
+    console.log("Server response:", response.data);
+    alert(person ? "Updated successfully!" : "Created successfully!");
+    // optionally redirect back or refresh your list here
+
+  } catch (err) {
+    console.error("Save failed:", err.response || err);
+    alert("Error: " + (err.response?.data?.message || err.message));
+  }
+};
   
   
   return (
@@ -211,7 +246,7 @@ const [miscDetails, setMiscDetails] = useState([
             Vehicles
           </span>
           <span className="menu-item" onClick={() => handleNavigation("/LREnclosures")}>Enclosures</span>
-          <span className="menu-item active" onClick={() => handleNavigation("/LREvidence")}>Evidence</span>
+          <span className="menu-item" onClick={() => handleNavigation("/LREvidence")}>Evidence</span>
           <span className="menu-item" onClick={() => handleNavigation("/LRPictures")}>Pictures</span>
           <span className="menu-item" onClick={() => handleNavigation("/LRAudio")}>Audio</span>
           <span className="menu-item" onClick={() => handleNavigation("/LRVideo")}>Videos</span>
