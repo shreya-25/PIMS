@@ -74,4 +74,47 @@ const getLRPictureByDetails = async (req, res) => {
     }
 };
 
-module.exports = { createLRPicture, getLRPictureByDetails };
+// Update existing picture
+const updateLRPicture = async (req, res) => {
+    try {
+      const { leadNo, leadName, caseNo, caseName, leadReturnId, pictureDescription: oldDesc } = req.params;
+      const pic = await LRPicture.findOne({ leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId, pictureDescription: oldDesc });
+      if (!pic) return res.status(404).json({ message: "Picture not found" });
+  
+      if (req.file && pic.filePath) {
+        try { if (fs.existsSync(pic.filePath)) fs.unlinkSync(pic.filePath); } catch (fsErr) { console.warn(fsErr); }
+        pic.filePath = req.file.path;
+        pic.originalName = req.file.originalname;
+        pic.filename = req.file.filename;
+      }
+  
+      pic.leadReturnId = req.body.leadReturnId;
+      pic.datePictureTaken = req.body.datePictureTaken;
+      pic.pictureDescription = req.body.pictureDescription;
+      pic.enteredBy = req.body.enteredBy;
+      await pic.save();
+      return res.json(pic);
+    } catch (err) {
+      console.error("Error updating LRPicture:", err);
+      return res.status(500).json({ message: "Something went wrong" });
+    }
+  };
+  
+  // Delete a picture
+  const deleteLRPicture = async (req, res) => {
+    try {
+      const { leadNo, leadName, caseNo, caseName, leadReturnId, pictureDescription } = req.params;
+      const pic = await LRPicture.findOneAndDelete({ leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId, pictureDescription });
+      if (!pic) return res.status(404).json({ message: "Picture not found" });
+  
+      if (pic.filePath) {
+        try { if (fs.existsSync(pic.filePath)) fs.unlinkSync(pic.filePath); } catch (fsErr) { console.warn(fsErr); }
+      }
+      return res.json({ message: "Picture deleted" });
+    } catch (err) {
+      console.error("Error deleting LRPicture:", err);
+      if (!res.headersSent) return res.status(500).json({ message: "Something went wrong" });
+    }
+  };
+
+module.exports = { createLRPicture, getLRPictureByDetails, updateLRPicture, deleteLRPicture  };
