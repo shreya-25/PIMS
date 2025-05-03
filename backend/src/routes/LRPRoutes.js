@@ -1,6 +1,6 @@
 const express = require("express");
 const verifyToken = require("../middleware/authMiddleware");
-const { createLRPicture, getLRPictureByDetails } = require("../controller/LRPictureController");
+const { createLRPicture, getLRPictureByDetails, updateLRPicture, deleteLRPicture } = require("../controller/LRPictureController");
 const getUploadMiddleware = require("../middleware/upload");
 const upload = require("../middleware/upload-disk");
 
@@ -77,6 +77,9 @@ router.post(
 
 
 router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLRPictureByDetails);
+router.put("/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId/:pictureDescription", verifyToken, upload.single("file"), updateLRPicture);
+router.delete("/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId/:pictureDescription", verifyToken, deleteLRPicture);
+
 
 
 module.exports = router;
