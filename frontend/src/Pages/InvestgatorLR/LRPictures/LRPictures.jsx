@@ -24,6 +24,9 @@ export const LRPictures = () => {
   const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
   const [file, setFile] = useState(null);
 
+  const [isEditing, setIsEditing] = useState(false);
+const [editingIndex, setEditingIndex] = useState(null);
+
   
     const formatDate = (dateString) => {
       if (!dateString) return "";
@@ -75,6 +78,7 @@ export const LRPictures = () => {
     description: "",
     image: "",
     leadReturnId: "",
+    filename: "" 
   });
 
   const handleInputChange = (field, value) => {
@@ -85,9 +89,51 @@ export const LRPictures = () => {
     const selectedFile = event.target.files[0];
     if (selectedFile) {
       setFile(selectedFile);
-      setPictureData({ ...pictureData, image: URL.createObjectURL(selectedFile) }); // for preview
+      setPictureData({ ...pictureData, image: URL.createObjectURL(selectedFile), filename: selectedFile.name }); // for preview
     }
   };
+
+  // populate the form to edit a picture
+const handleEditPicture = (idx) => {
+  const pic = pictures[idx];
+  setPictureData({
+    datePictureTaken: new Date(pic.rawDatePictureTaken)
+    .toISOString()
+    .slice(0, 10),
+    leadReturnId: pic.returnId,
+    description: pic.description,
+    image: pic.image,
+    filename:         pic.filename
+  });
+  setIsEditing(true);
+  setEditingIndex(idx);
+  setFile(null);
+};
+
+// delete a picture
+const handleDeletePicture = async (idx) => {
+  if (!window.confirm("Delete this picture?")) return;
+  const pic = pictures[idx];
+  const token = localStorage.getItem("token");
+
+  try {
+    await api.delete(
+      `/api/lrpicture/` +
+      `${selectedLead.leadNo}/` +
+      `${encodeURIComponent(selectedLead.leadName)}/` +
+      `${selectedCase.caseNo}/` +
+      `${encodeURIComponent(selectedCase.caseName)}/` +
+      `${pic.returnId}/` +
+      `${encodeURIComponent(pic.description)}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    setPictures(pics => pics.filter((_, i) => i !== idx));
+  } catch (err) {
+    console.error("Error deleting picture:", err);
+    alert("Failed to delete picture");
+  }
+};
+
   
 
   const handleAddPicture = async () => {
@@ -146,11 +192,68 @@ export const LRPictures = () => {
         datePictureTaken: "",
         description: "",
         image: "",
+        leadReturnId: "",
+        filename: ""
       });
       setFile(null);
     } catch (error) {
       console.error("Error uploading picture:", error);
       alert("Failed to upload picture.");
+    }
+  };
+
+  const handleUpdatePicture = async () => {
+    const pic = pictures[editingIndex];
+    const token = localStorage.getItem("token");
+    const fd = new FormData();
+  
+    // only append file if user picked a new one
+    if (file) fd.append("file", file);
+  
+    // these must match what your controller expects
+    fd.append("leadReturnId", pictureData.leadReturnId);
+    fd.append("datePictureTaken", pictureData.datePictureTaken);
+    fd.append("pictureDescription", pictureData.description);
+    fd.append("enteredBy", localStorage.getItem("loggedInUser"));
+  
+    try {
+      const res = await api.put(
+        `/api/lrpicture/` +
+        `${selectedLead.leadNo}/` +
+        `${encodeURIComponent(selectedLead.leadName)}/` +
+        `${selectedCase.caseNo}/` +
+        `${encodeURIComponent(selectedCase.caseName)}/` +
+        `${pic.returnId}/` +
+        `${encodeURIComponent(pic.description)}`,
+        fd,
+        { headers: { Authorization: `Bearer ${token}`,  "Content-Type": "multipart/form-data" } }
+      );
+      const updated = res.data;
+  
+      // reflect update in local state
+      setPictures(ps => {
+        const copy = [...ps];
+        copy[editingIndex] = {
+          dateEntered: formatDate(updated.enteredDate),
+          returnId: updated.leadReturnId,
+          datePictureTaken: formatDate(updated.datePictureTaken),
+          description: updated.pictureDescription,
+          image: file
+            ? URL.createObjectURL(file)
+            : `${BASE_URL}/uploads/${updated.filename}`,
+        };
+        return copy;
+      });
+  
+      // clear edit mode
+      setIsEditing(false);
+      setEditingIndex(null);
+      setPictureData({ datePictureTaken: "", leadReturnId: "", description: "", image: "",
+        filename: "" });
+      setFile(null);
+    } catch (err) {
+      console.error("Error updating:", err);
+      alert("Failed to update picture");
     }
   };
   
@@ -191,10 +294,13 @@ export const LRPictures = () => {
   
       const mappedPictures = res.data.map((pic) => ({
         dateEntered: formatDate(pic.enteredDate),
+        rawEnteredDate:  pic.enteredDate, 
         returnId: pic.leadReturnId,
         datePictureTaken: formatDate(pic.datePictureTaken),
+        rawDatePictureTaken: pic.datePictureTaken,
         description: pic.pictureDescription,
-          image: `${BASE_URL}/uploads/${pic.filename}`
+          image: `${BASE_URL}/uploads/${pic.filename}`,
+          filename: pic.filename  
       }));
       const withAccess = mappedPictures.map(r => ({
         ...r,
@@ -324,12 +430,20 @@ const handleAccessChange = (idx, newAccess) => {
           <div className="form-row-pic">
             <label  className="evidence-head">Upload Image:</label>
             <input type="file" accept="image/*"  className="evidence-head" onChange={handleFileChange} />
+
+            {pictureData.filename && (
+              <div style={{ marginTop: 4, marginLeft: 8 }}>
+                <em>Current file:</em> {pictureData.filename}
+              </div>
+            )}
           </div>
         </div>
         <div className="form-buttons">
         <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
 
-           className="save-btn1" onClick={handleAddPicture}>Add Picture</button>
+           className="save-btn1" 
+           onClick={isEditing ? handleUpdatePicture : handleAddPicture}>
+            {isEditing ? "Update Picture" : "Add Picture"}</button>
         </div>
         {/* Uploaded Pictures Preview */}
         <div className="uploaded-pictures">
@@ -375,7 +489,7 @@ const handleAccessChange = (idx, newAccess) => {
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
                   className="edit-icon"
-                  // onClick={() => handleEditReturn(ret)}
+                  onClick={() => handleEditPicture(index)}
                 />
                   </button>
                   <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
@@ -384,7 +498,7 @@ const handleAccessChange = (idx, newAccess) => {
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  // onClick={() => handleDeleteReturn(ret.id)}
+                  onClick={() => handleDeletePicture(index)}
                 />
                   </button>
                   </div>

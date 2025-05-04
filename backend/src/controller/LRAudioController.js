@@ -74,4 +74,53 @@ const getLRAudioByDetails = async (req, res) => {
     }
 };
 
-module.exports = { createLRAudio, getLRAudioByDetails };
+// **UPDATE** an existing audio entry (and optional file replacement)
+const updateLRAudio = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = {
+        leadReturnId: req.body.leadReturnId,
+        audioDescription: req.body.audioDescription,
+        dateAudioRecorded: req.body.dateAudioRecorded,
+      };
+  
+      // if a new file was uploaded, delete the old one and store the new path
+      if (req.file) {
+        const existing = await LRAudio.findById(id);
+        if (existing && existing.filePath) {
+          fs.unlinkSync(path.resolve(existing.filePath));
+        }
+        updates.filePath     = req.file.path;
+        updates.originalName = req.file.originalname;
+        updates.filename     = req.file.filename;
+      }
+  
+      const updated = await LRAudio.findByIdAndUpdate(id, updates, { new: true });
+      if (!updated) return res.status(404).json({ message: "Audio not found" });
+      res.json({ message: "Audio updated", audio: updated });
+    } catch (err) {
+      console.error("Error updating LRAudio:", err);
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  };
+  
+  // **DELETE** an audio entry
+  const deleteLRAudio = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const toDel = await LRAudio.findByIdAndDelete(id);
+      if (!toDel) return res.status(404).json({ message: "Audio not found" });
+  
+      // delete file from disk
+      if (toDel.filePath) {
+        fs.unlinkSync(path.resolve(toDel.filePath));
+      }
+  
+      res.json({ message: "Audio deleted" });
+    } catch (err) {
+      console.error("Error deleting LRAudio:", err);
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  };
+
+module.exports = { createLRAudio, getLRAudioByDetails, updateLRAudio, deleteLRAudio };
