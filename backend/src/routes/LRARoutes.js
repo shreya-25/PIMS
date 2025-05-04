@@ -1,6 +1,6 @@
 const express = require("express");
 const verifyToken = require("../middleware/authMiddleware");
-const { createLRAudio, getLRAudioByDetails } = require("../controller/LRAudioController");
+const { createLRAudio, getLRAudioByDetails, updateLRAudio, deleteLRAudio  } = require("../controller/LRAudioController");
 const getUploadMiddleware = require("../middleware/upload");
 const upload = require("../middleware/upload-disk");
 
@@ -74,6 +74,21 @@ router.post(
 //     });
 //   });
 // });
+
+// update (allow optional file replace)
+router.put(
+  "/:id",
+  verifyToken,
+  upload.single("file"),
+  updateLRAudio
+);
+
+// delete
+router.delete(
+  "/:id",
+  verifyToken,
+  deleteLRAudio
+);
 
 
 router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLRAudioByDetails);
