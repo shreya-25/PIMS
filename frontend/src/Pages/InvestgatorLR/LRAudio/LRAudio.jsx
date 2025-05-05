@@ -179,6 +179,7 @@ export const LRAudio = () => {
                       description: audio.audioDescription,
                       audioSrc: `${BASE_URL}/uploads/${audio.filename}`,
                       id:                audio._id,   
+                      originalName: audio.originalName,
                     }));
 
                     const withAccess = mappedAudios.map(r => ({
@@ -438,6 +439,7 @@ const handleEditAudio = idx => {
               <th style={{ width: "11%" }}>Date Entered</th>
               <th style={{ width: "10%" }}>Return Id </th>
               <th>Date Audio Recorded</th>
+              <th>File Name</th>
               <th>Description</th>
               <th style={{ width: "13%" }}></th>
               {isCaseManager && (
@@ -451,6 +453,16 @@ const handleEditAudio = idx => {
                 <td>{audio.dateEntered}</td>
                 <td>{audio.returnId}</td>
                 <td>{audio.dateAudioRecorded}</td>
+                  <td>
+                                                <a
+                                    href={`${BASE_URL}/uploads/${audio.filename}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="link-button"
+                                  >
+                                    {audio.originalName}
+                                  </a>
+                                  </td>
                 <td>{audio.description}</td>
                 <td>
                   <div classname = "lr-table-btn">
@@ -488,7 +500,7 @@ const handleEditAudio = idx => {
       </tr>
        )) : (
         <tr>
-          <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign:'center' }}>
+          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
             No Audio Data Available
           </td>
         </tr>

@@ -5,16 +5,18 @@ const path    = require("path");
 // **Create a new LREnclosure entry with file upload support**
 const createLRAudio = async (req, res) => {
     try {
-        console.log('Uploaded file:', req.file);
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file received' });
-        }
-        
-        // Extract file ID from the uploaded file
-        // const fileId = req.file.id; or req.file._id depending on your multer-gridfs-storage version
+      const isLink = req.body.isLink === "true";
 
-        // For disk storage, use file details (not fileId)
-        const fileLocation = req.file.path;
+      let filePath = null;
+      let originalName = null;
+      let filename = null;
+  
+      if (!isLink) {
+        if (!req.file) return res.status(400).json({ error: 'No file received' });
+        filePath = req.file.path;
+        originalName = req.file.originalname;
+        filename = req.file.filename;
+      }
 
         // Create a new LREnclosure document with the file reference
         const newLRAudio = new LRAudio({
@@ -29,10 +31,13 @@ const createLRAudio = async (req, res) => {
             enteredDate: req.body.enteredDate,
             dateAudioRecorded: req.body.dateAudioRecorded,
             audioDescription:req.body.audioDescription,
+            accessLevel,
             // fileId, // Store the GridFS file reference here
-            filePath: fileLocation,               // Save file path on disk
-            originalName: req.file.originalname,  // Save original file name
-            filename: req.file.filename           // Save the generated filename on disk
+            isLink,
+            link: isLink ? req.body.link : null,
+            filePath,
+            originalName,
+            filename
         });
 
         // Save the document in MongoDB
