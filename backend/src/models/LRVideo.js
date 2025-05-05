@@ -33,6 +33,15 @@ const lrVideoSchema = new mongoose.Schema(
         filePath: { type: String, required: true },
         originalName: { type: String },
         filename: { type: String },
+        isLink: { type: Boolean, default: false },
+link: { type: String },
+filePath: { type: String }, // remove `required: true`
+
+        accessLevel: {
+            type: String,
+            enum: ["Only Case Manager", "Everyone"],
+            default: "Everyone"
+          }
        
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields

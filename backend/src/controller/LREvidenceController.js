@@ -3,17 +3,21 @@ const LREvidence = require("../models/LREvidence");
 // **Create a new LREnclosure entry with file upload support**
 const createLREvidence = async (req, res) => {
     try {
-        console.log('Uploaded file:', req.file);
+      const isLink = req.body.isLink === "true";
+
+      let filePath = null;
+      let originalName = null;
+      let filename = null;
+  
+      if (!isLink) {
         if (!req.file) {
-            return res.status(400).json({ error: 'No file received' });
+          return res.status(400).json({ error: 'No file received for non-link upload' });
         }
-        
-        // Extract file ID from the uploaded file
-        // const fileId = req.file.id; or req.file._id depending on your multer-gridfs-storage version
-
-        // For disk storage, use file details (not fileId)
-        const fileLocation = req.file.path;
-
+        filePath = req.file.path;
+        originalName = req.file.originalname;
+        filename = req.file.filename;
+      }
+  
         // Create a new LREnclosure document with the file reference
         const newLREvidence = new LREvidence({
             leadNo: req.body.leadNo,
@@ -28,11 +32,13 @@ const createLREvidence = async (req, res) => {
             collectionDate:req.body.collectionDate,
             disposedDate: req.body.disposedDate,
             type: req.body.type,
+            accessLevel,
             evidenceDescription:req.body.evidenceDescription,
-            // fileId, // Store the GridFS file reference here
-            filePath: fileLocation,               // Save file path on disk
-            originalName: req.file.originalname,  // Save original file name
-            filename: req.file.filename           // Save the generated filename on disk
+            isLink: isLink,
+            link: isLink ? req.body.link : null,
+            filePath,
+            originalName,
+            filename
         });
 
         // Save the document in MongoDB

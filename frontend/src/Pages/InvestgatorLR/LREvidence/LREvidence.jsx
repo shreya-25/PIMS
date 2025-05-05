@@ -250,7 +250,8 @@ export const LREvidence = () => {
         originalName: enc.originalName,
         collectionDate: formatDate(enc.collectionDate),
         disposedDate: formatDate(enc.disposedDate),
-        disposition: enc.disposition
+        disposition: enc.disposition,
+        filename: enc.filename
       }));
 
       const withAccess = mappedEvidences.map(r => ({
@@ -460,10 +461,11 @@ export const LREvidence = () => {
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th style={{ width: "10%" }}> Return Id </th>
+              <th style={{ width: "4%" }}> Return Id </th>
               <th>Type</th>
               <th>Collection Date</th>
               <th>Disposed Date</th>
+              <th>File Name</th>
               <th>Description</th>
               <th></th>
               {isCaseManager && (
@@ -479,6 +481,16 @@ export const LREvidence = () => {
                 <td>{item.type}</td>
                 <td>{item.collectionDate}</td>
                 <td>{item.disposedDate}</td>
+                 <td>
+                                <a
+                    href={`${BASE_URL}/uploads/${item.filename}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="link-button"
+                  >
+                    {item.originalName}
+                  </a>
+                  </td>
                 <td>{item.evidenceDescription}</td>
                 <td>
                   <div classname = "lr-table-btn">
@@ -516,7 +528,7 @@ export const LREvidence = () => {
       </tr>
        )) : (
         <tr>
-          <td colSpan={isCaseManager ? 8 : 7} style={{ textAlign:'center' }}>
+          <td colSpan={isCaseManager ? 9 : 8} style={{ textAlign:'center' }}>
             No Evidences Available
           </td>
         </tr>

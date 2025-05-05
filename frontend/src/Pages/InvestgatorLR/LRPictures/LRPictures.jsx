@@ -298,6 +298,8 @@ const handleDeletePicture = async (idx) => {
         returnId: pic.leadReturnId,
         datePictureTaken: formatDate(pic.datePictureTaken),
         rawDatePictureTaken: pic.datePictureTaken,
+        filename: pic.filename,
+  originalName: pic.originalName,
         description: pic.pictureDescription,
           image: `${BASE_URL}/uploads/${pic.filename}`,
           filename: pic.filename  
@@ -467,6 +469,7 @@ const handleAccessChange = (idx, newAccess) => {
               <th>Date Entered</th>
               <th>Return Id </th>
               <th>Date Picture Taken</th>
+              <th>File Name</th>
               <th>Description</th>
               <th></th>
               {isCaseManager && (
@@ -480,6 +483,16 @@ const handleAccessChange = (idx, newAccess) => {
                 <td>{picture.dateEntered}</td>
                 <td>{picture.returnId}</td>
                 <td>{picture.datePictureTaken}</td>
+                 <td>
+                                <a
+                    href={`${BASE_URL}/uploads/${picture.filename}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="link-button"
+                  >
+                    {picture.originalName}
+                  </a>
+                  </td>
                 <td>{picture.description}</td>
                 <td>
                   <div classname = "lr-table-btn">
@@ -517,7 +530,7 @@ const handleAccessChange = (idx, newAccess) => {
       </tr>
        )) : (
         <tr>
-          <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign:'center' }}>
+          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
             No Pictures Available
           </td>
         </tr>

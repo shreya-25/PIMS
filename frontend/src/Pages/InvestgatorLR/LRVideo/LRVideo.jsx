@@ -174,6 +174,7 @@ export const LRVideo = () => {
                         videoSrc: `${BASE_URL}/uploads/${video.filename}`,
                         rawDateVideoRecorded: video.dateVideoRecorded,
                         filename: video.filename,  
+                        originalName: video.originalName
                       }));
 
                       const withAccess = mappedVideos.map(r => ({
@@ -415,6 +416,7 @@ onClick={editingIndex!==null ? handleUpdateVideo : handleAddVideo}
               <th style={{ width: "12%" }}>Date Entered</th>
               <th style={{ width: "10%" }}> Return Id </th>
               <th>Date Video Recorded</th>
+              <th>File Name</th>
               <th>Description</th>
               <th style={{ width: "13%" }}></th>
               {isCaseManager && (
@@ -428,6 +430,16 @@ onClick={editingIndex!==null ? handleUpdateVideo : handleAddVideo}
                 <td>{video.dateEntered}</td>
                 <td>{video.returnId} </td>
                 <td>{video.dateVideoRecorded}</td>
+                  <td>
+                                                <a
+                                     href={`${BASE_URL}/uploads/${video.filename}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="link-button"
+                                  >
+                                    {video.originalName}
+                                  </a>
+                                  </td>
                 <td>{video.description}</td>
                 <td>
                   <div classname = "lr-table-btn">
@@ -466,7 +478,7 @@ onClick={editingIndex!==null ? handleUpdateVideo : handleAddVideo}
       </tr>
        )) : (
         <tr>
-          <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign:'center' }}>
+          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
             No Video Data Available
           </td>
         </tr>
