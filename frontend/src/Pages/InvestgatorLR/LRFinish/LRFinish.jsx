@@ -25,7 +25,7 @@ export const LRFinish = () => {
   //   }, []);
   const navigate = useNavigate();
   const localPdfRef = useRef(null);
-  const { selectedCase, selectedLead} = useContext(CaseContext);
+  const { selectedCase, selectedLead, setSelectedLead} = useContext(CaseContext);
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const getCasePageRoute = () => {
@@ -449,6 +449,11 @@ useEffect(() => {
   
       if (statusRes.status === 200) {
         alert(`Lead Return submitted and status set to '${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}'`);
+
+        setSelectedLead((prev) => ({
+          ...prev,
+          leadStatus: newStatus === "complete" ? "Completed" : "Pending",
+        }));
       } else {
         alert("Return submitted but status update failed");
       }
@@ -820,24 +825,27 @@ Case Page
 
         <Comment tag= "Finish"/>
         {/* Buttons */}
+        {isCaseManager ? (
+  selectedLead?.leadStatus !== "Completed" && (
+    <div className="form-buttons-finish">
+      <button className="save-btn1" onClick={() => submitReturnAndUpdate("complete")}>Approve</button>
+      <button className="save-btn1" onClick={() => submitReturnAndUpdate("pending")}>Return</button>
+    </div>
+  )
+) : (
+  selectedLead?.leadStatus !== "Completed" && (
+    <div className="form-buttons-finish">
+      <button
+        disabled={selectedLead?.leadStatus === "In Review"}
+        className="save-btn1"
+        onClick={handleSubmitReport}
+      >
+        Submit Report
+      </button>
+    </div>
+  )
+)}
 
-        {isCaseManager ?
-        (
-        <div className="form-buttons-finish">
-          <button className="save-btn1"  onClick={() => submitReturnAndUpdate("complete")} >Approve</button>
-          <button className="save-btn1"  onClick={() => submitReturnAndUpdate("pending")}>Return</button>
-        </div>
-         ) :
-        (
-        <div className="form-buttons-finish">
-          <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
-
-          className="save-btn1" onClick={handleSubmitReport}>
-            Submit Report
-          </button>
-        </div>
-        )
-      }
 
         </div>
         </div>
