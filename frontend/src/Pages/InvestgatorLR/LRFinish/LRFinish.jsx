@@ -825,26 +825,26 @@ Case Page
 
         <Comment tag= "Finish"/>
         {/* Buttons */}
-        {isCaseManager ? (
-  selectedLead?.leadStatus !== "Completed" && (
+      {/* Buttons */}
+{selectedLead?.leadStatus !== "Completed" && (
+  isCaseManager ? (
     <div className="form-buttons-finish">
       <button className="save-btn1" onClick={() => submitReturnAndUpdate("complete")}>Approve</button>
       <button className="save-btn1" onClick={() => submitReturnAndUpdate("pending")}>Return</button>
     </div>
-  )
-) : (
-  selectedLead?.leadStatus !== "Completed" && (
+  ) : (
     <div className="form-buttons-finish">
       <button
         disabled={selectedLead?.leadStatus === "In Review"}
         className="save-btn1"
         onClick={handleSubmitReport}
       >
-        Submit Report
+        Submit Lead Return
       </button>
     </div>
   )
 )}
+
 
 
         </div>
