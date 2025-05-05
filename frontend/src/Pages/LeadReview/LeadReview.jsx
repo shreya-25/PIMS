@@ -115,15 +115,16 @@ console.log("SL, SC", selectedLead, selectedCase);
   useEffect(() => {
     const fetchLeadData = async () => {
       try {
-        if (selectedLead.leadNo && selectedLead.leadName && selectedCase?.caseNo && selectedCase?.caseName) {
-          const token = localStorage.getItem("token");
-          console.log("localstorage data",localStorage.getItem("token"));
+        const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+      const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
-          const response = await api.get(`/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(
-            selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, {
-              headers: { Authorization: `Bearer ${token}` }
-            });
+      if (lead?.leadNo && lead?.leadName && kase?.caseNo && kase?.caseName) {
+        const token = localStorage.getItem("token");
 
+        const response = await api.get(
+          `/api/lead/lead/${lead.leadNo}/${encodeURIComponent(lead.leadName)}/${kase.caseNo}/${encodeURIComponent(kase.caseName)}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
           console.log("Fetched Lead Data1:", response.data);
 
           // if (response.data.length > 0) {
@@ -317,14 +318,27 @@ Case Page
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
 
           
-            <li className="sidebar-item" 
-             onClick={() => {
-              selectedCase.role === "Investigator"
-              ? setPendingRoute("/LRInstruction")
-              : setPendingRoute("/LRInstruction")
-              // setPendingRoute("/CMInstruction");
-              setShowSelectModal(true);
-            }}>View Lead Return</li>
+            <li
+  className="sidebar-item"
+  onClick={() => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+    if (lead && kase) {
+      navigate("/LRInstruction", {
+        state: {
+          caseDetails: kase,
+          leadDetails: lead
+        }
+      });
+    } else {
+      alert("Please select a case and lead first.");
+    }
+  }}
+>
+  View Lead Return
+</li>
+
 
 
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
