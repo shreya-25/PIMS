@@ -12,7 +12,8 @@ const createLeadReturn = async (req, res) => {
             caseName,
             caseNo,
             assignedTo, // Expected to be an object { assignees: [], lRStatus: "" }
-            assignedBy // Expected to be an object { assignee: "", lRStatus: "" }
+            assignedBy, // Expected to be an object { assignee: "", lRStatus: "" }
+            accessLevel,
         } = req.body;
 
         // Validate assignedBy format
@@ -34,7 +35,8 @@ const createLeadReturn = async (req, res) => {
             caseName,
             caseNo,
             assignedTo,
-            assignedBy
+            assignedBy,
+            accessLevel,
         });
 
         await newLeadReturn.save();

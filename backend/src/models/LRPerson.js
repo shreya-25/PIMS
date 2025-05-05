@@ -65,6 +65,11 @@ const lrPersonSchema = new mongoose.Schema(
         tattoo: { type: String },
         mark: { type: String },
         additionalData: { type: Schema.Types.Mixed }, 
+        accessLevel: {
+            type: String,
+            enum: ["Only Case Manager", "Everyone"],
+            default: "Everyone"
+          }
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields
 );

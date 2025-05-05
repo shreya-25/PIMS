@@ -24,7 +24,8 @@ const createLRVehicle = async (req, res) => {
             primaryColor,
             secondaryColor,
             information,
-            additionalData
+            additionalData,
+            accessLevel,
         } = req.body;
 
         const newLRVehicle = new LRVehicle({
@@ -48,7 +49,8 @@ const createLRVehicle = async (req, res) => {
             primaryColor,
             secondaryColor,
             information,
-            additionalData
+            additionalData,
+            accessLevel,
         });
 
         await newLRVehicle.save();

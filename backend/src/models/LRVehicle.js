@@ -40,7 +40,12 @@ const lrVehicleSchema = new mongoose.Schema(
         secondaryColor: { type: String },
         information: { type: String },
 
-        additionalData: { type: Schema.Types.Mixed } // Flexible structure for extra fields
+        additionalData: { type: Schema.Types.Mixed }, // Flexible structure for extra fields
+        accessLevel: {
+            type: String,
+            enum: ["Only Case Manager and Assignees", "Everyone"],
+            default: "Everyone"
+          }
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields
 );

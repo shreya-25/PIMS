@@ -36,6 +36,11 @@ const lrTimelineSchema = new mongoose.Schema(
         timelineFlag: {
             type: [String], 
             default: []
+          },
+          accessLevel: {
+            type: String,
+            enum: ["Only Case Manager", "Everyone"],
+            default: "Everyone"
           }
        
     },

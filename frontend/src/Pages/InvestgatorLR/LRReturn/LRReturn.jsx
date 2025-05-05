@@ -158,37 +158,92 @@ const numberToAlphabet = (num) => {
 
 
 // Fetch return entries for this lead and determine the max return id (alphabetic)
+// useEffect(() => {
+//   const fetchReturnData = async () => {
+//     try {
+//       if (
+//         selectedLead?.leadNo &&
+//         selectedLead?.leadName &&
+//         selectedLead?.caseNo &&
+//         selectedLead?.caseName
+//       ) {
+//         const token = localStorage.getItem("token");
+//         const response = await api.get(
+//           `/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
+//             selectedLead.leadName
+//           )}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`,
+//           { headers: { Authorization: `Bearer ${token}` } }
+//         );
+//         const data = response.data;
+//         // setReturns(data);
+//         const withAccess = data.map(r => ({
+//           ...r,
+//           access: r.access ?? "Everyone"
+//         }));
+//         setReturns(withAccess);
+//         setLeadReturns(withAccess);
+//         // Determine the highest existing return id (if any) using alphabetToNumber conversion
+//         const maxNumericId = withAccess.reduce((max, item) => {
+//           // If leadReturnId is not defined, treat it as 0.
+//           const numVal = item.leadReturnId ? alphabetToNumber(item.leadReturnId) : 0;
+//           return Math.max(max, numVal);
+//         }, 0);
+//         setMaxReturnId(maxNumericId);
+//       }
+//     } catch (err) {
+//       console.error("Error fetching return data:", err);
+//       setError("Failed to fetch return data.");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   fetchReturnData();
+// }, [leadDetails, caseDetails, selectedLead]);
+
+// Fetch return entries for this lead, normalize access, compute max ID, and filter by role
 useEffect(() => {
   const fetchReturnData = async () => {
+    setLoading(true);
     try {
       if (
         selectedLead?.leadNo &&
         selectedLead?.leadName &&
-        selectedLead?.caseNo &&
-        selectedLead?.caseName
+        selectedCase?.caseNo &&
+        selectedCase?.caseName
       ) {
         const token = localStorage.getItem("token");
         const response = await api.get(
           `/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
             selectedLead.leadName
-          )}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`,
+          )}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        const data = response.data;
-        // setReturns(data);
-        const withAccess = data.map(r => ({
+        const raw = response.data;
+
+        // 1. Ensure every return has an 'access' field
+        const withAccess = raw.map(r => ({
           ...r,
           access: r.access ?? "Everyone"
         }));
-        setReturns(withAccess);
-        setLeadReturns(withAccess);
-        // Determine the highest existing return id (if any) using alphabetToNumber conversion
+
+        // 2. Compute the max numeric ID (for nextReturnId)
         const maxNumericId = withAccess.reduce((max, item) => {
-          // If leadReturnId is not defined, treat it as 0.
-          const numVal = item.leadReturnId ? alphabetToNumber(item.leadReturnId) : 0;
+          const numVal = item.leadReturnId
+            ? alphabetToNumber(item.leadReturnId)
+            : 0;
           return Math.max(max, numVal);
         }, 0);
         setMaxReturnId(maxNumericId);
+
+        // 3. Filter based on role
+        const visible = selectedCase.role === "Case Manager"
+          ? withAccess
+          : withAccess.filter(r => r.access === "Everyone");
+
+        // 4. Update state
+        setReturns(visible);
+        setLeadReturns(visible);
       }
     } catch (err) {
       console.error("Error fetching return data:", err);
@@ -199,7 +254,13 @@ useEffect(() => {
   };
 
   fetchReturnData();
-}, [leadDetails, caseDetails, selectedLead]);
+}, [
+  selectedLead,
+  selectedCase,    // re-run if role or case details change
+  leadDetails,
+  caseDetails
+]);
+
 
 // handler to change access per row
 const handleAccessChange = (idx, newAccess) => {
