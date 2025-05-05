@@ -2,7 +2,7 @@ import './LRVehicle.css';
 import React, { useContext, useState, useEffect, useRef } from "react";
 import Navbar from '../../../components/Navbar/Navbar';
 import FootBar from '../../../components/FootBar/FootBar';
-import VehicleModal from "../../../components/VehicleModal/VehicleModel";
+import VehicleModal from "../../../components/VehicleModal/VehicleModal";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import { useDataContext } from "../../Context/DataContext"; // Import Context
@@ -67,7 +67,7 @@ export const LRVehicle = () => {
   ]);
    const [vehicleModalData, setVehicleModalData] = useState({
         leadNo: "",
-        description: "",
+        leadName: "",
         caseNo: "",
         caseName: "",
         leadReturnId: "",
@@ -76,10 +76,10 @@ export const LRVehicle = () => {
       
 const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
         
- const openVehicleModal = (leadNo, description, caseNo, caseName, leadReturnId, leadsDeskCode) => {
+ const openVehicleModal = (leadNo, leadName, caseNo, caseName, leadReturnId, leadsDeskCode) => {
       setVehicleModalData({
         leadNo,
-        description,
+        leadName,
         caseNo,
         caseName,
         leadReturnId,
@@ -91,7 +91,7 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
     const closeVehicleModal = () => {
       setVehicleModalData({
         leadNo: "",
-        description: "",
+        leadName: "",
         caseNo: "",
         caseName: "",
         leadReturnId: "",
@@ -253,7 +253,7 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
     const token = localStorage.getItem("token");
     const payload = {
       leadNo:        selectedLead.leadNo,
-      description:   selectedLead.leadName,
+      leadName:   selectedLead.leadName,
       caseNo:        selectedCase.caseNo,
       caseName:      selectedCase.caseName,
       enteredBy:     username,
@@ -681,7 +681,7 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
         <td>{vehicle.state}</td>
         <td> <button className="download-btn" onClick={() => openVehicleModal(
                       selectedLead.leadNo,
-                      selectedLead.description,
+                      selectedLead.leadName,
                       selectedCase.caseNo,
                       selectedCase.caseName,
                       vehicle.returnId
@@ -691,7 +691,7 @@ const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
     isOpen={showVehicleModal}
     onClose={closeVehicleModal}
     leadNo={vehicleModalData.leadNo}
-    description={vehicleModalData.description}
+    leadName={vehicleModalData.leadName}
     caseNo={vehicleModalData.caseNo}
     caseName={vehicleModalData.caseName}
     leadReturnId={vehicleModalData.leadReturnId}

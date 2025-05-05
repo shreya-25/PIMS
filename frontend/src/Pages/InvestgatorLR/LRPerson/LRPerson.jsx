@@ -28,7 +28,7 @@ export const LRPerson = () => {
           const [loading, setLoading] = useState(true);
           const [error, setError] = useState("");
           const [rawPersons, setRawPersons] = useState([]);
-            const { selectedCase, selectedLead, setSelectedLead, setLeadPersons } = useContext(CaseContext);
+            const { selectedCase, selectedLead, setSelectedLead, setSelectedCase, setLeadPersons } = useContext(CaseContext);
 
                 const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
                 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
@@ -108,7 +108,12 @@ export const LRPerson = () => {
       }
     }, [selectedCase, selectedLead]);
     
-  
+    useEffect(() => {
+      if (caseDetails && leadDetails) {
+        setSelectedCase(caseDetails);
+        setSelectedLead(leadDetails);
+      }
+    }, [caseDetails, leadDetails]);
   
   const [leadData, setLeadData] = useState({
     leadNumber: '16',
@@ -373,7 +378,7 @@ const handleDeletePerson = async (idx) => {
                 <td>  <button className="download-btn" onClick={() =>
                               openPersonModal(
                                 selectedLead.leadNo,
-                                selectedLead.description,
+                                selectedLead.leadName,
                                 selectedCase.caseNo,
                                 selectedCase.caseName,
                                 person.leadReturnId

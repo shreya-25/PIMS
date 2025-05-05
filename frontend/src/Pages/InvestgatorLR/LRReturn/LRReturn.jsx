@@ -529,8 +529,8 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
             )}
           </tr>
         </thead>
-        <tbody>
-            {returns.length > 0 ? returns.map((ret, idx) => (
+        {/* <tbody>
+            {returns.length > 0 ? returns.map((ret, idx) => (  
               <tr key={ret.id || idx}>
                  <td>{ret.leadReturnId}</td>
               <td>{formatDate(ret.enteredDate)}</td>
@@ -576,7 +576,68 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
           </td>
         </tr>
       )}
-          </tbody>
+          </tbody> */}
+
+<tbody>
+  {returns.length > 0 ? returns.map((ret, idx) => {
+    const canModify = ret.enteredBy.trim() === username.trim();
+    const disableActions =
+      selectedLead?.leadStatus === "In Review" ||
+      selectedLead?.leadStatus === "Completed" ||
+      !canModify;
+
+    return (
+      <tr key={ret.leadReturnId || idx}>
+        <td>{ret.leadReturnId}</td>
+        <td>{formatDate(ret.enteredDate)}</td>
+        <td>{ret.enteredBy}</td>
+        <td>{ret.leadReturnResult}</td>
+        <td>
+          <div className="lr-table-btn">
+            <button
+              onClick={() => handleEditReturn(ret)}
+              disabled={disableActions}
+            >
+              <img
+                src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                alt="Edit Icon"
+                className="edit-icon"
+              />
+            </button>
+            <button
+              onClick={() => handleDeleteReturn(ret.leadReturnId)}
+              disabled={disableActions}
+            >
+              <img
+                src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                alt="Delete Icon"
+                className="edit-icon"
+              />
+            </button>
+          </div>
+        </td>
+        {isCaseManager && (
+          <td>
+            <select
+              value={ret.access}
+              onChange={(e) => handleAccessChange(idx, e.target.value)}
+            >
+              <option value="Everyone">Everyone</option>
+              <option value="Case Manager">Case Manager Only</option>
+            </select>
+          </td>
+        )}
+      </tr>
+    );
+  }) : (
+    <tr>
+      <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign: 'center' }}>
+        No Returns Available
+      </td>
+    </tr>
+  )}
+</tbody>
+
         </table>
 
         <Comment tag= "Return"/>

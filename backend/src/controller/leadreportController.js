@@ -18,6 +18,17 @@ async function mergeWithAnotherPDF(pdfKitBuffer, otherPdfPath) {
   return Buffer.from(mergedPdfBytes);
 }
 
+// helper to format just the time portion
+function formatTime(dateString) {
+  if (!dateString) return "";
+  const d = new Date(dateString);
+  return d.toLocaleTimeString("en-US", {
+    hour:   "2-digit",
+    minute: "2-digit"
+  });
+}
+
+
 function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
   const minRowHeight = 20;
   doc.font("Helvetica-Bold").fontSize(10);
@@ -627,84 +638,248 @@ function generateReport(req, res) {
     }
     
 
+    // if (includeAll || leadVehicles) {
+    //   if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+    //     doc.addPage();
+    //     currentY = doc.page.margins.top;
+    //   }
+    //   doc.font("Helvetica-Bold").fontSize(12).text("Vehicle Details", 50, currentY);
+    //   currentY += 20;
+    //   currentY = drawTable(doc, 50, currentY, ["Date Entered", "Year", "Make", "Model", "Plate", "Category", "VIN"], [{ "Date Entered": "03/14/24","Year": "2019", "Make": "Toyota", "Model": "Corolla", "Plate": "XYZ1234", "Category": "Bike", "VIN": "" }], [90, 70, 70, 70, 70, 70, 72]) + 20;
+    //   currentY = drawTable(doc, 50, currentY, ["Type", "State", "Primary Color", "Secondary Color","Additional Information"], [{ "Type": "", "State": "NY", "Primary Color": "Blue", "Secondary Color": "Yellow", "Additional Information": "" }], [90, 90, 80, 120, 132]) + 20;
+
+    //   // currentY = drawHardcodedContent(doc, currentY);
+    // }
+
     if (includeAll || leadVehicles) {
+      // page‐break check
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
         doc.addPage();
         currentY = doc.page.margins.top;
       }
-      doc.font("Helvetica-Bold").fontSize(12).text("Vehicle Details", 50, currentY);
+    
+      // Section header
+      doc.font("Helvetica-Bold").fontSize(12)
+         .text("Vehicle Details", 50, currentY);
       currentY += 20;
-      currentY = drawTable(doc, 50, currentY, ["Date Entered", "Year", "Make", "Model", "Plate", "Category", "VIN"], [{ "Date Entered": "03/14/24","Year": "2019", "Make": "Toyota", "Model": "Corolla", "Plate": "XYZ1234", "Category": "Bike", "VIN": "" }], [90, 70, 70, 70, 70, 70, 72]) + 20;
-      currentY = drawTable(doc, 50, currentY, ["Type", "State", "Primary Color", "Secondary Color","Additional Information"], [{ "Type": "", "State": "NY", "Primary Color": "Blue", "Secondary Color": "Yellow", "Additional Information": "" }], [90, 90, 80, 120, 132]) + 20;
-
-      // currentY = drawHardcodedContent(doc, currentY);
+    
+      // No‐data case
+      if (!Array.isArray(leadVehicles) || leadVehicles.length === 0) {
+        doc.font("Helvetica").fontSize(11)
+           .text("No vehicle data available.", 50, currentY);
+        currentY += 20;
+    
+      } else {
+        // For each vehicle record, draw a mini‐table
+        const headers = ["Date Entered","Year","Make","Model","Plate","Category","VIN"];
+        const colWidths = [90, 50, 60, 60, 60, 80, 112];
+    
+        leadVehicles.forEach((veh, idx) => {
+          // Optional label per vehicle
+          doc.font("Helvetica-Bold").fontSize(11)
+             .text(`Vehicle ${idx + 1}`, 50, currentY);
+          currentY += 15;
+    
+          // Build the one‐row of data
+          const row = {
+            "Date Entered": formatDate(veh.enteredDate),
+            "Year":         veh.year || "",
+            "Make":         veh.make || "",
+            "Model":        veh.model || "",
+            "Plate":        veh.plate || "",
+            "Category":     veh.category || "",
+            "VIN":          veh.vin || ""
+          };
+    
+          // Draw it
+          currentY = drawTable(
+            doc,
+            50,
+            currentY,
+            headers,
+            [row],
+            colWidths
+          ) + 20;
+    
+          // Page‐break if needed before next one
+          if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+            doc.addPage();
+            currentY = doc.page.margins.top;
+          }
+        });
+      }
     }
 
     if (includeAll || leadEnclosures) {
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage();
-        currentY = doc.page.margins.top;
+        doc.addPage(); currentY = doc.page.margins.top;
       }
       doc.font("Helvetica-Bold").fontSize(12).text("Enclosure Details", 50, currentY);
       currentY += 20;
-      currentY = drawTable(doc, 50, currentY, ["Date Entered", "Type", "Enclosure Description"], [{ "Date Entered": "", "Type": "", "Enclosure Description": "" }], [90, 70, 352]) + 20;
+    
+      if (!Array.isArray(leadEnclosures) || leadEnclosures.length === 0) {
+        doc.font("Helvetica").fontSize(11)
+           .text("No enclosure data available.", 50, currentY);
+        currentY += 20;
+      } else {
+        const headers  = ["Date Entered","Type","Description"];
+        const widths   = [90, 100, 322];
+        const rows     = leadEnclosures.map(e => ({
+          "Date Entered":         formatDate(e.enteredDate),
+          "Type":                 e.type || "",
+          "Description":          e.enclosureDescription || ""
+        }));
+        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+      }
     }
-
+    
+    // ── Evidence Details ─────────────────────────────────────────
     if (includeAll || leadEvidence) {
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage();
-        currentY = doc.page.margins.top;
+        doc.addPage(); currentY = doc.page.margins.top;
       }
       doc.font("Helvetica-Bold").fontSize(12).text("Evidence Details", 50, currentY);
       currentY += 20;
-      currentY = drawTable(doc, 50, currentY, ["Date Entered", "Type", "Collection Date", "Disposed Date","Disposition","Description"], [{ "Date Entered": "", "Type": "", "Collection Date": "", "Disposed Date": "", "Disposition": "", "Description": "" }], [80, 90, 90, 80,80, 92]) + 20;
+    
+      if (!Array.isArray(leadEvidence) || leadEvidence.length === 0) {
+        doc.font("Helvetica").fontSize(11)
+           .text("No evidence data available.", 50, currentY);
+        currentY += 20;
+      } else {
+        const headers = ["Date Entered","Type","Collection Date","Disposed Date","Description"];
+        const widths  = [80,80,90,90,172];
+        const rows    = leadEvidence.map(ev => ({
+          "Date Entered":     formatDate(ev.enteredDate),
+          "Type":             ev.type || "",
+          "Collection Date":  formatDate(ev.collectionDate),
+          "Disposed Date":    formatDate(ev.disposedDate),
+          "Description":      ev.evidenceDescription || ""
+        }));
+        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+      }
     }
+    
+    // ── Picture Details ─────────────────────────────────────────
     if (includeAll || leadPictures) {
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage();
-        currentY = doc.page.margins.top;
+        doc.addPage(); currentY = doc.page.margins.top;
       }
       doc.font("Helvetica-Bold").fontSize(12).text("Picture Details", 50, currentY);
       currentY += 20;
-      currentY = drawTable(doc, 50, currentY, ["Date Entered", "Date Picture Taken","Description"], [{ "Date Entered": "", "Date Picture Taken": "", "Description": "" }], [90, 100, 322]) + 20;
+    
+      if (!Array.isArray(leadPictures) || leadPictures.length === 0) {
+        doc.font("Helvetica").fontSize(11)
+           .text("No picture data available.", 50, currentY);
+        currentY += 20;
+      } else {
+        const headers = ["Date Entered","Date Picture Taken","Description"];
+        const widths  = [90,120, 302];
+        const rows    = leadPictures.map(p => ({
+          "Date Entered":        formatDate(p.enteredDate),
+          "Date Picture Taken":  formatDate(p.datePictureTaken),
+          "Description":         p.pictureDescription || ""
+        }));
+        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+      }
     }
-
+    
+    // ── Audio Details ────────────────────────────────────────────
     if (includeAll || leadAudio) {
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage();
-        currentY = doc.page.margins.top;
+        doc.addPage(); currentY = doc.page.margins.top;
       }
       doc.font("Helvetica-Bold").fontSize(12).text("Audio Details", 50, currentY);
       currentY += 20;
-      currentY = drawTable(doc, 50, currentY, ["Date Entered", "Date Audio Recorded","Description"], [{ "Date Entered": "", "Date Audio Recorded": "", "Description": "" }], [90, 120, 302]) + 20;
+    
+      if (!Array.isArray(leadAudio) || leadAudio.length === 0) {
+        doc.font("Helvetica").fontSize(11)
+           .text("No audio data available.", 50, currentY);
+        currentY += 20;
+      } else {
+        const headers = ["Date Entered","Date Audio Recorded","Description"];
+        const widths  = [90,120, 302];
+        const rows    = leadAudio.map(a => ({
+          "Date Entered":         formatDate(a.enteredDate),
+          "Date Audio Recorded":  formatDate(a.dateAudioRecorded),
+          "Description":          a.audioDescription || ""
+        }));
+        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+      }
     }
-
+    
+    // ── Video Details ────────────────────────────────────────────
     if (includeAll || leadVideos) {
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage();
-        currentY = doc.page.margins.top;
+        doc.addPage(); currentY = doc.page.margins.top;
       }
       doc.font("Helvetica-Bold").fontSize(12).text("Video Details", 50, currentY);
       currentY += 20;
-      currentY = drawTable(doc, 50, currentY, ["Date Entered", "Date Video Recorded","Description"], [{ "Date Entered": "", "Date Video Recorded": "", "Description": "" }], [90, 120, 302]) + 20;
+    
+      if (!Array.isArray(leadVideos) || leadVideos.length === 0) {
+        doc.font("Helvetica").fontSize(11)
+           .text("No video data available.", 50, currentY);
+        currentY += 20;
+      } else {
+        const headers = ["Date Entered","Date Video Recorded","Description"];
+        const widths  = [90,120, 302];
+        const rows    = leadVideos.map(v => ({
+          "Date Entered":         formatDate(v.enteredDate),
+          "Date Video Recorded":  formatDate(v.dateVideoRecorded),
+          "Description":          v.videoDescription || ""
+        }));
+        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+      }
     }
+    
+    // ── Lead Notes (Scratchpad) ─────────────────────────────────
     if (includeAll || leadScratchpad) {
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage();
-        currentY = doc.page.margins.top;
+        doc.addPage(); currentY = doc.page.margins.top;
       }
       doc.font("Helvetica-Bold").fontSize(12).text("Lead Notes", 50, currentY);
       currentY += 20;
-      currentY = drawTable(doc, 50, currentY, ["Date Entered", "Entered By","Description"], [{ "Date Entered": "", "Entered By": "", "Description": "" }], [90, 120, 302]) + 20;
+    
+      if (!Array.isArray(leadScratchpad) || leadScratchpad.length === 0) {
+        doc.font("Helvetica").fontSize(11)
+           .text("No notes available.", 50, currentY);
+        currentY += 20;
+      } else {
+        const headers = ["Date Entered","Return Id","Description"];
+        const widths  = [90,120, 302];
+        const rows    = leadScratchpad.map(n => ({
+          "Date Entered": formatDate(n.enteredDate),
+          "Return Id": n.leadReturnId  || "",
+          "Description":  n.text || ""
+        }));
+        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+      }
     }
+    
+    // ── Timeline Details ─────────────────────────────────────────
     if (includeAll || leadTimeline) {
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage();
-        currentY = doc.page.margins.top;
+        doc.addPage(); currentY = doc.page.margins.top;
       }
       doc.font("Helvetica-Bold").fontSize(12).text("Timeline Details", 50, currentY);
       currentY += 20;
-      currentY = drawTable(doc, 50, currentY, ["Event Date", "Event Time Range", "Event Location", "Flags","Event Description"], [{ "Event Date": "", "Event Time Range": "", "Event Location": "", "Flags": "", "Event Description": "" }], [80, 100, 100, 90, 142]) + 20;
+    
+      if (!Array.isArray(leadTimeline) || leadTimeline.length === 0) {
+        doc.font("Helvetica").fontSize(11)
+           .text("No timeline data available.", 50, currentY);
+        currentY += 20;
+      } else {
+        const headers = ["Event Date","Time Range","Location","Flags","Description"];
+        const widths  = [80,100,100, 80, 142];
+        const rows    = leadTimeline.map(t => ({
+          "Event Date":   formatDate(t.eventDate),
+         "Time Range":  `${formatTime(t.eventStartTime)} – ${formatTime(t.eventEndTime)}`,
+
+          "Location":     t.eventLocation || "",
+          "Flags":        Array.isArray(t.timelineFlag) ? t.timelineFlag.join(", ") : "",
+          "Description":  t.eventDescription || ""
+        }));
+        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+      }
     }
 
     doc.end();
