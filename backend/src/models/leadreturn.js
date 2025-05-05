@@ -30,6 +30,11 @@ const leadReturnSchema = new mongoose.Schema(
         returnedDate: { type: Date },
         caseName: { type: String, required: true},
         caseNo: { type: String , required: true},
+        accessLevel: {
+            type: String,
+            enum: ["Only Case Manager", "Everyone"],
+            default: "Everyone"
+          }
     },
     { timestamps: true }
 );

@@ -13,7 +13,8 @@ const createLeadReturnResult = async (req, res) => {
             caseName,
             caseNo,
             leadReturnId,
-            leadReturnResult
+            leadReturnResult,
+            accessLevel,
         } = req.body;
 
         // Validate assignedBy format
@@ -36,7 +37,8 @@ const createLeadReturnResult = async (req, res) => {
             caseName,
             caseNo,
             leadReturnId,
-            leadReturnResult
+            leadReturnResult,
+            accessLevel,
         });
 
         await newLeadReturnResult.save();

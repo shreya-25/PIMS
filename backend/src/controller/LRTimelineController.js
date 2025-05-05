@@ -27,7 +27,8 @@ const createLRTimeline = async (req, res) => {
             eventEndTime,
             eventLocation,
             eventDescription,
-            timelineFlag
+            timelineFlag,
+            accessLevel,
            
         } = req.body;
 
@@ -50,7 +51,8 @@ const createLRTimeline = async (req, res) => {
             eventEndTime: req.body.eventEndTime,
             eventLocation: req.body.eventLocation,
             eventDescription: req.body.eventDescription,
-            timelineFlag: timelineFlag
+            timelineFlag: timelineFlag,
+            accessLevel: accessLevel
         });
 
         // Save the document in MongoDB

@@ -299,14 +299,13 @@ export default function Comment({ tag }) {
     }
   };
 
-  // --- Start editing ---
   const startEditing = (id, currentText) => {
     setEditingId(id);
     setEditedComment(currentText);
   };
 
-  // --- Save edit ---
   const saveEdit = async (id) => {
+    if (!editedComment.trim()) return;
     try {
       const token = localStorage.getItem("token");
       const res = await api.put(
@@ -314,23 +313,21 @@ export default function Comment({ tag }) {
         { comment: editedComment },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Replace updated comment in list
       setComments((prev) =>
         prev.map((c) => (c._id === id ? res.data : c))
       );
-      setEditingId(null);
-      setEditedComment("");
+      cancelEdit();
     } catch (err) {
       console.error("Error updating comment:", err);
       alert("Failed to update comment");
     }
   };
 
-  // --- Cancel edit ---
   const cancelEdit = () => {
     setEditingId(null);
     setEditedComment("");
   };
+
 
   return (
     <div className="comment-section">

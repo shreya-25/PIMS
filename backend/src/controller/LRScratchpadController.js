@@ -14,7 +14,8 @@ const createLRScratchpad = async (req, res) => {
             leadReturnId,
             enteredDate,
             text,
-            type
+            type,
+            accessLevel,
 
         } = req.body;
 
@@ -29,7 +30,8 @@ const createLRScratchpad = async (req, res) => {
             leadReturnId,
             enteredDate,
             text,
-            type
+            type,
+            accessLevel,
         });
 
         await newScratchpad.save();

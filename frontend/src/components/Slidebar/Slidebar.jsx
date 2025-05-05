@@ -199,12 +199,18 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
         status: "Ongoing",
       });
       setIsSidebarOpen(false);
+
+      const notificationRecipients = caseDetails.investigators.filter(
+        (name) => name !== caseDetails.managerName
+      );
+
+      console.log("NotifRec", notificationRecipients);
   
       // 2) Send a notification to all assigned officers
       const notificationPayload = {
         notificationId: Date.now().toString(),
         assignedBy: caseDetails.managerName,
-        assignedTo: caseDetails.investigators,
+        assignedTo: notificationRecipients,
         action1: "assigned you to a new case",
         post1: `${caseDetails.number}: ${caseDetails.title}`,
         leadNo: "",
@@ -217,37 +223,43 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
         time: new Date().toISOString(),
       };
   
-      try {
-        const notifResponse = await api.post(
-          "/api/notifications",
-          notificationPayload,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const notifData = notifResponse.data;
-        console.log("✅ Notification sent successfully:", notifData);
-      } catch (notifErr) {
-        console.error("❌ Notification error:", notifErr.response?.data || notifErr.message);
+      // Only send notification if there are investigators selected (excluding case manager)
+if (notificationRecipients.length > 0) {
+  try {
+    const notifResponse = await api.post(
+      "/api/notifications",
+      notificationPayload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       }
-  
-    } catch (err) {
-      // setError(err.message);
-      // console.error("❌ Error creating case:", err.response?.data || err.message);
-      const msg = err.response?.data?.message;
-      if (msg === "Case number already exists. Please use a unique caseNo.") {
-         alert("A case with this number already exists. Please use a unique case number.");
-         } else {
-           alert(`❌ Error: ${msg || err.message}`);
-         }
-          setError(msg || err.message);
-        console.error("❌ Error creating case:", err.response?.data || err.message);
-    } finally {
-      setLoading(false);
-    }
+    );
+    const notifData = notifResponse.data;
+    console.log("✅ Notification sent successfully:", notifData);
+  } catch (notifErr) {
+    console.error(
+      "❌ Notification error:",
+      notifErr.response?.data || notifErr.message
+    );
+  }
+} else {
+  console.log("ℹ️ No investigators selected to receive notification.");
+}
+
+} catch (err) {
+  const msg = err.response?.data?.message;
+  if (msg === "Case number already exists. Please use a unique caseNo.") {
+    alert("A case with this number already exists. Please use a unique case number.");
+  } else {
+    alert(`❌ Error: ${msg || err.message}`);
+  }
+  setError(msg || err.message);
+  console.error("❌ Error creating case:", err.response?.data || err.message);
+} finally {
+  setLoading(false);
+}
   };
   
   

@@ -39,6 +39,7 @@ const createLRPerson = async (req, res) => {
             scar,
             tattoo,
             mark,
+            accessLevel,
             additionalData // Allows additional dynamic fields
         } = req.body;
 
@@ -78,6 +79,7 @@ const createLRPerson = async (req, res) => {
             scar,
             tattoo,
             mark,
+            accessLevel,
             additionalData
         });
 
