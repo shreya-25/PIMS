@@ -89,4 +89,27 @@ const getComments = async (req, res) => {
   }
 };
 
-module.exports = { createComment, getComments };
+const updateComment = async (req, res) => {
+  try {
+    const commentId = req.params.id;
+    const { comment } = req.body;
+
+    const updated = await Comment.findByIdAndUpdate(
+      commentId,
+      { comment, updatedAt: new Date() },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Comment not found" });
+    }
+
+    return res.status(200).json(updated);
+  } catch (err) {
+    console.error("Error updating comment:", err.message);
+    return res.status(500).json({ message: "Failed to update comment" });
+  }
+};
+
+
+module.exports = { createComment, getComments, updateComment };

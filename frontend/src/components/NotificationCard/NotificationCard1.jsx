@@ -17,6 +17,13 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
   const [error, setError] = useState(null);
   const { setSelectedCase, setSelectedLead } = useContext(CaseContext);
   const navigate = useNavigate();
+  const [refreshToggle, setRefreshToggle] = useState(false);
+
+  useEffect(() => {
+    fetchUnreadNotifications();
+    fetchOpenCaseNotifications();
+  }, [signedInOfficer, refreshToggle]);
+  
 
   const fetchUnreadNotifications = async () => {
     try {
@@ -24,7 +31,13 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
         const response = await api.get(`/api/notifications/user/${signedInOfficer}`);
 
         // const newUnread = response.data.filter(notification => notification.unread ||  !notification.accepted);
-        const allNotifications = response.data;
+        const allNotificationsV1 = response.data;
+
+        const allNotifications = allNotificationsV1.filter(
+          (n) =>
+            n.assignedTo.includes(signedInOfficer) &&
+            n.assignedBy !== signedInOfficer // ✅ filter out self-assigned
+        );
     
         const newUnread = allNotifications.filter((notification) => {
           // Check if `action1` mentions a new case or lead
@@ -63,11 +76,6 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
         setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchUnreadNotifications();
-  }, [signedInOfficer]);
-
   const getNotificationType = (notification) => {
     if (notification.action1.includes("assigned you to a new case")) {
       return { letter: "C", color: "blue" }; // Case: Blue Circle
@@ -196,30 +204,48 @@ const handleAccept = async (_id) => {
       // ✅ Make API request to accept lead
       const response = await api.put(`/api/notifications/accept/${notificationId}`, {});
       const token = localStorage.getItem("token");
-      await api.put(
-        `/api/lead/status/accepted`,
-          {
-            leadNo:   notification.leadNo,
-            leadName: notification.leadName,
-            caseNo:   notification.caseName,
-           caseName: notification.caseNo
-          },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-        
+      // await api.put(
+      //   `/api/lead/status/accepted`,
+      //     {
+      //       leadNo:   notification.leadNo,
+      //       leadName: notification.leadName,
+      //       caseNo:   notification.caseName,
+      //      caseName: notification.caseNo
+      //     },
+      //       { headers: { Authorization: `Bearer ${token}` } }
+      //     );
 
-      console.log("✅ Case accepted successfully", response.data);
+      const leadNo = notification.leadNo;
+    const description = notification.leadName;
+    const caseNo = notification.caseNo;
+    const caseName = notification.caseName;
 
-      // ✅ Remove from "New Notifications"
-      setUnreadNotifications((prevNotifications) =>
-          prevNotifications.filter((n) => n._id !== _id)
-      );
+    const url = `/api/lead/${leadNo}/${encodeURIComponent(description)}/${caseName}/${encodeURIComponent(caseNo)}`;
 
-      // ✅ Now add it to "View All Notifications"
-      setOpenCaseNotifications((prevNotifications) => [
-          ...prevNotifications,
-          { ...notification, accepted: true }
-      ]);
+    await api.put(
+      url,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+      // console.log("✅ Case accepted successfully", response.data);
+
+      // // ✅ Remove from "New Notifications"
+      // setUnreadNotifications((prevNotifications) =>
+      //     prevNotifications.filter((n) => n._id !== _id)
+      // );
+
+      // // ✅ Now add it to "View All Notifications"
+      // setOpenCaseNotifications((prevNotifications) => [
+      //     ...prevNotifications,
+      //     { ...notification, accepted: true }
+      // ]);
+
+      setRefreshToggle(prev => !prev);
 
   } catch (error) {
       console.error("❌ Error accepting Case:", error.response ? error.response.data : error);
@@ -243,6 +269,7 @@ const handleAccept = async (_id) => {
           fetchUnreadNotifications();
           setShowAllNotifications(false);
           setShowSearchBar(false);
+          setRefreshToggle(prev => !prev); // force reload
         }}>
           New Notifications <span className="count">{unreadNotifications.length}</span>
         </h3>
@@ -250,6 +277,8 @@ const handleAccept = async (_id) => {
           setShowAllNotifications(true);
           setShowSearchBar(true);
           fetchOpenCaseNotifications();
+          setRefreshToggle(prev => !prev); // force reload
+
         }}>
           View All Notifications
         </h3>

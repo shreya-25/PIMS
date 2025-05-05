@@ -220,6 +220,7 @@ const handleSelectLead = (lead) => {
           pendingLeads: updatedPendingLeads,
         };
       });
+      // await fetchLeadsForCase();
     } catch (error) {
       console.error("Error updating lead status:", error.response?.data || error);
       alert("Failed to accept lead.");
@@ -1217,8 +1218,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                 >
                   View
                 </button>
-                {selectedCase.role === "Investigator" &&
- lead.assignedOfficers?.includes(signedInOfficer) && (
+                {lead.assignedOfficers?.includes(signedInOfficer) && (
   <button
     className="accept-btn"
     onClick={() => {

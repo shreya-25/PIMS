@@ -27,7 +27,12 @@ const lrScratchpadSchema = new mongoose.Schema(
         leadReturnId: { type: String },
         enteredDate: { type: Date, required: true },
         text: { type: String, required: true},
-        type: { type: String, required: true, enum: ["Case", "Lead"]}
+        type: { type: String, required: true, enum: ["Case", "Lead"]},
+        accessLevel: {
+            type: String,
+            enum: ["Only Case Manager", "Everyone"],
+            default: "Everyone"
+          }
        
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields
