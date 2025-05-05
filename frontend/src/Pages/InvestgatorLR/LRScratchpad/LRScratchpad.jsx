@@ -45,6 +45,7 @@ export const LRScratchpad = () => {
                                 navigate(route, { state: { caseDetails } });
                             };
         
+const [editingIndex, setEditingIndex] = useState(null);
 
   // Sample scratchpad data
   const [notes, setNotes] = useState([
@@ -168,6 +169,51 @@ export const LRScratchpad = () => {
       return copy;
     });
   };
+
+  function handleEditClick(idx) {
+    const n = notes[idx];
+    setEditingIndex(idx);
+    setNoteData({
+      text: n.text,
+      returnId: n.leadReturnId || "",
+    });
+  }
+
+  async function handleUpdateNote() {
+    if (editingIndex === null) return;
+    const note = notes[editingIndex];
+    const token = localStorage.getItem("token");
+    try {
+      await api.put(
+        `/api/scratchpad/${note._id}`,
+        { leadReturnId: noteData.returnId, text: noteData.text, type: "Lead" },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      await fetchNotes();
+      // reset form
+      setEditingIndex(null);
+      setNoteData({ text: "", returnId: "" });
+    } catch (err) {
+      console.error("Update failed", err);
+      alert("Failed to update note.");
+    }
+  }
+
+  async function handleDeleteNote(idx) {
+    if (!window.confirm("Delete this note?")) return;
+    const note = notes[idx];
+    const token = localStorage.getItem("token");
+    try {
+      await api.delete(
+        `/api/scratchpad/${note._id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setNotes(n => n.filter((_,i) => i !== idx));
+    } catch (err) {
+      console.error("Delete failed", err);
+      alert("Failed to delete note.");
+    }
+  }
   
 
   return (
@@ -262,9 +308,35 @@ export const LRScratchpad = () => {
           ></textarea>
         </div>
         <div className="form-buttons-scratchpad">
-        <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+        {/* <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
 
-        className="save-btn1" onClick={handleAddNote}>Add Note</button>
+        className="save-btn1" onClick={handleAddNote}>Add Note</button> */}
+
+{editingIndex === null ? (
+              <button 
+              disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+              onClick={handleAddNote} className="save-btn1">
+                Add Note
+              </button>
+            ) : (
+              <>
+                <button
+                 disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"} 
+                onClick={handleUpdateNote} className="save-btn1">
+                  Update Note
+                </button>
+                <button
+                 disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+                  onClick={() => {
+                    setEditingIndex(null);
+                    setNoteData({ text: "", returnId: "" });
+                  }}
+                  className="save-btn1"
+                >
+                  Cancel
+                </button>
+              </>
+            )}
         </div>
         </div>
 
@@ -297,7 +369,7 @@ export const LRScratchpad = () => {
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
                   className="edit-icon"
-                  // onClick={() => handleEditReturn(ret)}
+                  onClick={() => handleEditClick(index)}
                 />
                   </button>
                   <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
@@ -306,7 +378,7 @@ export const LRScratchpad = () => {
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  // onClick={() => handleDeleteReturn(ret.id)}
+                  onClick={() => handleDeleteNote(index)}
                 />
                   </button>
                   </div>
@@ -327,7 +399,7 @@ export const LRScratchpad = () => {
        )) : (
         <tr>
           <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign:'center' }}>
-            No Returns Available
+            No Notes Added
           </td>
         </tr>
       )}
