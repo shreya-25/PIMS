@@ -1,4 +1,6 @@
 const LRTimeline = require("../models/LRTimeline");
+const fs = require("fs");
+const path = require("path");
 
 // **Create a new LRTimeline entry**
 const createLRTimeline = async (req, res) => {
@@ -113,5 +115,43 @@ const getLRTimelineByDetails = async (req, res) => {
     }
 };
 
+const updateLRTimeline = async (req, res) => {
+    try {
+      const { id } = req.params;
+      // build updates only from allowed fields
+      const updates = {
+        leadReturnId: req.body.leadReturnId,
+        eventDate: req.body.eventDate,
+        eventStartDate: req.body.eventStartDate,
+        eventEndDate: req.body.eventEndDate,
+        eventStartTime: req.body.eventStartTime,
+        eventEndTime: req.body.eventEndTime,
+        eventLocation: req.body.eventLocation,
+        eventDescription: req.body.eventDescription,
+        timelineFlag: req.body.timelineFlag,
+      };
+  
+      const updated = await LRTimeline.findByIdAndUpdate(id, updates, { new: true });
+      if (!updated) return res.status(404).json({ message: "Timeline entry not found." });
+      res.json({ message: "Timeline entry updated", timeline: updated });
+    } catch (err) {
+      console.error("Error updating timeline:", err);
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  };
+  
+  // ★ DELETE a timeline entry by its Mongo ID
+  const deleteLRTimeline = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const removed = await LRTimeline.findByIdAndDelete(id);
+      if (!removed) return res.status(404).json({ message: "Timeline entry not found." });
+      res.json({ message: "Timeline entry deleted" });
+    } catch (err) {
+      console.error("Error deleting timeline:", err);
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  };
 
-module.exports = { createLRTimeline, getTimelinesByCase, getLRTimelineByDetails };
+
+module.exports = { createLRTimeline, getTimelinesByCase, getLRTimelineByDetails ,  updateLRTimeline, deleteLRTimeline};

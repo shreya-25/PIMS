@@ -1,4 +1,6 @@
 const LRVideo = require("../models/LRVideo");
+const fs = require("fs");
+const path = require("path");
 
 // **Create a new LREnclosure entry with file upload support**
 const createLRVideo = async (req, res) => {
@@ -74,4 +76,55 @@ const getLRVideoByDetails = async (req, res) => {
     }
 };
 
-module.exports = { createLRVideo, getLRVideoByDetails };
+const updateLRVideo = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = {
+        leadReturnId:    req.body.leadReturnId,
+        videoDescription: req.body.videoDescription,
+        dateVideoRecorded: req.body.dateVideoRecorded,
+      };
+  
+      // if a new file was uploaded, delete the old one and store the new path
+      if (req.file) {
+        const existing = await LRVideo.findById(id);
+        if (existing && existing.filePath) {
+          fs.unlinkSync(path.resolve(existing.filePath));
+        }
+        updates.filePath     = req.file.path;
+        updates.originalName = req.file.originalname;
+        updates.filename     = req.file.filename;
+      }
+  
+      const updated = await LRVideo.findByIdAndUpdate(id, updates, { new: true });
+      if (!updated) return res.status(404).json({ message: "Video not found" });
+  
+      res.json({ message: "Video updated", video: updated });
+    } catch (err) {
+      console.error("Error updating LRVideo:", err);
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  };
+  
+  // **DELETE** a video entry
+  const deleteLRVideo = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const toDel = await LRVideo.findByIdAndDelete(id);
+      if (!toDel) return res.status(404).json({ message: "Video not found" });
+  
+      // delete file from disk
+      if (toDel.filePath) {
+        fs.unlinkSync(path.resolve(toDel.filePath));
+      }
+  
+      res.json({ message: "Video deleted" });
+    } catch (err) {
+      console.error("Error deleting LRVideo:", err);
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  };
+
+module.exports = { createLRVideo, getLRVideoByDetails,
+    updateLRVideo,
+    deleteLRVideo, };

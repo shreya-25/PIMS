@@ -25,14 +25,32 @@ export const LRFinish = () => {
   //   }, []);
   const navigate = useNavigate();
   const localPdfRef = useRef(null);
-  const { selectedCase, selectedLead, leadInstructions, leadReturns, leadPersons} = useContext(CaseContext);
-
-
+  const { selectedCase, selectedLead} = useContext(CaseContext);
   const location = useLocation();
+  const [loading, setLoading] = useState(true);
   const getCasePageRoute = () => {
     if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
     return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
 };
+
+useEffect(() => {
+  // 1) Must have a case
+  if (!selectedCase?.caseNo || !selectedCase?.caseName) {
+    alert("Please select a case first.");
+    return navigate("/HomePage");
+  }
+  // 2) Must have a lead
+  if (!selectedLead?.leadNo || !selectedLead?.leadName) {
+    alert("Please select a lead first.");
+    // if this user is an Investigator send them to /Investigator
+    // otherwise send them to the Case Manager page
+    const leadPicker =
+      selectedCase.role === "Investigator"
+        ? "/Investigator"
+        : "/CasePageManager";
+    return navigate(leadPicker);
+  }
+}, [selectedCase, selectedLead, navigate]);
       
         const formatDate = (dateString) => {
           if (!dateString) return "";
@@ -46,26 +64,85 @@ export const LRFinish = () => {
       
         const { leadDetails, caseDetails } = location.state || {};
         const [leadInstruction, setLeadInstruction] = useState({});
-        const [leadReturn, setLeadReturn] = useState([]);
-        // const [leadPersons, setLeadPersons] = useState([]);
+        const [leadInstructions, setLeadInstructions] = useState({});
+        const [leadReturns, setLeadReturns] = useState([]);
+        const [leadPersons, setLeadPersons] = useState([]);
         const [leadVehicles, setLeadVehicles] = useState([]);
         const [leadEnclosures, setLeadEnclosures] = useState([]);
-        const [leadEvidences, setLeadEvidences] = useState([]);
-
+        const [leadEvidence, setLeadEvidence] = useState([]);
+        const [leadScratchpad, setLeadScratchpad] = useState([]);
+        const [leadTimeline, setLeadTimeline] = useState([]);
+     
         useEffect(() => {
-          if (leadInstructions) {
-            setLeadInstruction(leadInstructions);
-          }
-        }, [leadInstructions]);
-
-        useEffect(() => {
-          if (leadReturns && leadReturns.length) {
-             setLeadReturn(leadReturns);
-            }
-           }, [leadReturns]);
-
-        console.log("LD", leadPersons);
-
+          if (!selectedCase?.caseNo || !selectedLead?.leadNo) return;
+      
+          const { leadNo, leadName } = selectedLead;
+          const { caseNo, caseName } = selectedCase;
+          const encLead = encodeURIComponent(leadName);
+          const encCase = encodeURIComponent(caseName);
+          const token = localStorage.getItem("token");
+      
+          Promise.all([
+            api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            }),
+            api.get(
+              `/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            ),
+            api.get(
+              `/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            ),
+            api.get(
+              `/api/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            ),
+            // api.get(
+            //   `/api/lrenclosures/lrenclosures/${leadNo}/${encLead}/${caseNo}/${encCase}`,
+            //   { headers: { Authorization: `Bearer ${token}` } }
+            // ),
+            // api.get(
+            //   `/api/lrevidence/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`,
+            //   { headers: { Authorization: `Bearer ${token}` } }
+            // ),
+            // api.get(
+            //   `/api/scratchpad/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`,
+            //   { headers: { Authorization: `Bearer ${token}` } }
+            // ),
+            // api.get(
+            //   `/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`,
+            //   { headers: { Authorization: `Bearer ${token}` } }
+            // ),
+          ])
+            .then(
+              ([
+                instrRes,
+                returnsRes,
+                personsRes,
+                vehiclesRes,
+                // enclosuresRes,
+                // evidenceRes,
+                // scratchRes,
+                // timelineRes,
+              ]) => {
+                setLeadInstructions(instrRes.data[0] || {});
+                setLeadReturns(returnsRes.data);
+                setLeadPersons(personsRes.data);
+                setLeadVehicles(vehiclesRes.data);
+                // setLeadEnclosures(enclosuresRes.data);
+                // setLeadEvidence(evidenceRes.data);
+                // setLeadScratchpad(scratchRes.data);
+                // setLeadTimeline(timelineRes.data);
+              }
+            )
+            .catch((err) => {
+              console.error("Batch fetch failed:", err);
+              alert("Error loading lead data. Please try again.");
+            })
+            .finally(() => setLoading(false));
+        }, [selectedCase, selectedLead]);
+      
 
 
         const [selectedReports, setSelectedReports] = useState({
@@ -128,9 +205,9 @@ export const LRFinish = () => {
       
               // Also pass along which sections are selected
               selectedReports,
-              leadInstructions,
-              leadReturns,
-              leadPersons
+              leadInstructions,   
+              leadReturns,      
+              // leadPersons,       
             };
 
             // generatePDF(pdfRef.current);

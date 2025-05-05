@@ -35,12 +35,18 @@ export const LRAudio = () => {
     
       const { leadDetails, caseDetails } = location.state || {};
       const [editingId, setEditingId] = useState(null);
-      const [editData, setEditData] = useState({
-        dateAudioRecorded: "",
-        description: "",
-        leadReturnId: "",
-        file: null,
-      });
+      const isEditing   = editingId !== null;
+// const formState   = isEditing ? editData : audioData;
+// const onField     = isEditing ? handleEditInput : handleInputChange;
+// const onFileField = isEditing ? handleEditFileChange : handleFileChange;
+// const onSubmit    = isEditing ? handleUpdateAudio : handleAddAudio;
+
+      // const [editData, setEditData] = useState({
+      //   dateAudioRecorded: "",
+      //   description: "",
+      //   leadReturnId: "",
+      //   file: null,
+      // });
 
   // Sample audio data
   const [audioFiles, setAudioFiles] = useState([
@@ -63,7 +69,7 @@ export const LRAudio = () => {
     if (selectedFile) {
       const audioUrl = URL.createObjectURL(selectedFile);
       setFile(selectedFile); // ✅ This was missing
-      setAudioData({ ...audioData, audioSrc: audioUrl });
+      setAudioData({ ...audioData, audioSrc: audioUrl, filename: selectedFile.name });
     }
   };
 
@@ -118,6 +124,8 @@ export const LRAudio = () => {
           id:                 savedAudio._id
         },
       ]);
+
+      await fetchAudioFiles();
   
       // Reset form
       setAudioData({
@@ -167,6 +175,7 @@ export const LRAudio = () => {
                       dateEntered: formatDate(audio.enteredDate),
                       returnId: audio.leadReturnId,
                       dateAudioRecorded: formatDate(audio.dateAudioRecorded),
+                      rawDateAudioRecorded:  audio.dateAudioRecorded,   
                       description: audio.audioDescription,
                       audioSrc: `${BASE_URL}/uploads/${audio.filename}`,
                       id:                audio._id,   
@@ -202,65 +211,73 @@ export const LRAudio = () => {
                   });
                 };
 
-                // Delete
-  const handleDeleteAudio = async (id) => {
-    if (!window.confirm("Delete this audio?")) return;
-    const token = localStorage.getItem("token");
-    try {
-      await api.delete(`/api/lraudio/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      setAudioFiles(prev => prev.filter(a => a.id !== id));
-    } catch (err) {
-      console.error(err);
-      alert("Failed to delete audio.");
-    }
-  };
 
-  // Edit
-  const startEdit = (audio) => {
-    setEditingId(audio.id);
-    setEditData({
-      leadReturnId: audio.returnId,
-      dateAudioRecorded: audio.dateAudioRecorded,
-      description: audio.description,
-      file: null
-    });
-  };
-  const handleEditInput = (field, value) => {
-    setEditData(prev => ({ ...prev, [field]: value }));
-  };
+                const handleDeleteAudio = async idx => {
+                   if (!window.confirm("Delete this audio?")) return;
+                     const a = audioFiles[idx];
+                    const leadNo   = selectedLead.leadNo;
+                     const leadName = encodeURIComponent(selectedLead.leadName);
+                      const caseNo   = selectedCase.caseNo;
+                      const caseName = encodeURIComponent(selectedCase.caseName);
+                      await api.delete(
+                        `/api/lraudio/${a.id}`,
+                        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+                      );
+             
+                  setAudioFiles(prev => prev.filter((_, i) => i !== idx));
+                  };
 
-  const handleEditFileChange = (e) => {
-    const f = e.target.files[0];
-    if (f) setEditData(prev => ({ ...prev, file: f }));
-  };
+
+  // const handleEditInput = (field, value) => {
+  //   setEditData(prev => ({ ...prev, [field]: value }));
+  // };
+
+  // const handleEditFileChange = (e) => {
+  //   const f = e.target.files[0];
+  //   if (f) setEditData(prev => ({ ...prev, file: f }));
+  // };
+
+// Populate form from an existing row
+const handleEditAudio = idx => {
+  const a = audioFiles[idx];
+  setEditingId(idx);
+  setFile(null);
+  setAudioData({
+    dateAudioRecorded: new Date(a.rawDateAudioRecorded).toISOString().slice(0,10),
+    leadReturnId:      a.returnId,
+    description:       a.description,
+    audioSrc:          a.audioSrc,
+    filename:          a.filename
+  });
+};
+
 
   const handleUpdateAudio = async () => {
-    const fd = new FormData();
-    fd.append("leadReturnId", editData.leadReturnId);
-    fd.append("dateAudioRecorded", editData.dateAudioRecorded);
-    fd.append("audioDescription", editData.description);
-    if (editData.file) fd.append("file", editData.file);
-    const token = localStorage.getItem("token");
-    try {
-      const res = await api.put(
-        `/api/lraudio/${editingId}`,
+     const idx = editingId;
+    const a   = audioFiles[idx];
+      const fd  = new FormData();
+    fd.append("leadReturnId", audioData.leadReturnId);
+    fd.append("dateAudioRecorded", audioData.dateAudioRecorded);
+     fd.append("audioDescription", audioData.description);
+       if (file) fd.append("file", file);
+    const leadNo   = selectedLead.leadNo;
+      const leadName = encodeURIComponent(selectedLead.leadName);
+      const caseNo   = selectedCase.caseNo;
+      const caseName = encodeURIComponent(selectedCase.caseName);
+ 
+     await api.put(
+        `/api/lraudio/${a.id}`,
         fd,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const updated = res.data.audio;
-      setAudioFiles(prev => prev.map(a => a.id === updated._id ? ({
-        ...a,
-        returnId: updated.leadReturnId,
-        dateAudioRecorded: formatDate(updated.dateAudioRecorded),
-        description: updated.audioDescription,
-        audioSrc: updated.filename ? `${BASE_URL}/uploads/${updated.filename}` : a.audioSrc
-      }) : a));
-      setEditingId(null);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to update audio.");
-    }
-  };
+         { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+       );
+
+     await fetchAudioFiles();
+
+     setEditingId(null);
+        setAudioData({ dateAudioRecorded:"", leadReturnId:"", description:"", audioSrc:"", filename:"" });
+      setFile(null);
+      };
+      
                       
 
   return (
@@ -375,9 +392,27 @@ export const LRAudio = () => {
           </div>
         </div>
         <div className="form-buttons-audio">
-        <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+        {/* <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
 
-          className="save-btn1" onClick={handleAddAudio}>Add Audio</button>
+          className="save-btn1" onClick={handleAddAudio}>Add Audio</button> */}
+
+  <button
+  disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+   onClick={ isEditing ? handleUpdateAudio : handleAddAudio }
+    className="save-btn1"
+ >
+   {isEditing ? "Update Audio" : "Add Audio"}
+  </button>
+  {isEditing && (
+    <button
+     className="save-btn1"
+     onClick={() => {
+       setEditingId(null);
+        setAudioData({ dateAudioRecorded:"", leadReturnId:"", description:"", audioSrc:"", filename:"" });
+       setFile(null);
+    }}
+   >Cancel</button>
+  )}
          </div>
          {/* Uploaded Audio Preview */}
          <div className="uploaded-audio">
@@ -425,7 +460,7 @@ export const LRAudio = () => {
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
                   className="edit-icon"
-                  onClick={() => startEdit(audio)} 
+                  onClick={() => handleEditAudio(index)}
                 />
                   </button>
                   <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
@@ -434,7 +469,7 @@ export const LRAudio = () => {
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  onClick={() => handleDeleteAudio(audio.id)}
+                  onClick={() => handleDeleteAudio(index)}
                 />
                   </button>
                   </div>

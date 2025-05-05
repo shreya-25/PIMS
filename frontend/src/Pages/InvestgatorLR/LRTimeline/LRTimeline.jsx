@@ -24,6 +24,7 @@ export const LRTimeline = () => {
   const navigate = useNavigate();
    const location = useLocation();
    const { selectedCase, selectedLead } = useContext(CaseContext);
+   const [entries, setEntries] = useState([]);
         
           const formatDate = (dateString) => {
             if (!dateString) return "";
@@ -70,7 +71,7 @@ export const LRTimeline = () => {
     endTime: '',
     location: '',
     description: '',
-    flag: '',
+    flag: ''
   });
 
   const [timelineFlags, setTimelineFlags] = useState([
@@ -80,10 +81,44 @@ export const LRTimeline = () => {
   ]);
 
   const [newFlag, setNewFlag] = useState('');
+  const [editingIndex, setEditingIndex] = useState(null);
 
   const handleInputChange = (field, value) => {
     setNewEntry({ ...newEntry, [field]: value });
   };
+
+  async function fetchTimelineEntries() {
+    const token = localStorage.getItem("token");
+    const url = `/api/timeline/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`;
+    try {
+      const res = await api.get(url, { headers: { Authorization: `Bearer ${token}` } });
+      setTimelineEntries(res.data.map(e => ({
+        id: e._id,
+        rawEventDate: e.eventDate,
+        rawStartDate: e.eventStartDate,
+        rawEndDate: e.eventEndDate,
+        rawStartTime: e.eventStartTime,
+        rawEndTime: e.eventEndTime,
+        leadReturnId: e.leadReturnId,
+        eventLocation: e.eventLocation,
+        eventDescription: e.eventDescription,
+        flags: e.timelineFlag || [],
+        access: e.access || "Everyone",
+        // for display:
+        date: formatDate(e.eventDate),
+        timeRange: formatTimeRangeNY(e.eventStartTime, e.eventEndTime),
+        location: e.eventLocation,
+        description: e.eventDescription,
+      })));
+    } catch (err) {
+      console.error("Error fetching timeline entries:", err);
+    }
+  }
+  
+  const handleChange = (field, val) => {
+    setNewEntry(ne => ({ ...ne, [field]: val }));
+  };
+
 
   useEffect(() => {
     if (
@@ -95,40 +130,6 @@ export const LRTimeline = () => {
       fetchTimelineEntries();
     }
   }, [selectedLead, selectedCase]);
-  
-  const fetchTimelineEntries = async () => {
-    const token = localStorage.getItem("token");
-  
-    try {
-      const res = await api.get(
-        `/api/timeline/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log("response:", res);
-  
-      const mapped = res.data.map((entry) => ({
-        date: formatDate(entry.eventDate),
-        returnId: entry.leadReturnId,
-        timeRange: formatTimeRangeNY(entry.eventStartTime, entry.eventEndTime),
-
-        location: entry.eventLocation,
-        description: entry.eventDescription,
-        flags: entry.timelineFlag || [],
-      }));
-      const withAccess = mapped.map(r => ({
-        ...r,
-        access: r.access ?? "Everyone"
-      }));
-  
-      setTimelineEntries(withAccess);
-    } catch (err) {
-      console.error("Error fetching timeline entries:", err);
-    }
-  };
   
   const formatTimeRangeNY = (startTime, endTime) => {
     const options = {
@@ -225,7 +226,7 @@ export const LRTimeline = () => {
       endTime: entryToEdit.timeRange.split(' - ')[1],
       location: entryToEdit.location,
       description: entryToEdit.description,
-      flag: entryToEdit.flags[0] || '',
+      flag: entryToEdit.flags[0] || ''
     });
     handleDeleteEntry(index);
   };
@@ -253,6 +254,94 @@ const handleAccessChange = (idx, newAccess) => {
     return copy;
   });
 };
+
+async function handleSubmit() {
+  const {
+    date, leadReturnId, eventStartDate, eventEndDate,
+    startTime, endTime, location, description, flag
+  } = newEntry;
+  if (!date || !eventStartDate || !eventEndDate || !startTime || !endTime || !location || !description) {
+    return alert("Please fill in all required fields.");
+  }
+  const token = localStorage.getItem("token");
+  const payload = {
+    leadNo: selectedLead.leadNo,
+    description: selectedLead.leadName,
+    assignedTo: selectedLead.assignedTo || {},
+    assignedBy: selectedLead.assignedBy || {},
+    enteredBy: localStorage.getItem("loggedInUser"),
+    caseName: selectedCase.caseName,
+    caseNo: selectedCase.caseNo,
+    leadReturnId,
+    enteredDate: new Date().toISOString(),
+    eventDate: date,
+    eventStartDate,
+    eventEndDate,
+    eventStartTime: combineDateTime(date, startTime),
+    eventEndTime: combineDateTime(date, endTime),
+    eventLocation: location,
+    eventDescription: description,
+    timelineFlag: flag ? [flag] : [],
+  };
+
+  try {
+    if (editingIndex === null) {
+      // CREATE
+      await api.post("/api/timeline/create", payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } else {
+      // UPDATE
+      const e = timelineEntries[editingIndex];
+      await api.put(`/api/timeline/${e.id}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    }
+    // refresh, reset form
+    await fetchTimelineEntries();
+    setEditingIndex(null);
+    setNewEntry({
+      date: '', leadReturnId:'', eventStartDate:'', eventEndDate:'',
+      startTime:'', endTime:'', location:'', description:'', flag:''
+    });
+  } catch (err) {
+    console.error(err);
+    alert(`Failed to ${editingIndex===null? 'add':'update'} entry`);
+  }
+}
+
+// Delete
+async function handleDelete(idx) {
+  if (!window.confirm("Delete this entry?")) return;
+  const token = localStorage.getItem("token");
+  const e = timelineEntries[idx];
+  try {
+    await api.delete(`/api/timeline/${e.id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    setTimelineEntries(te => te.filter((_,i)=>i!==idx));
+  } catch (err) {
+    console.error(err);
+    alert("Failed to delete entry");
+  }
+}
+
+// Prefill form for edit
+function handleEdit(idx) {
+  const e = timelineEntries[idx];
+  setEditingIndex(idx);
+  setNewEntry({
+    date:   new Date(e.rawEventDate).toISOString().slice(0,10),
+    leadReturnId: e.leadReturnId,
+    eventStartDate: new Date(e.rawStartDate).toISOString().slice(0,10),
+    eventEndDate:   new Date(e.rawEndDate).toISOString().slice(0,10),
+    startTime:      new Date(e.rawStartTime).toISOString().substr(11,5),
+    endTime:        new Date(e.rawEndTime).toISOString().substr(11,5),
+    location: e.eventLocation,
+    description: e.eventDescription,
+    flag: e.flags[0] || ''
+  });
+}
 
 
   return (
@@ -401,9 +490,26 @@ Case Page
               <button className="customer-btn" onClick={handleAddFlag}>Add Flag</button>
             </div>
 
-            <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
-
-            className="customer-btn" onClick={handleAddEntry}>Add Entry</button>
+            <button
+                disabled={selectedLead?.leadStatus==="In Review"||selectedLead?.leadStatus==="Completed"}
+                className="customer-btn"
+                onClick={handleSubmit}>
+                {editingIndex===null ? "Add Entry" : "Update Entry"}
+              </button>
+              {editingIndex!==null && (
+                <button
+                  className="customer-btn"
+                  onClick={()=>{
+                    setEditingIndex(null);
+                    setNewEntry({
+                      date:'',leadReturnId:'',eventStartDate:'',
+                      eventEndDate:'',startTime:'',endTime:'',
+                      location:'',description:'',flag:''
+                    });
+                  }}>
+                  Cancel
+                </button>
+              )}
           </div>
         </div>
 
@@ -426,7 +532,7 @@ Case Page
                 timelineEntries.map((entry, index) => (
                   <tr key={index}>
                     <td>{entry.date}</td>
-                    <td>{entry.returnId}</td>
+                    <td>{entry.leadReturnId}</td>
                     <td>{entry.timeRange}</td>
                     <td>{entry.location}</td>
                     <td>{entry.description}</td>
@@ -442,7 +548,7 @@ Case Page
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
                   className="edit-icon"
-                  onClick={() => handleEditEntry(index)}
+                  onClick={() => handleEdit(index)}
                 />
                   </button>
                   <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
@@ -451,7 +557,7 @@ Case Page
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  onClick={() => handleDeleteEntry(index)}
+                  onClick={() => handleDelete(index)}
                 />
                   </button>
                   </div>

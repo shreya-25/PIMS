@@ -1,6 +1,8 @@
 const express = require("express");
 const verifyToken = require("../middleware/authMiddleware");
-const { createLRVideo, getLRVideoByDetails } = require("../controller/LRVideoController");
+const { createLRVideo, getLRVideoByDetails,
+  updateLRVideo,
+  deleteLRVideo } = require("../controller/LRVideoController");
 const getUploadMiddleware = require("../middleware/upload");
 const upload = require("../middleware/upload-disk");
 
@@ -77,6 +79,20 @@ router.post(
 
 
 router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLRVideoByDetails);
+
+router.put(
+  "/:id",
+  verifyToken,
+  upload.single("file"),
+  updateLRVideo
+);
+
+// delete
+router.delete(
+  "/:id",
+  verifyToken,
+  deleteLRVideo
+);
 
 
 module.exports = router;

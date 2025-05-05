@@ -1,6 +1,6 @@
 const express = require("express");
 const verifyToken = require("../middleware/authMiddleware");
-const { createLRTimeline, getTimelinesByCase, getLRTimelineByDetails } = require("../controller/LRTimelineController");
+const { createLRTimeline, getTimelinesByCase, getLRTimelineByDetails,  updateLRTimeline, deleteLRTimeline } = require("../controller/LRTimelineController");
 
 const router = express.Router();
 
@@ -11,6 +11,12 @@ router.post("/create", verifyToken, createLRTimeline);
 router.get("/case/:caseNo/:caseName", verifyToken, getTimelinesByCase);
 
 router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLRTimelineByDetails);
+
+// update one
+router.put("/:id", verifyToken, updateLRTimeline);
+
+// delete one
+router.delete("/:id", verifyToken, deleteLRTimeline);
 
 
 module.exports = router;
