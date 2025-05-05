@@ -1,4 +1,6 @@
 const LRAudio = require("../models/LRAudio");
+const fs      = require("fs");
+const path    = require("path");
 
 // **Create a new LREnclosure entry with file upload support**
 const createLRAudio = async (req, res) => {
@@ -107,20 +109,26 @@ const updateLRAudio = async (req, res) => {
   // **DELETE** an audio entry
   const deleteLRAudio = async (req, res) => {
     try {
-      const { id } = req.params;
-      const toDel = await LRAudio.findByIdAndDelete(id);
-      if (!toDel) return res.status(404).json({ message: "Audio not found" });
-  
-      // delete file from disk
-      if (toDel.filePath) {
-        fs.unlinkSync(path.resolve(toDel.filePath));
+        const { id } = req.params;
+        console.log("DELETE /api/lraudio/", id);
+    
+        const toDel = await LRAudio.findByIdAndDelete(id);
+        if (!toDel) {
+          console.log("→ not found");
+          return res.status(404).json({ message: "Audio not found" });
+        }
+    
+        // remove the file itself
+        if (toDel.filePath) {
+          fs.unlinkSync(path.resolve(toDel.filePath));
+        }
+    
+        console.log("→ deleted");
+        return res.status(200).json({ message: "Audio deleted" });
+      } catch (err) {
+        console.error("Error deleting LRAudio:", err);
+        return res.status(500).json({ message: "Something went wrong" });
       }
-  
-      res.json({ message: "Audio deleted" });
-    } catch (err) {
-      console.error("Error deleting LRAudio:", err);
-      res.status(500).json({ message: "Something went wrong" });
-    }
   };
 
 module.exports = { createLRAudio, getLRAudioByDetails, updateLRAudio, deleteLRAudio };

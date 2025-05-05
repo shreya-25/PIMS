@@ -25,6 +25,7 @@ export const LRVideo = () => {
   const location = useLocation();
   const [file, setFile] = useState(null);
   const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+  const [editingIndex, setEditingIndex] = useState(null);
   
 
   const handleFileChange = (event) => {
@@ -59,6 +60,7 @@ export const LRVideo = () => {
     description: "",
     videoSrc: "",
     leadReturnId: "",
+    filename: ""  
   });
 
   const handleInputChange = (field, value) => {
@@ -164,11 +166,14 @@ export const LRVideo = () => {
                       );
                   
                       const mappedVideos = res.data.map((video) => ({
+                        id: video._id, 
                         dateEntered: formatDate(video.enteredDate),
                         returnId: video.leadReturnId,
                         dateVideoRecorded: formatDate(video.dateVideoRecorded),
                         description: video.videoDescription,
                         videoSrc: `${BASE_URL}/uploads/${video.filename}`,
+                        rawDateVideoRecorded: video.dateVideoRecorded,
+                        filename: video.filename,  
                       }));
 
                       const withAccess = mappedVideos.map(r => ({
@@ -189,7 +194,65 @@ export const LRVideo = () => {
                       return copy;
                     });
                   };
-                  const isCaseManager = selectedCase?.role === "Case Manager";              
+                  const isCaseManager = selectedCase?.role === "Case Manager";   
+                  
+                  const handleEditVideo = idx => {
+                    const v = videos[idx];
+                    setEditingIndex(idx);
+                    setVideoData({
+                      dateVideoRecorded: new Date(v.rawDateVideoRecorded)
+                                            .toISOString().slice(0,10),
+                      leadReturnId:      v.returnId,
+                      description:       v.description,
+                      videoSrc:          v.videoSrc,
+                      filename:          v.filename  
+
+                    });
+                    setFile(null);
+                  };
+                  
+                  //  B) on “Update Video”
+                  const handleUpdateVideo = async () => {
+                    if (editingIndex === null) return;
+                    const v = videos[editingIndex];
+                    const fd = new FormData();
+                    fd.append("leadReturnId",    videoData.leadReturnId);
+                    fd.append("dateVideoRecorded", videoData.dateVideoRecorded);
+                    fd.append("videoDescription",  videoData.description);
+                    if (file) fd.append("file", file);
+                  
+                    try {
+                      await api.put(
+                        `/api/lrvideo/${v.id}`, 
+                        fd,
+                        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+                      );
+                      await fetchVideos();
+                    } catch(err) {
+                      console.error(err);
+                      alert("Failed to update video");
+                    } finally {
+                      setEditingIndex(null);
+                      setVideoData({ dateVideoRecorded:"", leadReturnId:"", description:"", videoSrc:"" });
+                      setFile(null);
+                    }
+                  };
+                  
+                  //  C) on “🗑” icon
+                  const handleDeleteVideo = async idx => {
+                    if (!window.confirm("Delete this video?")) return;
+                    const v = videos[idx];
+                    try {
+                      await api.delete(
+                        `/api/lrvideo/${v.id}`,
+                        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+                      );
+                      setVideos(vs => vs.filter((_,i) => i!==idx));
+                    } catch(err) {
+                      console.error(err);
+                      alert("Failed to delete video");
+                    }
+                  };
                   
   return (
     <div className="lrvideos-container">
@@ -294,12 +357,35 @@ export const LRVideo = () => {
           <div className="form-row-video">
             <label className="evidence-head">Upload Video*</label>
             <input type="file" accept="video/*" className="evidence-head" onChange={handleFileChange} />
+            {editingIndex !== null && videoData.filename && (
+    <div style={{ marginTop: 4, marginLeft: 8 }}>
+      <em>Current file:</em> {videoData.filename}
+    </div>
+  )}
           </div>
         </div>
         <div className="form-buttons-video">
         <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
 
-        className="save-btn1" onClick={handleAddVideo}>Add Video</button>
+className="save-btn1"
+onClick={editingIndex!==null ? handleUpdateVideo : handleAddVideo}
+>
+{editingIndex!==null ? "Update Video" : "Add Video"}
+</button>
+
+{editingIndex!==null && (
+  <button
+    className="save-btn1"
+    onClick={() => {
+      setEditingIndex(null);
+      setVideoData({ dateVideoRecorded:"", leadReturnId:"", description:"", videoSrc:"" });
+      setFile(null);
+    }}
+  >
+    Cancel
+  </button>
+)}
+
         </div>
 
         {/* Uploaded Video Preview */}
@@ -351,7 +437,7 @@ export const LRVideo = () => {
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
                   className="edit-icon"
-                  // onClick={() => handleEditReturn(ret)}
+                  onClick={() => handleEditVideo(index)}
                 />
                   </button>
                   <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
@@ -360,7 +446,7 @@ export const LRVideo = () => {
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  // onClick={() => handleDeleteReturn(ret.id)}
+                  onClick={() => handleDeleteVideo(index)}
                 />
                   </button>
                   </div>
