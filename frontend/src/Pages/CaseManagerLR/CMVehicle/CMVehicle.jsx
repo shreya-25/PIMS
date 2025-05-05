@@ -7,7 +7,7 @@ import axios from "axios";
 import Comment from "../../../components/Comment/Comment";
 import { CaseContext } from "../../CaseContext";
 import FootBar from '../../../components/FootBar/FootBar';
-import VehicleModal from "../../../components/VehicleModal/VehicleModel";
+import VehicleModal from "../../../components/VehicleModal/VehicleModal";
 import api, { BASE_URL } from "../../../api";
 
 

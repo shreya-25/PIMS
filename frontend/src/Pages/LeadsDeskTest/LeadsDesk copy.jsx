@@ -6,7 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import PersonModal from "../../components/PersonModal/PersonModel";
-import VehicleModal from "../../components/VehicleModal/VehicleModel";
+import VehicleModal from "../../components/VehicleModal/VehicleModal";
 import Pagination from "../../components/Pagination/Pagination";
 
 

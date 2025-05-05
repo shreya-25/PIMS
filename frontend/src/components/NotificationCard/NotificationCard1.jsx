@@ -15,7 +15,7 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
   const [showSearchBar, setShowSearchBar] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { setSelectedCase } = useContext(CaseContext);
+  const { setSelectedCase, setSelectedLead } = useContext(CaseContext);
   const navigate = useNavigate();
 
   const fetchUnreadNotifications = async () => {
@@ -126,8 +126,8 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
         //     leadName: notification.leadName
         //   } : {})
         // }
-        caseNo:   notification.caseNo,
-        caseName: notification.caseName,
+        caseNo:   notification.caseName,
+        caseName: notification.caseNo,
         role,
         ...(notification.leadNo && {
           leadNo:   notification.leadNo,
@@ -135,6 +135,11 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
       };
 
       setSelectedCase(baseState);
+
+      setSelectedLead({
+        leadNo:   notification.leadNo,
+        leadName: notification.leadName,
+      });
 
       localStorage.setItem("selectedCase", JSON.stringify(baseState));
 
@@ -190,6 +195,18 @@ const handleAccept = async (_id) => {
 
       // ✅ Make API request to accept lead
       const response = await api.put(`/api/notifications/accept/${notificationId}`, {});
+      const token = localStorage.getItem("token");
+      await api.put(
+        `/api/lead/status/accepted`,
+          {
+            leadNo:   notification.leadNo,
+            leadName: notification.leadName,
+            caseNo:   notification.caseName,
+           caseName: notification.caseNo
+          },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        
 
       console.log("✅ Case accepted successfully", response.data);
 

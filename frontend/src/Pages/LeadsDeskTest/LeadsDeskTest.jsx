@@ -7,7 +7,7 @@ import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import PersonModal from "../../components/PersonModal/PersonModel";
 import CaseHeaderSection from "../../components/CaseHeaderSection/CaseHeaderSection";
-import VehicleModal from "../../components/VehicleModal/VehicleModel";
+import VehicleModal from "../../components/VehicleModal/VehicleModal";
 import Pagination from "../../components/Pagination/Pagination";
 import { jsPDF } from "jspdf"; // if still used elsewhere
 import html2canvas from "html2canvas";
