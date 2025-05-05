@@ -1217,18 +1217,20 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                 >
                   View
                 </button>
-                <button
-                  className="accept-btn"
-                  onClick={() => {
-                    if (
-                      window.confirm(`Do you want to accept this lead?`)
-                    ) {
-                      acceptLead(lead.id, lead.description );
-                    }
-                  }}
-                >
-                  Accept
-                </button>
+                {selectedCase.role === "Investigator" &&
+ lead.assignedOfficers?.includes(signedInOfficer) && (
+  <button
+    className="accept-btn"
+    onClick={() => {
+      if (window.confirm(`Do you want to accept this lead?`)) {
+        acceptLead(lead.id, lead.description);
+      }
+    }}
+  >
+    Accept
+  </button>
+)}
+
               </td>
             </tr>
            ))
