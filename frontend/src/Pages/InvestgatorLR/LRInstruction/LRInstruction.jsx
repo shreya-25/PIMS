@@ -28,7 +28,7 @@ export const LRInstruction = () => {
     const location = useLocation();
          const [loading, setLoading] = useState(true);
           const [error, setError] = useState("");
-    const { caseDetails } = routerLocation.state || {};
+    const { caseDetails, leadDetails } = routerLocation.state || {};
 
     const formatDate = (dateString) => {
       if (!dateString) return "";
@@ -126,14 +126,21 @@ export const LRInstruction = () => {
     useEffect(() => {
       const fetchLeadData = async () => {
         try {
-          if (selectedLead?.leadNo && selectedLead?.leadName && selectedLead?.caseNo && selectedLead?.caseName) {
+          const lead = selectedLead?.leadNo ? selectedLead : leadDetails;
+          const kase = selectedCase?.caseNo ? selectedCase : caseDetails;
+    
+          if (lead?.leadNo && lead?.leadName && kase?.caseNo && kase?.caseName) {
             const token = localStorage.getItem("token");
-            console.log("localstorage data",localStorage.getItem("token"));
-  
-            const response = await api.get(`/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(
-              selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
+    
+            const response = await api.get(
+              `/api/lead/lead/${lead.leadNo}/${encodeURIComponent(
+                lead.leadName
+              )}/${kase.caseNo}/${encodeURIComponent(kase.caseName)}`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+    
   
             console.log("Fetched Lead Data1:", response.data);
   
