@@ -1075,7 +1075,7 @@ import api from "../../api"; // adjust the path as needed
 
 
 import ExecSummaryModal from "../../components/ExecSummaryModal/ExecSummaryModal";
-import VehicleModal from "../../components/VehicleModal/VehicleModel";
+import VehicleModal from "../../components/VehicleModal/VehicleModal";
 import Pagination from "../../components/Pagination/Pagination";
 import { jsPDF } from "jspdf"; // if still used elsewhere
 import html2canvas from "html2canvas";

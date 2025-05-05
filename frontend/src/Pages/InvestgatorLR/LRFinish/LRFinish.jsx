@@ -70,81 +70,197 @@ useEffect(() => {
         const [leadVehicles, setLeadVehicles] = useState([]);
         const [leadEnclosures, setLeadEnclosures] = useState([]);
         const [leadEvidence, setLeadEvidence] = useState([]);
+        const [leadPictures, setLeadPictures] = useState([]);
+        const [leadAudio,    setLeadAudio]    = useState([]);
+        const [leadVideos,   setLeadVideos]   = useState([]);
         const [leadScratchpad, setLeadScratchpad] = useState([]);
         const [leadTimeline, setLeadTimeline] = useState([]);
-     
+
+        // useEffect(() => {
+        //   if (!selectedCase?.caseNo || !selectedLead?.leadNo) return;
+        
+        //   const { leadNo, leadName } = selectedLead;
+        //   const { caseNo, caseName } = selectedCase;
+        //   const encLead = encodeURIComponent(leadName);
+        //   const encCase = encodeURIComponent(caseName);
+        //   const token = localStorage.getItem("token");
+        //   const headers = { headers: { Authorization: `Bearer ${token}` } };
+        
+        //   const calls = {
+        //     Instructions: api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+        //     Returns:      api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+        //     Persons:      api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+        //     Vehicles:     api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+        //     Enclosures:   api.get(`/api/lrenclosures/lrenclosures/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+        //     Evidence:     api.get(`/api/lrevidence/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+        //     Scratchpad:   api.get(`/api/scratchpad/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+        //     Timeline:     api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+        //     Pictures:     api.get(`/api/lrpictures/lrpictures/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+        //     Audio:        api.get(`/api/lraudio/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+        //     Videos:       api.get(`/api/lrvideo/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+        //   };
+        
+        //   Promise
+        //     .allSettled(Object.values(calls))
+        //     .then(results => {
+        //       const emptySections = [];
+        
+        //       // map the results back to your state setters & collect empties
+        //       Object.entries(calls).forEach(( [section, _], idx ) => {
+        //         const res = results[idx];
+        //         if (res.status === 'fulfilled') {
+        //           const data = res.value.data || [];
+        //           switch(section) {
+        //             case 'Instructions':   setLeadInstructions(data[0] || {}); break;
+        //             case 'Returns':        setLeadReturns(data);             break;
+        //             case 'Persons':        setLeadPersons(data);             break;
+        //             case 'Vehicles':       setLeadVehicles(data);            break;
+        //             case 'Enclosures':     setLeadEnclosures(data);          break;
+        //             case 'Evidence':       setLeadEvidence(data);            break;
+        //             case 'Scratchpad':     setLeadScratchpad(data);          break;
+        //             case 'Timeline':       setLeadTimeline(data);            break;
+        //             case 'Pictures':       setLeadPictures(data);            break;
+        //             case 'Audio':          setLeadAudio(data);               break;
+        //             case 'Videos':         setLeadVideos(data);              break;
+        //           }
+        //           if ((Array.isArray(data) && data.length === 0) ||
+        //               (section === 'Instructions' && !data[0])) {
+        //             emptySections.push(section);
+        //           }
+        //         } else {
+        //           // network/server error: treat as empty or truly failed?
+        //           console.error(`${section} fetch failed:`, res.reason);
+        //           emptySections.push(section + ' (error)');
+        //         }
+        //       });
+        
+        //       if (emptySections.length) {
+        //         // alert(`No data for: ${emptySections.join(', ')}`);
+        //       }
+        //     })
+        //     .catch(err => {
+        //       // This should never fire, since allSettled never rejects
+        //       console.error("Unexpected error:", err);
+        //       alert("Error loading lead data. Please try again.");
+        //     })
+        //     .finally(() => setLoading(false));
+        // }, [selectedCase, selectedLead]);
+
         useEffect(() => {
           if (!selectedCase?.caseNo || !selectedLead?.leadNo) return;
-      
+        
           const { leadNo, leadName } = selectedLead;
           const { caseNo, caseName } = selectedCase;
           const encLead = encodeURIComponent(leadName);
           const encCase = encodeURIComponent(caseName);
           const token = localStorage.getItem("token");
-      
-          Promise.all([
-            api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            api.get(
-              `/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            ),
-            api.get(
-              `/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            ),
-            api.get(
-              `/api/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            ),
-            // api.get(
-            //   `/api/lrenclosures/lrenclosures/${leadNo}/${encLead}/${caseNo}/${encCase}`,
-            //   { headers: { Authorization: `Bearer ${token}` } }
-            // ),
-            // api.get(
-            //   `/api/lrevidence/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`,
-            //   { headers: { Authorization: `Bearer ${token}` } }
-            // ),
-            // api.get(
-            //   `/api/scratchpad/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`,
-            //   { headers: { Authorization: `Bearer ${token}` } }
-            // ),
-            // api.get(
-            //   `/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`,
-            //   { headers: { Authorization: `Bearer ${token}` } }
-            // ),
-          ])
-            .then(
-              ([
+          const headers = { headers: { Authorization: `Bearer ${token}` } };
+        
+          async function loadAll() {
+            try {
+              // 1) Fetch the “main” arrays in parallel
+              const [
                 instrRes,
                 returnsRes,
                 personsRes,
                 vehiclesRes,
-                // enclosuresRes,
-                // evidenceRes,
-                // scratchRes,
-                // timelineRes,
-              ]) => {
-                setLeadInstructions(instrRes.data[0] || {});
-                setLeadReturns(returnsRes.data);
-                setLeadPersons(personsRes.data);
-                setLeadVehicles(vehiclesRes.data);
-                // setLeadEnclosures(enclosuresRes.data);
-                // setLeadEvidence(evidenceRes.data);
-                // setLeadScratchpad(scratchRes.data);
-                // setLeadTimeline(timelineRes.data);
-              }
-            )
-            .catch((err) => {
-              console.error("Batch fetch failed:", err);
-              alert("Error loading lead data. Please try again.");
-            })
-            .finally(() => setLoading(false));
+                enclosuresRes,
+                evidenceRes,
+                scratchpadRes,
+                timelineRes,
+                picturesRes,
+                audioRes,
+                videosRes,
+              ] = await Promise.all([
+                api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                api.get(`/api/lrenclosures/lrenclosures/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                api.get(`/api/lrevidence/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                api.get(`/api/scratchpad/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                api.get(`/api/lrpictures/lrpictures/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                api.get(`/api/lraudio/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                api.get(`/api/lrvideo/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+              ]);
+        
+              // 2) Instructions is a single object
+              setLeadInstructions(instrRes.data[0] || {});
+        
+              // 3) For every section that can have files, 
+              //    map over its array and fetch `/files/:id`
+              const attachFiles = async (items, idField, fetchUrlBase) => {
+                return Promise.all(
+                  (items || []).map(async item => {
+                    const fileRes = await api.get(
+                      `${fetchUrlBase}/${item[idField]}`,
+                      headers
+                    );
+                    // assume fileRes.data is an array of { filename, url, … }
+                    return { ...item, files: fileRes.data };
+                  })
+                );
+              };
+        
+              setLeadReturns(
+                await attachFiles(
+                  returnsRes.data,
+                  "leadReturnId",
+                  "/api/leadReturn/files"
+                )
+              );
+              setLeadPersons(personsRes.data);
+              setLeadVehicles(vehiclesRes.data);
+              setLeadEnclosures(
+                await attachFiles(
+                  enclosuresRes.data,
+                  "enclosureId",
+                  "/api/lrenclosures/files"
+                )
+              );
+              setLeadEvidence(
+                await attachFiles(
+                  evidenceRes.data,
+                  "evidenceId",
+                  "/api/lrevidence/files"
+                )
+              );
+              setLeadScratchpad(scratchpadRes.data);
+              setLeadTimeline(timelineRes.data);
+              setLeadPictures(
+                await attachFiles(
+                  picturesRes.data,
+                  "pictureId",
+                  "/api/lrpictures/files"
+                )
+              );
+              setLeadAudio(
+                await attachFiles(
+                  audioRes.data,
+                  "audioId",
+                  "/api/lraudio/files"
+                )
+              );
+              setLeadVideos(
+                await attachFiles(
+                  videosRes.data,
+                  "videoId",
+                  "/api/lrvideo/files"
+                )
+              );
+        
+            } catch (err) {
+              console.error("Error loading lead data:", err);
+              // alert("Error loading lead data. Please try again.");
+            } finally {
+              setLoading(false);
+            }
+          }
+        
+          loadAll();
         }, [selectedCase, selectedLead]);
-      
-
-
+        
         const [selectedReports, setSelectedReports] = useState({
           FullReport: false,
           leadInstruction: false,

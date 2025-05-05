@@ -129,45 +129,103 @@ const handleSelectLead = (lead) => {
       }
     };
     console.log("SelectedCase", selectedCase);
-    const acceptLead = async (leadNo) => {
-      const leadToAccept = leads.assignedLeads.find((lead) => lead.leadNo === leadNo);
-      if (!leadToAccept) return;
+  //   const acceptLead = async (leadNo) => {
+  //     const leadToAccept = leads.assignedLeads.find((lead) => lead.leadNo === leadNo);
+  //     if (!leadToAccept) return;
 
-      try {
-        const token = localStorage.getItem("token");
+  //     try {
+  //       const token = localStorage.getItem("token");
     
-        // Update the lead status in the database to "Pending"
-        await api.patch(
-          `/api/lead/${leadToAccept.leadNo}/${leadToAccept.caseNo}/${encodeURIComponent(leadToAccept.caseName)}/status`,
-          { status: "Pending" },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+  //       // Update the lead status in the database to "Pending"
+  //       await api.patch(
+  //         `/api/lead/${leadToAccept.leadNo}/${leadToAccept.caseNo}/${encodeURIComponent(leadToAccept.caseName)}/status`,
+  //         { status: "Pending" },
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //             "Content-Type": "application/json",
+  //           },
+  //         }
+  //       );
     
-      // Add lead to pending leads with default fields if not present
+  //     // Add lead to pending leads with default fields if not present
+  //     const newPendingLead = {
+  //       ...leadToAccept,
+  //       leadStatus: "Pending",
+  //       dueDate: leadToAccept.dueDate || "12/31/2024", // Default due date
+  //       priority: leadToAccept.priority || "Medium", // Default priority
+  //       flags: leadToAccept.flags || [],
+  //       assignedOfficers: leadToAccept.assignedOfficers || ["Unassigned"],
+  //     };
+    
+  //     setLeads((prevLeads) => ({
+  //       ...prevLeads,
+  //       assignedLeads: prevLeads.assignedLeads.filter((lead) => lead.leadNo !== leadNo),
+  //       pendingLeads: [...prevLeads.pendingLeads, newPendingLead],
+  //     }));
+  //   } catch (error) {
+  //     console.error("Error updating lead status:", error.response?.data || error);
+  //     alert("Failed to accept lead.");
+  //   }
+  // };
+
+  const acceptLead = async (leadNo, description) => {
+    console.log("Accept button clicked for lead:", leadNo);
+  
+    try {
+      const token = localStorage.getItem("token");
+      const url = `/api/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`;
+      console.log("PUT request URL:", url);
+  
+      // Call the database update endpoint via a PUT request.
+      const response = await api.put(
+        url,
+        {}, // No payload; the backend sets the status to "Pending" automatically.
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log("PUT request succeeded. Response data:", response.data);
+  
+      // Build a new pending lead object from the function parameters and default values.
       const newPendingLead = {
-        ...leadToAccept,
+        id: leadNo,
+        leadNo: leadNo,
+        description: description,
         leadStatus: "Pending",
-        dueDate: leadToAccept.dueDate || "12/31/2024", // Default due date
-        priority: leadToAccept.priority || "Medium", // Default priority
-        flags: leadToAccept.flags || [],
-        assignedOfficers: leadToAccept.assignedOfficers || ["Unassigned"],
+        dueDate: "NA",          // Default due date (adjust if needed)
+        priority: "NA",         // Default priority (adjust if needed)
+        flags: [],              // Defaults to empty array
+        assignedOfficers: ["Unassigned"], // Default assigned officer
       };
-    
-      setLeads((prevLeads) => ({
-        ...prevLeads,
-        assignedLeads: prevLeads.assignedLeads.filter((lead) => lead.leadNo !== leadNo),
-        pendingLeads: [...prevLeads.pendingLeads, newPendingLead],
-      }));
+  
+      // Update your local state: remove the accepted lead from assignedLeads and add it to pendingLeads.
+      setLeads((prevLeads) => {
+        const updatedAssignedLeads = prevLeads.assignedLeads.filter(
+          (lead) => Number(lead.id) !== Number(leadNo)
+        );
+        const updatedPendingLeads = [...prevLeads.pendingLeads, newPendingLead];
+        console.log(
+          "Updating leads state. New assignedLeads length:",
+          updatedAssignedLeads.length,
+          "New pendingLeads length:",
+          updatedPendingLeads.length
+        );
+        return {
+          ...prevLeads,
+          assignedLeads: updatedAssignedLeads,
+          pendingLeads: updatedPendingLeads,
+        };
+      });
     } catch (error) {
       console.error("Error updating lead status:", error.response?.data || error);
       alert("Failed to accept lead.");
     }
   };
+  
     
     
       
@@ -1159,18 +1217,18 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                 >
                   View
                 </button>
-                {/* <button
+                <button
                   className="accept-btn"
                   onClick={() => {
                     if (
                       window.confirm(`Do you want to accept this lead?`)
                     ) {
-                      acceptLead(lead.id);
+                      acceptLead(lead.id, lead.description );
                     }
                   }}
                 >
                   Accept
-                </button> */}
+                </button>
               </td>
             </tr>
            ))
