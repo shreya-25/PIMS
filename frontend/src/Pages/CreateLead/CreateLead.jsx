@@ -187,8 +187,9 @@ useEffect(() => {
     }));
   };
   
-   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
-   const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+ const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
    const [usernames, setUsernames] = useState([]); // State to hold fetched usernames
 
 
@@ -493,15 +494,16 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
                                  {/* Lead Management Dropdown */}
 
             <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
+        </li>
+        {caseDropdownOpen && (
+      <ul >
+            
             <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
             <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
             {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item active" onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-<li className="sidebar-item" 
-             onClick={() => {
-              setPendingRoute("/leadReview");
-              setShowSelectModal(true);
-            }}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
             <li className="sidebar-item" 
              onClick={() => {
@@ -531,6 +533,19 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            </ul>)}
+
+            <li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen1(!leadDropdownOpen1)}>
+          Lead Related Tabs {leadDropdownOpen1 ?  "▲": "▼"}
+</li>
+        {leadDropdownOpen1 && (
+          <ul>
+            <li className="sidebar-item" 
+             onClick={() => {
+              setPendingRoute("/leadReview");
+              setShowSelectModal(true);
+            }}>Lead Information</li>
+            
             {selectedCase.role !== "Investigator" && (
    <li
    className="sidebar-item"
@@ -541,6 +556,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
   >    View Lead Chain of Custody
     </li>
 )}
+</ul>)}
                     </ul>
 
                     {showSelectModal && (
@@ -553,6 +569,8 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
                 </div>
 
                 <div className="left-content1">
+                <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+
 
 
         {/* Center Section */}

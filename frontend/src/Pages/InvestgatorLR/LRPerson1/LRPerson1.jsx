@@ -28,6 +28,8 @@ const [username, setUsername] = useState("");
   };
   const { leadDetails, caseDetails, person } = location.state || {};
 const { selectedCase, selectedLead, leadInstructions, leadReturns } = useContext(CaseContext);
+     const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+                const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
 const onShowCaseSelector = (route) => {
   navigate(route, { state: { caseDetails } });
 };
@@ -261,11 +263,31 @@ useEffect(() => {
        <div className="LRI_Content">
        <div className="sideitem">
        <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
-            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+
+       <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
+        </li>
+        {caseDropdownOpen && (
+      <ul >
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>  
+            {/* {selectedCase.role !== "Investigator" && (      
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li> )}  */}
+
+
+                  <li
+  className="sidebar-item"
+  onClick={() =>
+    selectedCase.role === "Investigator"
+      ? navigate("/Investigator")
+      : navigate("/CasePageManager")
+  }
+>
+Case Page
+</li>
+
+
             {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
             <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
@@ -288,11 +310,23 @@ useEffect(() => {
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+
+            </ul>
+        )}
+          <li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
+          </li>
+        {leadDropdownOpen && (
+          <ul>
+              <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             {selectedCase.role !== "Investigator" && (
-  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-    View Lead Chain of Custody
-  </li>
-)}
+            <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+              View Lead Chain of Custody
+            </li>
+             )}
+          </ul>
+
+            )}
 
                 </div>
                 <div className="left-content">
