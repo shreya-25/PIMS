@@ -385,6 +385,16 @@ Case Page
         {/* Content Area */}
         <div className="lead-main-content">
           {/* Page Header */}
+
+          <div className="caseandleadinfo">
+          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"}</h5>
+
+          <h5 className = "side-title"> 
+          {selectedLead?.leadNo ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName}` : "LEAD DETAILS"}
+
+          </h5>
+          </div>
+
           <div className="case-header">
             {/* <h1>LEAD:{selectedLead.leadNo} | {selectedLead.leadName.toUpperCase()}</h1> */}
             <h1>

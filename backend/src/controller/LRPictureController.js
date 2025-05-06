@@ -3,14 +3,19 @@ const LRPicture = require("../models/LRPicture");
 // **Create a new LREnclosure entry with file upload support**
 const createLRPicture = async (req, res) => {
     try {
-      const isLink = req.body.isLink === "true";
+      const isLink = req.body.isLink === "true"; // Handle string from formData
+      const accessLevel = req.body.accessLevel || "Everyone";
 
       let filePath = null;
       let originalName = null;
       let filename = null;
   
       if (!isLink) {
-        if (!req.file) return res.status(400).json({ error: 'No file received' });
+        if (!req.file) {
+          return res.status(400).json({ error: 'No file received for non-link upload' });
+        }
+  
+        // File fields (for disk storage)
         filePath = req.file.path;
         originalName = req.file.originalname;
         filename = req.file.filename;
@@ -28,13 +33,12 @@ const createLRPicture = async (req, res) => {
             enteredDate: req.body.enteredDate,
             datePictureTaken: req.body.datePictureTaken,
             pictureDescription:req.body.pictureDescription,
+            filePath: isLink ? "link-only" : filePath,
+            originalName: originalName,
+            filename: filename,
             accessLevel,
-            // fileId, // Store the GridFS file reference here
             isLink,
             link: isLink ? req.body.link : null,
-            filePath,
-            originalName,
-            filename
         });
 
         // Save the document in MongoDB

@@ -901,6 +901,8 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                 </div>
                 <div className="left-content">
 
+                  <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"}</h5>
+
                    {/* Display Case Number and Name */}
                 <div className="case-header">
                     {

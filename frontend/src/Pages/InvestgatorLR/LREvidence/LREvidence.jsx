@@ -42,7 +42,7 @@ export const LREvidence = () => {
     };
   
     const { leadDetails, caseDetails } = location.state || {};
-  
+
 
   // Sample evidence data
   // const [evidence, setEvidence] = useState([
@@ -84,9 +84,13 @@ export const LREvidence = () => {
    disposedDate:         "",
    type:                 "",
   disposition:          "",
+  isLink: false,
+  link: "",
+  originalName: '',   // ← add this
+  filename: ''   
   });
     const [file, setFile] = useState(null);
-
+  
   const handleInputChange = (field, value) => {
     setEvidenceData({ ...evidenceData, [field]: value });
   };
@@ -156,62 +160,91 @@ export const LREvidence = () => {
   // };
 
   const handleSaveEvidence = async () => {
-    // 1. Grab the file from the ref
-    const file = fileInputRef.current?.files[0];
-    if (!file) {
-      alert("Please select a file to upload");
+    // require a file or a link on new entries
+    if (editIndex === null && !file && !evidenceData.isLink) {
+      alert("Please select a file or enter a link.");
       return;
     }
   
-    // 2. Build FormData with all required fields
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("leadNo", selectedLead.leadNo);
-    formData.append("description", selectedLead.leadName);        // ← required by schema
-    formData.append("enteredBy", localStorage.getItem("loggedInUser"));
-    formData.append("caseName", selectedCase.caseName);
-    formData.append("caseNo", selectedCase.caseNo);
-    formData.append("leadReturnId", evidenceData.leadReturnId);
-    formData.append("enteredDate", new Date().toISOString());
-    formData.append("type", evidenceData.type);
-    formData.append("evidenceDescription", evidenceData.evidenceDescription); // ← fixed typo
-    formData.append("collectionDate", evidenceData.collectionDate);
-    formData.append("disposedDate", evidenceData.disposedDate);
-    formData.append("disposition", evidenceData.disposition);
+    // build payload
+    const fd = new FormData();
+    if (!evidenceData.isLink && file) {
+      fd.append("file", file);
+    }
+    fd.append("leadNo", selectedLead.leadNo);
+    fd.append("description", selectedLead.leadName);
+    fd.append("enteredBy", localStorage.getItem("loggedInUser"));
+    fd.append("caseName", selectedCase.caseName);
+    fd.append("caseNo", selectedCase.caseNo);
+    fd.append("leadReturnId", evidenceData.leadReturnId);
+    fd.append("enteredDate", new Date().toISOString());
+    fd.append("type", evidenceData.type);
+    fd.append("evidenceDescription", evidenceData.evidenceDescription);
+    fd.append("collectionDate", evidenceData.collectionDate);
+    fd.append("disposedDate", evidenceData.disposedDate);
+    fd.append("disposition", evidenceData.disposition);
+    // link-specific
+    fd.append("isLink", evidenceData.isLink);
+    if (evidenceData.isLink) {
+      fd.append("link", evidenceData.link);
+    }
   
-    // 3. POST via your `api` instance, removing the default JSON header
     try {
       const token = localStorage.getItem("token");
-      await api.post(
-        "/api/lrevidence/upload",
-        formData,
-        {
+      if (editIndex === null) {
+        // CREATE
+        await api.post("/api/lrevidence/upload", fd, {
           headers: { Authorization: `Bearer ${token}` },
           transformRequest: [(data, headers) => {
             delete headers["Content-Type"];
             return data;
           }]
-        }
-      );
+        });
+        alert("Evidence added");
+      } else {
+        // UPDATE
+        const ev = evidences[editIndex];
+        const url =
+          `/api/lrevidence/${selectedLead.leadNo}/` +
+          `${encodeURIComponent(selectedLead.leadName)}/` +
+          `${selectedCase.caseNo}/` +
+          `${encodeURIComponent(selectedCase.caseName)}/` +
+          `${ev.returnId}/` +
+          `${encodeURIComponent(originalDesc)}`;
+        await api.put(url, fd, {
+          headers: { Authorization: `Bearer ${token}` },
+          transformRequest: [(data, headers) => {
+            delete headers["Content-Type"];
+            return data;
+          }]
+        });
+        alert("Evidence updated");
+      }
   
-      // 4. Re-fetch the full list (no more `undefined` entries!)
+      // refresh & reset
       await fetchEvidences();
-  
-      // 5. Clear form state and the file-input UI
       setEvidenceData({
-        leadReturnId: "",
-        collectionDate: "",
-        disposedDate: "",
-        type: "",
-        disposition: "",
+        leadReturnId:        "",
+        evidenceDescription: "",
+        collectionDate:      "",
+        disposedDate:        "",
+        type:                "",
+        disposition:         "",
+        isLink:              false,
+        link:                "",
+        originalName:        "",
+        filename:            ""
       });
-      fileInputRef.current.value = "";
-  
+      setFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setEditIndex(null);
+      setOriginalDesc("");
     } catch (err) {
-      console.error("Error saving evidence:", err.response || err);
-      alert("Failed to save evidence. Check console for details.");
+      console.error("Save error:", err);
+      alert("Failed to save evidence. See console for details.");
     }
   };
+  
 
   useEffect(() => {
     if (
@@ -251,7 +284,9 @@ export const LREvidence = () => {
         collectionDate: formatDate(enc.collectionDate),
         disposedDate: formatDate(enc.disposedDate),
         disposition: enc.disposition,
-        filename: enc.filename
+        originalName:        enc.originalName,
+        filename:            enc.filename,
+         link:                enc.link || ""   
       }));
 
       const withAccess = mappedEvidences.map(r => ({
@@ -288,15 +323,20 @@ export const LREvidence = () => {
     setEditIndex(idx);
     setOriginalDesc(ev.evidenceDescription);
     setEvidenceData({
-      leadReturnId:       ev.returnId,
-      collectionDate:     ev.collectionDate,
-      disposedDate:       ev.disposedDate,
-      type:               ev.type,
+      leadReturnId:        ev.returnId,
+      collectionDate:      ev.collectionDate,
+      disposedDate:        ev.disposedDate,
+      type:                ev.type,
       evidenceDescription: ev.evidenceDescription,
-      disposition:        ev.disposition
+      disposition:         ev.disposition,
+      isLink:              !!ev.link,
+      link:                ev.link || "",
+      originalName:        ev.originalName,
+      filename:            ev.filename
     });
-    fileInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
+  
   
   const handleDelete = async idx => {
     if (!window.confirm("Delete this evidence?")) return;
@@ -439,21 +479,100 @@ export const LREvidence = () => {
   value={evidenceData.evidenceDescription}
   onChange={e => handleInputChange("evidenceDescription", e.target.value)}
 />
-          <div className="form-row-evidence">
-            <label>Upload File*</label>
-            <input
-  type="file"
-  name="file"               // match your multer field
-  ref={fileInputRef}        // ← attach the ref here
-  onChange={handleFileChange}
-/>
-          </div>
+{/* Upload Type */}
+<div className="form-row-evidence">
+  <label>Upload Type:</label>
+  <select
+    value={evidenceData.isLink ? "link" : "file"}
+    onChange={e =>
+      setEvidenceData(prev => ({
+        ...prev,
+        isLink: e.target.value === "link",
+        link:   ""     // reset link if switching back to file
+      }))
+    }
+  >
+    <option value="file">File</option>
+    <option value="link">Link</option>
+  </select>
+</div>
+
+{/* If editing a file‐upload entry, show current filename */}
+{editIndex !== null && !evidenceData.isLink && evidenceData.originalName && (
+  <div className="form-row-evidence">
+    <label>Current File:</label>
+    <span className="current-filename">
+      {evidenceData.originalName}
+    </span>
+  </div>
+)}
+
+{/* File vs Link input */}
+{!evidenceData.isLink ? (
+  <div className="form-row-evidence">
+    <label>
+      {editIndex === null ? "Upload File*" : "Replace File (optional)*"}
+    </label>
+    <input
+      type="file"
+      ref={fileInputRef}
+      onChange={handleFileChange}
+    />
+  </div>
+) : (
+  <div className="form-row-evidence">
+    <label>Paste Link*</label>
+    <input
+      type="text"
+      placeholder="https://..."
+      value={evidenceData.link}
+      onChange={e =>
+        setEvidenceData(prev => ({ ...prev, link: e.target.value }))
+      }
+    />
+  </div>
+)}
+
         </div>
         </div>
         <div className="form-buttons">
-        <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+        <div className="form-buttons">
+  <button
+    disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+    className="save-btn1"
+    onClick={handleSaveEvidence}
+  >
+    {editIndex === null ? "Add Evidence" : "Update Evidence"}
+  </button>
 
-           className="save-btn1" onClick={handleSaveEvidence}>Add Evidence</button>
+  {editIndex !== null && (
+    <button
+      disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+      className="save-btn1"
+      onClick={() => {
+        // reset form back to “add” mode
+        setEditIndex(null);
+        setEvidenceData({
+          leadReturnId:        "",
+          evidenceDescription: "",
+          collectionDate:      "",
+          disposedDate:        "",
+          type:                "",
+          disposition:         "",
+          isLink:              false,
+          link:                "",
+          originalName:        "",
+          filename:            ""
+        });
+        setFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }}
+    >
+      Cancel
+    </button>
+  )}
+</div>
+
         </div>  
 
             {/* Evidence Table */}
@@ -481,16 +600,30 @@ export const LREvidence = () => {
                 <td>{item.type}</td>
                 <td>{item.collectionDate}</td>
                 <td>{item.disposedDate}</td>
-                 <td>
-                                <a
-                    href={`${BASE_URL}/uploads/${item.filename}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="link-button"
-                  >
-                    {item.originalName}
-                  </a>
-                  </td>
+                <td>
+  {item.link ? (
+    // if it's a link‐type upload
+    <a
+      href={item.link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="link-button"
+    >
+      {item.link}
+    </a>
+  ) : (
+    // otherwise it's a file
+    <a
+      href={`${BASE_URL}/uploads/${item.filename}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="link-button"
+    >
+      {item.originalName}
+    </a>
+  )}
+</td>
+
                 <td>{item.evidenceDescription}</td>
                 <td>
                   <div classname = "lr-table-btn">
