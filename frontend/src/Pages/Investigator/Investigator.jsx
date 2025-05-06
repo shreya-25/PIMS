@@ -12,6 +12,7 @@ import Pagination from "../../components/Pagination/Pagination";
 import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 import api from "../../api";
 import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
+import { AlertModal } from "../../components/AlertModal/AlertModal"
 
 
 
@@ -31,8 +32,28 @@ export const Investigator = () => {
   const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
    const [showSelectModal, setShowSelectModal] = useState(false);
     const [pendingRoute, setPendingRoute]   = useState(null);
+    const [showAlert, setShowAlert] = useState(false);
 
   console.log("case context", selectedCase);
+
+  // modal state
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen:    false,
+    lead:    null,
+  });
+  const [alertConfig, setAlertConfig] = useState({
+    isOpen: false,
+    title:  "",
+    message:"",
+  });
+
+  const openConfirm  = (lead) => setConfirmConfig({ isOpen: true, lead });
+  const closeConfirm = ()      => setConfirmConfig({ isOpen: false, lead: null });
+
+  const handleConfirmAccept = () => {
+    acceptLead(confirmConfig.lead.id, confirmConfig.lead.description);
+    closeConfirm();
+  };
 
   const [leads, setLeads] = useState({
     assignedLeads: [
@@ -1174,13 +1195,7 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
                 </button>
                 <button
                   className="accept-btn"
-                  onClick={() => {
-                    if (
-                      window.confirm(`Do you want to accept this lead?`)
-                    ) {
-                      acceptLead(lead.id, lead.description );
-                    }
-                  }}
+                  onClick={() => openConfirm(lead)}
                 >
                   Accept
                 </button>
@@ -1190,6 +1205,24 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
       </tbody>
     </table>
     </div>
+
+    
+    <AlertModal
+  isOpen={confirmConfig.isOpen}
+  title="Confirm Accept"
+  message={`Are you sure you want to accept Lead #${confirmConfig.lead?.id}?`}
+  onClose={closeConfirm}
+  onConfirm={handleConfirmAccept}
+>
+  <div className="alert-footer">
+    <button className="alert-button" onClick={handleConfirmAccept}>
+      Yes
+    </button>
+    <button className="alert-button" onClick={closeConfirm}>
+      No
+    </button>
+  </div>
+</AlertModal>
     <Pagination
   currentPage={currentPage}
   totalEntries={totalEntries}  // Automatically calculate total entries

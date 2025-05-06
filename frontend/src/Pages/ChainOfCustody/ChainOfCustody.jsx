@@ -7,6 +7,8 @@ import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
+import api from "../../api"; // adjust the path as needed
+import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
 
 export const ChainOfCustody = () => {
   
@@ -16,11 +18,22 @@ export const ChainOfCustody = () => {
    const location = useLocation();
  
      const { caseDetails } = location.state || {};
-       const { selectedCase, setSelectedLead } = useContext(CaseContext);
+       const { selectedCase, setSelectedLead , selectedLead, leadStatus, setLeadStatus} = useContext(CaseContext);
 
        const onShowCaseSelector = (route) => {
         navigate(route, { state: { caseDetails } });
     };
+       const [showSelectModal, setShowSelectModal] = useState(false);
+            const [pendingRoute, setPendingRoute]   = useState(null);
+                  const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+                  const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+
+       const [leads, setLeads] = useState({
+                assignedLeads: [],
+                pendingLeads: [],
+                pendingLeadReturns: [],
+                allLeads: [],
+              } );
 
   const handleNavigation = (route) => {
     navigate(route); // Navigate to the respective page
@@ -64,6 +77,73 @@ export const ChainOfCustody = () => {
       handleNavigation(route);
     }
   };
+  const handleSelectLead = (lead) => {
+    setSelectedLead({
+      leadNo: lead.leadNo,
+      leadName: lead.description,
+      caseName: lead.caseName,
+      caseNo: lead.caseNo,
+    });
+  
+    setShowSelectModal(false);
+    navigate(pendingRoute, {
+      state: {
+        caseDetails: selectedCase,
+        leadDetails: lead
+      }
+    });
+    
+    setPendingRoute(null);
+  };
+
+  // const fetchLogs = async () => {
+  //   if (!selectedLead?.leadNo) return;
+  //   try {
+  //     const { data } = await api.get(
+  //       `/api/logs/${selectedCase.caseNo}/${selectedLead.leadNo}`
+  //     );
+  //     setLogEntries(
+  //       data.map((e: any) => ({
+  //         date:    e.timestamp,
+  //         officer: e.officer,
+  //         action:  e.action,
+  //       }))
+  //     );
+  //   } catch (err) {
+  //     console.error("Failed to fetch logs:", err);
+  //   }
+  // };
+
+  // // 2️⃣ Post an action to the audit-trail and optimistically update UI
+  // const logAction = async (action: string) => {
+  //   if (!selectedLead?.leadNo) return;
+  //   const officer = localStorage.getItem("loggedInUser") || "Unknown";
+  //   try {
+  //     await api.post("/api/logs", {
+  //       caseNo:    selectedCase.caseNo,
+  //       leadNo:    selectedLead.leadNo,
+  //       action,
+  //       officer,
+  //     });
+  //     setLogEntries((prev) => [
+  //       ...prev,
+  //       { date: new Date().toISOString(), action, officer },
+  //     ]);
+  //   } catch (err) {
+  //     console.error("Failed to log action:", err);
+  //     // you might still want to append locally even on error:
+  //     setLogEntries((prev) => [
+  //       ...prev,
+  //       { date: new Date().toISOString(), action, officer },
+  //     ]);
+  //   }
+  // };
+
+  // // 3️⃣ Whenever the selectedLead changes, reload its history
+  // useEffect(() => {
+  //   fetchLogs();
+  // }, [selectedLead]);
+
 
   return (
     <div className="admin-container">
@@ -72,15 +152,27 @@ export const ChainOfCustody = () => {
       <div className="main-container">
             {/* Sidebar */}
             <div className="sideitem">
-                 
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+                    <ul className="sidebar-list">
+                    
+                    <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+                    <li className="sidebar-item " style={{ fontWeight: 'bold' }} onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
+        </li>
+        {caseDropdownOpen && (
+      <ul >
             <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
             <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
             {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item "onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" 
+             onClick={() => {
+              selectedCase.role === "Investigator"
+              ? setPendingRoute("/LRInstruction")
+              : setPendingRoute("/CMInstruction")
+              // setPendingRoute("/CMInstruction");
+              setShowSelectModal(true);
+            }}>View Lead Return</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
@@ -101,54 +193,81 @@ export const ChainOfCustody = () => {
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-            {selectedCase.role !== "Investigator" && (
-  <li className="sidebar-item active" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-    View Lead Chain of Custody
-  </li>
-)}
+           </ul>
+        )}
 
+<li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
+</li>
+        {leadDropdownOpen && (
+          <ul>
+               <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+           
+           {selectedCase.role !== "Investigator" && (
+ <li
+ className="sidebar-item active"
+ onClick={() => {
+   setPendingRoute("/ChainOfCustody", { state: { caseDetails } });
+   setShowSelectModal(true);
+ }}
+>    View Lead Chain of Custody
+  </li> )}
+  </ul>)}
+       
+
+                    </ul>
+
+                    {showSelectModal && (
+      <SelectLeadModal
+        leads={leads.allLeads}
+        onSelect={handleSelectLead}
+        onClose={() => setShowSelectModal(false)}
+      />
+    )}
                 </div>
 
       <div className="left-content">
-      <div className="case-header">
-          {/* <h2 className="">ALL NOTES</h2> */}
-          <h2 className="">WEBPAGE UNDER CONSTRUCTION</h2>
-        </div>
-        {/* <div className="main-section-admin">
+   
+      <div className="caseandleadinfo">
+          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
 
-        <h2>
-          Lead No: <span className="case-number">12</span> | Interview Mr. John
-        </h2>
+          <h5 className="side-title">
+  {selectedLead?.leadNo
+    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${ leadStatus || "Unknown Status"}`
+    : `LEAD DETAILS | ${ leadStatus || "Unknown Status"}`}
+</h5>
 
-           <div className='searchContainer'>
-           <Searchbar
-              placeholder="Search"
-              onSearch={(query) => console.log("Search query:", query)}
-            />
-                    </div>
-            </div> */}
+          </div>
+
+          <div className="case-header">
+            {/* <h1>LEAD:{selectedLead.leadNo} | {selectedLead.leadName.toUpperCase()}</h1> */}
+            <h1>
+  {selectedLead?.leadNo ? `LEAD: ${selectedLead.leadNo} | ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"}
+</h1>
+
+          </div>
 
              {/* Main Table */}
-        {/* <div className="table-container1">
+        <div className="table-container1">
           <table className="leads-table">
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Action</th>
                 <th>Officer</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
             {logEntries.map((entry, index) => (
           <tr key={index}>
             <td>{new Date(entry.date).toLocaleString()}</td>
-            <td>{entry.action}</td>
             <td>{entry.officer}</td>
+            <td>{entry.action}</td>
           </tr>
         ))}
             </tbody>
           </table>
-        </div> */}
+        </div>
      </div>
     </div>
     </div>
