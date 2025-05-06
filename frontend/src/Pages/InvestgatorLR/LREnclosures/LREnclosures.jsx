@@ -63,7 +63,9 @@ export const LREnclosures = () => {
     type: "",
     enclosure: "",
      isLink: false,
-  link: ""
+  link: "",
+  originalName: '',   // ← add this
+  filename: ''   
   });
 
   const handleInputChange = (field, value) => {
@@ -126,6 +128,8 @@ export const LREnclosures = () => {
         enclosure: enc.enclosureDescription,
         returnId: enc.leadReturnId,
         originalName: enc.originalName,
+        filename:      enc.filename,  
+        link:        enc.link || ""
       }));
 
       setEnclosures(mapped);
@@ -355,11 +359,12 @@ export const LREnclosures = () => {
       } else {
         // UPDATE
         const { leadReturnId } = enclosureData;
+
         const url = `/api/lrenclosure/${selectedLead.leadNo}/` +
                     `${encodeURIComponent(selectedLead.leadName)}/` +
                     `${selectedCase.caseNo}/` +
                     `${encodeURIComponent(selectedCase.caseName)}/` +
-                    `${leadReturnId}/` +
+                    `${enclosureData.returnId}/` +
                     `${encodeURIComponent(originalDesc)}`;
   
         await api.put(url, fd, {
@@ -396,7 +401,9 @@ export const LREnclosures = () => {
       type:     enc.type,
       enclosure:enc.enclosure,
       isLink: !!enc.link,
-    link: enc.link || ""
+    link: enc.link || "",
+    originalName: enc.originalName, // ← grab it here
+    filename:     enc.filename 
     });
     // clear file input so user can choose new one if desired
     setFile(null);
@@ -631,7 +638,7 @@ export const LREnclosures = () => {
     <option value="link">Link</option>
   </select>
 </div>
-{!enclosureData.isLink ? (
+{/* {!enclosureData.isLink ? (
   <div className="form-row-evidence">
     <label>Upload File:</label>
     <input
@@ -650,6 +657,39 @@ export const LREnclosures = () => {
       value={enclosureData.link || ""}
       onChange={(e) =>
         setEnclosureData((prev) => ({ ...prev, link: e.target.value }))
+      }
+    />
+  </div>
+)} */}
+
+{editIndex !== null && !enclosureData.isLink && enclosureData.originalName && (
+  <div className="form-row-evidence">
+    <label>Current File:</label>
+    <span className="current-filename">
+      {enclosureData.originalName}
+    </span>
+  </div>
+)}
+
+{!enclosureData.isLink ? (
+  <div className="form-row-evidence">
+    <label>{editIndex === null ? 'Upload File:' : 'Replace File (optional):'}</label>
+    <input
+      type="file"
+      name="file"
+      ref={fileInputRef}
+      onChange={handleFileChange}
+    />
+  </div>
+) : (
+  <div className="form-row-evidence">
+    <label>Paste Link:</label>
+    <input
+      type="text"
+      placeholder="Enter URL (https://...)"
+      value={enclosureData.link || ""}
+      onChange={e =>
+        setEnclosureData(prev => ({ ...prev, link: e.target.value }))
       }
     />
   </div>
