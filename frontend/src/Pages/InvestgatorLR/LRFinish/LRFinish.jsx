@@ -25,7 +25,7 @@ export const LRFinish = () => {
   //   }, []);
   const navigate = useNavigate();
   const localPdfRef = useRef(null);
-  const { selectedCase, selectedLead, setSelectedLead} = useContext(CaseContext);
+  const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus} = useContext(CaseContext);
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const getCasePageRoute = () => {
@@ -412,6 +412,7 @@ useEffect(() => {
         );
   
         if (statusResponse.status === 200) {
+          setLeadStatus("In Review");
           alert("Lead Return submitted and status set to 'In Review'");
         } else {
           alert("Lead Return submitted but status update failed.");
@@ -454,6 +455,9 @@ useEffect(() => {
           ...prev,
           leadStatus: newStatus === "complete" ? "Completed" : "Pending",
         }));
+
+        setLeadStatus(newStatus === "complete" ? "Completed" : "Pending");
+
       } else {
         alert("Return submitted but status update failed");
       }
@@ -548,10 +552,20 @@ useEffect(() => {
       </div>
 
       <div className="LRI_Content">
-       <div className="sideitem">
+      <div className="sideitem">
        <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
-            <li
+
+       <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
+        </li>
+        {caseDropdownOpen && (
+      <ul >
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>  
+            {/* {selectedCase.role !== "Investigator" && (      
+            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li> )}  */}
+
+
+                  <li
   className="sidebar-item"
   onClick={() =>
     selectedCase.role === "Investigator"
@@ -560,10 +574,11 @@ useEffect(() => {
   }
 >
 Case Page
-</li>            
+</li>
+
+
             {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
             <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
@@ -586,14 +601,36 @@ Case Page
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+
+            </ul>
+        )}
+          <li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
+          </li>
+        {leadDropdownOpen && (
+          <ul>
+              <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             {selectedCase.role !== "Investigator" && (
-  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-    View Lead Chain of Custody
-  </li>
-)}
+            <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+              View Lead Chain of Custody
+            </li>
+             )}
+          </ul>
+
+            )}
 
                 </div>
                 <div className="left-content">
+                <div className="caseandleadinfo">
+          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+          <h5 className="side-title">
+  {selectedLead?.leadNo
+    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
+    : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
+</h5>
+
+
+          </div>
 
                   {/* Hidden Report Preview Container (positioned offscreen) */}
                   {/* <div

@@ -8,6 +8,7 @@ import { CaseContext } from "../CaseContext";
 import PersonModal from "../../components/PersonModal/PersonModel";
 import CaseHeaderSection from "../../components/CaseHeaderSection/CaseHeaderSection";
 import ReactQuill from "react-quill";
+import RichTextEditor from "../../components/RichTextEditor/RichTextEditor";
 
 import ExecSummaryModal from "../../components/ExecSummaryModal/ExecSummaryModal";
 import VehicleModal from "../../components/VehicleModal/VehicleModal";

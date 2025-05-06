@@ -35,7 +35,7 @@ export const LeadReview = () => {
             allLeads: [],
        } );
 
-  const { selectedCase, setSelectedLead , selectedLead} = useContext(CaseContext);
+  const { selectedCase, setSelectedLead , selectedLead, leadStatus, setLeadStatus} = useContext(CaseContext);
 // const leadFromState = location.state?.lead || null;
 
 // const selectedLead = leadFromState || null;
@@ -106,6 +106,7 @@ export const LeadReview = () => {
 
 const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
 
 const onShowCaseSelector = (route) => {
   navigate(route, { state: { caseDetails } });
@@ -298,49 +299,48 @@ const dueDateISO = leadData?.dueDate
       <div className="lead-review-container1">
 
       <div className="sideitem">
-      <ul className="sidebar-list">
-                   
+      {/* <ul className="sidebar-list"> */}
       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+      <li className="sidebar-item"   style={{ fontWeight: 'bold' }} onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
+        </li>
+        {caseDropdownOpen && (
+      <ul >
             <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
             <li
-  className="sidebar-item"
-  onClick={() =>
-    selectedCase.role === "Investigator"
-      ? navigate("/Investigator")
-      : navigate("/CasePageManager")
-  }
->
-Case Page
-</li>              
+                className="sidebar-item"
+                onClick={() =>
+                  selectedCase.role === "Investigator"
+                    ? navigate("/Investigator")
+                    : navigate("/CasePageManager")
+                }
+              >
+              Case Page
+              </li>              
             {selectedCase.role !== "Investigator" && (
-<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item active" onClick={() => navigate('/leadReview')}>Lead Information</li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-
-          
+            <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
             <li
-  className="sidebar-item"
-  onClick={() => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                className="sidebar-item"
+                onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
-    if (lead && kase) {
-      navigate("/LRInstruction", {
-        state: {
-          caseDetails: kase,
-          leadDetails: lead
-        }
-      });
-    } else {
-      alert("Please select a case and lead first.");
-    }
-  }}
->
-  View Lead Return
-</li>
-
-
-
+                  if (lead && kase) {
+                    navigate("/LRInstruction", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } else {
+                    alert("Please select a case and lead first.");
+                  }
+                }}
+              >
+                View Lead Return
+              </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
@@ -361,6 +361,17 @@ Case Page
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+
+            </ul>
+            )}
+            <li className="sidebar-item active" onClick={() => setLeadDropdownOpen1(!leadDropdownOpen1)}>
+          Lead Related Tabs {leadDropdownOpen1 ?  "▲": "▼"}
+</li>
+        {leadDropdownOpen1 && (
+          <ul>
+                        <li className="sidebar-item active" onClick={() => navigate('/leadReview')}>Lead Information</li>
+
+
             {selectedCase.role !== "Investigator" && (
              <li
              className="sidebar-item"
@@ -372,7 +383,7 @@ Case Page
               </li>
 )}
        
-         </ul>
+  
             {showSelectModal && (
                <SelectLeadModal
                  leads={leads.allLeads}
@@ -380,6 +391,8 @@ Case Page
                  onClose={() => setShowSelectModal(false)}
                />
              )}
+             </ul>
+            )}
         </div>
 
         {/* Content Area */}
@@ -387,12 +400,14 @@ Case Page
           {/* Page Header */}
 
           <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"}</h5>
+          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
 
-          <h5 className = "side-title"> 
-          {selectedLead?.leadNo ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName}` : "LEAD DETAILS"}
+          <h5 className="side-title">
+  {selectedLead?.leadNo
+    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${leadData.leadStatus || leadStatus || "Unknown Status"}`
+    : `LEAD DETAILS | ${leadData?.leadStatus || leadStatus || "Unknown Status"}`}
+</h5>
 
-          </h5>
           </div>
 
           <div className="case-header">

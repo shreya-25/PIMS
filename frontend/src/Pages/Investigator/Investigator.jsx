@@ -466,8 +466,9 @@ const handleLeadClick = (lead) => {
   //     fetchPendingLeadReturns();
   // }, [signedInOfficer, selectedCase]);
 
-  const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
-  const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
 
    const [showFilter, setShowFilter] = useState(false);
     const [showSort, setShowSort] = useState(false);
@@ -764,8 +765,14 @@ const handleLeadClick = (lead) => {
                 {/* Sidebar */}
 
                 <div className="sideitem">
-                    <ul className="sidebar-list">
+                    {/* <ul className="sidebar-list"> */}
                     <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+                    <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
+        </li>
+        {caseDropdownOpen && (
+      <ul >
                     <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>   
                                  <li className="sidebar-item active" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
           Case Page {leadDropdownOpen ?  "▼" : "▲"}
@@ -798,11 +805,6 @@ const handleLeadClick = (lead) => {
 
 {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-<li className="sidebar-item" 
-             onClick={() => {
-              setPendingRoute("/leadReview");
-              setShowSelectModal(true);
-            }}>Lead Information</li>
             <li className="sidebar-item"
              onClick={() => onShowCaseSelector("/SearchLead")}
           >Search Lead</li>
@@ -837,19 +839,29 @@ const handleLeadClick = (lead) => {
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            
+            </ul>)}
+            
+            <li className="sidebar-item"  style={{ fontWeight: 'bold' }}onClick={() => setLeadDropdownOpen1(!leadDropdownOpen1)}>
+          Lead Related Tabs {leadDropdownOpen1 ?  "▲": "▼"}
+          </li>
+        {leadDropdownOpen1 && (
+          <ul>
+            <li className="sidebar-item" 
+             onClick={() => {
+              setPendingRoute("/leadReview");
+              setShowSelectModal(true);
+            }}>Lead Information</li>
             {selectedCase.role !== "Investigator" && (
-  <li className="sidebar-item"
+              <li className="sidebar-item"
+                onClick={() => {
+                  setPendingRoute("/ChainOfCustody");
+                  setShowSelectModal(true);
+                }}
 
-  onClick={() => {
-    setPendingRoute("/ChainOfCustody");
-    setShowSelectModal(true);
-  }}
-
-// onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}
->View Lead Chain of Custody</li>
-)}
-
-                    </ul>
+              // onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}
+              >View Lead Chain of Custody</li>
+              )}
 
                     
                     {showSelectModal && (
@@ -859,9 +871,12 @@ const handleLeadClick = (lead) => {
         onClose={() => setShowSelectModal(false)}
       />
     )}
+    </ul>)}
                 </div>
                
                 <div className="left-content">
+
+          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
 
                    {/* Display Case Number and Name */}
                 <div className="case-header">
