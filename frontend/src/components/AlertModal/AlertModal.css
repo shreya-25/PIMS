@@ -1,0 +1,63 @@
+
+.alert-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;   
+    z-index: 1000;
+  }
+  
+  .alert-modal {
+    pointer-events: auto;   
+    background: #fff;
+    border-radius: 8px;
+    padding: 16px;
+    width: 30%;
+    height: 10%;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+  
+  .alert-header {
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+    font-weight: bold;
+  }
+  
+  .alert-body {
+    margin-bottom: 16px;
+    font-size: 0.95rem;
+    color: #333;
+  }
+  
+  .alert-footer {
+    text-align: right;
+  }
+  
+  .alert-button {
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 8px;
+  }
+  
+  .alert-button.cancel {
+    background: #ccc;
+    color: #000;
+  }
+  
+  .alert-button.cancel:hover {
+    background: #aaa;
+  }
+  
+  .alert-button.confirm {
+    background: #007bff;
+    color: #fff;
+  }
+  
+  .alert-button.confirm:hover {
+    background: #0056b3;
+  }
+  

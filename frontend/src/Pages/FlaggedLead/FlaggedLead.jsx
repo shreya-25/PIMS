@@ -7,6 +7,8 @@ import { CaseContext } from "../CaseContext";
 import Pagination from "../../components/Pagination/Pagination";
 import Filter from "../../components/Filter/Filter";
 import Sort from "../../components/Sort/Sort";
+import api from "../../api"; // adjust the path as needed
+import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
 
 export const FlaggedLead = () => {
   const location = useLocation();
@@ -15,6 +17,8 @@ export const FlaggedLead = () => {
     const [error, setError] = useState("");
     const { caseDetails } = location.state || {};
       const { selectedCase, setSelectedLead } = useContext(CaseContext);
+            const [showSelectModal, setShowSelectModal] = useState(false);
+              const [pendingRoute, setPendingRoute]   = useState(null);
       
              const [showFilter, setShowFilter] = useState(false);
             const [showSort, setShowSort] = useState(false);
@@ -168,7 +172,69 @@ const formatDate = (dateString) => {
     const onShowCaseSelector = (route) => {
       navigate(route, { state: { caseDetails } });
   };
+
+  const [leads, setLeads] = useState({
+    assignedLeads: [],
+    pendingLeads: [],
+    pendingLeadReturns: [],
+    allLeads: [],
+  } );
+  useEffect(() => {
+    const fetchAllLeads = async () => {
+      if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+  
+      try {
+        const token = localStorage.getItem("token");
+        const resp = await api.get(
+          `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+  
+        // assume resp.data is an array
+        let leadsArray = Array.isArray(resp.data) ? resp.data : [];
+  
+        // if user is _not_ a Case Manager, strip out CM-only leads:
+        if (selectedCase.role !== "Case Manager") {
+          leadsArray = leadsArray.filter(
+            (l) => l.accessLevel !== "Only Case Manager and Assignees"
+          );
+        }
+  
+        setLeads((prev) => ({
+          ...prev,
+          allLeads: leadsArray.map((lead) => ({
+            leadNo: lead.leadNo,
+            description: lead.description,
+            leadStatus: lead.leadStatus,
+            // any other fields you need...
+          })),
+        }));
+      } catch (err) {
+        console.error("Error fetching all leads:", err);
+      }
+    };
+  
+    fetchAllLeads();
+  }, [selectedCase])
+
+  const handleSelectLead = (lead) => {
+    setSelectedLead({
+      leadNo: lead.leadNo,
+      leadName: lead.description,
+      caseName: lead.caseName,
+      caseNo: lead.caseNo,
+    });
+  
+    setShowSelectModal(false);
+    navigate(pendingRoute, {
+      state: {
+        caseDetails: selectedCase,
+        leadDetails: lead
+      }
+    });
     
+    setPendingRoute(null);
+  };
 
   return (
     <div className="lead-log-page">
@@ -177,14 +243,27 @@ const formatDate = (dateString) => {
       <div className="main-container">
             {/* Sidebar */}
             <div className="sideitem">
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+                    <ul className="sidebar-list">
+                    
+                    <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+                    <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
+        </li>
+        {caseDropdownOpen && (
+      <ul >
             <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
             <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
             {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item "onClick={() => navigate('/SearchLead')}>Search Lead</li>
+            <li className="sidebar-item" 
+             onClick={() => {
+              selectedCase.role === "Investigator"
+              ? setPendingRoute("/LRInstruction")
+              : setPendingRoute("/CMInstruction")
+              // setPendingRoute("/CMInstruction");
+              setShowSelectModal(true);
+            }}>View Lead Return</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
               Officer Management
@@ -199,17 +278,43 @@ const formatDate = (dateString) => {
             {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
               Generate Report
             </li> */}
-            <li className="sidebar-item active" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
+            <li className="sidebar-item active" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
             {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-            {selectedCase.role !== "Investigator" && (
-  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-    View Lead Chain of Custody
-  </li>
-)}
+           </ul>
+        )}
+
+<li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
+</li>
+        {leadDropdownOpen && (
+          <ul>
+               <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+           
+           {selectedCase.role !== "Investigator" && (
+ <li
+ className="sidebar-item"
+ onClick={() => {
+   setPendingRoute("/ChainOfCustody", { state: { caseDetails } });
+   setShowSelectModal(true);
+ }}
+>    View Lead Chain of Custody
+  </li> )}
+  </ul>)}
+       
+
+                    </ul>
+
+                    {showSelectModal && (
+      <SelectLeadModal
+        leads={leads.allLeads}
+        onSelect={handleSelectLead}
+        onClose={() => setShowSelectModal(false)}
+      />
+    )}
                 </div>
         {/* <div className="left-section">
           <img
