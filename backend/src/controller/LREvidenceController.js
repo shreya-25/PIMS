@@ -1,9 +1,11 @@
 const LREvidence = require("../models/LREvidence");
+const fs = require("fs");
 
 // **Create a new LREnclosure entry with file upload support**
 const createLREvidence = async (req, res) => {
     try {
-      const isLink = req.body.isLink === "true";
+      const isLink = req.body.isLink === "true"; // Handle string from formData
+      const accessLevel = req.body.accessLevel || "Everyone";
 
       let filePath = null;
       let originalName = null;
@@ -13,10 +15,13 @@ const createLREvidence = async (req, res) => {
         if (!req.file) {
           return res.status(400).json({ error: 'No file received for non-link upload' });
         }
+  
+        // File fields (for disk storage)
         filePath = req.file.path;
         originalName = req.file.originalname;
         filename = req.file.filename;
       }
+
   
         // Create a new LREnclosure document with the file reference
         const newLREvidence = new LREvidence({
@@ -32,13 +37,13 @@ const createLREvidence = async (req, res) => {
             collectionDate:req.body.collectionDate,
             disposedDate: req.body.disposedDate,
             type: req.body.type,
-            accessLevel,
             evidenceDescription:req.body.evidenceDescription,
-            isLink: isLink,
+            filePath: isLink ? "link-only" : filePath,
+            originalName: originalName,
+            filename: filename,
+            accessLevel,
+            isLink,
             link: isLink ? req.body.link : null,
-            filePath,
-            originalName,
-            filename
         });
 
         // Save the document in MongoDB

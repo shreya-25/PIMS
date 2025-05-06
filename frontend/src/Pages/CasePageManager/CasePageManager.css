@@ -201,6 +201,19 @@
     width: 100%;
   }
 
+  .caseandleadinfo
+  {
+    display: flex;
+    justify-content: space-between;
+    width: 90%;
+  }
+
+  .side-title
+  {
+    margin-left: 20px;
+    /* margin-top: -10px; */
+  }
+
   /* Stats Bar */
 .stats-bar {
   display: flex;
