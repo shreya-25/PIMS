@@ -97,6 +97,19 @@
   margin: 0;
 }
 
+ul {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-left: 60px; /* adjust bullet indent */
+  margin-left: 20px;
+}
+
+
+.sidebar-ul
+{
+  margin: 0;
+}
+
 .sidebar-item {
   display: flex;
   align-items: center;
