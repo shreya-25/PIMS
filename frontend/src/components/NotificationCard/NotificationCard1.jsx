@@ -334,7 +334,7 @@ const handleAccept = async (_id) => {
 
       {showAllNotifications && (
         <div className="notifications-list">
-          {openCaseNotifications.map(notification => {
+          {openCaseNotifications .map(notification => {
             const { letter, color } = getNotificationType(notification);
 
             return (

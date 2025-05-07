@@ -112,4 +112,6 @@ router.get("/:id/subNumbers", async (req, res) => {
     }
   });
 
+  router.get("/:caseNo/team", caseController.getCaseTeam);
+
 module.exports = router;
