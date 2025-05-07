@@ -374,3 +374,30 @@ exports.getExecutiveCaseSummary = async (req, res) => {
     }
   };
   
+
+  exports.getCaseTeam = async (req, res) => {
+    try {
+      const { caseNo } = req.params;
+      if (!caseNo) {
+        return res.status(400).json({ message: "caseNo is required" });
+      }
+  
+      // find by the string caseNo field (not by _id)
+      const c = await Case.findOne({ caseNo }, "assignedOfficers").lean();
+      if (!c) {
+        return res.status(404).json({ message: "Case not found" });
+      }
+  
+      // pull out manager + investigators
+      const caseManager = c.assignedOfficers.find(o => o.role === "Case Manager")?.name || "";
+      const investigators = c.assignedOfficers
+        .filter(o => o.role === "Investigator")
+        .map(o => o.name);
+  
+      return res.json({ caseManager, investigators });
+    } catch (err) {
+      console.error("Error in getCaseTeamByNumber:", err);
+      return res.status(500).json({ message: "Server error", error: err.message });
+    }
+  };
+  
