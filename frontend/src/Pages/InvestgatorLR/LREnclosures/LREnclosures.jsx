@@ -355,7 +355,7 @@ export const LREnclosures = () => {
             return data;
           }]
         });
-        alert("Enclosure added");
+        // alert("Enclosure added");
       } else {
         // UPDATE
         const { leadReturnId } = enclosureData;
@@ -374,7 +374,7 @@ export const LREnclosures = () => {
             return data;
           }]
         });
-        alert("Enclosure updated");
+        // alert("Enclosure updated");
       }
   
       // Refresh & reset form
@@ -427,7 +427,7 @@ export const LREnclosures = () => {
       });
       // remove immediately
       setEnclosures(list => list.filter((_,i)=>i!==idx));
-      alert("Deleted");
+      // alert("Deleted");
     } catch (err) {
       console.error(err);
       alert("Failed to delete");
