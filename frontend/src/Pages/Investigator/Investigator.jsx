@@ -33,8 +33,26 @@ export const Investigator = () => {
    const [showSelectModal, setShowSelectModal] = useState(false);
     const [pendingRoute, setPendingRoute]   = useState(null);
     const [showAlert, setShowAlert] = useState(false);
+       const [caseSummary, setCaseSummary] = useState('');
+       const [isEditing, setIsEditing] = useState(false);
 
   console.log("case context", selectedCase);
+  const handleSaveClick = () => {
+    setIsEditing(false);
+    // You can add logic here to update the backend with the new summary if needed
+};
+const [team, setTeam] = useState({
+  caseManager: "",
+  investigators: []
+});
+
+useEffect(() => {
+  if (!selectedCase?.caseNo) return;
+  api.get(`/api/cases/${selectedCase.caseNo}/team`)
+    .then(({ data }) => setTeam(data))
+    .catch(console.error);
+}, [selectedCase.caseNo]);
+
 
   // modal state
   const [confirmConfig, setConfirmConfig] = useState({
@@ -905,6 +923,42 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
                             CASE: {selectedCase.caseNo} |  {selectedCase.caseName.toUpperCase()}
                         </h1>
                 </div>
+
+                <div className="case-summary">
+              <label className="input-label">Case Summary</label>
+              <textarea
+                className="textarea-field"
+                value={caseSummary}
+                onChange={(e) => setCaseSummary(e.target.value)}
+              />
+
+               {/* Save Button */}
+             <button className="save-btn1" onClick={handleSaveClick}>
+              Save
+            </button>
+            </div>
+
+            <div className="case-team">
+        <table className="leads-table">
+          <thead>
+            <tr><th style={{ width: "20%" }}>Role</th><th>Name(s)</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Case Manager</td>
+              <td>{team.caseManager || "—"}</td>
+            </tr>
+            <tr>
+              <td>Investigator{team.investigators.length > 1 ? "s" : ""}</td>
+              <td>
+                {team.investigators.length
+                  ? team.investigators.join(", ")
+                  : "None assigned"}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
                 {/* Content Area */}
                 <div className="content">
                     {/* Tab Navigation */}

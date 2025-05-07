@@ -46,6 +46,19 @@ export const CasePageManager = () => {
     const handleCaseClick = (caseDetails) => {
       navigate("/CasePageManager", { state: { caseDetails } }); // Pass case details via state
     };
+    const [team, setTeam] = useState({
+      caseManager: "",
+      investigators: []
+    });
+
+    useEffect(() => {
+      if (!selectedCase?.caseNo) return;
+      api.get(`/api/cases/${selectedCase.caseNo}/team`)
+        .then(({ data }) => setTeam(data))
+        .catch(console.error);
+    }, [selectedCase.caseNo]);
+
+  
   
     const handleNavigation = (route) => {
       navigate(route); // Navigate to respective page
@@ -580,7 +593,7 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
 
   //  const [caseSummary, setCaseSummary] = useState(caseDetails?.caseSummary || defaultCaseSummary);
   
-    const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
+    const [caseSummary, setCaseSummary] = useState('');
 
    const [isEditing, setIsEditing] = useState(false); // Controls whether the textarea is editable
    useEffect(() => {
@@ -622,7 +635,6 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
     // Save the edited text and disable editing
     const handleSaveClick = () => {
         setIsEditing(false);
-        alert("Report Saved!");
         // You can add logic here to update the backend with the new summary if needed
     };
       const filtersConfig = [
@@ -766,14 +778,14 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
        
                                  {/* Lead Management Dropdown */}
 
-                        <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+                        <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Home Page</li>
 
-                                 <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+                                 {/* <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
           Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
         </li>
-        {caseDropdownOpen && (
-      <ul >
-        <li className="sidebar-item" onClick={() => navigate('/caseInformation')}> Case Information</li>
+        {caseDropdownOpen && ( */}
+      {/* <ul > */}
+        {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}> Case Information</li> */}
          <li className="sidebar-item active" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
           Case Page {leadDropdownOpen ?  "▲": "▼"}
         </li>
@@ -837,8 +849,8 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
             <li className="sidebar-item" 
             onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}
             >Generate Report</li>
-        </ul>
-      )}
+        {/* </ul> */}
+      {/* )} */}
 
 <li className="sidebar-item "  style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen1(!leadDropdownOpen1)}>
           Lead Related Tabs {leadDropdownOpen1 ?  "▲": "▼"}
@@ -909,7 +921,55 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
                     /> */}
                    
                     {/* Tab Navigation */}
+                    <div className="case-summary">
+              <label className="input-label">Case Summary</label>
+              <textarea
+                className="textarea-field"
+                value={caseSummary}
+                onChange={(e) => setCaseSummary(e.target.value)}
+              />
 
+               {/* Save Button */}
+             <button className="save-btn1" onClick={handleSaveClick}>
+              Save
+            </button>
+            </div>
+
+            <div className="case-team">
+        <table className="leads-table">
+          <thead>
+            <tr>
+              <th style={{ width: "20%" }}>Role</th>
+            <th>Name(s)</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Case Manager</td>
+              <td>{team.caseManager || "—"}</td>
+            </tr>
+            <tr>
+              <td>Investigator{team.investigators.length > 1 ? "s" : ""}</td>
+              <td>
+                {team.investigators.length
+                  ? team.investigators.join(", ")
+                  : "None assigned"}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div
+    className="add-case-section"
+  >
+    <h2>Click here to add a new lead</h2>
+    <div className = "add-lead-btn1">
+    <Button  className = "add-lead-btn" onClick={() => navigate('/createlead', { state: { caseDetails: selectedCase } })}
+    style={{ cursor: 'pointer' }} >
+      Add Lead
+    </Button>
+    </div>
+  </div>
                     <div className="stats-bar">
                         <span
                             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}

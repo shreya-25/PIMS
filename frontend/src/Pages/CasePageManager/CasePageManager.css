@@ -15,6 +15,30 @@
     flex-direction: row; /* Sidebar and content side-by-side */
     /* flex: 1; */
   }
+
+  .case-team
+  {
+    width: 80%;
+
+    margin-left: 200px;
+    margin-top: 20px;
+
+  }
+
+  .add-case-section
+  {
+  
+    width: 80%;
+    margin-left: 200px;
+    margin-top: 20px;
+
+  }
+  .add-lead-btn1 {
+    color: green;
+    padding: 0.5rem 1rem;
+    font-size: 20px;
+    height: 20px;
+  }
   /* .left-content
   {
     height:100vh;
