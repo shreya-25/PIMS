@@ -13,6 +13,7 @@ import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 import api from "../../api";
 import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
 import { AlertModal } from "../../components/AlertModal/AlertModal"
+import {SideBar } from "../../components/Sidebar/Sidebar";
 
 
 
@@ -801,10 +802,10 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
 
             {/* Main Container */}
             <div className="main-container">
-                {/* Sidebar */}
+        
 
-                <div className="sideitem">
-                    {/* <ul className="sidebar-list"> */}
+                {/* <div className="sideitem">
+                
                     <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
 
                     <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
@@ -854,19 +855,12 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
             }} >View Lead Return</li>
 
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-              Officer Management
-            </li> */}
+       
               {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
             </li>)}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-              View Lead Hierarchy
-            </li> */}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              Generate Report
-            </li> */}
+      
              <li className="sidebar-item"    
             onClick={() => navigate("/FlaggedLead")}>
               View Flagged Leads
@@ -874,7 +868,6 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
             View Timeline Entries
             </li>
-            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
@@ -898,7 +891,7 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
                   setShowSelectModal(true);
                 }}
 
-              // onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}
+          
               >View Lead Chain of Custody</li>
               )}
 
@@ -911,7 +904,15 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
       />
     )}
     </ul>)}
-                </div>
+                </div> */}
+              
+
+                    <SideBar
+                  activePage="Investigator"
+                  leads={leads}
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                />
                
                 <div className="left-content">
 

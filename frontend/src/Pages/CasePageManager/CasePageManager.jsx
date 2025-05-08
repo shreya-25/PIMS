@@ -4,6 +4,7 @@ import Searchbar from '../../components/Searchbar/Searchbar';
 import Filter from "../../components/Filter/Filter";
 import Sort from "../../components/Sort/Sort";
 import Button from '../../components/Button/Button';
+import {SideBar } from "../../components/Sidebar/Sidebar";
 import './CasePageManager.css'; // Custom CSS file for styling
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
@@ -758,34 +759,9 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
 
             {/* Main Container */}
             <div className="main-container">
-                {/* Sidebar */}
-                <div className="sideitem">
-                    {/* <ul className="sidebar-list"> */}
-                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
-                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
-                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
-                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
-                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
-                        <li className="sidebar-item">Generate Report</li>
-                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
-
-                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
-
-       
-                                 {/* Lead Management Dropdown */}
-
-                        <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Home Page</li>
-
-                                 {/* <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
-        </li>
-        {caseDropdownOpen && ( */}
-      {/* <ul > */}
-        {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}> Case Information</li> */}
+        
+                {/* <div className="sideitem">
+                <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Home Page</li>
          <li className="sidebar-item active" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
           Case Page {leadDropdownOpen ?  "▲": "▼"}
         </li>
@@ -849,8 +825,7 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
             <li className="sidebar-item" 
             onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}
             >Generate Report</li>
-        {/* </ul> */}
-      {/* )} */}
+ 
 
 <li className="sidebar-item "  style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen1(!leadDropdownOpen1)}>
           Lead Related Tabs {leadDropdownOpen1 ?  "▲": "▼"}
@@ -870,8 +845,6 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
                 setPendingRoute("/ChainOfCustody");
                 setShowSelectModal(true);
               }}
-            
-            // onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}
             >View Lead Chain of Custody</li>
 
          {showSelectModal && (
@@ -884,7 +857,20 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
     </ul>
   )}
     
-                </div>
+                </div> */}
+
+                <SideBar
+  activePage="CasePageManager"
+  leads={leads}
+  activeTab={activeTab}
+  setActiveTab={setActiveTab}
+/>
+{/* <main>
+        {activeTab === 'allLeads' && <AllLeadsList leads={leads.allLeads} />}
+        {activeTab === 'assignedLeads' && <AssignedLeadsList leads={leads.assignedLeads} />}
+        {activeTab === 'pendingLeads' && <PendingLeadsList leads={leads.pendingLeads} />}
+        {activeTab === 'pendingLeadReturns' && <LeadReturnsList leads={leads.pendingLeadReturns} />}
+      </main> */}
                 <div className="left-content">
 
                 <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>

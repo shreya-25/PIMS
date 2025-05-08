@@ -11,6 +11,7 @@ import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import api from "../../api"; // adjust the path as needed
 import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
+import {SideBar } from "../../components/Sidebar/Sidebar";
 
 
 
@@ -297,6 +298,7 @@ const dueDateISO = leadData?.dueDate
 
       <div className="top-menu">
         <div className="menu-items">
+        <span className="menu-item active" > Lead Information</span>
           <span className="menu-item" onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
@@ -334,8 +336,8 @@ const dueDateISO = leadData?.dueDate
       {/* Main Container */}
       <div className="lead-review-container1">
 
-      <div className="sideitem">
-      {/* <ul className="sidebar-list"> */}
+      {/* <div className="sideitem">
+
       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
 
       <li className="sidebar-item"   style={{ fontWeight: 'bold' }} onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
@@ -378,22 +380,14 @@ const dueDateISO = leadData?.dueDate
                 View Lead Return
               </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-              Officer Management
-            </li> */}
+     
               {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
             </li>)}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-              View Lead Hierarchy
-            </li> */}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              Generate Report
-            </li> */}
+         
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
@@ -429,8 +423,10 @@ const dueDateISO = leadData?.dueDate
              )}
              </ul>
             )}
-        </div>
+        </div> */}
 
+       <SideBar  activePage="CasePageManager" />
+     
         {/* Content Area */}
         <div className="lead-main-content">
           {/* Page Header */}

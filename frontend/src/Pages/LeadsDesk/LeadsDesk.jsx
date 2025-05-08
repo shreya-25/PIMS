@@ -2111,8 +2111,8 @@ const handleShowLeadsInRange = () => {
        </div>
 
       <div className="main-content-ld-ExecSummary">
-        <div className="sideitem">
-          {/* <ul className="sidebar-list"> */}
+        {/* <div className="sideitem">
+        
           <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
           <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
           Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
@@ -2128,22 +2128,14 @@ const handleShowLeadsInRange = () => {
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
             <li className="sidebar-item" onClick={() => navigate('/LRInstruction')}>View Lead Return</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-              Officer Management
-            </li> */}
+          
               {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
             </li>)}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-              View Lead Hierarchy
-            </li> */}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              Generate Report
-            </li> */}
+          
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
             <li className="sidebar-item active" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
@@ -2167,7 +2159,8 @@ const handleShowLeadsInRange = () => {
           </ul>
         )}
 
-        </div>
+        </div> */}
+         <SideBar activePage="LeadsDesk" />
 
         <div className="right-sec">
         <div className="caseandleadinfo">
