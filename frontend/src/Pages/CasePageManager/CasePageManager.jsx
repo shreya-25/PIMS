@@ -865,6 +865,7 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
   activeTab={activeTab}
   setActiveTab={setActiveTab}
 />
+
 {/* <main>
         {activeTab === 'allLeads' && <AllLeadsList leads={leads.allLeads} />}
         {activeTab === 'assignedLeads' && <AssignedLeadsList leads={leads.assignedLeads} />}
@@ -873,87 +874,89 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
       </main> */}
                 <div className="left-content">
 
-                <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+                {/* <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5> */}
 
-                   {/* Display Case Number and Name */}
-                <div className="case-header">
-                    {
-                        <h1>
-                          CASE:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
-                        </h1>
-                    }
-                </div>
-                {/* <div className = "case-summary">
-                <label className="input-label">Case Summary</label>
-                        <textarea
-                            className="textarea-field"
-                            value={caseSummary}
-                            onChange={handleCaseSummaryChange}
-                            readOnly={!isEditing} // Read-only when not in edit mode
-                        ></textarea>
+{/* Display Case Number and Name */}
+<div className="case-header">
+ {
+     <h1>
+       CASE:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
+     </h1>
+ }
+</div>
+{/* <div className = "case-summary">
+<label className="input-label">Case Summary</label>
+     <textarea
+         className="textarea-field"
+         value={caseSummary}
+         onChange={handleCaseSummaryChange}
+         readOnly={!isEditing} // Read-only when not in edit mode
+     ></textarea>
 
-                         <button className="save-btn1" onClick={handleSaveClick}>Save</button>
-               
-                </div> */}
-                {/* Content Area */}
-                {/* <div className="table-section1"> */}
-                  {/* <div className='searchContainer'>
-                    <Searchbar placeholder="Search Lead" />
-                    </div> */}
-                    {/* <Button
-                        label="Generate Lead"
-                        className="generate-lead-btn1"
-                        onClick={handleGenerateLead}
-                    /> */}
-                   
-                    {/* Tab Navigation */}
-                    <div className="case-summary">
-              <label className="input-label">Case Summary</label>
-              <textarea
-                className="textarea-field"
-                value={caseSummary}
-                onChange={(e) => setCaseSummary(e.target.value)}
-              />
+      <button className="save-btn1" onClick={handleSaveClick}>Save</button>
 
-               {/* Save Button */}
-             <button className="save-btn1"  onClick={handleSaveClick}>
-              Save
-            </button>
-            </div>
+</div> */}
+{/* Content Area */}
+{/* <div className="table-section1"> */}
+{/* <div className='searchContainer'>
+ <Searchbar placeholder="Search Lead" />
+ </div> */}
+ {/* <Button
+     label="Generate Lead"
+     className="generate-lead-btn1"
+     onClick={handleGenerateLead}
+ /> */}
 
-            <div className="case-team">
-        <table className="leads-table">
-          <thead>
-            <tr>
-              <th style={{ width: "20%" }}>Role</th>
-            <th>Name(s)</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Case Manager</td>
-              <td>{team.caseManager || "—"}</td>
-            </tr>
-            <tr>
-              <td>Investigator{team.investigators.length > 1 ? "s" : ""}</td>
-              <td>
-                {team.investigators.length
-                  ? team.investigators.join(", ")
-                  : "None assigned"}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+ {/* Tab Navigation */}
+ <div className="case-summary">
+<label className="input-label">Case Summary</label>
+<textarea
+className="textarea-field"
+value={caseSummary}
+onChange={(e) => setCaseSummary(e.target.value)}
+/>
 
-      <div  className="add-lead-section">
-    <div><h2>Click here to add a new lead</h2></div>
-    <div className = "add-lead-btn1">
-    <button className="save-btn1"  onClick={() => navigate('/createlead', { state: { caseDetails: selectedCase } })}
-    style={{ cursor: 'pointer' }} >
-              Add Lead
-    </button>
-    </div>
-  </div>
+{/* Save Button */}
+<button className="save-btn1"  onClick={handleSaveClick}>
+Save
+</button>
+</div>
+
+<div className="case-team">
+<table className="leads-table">
+<thead>
+<tr>
+<th style={{ width: "20%" }}>Role</th>
+<th>Name(s)</th></tr>
+</thead>
+<tbody>
+<tr>
+<td>Case Manager</td>
+<td>{team.caseManager || "—"}</td>
+</tr>
+<tr>
+<td>Investigator{team.investigators.length > 1 ? "s" : ""}</td>
+<td>
+{team.investigators.length
+? team.investigators.join(", ")
+: "None assigned"}
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div  className="add-lead-section">
+<div><h2>Click here to add a new lead</h2></div>
+<div className = "add-lead-btn1">
+<button className="save-btn1"  onClick={() => navigate('/createlead', { state: { caseDetails: selectedCase } })}
+style={{ cursor: 'pointer' }} >
+Add Lead
+</button>
+</div>
+</div>
+
+             
                     <div className="stats-bar">
                         <span
                             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}

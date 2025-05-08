@@ -50,7 +50,7 @@ export const SideBar = ({ leads = {}, cases = [], activePage,   activeTab,   set
     <div className="sideitem">
     
         
-    <li className={`sidebar-item ${activePage === 'HomePage' ? 'active' : ''}`} onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Home Page</li>
+    <li className={`sidebar-item ${activePage === 'HomePage' ? 'active' : ''}`} onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >PIMS Home</li>
 {/*     
     {isCasePage ? (
         <>
@@ -106,14 +106,14 @@ export const SideBar = ({ leads = {}, cases = [], activePage,   activeTab,   set
 <li className={`sidebar-item ${['CasePageManager','Investigator'].includes(activePage) ? 'active' : ''}`}
           onClick={goToCasePage}
         >
-          Case
+          Case: {selectedCase.caseNo}
         </li>
 
 
-    <li className={`sidebar-item ${activePage === 'LeadLog' ? 'active' : ''}`} onClick={() =>navigate("/LeadLog", { state: { caseDetails } } )}>
+    <li  style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadLog' ? 'active' : ''}`} onClick={() =>navigate("/LeadLog", { state: { caseDetails } } )}>
               Lead Log
             </li>
-    <li className={`sidebar-item ${activePage === 'LeadsDesk' ? 'active' : ''}`}
+    <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadsDesk' ? 'active' : ''}`}
             onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}
              >Leads Desk</li>
 
