@@ -1081,6 +1081,7 @@ import { jsPDF } from "jspdf"; // if still used elsewhere
 import html2canvas from "html2canvas";
 
 import "./LeadsDesk.css";
+import { SideBar } from "../../components/Sidebar/Sidebar";
 
 // ---------- Helper to format dates as MM/DD/YY ----------
 const formatDate = (dateString) => {
@@ -2088,6 +2089,26 @@ const handleShowLeadsInRange = () => {
   return (
     <div ref={pdfRef} className="lead-desk-page">
       <Navbar />
+
+      <div className="top-menu">
+        <div className="menu-items">
+        <span className="menu-item " onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}>
+            Generate Report
+          </span>
+          <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
+            Add/View Case Notes
+          </span>
+          <span className="menu-item" onClick={() => navigate('/SearchLead', { state: { caseDetails } } )} >
+            Search Leads
+          </span>
+          <span className="menu-item" onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}>
+          View Timelines
+          </span>
+          <span className="menu-item" onClick={() => navigate("/FlaggedLead", { state: { caseDetails } } )}>
+          View Flagged Leads
+          </span>
+         </div>
+       </div>
 
       <div className="main-content-ld-ExecSummary">
         <div className="sideitem">
