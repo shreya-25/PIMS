@@ -295,6 +295,42 @@ const dueDateISO = leadData?.dueDate
       {/* Navbar */}
       <Navbar />
 
+      <div className="top-menu">
+        <div className="menu-items">
+          <span className="menu-item" onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/LRInstruction", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } else {
+                    alert("Please select a case and lead first.");
+                  }
+                }}>Add/View Lead Return</span>
+          <span className="menu-item" onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/ChainOfCustody", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } else {
+                    alert("Please select a case and lead first.");
+                  }
+                }}>Lead Chain of Custody</span>
+          
+        </div>
+      </div>
+
       {/* Main Container */}
       <div className="lead-review-container1">
 

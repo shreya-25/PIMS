@@ -930,7 +930,7 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
               />
 
                {/* Save Button */}
-             <button className="save-btn1" onClick={handleSaveClick}>
+             <button className="save-btn1"  onClick={handleSaveClick}>
               Save
             </button>
             </div>
@@ -959,15 +959,13 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
         </table>
       </div>
 
-      <div
-    className="add-case-section"
-  >
-    <h2>Click here to add a new lead</h2>
+      <div  className="add-lead-section">
+    <div><h2>Click here to add a new lead</h2></div>
     <div className = "add-lead-btn1">
-    <Button  className = "add-lead-btn" onClick={() => navigate('/createlead', { state: { caseDetails: selectedCase } })}
+    <button className="save-btn1"  onClick={() => navigate('/createlead', { state: { caseDetails: selectedCase } })}
     style={{ cursor: 'pointer' }} >
-      Add Lead
-    </Button>
+              Add Lead
+    </button>
     </div>
   </div>
                     <div className="stats-bar">
