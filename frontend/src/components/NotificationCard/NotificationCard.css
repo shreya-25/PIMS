@@ -1,7 +1,7 @@
 .notification-bar {
     width: 70%;
     /* height: 450px; */
-    height: 20%;
+    height: 10%;
     background: white;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -24,6 +24,24 @@
   width: 100%;
   margin-top: -70px;
 }
+
+
+.view-all-collapse-toggle {
+  text-align: right;
+  padding: 4px 8px;
+}
+
+.collapse-btn {
+  background: none;
+  border: none;
+  font-size: 30px;
+  cursor: pointer;
+  line-height: 1;
+  color: black; 
+  align-items: center;
+}
+
+
 
 
 .clickable-header {
@@ -62,9 +80,9 @@
   } */
 
   .notifications-list {
-    flex: 1 1 20%;     /* grow/shrink to fill remaining space */
+    flex: 1;     /* grow/shrink to fill remaining space */
     overflow-y: auto;   /* scroll when content is too tall */
-    margin: 60px 0px;
+    /* margin: 5px 0px; */
     padding: 10px;
   }
   
