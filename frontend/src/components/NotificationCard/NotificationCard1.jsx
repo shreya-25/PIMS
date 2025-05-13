@@ -19,6 +19,7 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
   const navigate = useNavigate();
   const [refreshToggle, setRefreshToggle] = useState(false);
   const [collapsedAll, setCollapsedAll] = useState(false);
+  const downArrow = `${process.env.PUBLIC_URL}/Materials/down_arrow.png`;
 
 
   useEffect(() => {
@@ -247,7 +248,14 @@ const handleAccept = async (_id) => {
       //     { ...notification, accepted: true }
       // ]);
 
-      setRefreshToggle(prev => !prev);
+      // setRefreshToggle(prev => !prev);
+      setUnreadNotifications(prev =>
+           prev.filter(n => n._id !== _id)
+          );
+      setOpenCaseNotifications(prev => [
+                { ...notification, accepted: true, unread: false },
+                ...prev
+              ]);
 
   } catch (error) {
       console.error("❌ Error accepting Case:", error.response ? error.response.data : error);
@@ -336,67 +344,75 @@ const handleAccept = async (_id) => {
 
       {showAllNotifications && (
         <>
-        {/* collapse/expand toggle */}
-        <div className="view-all-collapse-toggle">
-          <button
-            className="collapse-btn"
-            onClick={() => setCollapsedAll(!collapsedAll)}
-            aria-label={collapsedAll ? "Expand notifications" : "Collapse notifications"}
+    <div className="view-all-collapse-toggle">
+            <button
+              onClick={() => setCollapsedAll(c => !c)}
+              aria-label={collapsedAll ? "Expand" : "Collapse"}
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: '40px',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <img
+                src={collapsedAll ? downArrow : downArrow}
+                alt={collapsedAll ? "Expand" : "Collapse"}
+                style={{
+                  position: 'absolute',
+                  bottom: '4px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '24px',
+                  height: '24px'
+                }}
+              />
+            </button>
+          </div>
+
+          <div
+            className="notifications-list view-all"
+            style={{
+              height: collapsedAll ? "80px" : "auto",
+              overflowY: collapsedAll ? "hidden" : "auto"
+            }}
           >
-            {collapsedAll ? "▼" : "▲"}
-          </button>
-        </div>
-    
-        {/* notifications list, whose height toggles */}
-        <div
-          className="notifications-list view-all"
-          style={{
-            height: collapsedAll ? "10%" : "auto",
-            overflowY: "auto",
-          }}
-        >
-          {openCaseNotifications.map(notification => {
-            const { letter, color } = getNotificationType(notification);
-    
-            return (
-              <div
-                key={notification._id}
-                className={`notification-card ${notification.unread ? "unread" : "read"} gray-background`}
-              >
-                <div className="circle-icon" style={{ backgroundColor: color }}>
-                  <span className="notification-letter">{letter}</span>
-                </div>
-                <div className="notification-content">
+            {(collapsedAll
+              ? openCaseNotifications.filter(n => n.unread).slice(0, 1)
+              : openCaseNotifications.filter(n => n.unread)
+            ).map(n => {
+              const { letter, color } = getNotificationType(n);
+              return (
+                <div key={n._id} className={`notification-card ${n.unread ? "unread" : ""}`}>
+                  <div className="circle-icon" style={{ backgroundColor: color }}>
+                    <span className="notification-letter">{letter}</span>
+                  </div>
+                  <div className="notification-content">
                   <div className="notification-text">
                     <p>
-                      <strong>{notification.assignedBy}</strong> {notification.action1}{" "}
-                      {notification.post1 && <strong>{notification.post1}</strong>}{" "}
-                      {notification.action2}{" "}
-                      {notification.post2 && <strong>{notification.post2}</strong>}
+                      <strong>{n.assignedBy}</strong> {n.action1}
+                      {n.post1 && <strong> {n.post1}</strong>} {n.action2}
+                      {n.post2 && <strong> {n.post2}</strong>}
                     </p>
-                    {notification.comment && <div className="message-box">{notification.comment}</div>}
-                    <span className="time">{new Date(notification.time).toLocaleString()}</span>
-                  </div>
-                  <div className="buttons-container">
-                    <button className="view-btnNC" onClick={() => handleView(notification._id)}>
-                      View
-                    </button>
-                    {(notification.action1.includes("assigned you to a new lead") ||
-                      notification.action1.includes("assigned you to a new case")) && (
+                    <span className="time">{new Date(n.time).toLocaleString()}</span> </div>
+                    <div className="buttons-container">
+                      <button onClick={() => handleView(n._id)} className="view-btnNC">View</button>
                       <button
-                        className={`accept-btnNC ${notification.accepted ? "accepted-btnNC" : ""}`}
-                        disabled={notification.accepted}
+                        className="accept-btnNC"
+                        onClick={() => handleAccept(n._id)}
+                        disabled={n.accepted}
                       >
                         Accept
                       </button>
-                    )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      </>
+              );
+            })}
+          </div>
+        </>
     )}
     
     </div>

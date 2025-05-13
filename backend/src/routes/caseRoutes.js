@@ -36,6 +36,19 @@ router.put(
   }
 );
 
+router.put(
+  "/case-summary",
+  verifyToken,
+  async (req, res) => {
+    try {
+      await caseController.updateCaseSummary(req, res);
+    } catch (error) {
+      console.error("Router error in case-summary:", error);
+      res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+  }
+);
+
 // routes/caseRoutes.js
 
 // … other imports …
@@ -43,6 +56,12 @@ router.get(
   "/executive-summary/:caseNo",
   verifyToken,
   (req, res) => caseController.getExecutiveCaseSummary(req, res)
+);
+
+router.get(
+  "/case-summary/:caseNo",
+  verifyToken,
+  (req, res) => caseController.getCaseSummary(req, res)
 );
 
 // Get cases assigned to a specific officer (Authenticated)

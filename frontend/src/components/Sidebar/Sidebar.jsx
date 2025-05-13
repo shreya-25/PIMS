@@ -21,6 +21,11 @@ export const SideBar = ({ leads = {}, cases = [], activePage,   activeTab,   set
     pendingLeadReturns = [],
     allLeads = []
   } = leads;
+  
+  const folderIcon    = `${process.env.PUBLIC_URL}/Materials/case1.png`;
+  const folderIcon1    = `${process.env.PUBLIC_URL}/Materials/case.png`;
+  const homeIcon    = `${process.env.PUBLIC_URL}/Materials/home.png`;
+  const logIcon    = `${process.env.PUBLIC_URL}/Materials/log2.png`;
 
   const isCasePage = activePage === 'CasePageManager' || activePage === 'Investigator';
   const goToCasePage = () => {
@@ -50,7 +55,9 @@ export const SideBar = ({ leads = {}, cases = [], activePage,   activeTab,   set
     <div className="sideitem">
     
         
-    <li className={`sidebar-item ${activePage === 'HomePage' ? 'active' : ''}`} onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >PIMS Home</li>
+    <li className={`sidebar-item ${activePage === 'HomePage' ? 'active' : ''}`} onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >
+    <img src={homeIcon} className="sidebar-icon" alt="" />
+      PIMS Home</li>
 {/*     
     {isCasePage ? (
         <>
@@ -106,16 +113,20 @@ export const SideBar = ({ leads = {}, cases = [], activePage,   activeTab,   set
 <li className={`sidebar-item ${['CasePageManager','Investigator'].includes(activePage) ? 'active' : ''}`}
           onClick={goToCasePage}
         >
+          <img src={folderIcon} className="sidebar-icon" alt="" />
           Case: {selectedCase.caseNo}
         </li>
 
 
     <li  style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadLog' ? 'active' : ''}`} onClick={() =>navigate("/LeadLog", { state: { caseDetails } } )}>
+    <img src={logIcon} className="sidebar-icon" alt="" />
+
               Lead Log
             </li>
     <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadsDesk' ? 'active' : ''}`}
             onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}
-             >Leads Desk</li>
+             > <img src={folderIcon1} className="sidebar-icon" alt="" />
+              Leads Desk</li>
 
 
     </div>
