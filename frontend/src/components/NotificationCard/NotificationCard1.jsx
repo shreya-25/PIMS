@@ -18,8 +18,9 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
   const { setSelectedCase, setSelectedLead } = useContext(CaseContext);
   const navigate = useNavigate();
   const [refreshToggle, setRefreshToggle] = useState(false);
-  const [collapsedAll, setCollapsedAll] = useState(false);
+  const [collapsedAll, setCollapsedAll] = useState(true);
   const downArrow = `${process.env.PUBLIC_URL}/Materials/down_arrow.png`;
+  const upArrow = `${process.env.PUBLIC_URL}/Materials/up_arrow.png`;
 
 
   useEffect(() => {
@@ -358,7 +359,7 @@ const handleAccept = async (_id) => {
               }}
             >
               <img
-                src={collapsedAll ? downArrow : downArrow}
+                src={collapsedAll ? downArrow : upArrow}
                 alt={collapsedAll ? "Expand" : "Collapse"}
                 style={{
                   position: 'absolute',
