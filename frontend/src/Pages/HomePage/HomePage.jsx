@@ -689,7 +689,7 @@ const addCase = (newCase) => {
 
 
   return (
-    <div className = "main-page-body">
+    <div className = "main-page-bodyhp">
     <Navbar />
     {/* <div className="main-container"> */}
         {/* Pass down props for leads, cases, and modal visibility */}
@@ -733,26 +733,35 @@ const addCase = (newCase) => {
               onClose={handleCloseCaseSelector} // Pass close functionality
             />
           )} */}
-           <div className="main-page-content">
-      <div className="main-page">
-      <NotificationCard acceptLead={acceptLead} signedInOfficer={signedInOfficer} />
+           <div className="main-page-contenthp">
+           <div className="main-page-abovepart">
 
-      <div className= "add-case-section">
-          <h2> Click here to add a new case</h2>
-          {/* <div className="slidebartopcontrolMP"> */}
-              <SlideBar
-              onAddCase={(newCase) => addCase(newCase)}
-              buttonClass="custom-add-case-btn1"
-            />
-            {/* </div> */}
-        </div>
-        <div className="stats-bar">
+           <NotificationCard acceptLead={acceptLead} signedInOfficer={signedInOfficer} />
+
+<div className= "add-case-section">
+    <h2> Click here to add a new case</h2>
+    {/* <div className="slidebartopcontrolMP"> */}
+        <SlideBar
+        onAddCase={(newCase) => addCase(newCase)}
+        buttonClass="custom-add-case-btn1"
+      />
+      {/* </div> */}
+  </div>
+  </div>
+      <div className="left-content">
+      <div className="stats-bar">
           {/* <span
             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
             onClick={() => setActiveTab("assignedLeads")}
           >
             Assigned Leads: {leads.assignedLeads.length}
           </span> */}
+          <span
+            className={`hoverable ${activeTab === "cases" ? "active" : ""}`}
+            onClick={() => setActiveTab("cases")}
+          >
+            My Ongoing Cases: {cases.length}
+          </span>
           <span
             className={`hoverable ${activeTab === "pendingLeads" ? "active" : ""}`}
             onClick={() => setActiveTab("pendingLeads")}
@@ -765,12 +774,6 @@ const addCase = (newCase) => {
             onClick={() => setActiveTab("pendingLeadReturns")}
           >
             Lead Returns for Review: {leads.pendingLeadReturns.length}
-          </span>
-          <span
-            className={`hoverable ${activeTab === "cases" ? "active" : ""}`}
-            onClick={() => setActiveTab("cases")}
-          >
-            My Ongoing Cases: {cases.length}
           </span>
         </div>
 

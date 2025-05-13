@@ -125,3 +125,16 @@
     cursor: pointer;
   }
   
+  .sidebar-icon {
+    width: 25px;
+    height: 25px;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  
+  .sidebar-expand-icon {
+    width: 12px;
+    height: 12px;
+    margin-left: auto;
+  }
+  
