@@ -825,7 +825,18 @@ const addCase = (newCase) => {
 <table className="leads-table" style={{ minWidth: "1000px" }}>
               <thead>
                 <tr>
-                  <th style={{ width: "10%" }}>Case No.</th>
+                  <th  style={{ width: "10%" }}>Case No.
+                    <span>
+                     {/* <div className="column-controls"> */}
+          <button  onClick={() => setShowFilter(true)} className="icon-button" aria-label="Filter Case No">
+            <img src={`${process.env.PUBLIC_URL}/Materials/filter.png`} alt="" />
+          </button>
+          <button onClick={() => setShowSort(true)} className="icon-button" aria-label="Sort Case No">
+            <img src={`${process.env.PUBLIC_URL}/Materials/sort1.png`} alt="" />
+          </button>
+        {/* </div> */}
+        </span>
+                  </th>
                   <th style={{ width: "35%" }}>Case Name</th>
                   <th style={{ width: "15%" }}>Role</th>
                   <th style={{ width: "15%" }}></th>

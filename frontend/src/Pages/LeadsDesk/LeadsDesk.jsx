@@ -2090,26 +2090,6 @@ const handleShowLeadsInRange = () => {
     <div ref={pdfRef} className="lead-desk-page">
       <Navbar />
 
-      <div className="top-menu">
-        <div className="menu-items">
-        <span className="menu-item " onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}>
-            Generate Report
-          </span>
-          <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
-            Add/View Case Notes
-          </span>
-          <span className="menu-item" onClick={() => navigate('/SearchLead', { state: { caseDetails } } )} >
-            Search Leads
-          </span>
-          <span className="menu-item" onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}>
-          View Timelines
-          </span>
-          <span className="menu-item" onClick={() => navigate("/FlaggedLead", { state: { caseDetails } } )}>
-          View Flagged Leads
-          </span>
-         </div>
-       </div>
-
       <div className="main-content-ld-ExecSummary">
         {/* <div className="sideitem">
         
@@ -2183,6 +2163,26 @@ const handleShowLeadsInRange = () => {
             </h1>
           </div>
           </div>
+
+             <div className="top-menu">
+        <div className="menu-items">
+        <span className="menu-item " onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}>
+            Generate Report
+          </span>
+          <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
+            Add/View Case Notes
+          </span>
+          <span className="menu-item" onClick={() => navigate('/SearchLead', { state: { caseDetails } } )} >
+            Search Leads
+          </span>
+          <span className="menu-item" onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}>
+          View Timelines
+          </span>
+          <span className="menu-item" onClick={() => navigate("/FlaggedLead", { state: { caseDetails } } )}>
+          View Flagged Leads
+          </span>
+         </div>
+       </div>
        <div className="down-content"> 
 
         <div className="left-content-execSummary">
