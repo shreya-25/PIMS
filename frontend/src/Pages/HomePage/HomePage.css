@@ -281,6 +281,29 @@
   font-size: 20px;
 }
 
+ .icon-button img {
+  width: 25px;
+  height: 25px;
+}
+
+.column-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* so “Case No.” and the icons all line up on the left */
+  gap: 4px;               /* optional spacing between the title and the icons */
+}
+
+/* .column-controls {
+  display: flex;
+  flex-direction: column; 
+  gap: 4px;             
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  padding: 4px;
+} */
 
 
 /* Hover effect for case and lead items */
@@ -344,6 +367,24 @@
   }
   
 } */
+
+
+.table-scroll-container {
+  max-height: 400px;      /* adjust height */
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.table-scroll-container table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.table-scroll-container table {
+  width: 100%;
+  border-collapse: collapse;
+}
 
 
 /* General Table Styling */

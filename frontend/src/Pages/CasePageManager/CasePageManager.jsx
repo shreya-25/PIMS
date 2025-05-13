@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useRef, useEffect} from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import Searchbar from '../../components/Searchbar/Searchbar';
 import Filter from "../../components/Filter/Filter";
@@ -36,6 +36,12 @@ export const CasePageManager = () => {
     const [showFilter, setShowFilter] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [pendingRoute, setPendingRoute]   = useState(null);
+
+  const [summary, setSummary] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
+  const saveTimer = useRef(null);
+  const isFirstLoad = useRef(true);
   
 
   const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
@@ -534,6 +540,64 @@ const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
 const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
 
+
+useEffect(() => {
+    async function load() {
+      if (!selectedCase?.caseNo) return;
+      try {
+        const token = localStorage.getItem('token');
+        const { data } = await api.get(
+          `/api/cases/case-summary/${selectedCase.caseNo}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setSummary(data.caseSummary);
+      } catch (err) {
+        console.error('Failed to load summary', err);
+      }
+    }
+    load();
+  }, [selectedCase.caseNo]);
+
+useEffect(() => {
+    // skip the very first render (when we just loaded from server)
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
+    }
+
+    // clear any pending save
+    clearTimeout(saveTimer.current);
+
+    // if summary is empty or no case selected, don’t bother
+    if (!selectedCase?.caseNo) return;
+
+    // schedule a save
+    saveTimer.current = setTimeout(async () => {
+      setIsSaving(true);
+      setError('');
+      try {
+        const token = localStorage.getItem('token');
+        await api.put(
+          '/api/cases/case-summary',
+          {
+            caseNo: selectedCase.caseNo,
+            caseName: selectedCase.caseName,
+            caseSummary: summary,
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } catch (err) {
+        console.error('Save failed', err);
+        setError('Save failed. Try again.');
+      } finally {
+        setIsSaving(false);
+      }
+    }, 2000);
+
+    // cleanup on unmount or before next change
+    return () => clearTimeout(saveTimer.current);
+  }, [summary, selectedCase.caseNo, selectedCase.caseName]);
+
   
 
   // Calculate remaining days from the due date
@@ -590,8 +654,6 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
   };
 
    // Define a constant with some predefined notes
-   const defaultCaseSummary = "Initial findings indicate that the suspect was last seen near the crime scene at 9:45 PM. Witness statements collected. Awaiting forensic reports and CCTV footage analysis.";
-
   //  const [caseSummary, setCaseSummary] = useState(caseDetails?.caseSummary || defaultCaseSummary);
   
     const [caseSummary, setCaseSummary] = useState('');
@@ -908,19 +970,36 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
  /> */}
 
  {/* Tab Navigation */}
- <div className="case-summary">
+ {/* <div className="case-summary">
 <label className="input-label">Case Summary</label>
 <textarea
 className="textarea-field"
 value={caseSummary}
 onChange={(e) => setCaseSummary(e.target.value)}
 />
-
-{/* Save Button */}
 <button className="save-btn1"  onClick={handleSaveClick}>
 Save
 </button>
-</div>
+</div> */}
+
+<div className="case-summary">
+      <label className="input-label">Case Summary</label>
+      <textarea
+        id="case-summary"
+        rows={6}
+        style={{ width: '100%', fontSize: 20, padding: 8 }}
+        value={summary}
+        onChange={e => setSummary(e.target.value)}
+      />
+      <div style={{ marginTop: 8, fontSize: 20, minHeight: '1em' }}>
+        {isSaving
+          ? <span style={{ color: '#888' }}>Saving…</span>
+          : error
+            ? <span style={{ color: 'red' }}>{error}</span>
+            : <span>&nbsp;</span>
+        }
+      </div>
+    </div>
 
 <div className="case-team">
 <table className="leads-table">
@@ -1183,7 +1262,7 @@ Add Lead
       <thead>
         <tr>
 
-          <th style={{ width: "10%" }}>Lead No.</th>
+          <th style={{ width: "10%" }}>Lead No. </th>
           <th style={{ width: "15%" }}>Lead Log Summary</th>
           <th style={{ width: "10%" }}>Due Date</th>
           <th style={{ width: "8%" }}>Priority</th>
