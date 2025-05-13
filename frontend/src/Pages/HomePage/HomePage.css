@@ -1,23 +1,56 @@
 
 
-.main-page-body
+.main-page-bodyhp
 {
   width: 100%;
   font-family: Arial, sans-serif;
+  overflow: hidden;
+
 }
-.main-page-content
+.main-page-contenthp
 {
   display: flex;
   justify-content: center;
+  flex-direction:column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  flex: 1 1 auto;     /* fill remaining height under Navbar */
+
 }
 
-.main-page {
+.main-page-abovepart
+{
+  display: flex;
+  justify-content: center;
+  flex-direction:column;
+  align-items: center;
+  width: 90%;
+  justify-content: center;
+  flex: 0 0 auto; 
+}
+
+.main-page-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.main-pagehp {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.main-pagehp {
   width: 90%;
   display: flex;
   flex-direction: column;
   padding: 20px;
   font-family: Arial, sans-serif;
   align-items: center;
+  flex: 1 1 auto;     /* take all leftover space */
+  overflow-y: auto;
 }
 
 /* logo section */
@@ -149,7 +182,7 @@
   margin-bottom: 20px;
   font-size: 20px;
   /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);  */
-  width: 80%;
+  width: 90%;
   align-items: center;
   margin: 0 auto; /* Centers horizontally */
   margin-top: 20px;
@@ -393,6 +426,8 @@
   max-width: 50px;
   text-align: center;
 }
+
+
 
 /* .leads-table td:last-child {
   text-align: center;
