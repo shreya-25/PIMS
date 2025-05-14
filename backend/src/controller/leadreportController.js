@@ -324,6 +324,10 @@ function generateReport(req, res) {
   } = req.body;
 
   const includeAll = selectedReports && selectedReports.FullReport;
+  //  const pdfUploads   = req.files.pdfFiles   || [];
+  // const imageUploads = req.files.imageFiles || [];
+
+  
 
   try {
     const doc = new PDFDocument({ size: "LETTER", margin: 50 });
@@ -651,64 +655,94 @@ function generateReport(req, res) {
     //   // currentY = drawHardcodedContent(doc, currentY);
     // }
 
-    if (includeAll || leadVehicles) {
-      // page‐break check
-      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage();
-        currentY = doc.page.margins.top;
-      }
-    
-      // Section header
-      doc.font("Helvetica-Bold").fontSize(12)
-         .text("Vehicle Details", 50, currentY);
-      currentY += 20;
-    
-      // No‐data case
-      if (!Array.isArray(leadVehicles) || leadVehicles.length === 0) {
-        doc.font("Helvetica").fontSize(11)
-           .text("No vehicle data available.", 50, currentY);
-        currentY += 20;
-    
-      } else {
-        // For each vehicle record, draw a mini‐table
-        const headers = ["Date Entered","Year","Make","Model","Plate","Category","VIN"];
-        const colWidths = [90, 50, 60, 60, 60, 80, 112];
-    
-        leadVehicles.forEach((veh, idx) => {
-          // Optional label per vehicle
-          doc.font("Helvetica-Bold").fontSize(11)
-             .text(`Vehicle ${idx + 1}`, 50, currentY);
-          currentY += 15;
-    
-          // Build the one‐row of data
-          const row = {
-            "Date Entered": formatDate(veh.enteredDate),
-            "Year":         veh.year || "",
-            "Make":         veh.make || "",
-            "Model":        veh.model || "",
-            "Plate":        veh.plate || "",
-            "Category":     veh.category || "",
-            "VIN":          veh.vin || ""
-          };
-    
-          // Draw it
-          currentY = drawTable(
-            doc,
-            50,
-            currentY,
-            headers,
-            [row],
-            colWidths
-          ) + 20;
-    
-          // Page‐break if needed before next one
-          if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-            doc.addPage();
-            currentY = doc.page.margins.top;
-          }
-        });
+ if (includeAll || leadVehicles) {
+  // Page-break check
+  if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+    doc.addPage();
+    currentY = doc.page.margins.top;
+  }
+
+  // Section header
+  doc.font("Helvetica-Bold").fontSize(12)
+     .text("Vehicle Details", 50, currentY);
+  currentY += 20;
+
+  if (!Array.isArray(leadVehicles) || leadVehicles.length === 0) {
+    doc.font("Helvetica").fontSize(11)
+       .text("No vehicle data available.", 50, currentY);
+    currentY += 20;
+
+  } else {
+    // Define how to chunk vehicle fields into small tables
+    const vehicleTables = [
+      ["Date Entered", "Year", "Make", "Model"],
+      ["Plate", "Category", "VIN", "Color"],
+      ["State", "Owner", "Additional Info"]
+    ];
+    // Column widths for each header
+    const vehicleWidths = {
+      "Date Entered":   90,
+      "Year":           100,
+      "Make":           100,
+      "Model":          222,
+      "Plate":          90,
+      "Category":       100,
+      "VIN":            100,
+      "Color":          222,
+      "State":          90,
+      "Owner":          100,
+      "Additional Info": 322
+    };
+
+    // Helper to pull the right vehicle field
+    function getVehicleValue(v, header) {
+      switch (header) {
+        case "Date Entered":   return formatDate(v.enteredDate);
+        case "Year":           return v.year?.toString() || "";
+        case "Make":           return v.make || "";
+        case "Model":          return v.model || "";
+        case "Plate":          return v.plate || "";
+        case "Category":       return v.category || "";
+        case "VIN":            return v.vin || "";
+        case "Color":          return v.color || "";
+        case "State":          return v.state || "";
+        case "Owner":          return v.owner || "";
+        case "Additional Info":return v.additionalInfo || "";
+        default:               return "";
       }
     }
+
+    // Draw each vehicle
+    leadVehicles.forEach((veh, idx) => {
+      // Label each vehicle
+      doc.font("Helvetica-Bold").fontSize(11)
+         .text(`Vehicle ${idx + 1}`, 50, currentY);
+      currentY += 15;
+
+      // For each chunk of headers, draw a mini-table
+      vehicleTables.forEach(headers => {
+        // Page-break if needed
+        if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+          doc.addPage();
+          currentY = doc.page.margins.top;
+        }
+
+        // Build one row of data
+        const row = {};
+        headers.forEach(h => {
+          row[h] = getVehicleValue(veh, h);
+        });
+
+        // Compute column widths
+        const colWidths = headers.map(h => vehicleWidths[h] || 100);
+
+        // Draw the table
+        currentY = drawTable(doc, 50, currentY, headers, [row], colWidths) + 20;
+      });
+    });
+  }
+}
+
 
     if (includeAll || leadEnclosures) {
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {

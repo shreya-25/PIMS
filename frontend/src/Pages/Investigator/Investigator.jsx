@@ -36,6 +36,11 @@ export const Investigator = () => {
     const [showAlert, setShowAlert] = useState(false);
        const [caseSummary, setCaseSummary] = useState('');
        const [isEditing, setIsEditing] = useState(false);
+         const [summary, setSummary] = useState('');
+         const [isSaving, setIsSaving] = useState(false);
+         const [error, setError] = useState('');
+         const saveTimer = useRef(null);
+         const isFirstLoad = useRef(true);
 
   console.log("case context", selectedCase);
   const handleSaveClick = () => {
@@ -46,6 +51,23 @@ const [team, setTeam] = useState({
   caseManager: "",
   investigators: []
 });
+
+useEffect(() => {
+    async function load() {
+      if (!selectedCase?.caseNo) return;
+      try {
+        const token = localStorage.getItem('token');
+        const { data } = await api.get(
+          `/api/cases/case-summary/${selectedCase.caseNo}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setSummary(data.caseSummary);
+      } catch (err) {
+        console.error('Failed to load summary', err);
+      }
+    }
+    load();
+  }, [selectedCase.caseNo]);
 
 useEffect(() => {
   if (!selectedCase?.caseNo) return;
@@ -1005,17 +1027,24 @@ const handleSortAll = colKey => {
                         </h1>
                 </div>
 
-                <div className="case-summary">
-              <label className="input-label">Case Summary</label>
-              <textarea
-                className="textarea-field"
-                value={caseSummary}
-                onChange={(e) => setCaseSummary(e.target.value)}
-              />
-
-               {/* Save Button */}
-      
-            </div>
+             <div className="case-summary">
+      <label className="input-label">Case Summary</label>
+      <textarea
+        id="case-summary"
+        rows={6}
+        style={{ width: '100%', fontSize: 20, padding: 8 }}
+        value={summary}
+        onChange={e => setSummary(e.target.value)}
+      />
+      <div style={{ marginTop: 8, fontSize: 20, minHeight: '1em' }}>
+        {isSaving
+          ? <span style={{ color: '#888' }}>Saving…</span>
+          : error
+            ? <span style={{ color: 'red' }}>{error}</span>
+            : <span>&nbsp;</span>
+        }
+      </div>
+    </div>
 
             <div className="case-team">
         <table className="leads-table">
@@ -1763,21 +1792,40 @@ const handleSortAll = colKey => {
               { label:"Assigned Officers",key:"assignedOfficers", width:"12%" }
             ].map(col => (
            <th key={col.key} style={{ width: col.width }}>
-  <div className="header-title">{col.label}</div>
+   <div className="header-title">{col.label}</div>
   <div className="header-controls" ref={el => allPopupRefs.current[col.key] = el}>
     <button onClick={() => handleFilterAllClick(col.key)}>
       <img src={`${process.env.PUBLIC_URL}/Materials/filter.png`} className="icon-image"/>
     </button>
     {openAllFilter === col.key && (
-      <div className="filter-popup">
-        {/* …your popup code… */}
-      </div>
-    )}
+  <div className="filter-popup">
+    <select
+      value={allFilterConfig[col.key]}
+      onChange={e =>
+        setAllFilterConfig(cfg => ({ ...cfg, [col.key]: e.target.value }))
+      }
+    >
+      <option value="">All</option>
+      {distinctAll[col.key].map(v => (
+        <option key={v} value={v}>{v}</option>
+      ))}
+    </select>
+    <div className="filter-popup-buttons">
+      <button onClick={() => setOpenAllFilter(null)}>Apply</button>
+      <button onClick={() => {
+        setAllFilterConfig(cfg => ({ ...cfg, [col.key]: "" }));
+        setOpenAllFilter(null);
+      }}>Clear</button>
+    </div>
+  </div>
+)}
+
     <button onClick={() => handleSortAll(col.key)}>
       <img src={`${process.env.PUBLIC_URL}/Materials/sort1.png`} className="icon-image"/>
     </button>
   </div>
 </th>
+
 
             ))}
             <th style={{ width:"12%" }}></th>

@@ -899,7 +899,7 @@ const handleShowLeadsInRange = () => {
                         isOpen={showVehicleModal}
                         onClose={closeVehicleModal}
                         leadNo={vehicleModalData.leadNo}
-                        description={vehicleModalData.description}
+                        leadName={vehicleModalData.description}
                         caseNo={vehicleModalData.caseNo}
                         caseName={vehicleModalData.caseName}
                         leadReturnId={vehicleModalData.leadReturnId}
@@ -908,7 +908,7 @@ const handleShowLeadsInRange = () => {
                     </tr>
                     <tr>
                       <td colSpan={2}>
-                        <div className="person-section">
+                        {/* <div className="person-section">
                           <h3 className="title-ld">Uploaded Files</h3>
                           <table className="lead-table2" style={{ width: "100%", tableLayout: "fixed" }}>
                             <thead>
@@ -958,7 +958,7 @@ const handleShowLeadsInRange = () => {
                               })}
                             </tbody>
                           </table>
-                        </div>
+                        </div> */}
                       </td>
                       <MediaModal
                         isOpen={showMediaModal}
