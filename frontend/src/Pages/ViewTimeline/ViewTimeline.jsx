@@ -307,10 +307,10 @@ export const ViewTimeline = () => {
 
           </h5> */}
           </div>
-
+{/* 
           <div className="case-header">
             <h2>CRIME INVESTIGATION TIMELINE</h2>
-          </div>
+          </div> */}
 
              <div className="top-menu">
         <div className="menu-items">
@@ -320,18 +320,18 @@ export const ViewTimeline = () => {
         <span className="menu-item " onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}>
             Generate Report
           </span>
-          <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
+          {/* <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
             Add/View Case Notes
-          </span>
+          </span> */}
           <span className="menu-item" onClick={() => navigate('/SearchLead', { state: { caseDetails } } )} >
             Search Leads
           </span>
           <span className="menu-item active" onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}>
           View Timelines
           </span>
-          <span className="menu-item" onClick={() => navigate("/FlaggedLead", { state: { caseDetails } } )}>
+          {/* <span className="menu-item" onClick={() => navigate("/FlaggedLead", { state: { caseDetails } } )}>
           View Flagged Leads
-          </span>
+          </span> */}
          </div>
        </div>
 

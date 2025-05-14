@@ -338,13 +338,12 @@ function generateReport(req, res) {
     const chunks = [];
   doc.on("data", (chunk) => chunks.push(chunk));
   doc.on("end", async () => {
-  // All PDF data from PDFKit is now in `chunks`
   const pdfKitBuffer = Buffer.concat(chunks);
 
   // We'll do the merging with pdf-lib here
   try {
     const mergedBuffer = await mergeWithAnotherPDF(pdfKitBuffer, "report_Officer 916_20250321T144351339Z.pdf");
-    // Then send that final merged PDF
+   
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline; filename=merged.pdf");
     res.send(mergedBuffer);
