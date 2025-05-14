@@ -799,9 +799,11 @@ Case Page
         <td>{ret.leadReturnId}</td>
         <td>{formatDate(ret.enteredDate)}</td>
         <td>{ret.enteredBy}</td>
-        <div className="scrollable-cell">
-        <td> {ret.leadReturnResult}</td>
-          </div>
+        <td className="results-col">
+            <div className="scrollable-cell">
+              {ret.leadReturnResult}
+            </div>
+          </td>
         <td>
           <div className="lr-table-btn">
             <button
