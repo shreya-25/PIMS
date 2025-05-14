@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useState,useRef, useMemo, useEffect } from "react";
 import axios from "axios";
 import "./HomePage.css";
 import { CaseContext } from "../CaseContext";
@@ -20,19 +20,7 @@ import api from "../../api";
 export const HomePage = () => {
 
   const [activeTab, setActiveTab] = useState("cases"); // Default tab
-  const [sortField, setSortField] = useState(""); 
-  const [filterText, setFilterText] = useState("");
-  // const [filterPopupVisible, setFilterPopupVisible] = useState(false);
-  const [filterSortPopupVisible, setFilterSortPopupVisible] = useState(false); // State for popup visibility
-  const [selectedPriority, setSelectedPriority] = useState(""); // State for priority filter
-  const [sortOrder, setSortOrder] = useState(""); // State for sort order
-  const [remainingDaysFilter, setRemainingDaysFilter] = useState("");
-const [flagsFilter, setFlagsFilter] = useState("");
-const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
-// const [newInvestigator, setNewInvestigator] = useState("");
-const [appliedFilters, setAppliedFilters] = useState({});
-
-
+ 
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(50);
     const totalPages = 10;
@@ -44,17 +32,6 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
   const [navigateTo, setNavigateTo] = useState(""); 
 
   const { setSelectedCase, setToken, withAutoRefresh } = useContext(CaseContext);
-
-  const [showFilter, setShowFilter] = useState(false);
-const [showSort, setShowSort] = useState(false);
-
-
-
-
-  // const handleShowCaseSelector = (targetPage) => {
-  //   setNavigateTo(targetPage);
-  //   setShowCaseSelector(true);
-  // };
 
   // Function to close CaseSelector
   const handleCloseCaseSelector = () => {
@@ -203,8 +180,8 @@ const acceptLead = (leadId) => {
   // Add lead to pending leads with default fields if not present
   const newPendingLead = {
     ...leadToAccept,
-    dueDate: leadToAccept.dueDate || "12/31/2024", // Default due date
-    priority: leadToAccept.priority || "Medium", // Default priority
+    dueDate: leadToAccept.dueDate , // Default due date
+    priority: leadToAccept.priority, // Default priority
     flags: leadToAccept.flags || [],
     assignedOfficers: leadToAccept.assignedOfficers || ["Unassigned"],
   };
@@ -450,62 +427,6 @@ useEffect(() => {
     const timeDifference = targetDate - currentDate;
     return Math.max(0, Math.ceil(timeDifference / (1000 * 60 * 60 * 24))); // Return 0 if negative
   };
- 
-
-
-  // Sort leads
-  const handleSort = (field, order) => {
-    setSortField(`${field}-${order}`);
-    setLeads((prevLeads) => ({
-      ...prevLeads,
-      pendingLeads: [...prevLeads.pendingLeads].sort((a, b) => {
-        let comparison = 0;
- 
-        if (field === "remainingDays") {
-          const remainingDaysA = Math.max(0, calculateRemainingDays(a.dueDate));
-          const remainingDaysB = Math.max(0, calculateRemainingDays(b.dueDate));
-          comparison = remainingDaysA - remainingDaysB;
-        } else if (field === "priority") {
-          const priorities = { High: 3, Medium: 2, Low: 1 };
-          comparison = priorities[a[field]] - priorities[b[field]];
-        } else {
-          comparison = a[field]?.localeCompare(b[field]);
-        }
- 
-        return order === "asc" ? comparison : -comparison;
-      }),
-    }));
-  };
- 
-
-  const handleCaseSort = (field, order) => {
-    setSortField(field);
-    setSortOrder(order);
-  
-    setCases((prevCases) => {
-      return [...prevCases].sort((a, b) => {
-        let aField = a;
-        let bField = b;
-  
-        // Convert Case No to numbers for accurate sorting
-        if (field === "Case No") {
-          aField = parseInt(a.id, 10);
-          bField = parseInt(b.id, 10);
-        } else if (field === "Case Name") {
-          aField = a.title.toLowerCase();
-          bField = b.title.toLowerCase();
-        } else if (field === "Role") {
-          aField = a.role.toLowerCase();
-          bField = b.role.toLowerCase();
-        }
-  
-        if (aField < bField) return order === "asc" ? -1 : 1;
-        if (aField > bField) return order === "asc" ? 1 : -1;
-        return 0;
-      });
-    });
-  };
-  
   
 
 
@@ -518,29 +439,6 @@ const addCase = (newCase) => {
   }
     setCases((prevCases) => [...prevCases, newCase]);
 };
-
-
-
-
-  // Close an ongoing case
-  const closeCase = (caseId) => {
-    if (window.confirm("Are you sure you want to close this case?")) {
-      setCases((prevCases) =>
-        prevCases.filter((c) => c.id !== caseId)
-      );
-    }
-  };
-
-
-  // Delete an ongoing case
-  const deleteCase = (caseId) => {
-    if (window.confirm("Are you sure you want to delete this case?")) {
-      setCases((prevCases) =>
-        prevCases.filter((c) => c.id !== caseId)
-      );
-    }
-  };
-
 
   // Continue a pending lead return
   const continueLead = (leadId) => {
@@ -557,136 +455,78 @@ const addCase = (newCase) => {
     }));
   };
 
+  // Filter and Sort Function
 
-  // Filter leads
-  const handleFilter = (e) => {
-    setFilterText(e.target.value);
+const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' });
+  const [filterConfig,setFilterConfig] = useState({ id: "", description: "", dueDate: "", priority: "", title: "", role: "" });
+  const [openFilter,  setOpenFilter]   = useState(null);
+
+
+  const colKey = {
+    "Case No.":  "id",
+    "Case Name": "title",
+    "Role":      "role"
   };
 
-  const filtersConfig = [
-    {
-      name: "leadNumber",
-      label: "Lead Number",
-      options: ["45", "23", "14"],
-    },
-    {
-      name: "leadName",
-      label: "Lead Name",
-      options: [
-        "Collect Audio from Dispatcher",
-        "Interview Mr. John",
-        "Collect evidence from 63 Mudray Street",
-      ],
-    },
-    {
-      name: "dueDate",
-      label: "Due Date",
-      options: ["Officer 1", "Officer 2", "Officer 3"],
-    },
-    {
-      name: "assignedOfficers",
-      label: "Assigned Officers",
-      options: ["Officer 1", "Officer 2", "Officer 3"],
-    },
-    {
-      name: "CaseName",
-      label: "Case Name",
-      options: [
-        "Main Street Murder",
-        "Cook Streat School Threat",
-        "216 Endicott Suicide",
-      ],
-    }
-    // {
-    //   name: "daysLeft",
-    //   label: "Days Left",
-    //   options: ["1", "2", "3"],
-    // },
-  ];
-
-  const filtersConfigPLR = [
-    {
-      name: "leadNumber",
-      label: "Lead Number",
-      options: ["45", "23", "14"],
-    },
-    {
-      name: "leadName",
-      label: "Lead Name",
-      options: [
-        "Collect Audio from Dispatcher",
-        "Interview Mr. John",
-        "Collect evidence from 63 Mudray Street",
-      ],
-    },
-    {
-      name: "CaseName",
-      label: "Case Name",
-      options: [
-        "Main Street Murder",
-        "Cook Streat School Threat",
-        "216 Endicott Suicide",
-      ],
-    }
-  ];
-
-  const filtersConfigOC = [
-    {
-      name: "CaseNumber",
-      label: "Case Number",
-      options: ["12345", "45637", "23789"],
-    },
-    {
-      name: "CaseName",
-      label: "Case Name",
-      options: [
-        "Main Street Murder",
-        "Cook Streat School Threat",
-        "216 Endicott Suicide",
-      ],
-    },
-    {
-      name: "Role",
-      label: "Role",
-      options: ["Case Manager", "Investigator"],
-    },
-    {
-      name: "Status",
-      label: "Case Status",
-      options: ["Ongoing", "Closed"],
-    },
-  ];
-
-  const handleFilterApply = (filters) => {
-    console.log("✅ Applied Filters:", filters);
-    setAppliedFilters(filters);
-  };
+  // 1) Precompute distinct values for each field
+    const distinctValues = useMemo(() => {
+      const map = { id: new Set(), description: new Set(), dueDate: new Set(), priority: new Set(), title: new Set(), role: new Set()  };
+      cases.forEach(lead => {
+        Object.entries(map).forEach(([field, set]) => {
+          set.add(String(lead[field]));
+        });
+      });
+      return Object.fromEntries(
+        Object.entries(map).map(([k, set]) => [k, Array.from(set)])
+      );
+    }, [cases]);
   
-
-  const [sortedData, setSortedData] = useState([]);
-  const data = [
-    { category: "Electronics", price: 100 },
-    { category: "Clothing", price: 50 },
-    { category: "Electronics", price: 200 },
-    { category: "Home", price: 150 },
-  ];
-
-  // Function to apply sorting
-  // const handleSort = (sortConfig) => {
-  //   const { category, order } = sortConfig;
-
-  //   if (!category) return; // If no column selected, do nothing
-
-  //   const sorted = [...data].sort((a, b) => {
-  //     if (a[category] < b[category]) return order === "asc" ? -1 : 1;
-  //     if (a[category] > b[category]) return order === "asc" ? 1 : -1;
-  //     return 0;
-  //   });
-
-  //   setSortedData(sorted);
-  // };
-
-
+    // 2) Filter + sort
+    const sortedCases  = useMemo(() => {
+      // apply filters
+      const filtered = cases.filter(lead =>
+        Object.entries(filterConfig).every(([field, val]) => {
+          return !val || String(lead[field]) === val;
+        })
+      );
+      // apply sort
+      if (!sortConfig.key) return filtered;
+      const PRIORITY_ORDER = { Low:1, Medium:2, High:3 };
+      return [...filtered].sort((a,b) => {
+        let aV = a[sortConfig.key], bV = b[sortConfig.key];
+        if (sortConfig.key==="priority") {
+          aV = PRIORITY_ORDER[aV]||0; bV = PRIORITY_ORDER[bV]||0;
+        }
+        if (aV < bV) return sortConfig.direction==='asc' ? -1 : 1;
+        if (aV > bV) return sortConfig.direction==='asc' ?  1 : -1;
+        return 0;
+      });
+    }, [cases, sortConfig, filterConfig]);
+  
+    // 3) Handlers
+    const handleSort = col => {
+      const key = colKey[col];
+      setSortConfig(prev => ({
+        key,
+        direction: prev.key===key && prev.direction==='asc' ? 'desc' : 'asc'
+      }));
+    };
+    const handleFilterClick = col => {
+      setOpenFilter(prev => prev===col ? null : col);
+    };
+  
+    // close popups when clicking outside
+    const popupRefs = useRef({});
+    useEffect(() => {
+      const onClick = e => {
+        if (!Object.values(popupRefs.current).some(el => el?.contains(e.target))) {
+          setOpenFilter(null);
+        }
+      };
+      document.addEventListener('mousedown', onClick);
+      return () => document.removeEventListener('mousedown', onClick);
+    }, []);
+  
 
   return (
     <div className = "main-page-bodyhp">
@@ -778,99 +618,81 @@ const addCase = (newCase) => {
         </div>
 
         <div className="content-section">
-        {activeTab === "cases" && (
-            <div className="case-list">
-                  <div className="filter-sort-icons">
-                    <button onClick={() => setShowFilter(true)} className="icon-button">
-                      <img 
+
+{activeTab === "cases" && (
+          <div className="table-scroll-container">
+            <table className="leads-table">
+              <thead>
+                <tr>
+                  {["Case No.","Case Name","Role"].map(col => {
+                    const key = colKey[col];
+                    return (
+                      <th key={col} className="column-header1">
+                        {col}
+                        <span
+                          className="column-controls1"
+                          ref={el => (popupRefs.current[col] = el)}
+                          style={{ position: "relative", width: "10px" }}
+                        >
+                          {/* filter toggle */}
+                          <button onClick={() => handleFilterClick(col)}> <img 
                         src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
                         alt="Filter Icon"
                         className="icon-image"
-                      />
-                    </button>
-                    <button onClick={() => setShowSort(true)} className="icon-button">
-                      <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
-                        alt="Sort Icon"
-                        className="icon-image"
-                      />
-                    </button>
-                  </div>
-
-      {/* Conditionally render the Filter component */}
-      {showFilter && (
-        <div className="popup-overlay">
-          <div className="popup-content">
-            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
-              &times;
-            </button>
-            <Filter filtersConfig={filtersConfigOC} onApply={handleFilterApply} />
-          </div>
-        </div>
-      )}
-
-      {/* Conditionally render the Sort component */}
-      {showSort && (
-        <div className="popup-overlay">
-          <div className="popup-content">
-            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
-              &times;
-            </button>
-            <Sort columns={["Case No", "Case Name", "Lead Number", "Lead Name", "Priority", "Flag"]} onApplySort={handleCaseSort} />
-          </div>
-          </div>
-      )}
-
-<div className="table-scroll-container">
-<table className="leads-table" style={{ minWidth: "1000px" }}>
-              <thead>
-                <tr>
-                  <th  style={{ width: "10%" }}>Case No.
-                    <span>
-                     {/* <div className="column-controls"> */}
-          <button  onClick={() => setShowFilter(true)} className="icon-button" aria-label="Filter Case No">
-            <img src={`${process.env.PUBLIC_URL}/Materials/filter.png`} alt="" />
-          </button>
-          <button onClick={() => setShowSort(true)} className="icon-button" aria-label="Sort Case No">
-            <img src={`${process.env.PUBLIC_URL}/Materials/sort1.png`} alt="" />
-          </button>
-        {/* </div> */}
-        </span>
-                  </th>
-                  <th style={{ width: "35%" }}>Case Name</th>
-                  <th style={{ width: "15%" }}>Role</th>
-                  <th style={{ width: "15%" }}></th>
+                      /></button>
+                          {openFilter === col && (
+                            <div className="filter-popup">
+                              <select
+                                value={filterConfig[key]}
+                                onChange={e =>
+                                  setFilterConfig(cfg => ({
+                                    ...cfg,
+                                    [key]: e.target.value
+                                  }))
+                                }
+                              >
+                                <option value="">All</option>
+                                {distinctValues[key].map(v => (
+                                  <option key={v} value={v}>{v}</option>
+                                ))}
+                              </select>
+                              <div className="filter-popup-buttons">
+                                <button onClick={() => setOpenFilter(null)}>Apply</button>
+                                <button onClick={() => {
+                                  setFilterConfig(cfg => ({ ...cfg, [key]: "" }));
+                                  setOpenFilter(null);
+                                }}>Clear</button>
+                              </div>
+                            </div>
+                          )}
+                          {/* sort toggle */}
+                          <button onClick={() => handleSort(col)} style={{ marginLeft: 0 }}>
+                            {sortConfig.key === key
+                              ? (sortConfig.direction === "asc" ?  <img 
+                                src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                                alt="Sort Icon"
+                                className="icon-image"
+                              /> :  <img 
+                              src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                              alt="Sort Icon"
+                              className="icon-image"
+                            />)
+                              :  <img 
+                              src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                              alt="Sort Icon"
+                              className="icon-image"
+                            />}
+                          </button>
+                        </span>
+                      </th>
+                    );
+                  })}
+                  <th></th>{/* extra column for “View” button */}
                 </tr>
               </thead>
               <tbody>
-                {cases.length > 0 ? ( cases.filter((c) => {
-    const { CaseNumber, CaseName, Role, Status } = appliedFilters;
-    const matchesCaseNo = !CaseNumber || c.id.toString() === CaseNumber;
-    const matchesCaseName = !CaseName || c.title === CaseName;
-    const matchesRole = !Role || c.role === Role;
-    const matchesStatus = !Status || c.status === Status; 
-
-    return matchesCaseNo && matchesCaseName && matchesRole && matchesStatus;
-  }) 
-
-  .sort((a, b) => {
-    if (!sortField || !sortOrder) return 0;
-
-    let aField = sortField === "Case No" ? a.id.toString() : a.title?.toLowerCase();
-    let bField = sortField === "Case No" ? b.id.toString() : b.title?.toLowerCase();
-
-    if (sortField === "Role") {
-      aField = a.role?.toLowerCase();
-      bField = b.role?.toLowerCase();
-    }
-
-    if (!aField || !bField) return 0;
-
-    return sortOrder === "asc"
-      ? aField.localeCompare(bField)
-      : bField.localeCompare(aField);
-  })
-                  .map((c) => (
+                {sortedCases.length > 0 ? (
+                  sortedCases.map(c => (
                     <tr key={c.id}>
                       <td>{c.id}</td>
                       <td>{c.title}</td>
@@ -887,60 +709,22 @@ const addCase = (newCase) => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" style={{ textAlign: 'center' }}>
-                      No Cases Available
+                    <td colSpan={4} style={{ textAlign: "center" }}>
+                      No cases found.
                     </td>
-                  </tr>)}
+                  </tr>
+                )}
               </tbody>
             </table>
-            </div>
-            {/* {cases.map((c) => (
-              <div key={c.id} className="case-item">
-                <span
-                  className="case-details"
-                  // onClick={() => handleCaseClick(c)} 
-                >
-                  <strong>Case Number:</strong> {c.id} | {c.title} | <strong>Role:</strong> {c.role}
-                </span>
-               
-                <div className="case-actions">
-
-
-                  <button
-                    className="close-button"
-                    // onClick={() => {
-                    //   if (window.confirm(`Are you sure you want to close case ${c.id}?`)) {
-                    //     closeCase(c.id);
-                    //   }
-                    // }}
-                    onClick={() => handleCaseClick(c)}
-                  >
-                    View
-                  </button>
-                  <button
-                    className="delete-btn"
-                    onClick={() => {
-                      if (window.confirm(`Are you sure you want to delete case ${c.id}?`)) {
-                        deleteCase(c.id);
-                      }
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))} */}
-               <Pagination
-  currentPage={currentPage}
-  totalEntries={totalEntries}  // Automatically calculate total entries
-  onPageChange={setCurrentPage} // Update current page state
-  pageSize={pageSize}
-  onPageSizeChange={setPageSize} // Update page size state
-/>
+            <Pagination
+              currentPage={currentPage}
+              totalEntries={totalEntries}
+              onPageChange={setCurrentPage}
+              pageSize={pageSize}
+              onPageSizeChange={setPageSize}
+            />
           </div>
-         
-)}
-
+        )}
 
 
 
@@ -1174,7 +958,7 @@ const addCase = (newCase) => {
 {activeTab === "pendingLeads" && (
   <div className="pending-leads">
 
-<div className="filter-sort-icons">
+{/* <div className="filter-sort-icons">
                     <button onClick={() => setShowFilter(true)} className="icon-button">
                       <img 
                         src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
@@ -1189,10 +973,10 @@ const addCase = (newCase) => {
                         className="icon-image"
                       />
                     </button>
-                  </div>
+                  </div> */}
 
       {/* Conditionally render the Filter component */}
-      {showFilter && (
+      {/* {showFilter && (
         <div className="popup-overlay">
           <div className="popup-content">
             <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
@@ -1201,10 +985,10 @@ const addCase = (newCase) => {
             <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Conditionally render the Sort component */}
-      {showSort && (
+      {/* {showSort && (
         <div className="popup-overlay">
           <div className="popup-content">
             <button className="close-popup-btn" onClick={() => setShowSort(false)}>
@@ -1213,7 +997,7 @@ const addCase = (newCase) => {
             <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
             </div>
           </div>
-      )}
+      )} */}
 
     {/* <button
       onClick={() => setFilterSortPopupVisible(true)}
@@ -1223,14 +1007,14 @@ const addCase = (newCase) => {
     </button> */}
 
 
-    {filterSortPopupVisible && (
+    {/* {filterSortPopupVisible && (
       <div className="popup-overlay">
         <div className="popup-content">
         <button
         className="close-popup-btn"
         onClick={() => setFilterSortPopupVisible(false)}
       >
-        &times; {/* Close icon */}
+        &times; 
       </button>
           <h3>Filter & Sort Leads</h3>
           <div className="filter-sort-section">
@@ -1272,7 +1056,7 @@ const addCase = (newCase) => {
               </div>
 
 
-            {/* Filter by Remaining Days */}
+       
         <div className="filter-item">
           <label>Remaining Days:</label>
           <input
@@ -1290,7 +1074,7 @@ const addCase = (newCase) => {
         </div>
 
 
-        {/* Filter by Flags */}
+      
         <div className="filter-item">
           <label>Flags:</label>
           <input
@@ -1305,7 +1089,7 @@ const addCase = (newCase) => {
         </div>
 
 
-        {/* Filter by Assigned Officers */}
+      
         <div className="filter-item">
           <label>Assigned Officers:</label>
           <input
@@ -1362,10 +1146,10 @@ const addCase = (newCase) => {
           </button>
         </div>
       </div>
-    )}
+    )} */}
 
 
-<div className="table-scroll-container">
+{/* <div className="table-scroll-container">
 <table className="leads-table" style={{ minWidth: "1000px" }}>
       <thead>
         <tr>
@@ -1415,9 +1199,7 @@ const addCase = (newCase) => {
             <tr key={lead.id}>
               <td>{lead.id}</td>
               <td>{lead.description}</td>
-              {/* <td>{lead.assignedOfficers.join(", ")}</td> */}
               <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
-                {/* {lead.assignedOfficers.join(", ")} */}
                 {lead.assignedOfficers.map((officer, index) => (
                   <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
                 ))}
@@ -1442,7 +1224,7 @@ const addCase = (newCase) => {
         )}
       </tbody>
     </table>
-    </div>
+    </div> */}
 
     <Pagination
   currentPage={currentPage}
@@ -1457,7 +1239,7 @@ const addCase = (newCase) => {
 {activeTab === "pendingLeadReturns" && (
   <div className="pending-lead-returns">
 
-    <div className="filter-sort-icons">
+    {/* <div className="filter-sort-icons">
                     <button onClick={() => setShowFilter(true)} className="icon-button">
                       <img 
                         src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
@@ -1474,7 +1256,7 @@ const addCase = (newCase) => {
                     </button>
                   </div>
 
-      {/* Conditionally render the Filter component */}
+     
       {showFilter && (
         <div className="popup-overlay">
           <div className="popup-content">
@@ -1486,7 +1268,7 @@ const addCase = (newCase) => {
         </div>
       )}
 
-      {/* Conditionally render the Sort component */}
+     
       {showSort && (
         <div className="popup-overlay">
           <div className="popup-content">
@@ -1496,7 +1278,7 @@ const addCase = (newCase) => {
             <Sort columns={["Lead Number", "Lead Name","Priority", "Flag"]} onApplySort={handleSort} />
             </div>
           </div>
-      )}
+      )} */}
 
 
 

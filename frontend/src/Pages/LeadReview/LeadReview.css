@@ -257,7 +257,8 @@ html, body {
 .status-circle {
   width: 60px;
   height: 60px;
-  background: #b0b0b0;
+  /* background: #b0b0b0; */
+  background: rgba(41, 41, 139, 0.852);
   border-radius: 50%;
   border: 4px solid #d0d0d0;
   display: flex;
@@ -265,11 +266,13 @@ html, body {
   justify-content: center;
   position: relative;
   transition: all 0.3s ease-in-out;
+  color: white;
+  font-weight: 100;
 }
 
 /* Active (Current and Completed) Status */
 .status-circle.active {
-  background: rgb(41, 41, 139); /* Blue */
+  background: rgba(41, 41, 139, 0.317); /* Blue */
   /* border-color: #7a7a7a; */
   /* box-shadow: 0 0 10px rgba(153, 197, 205, 0.584); */
   /* box-shadow: 0 0 10px rgba(86, 86, 148, 0.932); */
@@ -317,7 +320,7 @@ html, body {
 .status-text-box.highlighted {
   background: #dbeafe;
   /* border-color: #2e6472; */
-  border-color: rgb(41, 41, 139);
+  border-color: rgba(41, 41, 139, 0.97);
   /* color: #518d97; */
   color: rgb(41, 41, 139);
   /* box-shadow: 0 0 10px rgba(153, 197, 205, 0.584); */
