@@ -514,7 +514,7 @@ const dueDateISO = leadData?.dueDate
                   </td>
                 </tr> */}
                 <tr>
-                  <td className="info-label">Case Number:</td>
+                  <td className="info-label">Case Number</td>
                   <td>
                     <input
                       type="text"
@@ -525,7 +525,7 @@ const dueDateISO = leadData?.dueDate
                   </td>
                 </tr>
                 <tr>
-                  <td className="info-label">Case Name:</td>
+                  <td className="info-label">Case Name</td>
                   <td>
                     <input
                       type="text"
@@ -536,7 +536,7 @@ const dueDateISO = leadData?.dueDate
                   </td>
                 </tr>
                 <tr>
-                  <td className="info-label">Assigned Date:</td>
+                  <td className="info-label">Assigned Date</td>
                   <td>
                     <input
                       type="text"
@@ -549,7 +549,7 @@ const dueDateISO = leadData?.dueDate
                 </tr>
 
                 <tr>
-                  <td className="info-label">Lead Log Summary:</td>
+                  <td className="info-label">Lead Log Summary</td>
                   <td>
                     <textarea
                       className="input-field"
@@ -560,7 +560,7 @@ const dueDateISO = leadData?.dueDate
                   </td>
                 </tr>
                 <tr>
-                  <td className="info-label">Lead Instruction:</td>
+                  <td className="info-label">Lead Instruction</td>
                   <td>
                     <textarea
                       className="input-field"
@@ -572,7 +572,7 @@ const dueDateISO = leadData?.dueDate
                 </tr>
 
                 <tr>
-                  <td className="info-label">Lead Origin:</td>
+                  <td className="info-label">Lead Origin</td>
                   <td>
                     <input
                       type="text"
@@ -585,7 +585,7 @@ const dueDateISO = leadData?.dueDate
                 </tr>
 
                 <tr>
-  <td className="info-label">Assigned Officers:</td>
+  <td className="info-label">Assigned Officers</td>
   <td>
     <div className="custom-dropdown">
       <div
@@ -629,7 +629,7 @@ const dueDateISO = leadData?.dueDate
 
 
                 <tr>
-                  <td className="info-label">Assigned By:</td>
+                  <td className="info-label">Assigned By</td>
                   <td>
                     <input
                       type="text"
@@ -643,7 +643,7 @@ const dueDateISO = leadData?.dueDate
 
                 {/* Another example date field */}
                 <tr>
-                  <td className="info-label">Due Date:</td>
+                  <td className="info-label">Due Date</td>
                   <td>
                     {/* <input
                       type="text"
@@ -667,7 +667,7 @@ const dueDateISO = leadData?.dueDate
                   </td>
                 </tr>
                 <tr>
-                  <td className="info-label">Subnumber:</td>
+                  <td className="info-label">Subnumber</td>
                   <td>
                     <input
                       type="text"
@@ -680,7 +680,7 @@ const dueDateISO = leadData?.dueDate
 
                                {/* Associated Subnumbers */}
                                <tr>
-  <td className="info-label"style={{ width: "30%" }}>Associated Subnumbers:</td>
+  <td className="info-label"style={{ width: "25%" }}>Associated Subnumbers</td>
   <td>
     <div className="custom-dropdown">
       <div
@@ -766,11 +766,14 @@ const dueDateISO = leadData?.dueDate
                   }}
                   style={{ cursor: status === "Lead Return Submitted" ? "pointer" : "default" }}
                 >
-                  <div className={`status-circle ${idx <= currentStatusIndex ? "active" : ""}`}>
-                    {idx <= currentStatusIndex && <span className="status-number">{idx + 1}</span>}
-                  </div>
+                 {/* Always render the circle and its number; add “active” class only if idx <= current */}
+      <div className={`status-circle ${idx <= currentStatusIndex ? "active" : ""}`}>
+        <span className="status-number">{idx + 1}</span>
+      </div>
+
                   {idx < statuses.length && (
-                    <div className={`status-line ${idx < currentStatusIndex ? "active" : ""}`}></div>
+                    <div className={`status-line ${idx < currentStatusIndex ? "active" : ""}`}>
+                    </div>
                   )}
                   <div className={`status-text-box ${idx === currentStatusIndex ? "highlighted" : ""}`}>
                     {status}
