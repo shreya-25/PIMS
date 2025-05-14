@@ -54,6 +54,14 @@ body{
   margin-top: 20px;
 }
 
+.lead-return-input {
+  /* fixed height */
+  height: 150px;       /* ← pick whatever fixed height you like */
+  max-height: 150px;   /* ensure it never grows beyond that */
+  overflow-y: auto;    /* vertical scrollbar when content overflows */
+  resize: none;        /* disable manual resizing if you prefer */
+}
+
 /* .search-button
 {
   width: 30%;

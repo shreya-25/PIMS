@@ -156,8 +156,11 @@ useEffect(() => {
           const encCase = encodeURIComponent(caseName);
           const token = localStorage.getItem("token");
           const headers = { headers: { Authorization: `Bearer ${token}` } };
+
+             console.log("🔍 fetching scratchpad for leadNo:", encLead, encCase, leadNo, caseNo);
         
           async function loadAll() {
+            console.log("🔍 fetching scratchpad for leadNo:", selectedLead.leadNo);
             try {
               // 1) Fetch the “main” arrays in parallel
               const [
@@ -177,13 +180,13 @@ useEffect(() => {
                 api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
                 api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
                 api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                api.get(`/api/lrenclosures/lrenclosures/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                api.get(`/api/lrevidence/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                api.get(`/api/scratchpad/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                api.get(`/api/lrpictures/lrpictures/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                api.get(`/api/lraudio/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                api.get(`/api/lrvideo/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                // api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                // api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                // api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                // api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                // api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                // api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                // api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
               ]);
         
               // 2) Instructions is a single object
@@ -205,11 +208,9 @@ useEffect(() => {
               };
         
               setLeadReturns(
-                await attachFiles(
                   returnsRes.data,
-                  "leadReturnId",
-                  "/api/leadReturn/files"
-                )
+                  
+               
               );
               setLeadPersons(personsRes.data);
               setLeadVehicles(vehiclesRes.data);

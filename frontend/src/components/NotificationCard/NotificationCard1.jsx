@@ -158,7 +158,7 @@ const NotificationCard1 = ({ acceptLead, signedInOfficer }) => {
       console.log("selectedCase", baseState);
   
       if (notification.action1.includes("assigned you to a new case")) {
-        navigate("/CaseInformation", { state: baseState });
+        navigate("/Investigator", { state: baseState });
       }
       else if (notification.action1.includes("assigned you to a new lead")) {
         navigate("/LeadReview", { state: baseState });
