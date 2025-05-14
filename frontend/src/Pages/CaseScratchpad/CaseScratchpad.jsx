@@ -4,6 +4,9 @@ import "./CaseScratchpad.css";
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
+import api from "../../api"; // adjust the path as needed
+import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
+import {SideBar } from "../../components/Sidebar/Sidebar";
 
 export const CaseScratchpad = () => {
 
@@ -25,6 +28,8 @@ export const CaseScratchpad = () => {
 
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
+   const [pendingRoute, setPendingRoute]   = useState(null);
+     const [showSelectModal, setShowSelectModal] = useState(false);
 
   const handleInputChange = (field, value) => {
     setNewEntry({ ...newEntry, [field]: value });
@@ -54,6 +59,26 @@ export const CaseScratchpad = () => {
 
     setNewEntry({ date: "", notes: "" });
   };
+
+  const handleSelectLead = (lead) => {
+    setSelectedLead({
+      leadNo: lead.leadNo,
+      leadName: lead.description,
+      caseName: lead.caseName,
+      caseNo: lead.caseNo,
+    });
+  
+    setShowSelectModal(false);
+    navigate(pendingRoute, {
+      state: {
+        caseDetails: selectedCase,
+        leadDetails: lead
+      }
+    });
+    
+    setPendingRoute(null);
+  };
+  
 
   const handleDeleteEntry = (id) => {
     if (window.confirm("Are you sure you want to delete this entry?")) {
@@ -88,6 +113,49 @@ export const CaseScratchpad = () => {
       navigate(route, { state: { caseDetails } });
   };
     
+    const [leads, setLeads] = useState({
+            assignedLeads: [],
+            pendingLeads: [],
+            pendingLeadReturns: [],
+            allLeads: [],
+          } );
+          useEffect(() => {
+            const fetchAllLeads = async () => {
+              if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+          
+              try {
+                const token = localStorage.getItem("token");
+                const resp = await api.get(
+                  `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
+                  { headers: { Authorization: `Bearer ${token}` } }
+                );
+          
+                // assume resp.data is an array
+                let leadsArray = Array.isArray(resp.data) ? resp.data : [];
+          
+                // if user is _not_ a Case Manager, strip out CM-only leads:
+                if (selectedCase.role !== "Case Manager") {
+                  leadsArray = leadsArray.filter(
+                    (l) => l.accessLevel !== "Only Case Manager and Assignees"
+                  );
+                }
+          
+                setLeads((prev) => ({
+                  ...prev,
+                  allLeads: leadsArray.map((lead) => ({
+                    leadNo: lead.leadNo,
+                    description: lead.description,
+                    leadStatus: lead.leadStatus,
+                    // any other fields you need...
+                  })),
+                }));
+              } catch (err) {
+                console.error("Error fetching all leads:", err);
+              }
+            };
+          
+            fetchAllLeads();
+          }, [selectedCase])
 
   return (
     <div className="scratchpad-container">
@@ -96,46 +164,100 @@ export const CaseScratchpad = () => {
 
       <div className="main-container">
             {/* Sidebar */}
-            <div className="sideitem">
-                 
-            <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+            {/* <div className="sideitem">
+                    <ul className="sidebar-list">
+                    
+                    <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+                    <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
+        </li>
+        {caseDropdownOpen && (
+      <ul >
             <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
             <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
             {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
+            <li className="sidebar-item" 
+             onClick={() => {
+              selectedCase.role === "Investigator"
+              ? setPendingRoute("/LRInstruction")
+              : setPendingRoute("/CMInstruction")
+             
+              setShowSelectModal(true);
+            }}>View Lead Return</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-              Officer Management
-            </li> */}
+          
               {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item active" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
             </li>)}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-              View Lead Hierarchy
-            </li> */}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              Generate Report
-            </li> */}
+     
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-            {selectedCase.role !== "Investigator" && (
-  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-    View Lead Chain of Custody
-  </li>
-)}
+           </ul>
+        )}
 
-                </div>
+<li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
+</li>
+        {leadDropdownOpen && (
+          <ul>
+               <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+           
+           {selectedCase.role !== "Investigator" && (
+ <li
+ className="sidebar-item"
+ onClick={() => {
+   setPendingRoute("/ChainOfCustody", { state: { caseDetails } });
+   setShowSelectModal(true);
+ }}
+>    View Lead Chain of Custody
+  </li> )}
+  </ul>)}
+       
+
+                    </ul>
+
+                    {showSelectModal && (
+      <SelectLeadModal
+        leads={leads.allLeads}
+        onSelect={handleSelectLead}
+        onClose={() => setShowSelectModal(false)}
+      />
+    )}
+                </div> */}
+                 <SideBar activePage="LeadsDesk" />
    
 
         <div className="left-content">
+
+          
+           <div className="top-menu">
+        <div className="menu-items">
+           <span className="menu-item " onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}>
+            Leads Desk
+          </span>
+        <span className="menu-item " onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}>
+            Generate Report
+          </span>
+          <span className="menu-item active" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
+            Add/View Case Notes
+          </span>
+          <span className="menu-item" onClick={() => navigate('/SearchLead', { state: { caseDetails } } )} >
+            Search Leads
+          </span>
+          <span className="menu-item" onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}>
+          View Timelines
+          </span>
+          <span className="menu-item" onClick={() => navigate("/FlaggedLead", { state: { caseDetails } } )}>
+          View Flagged Leads
+          </span>
+         </div>
+       </div>
 
         <div className="case-header">
           {/* <h2 className="">ALL NOTES</h2> */}

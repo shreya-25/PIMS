@@ -1,0 +1,140 @@
+  /* Sidebar Container */
+  .sideitem {
+    width: 23%;
+    background-color: rgba(12, 31, 32, 0.096);
+    padding: 10px;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    color: rgb(5, 5, 5);
+    font-weight: 500;
+    height: 100%;
+    min-height: 100%;
+    /* position: fixed;  */
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    border-right: 1px solid #ddd;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    transition: width 0.3s ease;
+  }
+  
+  /* Sidebar Header */
+  .sidebar-header {
+    font-size: 18px;
+    font-weight: bold;
+    padding: 15px 10px;
+    color: #0073e6;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 10px;
+  }
+  
+  /* Sidebar List */
+  .sidebar-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  ul {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-left: 60px; /* adjust bullet indent */
+    margin-left: 20px;
+  }
+  
+  
+  .sidebar-ul
+  {
+    margin: 0;
+  }
+  
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    margin-bottom: 5px;
+    cursor: pointer;
+    font-size: 20px;
+    transition: background 0.3s;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.055);
+  }
+  /* Active Tab */
+  .sidebar-item.active {
+    background-color:  rgba(41, 41, 139, 0.219) ; /* Same as hover color */
+    font-weight: bold;
+  }
+  
+  /* Sidebar Content (Ensures text & number stay on the same line) */
+  .sidebar-content {
+    display: flex;
+    justify-content: space-between; /* Text on left, number on right */
+    align-items: center;
+    width: 100%;
+  }
+  
+  /* Sidebar Number (Right-aligned) */
+  .sidebar-number {
+    min-width: 30px;
+    text-align: right;
+  }
+  .sidebar-item:hover {
+    /* background-color: #c4c6c98e; */
+    background-color: rgba(41, 41, 139, 0.219);
+    font-weight: 600;
+  }
+  
+  /* Sidebar Icons */
+  .sidebar-item svg {
+    font-size: 18px;
+    margin-right: 12px;
+    color: #666;
+  }
+  
+  /* Collapsible Section */
+  .collapsible {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  /* Submenu */
+  .submenu {
+    list-style: none;
+    padding-left: 30px;
+    margin-top: 5px;
+  }
+  
+  .submenu-item {
+    padding: 8px 0;
+    font-size: 14px;
+    color: #555;
+    transition: color 0.3s;
+  }
+  
+  .submenu-item:hover {
+    color: #dee1e4;
+  }
+  
+  /* Sidebar Footer */
+  .sidebar-footer {
+    margin-top: auto;
+    padding-top: 15px;
+    border-top: 1px solid #ddd;
+    font-size: 14px;
+    text-align: center;
+    color: #555;
+    cursor: pointer;
+  }
+  
+  .sidebar-icon {
+    width: 25px;
+    height: 25px;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  
+  .sidebar-expand-icon {
+    width: 12px;
+    height: 12px;
+    margin-left: auto;
+  }
+  

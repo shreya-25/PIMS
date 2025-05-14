@@ -1,9 +1,10 @@
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useRef, useEffect, useMemo} from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import Searchbar from '../../components/Searchbar/Searchbar';
 import Filter from "../../components/Filter/Filter";
 import Sort from "../../components/Sort/Sort";
 import Button from '../../components/Button/Button';
+import {SideBar } from "../../components/Sidebar/Sidebar";
 import './CasePageManager.css'; // Custom CSS file for styling
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
@@ -35,6 +36,12 @@ export const CasePageManager = () => {
     const [showFilter, setShowFilter] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [pendingRoute, setPendingRoute]   = useState(null);
+
+  const [summary, setSummary] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
+  const saveTimer = useRef(null);
+  const isFirstLoad = useRef(true);
   
 
   const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
@@ -46,6 +53,19 @@ export const CasePageManager = () => {
     const handleCaseClick = (caseDetails) => {
       navigate("/CasePageManager", { state: { caseDetails } }); // Pass case details via state
     };
+    const [team, setTeam] = useState({
+      caseManager: "",
+      investigators: []
+    });
+
+    useEffect(() => {
+      if (!selectedCase?.caseNo) return;
+      api.get(`/api/cases/${selectedCase.caseNo}/team`)
+        .then(({ data }) => setTeam(data))
+        .catch(console.error);
+    }, [selectedCase.caseNo]);
+
+  
   
     const handleNavigation = (route) => {
       navigate(route); // Navigate to respective page
@@ -322,7 +342,7 @@ const handleSelectLead = (lead) => {
         });
   
         const mapLead = (lead) => ({
-          id: lead.leadNo,
+           id: Number(lead.leadNo), 
           description: lead.description,
           summary: lead.summary,
           dueDate: lead.dueDate
@@ -351,6 +371,9 @@ const handleSelectLead = (lead) => {
         const LRInReview = filteredLeadsArray
           .filter((lead) => lead.leadStatus === "In Review")
           .map(mapLead);
+
+        const allLeads = filteredLeadsArray
+          .map(mapLead);
   
         console.log("✅ Assigned Leads:", assignedLeads);
         console.log("✅ Pending Leads:", pendingLeads);
@@ -358,7 +381,7 @@ const handleSelectLead = (lead) => {
   
         setLeads((prev) => ({
           ...prev,
-          allLeads: filteredLeadsArray,
+          allLeads,
           assignedLeads,
           pendingLeads,
           pendingLeadReturns: LRInReview,
@@ -518,6 +541,65 @@ const handleSelectLead = (lead) => {
 
 const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
+
+
+useEffect(() => {
+    async function load() {
+      if (!selectedCase?.caseNo) return;
+      try {
+        const token = localStorage.getItem('token');
+        const { data } = await api.get(
+          `/api/cases/case-summary/${selectedCase.caseNo}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setSummary(data.caseSummary);
+      } catch (err) {
+        console.error('Failed to load summary', err);
+      }
+    }
+    load();
+  }, [selectedCase.caseNo]);
+
+useEffect(() => {
+    // skip the very first render (when we just loaded from server)
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
+    }
+
+    // clear any pending save
+    clearTimeout(saveTimer.current);
+
+    // if summary is empty or no case selected, don’t bother
+    if (!selectedCase?.caseNo) return;
+
+    // schedule a save
+    saveTimer.current = setTimeout(async () => {
+      setIsSaving(true);
+      setError('');
+      try {
+        const token = localStorage.getItem('token');
+        await api.put(
+          '/api/cases/case-summary',
+          {
+            caseNo: selectedCase.caseNo,
+            caseName: selectedCase.caseName,
+            caseSummary: summary,
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } catch (err) {
+        console.error('Save failed', err);
+        setError('Save failed. Try again.');
+      } finally {
+        setIsSaving(false);
+      }
+    }, 2000);
+
+    // cleanup on unmount or before next change
+    return () => clearTimeout(saveTimer.current);
+  }, [summary, selectedCase.caseNo, selectedCase.caseName]);
 
   
 
@@ -575,11 +657,9 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
   };
 
    // Define a constant with some predefined notes
-   const defaultCaseSummary = "Initial findings indicate that the suspect was last seen near the crime scene at 9:45 PM. Witness statements collected. Awaiting forensic reports and CCTV footage analysis.";
-
   //  const [caseSummary, setCaseSummary] = useState(caseDetails?.caseSummary || defaultCaseSummary);
   
-    const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
+    const [caseSummary, setCaseSummary] = useState('');
 
    const [isEditing, setIsEditing] = useState(false); // Controls whether the textarea is editable
    useEffect(() => {
@@ -621,7 +701,6 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
     // Save the edited text and disable editing
     const handleSaveClick = () => {
         setIsEditing(false);
-        alert("Report Saved!");
         // You can add logic here to update the backend with the new summary if needed
     };
       const filtersConfig = [
@@ -715,11 +794,11 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
         },
       ];
     
-      const handleFilterApply = (filters) => {
-        console.log("Applied Filters:", filters);
-        // Perform filtering logic here (e.g., API call, state update)
-      };
-    
+    const handleFilterApply = (filters) => {
+  console.log("Applied Filters:", filters);
+  setAssignedFilters(filters);
+  setShowFilter(false);
+};
       const [sortedData, setSortedData] = useState([]);
       const data = [
         { category: "Electronics", price: 100 },
@@ -736,7 +815,136 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
       // Scroll to the top when the component mounts
       window.scrollTo(0, 0);
     }, []); // Empty dependency array ensures it runs only once on mount
+
+
+    const [allFilterConfig, setAllFilterConfig] = useState({
+  id: "",                 // Lead No.
+  description: "",        // Lead Log Summary
+  leadStatus: "",         // Lead Status
+  dueDate: "",            // Due Date
+  priority: "",           // Priority
+  remainingDays: "",      // Days Left
+  assignedOfficers: ""    // Assigned Officers (we'll treat each officer name)
+});
+const [allSortConfig, setAllSortConfig]   = useState({ key: null, direction: "asc" });
+const [openAllFilter, setOpenAllFilter]   = useState(null);
+const allPopupRefs = useRef({});
+const [assignedFilters, setAssignedFilters] = useState({});
       
+const distinctAll = useMemo(() => {
+  const map = {
+    id: new Set(), description: new Set(), leadStatus: new Set(),
+    dueDate: new Set(), priority: new Set(),
+    remainingDays: new Set(), assignedOfficers: new Set()
+  };
+  leads.allLeads.forEach(lead => {
+    map.id.add(String(lead.id));
+    map.description.add(lead.description);
+    map.leadStatus.add(lead.leadStatus);
+    map.dueDate.add(lead.dueDate);
+    map.priority.add(lead.priority);
+    map.remainingDays.add(String(calculateRemainingDays(lead.dueDate)));
+    (lead.assignedOfficers || []).forEach(o => map.assignedOfficers.add(o));
+  });
+  return Object.fromEntries(Object.entries(map).map(([k, v]) => [k, Array.from(v)]));
+}, [leads.allLeads]);
+
+// const sortedAllLeads = useMemo(() => {
+//   // 1) apply filters
+//   const filtered = leads.allLeads.filter(lead => {
+//     return (
+//       (!allFilterConfig.id           || lead.id           === allFilterConfig.id)           &&
+//       (!allFilterConfig.description  || lead.description            === allFilterConfig.description)  &&
+//       (!allFilterConfig.leadStatus   || lead.leadStatus             === allFilterConfig.leadStatus)   &&
+//       (!allFilterConfig.dueDate      || lead.dueDate                === allFilterConfig.dueDate)      &&
+//       (!allFilterConfig.priority     || lead.priority               === allFilterConfig.priority)     &&
+//       (!allFilterConfig.remainingDays|| String(calculateRemainingDays(lead.dueDate)) === allFilterConfig.remainingDays) &&
+//       (!allFilterConfig.assignedOfficers ||
+//          (lead.assignedOfficers || []).includes(allFilterConfig.assignedOfficers))
+//     );
+//   });
+//   // 2) apply sort
+//   if (!allSortConfig.key) return filtered;
+//   return [...filtered].sort((a, b) => {
+//     let aV = allSortConfig.key==="remainingDays"
+//       ? calculateRemainingDays(a.dueDate)
+//       : (allSortConfig.key==="assignedOfficers"
+//          ? (a.assignedOfficers||[])[0]   // first officer for simplicity
+//          : a[allSortConfig.key]);
+//     let bV = allSortConfig.key==="remainingDays"
+//       ? calculateRemainingDays(b.dueDate)
+//       : (allSortConfig.key==="assignedOfficers"
+//          ? (b.assignedOfficers||[])[0]
+//          : b[allSortConfig.key]);
+//     if (aV < bV) return allSortConfig.direction==="asc" ? -1 : 1;
+//     if (aV > bV) return allSortConfig.direction==="asc" ?  1 : -1;
+//     return 0;
+//   });
+// }, [leads.allLeads, allFilterConfig, allSortConfig]);
+
+const sortedAllLeads = useMemo(() => {
+  // 1) apply filters
+  const filtered = leads.allLeads.filter(lead => {
+    return (
+      (!allFilterConfig.id           || String(lead.id)        === allFilterConfig.id)           &&
+      (!allFilterConfig.description  || lead.description          === allFilterConfig.description) &&
+      (!allFilterConfig.leadStatus   || lead.leadStatus           === allFilterConfig.leadStatus)  &&
+      (!allFilterConfig.dueDate      || lead.dueDate              === allFilterConfig.dueDate)     &&
+      (!allFilterConfig.priority     || lead.priority             === allFilterConfig.priority)    &&
+      (!allFilterConfig.remainingDays|| String(calculateRemainingDays(lead.dueDate)) === allFilterConfig.remainingDays) &&
+      (!allFilterConfig.assignedOfficers ||
+         (lead.assignedOfficers || []).includes(allFilterConfig.assignedOfficers))
+    );
+  });
+
+  // 2) apply sort
+  if (!allSortConfig.key) return filtered;
+
+  return [...filtered].sort((a, b) => {
+    let aV, bV;
+
+    switch (allSortConfig.key) {
+      case "id":
+        // numeric compare on Lead No.
+        aV = Number(a.id);
+        bV = Number(b.id);
+        break;
+
+      case "remainingDays":
+        aV = calculateRemainingDays(a.dueDate);
+        bV = calculateRemainingDays(b.dueDate);
+        break;
+
+      case "assignedOfficers":
+        // compare the first officer name
+        aV = (a.assignedOfficers || [])[0] || "";
+        bV = (b.assignedOfficers || [])[0] || "";
+        break;
+
+      default:
+        // everything else is string-based
+        aV = a[allSortConfig.key] ?? "";
+        bV = b[allSortConfig.key] ?? "";
+    }
+
+    if (aV < bV) return allSortConfig.direction === "asc" ? -1 : 1;
+    if (aV > bV) return allSortConfig.direction === "asc" ?  1 : -1;
+    return 0;
+  });
+}, [leads.allLeads, allFilterConfig, allSortConfig]);
+
+
+
+const handleFilterAllClick = col => {
+  setOpenAllFilter(prev => prev===col ? null : col);
+};
+const handleSortAll = colKey => {
+  setAllSortConfig(prev => ({
+    key: prev.key===colKey && prev.direction==="asc" ? null : colKey,
+    direction: prev.key===colKey && prev.direction==="asc" ? "desc" : "asc"
+  }));
+};
+
 
     return (
         <div className="case-page-manager">
@@ -745,29 +953,10 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
 
             {/* Main Container */}
             <div className="main-container">
-                {/* Sidebar */}
-                <div className="sideitem">
-                    <ul className="sidebar-list">
-                    {/* <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-                        <li className="sidebar-item" onClick={() => navigate('/createlead')}>Create Lead</li>
-                        <li className="sidebar-item" onClick={() => navigate("/leadlog", { state: { caseDetails } } )} >View Lead Log</li>
-                        <li className="sidebar-item" onClick={() => navigate('/OfficerManagement')}>Officer Management</li>
-                        <li className="sidebar-item"onClick={() => navigate('/casescratchpad')}>Case Scratchpad</li>
-                        <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-                        <li className="sidebar-item"onClick={() => navigate('/LeadHierarchy1')}>View Lead Hierarchy</li>
-                        <li className="sidebar-item">Generate Report</li>
-                        <li className="sidebar-item"onClick={() => navigate('/FlaggedLead')}>View Flagged Leads</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewTimeline')}>View Timeline Entries</li>
-                        <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li>
-
-                        <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li> */}
-
-       
-                                 {/* Lead Management Dropdown */}
-
-                                 <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-                                 <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>
-                                 <li className="sidebar-item active" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+        
+                {/* <div className="sideitem">
+                <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Home Page</li>
+         <li className="sidebar-item active" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
           Case Page {leadDropdownOpen ?  "▲": "▼"}
         </li>
         {leadDropdownOpen && (
@@ -794,20 +983,12 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           </div>
   </li>
 ))}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li> */}
           </ul>
         )} 
 
 <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
               New Lead
             </li>
-            <li className="sidebar-item" 
-             onClick={() => {
-              setPendingRoute("/leadReview");
-              setShowSelectModal(true);
-            }}>Lead Information</li>
             <li className="sidebar-item"
              onClick={() => onShowCaseSelector("/SearchLead")}
           >Search Lead</li>
@@ -818,123 +999,176 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
             }} >View Lead Return</li>
 
 
-<li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
+            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
               View Lead Log
             </li>
-
-{/* <li
-              className="sidebar-item"
-              onClick={() => {
-                setPendingRoute("/LeadLog");
-                setShowSelectModal(true);
-              }}
-            >
-              View Lead Log
-            </li> */}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-              Officer Management
-            </li> */}
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
             </li>
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-              View Lead Hierarchy
-            </li> */}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              Generate Report
-            </li> */}
             <li className="sidebar-item"    
             onClick={() => navigate("/FlaggedLead")}>
               View Flagged Leads
             </li>
-            {/* <li className="sidebar-item"  onClick={() => {
-              setPendingRoute("/ViewTimeline");
-              setShowSelectModal(true);
-            }}>
-              View Timeline Entries
-            </li> */}
 
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
             View Timeline Entries
             </li>
-
-            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
-
             <li className="sidebar-item" 
-            // onClick={() => {
-            //   setPendingRoute("/LeadsDesk");
-            //   setShowSelectModal(true);
-            // }}
             onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}
              >View Leads Desk</li>
-
             <li className="sidebar-item" 
-            //  onClick={() => {
-            //   setPendingRoute("/LeadsDeskTestExecSummary");
-            //   setShowSelectModal(true);
-            // }}
-            
             onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}
-            
             >Generate Report</li>
+ 
 
+<li className="sidebar-item "  style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen1(!leadDropdownOpen1)}>
+          Lead Related Tabs {leadDropdownOpen1 ?  "▲": "▼"}
+</li>
+        {leadDropdownOpen1 && (
+          <ul>
+           <li className="sidebar-item" 
+             onClick={() => {
+              setPendingRoute("/leadReview");
+              setShowSelectModal(true);
+            }}>Lead Information</li>
+                  
+    
             <li className="sidebar-item"
 
               onClick={() => {
                 setPendingRoute("/ChainOfCustody");
                 setShowSelectModal(true);
               }}
-            
-            // onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}
             >View Lead Chain of Custody</li>
 
-                    </ul>
-
-                    {showSelectModal && (
+         {showSelectModal && (
       <SelectLeadModal
         leads={leads.allLeads}
         onSelect={handleSelectLead}
         onClose={() => setShowSelectModal(false)}
       />
     )}
+    </ul>
+  )}
     
-                </div>
+                </div> */}
+
+                <SideBar
+  activePage="CasePageManager"
+  leads={leads}
+  activeTab={activeTab}
+  setActiveTab={setActiveTab}
+/>
+
+{/* <main>
+        {activeTab === 'allLeads' && <AllLeadsList leads={leads.allLeads} />}
+        {activeTab === 'assignedLeads' && <AssignedLeadsList leads={leads.assignedLeads} />}
+        {activeTab === 'pendingLeads' && <PendingLeadsList leads={leads.pendingLeads} />}
+        {activeTab === 'pendingLeadReturns' && <LeadReturnsList leads={leads.pendingLeadReturns} />}
+      </main> */}
                 <div className="left-content">
 
-                   {/* Display Case Number and Name */}
-                <div className="case-header">
-                    {
-                        <h1>
-                          CASE:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
-                        </h1>
-                    }
-                </div>
-                {/* <div className = "case-summary">
-                <label className="input-label">Case Summary</label>
-                        <textarea
-                            className="textarea-field"
-                            value={caseSummary}
-                            onChange={handleCaseSummaryChange}
-                            readOnly={!isEditing} // Read-only when not in edit mode
-                        ></textarea>
+                {/* <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5> */}
 
-                         <button className="save-btn1" onClick={handleSaveClick}>Save</button>
-               
-                </div> */}
-                {/* Content Area */}
-                {/* <div className="table-section1"> */}
-                  {/* <div className='searchContainer'>
-                    <Searchbar placeholder="Search Lead" />
-                    </div> */}
-                    {/* <Button
-                        label="Generate Lead"
-                        className="generate-lead-btn1"
-                        onClick={handleGenerateLead}
-                    /> */}
-                   
-                    {/* Tab Navigation */}
+{/* Display Case Number and Name */}
+<div className="case-header">
+ {
+     <h1>
+       CASE:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
+     </h1>
+ }
+</div>
+{/* <div className = "case-summary">
+<label className="input-label">Case Summary</label>
+     <textarea
+         className="textarea-field"
+         value={caseSummary}
+         onChange={handleCaseSummaryChange}
+         readOnly={!isEditing} // Read-only when not in edit mode
+     ></textarea>
 
-                    <div className="stats-bar">
+      <button className="save-btn1" onClick={handleSaveClick}>Save</button>
+
+</div> */}
+{/* Content Area */}
+{/* <div className="table-section1"> */}
+{/* <div className='searchContainer'>
+ <Searchbar placeholder="Search Lead" />
+ </div> */}
+ {/* <Button
+     label="Generate Lead"
+     className="generate-lead-btn1"
+     onClick={handleGenerateLead}
+ /> */}
+
+ {/* Tab Navigation */}
+ {/* <div className="case-summary">
+<label className="input-label">Case Summary</label>
+<textarea
+className="textarea-field"
+value={caseSummary}
+onChange={(e) => setCaseSummary(e.target.value)}
+/>
+<button className="save-btn1"  onClick={handleSaveClick}>
+Save
+</button>
+</div> */}
+
+<div className="case-summary">
+      <label className="input-label">Case Summary</label>
+      <textarea
+        id="case-summary"
+        rows={6}
+        style={{ width: '100%', fontSize: 20, padding: 8 }}
+        value={summary}
+        onChange={e => setSummary(e.target.value)}
+      />
+      <div style={{ marginTop: 8, fontSize: 20, minHeight: '1em' }}>
+        {isSaving
+          ? <span style={{ color: '#888' }}>Saving…</span>
+          : error
+            ? <span style={{ color: 'red' }}>{error}</span>
+            : <span>&nbsp;</span>
+        }
+      </div>
+    </div>
+
+<div className="case-team">
+<table className="leads-table">
+<thead>
+<tr>
+<th style={{ width: "20%" }}>Role</th>
+<th>Name(s)</th></tr>
+</thead>
+<tbody>
+<tr>
+<td>Case Manager</td>
+<td>{team.caseManager || "—"}</td>
+</tr>
+<tr>
+<td>Investigator{team.investigators.length > 1 ? "s" : ""}</td>
+<td>
+{team.investigators.length
+? team.investigators.join(", ")
+: "None assigned"}
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<div  className="add-lead-section">
+<div><h2>Click here to add a new lead</h2></div>
+<div className = "add-lead-btn1">
+<button className="save-btn1"  onClick={() => navigate('/createlead', { state: { caseDetails: selectedCase } })}
+style={{ cursor: 'pointer' }} >
+Add Lead
+</button>
+</div>
+</div>
+
+             
+                    {/* <div className="stats-bar">
                         <span
                             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("assignedLeads")}
@@ -959,7 +1193,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                         >
                             All Leads: {leads.allLeads.length}
                         </span>
-                    </div>
+                    </div> */}
                   
 
                     {/* Tab Content */}
@@ -1160,7 +1394,7 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
       <thead>
         <tr>
 
-          <th style={{ width: "10%" }}>Lead No.</th>
+          <th style={{ width: "10%" }}>Lead No. </th>
           <th style={{ width: "15%" }}>Lead Log Summary</th>
           <th style={{ width: "10%" }}>Due Date</th>
           <th style={{ width: "8%" }}>Priority</th>
@@ -1618,49 +1852,8 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
                             </div>
                         )} */}
 
-{activeTab === "allLeads" && (
+{/* {activeTab === "allLeads" && (
   <div className="all-leads">
-    <div className="filter-sort-icons">
-                    <button onClick={() => setShowFilter(true)} className="icon-button">
-                      <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
-                        alt="Filter Icon"
-                        className="icon-image"
-                      />
-                    </button>
-                    <button onClick={() => setShowSort(true)} className="icon-button">
-                      <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
-                        alt="Sort Icon"
-                        className="icon-image"
-                      />
-                    </button>
-                  </div>
-
-      {/* Conditionally render the Filter component */}
-      {showFilter && (
-        <div className="popup-overlay">
-          <div className="popup-content">
-            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
-              &times;
-            </button>
-            <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
-      </div>
-        </div>
-      )}
-
-      {/* Conditionally render the Sort component */}
-      {showSort && (
-        <div className="popup-overlay">
-          <div className="popup-content">
-            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
-              &times;
-            </button>
-            <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
-            </div>
-          </div>
-      )}
-
 <div className="table-scroll-container">
 <table className="leads-table" style={{ minWidth: "1000px" }}>
       <thead>
@@ -1668,16 +1861,31 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           <th style={{ width: "10%" }}>Lead No.</th>
           <th>Lead Log Summary</th>
           <th style={{ width: "10%" }}>Lead Status</th>
-          <th style={{ width: "12%" }}></th> {/* Empty header for buttons column */}
+          <th style={{ width: "10%" }}>Due Date</th>
+          <th style={{ width: "8%" }}>Priority</th>
+          <th style={{ width: "8%" }}>Days Left</th>
+          <th style={{ width: "15%" }}>Assigned Officers</th>
+          <th style={{ width: "12%" }}></th> 
         </tr>
       </thead>
       <tbody>
       {leads.allLeads.length > 0 ? (
        leads.allLeads.map((lead) => (
           <tr key={lead.id}>
-            <td>{lead.leadNo} </td>
+            <td>{lead.id} </td>
             <td>{lead.description}</td>
             <td>{lead.leadStatus}</td>
+             <td>{lead.dueDate}</td>
+              <td>{lead.priority}</td>
+              <td>{calculateRemainingDays(lead.dueDate)}</td>
+            
+            
+              <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
+             
+                {lead.assignedOfficers.map((officer, index) => (
+                  <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
+                ))}
+                </td>
             <td>
               <button
                 className= "view-btn1"
@@ -1689,13 +1897,97 @@ const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
           </tr>
         ))  ) : (
           <tr>
-            <td colSpan="4" style={{ textAlign: 'center' }}>
+            <td colSpan="8" style={{ textAlign: 'center' }}>
               No Leads Available
             </td>
           </tr>
         )}
       </tbody>
     </table>
+    </div>
+  </div>
+)} */}
+{activeTab === "allLeads" && (
+  <div className="all-leads">
+    <div className="table-scroll-container">
+      <table className="leads-table" style={{ minWidth: "1000px" }}>
+        <thead>
+          <tr>
+            {[
+              { label:"Lead No.",         key:"id",               width:"10%" },
+              { label:"Lead Log Summary", key:"description", width:"14%" },
+              { label:"Lead Status",      key:"leadStatus", width:"10%" },
+              { label:"Due Date",         key:"dueDate", width:"10%" },
+              { label:"Priority  ",         key:"priority" , width:"10%"},
+              { label:"Days Left",        key:"remainingDays", width:"10%" },
+              { label:"Assigned Officers",key:"assignedOfficers", width:"12%" }
+            ].map(col => (
+             <th key={col.key} style={{ width: col.width }}>
+  <div className="header-title">{col.label}</div>
+  <div className="header-controls" ref={el => allPopupRefs.current[col.key] = el}>
+    <button onClick={() => handleFilterAllClick(col.key)}>
+      <img src={`${process.env.PUBLIC_URL}/Materials/filter.png`} className="icon-image"/>
+    </button>
+    {openAllFilter === col.key && (
+  <div className="filter-popup">
+    <select
+      value={allFilterConfig[col.key]}
+      onChange={e =>
+        setAllFilterConfig(cfg => ({ ...cfg, [col.key]: e.target.value }))
+      }
+    >
+      <option value="">All</option>
+      {distinctAll[col.key].map(v => (
+        <option key={v} value={v}>{v}</option>
+      ))}
+    </select>
+    <div className="filter-popup-buttons">
+      <button onClick={() => setOpenAllFilter(null)}>Apply</button>
+      <button onClick={() => {
+        setAllFilterConfig(cfg => ({ ...cfg, [col.key]: "" }));
+        setOpenAllFilter(null);
+      }}>Clear</button>
+    </div>
+  </div>
+)}
+
+    <button onClick={() => handleSortAll(col.key)}>
+      <img src={`${process.env.PUBLIC_URL}/Materials/sort1.png`} className="icon-image"/>
+    </button>
+  </div>
+</th>
+
+            ))}
+            <th style={{ width:"12%" }}></th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedAllLeads.length>0 ? sortedAllLeads.map(lead=>(
+            <tr key={lead.id}>
+              <td>{lead.id}</td>
+              <td>{lead.description}</td>
+              <td>{lead.leadStatus}</td>
+              <td>{lead.dueDate}</td>
+              <td>{lead.priority}</td>
+              <td>{calculateRemainingDays(lead.dueDate)}</td>
+              <td style={{ wordBreak:"break-word" }}>
+                {(lead.assignedOfficers||[]).join(", ")}
+              </td>
+              <td>
+                <button className="view-btn1" onClick={()=>handleLeadClick(lead)}>
+                  View
+                </button>
+              </td>
+            </tr>
+          )) : (
+            <tr>
+              <td colSpan={8} style={{ textAlign:"center" }}>
+                No Leads Available
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
     </div>
   </div>
 )}

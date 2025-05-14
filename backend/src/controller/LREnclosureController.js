@@ -4,16 +4,23 @@ const fs = require("fs");
 // **Create a new LREnclosure entry with file upload support**
 const createLREnclosure = async (req, res) => {
     try {
-        console.log('Uploaded file:', req.file);
-        if (!req.file) {
-            return res.status(400).json({ error: 'No file received' });
-        }
-        
-        // Extract file ID from the uploaded file
-        // const fileId = req.file.id; or req.file._id depending on your multer-gridfs-storage version
+      const isLink = req.body.isLink === "true"; // Handle string from formData
+      const accessLevel = req.body.accessLevel || "Everyone";
 
-        // For disk storage, use file details (not fileId)
-        const fileLocation = req.file.path;
+      let filePath = null;
+      let originalName = null;
+      let filename = null;
+  
+      if (!isLink) {
+        if (!req.file) {
+          return res.status(400).json({ error: 'No file received for non-link upload' });
+        }
+  
+        // File fields (for disk storage)
+        filePath = req.file.path;
+        originalName = req.file.originalname;
+        filename = req.file.filename;
+      }
 
         // Create a new LREnclosure document with the file reference
         const newLREnclosure = new LREnclosure({
@@ -29,9 +36,12 @@ const createLREnclosure = async (req, res) => {
             type: req.body.type,
             enclosureDescription: req.body.enclosureDescription,
             // fileId, // Store the GridFS file reference here
-            filePath: fileLocation,               // Save file path on disk
-            originalName: req.file.originalname,  // Save original file name
-            filename: req.file.filename           // Save the generated filename on disk
+            filePath: isLink ? "link-only" : filePath,
+            originalName: originalName,
+            filename: filename,
+            accessLevel,
+            isLink,
+            link: isLink ? req.body.link : null,
         });
 
         // Save the document in MongoDB

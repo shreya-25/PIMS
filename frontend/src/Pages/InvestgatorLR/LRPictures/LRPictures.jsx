@@ -4,9 +4,11 @@ import FootBar from '../../../components/FootBar/FootBar';
 import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect, useRef} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import api, { BASE_URL } from "../../../api";
+import {SideBar } from "../../../components/Sidebar/Sidebar";
+
 
 
 export const LRPictures = () => {
@@ -21,11 +23,12 @@ export const LRPictures = () => {
     //   }, []);
   const navigate = useNavigate();
     const location = useLocation();
-  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+  const { selectedCase, selectedLead, setSelectedLead, leadStatus } = useContext(CaseContext);
   const [file, setFile] = useState(null);
 
   const [isEditing, setIsEditing] = useState(false);
 const [editingIndex, setEditingIndex] = useState(null);
+ const fileInputRef = useRef();
 
   
     const formatDate = (dateString) => {
@@ -94,168 +97,172 @@ const [editingIndex, setEditingIndex] = useState(null);
   };
 
   // populate the form to edit a picture
-const handleEditPicture = (idx) => {
-  const pic = pictures[idx];
-  setPictureData({
-    datePictureTaken: new Date(pic.rawDatePictureTaken)
-    .toISOString()
-    .slice(0, 10),
-    leadReturnId: pic.returnId,
-    description: pic.description,
-    image: pic.image,
-    filename:         pic.filename
-  });
-  setIsEditing(true);
-  setEditingIndex(idx);
-  setFile(null);
-};
+  const handleEditPicture = idx => {
+    const pic = pictures[idx];
+    setPictureData({
+      datePictureTaken: new Date(pic.rawDatePictureTaken).toISOString().slice(0,10),
+      leadReturnId:     pic.returnId,
+      description:      pic.description,
+      image:            pic.image,
+      filename:         pic.filename,
+      link:             pic.link || "",
+      isLink:           !!pic.link
+    });
+    setIsEditing(true);
+    setEditingIndex(idx);
+    setFile(null);
+  };
 
 // delete a picture
-const handleDeletePicture = async (idx) => {
+const handleDeletePicture = async idx => {
   if (!window.confirm("Delete this picture?")) return;
   const pic = pictures[idx];
   const token = localStorage.getItem("token");
+  await api.delete(
+    `/api/lrpicture/${selectedLead.leadNo}/` +
+    `${encodeURIComponent(selectedLead.leadName)}/` +
+    `${selectedCase.caseNo}/` +
+    `${encodeURIComponent(selectedCase.caseName)}/` +
+    `${pic.returnId}/` +
+    `${encodeURIComponent(pic.description)}`,
+    { headers:{ Authorization:`Bearer ${token}` } }
+  );
+  setPictures(ps => ps.filter((_, i) => i !== idx));
+};
+const handleAddPicture = async () => {
+  // 1️⃣ Validation: require date, description, and either a file or a link
+  if (
+    !pictureData.datePictureTaken ||
+    !pictureData.description ||
+    (!pictureData.isLink && !file) ||
+    (pictureData.isLink && !pictureData.link.trim())
+  ) {
+    alert("Please fill in all required fields and select a file or enter a valid link.");
+    return;
+  }
 
+  // 2️⃣ Build FormData
+  const fd = new FormData();
+  if (!pictureData.isLink) {
+    fd.append("file", file);
+  }
+  fd.append("leadNo", selectedLead.leadNo);
+  fd.append("description", selectedLead.leadName);
+  fd.append("enteredBy", localStorage.getItem("loggedInUser"));
+  fd.append("caseName", selectedCase.caseName);
+  fd.append("caseNo", selectedCase.caseNo);
+  fd.append("leadReturnId", pictureData.leadReturnId || "");
+  fd.append("enteredDate", new Date().toISOString());
+  fd.append("datePictureTaken", pictureData.datePictureTaken);
+  fd.append("pictureDescription", pictureData.description);
+
+  // 3️⃣ Link fields
+  fd.append("isLink", pictureData.isLink);
+  if (pictureData.isLink) {
+    fd.append("link", pictureData.link.trim());
+  }
+
+  // 4️⃣ Send to server
   try {
-    await api.delete(
-      `/api/lrpicture/` +
-      `${selectedLead.leadNo}/` +
-      `${encodeURIComponent(selectedLead.leadName)}/` +
-      `${selectedCase.caseNo}/` +
-      `${encodeURIComponent(selectedCase.caseName)}/` +
-      `${pic.returnId}/` +
-      `${encodeURIComponent(pic.description)}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    setPictures(pics => pics.filter((_, i) => i !== idx));
+    const token = localStorage.getItem("token");
+    await api.post("/api/lrpicture/upload", fd, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      transformRequest: [(data, headers) => {
+        delete headers["Content-Type"];
+        return data;
+      }]
+    });
+
+    // 5️⃣ Refresh list & reset form
+    await fetchPictures();
+    setPictureData({
+      datePictureTaken: "",
+      leadReturnId:     "",
+      description:      "",
+      isLink:           false,
+      link:             "",
+      originalName:     "",
+      filename:         ""
+    });
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   } catch (err) {
-    console.error("Error deleting picture:", err);
-    alert("Failed to delete picture");
+    console.error("Error uploading picture:", err);
+    alert("Failed to save picture. See console for details.");
   }
 };
 
-  
+const handleUpdatePicture = async () => {
+  const pic = pictures[editingIndex];
 
-  const handleAddPicture = async () => {
-    const formData = new FormData();
-  
-    // Validate required fields
-    if (!file || !pictureData.datePictureTaken || !pictureData.description) {
-      alert("Please fill in all required fields and select a file.");
-      return;
-    }
-  
-    // Append image file
-    formData.append("file", file);
-  
-    // Append textual fields
-    formData.append("leadNo", selectedLead?.leadNo);
-    formData.append("description", selectedLead?.leadName);
-    formData.append("enteredBy", localStorage.getItem("loggedInUser"));
-    formData.append("caseName", selectedCase?.caseName);
-    formData.append("caseNo", selectedCase?.caseNo);
-    formData.append("leadReturnId", pictureData.leadReturnId || "");
-    formData.append("enteredDate", new Date().toISOString());
-    formData.append("datePictureTaken", pictureData.datePictureTaken);
-    formData.append("pictureDescription", pictureData.description);
-  
-    const token = localStorage.getItem("token");
-  
-    try {
-      const response = await api.post(
-        "/api/lrpicture/upload",
-        formData,
-        {
-          headers: {
-            "Content-Type": undefined,  
-            "Authorization": `Bearer ${token}`,
-          },
-        }
-      );
-  
-      const savedPicture = response.data.picture;
-  
-      // Add newly saved picture to the table list
-      setPictures(prev => [
-        ...prev,
-        {
-          dateEntered: formatDate(savedPicture.enteredDate),
-          returnId: savedPicture.leadReturnId,
-          datePictureTaken: formatDate(savedPicture.datePictureTaken),
-          description: savedPicture.pictureDescription,
-          image: `${BASE_URL}/uploads/${savedPicture.filename}`
-        }
-      ]);
-  
-      // Clear form
-      setPictureData({
-        datePictureTaken: "",
-        description: "",
-        image: "",
-        leadReturnId: "",
-        filename: ""
-      });
-      setFile(null);
-    } catch (error) {
-      console.error("Error uploading picture:", error);
-      alert("Failed to upload picture.");
-    }
-  };
+  // 1️⃣ Validation for link-mode
+  if (pictureData.isLink && !pictureData.link.trim()) {
+    alert("Please enter a valid link.");
+    return;
+  }
 
-  const handleUpdatePicture = async () => {
-    const pic = pictures[editingIndex];
+  // 2️⃣ Build FormData
+  const fd = new FormData();
+  // only include a new file if user replaced it
+  if (!pictureData.isLink && file) {
+    fd.append("file", file);
+  }
+
+  // ● Required by your mongoose schema
+  fd.append("leadReturnId", pictureData.leadReturnId);
+
+  // ● All the rest of your fields
+  fd.append("datePictureTaken", pictureData.datePictureTaken);
+  fd.append("pictureDescription", pictureData.description);
+  fd.append("enteredBy", localStorage.getItem("loggedInUser"));
+  fd.append("isLink", pictureData.isLink);
+  if (pictureData.isLink) {
+    fd.append("link", pictureData.link.trim());
+  }
+
+  try {
     const token = localStorage.getItem("token");
-    const fd = new FormData();
-  
-    // only append file if user picked a new one
-    if (file) fd.append("file", file);
-  
-    // these must match what your controller expects
-    fd.append("leadReturnId", pictureData.leadReturnId);
-    fd.append("datePictureTaken", pictureData.datePictureTaken);
-    fd.append("pictureDescription", pictureData.description);
-    fd.append("enteredBy", localStorage.getItem("loggedInUser"));
-  
-    try {
-      const res = await api.put(
-        `/api/lrpicture/` +
+    await api.put(
+      `/api/lrpicture/` +
         `${selectedLead.leadNo}/` +
         `${encodeURIComponent(selectedLead.leadName)}/` +
         `${selectedCase.caseNo}/` +
         `${encodeURIComponent(selectedCase.caseName)}/` +
         `${pic.returnId}/` +
         `${encodeURIComponent(pic.description)}`,
-        fd,
-        { headers: { Authorization: `Bearer ${token}`,  "Content-Type": "multipart/form-data" } }
-      );
-      const updated = res.data;
-  
-      // reflect update in local state
-      setPictures(ps => {
-        const copy = [...ps];
-        copy[editingIndex] = {
-          dateEntered: formatDate(updated.enteredDate),
-          returnId: updated.leadReturnId,
-          datePictureTaken: formatDate(updated.datePictureTaken),
-          description: updated.pictureDescription,
-          image: file
-            ? URL.createObjectURL(file)
-            : `${BASE_URL}/uploads/${updated.filename}`,
-        };
-        return copy;
-      });
-  
-      // clear edit mode
-      setIsEditing(false);
-      setEditingIndex(null);
-      setPictureData({ datePictureTaken: "", leadReturnId: "", description: "", image: "",
-        filename: "" });
-      setFile(null);
-    } catch (err) {
-      console.error("Error updating:", err);
-      alert("Failed to update picture");
-    }
-  };
+      fd,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        transformRequest: [(data, headers) => {
+          delete headers["Content-Type"];
+          return data;
+        }]
+      }
+    );
+
+    // Refresh & reset
+    await fetchPictures();
+    setIsEditing(false);
+    setEditingIndex(null);
+    setPictureData({
+      datePictureTaken: "",
+      leadReturnId:     "",
+      description:      "",
+      isLink:           false,
+      link:             "",
+      originalName:     "",
+      filename:         ""
+    });
+    setFile(null);
+  } catch (err) {
+    console.error("Error updating LRPicture:", err);
+    alert("Failed to update picture. See console for details.");
+  }
+};
+
+
   
 
   const handleNavigation = (route) => {
@@ -298,9 +305,12 @@ const handleDeletePicture = async (idx) => {
         returnId: pic.leadReturnId,
         datePictureTaken: formatDate(pic.datePictureTaken),
         rawDatePictureTaken: pic.datePictureTaken,
+        filename: pic.filename,
+  originalName: pic.originalName,
         description: pic.pictureDescription,
           image: `${BASE_URL}/uploads/${pic.filename}`,
-          filename: pic.filename  
+          filename: pic.filename,
+          link: pic.link || ""
       }));
       const withAccess = mappedPictures.map(r => ({
         ...r,
@@ -329,7 +339,7 @@ const handleAccessChange = (idx, newAccess) => {
       <Navbar />
 
       {/* Top Menu */}
-      <div className="top-menu">
+      {/* <div className="top-menu">
         <div className="menu-items">
           <span className="menu-item" onClick={() => handleNavigation("/LRInstruction")}>Instructions</span>
           <span className="menu-item" onClick={() => handleNavigation("/LRReturn")}>Returns</span>
@@ -346,46 +356,191 @@ const handleAccessChange = (idx, newAccess) => {
           </span>
           <span className="menu-item" onClick={() => handleNavigation("/LRFinish")}>Finish</span>
         </div>
-      </div>
+      </div> */}
+        <div className="top-menu"   style={{ paddingLeft: '20%' }}>
+      <div className="menu-items" >
+        <span className="menu-item " onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/LeadReview", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } }} > Lead Information</span>
+                   <span className="menu-item active" >Add/View Lead Return</span>
+                   <span className="menu-item" onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/ChainOfCustody", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } else {
+                    alert("Please select a case and lead first.");
+                  }
+                }}>Lead Chain of Custody</span>
+          
+                  </div>
+        {/* <div className="menu-items">
+      
+        <span className="menu-item active" onClick={() => handleNavigation('/LRInstruction')}>
+            Instructions
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRReturn')}>
+            Returns
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRPerson')} >
+            Person
+          </span>
+          <span className="menu-item"onClick={() => handleNavigation('/LRVehicle')} >
+            Vehicles
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LREnclosures')} >
+            Enclosures
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LREvidence')} >
+            Evidence
+          </span>
+          <span className="menu-item"onClick={() => handleNavigation('/LRPictures')} >
+            Pictures
+          </span>
+          <span className="menu-item"onClick={() => handleNavigation('/LRAudio')} >
+            Audio
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRVideo')}>
+            Videos
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRScratchpad')}>
+            Scratchpad
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
+            Timeline
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRFinish')}>
+            Finish
+          </span>
+         </div> */}
+       </div>
 
       <div className="LRI_Content">
-       <div className="sideitem">
+      {/* <div className="sideitem">
        <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
-            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+
+       <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
+        </li>
+        {caseDropdownOpen && (
+      <ul >
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>  
+          
+
+
+                  <li
+  className="sidebar-item"
+  onClick={() =>
+    selectedCase.role === "Investigator"
+      ? navigate("/Investigator")
+      : navigate("/CasePageManager")
+  }
+>
+Case Page
+</li>
+
+
             {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
             <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-              Officer Management
-            </li> */}
+         
               {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
             </li>)}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-              View Lead Hierarchy
-            </li> */}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              Generate Report
-            </li> */}
+      
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-            {selectedCase.role !== "Investigator" && (
-  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-    View Lead Chain of Custody
-  </li>
-)}
-                </div>
-                <div className="left-content">
 
+            </ul>
+        )}
+          <li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
+          </li>
+        {leadDropdownOpen && (
+          <ul>
+              <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+              View Lead Chain of Custody
+            </li>
+             )}
+          </ul>
+
+            )}
+
+                </div> */}
+                  <SideBar  activePage="CasePageManager" />
+                <div className="left-content">
+                <div className="top-menu" style={{ marginTop: '2px', backgroundColor: '#3333330e' }}>
+       <div className="menu-items" style={{ fontSize: '19px' }}>
+       
+        <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
+            Instructions
+          </span>
+          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
+            Returns
+          </span>
+          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
+            Person
+          </span>
+          <span className="menu-item " style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
+            Vehicles
+          </span>
+          <span className="menu-item " style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREnclosures')} >
+            Enclosures
+          </span>
+          <span className="menu-item " style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREvidence')} >
+            Evidence
+          </span>
+          <span className="menu-item active" style={{fontWeight: '600' }}  onClick={() => handleNavigation('/LRPictures')} >
+            Pictures
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRAudio')} >
+            Audio
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
+            Videos
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRScratchpad')}>
+            Notes
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
+            Timeline
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
+            Finish
+          </span>
+         </div> </div>
+                <div className="caseandleadinfo">
+          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+          <h5 className="side-title">
+  {selectedLead?.leadNo
+    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
+    : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
+</h5>
+
+          </div>
                   
 
         {/* Center Section */}
@@ -427,23 +582,94 @@ const handleAccessChange = (idx, newAccess) => {
               onChange={(e) => handleInputChange("description", e.target.value)}
             ></textarea>
           </div>
-          <div className="form-row-pic">
-            <label  className="evidence-head">Upload Image:</label>
-            <input type="file" accept="image/*"  className="evidence-head" onChange={handleFileChange} />
+        {/* … above your “Upload Image” row … */}
+<div className="form-row-pic">
+  <label>Upload Type:</label>
+  <select
+    value={pictureData.isLink ? "link" : "file"}
+    onChange={e =>
+      setPictureData(prev => ({
+        ...prev,
+        isLink: e.target.value === "link",
+        link:   ""            // reset link when switching back
+      }))
+    }
+  >
+    <option value="file">File</option>
+    <option value="link">Link</option>
+  </select>
+</div>
 
-            {pictureData.filename && (
-              <div style={{ marginTop: 4, marginLeft: 8 }}>
-                <em>Current file:</em> {pictureData.filename}
-              </div>
-            )}
-          </div>
+{/* If editing a file‐upload entry, show current filename */}
+{isEditing && !pictureData.isLink && pictureData.originalName && (
+  <div className="form-row-pic">
+    <label>Current File:</label>
+    <span className="current-filename">{pictureData.originalName}</span>
+  </div>
+)}
+
+{/* File vs Link input */}
+{!pictureData.isLink ? (
+  <div className="form-row-pic">
+    <label>{isEditing ? "Replace Image (optional):" : "Upload Image*:"}</label>
+    <input
+      type="file"
+      accept="image/*"
+      ref={fileInputRef}
+      onChange={handleFileChange}
+    />
+  </div>
+) : (
+  <div className="form-row-pic">
+    <label>Paste Link*:</label>
+    <input
+      type="text"
+      placeholder="https://..."
+      value={pictureData.link}
+      onChange={e =>
+        setPictureData(prev => ({ ...prev, link: e.target.value }))
+      }
+    />
+  </div>
+)}
+
         </div>
         <div className="form-buttons">
-        <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+        <div className="form-buttons">
+  <button
+    disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+    className="save-btn1"
+    onClick={isEditing ? handleUpdatePicture : handleAddPicture}
+  >
+    {isEditing ? "Update Picture" : "Add Picture"}
+  </button>
 
-           className="save-btn1" 
-           onClick={isEditing ? handleUpdatePicture : handleAddPicture}>
-            {isEditing ? "Update Picture" : "Add Picture"}</button>
+  {isEditing && (
+    <button
+      disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+      className="save-btn1"
+      onClick={() => {
+        // Cancel editing & reset form
+        setIsEditing(false);
+        setEditingIndex(null);
+        setPictureData({
+          datePictureTaken: "",
+          leadReturnId:     "",
+          description:      "",
+          image:            "",
+          filename:         "",
+          link:             "",
+          isLink:           false
+        });
+        setFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }}
+    >
+      Cancel
+    </button>
+  )}
+</div>
+
         </div>
         {/* Uploaded Pictures Preview */}
         <div className="uploaded-pictures">
@@ -467,6 +693,7 @@ const handleAccessChange = (idx, newAccess) => {
               <th>Date Entered</th>
               <th>Return Id </th>
               <th>Date Picture Taken</th>
+              <th>File Name</th>
               <th>Description</th>
               <th></th>
               {isCaseManager && (
@@ -480,29 +707,47 @@ const handleAccessChange = (idx, newAccess) => {
                 <td>{picture.dateEntered}</td>
                 <td>{picture.returnId}</td>
                 <td>{picture.datePictureTaken}</td>
+                <td>
+  {picture.link ? (
+    // if it was saved as a URL
+    <a
+      href={picture.link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="link-button"
+    >
+      {picture.link}
+    </a>
+  ) : (
+    // otherwise it’s a file on your server
+    <a
+      href={`${BASE_URL}/uploads/${picture.filename}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="link-button"
+    >
+      {picture.originalName}
+    </a>
+  )}
+</td>
+
                 <td>{picture.description}</td>
                 <td>
-                  <div classname = "lr-table-btn">
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
-
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
-                  alt="Edit Icon"
-                  className="edit-icon"
-                  onClick={() => handleEditPicture(index)}
-                />
-                  </button>
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
-
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
-                  alt="Delete Icon"
-                  className="edit-icon"
-                  onClick={() => handleDeletePicture(index)}
-                />
-                  </button>
-                  </div>
-                </td>
+        <button
+          disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+          onClick={() => handleEditPicture(index)}
+        >
+          <img src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+               alt="Edit" className="edit-icon" />
+        </button>
+        <button
+          disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+          onClick={() => handleDeletePicture(index)}
+        >
+          <img src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+               alt="Delete" className="edit-icon" />
+        </button>
+      </td>
                 {isCaseManager && (
           <td>
             <select
@@ -517,7 +762,7 @@ const handleAccessChange = (idx, newAccess) => {
       </tr>
        )) : (
         <tr>
-          <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign:'center' }}>
+          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
             No Pictures Available
           </td>
         </tr>

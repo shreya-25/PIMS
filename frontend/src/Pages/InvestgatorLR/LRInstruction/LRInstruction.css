@@ -30,3 +30,21 @@
 {
     width: 95%;
 }
+
+.menu-item.active {
+    color: rgb(41, 41, 139);
+  }
+  .menu-item.active1 {
+    color: rgb(41, 41, 139);
+    font-weight: 700;
+  }
+
+  /* .top-menu {
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 10px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  } */

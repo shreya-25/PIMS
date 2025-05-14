@@ -7,6 +7,7 @@ import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import api from "../../api"; // adjust the path as needed
 import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
+import {SideBar } from "../../components/Sidebar/Sidebar";
 
 
 
@@ -346,44 +347,50 @@ const handleSearch = async () => {
       <Navbar />
       <div className="main-container">
             {/* Sidebar */}
-            <div className="sideitem">
+            {/* <div className="sideitem">
                     <ul className="sidebar-list">
                     
                     <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+                    <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
+        </li>
+        {caseDropdownOpen && (
+      <ul >
             <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
             <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
             {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item active"onClick={() => navigate('/SearchLead')}>Search Lead</li>
             <li className="sidebar-item" 
              onClick={() => {
               selectedCase.role === "Investigator"
               ? setPendingRoute("/LRInstruction")
               : setPendingRoute("/CMInstruction")
-              // setPendingRoute("/CMInstruction");
+        
               setShowSelectModal(true);
             }}>View Lead Return</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-              Officer Management
-            </li> */}
+           
               {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
             </li>)}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-              View Lead Hierarchy
-            </li> */}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              Generate Report
-            </li> */}
+     
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+           </ul>
+        )}
+
+<li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
+</li>
+        {leadDropdownOpen && (
+          <ul>
+               <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+           
            {selectedCase.role !== "Investigator" && (
  <li
  className="sidebar-item"
@@ -393,6 +400,7 @@ const handleSearch = async () => {
  }}
 >    View Lead Chain of Custody
   </li> )}
+  </ul>)}
        
 
                     </ul>
@@ -404,12 +412,45 @@ const handleSearch = async () => {
         onClose={() => setShowSelectModal(false)}
       />
     )}
-                </div>
+                </div> */}
+                 <SideBar  activePage="LeadsDesk" />
                 <div className="left-content">
+
+                <div className="caseandleadinfo">
+          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"}</h5>
+
+          {/* <h5 className = "side-title"> 
+          {selectedLead?.leadNo ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName}` : "LEAD DETAILS"}
+
+          </h5> */}
+          </div>
 
 <div className="case-header">
   <h2 className="">SEARCH LEAD</h2>
 </div>
+
+   <div className="top-menu">
+        <div className="menu-items">
+           <span className="menu-item " onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}>
+            Leads Desk
+          </span>
+        <span className="menu-item " onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}>
+            Generate Report
+          </span>
+          <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
+            Add/View Case Notes
+          </span>
+          <span className="menu-item active" onClick={() => navigate('/SearchLead', { state: { caseDetails } } )} >
+            Search Leads
+          </span>
+          <span className="menu-item" onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}>
+          View Timelines
+          </span>
+          <span className="menu-item" onClick={() => navigate("/FlaggedLead", { state: { caseDetails } } )}>
+          View Flagged Leads
+          </span>
+         </div>
+       </div>
 
       <div className="main-content-searchlead">
 
