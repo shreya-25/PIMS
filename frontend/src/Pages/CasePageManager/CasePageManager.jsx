@@ -342,7 +342,7 @@ const handleSelectLead = (lead) => {
         });
   
         const mapLead = (lead) => ({
-          id: lead.leadNo,
+           id: Number(lead.leadNo), 
           description: lead.description,
           summary: lead.summary,
           dueDate: lead.dueDate
@@ -794,11 +794,11 @@ useEffect(() => {
         },
       ];
     
-      const handleFilterApply = (filters) => {
-        console.log("Applied Filters:", filters);
-        // Perform filtering logic here (e.g., API call, state update)
-      };
-    
+    const handleFilterApply = (filters) => {
+  console.log("Applied Filters:", filters);
+  setAssignedFilters(filters);
+  setShowFilter(false);
+};
       const [sortedData, setSortedData] = useState([]);
       const data = [
         { category: "Electronics", price: 100 },
@@ -829,6 +829,7 @@ useEffect(() => {
 const [allSortConfig, setAllSortConfig]   = useState({ key: null, direction: "asc" });
 const [openAllFilter, setOpenAllFilter]   = useState(null);
 const allPopupRefs = useRef({});
+const [assignedFilters, setAssignedFilters] = useState({});
       
 const distinctAll = useMemo(() => {
   const map = {
@@ -848,38 +849,91 @@ const distinctAll = useMemo(() => {
   return Object.fromEntries(Object.entries(map).map(([k, v]) => [k, Array.from(v)]));
 }, [leads.allLeads]);
 
+// const sortedAllLeads = useMemo(() => {
+//   // 1) apply filters
+//   const filtered = leads.allLeads.filter(lead => {
+//     return (
+//       (!allFilterConfig.id           || lead.id           === allFilterConfig.id)           &&
+//       (!allFilterConfig.description  || lead.description            === allFilterConfig.description)  &&
+//       (!allFilterConfig.leadStatus   || lead.leadStatus             === allFilterConfig.leadStatus)   &&
+//       (!allFilterConfig.dueDate      || lead.dueDate                === allFilterConfig.dueDate)      &&
+//       (!allFilterConfig.priority     || lead.priority               === allFilterConfig.priority)     &&
+//       (!allFilterConfig.remainingDays|| String(calculateRemainingDays(lead.dueDate)) === allFilterConfig.remainingDays) &&
+//       (!allFilterConfig.assignedOfficers ||
+//          (lead.assignedOfficers || []).includes(allFilterConfig.assignedOfficers))
+//     );
+//   });
+//   // 2) apply sort
+//   if (!allSortConfig.key) return filtered;
+//   return [...filtered].sort((a, b) => {
+//     let aV = allSortConfig.key==="remainingDays"
+//       ? calculateRemainingDays(a.dueDate)
+//       : (allSortConfig.key==="assignedOfficers"
+//          ? (a.assignedOfficers||[])[0]   // first officer for simplicity
+//          : a[allSortConfig.key]);
+//     let bV = allSortConfig.key==="remainingDays"
+//       ? calculateRemainingDays(b.dueDate)
+//       : (allSortConfig.key==="assignedOfficers"
+//          ? (b.assignedOfficers||[])[0]
+//          : b[allSortConfig.key]);
+//     if (aV < bV) return allSortConfig.direction==="asc" ? -1 : 1;
+//     if (aV > bV) return allSortConfig.direction==="asc" ?  1 : -1;
+//     return 0;
+//   });
+// }, [leads.allLeads, allFilterConfig, allSortConfig]);
+
 const sortedAllLeads = useMemo(() => {
   // 1) apply filters
   const filtered = leads.allLeads.filter(lead => {
     return (
-      (!allFilterConfig.id           || String(lead.id)            === allFilterConfig.id)           &&
-      (!allFilterConfig.description  || lead.description            === allFilterConfig.description)  &&
-      (!allFilterConfig.leadStatus   || lead.leadStatus             === allFilterConfig.leadStatus)   &&
-      (!allFilterConfig.dueDate      || lead.dueDate                === allFilterConfig.dueDate)      &&
-      (!allFilterConfig.priority     || lead.priority               === allFilterConfig.priority)     &&
+      (!allFilterConfig.id           || String(lead.id)        === allFilterConfig.id)           &&
+      (!allFilterConfig.description  || lead.description          === allFilterConfig.description) &&
+      (!allFilterConfig.leadStatus   || lead.leadStatus           === allFilterConfig.leadStatus)  &&
+      (!allFilterConfig.dueDate      || lead.dueDate              === allFilterConfig.dueDate)     &&
+      (!allFilterConfig.priority     || lead.priority             === allFilterConfig.priority)    &&
       (!allFilterConfig.remainingDays|| String(calculateRemainingDays(lead.dueDate)) === allFilterConfig.remainingDays) &&
       (!allFilterConfig.assignedOfficers ||
          (lead.assignedOfficers || []).includes(allFilterConfig.assignedOfficers))
     );
   });
+
   // 2) apply sort
   if (!allSortConfig.key) return filtered;
+
   return [...filtered].sort((a, b) => {
-    let aV = allSortConfig.key==="remainingDays"
-      ? calculateRemainingDays(a.dueDate)
-      : (allSortConfig.key==="assignedOfficers"
-         ? (a.assignedOfficers||[])[0]   // first officer for simplicity
-         : a[allSortConfig.key]);
-    let bV = allSortConfig.key==="remainingDays"
-      ? calculateRemainingDays(b.dueDate)
-      : (allSortConfig.key==="assignedOfficers"
-         ? (b.assignedOfficers||[])[0]
-         : b[allSortConfig.key]);
-    if (aV < bV) return allSortConfig.direction==="asc" ? -1 : 1;
-    if (aV > bV) return allSortConfig.direction==="asc" ?  1 : -1;
+    let aV, bV;
+
+    switch (allSortConfig.key) {
+      case "id":
+        // numeric compare on Lead No.
+        aV = Number(a.id);
+        bV = Number(b.id);
+        break;
+
+      case "remainingDays":
+        aV = calculateRemainingDays(a.dueDate);
+        bV = calculateRemainingDays(b.dueDate);
+        break;
+
+      case "assignedOfficers":
+        // compare the first officer name
+        aV = (a.assignedOfficers || [])[0] || "";
+        bV = (b.assignedOfficers || [])[0] || "";
+        break;
+
+      default:
+        // everything else is string-based
+        aV = a[allSortConfig.key] ?? "";
+        bV = b[allSortConfig.key] ?? "";
+    }
+
+    if (aV < bV) return allSortConfig.direction === "asc" ? -1 : 1;
+    if (aV > bV) return allSortConfig.direction === "asc" ?  1 : -1;
     return 0;
   });
 }, [leads.allLeads, allFilterConfig, allSortConfig]);
+
+
 
 const handleFilterAllClick = col => {
   setOpenAllFilter(prev => prev===col ? null : col);
@@ -1875,10 +1929,28 @@ Add Lead
       <img src={`${process.env.PUBLIC_URL}/Materials/filter.png`} className="icon-image"/>
     </button>
     {openAllFilter === col.key && (
-      <div className="filter-popup">
-        {/* …your popup code… */}
-      </div>
-    )}
+  <div className="filter-popup">
+    <select
+      value={allFilterConfig[col.key]}
+      onChange={e =>
+        setAllFilterConfig(cfg => ({ ...cfg, [col.key]: e.target.value }))
+      }
+    >
+      <option value="">All</option>
+      {distinctAll[col.key].map(v => (
+        <option key={v} value={v}>{v}</option>
+      ))}
+    </select>
+    <div className="filter-popup-buttons">
+      <button onClick={() => setOpenAllFilter(null)}>Apply</button>
+      <button onClick={() => {
+        setAllFilterConfig(cfg => ({ ...cfg, [col.key]: "" }));
+        setOpenAllFilter(null);
+      }}>Clear</button>
+    </div>
+  </div>
+)}
+
     <button onClick={() => handleSortAll(col.key)}>
       <img src={`${process.env.PUBLIC_URL}/Materials/sort1.png`} className="icon-image"/>
     </button>

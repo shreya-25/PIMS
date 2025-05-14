@@ -464,3 +464,24 @@ ul {
   transform: translateX(-50%);
   /* …etc… */
 }
+
+/* make the semi-transparent overlay on top of everything */
+.popup-overlay {
+  z-index: 10000;    /* higher than sidebar, tables, etc. */
+}
+
+/* the white box you actually see */
+.popup-content {
+  width: 80% !important;    /* or 70%, 90%, whatever feels right */
+  max-width: 900px;         /* keep it from getting ridiculously wide */
+  z-index: 10001;           /* one above the overlay */
+}
+
+/* in case you’re using a smaller inline filter pop-up */
+.filter-popup {
+  position: absolute;       /* ensure it floats out of the flow */
+  z-index: 10002;           /* absolutely on top of everything else */
+  width: 250px;             /* or whatever width works best */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+

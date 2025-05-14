@@ -722,14 +722,14 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
   </div>
   </div>
       <div className="left-content">
-      <div className="stats-bar">
+      {/* <div className="stats-bar"> */}
         
-          <span
+          {/* <span
             className={`hoverable ${activeTab === "cases" ? "active" : ""}`}
             onClick={() => setActiveTab("cases")}
           >
             My Ongoing Cases: {cases.length}
-          </span>
+          </span> */}
 
             {/* <span
             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
@@ -750,7 +750,7 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
           >
             Lead Returns for Review: {leads.pendingLeadReturns.length}
           </span> */}
-        </div>
+        {/* </div> */}
 
         <div className="content-section">
 
@@ -765,7 +765,7 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                       <th key={col} className="column-header1" style={{ width: columnWidths[col] }}>
                           <div className="header-title">{col}</div>
                        <div className="header-controls"  ref={el => (popupRefs.current[col] = el)}>
-    <button onClick={() => handleFilterClick(col.key)}>
+    <button onClick={() => handleFilterClick(col)}>
       <img src={`${process.env.PUBLIC_URL}/Materials/filter.png`} className="icon-image"/>
     </button>
      {openFilter === col && (
@@ -844,13 +844,13 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                 )}
               </tbody>
             </table>
-                      <Pagination
+                      {/* <Pagination
               currentPage={currentPage}
               totalEntries={totalEntries}
               onPageChange={setCurrentPage}
               pageSize={pageSize}
               onPageSizeChange={setPageSize}
-            />
+            /> */}
              </div>
                     
            )}
@@ -1125,16 +1125,16 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
             </table>
             </div>
             
-            <Pagination
+           
+  </div>
+)}  
+ <Pagination
   currentPage={currentPage}
   totalEntries={totalEntries}  
   onPageChange={setCurrentPage} 
   pageSize={pageSize}
   onPageSizeChange={setPageSize} 
 />
-  </div>
-)}  
-
 
         </div>
       </div>
