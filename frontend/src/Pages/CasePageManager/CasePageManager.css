@@ -426,3 +426,41 @@ ul {
 {
   margin-left: 10%;
 }
+
+
+.leads-table th {
+  /* ensure relative positioning for any absolute popups */
+  position: relative;
+  padding-top: 0.5rem; /* some breathing room */
+}
+
+/* the header title (your column label) */
+.leads-table th .header-title {
+  text-align: left;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+/* the row that holds both icons, centered */
+.leads-table th .header-controls {
+  display: flex;
+  justify-content: flex-start;  
+  align-items: center;     
+  gap: 1px;             
+}
+
+/* tighten up the button styles */
+.leads-table th .header-controls button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.leads-table th .filter-popup {
+  position: absolute;
+  top: 2.5rem;   /* push it below the controls row */
+  left: 50%;
+  transform: translateX(-50%);
+  /* …etc… */
+}

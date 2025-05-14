@@ -763,19 +763,12 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                     const key = colKey[col];
                     return (
                       <th key={col} className="column-header1" style={{ width: columnWidths[col] }}>
-                        {col}
-                        <span
-                          className="column-controls1"
-                          ref={el => (popupRefs.current[col] = el)}
-                          // style={{ position: "relative", width: "10px" }}
-                        >
-                          {/* filter toggle */}
-                          <button onClick={() => handleFilterClick(col)}> <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
-                        alt="Filter Icon"
-                        className="icon-image"
-                      /></button>
-                          {openFilter === col && (
+                          <div className="header-title">{col}</div>
+                       <div className="header-controls"  ref={el => (popupRefs.current[col] = el)}>
+    <button onClick={() => handleFilterClick(col.key)}>
+      <img src={`${process.env.PUBLIC_URL}/Materials/filter.png`} className="icon-image"/>
+    </button>
+     {openFilter === col && (
                             <div className="filter-popup">
                               <select
                                 value={filterConfig[key]}
@@ -800,8 +793,8 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                               </div>
                             </div>
                           )}
-                          {/* sort toggle */}
-                          <button onClick={() => handleSort(col)} >
+
+     <button onClick={() => handleSort(col)} >
                             {sortConfig.key === key
                               ? (sortConfig.direction === "asc" ?  <img 
                                 src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
@@ -818,7 +811,7 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                               className="icon-image"
                             />}
                           </button>
-                        </span>
+  </div>
                       </th>
                     );
                   })}
