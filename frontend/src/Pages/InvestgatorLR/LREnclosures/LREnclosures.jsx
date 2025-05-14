@@ -7,6 +7,8 @@ import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import Comment from "../../../components/Comment/Comment";
 import api, { BASE_URL } from "../../../api";
+import Attachment from "../../../components/Attachment/Attachment";
+import {SideBar } from "../../../components/Sidebar/Sidebar";
 
 
 
@@ -41,7 +43,7 @@ export const LREnclosures = () => {
   
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);  
+    const { selectedCase, selectedLead, setSelectedLead, leadStatus } = useContext(CaseContext);  
   
       const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
                 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
@@ -61,6 +63,10 @@ export const LREnclosures = () => {
     returnId:'',
     type: "",
     enclosure: "",
+     isLink: false,
+  link: "",
+  originalName: '',   // ← add this
+  filename: ''   
   });
 
   const handleInputChange = (field, value) => {
@@ -123,6 +129,8 @@ export const LREnclosures = () => {
         enclosure: enc.enclosureDescription,
         returnId: enc.leadReturnId,
         originalName: enc.originalName,
+        filename:      enc.filename,  
+        link:        enc.link || ""
       }));
 
       setEnclosures(mapped);
@@ -242,27 +250,102 @@ export const LREnclosures = () => {
   //   }
   // };
 
+  // const handleSave = async () => {
+  //   // must always supply a file when creating; on update it's optional
+  //   if (editIndex === null && !file) {
+  //     alert("Please select a file to upload.");
+  //     return;
+  //   }
+
+  //   const fd = new FormData();
+  //   if (file) fd.append("file", file);
+  //   fd.append("leadNo",   selectedLead.leadNo);
+  //   fd.append("description", selectedLead.leadName);
+  //   fd.append("enteredBy",   localStorage.getItem("loggedInUser"));
+  //   fd.append("caseName",    selectedCase.caseName);
+  //   fd.append("caseNo",      selectedCase.caseNo);
+  //   fd.append("leadReturnId",enclosureData.returnId);
+  //   fd.append("enteredDate", new Date().toISOString());
+  //   fd.append("type",        enclosureData.type);
+  //   fd.append("enclosureDescription", enclosureData.enclosure);
+
+  //   const token = localStorage.getItem("token");
+
+  //   try {
+  //     if (editIndex === null) {
+  //       // CREATE
+  //       await api.post("/api/lrenclosure/upload", fd, {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //         transformRequest: [(data, headers) => {
+  //           delete headers["Content-Type"];
+  //           return data;
+  //         }]
+  //       });
+  //       alert("Enclosure added");
+  //     } else {
+  //       // UPDATE: must send to PUT /api/lrenclosure/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId/:oldDesc
+  //       const { leadReturnId } = enclosureData;
+  //       const url = `/api/lrenclosure/${selectedLead.leadNo}/` +
+  //                   `${encodeURIComponent(selectedLead.leadName)}/` +
+  //                   `${selectedCase.caseNo}/` +
+  //                   `${encodeURIComponent(selectedCase.caseName)}/` +
+  //                   `${leadReturnId}/` +
+  //                   `${encodeURIComponent(originalDesc)}`;
+  //       await api.put(url, fd, {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //         transformRequest: [(data, headers) => {
+  //           delete headers["Content-Type"];
+  //           return data;
+  //         }]
+  //       });
+  //       alert("Enclosure updated");
+  //     }
+  //     // refresh & reset form
+  //     await fetchEnclosures();
+  //     setEnclosureData({ returnId:"", type:"", enclosure:"" });
+  //     setFile(null);
+  //     if (fileInputRef.current) fileInputRef.current.value = "";
+  //     setEditIndex(null);
+  //     setOriginalDesc("");
+  //   } catch (err) {
+  //     console.error("Save error:", err.response || err);
+  //     alert("Save failed: " + (err.response?.data?.message || err.message));
+  //   }
+  // };
+
   const handleSave = async () => {
-    // must always supply a file when creating; on update it's optional
-    if (editIndex === null && !file) {
-      alert("Please select a file to upload.");
+    // Validation: must supply a file or link when creating
+    if (editIndex === null && !file && !enclosureData.isLink) {
+      alert("Please select a file to upload or enter a valid link.");
       return;
     }
-
+  
     const fd = new FormData();
-    if (file) fd.append("file", file);
-    fd.append("leadNo",   selectedLead.leadNo);
+  
+    // Add file if not a link upload
+    if (!enclosureData.isLink && file) {
+      fd.append("file", file);
+    }
+  
+    // Add common fields
+    fd.append("leadNo", selectedLead.leadNo);
     fd.append("description", selectedLead.leadName);
-    fd.append("enteredBy",   localStorage.getItem("loggedInUser"));
-    fd.append("caseName",    selectedCase.caseName);
-    fd.append("caseNo",      selectedCase.caseNo);
-    fd.append("leadReturnId",enclosureData.returnId);
+    fd.append("enteredBy", localStorage.getItem("loggedInUser"));
+    fd.append("caseName", selectedCase.caseName);
+    fd.append("caseNo", selectedCase.caseNo);
+    fd.append("leadReturnId", enclosureData.returnId);
     fd.append("enteredDate", new Date().toISOString());
-    fd.append("type",        enclosureData.type);
+    fd.append("type", enclosureData.type);
     fd.append("enclosureDescription", enclosureData.enclosure);
-
+  
+    // Link-related fields
+    fd.append("isLink", enclosureData.isLink || false);
+    if (enclosureData.isLink) {
+      fd.append("link", enclosureData.link || "");
+    }
+  
     const token = localStorage.getItem("token");
-
+  
     try {
       if (editIndex === null) {
         // CREATE
@@ -273,16 +356,18 @@ export const LREnclosures = () => {
             return data;
           }]
         });
-        alert("Enclosure added");
+        // alert("Enclosure added");
       } else {
-        // UPDATE: must send to PUT /api/lrenclosure/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId/:oldDesc
+        // UPDATE
         const { leadReturnId } = enclosureData;
+
         const url = `/api/lrenclosure/${selectedLead.leadNo}/` +
                     `${encodeURIComponent(selectedLead.leadName)}/` +
                     `${selectedCase.caseNo}/` +
                     `${encodeURIComponent(selectedCase.caseName)}/` +
-                    `${leadReturnId}/` +
+                    `${enclosureData.returnId}/` +
                     `${encodeURIComponent(originalDesc)}`;
+  
         await api.put(url, fd, {
           headers: { Authorization: `Bearer ${token}` },
           transformRequest: [(data, headers) => {
@@ -290,11 +375,12 @@ export const LREnclosures = () => {
             return data;
           }]
         });
-        alert("Enclosure updated");
+        // alert("Enclosure updated");
       }
-      // refresh & reset form
+  
+      // Refresh & reset form
       await fetchEnclosures();
-      setEnclosureData({ returnId:"", type:"", enclosure:"" });
+      setEnclosureData({ returnId: "", type: "", enclosure: "", isLink: false, link: "" });
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       setEditIndex(null);
@@ -304,6 +390,7 @@ export const LREnclosures = () => {
       alert("Save failed: " + (err.response?.data?.message || err.message));
     }
   };
+  
 
   // start editing
   const handleEdit = idx => {
@@ -313,7 +400,11 @@ export const LREnclosures = () => {
     setEnclosureData({
       returnId: enc.returnId,
       type:     enc.type,
-      enclosure:enc.enclosure
+      enclosure:enc.enclosure,
+      isLink: !!enc.link,
+    link: enc.link || "",
+    originalName: enc.originalName, // ← grab it here
+    filename:     enc.filename 
     });
     // clear file input so user can choose new one if desired
     setFile(null);
@@ -337,7 +428,7 @@ export const LREnclosures = () => {
       });
       // remove immediately
       setEnclosures(list => list.filter((_,i)=>i!==idx));
-      alert("Deleted");
+      // alert("Deleted");
     } catch (err) {
       console.error(err);
       alert("Failed to delete");
@@ -383,7 +474,8 @@ export const LREnclosures = () => {
         type: enc.type,
         enclosure: enc.enclosureDescription,
         returnId: enc.leadReturnId,
-        originalName: enc.originalName
+        originalName: enc.originalName,
+        link: enc.link || ""
       }));
 
       const withAccess = mappedEnclosures.map(r => ({
@@ -417,7 +509,7 @@ export const LREnclosures = () => {
       <Navbar />
 
       {/* Top Menu */}
-      <div className="top-menu">
+      {/* <div className="top-menu">
         <div className="menu-items">
           <span className="menu-item" onClick={() => handleNavigation("/LRInstruction")}>Instructions</span>
           <span className="menu-item" onClick={() => handleNavigation("/LRReturn")}>Returns</span>
@@ -434,46 +526,191 @@ export const LREnclosures = () => {
           </span>
           <span className="menu-item" onClick={() => handleNavigation("/LRFinish")}>Finish</span>
         </div>
-      </div>
+      </div> */}
+        <div className="top-menu"   style={{ paddingLeft: '20%' }}>
+      <div className="menu-items" >
+        <span className="menu-item " onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/LeadReview", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } }} > Lead Information</span>
+                   <span className="menu-item active" >Add/View Lead Return</span>
+                   <span className="menu-item" onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/ChainOfCustody", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } else {
+                    alert("Please select a case and lead first.");
+                  }
+                }}>Lead Chain of Custody</span>
+          
+                  </div>
+        {/* <div className="menu-items">
+      
+        <span className="menu-item active" onClick={() => handleNavigation('/LRInstruction')}>
+            Instructions
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRReturn')}>
+            Returns
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRPerson')} >
+            Person
+          </span>
+          <span className="menu-item"onClick={() => handleNavigation('/LRVehicle')} >
+            Vehicles
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LREnclosures')} >
+            Enclosures
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LREvidence')} >
+            Evidence
+          </span>
+          <span className="menu-item"onClick={() => handleNavigation('/LRPictures')} >
+            Pictures
+          </span>
+          <span className="menu-item"onClick={() => handleNavigation('/LRAudio')} >
+            Audio
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRVideo')}>
+            Videos
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRScratchpad')}>
+            Scratchpad
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
+            Timeline
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRFinish')}>
+            Finish
+          </span>
+         </div> */}
+       </div>
 
       <div className="LRI_Content">
-       <div className="sideitem">
+      {/* <div className="sideitem">
        <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
-            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+
+       <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
+        </li>
+        {caseDropdownOpen && (
+      <ul >
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>  
+       
+
+
+                  <li
+  className="sidebar-item"
+  onClick={() =>
+    selectedCase.role === "Investigator"
+      ? navigate("/Investigator")
+      : navigate("/CasePageManager")
+  }
+>
+Case Page
+</li>
+
+
             {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
             <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-              Officer Management
-            </li> */}
+         
               {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
             </li>)}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-              View Lead Hierarchy
-            </li> */}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              Generate Report
-            </li> */}
+         
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-            {selectedCase.role !== "Investigator" && (
-  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-    View Lead Chain of Custody
-  </li>
-)}
 
-                </div>
+            </ul>
+        )}
+          <li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
+          </li>
+        {leadDropdownOpen && (
+          <ul>
+              <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+              View Lead Chain of Custody
+            </li>
+             )}
+          </ul>
+
+            )}
+
+                </div> */}
+                 <SideBar  activePage="CasePageManager" />
                 <div className="left-content">
+                <div className="top-menu" style={{ marginTop: '2px', backgroundColor: '#3333330e' }}>
+       <div className="menu-items" style={{ fontSize: '19px' }}>
+       
+        <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
+            Instructions
+          </span>
+          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
+            Returns
+          </span>
+          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
+            Person
+          </span>
+          <span className="menu-item " style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
+            Vehicles
+          </span>
+          <span className="menu-item active" style={{fontWeight: '600' }}  onClick={() => handleNavigation('/LREnclosures')} >
+            Enclosures
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREvidence')} >
+            Evidence
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRPictures')} >
+            Pictures
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRAudio')} >
+            Audio
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
+            Videos
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRScratchpad')}>
+            Notes
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
+            Timeline
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
+            Finish
+          </span>
+         </div> </div>
+                <div className="caseandleadinfo">
+          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+          <h5 className="side-title">
+  {selectedLead?.leadNo
+    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
+    : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
+</h5>
+
+          </div>
      
         {/* Left Section */}
         {/* <div className="left-section">
@@ -520,17 +757,91 @@ export const LREnclosures = () => {
               onChange={(e) => handleInputChange("enclosure", e.target.value)}
             ></textarea>
           </div>
-          <div className="form-row-evidence">
+          {/* <div className="form-row-evidence">
             <label>Upload File:</label>
-           {/* after */}
+          
 <input
   type="file"
-  name="file"               // match your multer field
-  ref={fileInputRef}        // ← attach the ref here
+  name="file"               
+  ref={fileInputRef}      
   onChange={handleFileChange}
 />
 
-          </div>
+          </div> */}
+          <div className="form-row-evidence">
+  <label>Upload Type:</label>
+  <select
+    value={enclosureData.isLink ? "link" : "file"}
+    onChange={(e) =>
+      setEnclosureData((prev) => ({
+        ...prev,
+        isLink: e.target.value === "link",
+        link: "", // Reset link if switching from file
+      }))
+    }
+  >
+    <option value="file">File</option>
+    <option value="link">Link</option>
+  </select>
+</div>
+{/* {!enclosureData.isLink ? (
+  <div className="form-row-evidence">
+    <label>Upload File:</label>
+    <input
+      type="file"
+      name="file"
+      ref={fileInputRef}
+      onChange={handleFileChange}
+    />
+  </div>
+) : (
+  <div className="form-row-evidence">
+    <label>Paste Link:</label>
+    <input
+      type="text"
+      placeholder="Enter URL (https://...)"
+      value={enclosureData.link || ""}
+      onChange={(e) =>
+        setEnclosureData((prev) => ({ ...prev, link: e.target.value }))
+      }
+    />
+  </div>
+)} */}
+
+{editIndex !== null && !enclosureData.isLink && enclosureData.originalName && (
+  <div className="form-row-evidence">
+    <label>Current File:</label>
+    <span className="current-filename">
+      {enclosureData.originalName}
+    </span>
+  </div>
+)}
+
+{!enclosureData.isLink ? (
+  <div className="form-row-evidence">
+    <label>{editIndex === null ? 'Upload File:' : 'Replace File (optional):'}</label>
+    <input
+      type="file"
+      name="file"
+      ref={fileInputRef}
+      onChange={handleFileChange}
+    />
+  </div>
+) : (
+  <div className="form-row-evidence">
+    <label>Paste Link:</label>
+    <input
+      type="text"
+      placeholder="Enter URL (https://...)"
+      value={enclosureData.link || ""}
+      onChange={e =>
+        setEnclosureData(prev => ({ ...prev, link: e.target.value }))
+      }
+    />
+  </div>
+)}
+
+
         </div>
         </div>
           {/* Action Buttons */}
@@ -581,7 +892,23 @@ export const LREnclosures = () => {
                 <td>{enclosure.returnId}</td>
                 <td>{enclosure.type}</td>
                 <td>{enclosure.enclosure}</td>
-                <td>{enclosure.originalName}</td>
+                <td>
+  {enclosure.link ? (
+    <a href={enclosure.link} target="_blank" rel="noopener noreferrer" className="link-button">
+      {enclosure.link}
+    </a>
+  ) : (
+    <a
+      href={`${BASE_URL}/uploads/${enclosure.filename}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="link-button"
+    >
+      {enclosure.originalName}
+    </a>
+  )}
+</td>
+
                 <td>
                   <div classname = "lr-table-btn">
                   <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
@@ -626,6 +953,16 @@ export const LREnclosures = () => {
       )}
           </tbody>
         </table>
+         {/* <Attachment /> */}
+                {/* <Attachment attachments={enclosures.map(e => ({
+                    name: e.originalName || e.filename,
+                    // Optionally include size and date if available:
+                    size: e.size || "N/A",
+                    date: e.enteredDate ? new Date(e.enteredDate).toLocaleString() : "N/A",
+                    // Build a URL to view/download the file
+                    url: `http://${BASE_URL}/uploads/${e.filename}`
+                  }))} />
+         */}
         <Comment tag= "Enclosures"/>
       </div>
       </div>

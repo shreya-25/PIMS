@@ -1,146 +1,134 @@
-// import React, { useState } from "react";
-// import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
-// import "./Sidebar.css";
-// import { CaseSelector } from "../CaseSelector/CaseSelector";
-
-// export const SideBar = ({ leads = {}, cases = [], setActiveTab, onShowCaseSelector, }) => {
-//   const {
-//     pendingLeads = [],
-//     assignedLeads = [],
-//     pendingLeadReturns = [],
-//   } = leads;
-
-//   const navigate = useNavigate(); // Initialize the useNavigate hook
-
-//   const [showCaseSelector, setShowCaseSelector] = useState(false); // State to toggle CaseSelector
-
-
-//   const handleViewLeadLog = () => onShowCaseSelector("/LeadLog"); // Pass specific page
-//   const handleViewHierarchy = () => onShowCaseSelector("/ViewHierarchy");
-//   const handleViewFlaggedLeads = () => onShowCaseSelector("/FlaggedLeads");
-//   const handleViewCreateLead = () => onShowCaseSelector("/CreateLead");
-
-//   return (
-//     <div className="sideitem">
-//         <ul className="sidebar-list">
-//           <li
-//             className="sidebar-item"
-//             onClick={() => setActiveTab("assignedLeads")}
-//           >
-//             My Assigned Leads: {assignedLeads.length}
-//           </li>
-//           <li
-//             className="sidebar-item"
-//             onClick={() => setActiveTab("pendingLeads")}
-//           >
-//             My Pending Leads: {pendingLeads.length}
-//           </li>
-//           <li
-//             className="sidebar-item"
-//             onClick={() => setActiveTab("pendingLeadReturns")}
-//           >
-//             My Pending Lead Returns: {pendingLeadReturns.length}
-//           </li>
-//           <li
-//             className="sidebar-item"
-//             onClick={() => setActiveTab("cases")}
-//           >
-//             My Ongoing Cases: {cases.length}
-//           </li>
-//           <li className="sidebar-item"onClick={() => onShowCaseSelector("/OfficerManagement")}>Officer Management</li>
-//           <li className="sidebar-item"onClick={() => onShowCaseSelector("/CreateLead")}>Create Lead</li>
-//           <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-//             View Lead Log
-//           </li>
-//           <li
-//             className="sidebar-item"
-//             onClick={() => navigate("/CaseScratchpad")}
-//           >
-//             Case Scratchpad
-//           </li>
-//           <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>View Lead Hierarchy</li>
-//           <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>Generate Report</li>
-//           <li className="sidebar-item"onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
-//           <li className="sidebar-item"onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-//           <li className="sidebar-item"onClick={() => onShowCaseSelector("/ViewHierarchy")}>View Lead Chain of Custody</li>
-//         </ul>
-//     </div>
-//   );
-// };
-
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
+import React, { useContext, useState, useEffect} from 'react';
+import axios from "axios";
 import "./Sidebar.css";
-import { CaseSelector } from "../CaseSelector/CaseSelector";
+import { CaseContext } from "../../Pages/CaseContext";
 
-export const SideBar = ({ leads = {}, cases = [], setActiveTab, onShowCaseSelector }) => {
-  const { pendingLeads = [], assignedLeads = [], pendingLeadReturns = [] } = leads;
-  const navigate = useNavigate(); // Initialize the useNavigate hook
+import { CaseSelector } from "../CaseSelector/CaseSelector";
+import { useLocation, useNavigate } from 'react-router-dom';
+import api from "../../api";
+
+export const SideBar = ({ leads = {}, cases = [], activePage,   activeTab,   setActiveTab, onShowCaseSelector }) => {
+  const navigate = useNavigate(); 
 
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(false);
-  const [leadDropdownOpen, setLeadDropdownOpen] = useState(false);
+  const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+  const location = useLocation();
+  const { caseDetails } = location.state || {};
+  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+  const {
+    assignedLeads = [],
+    pendingLeads = [],
+    pendingLeadReturns = [],
+    allLeads = []
+  } = leads;
+  
+  const folderIcon    = `${process.env.PUBLIC_URL}/Materials/case1.png`;
+  const folderIcon1    = `${process.env.PUBLIC_URL}/Materials/case.png`;
+  const homeIcon    = `${process.env.PUBLIC_URL}/Materials/home.png`;
+  const logIcon    = `${process.env.PUBLIC_URL}/Materials/log2.png`;
+
+  const isCasePage = activePage === 'CasePageManager' || activePage === 'Investigator';
+  const goToCasePage = () => {
+    const dest = selectedCase.role === 'Investigator'
+      ? '/Investigator'
+      : '/CasePageManager';
+    navigate(dest, { state: { caseDetails: selectedCase } });
+  };
+
+
+  // helper array for dropdown items
+  const caseTabs = [
+    ['assignedLeads',       'Assigned Leads',            assignedLeads.length],
+    ['pendingLeads',        'Accepted Leads',            pendingLeads.length],
+    ['pendingLeadReturns',  'Lead Returns for Review',   pendingLeadReturns.length],
+    ['allLeads',            'All Leads',                 allLeads.length],
+  ];
+
+  const leadTabs = [
+    ['assignedLeads',       'Assigned Leads',            assignedLeads.length],
+    ['pendingLeads',        'Pending Leads',            pendingLeads.length],
+    ['pendingLeadReturns',  'Lead Returns In Review',   pendingLeadReturns.length],
+    ['allLeads',            'All Leads',                 allLeads.length],
+  ];
 
   return (
     <div className="sideitem">
-      <ul className="sidebar-list">
+    
         
-        {/* Case Information Dropdown */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Information {caseDropdownOpen ? "▲" : "▼"}
-        </li>
-        {caseDropdownOpen && (
-          <ul className="dropdown-list">
-            <li className="sidebar-item" onClick={() => setActiveTab("assignedLeads")}>
-              My Assigned Leads: {assignedLeads.length}
-            </li>
-            <li className="sidebar-item" onClick={() => setActiveTab("pendingLeads")}>
-              My Pending Leads: {pendingLeads.length}
-            </li>
-            <li className="sidebar-item" onClick={() => setActiveTab("pendingLeadReturns")}>
-              My Pending Lead Returns: {pendingLeadReturns.length}
-            </li>
-            <li className="sidebar-item" onClick={() => setActiveTab("cases")}>
-              My Ongoing Cases: {cases.length}
-            </li>
-          </ul>
-        )}
+    <li className={`sidebar-item ${activePage === 'HomePage' ? 'active' : ''}`} onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >
+    <img src={homeIcon} className="sidebar-icon" alt="" />
+      PIMS Home</li>
+{/*     
+    {isCasePage ? (
+        <>
+       
+          <li
+  className={`sidebar-item ${['CasePageManager','Investigator'].includes(activePage) ? 'active' : ''}`}
+  onClick={() => setLeadDropdownOpen(o => !o)}
+>
+  Case Page {leadDropdownOpen ? '▲' : '▼'}
+</li>
 
-        {/* Lead Management Dropdown */}
-        <li className="sidebar-item" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Management {leadDropdownOpen ? "▲" : "▼"}
+        
+          {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+          {activePage === "CasePageManager"
+            ? caseTabs.map(([tab, label, count]) => (
+                <li
+                  key={tab}
+                  className={`sidebar-item ${activeTab === tab ? "active" : ""}`}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  <div className="sidebar-content">
+                    <span className="sidebar-text">{label}</span>
+                    <span className="sidebar-number">{count}</span>
+                  </div>
+                </li>
+              ))
+            : leadTabs.map(([tab, label, count]) => (
+                <li
+                  key={tab}
+                  className={`sidebar-item ${activeTab === tab ? "active" : ""}`}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  <div className="sidebar-content">
+                    <span className="sidebar-text">{label}</span>
+                    <span className="sidebar-number">{count}</span>
+                  </div>
+                </li>
+              ))}
+        </ul>
+          )}
+        </>
+      ) : (
+      
+        <li
+          className="sidebar-item"
+          onClick={goToCasePage}
+        >
+          Case Page
         </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list">
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              Create Lead
+      )} */}
+
+<li className={`sidebar-item ${['CasePageManager','Investigator'].includes(activePage) ? 'active' : ''}`}
+          onClick={goToCasePage}
+        >
+          <img src={folderIcon} className="sidebar-icon" alt="" />
+          Case: {selectedCase.caseNo}
+        </li>
+
+
+    <li  style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadLog' ? 'active' : ''}`} onClick={() =>navigate("/LeadLog", { state: { caseDetails } } )}>
+    <img src={logIcon} className="sidebar-icon" alt="" />
+
+              Lead Log
             </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-              View Lead Log
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-              Officer Management
-            </li>
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Case Scratchpad
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-              View Lead Hierarchy
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              Generate Report
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-              View Timeline Entries
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              View Lead Chain of Custody
-            </li>
-          </ul>
-        )}
-      </ul>
+    <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadsDesk' ? 'active' : ''}`}
+            onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}
+             > <img src={folderIcon1} className="sidebar-icon" alt="" />
+              Leads Desk</li>
+
+
     </div>
   );
 };

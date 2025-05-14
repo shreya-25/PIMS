@@ -13,7 +13,15 @@ const upload = require("../middleware/upload-disk");
 const router = express.Router();
 
 // Original secure route for report generation
-router.post("/generate", verifyToken, generateReport);
+router.post(
+  "/generate",
+  verifyToken,
+  upload.fields([
+    { name: "pdfFiles", maxCount: 5 },
+    { name: "imageFiles", maxCount: 10 },
+  ]),
+  generateReport
+);
 
 router.post("/generateCase", verifyToken, generateCaseReport);
 

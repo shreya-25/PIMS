@@ -6,6 +6,7 @@ import Navbar from '../../../components/Navbar/Navbar';
 import './LRPerson1.css';
 import { CaseContext } from "../../CaseContext";
 import api, { BASE_URL } from "../../../api";
+import {SideBar } from "../../../components/Sidebar/Sidebar";
 
 
 
@@ -28,6 +29,8 @@ const [username, setUsername] = useState("");
   };
   const { leadDetails, caseDetails, person } = location.state || {};
 const { selectedCase, selectedLead, leadInstructions, leadReturns } = useContext(CaseContext);
+     const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+                const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
 const onShowCaseSelector = (route) => {
   navigate(route, { state: { caseDetails } });
 };
@@ -231,7 +234,7 @@ useEffect(() => {
       {/* Navbar at the top */}
       <Navbar />
 
-      <div className="top-menu">
+      {/* <div className="top-menu">
         <div className="menu-items">
         <span className="menu-item" onClick={() => handleNavigation('/LRInstruction')}>
             Instructions
@@ -256,46 +259,180 @@ useEffect(() => {
           </span>
           <span className="menu-item" onClick={() => handleNavigation("/LRFinish")}>Finish</span>
         </div>
+       </div> */}
+         <div className="top-menu"   style={{ paddingLeft: '20%' }}>
+      <div className="menu-items" >
+        <span className="menu-item " onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/LeadReview", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } }} > Lead Information</span>
+                   <span className="menu-item active" >Add/View Lead Return</span>
+                   <span className="menu-item" onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/ChainOfCustody", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } else {
+                    alert("Please select a case and lead first.");
+                  }
+                }}>Lead Chain of Custody</span>
+          
+                  </div>
+        {/* <div className="menu-items">
+      
+        <span className="menu-item active" onClick={() => handleNavigation('/LRInstruction')}>
+            Instructions
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRReturn')}>
+            Returns
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRPerson')} >
+            Person
+          </span>
+          <span className="menu-item"onClick={() => handleNavigation('/LRVehicle')} >
+            Vehicles
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LREnclosures')} >
+            Enclosures
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LREvidence')} >
+            Evidence
+          </span>
+          <span className="menu-item"onClick={() => handleNavigation('/LRPictures')} >
+            Pictures
+          </span>
+          <span className="menu-item"onClick={() => handleNavigation('/LRAudio')} >
+            Audio
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRVideo')}>
+            Videos
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRScratchpad')}>
+            Scratchpad
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
+            Timeline
+          </span>
+          <span className="menu-item" onClick={() => handleNavigation('/LRFinish')}>
+            Finish
+          </span>
+         </div> */}
        </div>
 
        <div className="LRI_Content">
-       <div className="sideitem">
+       {/* <div className="sideitem">
        <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
-            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
+
+       <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
+        </li>
+        {caseDropdownOpen && (
+      <ul >
+            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>  
+
+                  <li
+  className="sidebar-item"
+  onClick={() =>
+    selectedCase.role === "Investigator"
+      ? navigate("/Investigator")
+      : navigate("/CasePageManager")
+  }
+>
+Case Page
+</li>
+
+
             {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
             <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-              Officer Management
-            </li> */}
+        
               {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
             </li>)}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-              View Lead Hierarchy
-            </li> */}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              Generate Report
-            </li> */}
+        
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-            {selectedCase.role !== "Investigator" && (
-  <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-    View Lead Chain of Custody
-  </li>
-)}
 
-                </div>
+            </ul>
+        )}
+          <li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
+          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
+          </li>
+        {leadDropdownOpen && (
+          <ul>
+              <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+            {selectedCase.role !== "Investigator" && (
+            <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
+              View Lead Chain of Custody
+            </li>
+             )}
+          </ul>
+
+            )}
+                </div> */}
+                  <SideBar  activePage="CasePageManager" />
                 <div className="left-content">
+
+                <div className="top-menu" style={{ marginTop: '2px', backgroundColor: '#3333330e' }}>
+       <div className="menu-items" style={{ fontSize: '19px' }}>
+       
+        <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
+            Instructions
+          </span>
+          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
+            Returns
+          </span>
+          <span className="menu-item active" style={{fontWeight: '600' }} onClick={() => handleNavigation('/LRPerson')} >
+            Person
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
+            Vehicles
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREnclosures')} >
+            Enclosures
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREvidence')} >
+            Evidence
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRPictures')} >
+            Pictures
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRAudio')} >
+            Audio
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
+            Videos
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRScratchpad')}>
+            Notes
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
+            Timeline
+          </span>
+          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
+            Finish
+          </span>
+         </div> </div>
    
                 <div className = "LRI-content-section">
 

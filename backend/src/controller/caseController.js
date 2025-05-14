@@ -351,6 +351,46 @@ exports.updateExecutiveCaseSummary = async (req, res) => {
   }
 };
 
+exports.updateCaseSummary = async (req, res) => {
+  try {
+    const { caseNo, caseName, caseSummary } = req.body;
+
+    // Validate inputs
+    if (
+        typeof caseNo !== "string" ||
+        caseNo.trim() === "" ||
+        typeof caseName !== "string" ||
+        caseName.trim() === "" ||
+        typeof caseSummary !== "string"
+      ) {
+        return res.status(400).json({
+          message:
+            "caseNo (string), caseName (string) and caseSummary (string) are all required",
+        });
+      }
+
+    // Find the case by its caseNo + caseName
+    const existingCase = await Case.findOne({ caseNo, caseName });
+    if (!existingCase) {
+      return res.status(404).json({ message: "Case not found" });
+    }
+
+    // Update the executive summary field
+    existingCase.caseSummary = caseSummary;
+    await existingCase.save();
+
+    return res.status(200).json({
+      message: "Executive case summary updated successfully",
+      data: existingCase,
+    });
+  } catch (err) {
+    console.error("Error updating executive case summary:", err);
+    return res
+      .status(500)
+      .json({ message: "Error updating summary", error: err.message });
+  }
+};
+
 // controllers/caseController.js
 
 // GET /api/cases/executive-summary/:caseNo
@@ -370,6 +410,53 @@ exports.getExecutiveCaseSummary = async (req, res) => {
       });
     } catch (err) {
       console.error("Error fetching executive summary:", err);
+      return res.status(500).json({ message: "Server error", error: err.message });
+    }
+  };
+
+  exports.getCaseSummary = async (req, res) => {
+    try {
+      const { caseNo } = req.params;
+      if (!caseNo) {
+        return res.status(400).json({ message: "caseNo is required" });
+      }
+      const caseDoc = await Case.findOne({ caseNo });
+      if (!caseDoc) {
+        return res.status(404).json({ message: "Case not found" });
+      }
+      return res.status(200).json({
+        caseNo: caseDoc.caseNo,
+        caseSummary: caseDoc.caseSummary || "",
+      });
+    } catch (err) {
+      console.error("Error fetching executive summary:", err);
+      return res.status(500).json({ message: "Server error", error: err.message });
+    }
+  };
+  
+
+  exports.getCaseTeam = async (req, res) => {
+    try {
+      const { caseNo } = req.params;
+      if (!caseNo) {
+        return res.status(400).json({ message: "caseNo is required" });
+      }
+  
+      // find by the string caseNo field (not by _id)
+      const c = await Case.findOne({ caseNo }, "assignedOfficers").lean();
+      if (!c) {
+        return res.status(404).json({ message: "Case not found" });
+      }
+  
+      // pull out manager + investigators
+      const caseManager = c.assignedOfficers.find(o => o.role === "Case Manager")?.name || "";
+      const investigators = c.assignedOfficers
+        .filter(o => o.role === "Investigator")
+        .map(o => o.name);
+  
+      return res.json({ caseManager, investigators });
+    } catch (err) {
+      console.error("Error in getCaseTeamByNumber:", err);
       return res.status(500).json({ message: "Server error", error: err.message });
     }
   };
