@@ -455,6 +455,24 @@ const addCase = (newCase) => {
     }));
   };
 
+
+  const columnWidths = {
+  "Case No.":   "13%",
+  "Role":      "11%"
+};
+
+// Columns + mapping to your data fields
+const assignedCols = [
+  "Lead No.",
+  "Lead Name",
+  "Due Date",
+  "Priority",
+  "Days Left",
+  "Flags",
+  "Assigned Officers",
+];
+
+
   // Filter and Sort Function
 
 const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' });
@@ -515,6 +533,10 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
       setOpenFilter(prev => prev===col ? null : col);
     };
   
+
+ 
+
+
     // close popups when clicking outside
     const popupRefs = useRef({});
     useEffect(() => {
@@ -526,6 +548,117 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
       document.addEventListener('mousedown', onClick);
       return () => document.removeEventListener('mousedown', onClick);
     }, []);
+
+
+  //
+  // ─── 1) ASSIGNED LEADS SETUP ───────────────────────────────────────────────
+  //
+  const assignedColumns = [
+    "Lead No.",
+    "Lead Name",
+    "Due Date",
+    "Priority",
+    "Days Left",
+    "Flags",
+    "Assigned Officers"
+  ];
+  const assignedColKey = {
+    "Lead No.":          "id",
+    "Lead Name":   "description",
+    "Due Date":         "dueDate",
+    "Priority":       "priority",
+    "Days Left":   "remainingDays",
+    "Flags":             "flags",
+    "Assigned Officers":"assignedOfficers"
+  };
+  const assignedColWidths = {
+    "Lead No.":           "15%",
+    "Lead Name":         "30%",
+    "Due Date":          "12%",
+    "Priority":           "12%",
+    "Days Left":         "10%",
+    "Flags":              "10%",
+    "Assigned Officers": "18%"
+  };
+
+  // filter + sort state
+  const [assignedFilterConfig, setAssignedFilterConfig] = useState({
+    id: "", description: "", dueDate: "", priority: "", remainingDays: "", flags: "", assignedOfficers: ""
+  });
+  const [assignedSortConfig, setAssignedSortConfig] = useState({ key: null, direction: "asc" });
+  const [openAssignedFilter, setOpenAssignedFilter] = useState(null);
+  const popupAssignedRefs = useRef({});
+
+  // handle toggles
+  const handleFilterAssignedClick = col => {
+    setOpenAssignedFilter(prev => prev === col ? null : col);
+  };
+  const handleSortAssigned = col => {
+    const key = assignedColKey[col];
+    setAssignedSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc"
+    }));
+  };
+
+  // distinct values for each filter dropdown
+  const distinctAssigned = useMemo(() => {
+    const map = Object.fromEntries(assignedColumns.map(c => [c, new Set()]));
+    leads.assignedLeads.forEach(lead => {
+      assignedColumns.forEach(col => {
+        const key = assignedColKey[col];
+        let val = key === "remainingDays"
+          ? calculateRemainingDays(lead.dueDate)
+          : lead[key];
+        if (Array.isArray(val)) val.forEach(v => map[col].add(v));
+        else map[col].add(String(val));
+      });
+    });
+    return Object.fromEntries(
+      Object.entries(map).map(([c, set]) => [c, Array.from(set)])
+    );
+  }, [leads.assignedLeads]);
+
+  // sorted + filtered data
+  const sortedAssignedLeads = useMemo(() => {
+    return leads.assignedLeads
+      // 1) filter
+      .filter(lead =>
+        Object.entries(assignedFilterConfig).every(([field, val]) => {
+          if (!val) return true;
+          let cell = field === "remainingDays"
+            ? calculateRemainingDays(lead.dueDate)
+            : lead[field];
+          if (Array.isArray(cell)) return cell.includes(val);
+          return String(cell) === val;
+        })
+      )
+      // 2) sort
+      .sort((a, b) => {
+        const { key, direction } = assignedSortConfig;
+        if (!key) return 0;
+        let aV = key === "remainingDays"
+          ? calculateRemainingDays(a.dueDate)
+          : a[key];
+        let bV = key === "remainingDays"
+          ? calculateRemainingDays(b.dueDate)
+          : b[key];
+        if (aV < bV) return direction === "asc" ? -1 : 1;
+        if (aV > bV) return direction === "asc" ? 1 : -1;
+        return 0;
+      });
+  }, [leads.assignedLeads, assignedFilterConfig, assignedSortConfig]);
+
+  // close filter popups on outside click
+  useEffect(() => {
+    const handler = e => {
+      if (!Object.values(popupAssignedRefs.current).some(r => r?.contains(e.target))) {
+        setOpenAssignedFilter(null);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
   
 
   return (
@@ -590,31 +723,33 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
   </div>
       <div className="left-content">
       <div className="stats-bar">
-          {/* <span
-            className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
-            onClick={() => setActiveTab("assignedLeads")}
-          >
-            Assigned Leads: {leads.assignedLeads.length}
-          </span> */}
+        
           <span
             className={`hoverable ${activeTab === "cases" ? "active" : ""}`}
             onClick={() => setActiveTab("cases")}
           >
             My Ongoing Cases: {cases.length}
           </span>
-          <span
+
+            {/* <span
+            className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
+            onClick={() => setActiveTab("assignedLeads")}
+          >
+            Assigned Leads: {leads.assignedLeads.length}
+          </span> */}
+
+          {/* <span
             className={`hoverable ${activeTab === "pendingLeads" ? "active" : ""}`}
             onClick={() => setActiveTab("pendingLeads")}
           >
-            {/* Pending Leads: {leads.pendingLeads.length} */}
-            Assigned Leads: {leads?.pendingLeads?.length || 0}
-          </span>
-          <span
+            Pending Leads: {leads?.pendingLeads?.length || 0}
+          </span> */}
+          {/* <span
             className={`hoverable ${activeTab === "pendingLeadReturns" ? "active" : ""}`}
             onClick={() => setActiveTab("pendingLeadReturns")}
           >
             Lead Returns for Review: {leads.pendingLeadReturns.length}
-          </span>
+          </span> */}
         </div>
 
         <div className="content-section">
@@ -627,12 +762,12 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                   {["Case No.","Case Name","Role"].map(col => {
                     const key = colKey[col];
                     return (
-                      <th key={col} className="column-header1">
+                      <th key={col} className="column-header1" style={{ width: columnWidths[col] }}>
                         {col}
                         <span
                           className="column-controls1"
                           ref={el => (popupRefs.current[col] = el)}
-                          style={{ position: "relative", width: "10px" }}
+                          // style={{ position: "relative", width: "10px" }}
                         >
                           {/* filter toggle */}
                           <button onClick={() => handleFilterClick(col)}> <img 
@@ -666,7 +801,7 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                             </div>
                           )}
                           {/* sort toggle */}
-                          <button onClick={() => handleSort(col)} style={{ marginLeft: 0 }}>
+                          <button onClick={() => handleSort(col)} >
                             {sortConfig.key === key
                               ? (sortConfig.direction === "asc" ?  <img 
                                 src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
@@ -687,7 +822,7 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                       </th>
                     );
                   })}
-                  <th></th>{/* extra column for “View” button */}
+                  <th style={{ width: "10%" }} ></th>{/* extra column for “View” button */}
                 </tr>
               </thead>
               <tbody>
@@ -716,240 +851,135 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                 )}
               </tbody>
             </table>
-            <Pagination
+                      <Pagination
               currentPage={currentPage}
               totalEntries={totalEntries}
               onPageChange={setCurrentPage}
               pageSize={pageSize}
               onPageSizeChange={setPageSize}
             />
+             </div>
+                    
+           )}
+    
+         
+     
+
+
+
+
+
+  {activeTab === "assignedLeads" && (
+        <div className="assigned-leads">
+          <div className="table-scroll-container">
+            <table className="leads-table">
+              <thead>
+                <tr>
+                  {assignedColumns.map(col => (
+                    <th
+                      key={col}
+                      className="column-header1"
+                      style={{ width: assignedColWidths[col] }}
+                    >
+                      {col}
+                      <span
+                        className="column-controls1"
+                        ref={el => (popupAssignedRefs.current[col] = el)}
+                      >
+                        <button onClick={() => handleFilterAssignedClick(col)}>
+                          <img
+                            src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
+                            alt="Filter"
+                            className="icon-image"
+                          />
+                        </button>
+                        {openAssignedFilter === col && (
+                          <div className="filter-popup">
+                            <select
+                              value={assignedFilterConfig[assignedColKey[col]]}
+                              onChange={e =>
+                                setAssignedFilterConfig(cfg => ({
+                                  ...cfg,
+                                  [assignedColKey[col]]: e.target.value
+                                }))
+                              }
+                            >
+                              <option value="">All</option>
+                              {distinctAssigned[col].map(v => (
+                                <option key={v} value={v}>{v}</option>
+                              ))}
+                            </select>
+                            <div className="filter-popup-buttons">
+                              <button onClick={() => setOpenAssignedFilter(null)}>
+                                Apply
+                              </button>
+                              <button onClick={() => {
+                                setAssignedFilterConfig(cfg => ({
+                                  ...cfg,
+                                  [assignedColKey[col]]: ""
+                                }));
+                                setOpenAssignedFilter(null);
+                              }}>
+                                Clear
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        <button onClick={() => handleSortAssigned(col)}>
+                          <img
+                            src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                            alt="Sort"
+                            className="icon-image"
+                          />
+                        </button>
+                      </span>
+                    </th>
+                  ))}
+                  <th style={{ width: "10%" }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedAssignedLeads.length > 0 ? (
+                  sortedAssignedLeads.map(lead => (
+                    <tr key={lead.id}>
+                      <td>{lead.id}</td>
+                      <td>{lead.description}</td>
+                      <td>{lead.dueDate || "N/A"}</td>
+                      <td>{lead.priority || "N/A"}</td>
+                      <td>{calculateRemainingDays(lead.dueDate)}</td>
+                      <td>{lead.flags.join(", ")}</td>
+                      <td>{lead.assignedOfficers.join(", ")}</td>
+                      <td>
+                        <button className="view-btn1" onClick={() => handleCaseClick(lead)}>
+                          View
+                        </button>
+                        <button className="accept-btn" onClick={() => acceptLead(lead.id)}>
+                          Accept
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={assignedColumns.length + 1} style={{ textAlign: "center" }}>
+                      No Assigned Leads Available
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
 
-
-
-
-
-{/* {activeTab === "assignedLeads" && (
-  <div className="assigned-leads">
-          <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
-          <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
-
-
-    {filterSortPopupVisible && (
-      <div className="popup-overlay">
-        <div className="popup-content">
-          <button
-            className="close-popup-btn"
-            onClick={() => setFilterSortPopupVisible(false)}
-          >
-            &times;
-          </button>
-          <h3>Filter & Sort Leads</h3>
-          <div className="filter-sort-section">
-            <div className="filters">
-              <h4 className="filter-label">Filters</h4>
-              <div className="filter-item">
-                <input
-                  type="text"
-                  placeholder="Filter by Lead Name"
-                  value={filterText}
-                  onChange={(e) => setFilterText(e.target.value)}
-                  className="filter-input"
-                />
-                <button
-                  onClick={() => setFilterText("")}
-                  className="clear-button"
-                >
-                  Clear Name Filter
-                </button>
-              </div>
-              <div className="filter-item">
-                <label className="filter-label">Priority:</label>
-                <select
-                  value={selectedPriority}
-                  onChange={(e) => setSelectedPriority(e.target.value)}
-                  className="filter-dropdown"
-                >
-                  <option value="">All</option>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
-                </select>
-                <button
-                  onClick={() => setSelectedPriority("")}
-                  className="clear-button"
-                >
-                  Clear Priority Filter
-                </button>
-              </div>
-              <div className="filter-item">
-                <label className="filter-label">Remaining Days:</label>
-                <input
-                  type="number"
-                  placeholder="Enter Remaining Days"
-                  value={remainingDaysFilter}
-                  onChange={(e) => setRemainingDaysFilter(e.target.value)}
-                  className="filter-input"
-                />
-                <button
-                  onClick={() => setRemainingDaysFilter("")}
-                  className="clear-button"
-                >
-                  Clear Days Filter
-                </button>
-              </div>
-              <div className="filter-item">
-                <label className="filter-label">Flags:</label>
-                <input
-                  type="text"
-                  placeholder="Filter by Flags"
-                  value={flagsFilter}
-                  onChange={(e) => setFlagsFilter(e.target.value)}
-                  className="filter-input"
-                />
-                <button
-                  onClick={() => setFlagsFilter("")}
-                  className="clear-button"
-                >
-                  Clear Flags Filter
-                </button>
-              </div>
-              <div className="filter-item">
-                <label className="filter-label">Assigned Officers:</label>
-                <input
-                  type="text"
-                  placeholder="Filter by Assigned Officers"
-                  value={assignedOfficersFilter}
-                  onChange={(e) =>
-                    setAssignedOfficersFilter(e.target.value)
-                  }
-                  className="filter-input"
-                />
-                <button
-                  onClick={() => setAssignedOfficersFilter("")}
-                  className="clear-button"
-                >
-                  Clear Officers Filter
-                </button>
-              </div>
-            </div>
-
-
-            <div className="sorting">
-              <h4 className="filter-label">Sorting</h4>
-              <select
-                value={`${sortField}-${sortOrder}`}
-                onChange={(e) => {
-                  const [field, order] = e.target.value.split("-");
-                  setSortField(field);
-                  setSortOrder(order);
-                }}
-                className="sort-dropdown"
-              >
-                <option value="">Sort by...</option>
-                <option value="description-asc">Name (A-Z)</option>
-                <option value="description-desc">Name (Z-A)</option>
-                <option value="dueDate-asc">Due Date (Oldest First)</option>
-                <option value="dueDate-desc">Due Date (Newest First)</option>
-                <option value="priority-asc">Priority (Low-High)</option>
-                <option value="priority-desc">Priority (High-Low)</option>
-              </select>
-              <button
-                onClick={() => {
-                  setSortField("");
-                  setSortOrder("");
-                }}
-                className="clear-button"
-              >
-                Clear Sorting
-              </button>
-            </div>
-          </div>
-          <button
-            onClick={() => setFilterSortPopupVisible(false)}
-            className="apply-button"
-          >
-            Apply Filters & Sorting
-          </button>
+          <Pagination
+            currentPage={currentPage}
+            totalEntries={totalEntries}
+            onPageChange={setCurrentPage}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+          />
         </div>
-      </div>
-    )}
+      )}
 
-
-    <table className="leads-table">
-      <thead>
-        <tr>
-          <th>Lead No.</th>
-          <th>Lead Name</th>
-          <th>Due Date</th>
-          <th>Priority</th>
-          <th>Days Left</th>
-          <th>Flags</th>
-          <th>Assigned Officers</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {leads.assignedLeads
-          .filter(
-            (lead) =>
-              lead.description
-                .toLowerCase()
-                .includes(filterText.toLowerCase()) &&
-              (!selectedPriority || lead.priority === selectedPriority)
-          )
-          .sort((a, b) => {
-            if (!sortField || !sortOrder) return 0;
-            if (sortField === "remainingDays") {
-              return sortOrder === "asc"
-                ? calculateRemainingDays(a.dueDate) -
-                    calculateRemainingDays(b.dueDate)
-                : calculateRemainingDays(b.dueDate) -
-                    calculateRemainingDays(a.dueDate);
-            }
-            const fieldA = (a[sortField] || "").toString().toLowerCase();
-            const fieldB = (b[sortField] || "").toString().toLowerCase();
-            return sortOrder === "asc"
-              ? fieldA.localeCompare(fieldB)
-              : fieldB.localeCompare(fieldA);
-          })
-          .map((lead) => (
-            <tr key={lead.id}>
-              <td>{lead.id}</td>
-              <td>{lead.description}</td>
-              <td>{lead.dueDate || "N/A"}</td>
-              <td>{lead.priority || "N/A"}</td>
-              <td>{calculateRemainingDays(lead.dueDate) }</td>
-              <td>{lead.flags?.join(", ") || "None"}</td>
-              <td>{lead.assignedOfficers?.join(", ") || "Unassigned"}</td>
-              <td>
-                <button
-                  className="view-btn1"
-                  // onClick={() =>
-                  // }
-                >
-                  View
-                </button>
-                <button
-                  className="accept-btn"
-                  onClick={() => {
-                    if (
-                      window.confirm(`Do you want to accept this lead?`)
-                    ) {
-                      acceptLead(lead.id);
-                    }
-                  }}
-                >
-                  Accept
-                </button>
-              </td>
-            </tr>
-          ))}
-      </tbody>
-    </table>
-  </div>
-)} */}
 
 
 
@@ -958,198 +988,8 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
 {activeTab === "pendingLeads" && (
   <div className="pending-leads">
 
-{/* <div className="filter-sort-icons">
-                    <button onClick={() => setShowFilter(true)} className="icon-button">
-                      <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
-                        alt="Filter Icon"
-                        className="icon-image"
-                      />
-                    </button>
-                    <button onClick={() => setShowSort(true)} className="icon-button">
-                      <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
-                        alt="Sort Icon"
-                        className="icon-image"
-                      />
-                    </button>
-                  </div> */}
 
-      {/* Conditionally render the Filter component */}
-      {/* {showFilter && (
-        <div className="popup-overlay">
-          <div className="popup-content">
-            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
-              &times;
-            </button>
-            <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
-          </div>
-        </div>
-      )} */}
-
-      {/* Conditionally render the Sort component */}
-      {/* {showSort && (
-        <div className="popup-overlay">
-          <div className="popup-content">
-            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
-              &times;
-            </button>
-            <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
-            </div>
-          </div>
-      )} */}
-
-    {/* <button
-      onClick={() => setFilterSortPopupVisible(true)}
-      className="filter-sort-button"
-    >
-      Open Filter & Sort
-    </button> */}
-
-
-    {/* {filterSortPopupVisible && (
-      <div className="popup-overlay">
-        <div className="popup-content">
-        <button
-        className="close-popup-btn"
-        onClick={() => setFilterSortPopupVisible(false)}
-      >
-        &times; 
-      </button>
-          <h3>Filter & Sort Leads</h3>
-          <div className="filter-sort-section">
-            <div className="filters">
-              <h4>Filters</h4>
-              <div className="filter-item">
-                <input
-                  type="text"
-                  placeholder="Filter by Lead Name"
-                  value={filterText}
-                  onChange={(e) => setFilterText(e.target.value)}
-                  className="filter-input"
-                />
-                <button
-                  onClick={() => setFilterText("")}
-                  className="clear-button"
-                >
-                  Clear Name Filter
-                </button>
-              </div>
-              <div className="filter-item">
-                <label>Priority:</label>
-                <select
-                  value={selectedPriority}
-                  onChange={(e) => setSelectedPriority(e.target.value)}
-                  className="filter-dropdown"
-                >
-                  <option value="">All</option>
-                  <option value="High">High</option>
-                  <option value="Medium">Medium</option>
-                  <option value="Low">Low</option>
-                </select>
-                <button
-                  onClick={() => setSelectedPriority("")}
-                  className="clear-button"
-                >
-                  Clear Priority Filter
-                </button>
-              </div>
-
-
-       
-        <div className="filter-item">
-          <label>Remaining Days:</label>
-          <input
-            type="number"
-            placeholder="Enter Remaining Days"
-            onChange={(e) => setRemainingDaysFilter(e.target.value)}
-            className="filter-input"
-          />
-          <button
-            onClick={() => setRemainingDaysFilter("")}
-            className="clear-button"
-          >
-            Clear Days Filter
-          </button>
-        </div>
-
-
-      
-        <div className="filter-item">
-          <label>Flags:</label>
-          <input
-            type="text"
-            placeholder="Filter by Flags"
-            onChange={(e) => setFlagsFilter(e.target.value)}
-            className="filter-input"
-          />
-          <button onClick={() => setFlagsFilter("")} className="clear-button">
-            Clear Flags Filter
-          </button>
-        </div>
-
-
-      
-        <div className="filter-item">
-          <label>Assigned Officers:</label>
-          <input
-            type="text"
-            placeholder="Filter by Assigned Officers"
-            onChange={(e) => setAssignedOfficersFilter(e.target.value)}
-            className="filter-input"
-          />
-          <button
-            onClick={() => setAssignedOfficersFilter("")}
-            className="clear-button"
-          >
-            Clear Officers Filter
-          </button>
-        </div>
-        </div>
-
-
-            <div className="sorting">
-              <h4>Sorting</h4>
-              <select
-                value={`${sortField}-${sortOrder}`}
-                onChange={(e) => {
-                  const [field, order] = e.target.value.split("-");
-                  setSortField(field);
-                  setSortOrder(order);
-                }}
-                className="sort-dropdown"
-              >
-                <option value="">Sort by...</option>
-                <option value="description-asc">Name (A-Z)</option>
-                <option value="description-desc">Name (Z-A)</option>
-                <option value="dueDate-asc">Due Date (Oldest First)</option>
-                <option value="dueDate-desc">Due Date (Newest First)</option>
-                <option value="priority-asc">Priority (Low-High)</option>
-                <option value="priority-desc">Priority (High-Low)</option>
-              </select>
-              <button
-                onClick={() => {
-                  setSortField("");
-                  setSortOrder("");
-                }}
-                className="clear-button"
-              >
-                Clear Sorting
-              </button>
-            </div>
-          </div>
-          <button
-            onClick={() => setFilterSortPopupVisible(false)}
-            className="apply-button"
-          >
-            Apply Filters & Sorting
-          </button>
-        </div>
-      </div>
-    )} */}
-
-
-{/* <div className="table-scroll-container">
+<div className="table-scroll-container">
 <table className="leads-table" style={{ minWidth: "1000px" }}>
       <thead>
         <tr>
@@ -1164,37 +1004,6 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
       <tbody>
         {leads.length > 0 ? (
           leads.pendingLeads
-          .filter((lead) => {
-            const leadNoMatch = !appliedFilters.leadNumber || lead.id.toString() === appliedFilters.leadNumber;
-            const leadNameMatch = !appliedFilters.leadName || lead.description === appliedFilters.leadName;
-            const dueDateMatch = !appliedFilters.dueDate || lead.dueDate === appliedFilters.dueDate;
-            const officerMatch = !appliedFilters.assignedOfficers || lead.assignedOfficers.includes(appliedFilters.assignedOfficers);
-            const caseMatch = !appliedFilters.CaseName || lead.caseName === appliedFilters.CaseName;
-        
-            return (
-              leadNoMatch &&
-              leadNameMatch &&
-              dueDateMatch &&
-              officerMatch &&
-              caseMatch
-            );
-          })
-        
-          .sort((a, b) => {
-            if (!sortField || !sortOrder) return 0;
-            if (sortField === "remainingDays") {
-              return sortOrder === "asc"
-                ? calculateRemainingDays(a.dueDate) -
-                    calculateRemainingDays(b.dueDate)
-                : calculateRemainingDays(b.dueDate) -
-                    calculateRemainingDays(a.dueDate);
-            }
-            const fieldA = (a[sortField] || "").toString().toLowerCase();
-            const fieldB = (b[sortField] || "").toString().toLowerCase();
-            return sortOrder === "asc"
-              ? fieldA.localeCompare(fieldB)
-              : fieldB.localeCompare(fieldA);
-          })
           .map((lead) => (
             <tr key={lead.id}>
               <td>{lead.id}</td>
@@ -1224,15 +1033,16 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
         )}
       </tbody>
     </table>
-    </div> */}
-
+    
     <Pagination
   currentPage={currentPage}
-  totalEntries={totalEntries}  // Automatically calculate total entries
-  onPageChange={setCurrentPage} // Update current page state
+  totalEntries={totalEntries}  
+  onPageChange={setCurrentPage} 
   pageSize={pageSize}
-  onPageSizeChange={setPageSize} // Update page size state
+  onPageSizeChange={setPageSize} 
 />
+    </div>
+
   </div>
 )}
 
@@ -1321,12 +1131,13 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
               </tbody>
             </table>
             </div>
+            
             <Pagination
   currentPage={currentPage}
-  totalEntries={totalEntries}  // Automatically calculate total entries
-  onPageChange={setCurrentPage} // Update current page state
+  totalEntries={totalEntries}  
+  onPageChange={setCurrentPage} 
   pageSize={pageSize}
-  onPageSizeChange={setPageSize} // Update page size state
+  onPageSizeChange={setPageSize} 
 />
   </div>
 )}  

@@ -27,6 +27,12 @@ export const LeadReview = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
     const [pendingRoute, setPendingRoute]   = useState(null);
+
+
+    useEffect(() => {
+    // as soon as we land on this screen, jump to top
+    window.scrollTo(0, 0);
+  }, []);
   
    const [showSelectModal, setShowSelectModal] = useState(false);
        const [leads, setLeads] = useState({

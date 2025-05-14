@@ -235,6 +235,30 @@ export const CaseScratchpad = () => {
 
         <div className="left-content">
 
+          
+           <div className="top-menu">
+        <div className="menu-items">
+           <span className="menu-item " onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}>
+            Leads Desk
+          </span>
+        <span className="menu-item " onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}>
+            Generate Report
+          </span>
+          <span className="menu-item active" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
+            Add/View Case Notes
+          </span>
+          <span className="menu-item" onClick={() => navigate('/SearchLead', { state: { caseDetails } } )} >
+            Search Leads
+          </span>
+          <span className="menu-item" onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}>
+          View Timelines
+          </span>
+          <span className="menu-item" onClick={() => navigate("/FlaggedLead", { state: { caseDetails } } )}>
+          View Flagged Leads
+          </span>
+         </div>
+       </div>
+
         <div className="case-header">
           {/* <h2 className="">ALL NOTES</h2> */}
           <h2 className="">WEBPAGE UNDER CONSTRUCTION</h2>
