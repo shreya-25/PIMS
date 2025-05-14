@@ -886,7 +886,7 @@ const sortedAllLeads = useMemo(() => {
   // 1) apply filters
   const filtered = leads.allLeads.filter(lead => {
     return (
-      (!allFilterConfig.id           || String(lead.id)        === allFilterConfig.id)           &&
+      (!allFilterConfig.id           || lead.id       === allFilterConfig.id)           &&
       (!allFilterConfig.description  || lead.description          === allFilterConfig.description) &&
       (!allFilterConfig.leadStatus   || lead.leadStatus           === allFilterConfig.leadStatus)  &&
       (!allFilterConfig.dueDate      || lead.dueDate              === allFilterConfig.dueDate)     &&
