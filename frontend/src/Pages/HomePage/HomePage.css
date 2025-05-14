@@ -1,23 +1,56 @@
 
 
-.main-page-body
+.main-page-bodyhp
 {
   width: 100%;
   font-family: Arial, sans-serif;
+  overflow: hidden;
+
 }
-.main-page-content
+.main-page-contenthp
 {
   display: flex;
   justify-content: center;
+  flex-direction:column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  flex: 1 1 auto;     /* fill remaining height under Navbar */
+
 }
 
-.main-page {
+.main-page-abovepart
+{
+  display: flex;
+  justify-content: center;
+  flex-direction:column;
+  align-items: center;
+  width: 90%;
+  justify-content: center;
+  flex: 0 0 auto; 
+}
+
+.main-page-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.main-pagehp {
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.main-pagehp {
   width: 90%;
   display: flex;
   flex-direction: column;
   padding: 20px;
   font-family: Arial, sans-serif;
   align-items: center;
+  flex: 1 1 auto;     /* take all leftover space */
+  overflow-y: auto;
 }
 
 /* logo section */
@@ -149,7 +182,7 @@
   margin-bottom: 20px;
   font-size: 20px;
   /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);  */
-  width: 80%;
+  width: 90%;
   align-items: center;
   margin: 0 auto; /* Centers horizontally */
   margin-top: 20px;
@@ -248,6 +281,29 @@
   font-size: 20px;
 }
 
+ .icon-button img {
+  width: 25px;
+  height: 25px;
+}
+
+.column-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* so “Case No.” and the icons all line up on the left */
+  gap: 4px;               /* optional spacing between the title and the icons */
+}
+
+/* .column-controls {
+  display: flex;
+  flex-direction: column; 
+  gap: 4px;             
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  padding: 4px;
+} */
 
 
 /* Hover effect for case and lead items */
@@ -313,6 +369,24 @@
 } */
 
 
+.table-scroll-container {
+  max-height: 400px;      /* adjust height */
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.table-scroll-container table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.table-scroll-container table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+
 /* General Table Styling */
 .leads-table {
   width: 100%;
@@ -330,6 +404,10 @@
   word-wrap: break-word; /* Ensures text wraps inside the cell */
   overflow-wrap: break-word; /* Helps break long words */
   white-space: normal; /* Allows text to wrap */
+}
+
+.leads-table th {
+  color: #333;    /* or whatever dark colour you want */
 }
 
 .leads-table th {
@@ -393,6 +471,8 @@
   max-width: 50px;
   text-align: center;
 }
+
+
 
 /* .leads-table td:last-child {
   text-align: center;
@@ -890,6 +970,7 @@
   border-radius: 5px;
   margin-top: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index:10;
 }
 
 .filter-fields {

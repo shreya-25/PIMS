@@ -1081,6 +1081,7 @@ import { jsPDF } from "jspdf"; // if still used elsewhere
 import html2canvas from "html2canvas";
 
 import "./LeadsDesk.css";
+import { SideBar } from "../../components/Sidebar/Sidebar";
 
 // ---------- Helper to format dates as MM/DD/YY ----------
 const formatDate = (dateString) => {
@@ -1195,6 +1196,10 @@ export const LeadsDesk = () => {
   const [webpageUrl, setWebpageUrl] = useState("");
   const [typedSummary, setTypedSummary] = useState("");
   const saveTimeout = useRef(null);
+
+  const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+  const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+  const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
 
    // Save to backend
    const saveExecutiveSummary = async () => {
@@ -2000,7 +2005,7 @@ const handleShowLeadsInRange = () => {
                         isOpen={showVehicleModal}
                         onClose={closeVehicleModal}
                         leadNo={vehicleModalData.leadNo}
-                        description={vehicleModalData.description}
+                        leadName={vehicleModalData.description}
                         caseNo={vehicleModalData.caseNo}
                         caseName={vehicleModalData.caseName}
                         leadReturnId={vehicleModalData.leadReturnId}
@@ -2009,7 +2014,7 @@ const handleShowLeadsInRange = () => {
                     </tr>
                     <tr>
                       <td colSpan={2}>
-                        <div className="person-section">
+                        {/* <div className="person-section">
                           <h3 className="title-ld">Uploaded Files</h3>
                           <table className="lead-table2" style={{ width: "100%", tableLayout: "fixed" }}>
                             <thead>
@@ -2059,7 +2064,7 @@ const handleShowLeadsInRange = () => {
                               })}
                             </tbody>
                           </table>
-                        </div>
+                        </div> */}
                       </td>
                       <MediaModal
                         isOpen={showMediaModal}
@@ -2086,36 +2091,45 @@ const handleShowLeadsInRange = () => {
       <Navbar />
 
       <div className="main-content-ld-ExecSummary">
-        <div className="sideitem">
-          <ul className="sidebar-list">
+        {/* <div className="sideitem">
+        
           <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+          <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
+        </li>
+        {caseDropdownOpen && (
+      <ul >
+
             <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
             <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
             {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+        
             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
             <li className="sidebar-item" onClick={() => navigate('/LRInstruction')}>View Lead Return</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-              Officer Management
-            </li> */}
+          
               {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
             </li>)}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-              View Lead Hierarchy
-            </li> */}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              Generate Report
-            </li> */}
+          
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
             <li className="sidebar-item active" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+
+            </ul>
+        )}
+
+<li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen1(!leadDropdownOpen1)}>
+          Lead Related Tabs {leadDropdownOpen1 ?  "▲": "▼"}
+</li>
+        {leadDropdownOpen1 && (
+          <ul>
+             <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
+
             {selectedCase.role !== "Investigator" && (
   <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
     View Lead Chain of Custody
@@ -2123,19 +2137,55 @@ const handleShowLeadsInRange = () => {
 )}
        
           </ul>
-        </div>
+        )}
+
+        </div> */}
+         <SideBar activePage="LeadsDesk" />
 
         <div className="right-sec">
-          <div className="header-ld-exec">
-        <div className="case-header-ldExecSummary">
-            <h2>GENERATE REPORT</h2>
+        <div className="caseandleadinfo">
+        <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+
+
+          {/* <h5 className = "side-title"> 
+          {selectedLead?.leadNo ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName}` : "LEAD DETAILS"}
+
+          </h5> */}
           </div>
+
+          <div className="header-ld-exec">
+        {/* <div className="case-header-ldExecSummary">
+            <h2>LEADS DESK</h2>
+          </div> */}
           <div className="center-section-ldExecSummary">
             <h1>
               CASE: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
             </h1>
           </div>
           </div>
+
+             <div className="top-menu">
+        <div className="menu-items">
+           <span className="menu-item active " onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}>
+            Leads Desk
+          </span>
+        <span className="menu-item " onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}>
+            Generate Report
+          </span>
+          <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
+            Add/View Case Notes
+          </span>
+          <span className="menu-item" onClick={() => navigate('/SearchLead', { state: { caseDetails } } )} >
+            Search Leads
+          </span>
+          <span className="menu-item" onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}>
+          View Timelines
+          </span>
+          <span className="menu-item" onClick={() => navigate("/FlaggedLead", { state: { caseDetails } } )}>
+          View Flagged Leads
+          </span>
+         </div>
+       </div>
        <div className="down-content"> 
 
         <div className="left-content-execSummary">

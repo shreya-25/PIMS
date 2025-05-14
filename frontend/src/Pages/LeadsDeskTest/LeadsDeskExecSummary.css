@@ -72,9 +72,10 @@
 
 .header-ld-exec
 {
-  height: 80px;
+  height: 70px;
   /* margin-top: 20px; */
-  margin-bottom: 50px;
+  margin-bottom: 20px;
+  margin-top: -20px;
 }
 
 .case-header-ldExecSummary
@@ -84,7 +85,7 @@
 
 .center-section-ldExecSummary
 {
-  margin-top: -15px;
-  margin-bottom: 20px;
+  /* margin-top: -10px; */
+  /* margin-bottom: 20px; */
   text-align: center;
 }

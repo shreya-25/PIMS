@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect, useRef, useMemo} from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import Searchbar from '../../components/Searchbar/Searchbar';
 import Button from '../../components/Button/Button';
@@ -12,6 +12,8 @@ import Pagination from "../../components/Pagination/Pagination";
 import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 import api from "../../api";
 import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
+import { AlertModal } from "../../components/AlertModal/AlertModal"
+import {SideBar } from "../../components/Sidebar/Sidebar";
 
 
 
@@ -31,8 +33,68 @@ export const Investigator = () => {
   const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
    const [showSelectModal, setShowSelectModal] = useState(false);
     const [pendingRoute, setPendingRoute]   = useState(null);
+    const [showAlert, setShowAlert] = useState(false);
+       const [caseSummary, setCaseSummary] = useState('');
+       const [isEditing, setIsEditing] = useState(false);
+         const [summary, setSummary] = useState('');
+         const [isSaving, setIsSaving] = useState(false);
+         const [error, setError] = useState('');
+         const saveTimer = useRef(null);
+         const isFirstLoad = useRef(true);
 
   console.log("case context", selectedCase);
+  const handleSaveClick = () => {
+    setIsEditing(false);
+    // You can add logic here to update the backend with the new summary if needed
+};
+const [team, setTeam] = useState({
+  caseManager: "",
+  investigators: []
+});
+
+useEffect(() => {
+    async function load() {
+      if (!selectedCase?.caseNo) return;
+      try {
+        const token = localStorage.getItem('token');
+        const { data } = await api.get(
+          `/api/cases/case-summary/${selectedCase.caseNo}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setSummary(data.caseSummary);
+      } catch (err) {
+        console.error('Failed to load summary', err);
+      }
+    }
+    load();
+  }, [selectedCase.caseNo]);
+
+useEffect(() => {
+  if (!selectedCase?.caseNo) return;
+  api.get(`/api/cases/${selectedCase.caseNo}/team`)
+    .then(({ data }) => setTeam(data))
+    .catch(console.error);
+}, [selectedCase.caseNo]);
+
+
+  // modal state
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen:    false,
+    lead:    null,
+  });
+  const [alertConfig, setAlertConfig] = useState({
+    isOpen: false,
+    title:  "",
+    message:"",
+  });
+
+  const openConfirm  = (lead) => setConfirmConfig({ isOpen: true, lead });
+  const closeConfirm = ()      => setConfirmConfig({ isOpen: false, lead: null });
+
+  const handleConfirmAccept = () => {
+    acceptLead(confirmConfig.lead.id, confirmConfig.lead.description);
+    closeConfirm();
+  };
 
   const [leads, setLeads] = useState({
     assignedLeads: [
@@ -298,13 +360,16 @@ const handleLeadClick = (lead) => {
         const LRInReview = filteredLeadsArray
           .filter((lead) => lead.leadStatus === "In Review")
           .map(mapLead);
+
+           const allLeads = filteredLeadsArray
+          .map(mapLead);
   
         console.log("✅ Assigned Leads:", assignedLeads);
         console.log("✅ Pending Leads:", pendingLeads);
   
         setLeads((prev) => ({
           ...prev,
-          allLeads: filteredLeadsArray,
+          allLeads,
           assignedLeads,
           pendingLeads,
           pendingLeadReturns: LRInReview,
@@ -466,8 +531,9 @@ const handleLeadClick = (lead) => {
   //     fetchPendingLeadReturns();
   // }, [signedInOfficer, selectedCase]);
 
-  const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
-  const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
 
    const [showFilter, setShowFilter] = useState(false);
     const [showSort, setShowSort] = useState(false);
@@ -754,6 +820,83 @@ const handleLeadClick = (lead) => {
       navigate(route, { state: { caseDetails } });
   };
 
+  const [allFilterConfig, setAllFilterConfig] = useState({
+  id: "",                 // Lead No.
+  description: "",        // Lead Log Summary
+  leadStatus: "",         // Lead Status
+  dueDate: "",            // Due Date
+  priority: "",           // Priority
+  remainingDays: "",      // Days Left
+  assignedOfficers: ""    // Assigned Officers (we'll treat each officer name)
+});
+const [allSortConfig, setAllSortConfig]   = useState({ key: null, direction: "asc" });
+const [openAllFilter, setOpenAllFilter]   = useState(null);
+const allPopupRefs = useRef({});
+
+const distinctAll = useMemo(() => {
+  const map = {
+    id: new Set(), description: new Set(), leadStatus: new Set(),
+    dueDate: new Set(), priority: new Set(),
+    remainingDays: new Set(), assignedOfficers: new Set()
+  };
+  leads.allLeads.forEach(lead => {
+    map.id.add(String(lead.id));
+    map.description.add(lead.description);
+    map.leadStatus.add(lead.leadStatus);
+    map.dueDate.add(lead.dueDate);
+    map.priority.add(lead.priority);
+    map.remainingDays.add(String(calculateRemainingDays(lead.dueDate)));
+    (lead.assignedOfficers || []).forEach(o => map.assignedOfficers.add(o));
+  });
+  return Object.fromEntries(Object.entries(map).map(([k, v]) => [k, Array.from(v)]));
+}, [leads.allLeads]);
+
+const sortedAllLeads = useMemo(() => {
+  // 1) apply filters
+  const filtered = leads.allLeads.filter(lead => {
+    return (
+      (!allFilterConfig.id           || String(lead.id)            === allFilterConfig.id)           &&
+      (!allFilterConfig.description  || lead.description            === allFilterConfig.description)  &&
+      (!allFilterConfig.leadStatus   || lead.leadStatus             === allFilterConfig.leadStatus)   &&
+      (!allFilterConfig.dueDate      || lead.dueDate                === allFilterConfig.dueDate)      &&
+      (!allFilterConfig.priority     || lead.priority               === allFilterConfig.priority)     &&
+      (!allFilterConfig.remainingDays|| String(calculateRemainingDays(lead.dueDate)) === allFilterConfig.remainingDays) &&
+      (!allFilterConfig.assignedOfficers ||
+         (lead.assignedOfficers || []).includes(allFilterConfig.assignedOfficers))
+    );
+  });
+  // 2) apply sort
+  if (!allSortConfig.key) return filtered;
+  return [...filtered].sort((a, b) => {
+    let aV = allSortConfig.key==="remainingDays"
+      ? calculateRemainingDays(a.dueDate)
+      : (allSortConfig.key==="assignedOfficers"
+         ? (a.assignedOfficers||[])[0]   // first officer for simplicity
+         : a[allSortConfig.key]);
+    let bV = allSortConfig.key==="remainingDays"
+      ? calculateRemainingDays(b.dueDate)
+      : (allSortConfig.key==="assignedOfficers"
+         ? (b.assignedOfficers||[])[0]
+         : b[allSortConfig.key]);
+    if (aV < bV) return allSortConfig.direction==="asc" ? -1 : 1;
+    if (aV > bV) return allSortConfig.direction==="asc" ?  1 : -1;
+    return 0;
+  });
+}, [leads.allLeads, allFilterConfig, allSortConfig]);
+
+const handleFilterAllClick = col => {
+  setOpenAllFilter(prev => prev===col ? null : col);
+};
+const handleSortAll = colKey => {
+  setAllSortConfig(prev => ({
+    key: prev.key===colKey && prev.direction==="asc" ? null : colKey,
+    direction: prev.key===colKey && prev.direction==="asc" ? "desc" : "asc"
+  }));
+};
+
+
+
+
     return (
         <div className="case-page-manager">
             {/* Navbar */}
@@ -761,11 +904,17 @@ const handleLeadClick = (lead) => {
 
             {/* Main Container */}
             <div className="main-container">
-                {/* Sidebar */}
+        
 
-                <div className="sideitem">
-                    <ul className="sidebar-list">
+                {/* <div className="sideitem">
+                
                     <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+                    <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
+        </li>
+        {caseDropdownOpen && (
+      <ul >
                     <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>   
                                  <li className="sidebar-item active" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
           Case Page {leadDropdownOpen ?  "▼" : "▲"}
@@ -798,11 +947,6 @@ const handleLeadClick = (lead) => {
 
 {selectedCase.role !== "Investigator" && (
 <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-<li className="sidebar-item" 
-             onClick={() => {
-              setPendingRoute("/leadReview");
-              setShowSelectModal(true);
-            }}>Lead Information</li>
             <li className="sidebar-item"
              onClick={() => onShowCaseSelector("/SearchLead")}
           >Search Lead</li>
@@ -813,19 +957,12 @@ const handleLeadClick = (lead) => {
             }} >View Lead Return</li>
 
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-              Officer Management
-            </li> */}
+       
               {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
             </li>)}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-              View Lead Hierarchy
-            </li> */}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              Generate Report
-            </li> */}
+      
              <li className="sidebar-item"    
             onClick={() => navigate("/FlaggedLead")}>
               View Flagged Leads
@@ -833,23 +970,32 @@ const handleLeadClick = (lead) => {
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
             View Timeline Entries
             </li>
-            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+            
+            </ul>)}
+            
+            <li className="sidebar-item"  style={{ fontWeight: 'bold' }}onClick={() => setLeadDropdownOpen1(!leadDropdownOpen1)}>
+          Lead Related Tabs {leadDropdownOpen1 ?  "▲": "▼"}
+          </li>
+        {leadDropdownOpen1 && (
+          <ul>
+            <li className="sidebar-item" 
+             onClick={() => {
+              setPendingRoute("/leadReview");
+              setShowSelectModal(true);
+            }}>Lead Information</li>
             {selectedCase.role !== "Investigator" && (
-  <li className="sidebar-item"
+              <li className="sidebar-item"
+                onClick={() => {
+                  setPendingRoute("/ChainOfCustody");
+                  setShowSelectModal(true);
+                }}
 
-  onClick={() => {
-    setPendingRoute("/ChainOfCustody");
-    setShowSelectModal(true);
-  }}
-
-// onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}
->View Lead Chain of Custody</li>
-)}
-
-                    </ul>
+          
+              >View Lead Chain of Custody</li>
+              )}
 
                     
                     {showSelectModal && (
@@ -859,9 +1005,20 @@ const handleLeadClick = (lead) => {
         onClose={() => setShowSelectModal(false)}
       />
     )}
-                </div>
+    </ul>)}
+                </div> */}
+              
+
+                    <SideBar
+                  activePage="Investigator"
+                  leads={leads}
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                />
                
                 <div className="left-content">
+
+          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
 
                    {/* Display Case Number and Name */}
                 <div className="case-header">
@@ -869,10 +1026,51 @@ const handleLeadClick = (lead) => {
                             CASE: {selectedCase.caseNo} |  {selectedCase.caseName.toUpperCase()}
                         </h1>
                 </div>
+
+             <div className="case-summary">
+      <label className="input-label">Case Summary</label>
+      <textarea
+        id="case-summary"
+        rows={6}
+        style={{ width: '100%', fontSize: 20, padding: 8 }}
+        value={summary}
+        onChange={e => setSummary(e.target.value)}
+      />
+      <div style={{ marginTop: 8, fontSize: 20, minHeight: '1em' }}>
+        {isSaving
+          ? <span style={{ color: '#888' }}>Saving…</span>
+          : error
+            ? <span style={{ color: 'red' }}>{error}</span>
+            : <span>&nbsp;</span>
+        }
+      </div>
+    </div>
+
+            <div className="case-team">
+        <table className="leads-table">
+          <thead>
+            <tr><th style={{ width: "20%" }}>Role</th><th>Name(s)</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Case Manager</td>
+              <td>{team.caseManager || "—"}</td>
+            </tr>
+            <tr>
+              <td>Investigator{team.investigators.length > 1 ? "s" : ""}</td>
+              <td>
+                {team.investigators.length
+                  ? team.investigators.join(", ")
+                  : "None assigned"}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
                 {/* Content Area */}
                 <div className="content">
-                    {/* Tab Navigation */}
-                    <div className="stats-bar">
+              
+                    {/* <div className="stats-bar">
                         <span
                             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("assignedLeads")}
@@ -897,7 +1095,7 @@ const handleLeadClick = (lead) => {
                         >
                             All Leads: {leads.allLeads.length}
                         </span>
-                    </div>
+                    </div> */}
 
                        {/* Tab Content */}
                        <div className="content-section">
@@ -1159,13 +1357,7 @@ const handleLeadClick = (lead) => {
                 </button>
                 <button
                   className="accept-btn"
-                  onClick={() => {
-                    if (
-                      window.confirm(`Do you want to accept this lead?`)
-                    ) {
-                      acceptLead(lead.id, lead.description );
-                    }
-                  }}
+                  onClick={() => openConfirm(lead)}
                 >
                   Accept
                 </button>
@@ -1175,6 +1367,24 @@ const handleLeadClick = (lead) => {
       </tbody>
     </table>
     </div>
+
+    
+    <AlertModal
+  isOpen={confirmConfig.isOpen}
+  title="Confirm Accept"
+  message={`Are you sure you want to accept Lead #${confirmConfig.lead?.id}?`}
+  onClose={closeConfirm}
+  onConfirm={handleConfirmAccept}
+>
+  <div className="alert-footer">
+    <button className="alert-button" onClick={handleConfirmAccept}>
+      Yes
+    </button>
+    <button className="alert-button" onClick={closeConfirm}>
+      No
+    </button>
+  </div>
+</AlertModal>
     <Pagination
   currentPage={currentPage}
   totalEntries={totalEntries}  // Automatically calculate total entries
@@ -1509,45 +1719,42 @@ const handleLeadClick = (lead) => {
                             </div>
                         )} */}
 
-{activeTab === "allLeads" && (
+{/* {activeTab === "allLeads" && (
   <div className="all-leads">
-    {/* <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
-    <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} /> */}
+   
 
-
-<div className="filter-sort-icons">
-                    <button onClick={() => setShowFilter(true)} className="icon-button">
-                      <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
-                        alt="Filter Icon"
-                        className="icon-image"
-                      />
-                    </button>
-                    <button onClick={() => setShowSort(true)} className="icon-button">
-                      <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
-                        alt="Sort Icon"
-                        className="icon-image"
-                      />
-                    </button>
-                  </div>
-
-                  <div className="table-scroll-container">
+<div className="table-scroll-container">
                   <table className="leads-table" style={{ minWidth: "1000px" }}>
       <thead>
         <tr>
-          <th style={{ width: "10%" }}>Lead No.</th>
+         <th style={{ width: "10%" }}>Lead No.</th>
           <th>Lead Log Summary</th>
-          <th style={{ width: "12%" }}>Lead Status</th>
-          <th style={{ width: "14%" }}></th> {/* Empty header for buttons column */}
+          <th style={{ width: "10%" }}>Lead Status</th>
+          <th style={{ width: "10%" }}>Due Date</th>
+          <th style={{ width: "8%" }}>Priority</th>
+          <th style={{ width: "8%" }}>Days Left</th>
+          <th style={{ width: "15%" }}>Assigned Officers</th>
+          <th style={{ width: "12%" }}></th> 
         </tr>
       </thead>
       <tbody>
-        {leads.allLeads.map((lead) => (
+        {leads.allLeads.length > 0 ? (
+       leads.allLeads.map((lead) => (
           <tr key={lead.id}>
-            <td>{lead.leadNo }</td>
+           <td>{lead.id} </td>
             <td>{lead.description}</td>
             <td>{lead.leadStatus}</td>
+             <td>{lead.dueDate}</td>
+              <td>{lead.priority}</td>
+              <td>{calculateRemainingDays(lead.dueDate)}</td>
+            
+             
+              <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
+             
+                {lead.assignedOfficers.map((officer, index) => (
+                  <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
+                ))}
+                </td>
             <td>
               <button
                 className= "view-btn1"
@@ -1557,10 +1764,103 @@ const handleLeadClick = (lead) => {
               </button>
             </td>
           </tr>
-        ))}
+        ))  ) : (
+          <tr>
+            <td colSpan="8" style={{ textAlign: 'center' }}>
+              No Leads Available
+            </td>
+          </tr>
+        )}
       </tbody>
     </table>
     </div>
+  </div>
+)} */}
+{activeTab === "allLeads" && (
+  <div className="all-leads">
+    <div className="table-scroll-container">
+      <table className="leads-table" style={{ minWidth: "1000px" }}>
+        <thead>
+          <tr>
+            {[
+              { label:"Lead No.",         key:"id",               width:"10%" },
+              { label:"Lead Log Summary", key:"description", width:"14%" },
+              { label:"Lead Status",      key:"leadStatus", width:"10%" },
+              { label:"Due Date",         key:"dueDate", width:"10%" },
+              { label:"Priority  ",         key:"priority" , width:"10%"},
+              { label:"Days Left",        key:"remainingDays", width:"10%" },
+              { label:"Assigned Officers",key:"assignedOfficers", width:"12%" }
+            ].map(col => (
+           <th key={col.key} style={{ width: col.width }}>
+   <div className="header-title">{col.label}</div>
+  <div className="header-controls" ref={el => allPopupRefs.current[col.key] = el}>
+    <button onClick={() => handleFilterAllClick(col.key)}>
+      <img src={`${process.env.PUBLIC_URL}/Materials/filter.png`} className="icon-image"/>
+    </button>
+    {openAllFilter === col.key && (
+  <div className="filter-popup">
+    <select
+      value={allFilterConfig[col.key]}
+      onChange={e =>
+        setAllFilterConfig(cfg => ({ ...cfg, [col.key]: e.target.value }))
+      }
+    >
+      <option value="">All</option>
+      {distinctAll[col.key].map(v => (
+        <option key={v} value={v}>{v}</option>
+      ))}
+    </select>
+    <div className="filter-popup-buttons">
+      <button onClick={() => setOpenAllFilter(null)}>Apply</button>
+      <button onClick={() => {
+        setAllFilterConfig(cfg => ({ ...cfg, [col.key]: "" }));
+        setOpenAllFilter(null);
+      }}>Clear</button>
+    </div>
+  </div>
+)}
+
+    <button onClick={() => handleSortAll(col.key)}>
+      <img src={`${process.env.PUBLIC_URL}/Materials/sort1.png`} className="icon-image"/>
+    </button>
+  </div>
+</th>
+
+
+            ))}
+            <th style={{ width:"12%" }}></th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedAllLeads.length>0 ? sortedAllLeads.map(lead=>(
+            <tr key={lead.id}>
+              <td>{lead.id}</td>
+              <td>{lead.description}</td>
+              <td>{lead.leadStatus}</td>
+              <td>{lead.dueDate}</td>
+              <td>{lead.priority}</td>
+              <td>{calculateRemainingDays(lead.dueDate)}</td>
+              <td style={{ wordBreak:"break-word" }}>
+                {(lead.assignedOfficers||[]).join(", ")}
+              </td>
+              <td>
+                <button className="view-btn1" onClick={()=>handleLeadClick(lead)}>
+                  View
+                </button>
+              </td>
+            </tr>
+          )) : (
+            <tr>
+              <td colSpan={8} style={{ textAlign:"center" }}>
+                No Leads Available
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
     <Pagination
   currentPage={currentPage}
   totalEntries={totalEntries}  // Automatically calculate total entries
@@ -1568,8 +1868,6 @@ const handleLeadClick = (lead) => {
   pageSize={pageSize}
   onPageSizeChange={setPageSize} // Update page size state
 />
-  </div>
-)}
 
                     </div>
                 </div>

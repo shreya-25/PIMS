@@ -11,6 +11,7 @@ import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import api from "../../api"; // adjust the path as needed
 import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
+import {SideBar } from "../../components/Sidebar/Sidebar";
 
 
 
@@ -26,6 +27,12 @@ export const LeadReview = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
     const [pendingRoute, setPendingRoute]   = useState(null);
+
+
+    useEffect(() => {
+    // as soon as we land on this screen, jump to top
+    window.scrollTo(0, 0);
+  }, []);
   
    const [showSelectModal, setShowSelectModal] = useState(false);
        const [leads, setLeads] = useState({
@@ -35,7 +42,7 @@ export const LeadReview = () => {
             allLeads: [],
        } );
 
-  const { selectedCase, setSelectedLead , selectedLead} = useContext(CaseContext);
+  const { selectedCase, setSelectedLead , selectedLead, leadStatus, setLeadStatus} = useContext(CaseContext);
 // const leadFromState = location.state?.lead || null;
 
 // const selectedLead = leadFromState || null;
@@ -106,6 +113,7 @@ export const LeadReview = () => {
 
 const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
 
 const onShowCaseSelector = (route) => {
   navigate(route, { state: { caseDetails } });
@@ -294,73 +302,76 @@ const dueDateISO = leadData?.dueDate
       {/* Navbar */}
       <Navbar />
 
+
       {/* Main Container */}
       <div className="lead-review-container1">
 
-      <div className="sideitem">
-      <ul className="sidebar-list">
-                   
+      {/* <div className="sideitem">
+
       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+
+      <li className="sidebar-item"   style={{ fontWeight: 'bold' }} onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
+          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
+        </li>
+        {caseDropdownOpen && (
+      <ul >
             <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
             <li
-  className="sidebar-item"
-  onClick={() =>
-    selectedCase.role === "Investigator"
-      ? navigate("/Investigator")
-      : navigate("/CasePageManager")
-  }
->
-Case Page
-</li>              
+                className="sidebar-item"
+                onClick={() =>
+                  selectedCase.role === "Investigator"
+                    ? navigate("/Investigator")
+                    : navigate("/CasePageManager")
+                }
+              >
+              Case Page
+              </li>              
             {selectedCase.role !== "Investigator" && (
-<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item active" onClick={() => navigate('/leadReview')}>Lead Information</li>
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-
-          
+            <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
+             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
             <li
-  className="sidebar-item"
-  onClick={() => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                className="sidebar-item"
+                onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
-    if (lead && kase) {
-      navigate("/LRInstruction", {
-        state: {
-          caseDetails: kase,
-          leadDetails: lead
-        }
-      });
-    } else {
-      alert("Please select a case and lead first.");
-    }
-  }}
->
-  View Lead Return
-</li>
-
-
-
+                  if (lead && kase) {
+                    navigate("/LRInstruction", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } else {
+                    alert("Please select a case and lead first.");
+                  }
+                }}
+              >
+                View Lead Return
+              </li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/OfficerManagement")}>
-              Officer Management
-            </li> */}
+     
               {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
               Add/View Case Notes
             </li>)}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadHierarchy")}>
-              View Lead Hierarchy
-            </li> */}
-            {/* <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewHierarchy")}>
-              Generate Report
-            </li> */}
+         
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
             <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            {/* <li className="sidebar-item"onClick={() => navigate('/ViewDocument')}>View Uploaded Documents</li> */}
             <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
             {selectedCase.role !== "Investigator" && (
             <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
+
+            </ul>
+            )}
+            <li className="sidebar-item active" onClick={() => setLeadDropdownOpen1(!leadDropdownOpen1)}>
+          Lead Related Tabs {leadDropdownOpen1 ?  "▲": "▼"}
+</li>
+        {leadDropdownOpen1 && (
+          <ul>
+                        <li className="sidebar-item active" onClick={() => navigate('/leadReview')}>Lead Information</li>
+
+
             {selectedCase.role !== "Investigator" && (
              <li
              className="sidebar-item"
@@ -372,7 +383,7 @@ Case Page
               </li>
 )}
        
-         </ul>
+  
             {showSelectModal && (
                <SelectLeadModal
                  leads={leads.allLeads}
@@ -380,18 +391,72 @@ Case Page
                  onClose={() => setShowSelectModal(false)}
                />
              )}
-        </div>
+             </ul>
+            )}
+        </div> */}
 
+       <SideBar  activePage="CasePageManager" />
+     
         {/* Content Area */}
         <div className="lead-main-content">
           {/* Page Header */}
-          <div className="case-header">
-            {/* <h1>LEAD:{selectedLead.leadNo} | {selectedLead.leadName.toUpperCase()}</h1> */}
+
+
+          <div className="caseandleadinfo">
+          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+
+          <h5 className="side-title">
+  {selectedLead?.leadNo
+    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${leadData.leadStatus || leadStatus || "Unknown Status"}`
+    : `LEAD DETAILS | ${leadData?.leadStatus || leadStatus || "Unknown Status"}`}
+</h5>
+
+          </div>
+
+                    <div className="case-header">
             <h1>
   {selectedLead?.leadNo ? `LEAD: ${selectedLead.leadNo} | ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"}
 </h1>
 
           </div>
+
+
+                   <div className="top-menu">
+        <div className="menu-items">
+        <span className="menu-item active" > Lead Information</span>
+          <span className="menu-item" onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/LRInstruction", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } else {
+                    alert("Please select a case and lead first.");
+                  }
+                }}>Add/View Lead Return</span>
+          <span className="menu-item" onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/ChainOfCustody", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } else {
+                    alert("Please select a case and lead first.");
+                  }
+                }}>Lead Chain of Custody</span>
+          
+        </div>
+      </div>
 
           {/* Case Summary Textarea */}
           {/* <div className="form-section">
@@ -403,7 +468,7 @@ Case Page
             />
           </div> */}
 
-{ caseDetails?.role === "Investigator" && (
+{/* { caseDetails?.role === "Investigator" && (
   <div className="lead-return-div">
     <h2>Click here to start a lead return</h2>
     <button
@@ -413,7 +478,7 @@ Case Page
       Add Return
     </button>
   </div>
-) }
+) } */}
 
 
           {/* Additional Lead Details (Bottom Table) */}
@@ -455,7 +520,7 @@ Case Page
                   </td>
                 </tr> */}
                 <tr>
-                  <td className="info-label">Case Number:</td>
+                  <td className="info-label">Case Number</td>
                   <td>
                     <input
                       type="text"
@@ -466,7 +531,7 @@ Case Page
                   </td>
                 </tr>
                 <tr>
-                  <td className="info-label">Case Name:</td>
+                  <td className="info-label">Case Name</td>
                   <td>
                     <input
                       type="text"
@@ -477,7 +542,7 @@ Case Page
                   </td>
                 </tr>
                 <tr>
-                  <td className="info-label">Assigned Date:</td>
+                  <td className="info-label">Assigned Date</td>
                   <td>
                     <input
                       type="text"
@@ -490,7 +555,7 @@ Case Page
                 </tr>
 
                 <tr>
-                  <td className="info-label">Lead Log Summary:</td>
+                  <td className="info-label">Lead Log Summary</td>
                   <td>
                     <textarea
                       className="input-field"
@@ -501,7 +566,7 @@ Case Page
                   </td>
                 </tr>
                 <tr>
-                  <td className="info-label">Lead Instruction:</td>
+                  <td className="info-label">Lead Instruction</td>
                   <td>
                     <textarea
                       className="input-field"
@@ -513,7 +578,7 @@ Case Page
                 </tr>
 
                 <tr>
-                  <td className="info-label">Lead Origin:</td>
+                  <td className="info-label">Lead Origin</td>
                   <td>
                     <input
                       type="text"
@@ -526,7 +591,7 @@ Case Page
                 </tr>
 
                 <tr>
-  <td className="info-label">Assigned Officers:</td>
+  <td className="info-label">Assigned Officers</td>
   <td>
     <div className="custom-dropdown">
       <div
@@ -570,7 +635,7 @@ Case Page
 
 
                 <tr>
-                  <td className="info-label">Assigned By:</td>
+                  <td className="info-label">Assigned By</td>
                   <td>
                     <input
                       type="text"
@@ -584,7 +649,7 @@ Case Page
 
                 {/* Another example date field */}
                 <tr>
-                  <td className="info-label">Due Date:</td>
+                  <td className="info-label">Due Date</td>
                   <td>
                     {/* <input
                       type="text"
@@ -608,7 +673,7 @@ Case Page
                   </td>
                 </tr>
                 <tr>
-                  <td className="info-label">Subnumber:</td>
+                  <td className="info-label">Subnumber</td>
                   <td>
                     <input
                       type="text"
@@ -621,7 +686,7 @@ Case Page
 
                                {/* Associated Subnumbers */}
                                <tr>
-  <td className="info-label"style={{ width: "30%" }}>Associated Subnumbers:</td>
+  <td className="info-label"style={{ width: "25%" }}>Associated Subnumbers</td>
   <td>
     <div className="custom-dropdown">
       <div
@@ -707,11 +772,14 @@ Case Page
                   }}
                   style={{ cursor: status === "Lead Return Submitted" ? "pointer" : "default" }}
                 >
-                  <div className={`status-circle ${idx <= currentStatusIndex ? "active" : ""}`}>
-                    {idx <= currentStatusIndex && <span className="status-number">{idx + 1}</span>}
-                  </div>
+                 {/* Always render the circle and its number; add “active” class only if idx <= current */}
+      <div className={`status-circle ${idx <= currentStatusIndex ? "active" : ""}`}>
+        <span className="status-number">{idx + 1}</span>
+      </div>
+
                   {idx < statuses.length && (
-                    <div className={`status-line ${idx < currentStatusIndex ? "active" : ""}`}></div>
+                    <div className={`status-line ${idx < currentStatusIndex ? "active" : ""}`}>
+                    </div>
                   )}
                   <div className={`status-text-box ${idx === currentStatusIndex ? "highlighted" : ""}`}>
                     {status}

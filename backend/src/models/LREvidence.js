@@ -31,9 +31,16 @@ const lrEvidenceSchema = new mongoose.Schema(
         type: { type: String },
         evidenceDescription: { type: String, required: true  }, 
         // fileId: { type: mongoose.Schema.Types.ObjectId, ref: "uploads" },
-        filePath: { type: String, required: true },
+        filePath: { type: String, required: function () { return !this.isLink; } },
         originalName: { type: String },
         filename: { type: String },
+        accessLevel: {
+            type: String,
+            enum: ["Only Case Manager", "Everyone"],
+            default: "Everyone"
+          },
+          isLink: { type: Boolean, default: false },
+          link: { type: String }
        
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields

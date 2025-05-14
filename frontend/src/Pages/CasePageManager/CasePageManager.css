@@ -15,6 +15,40 @@
     flex-direction: row; /* Sidebar and content side-by-side */
     /* flex: 1; */
   }
+
+  .case-team
+  {
+    width: 80%;
+
+    margin-left: 200px;
+    margin-top: 20px;
+
+  }
+
+  .add-lead-section
+  {
+  
+    width: 80%;
+    margin-left: 200px;
+    /* margin-top: 20px; */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* background-color: green; */
+    margin-top: 20px;
+    gap: 20px;
+  }
+  .add-lead-title
+  {
+    display:flex;
+    align-items:center;
+  }
+  .add-lead-btn1 {
+    padding: 5px;
+    font-size: 20px;
+    height: 50px;
+    /* background-color: green; */
+  }
   /* .left-content
   {
     height:100vh;
@@ -94,6 +128,19 @@
 .sidebar-list {
   list-style: none;
   padding: 0;
+  margin: 0;
+}
+
+ul {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-left: 60px; /* adjust bullet indent */
+  margin-left: 20px;
+}
+
+
+.sidebar-ul
+{
   margin: 0;
 }
 
@@ -199,6 +246,19 @@
     margin-bottom: 20px;
     margin-top: 100px;
     width: 100%;
+  }
+
+  .caseandleadinfo
+  {
+    display: flex;
+    justify-content: space-between;
+    width: 90%;
+  }
+
+  .side-title
+  {
+    margin-left: 20px;
+    /* margin-top: -10px; */
   }
 
   /* Stats Bar */
@@ -366,3 +426,62 @@
 {
   margin-left: 10%;
 }
+
+
+.leads-table th {
+  /* ensure relative positioning for any absolute popups */
+  position: relative;
+  padding-top: 0.5rem; /* some breathing room */
+}
+
+/* the header title (your column label) */
+.leads-table th .header-title {
+  text-align: left;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+/* the row that holds both icons, centered */
+.leads-table th .header-controls {
+  display: flex;
+  justify-content: flex-start;  
+  align-items: center;     
+  gap: 1px;             
+}
+
+/* tighten up the button styles */
+.leads-table th .header-controls button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.leads-table th .filter-popup {
+  position: absolute;
+  top: 2.5rem;   /* push it below the controls row */
+  left: 50%;
+  transform: translateX(-50%);
+  /* …etc… */
+}
+
+/* make the semi-transparent overlay on top of everything */
+.popup-overlay {
+  z-index: 10000;    /* higher than sidebar, tables, etc. */
+}
+
+/* the white box you actually see */
+.popup-content {
+  width: 80% !important;    /* or 70%, 90%, whatever feels right */
+  max-width: 900px;         /* keep it from getting ridiculously wide */
+  z-index: 10001;           /* one above the overlay */
+}
+
+/* in case you’re using a smaller inline filter pop-up */
+.filter-popup {
+  position: absolute;       /* ensure it floats out of the flow */
+  z-index: 10002;           /* absolutely on top of everything else */
+  width: 250px;             /* or whatever width works best */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
