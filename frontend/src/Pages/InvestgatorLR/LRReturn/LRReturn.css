@@ -95,16 +95,20 @@ body {
 .leads-table td.results-col {
   width: 250px;   /* force Result column to exactly 250px */
   /* padding: 10px; */
+   vertical-align: center;
 }
 
 /* 2) Make the inner div scroll its overflow */
 .leads-table .scrollable-cell {
-  max-height: 200px;    /* how tall before scrolling */
+  height: 200px;    
+  width: 100%;
   overflow-y: auto;
   white-space: normal;
   word-break: break-word;
-  /* padding: 10px; */
+
 }
+
+
 
 /* Returns Table */
 .returns-table {

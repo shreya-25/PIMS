@@ -2154,9 +2154,9 @@ const handleShowLeadsInRange = () => {
           </div>
 
           <div className="header-ld-exec">
-        <div className="case-header-ldExecSummary">
+        {/* <div className="case-header-ldExecSummary">
             <h2>LEADS DESK</h2>
-          </div>
+          </div> */}
           <div className="center-section-ldExecSummary">
             <h1>
               CASE: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
@@ -2166,6 +2166,9 @@ const handleShowLeadsInRange = () => {
 
              <div className="top-menu">
         <div className="menu-items">
+           <span className="menu-item active " onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}>
+            Leads Desk
+          </span>
         <span className="menu-item " onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}>
             Generate Report
           </span>

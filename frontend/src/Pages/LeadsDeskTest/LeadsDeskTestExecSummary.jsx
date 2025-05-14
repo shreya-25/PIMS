@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect, useRef } from "react";
 import Navbar from "../../components/Navbar/Navbar";
 import FootBar from "../../components/FootBar/FootBar";
 import { useDataContext } from "../Context/DataContext";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import PersonModal from "../../components/PersonModal/PersonModel";
@@ -116,6 +116,7 @@ export const LeadsDeskTestExecSummary = () => {
   const pdfRef = useRef();
   const { selectedCase } = useContext(CaseContext);
   const { persons } = useDataContext();
+      const location = useLocation();
 
   // ------------------ State ------------------
   const [leadsData, setLeadsData] = useState([]);
@@ -130,6 +131,7 @@ export const LeadsDeskTestExecSummary = () => {
   const [webpageUrl, setWebpageUrl] = useState("");
   const [typedSummary, setTypedSummary] = useState("");
   const saveTimeout = useRef(null);
+    const { leadDetails, caseDetails } = location.state || {};
 
    // Save to backend
    const saveExecutiveSummary = async () => {
@@ -1012,15 +1014,39 @@ const handleShowLeadsInRange = () => {
           {/* </div> */}
 
           <div className="header-ld-exec">
-        <div className="case-header-ldExecSummary">
+        {/* <div className="case-header-ldExecSummary">
             <h2>GENERATE REPORT</h2>
-          </div>
+          </div> */}
           <div className="center-section-ldExecSummary">
             <h1 onClick={() => navigate("/LeadsDesk")} style={{ cursor: 'pointer' }}>
               CASE: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
             </h1>
           </div>
           </div>
+
+             <div className="top-menu">
+        <div className="menu-items">
+           <span className="menu-item " onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}>
+            Leads Desk
+          </span>
+        <span className="menu-item active " onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}>
+            Generate Report
+          </span>
+          <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
+            Add/View Case Notes
+          </span>
+          <span className="menu-item" onClick={() => navigate('/SearchLead', { state: { caseDetails } } )} >
+            Search Leads
+          </span>
+          <span className="menu-item" onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}>
+          View Timelines
+          </span>
+          <span className="menu-item" onClick={() => navigate("/FlaggedLead", { state: { caseDetails } } )}>
+          View Flagged Leads
+          </span>
+         </div>
+       </div>
+
        <div className="down-content"> 
         <div className="exec-summary-sec">
           <h3>Executive Summary</h3>
