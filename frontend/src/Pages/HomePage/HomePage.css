@@ -407,6 +407,10 @@
 }
 
 .leads-table th {
+  color: #333;    /* or whatever dark colour you want */
+}
+
+.leads-table th {
   background-color: #f2f2f2;
   font-weight: bold;
   min-width: 220px;

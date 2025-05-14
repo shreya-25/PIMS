@@ -730,7 +730,7 @@ Case Page
             <th style={{ width: "10%" }}>Return Id</th>
             <th style={{ width: "13%" }}>Date Entered</th>
             <th style={{ width: "9%" }}>Entered By</th>
-            <th>Results</th>
+            <th className="results-col">Results</th>
             <th style={{ width: "14%" }}></th>
             {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
@@ -799,7 +799,9 @@ Case Page
         <td>{ret.leadReturnId}</td>
         <td>{formatDate(ret.enteredDate)}</td>
         <td>{ret.enteredBy}</td>
-        <td>{ret.leadReturnResult}</td>
+        <div className="scrollable-cell">
+        <td> {ret.leadReturnResult}</td>
+          </div>
         <td>
           <div className="lr-table-btn">
             <button
