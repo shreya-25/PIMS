@@ -1168,7 +1168,7 @@ Add Lead
 </div>
 
              
-                    {/* <div className="stats-bar">
+                    <div className="stats-bar">
                         <span
                             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("assignedLeads")}
@@ -1193,7 +1193,7 @@ Add Lead
                         >
                             All Leads: {leads.allLeads.length}
                         </span>
-                    </div> */}
+                    </div>
                   
 
                     {/* Tab Content */}

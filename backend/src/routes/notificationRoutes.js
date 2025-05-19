@@ -11,23 +11,24 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Notification already exists" });
     }
 
+     const assignedTo = (req.body.assignedTo || []).map(u => ({ username: u }));
+
     const newNotification = new Notification({
-      notificationId: req.body.notificationId, // Assign unique ID if not provided
-      assignedBy: req.body.assignedBy,
-      assignedTo: req.body.assignedTo,
-      action1: req.body.action1,
-      action2: req.body.action2,
-      post1: req.body.post1,
-      post2: req.body.post2,
-      leadNo: req.body.leadNo,
-      leadName: req.body.leadName,
-      caseNo: req.body.caseNo,
-      caseName: req.body.caseName,
-      caseStatus: req.body.caseStatus || "Open",
-      unread: true,
-      accepted: false,
-      comment: req.body.comment,
-      time: new Date(),
+      notificationId: req.body.notificationId,
+      assignedBy:     req.body.assignedBy,
+      assignedTo,
+      action1:        req.body.action1,
+      action2:        req.body.action2,
+      post1:          req.body.post1,
+      post2:          req.body.post2,
+      leadNo:         req.body.leadNo,
+      leadName:       req.body.leadName,
+      caseNo:         req.body.caseNo,
+      caseName:       req.body.caseName,
+      caseStatus:     req.body.caseStatus,
+      unread:         true,
+      type:           req.body.type,  
+      time:           new Date(),
     });
 
     await newNotification.save();
@@ -57,48 +58,44 @@ router.get("/open", async (req, res) => {
   }
 });
 
-// ✅ Get notifications where `username` is in `assignedTo` or `assignedBy`
+// Get notifications where username is in assignedTo or assignedBy
 router.get("/user/:username", async (req, res) => {
-  try {
-    const { username } = req.params;
-    const userNotifications = await Notification.find({
-      $or: [{ assignedTo: username }, { assignedBy: username }],
-    });
-    res.json(userNotifications);
-  } catch (error) {
-    res.status(500).json({ error: "Error fetching user notifications", details: error.message });
-  }
+  const { username } = req.params;
+  const userNotifications = await Notification.find({
+    $or: [
+      { "assignedTo.username": username },
+      { assignedBy: username }
+    ]
+  });
+  res.json(userNotifications);
 });
 
-// ✅ Get only open case notifications for assignedBy or assignedTo officer
+// Get only open case notifications for this user
 router.get("/open/user/:username", async (req, res) => {
-  try {
-    const { username } = req.params;
-    const notifications = await Notification.find({
-      caseStatus: "Open",
-      $or: [{ assignedTo: username }, { assignedBy: username }],
-    });
-
-    res.json(notifications);
-  } catch (error) {
-    res.status(500).json({ error: "Error fetching open user cases", details: error.message });
-  }
+  const { username } = req.params;
+  const notifications = await Notification.find({
+    caseStatus: "Open",
+    $or: [
+      { "assignedTo.username": username },
+      { assignedBy: username }
+    ]
+  });
+  res.json(notifications);
 });
 
-// ✅ Get unread notifications (only unread & unaccepted leads)
+// Get unread notifications for this user
 router.get("/unread/user/:username", async (req, res) => {
-  try {
-    const { username } = req.params;
-    const notifications = await Notification.find({
-      unread: true,
-      $or: [{ assignedTo: username }, { assignedBy: username }],
-    });
-
-    res.json(notifications);
-  } catch (error) {
-    res.status(500).json({ error: "Error fetching unread notifications", details: error.message });
-  }
+  const { username } = req.params;
+  const notifications = await Notification.find({
+    unread: true,
+    $or: [
+      { "assignedTo.username": username },
+      { assignedBy: username }
+    ]
+  });
+  res.json(notifications);
 });
+
 
 // ✅ Update unread status
 router.put("/mark-read/:notificationId", async (req, res) => {

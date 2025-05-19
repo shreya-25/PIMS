@@ -1070,7 +1070,7 @@ const handleSortAll = colKey => {
                 {/* Content Area */}
                 <div className="content">
               
-                    {/* <div className="stats-bar">
+                    <div className="stats-bar">
                         <span
                             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("assignedLeads")}
@@ -1095,7 +1095,7 @@ const handleSortAll = colKey => {
                         >
                             All Leads: {leads.allLeads.length}
                         </span>
-                    </div> */}
+                    </div>
 
                        {/* Tab Content */}
                        <div className="content-section">
@@ -1385,13 +1385,13 @@ const handleSortAll = colKey => {
     </button>
   </div>
 </AlertModal>
-    <Pagination
+    {/* <Pagination
   currentPage={currentPage}
-  totalEntries={totalEntries}  // Automatically calculate total entries
-  onPageChange={setCurrentPage} // Update current page state
+  totalEntries={totalEntries}  
+  onPageChange={setCurrentPage} 
   pageSize={pageSize}
-  onPageSizeChange={setPageSize} // Update page size state
-/>
+  onPageSizeChange={setPageSize} 
+/> */}
   </div>
 )}
 
@@ -1635,13 +1635,13 @@ const handleSortAll = colKey => {
 
     </table>
     </div>
-    <Pagination
+    {/* <Pagination
   currentPage={currentPage}
-  totalEntries={totalEntries}  // Automatically calculate total entries
-  onPageChange={setCurrentPage} // Update current page state
+  totalEntries={totalEntries}  
+  onPageChange={setCurrentPage} 
   pageSize={pageSize}
-  onPageSizeChange={setPageSize} // Update page size state
-/>
+  onPageSizeChange={setPageSize} 
+/> */}
   </div>
 )}
 {activeTab === "pendingLeadReturns" && (
@@ -1679,7 +1679,7 @@ const handleSortAll = colKey => {
               <tbody>
                 {leads.pendingLeadReturns.map((lead) => (
                     <tr key={lead.id}>
-                      <td>{lead.leadNo }</td>
+                      <td>{lead.id }</td>
                       <td>{lead.description}</td>
                       <td>
                         <button
@@ -1696,13 +1696,13 @@ const handleSortAll = colKey => {
               </tbody>
             </table>
             </div>
-            <Pagination
+            {/* <Pagination
   currentPage={currentPage}
-  totalEntries={totalEntries}  // Automatically calculate total entries
-  onPageChange={setCurrentPage} // Update current page state
+  totalEntries={totalEntries}  
+  onPageChange={setCurrentPage} 
   pageSize={pageSize}
-  onPageSizeChange={setPageSize} // Update page size state
-/>
+  onPageSizeChange={setPageSize} 
+/> */}
   </div>
 )}  
 
