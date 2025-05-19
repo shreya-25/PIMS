@@ -206,43 +206,38 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
 
       console.log("NotifRec", notificationRecipients);
   
-      // 2) Send a notification to all assigned officers
-      const notificationPayload = {
-        notificationId: Date.now().toString(),
-        assignedBy: caseDetails.managerName,
-        assignedTo: notificationRecipients,
-        action1: "assigned you to a new case",
-        post1: `${caseDetails.number}: ${caseDetails.title}`,
-        leadNo: "",
-        leadName: "",
-        caseNo: caseDetails.number,
-        caseName: caseDetails.title,
-        caseStatus: "Open",
-        unread: true,
-        accepted: false,
-        time: new Date().toISOString(),
-      };
-  
-      // Only send notification if there are investigators selected (excluding case manager)
 if (notificationRecipients.length > 0) {
+  const notificationPayload = {
+    notificationId: Date.now().toString(),
+    assignedBy:     caseDetails.managerName,
+    assignedTo:     notificationRecipients,      // array of strings
+    action1:        "assigned you to a new case",
+    action2:        "",                          // optional
+    post1:          `${caseDetails.number}: ${caseDetails.title}`,
+    post2:          "",                          // optional
+    leadNo:         "",                          // optional for cases
+    leadName:       "",                          // optional for cases
+    caseNo:         caseDetails.number,
+    caseName:       caseDetails.title,
+    caseStatus:     "Open",
+    type:           "Case",                      // <— REQUIRED by your schema
+    // unread & time will get their defaults from the schema
+  };
+
   try {
     const notifResponse = await api.post(
       "/api/notifications",
       notificationPayload,
       {
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+          "Content-Type":  "application/json",
+          Authorization:   `Bearer ${token}`
+        }
       }
     );
-    const notifData = notifResponse.data;
-    console.log("✅ Notification sent successfully:", notifData);
+    console.log("✅ Notification sent:", notifResponse.data);
   } catch (notifErr) {
-    console.error(
-      "❌ Notification error:",
-      notifErr.response?.data || notifErr.message
-    );
+    console.error("❌ Notification error:", notifErr.response?.data || notifErr);
   }
 } else {
   console.log("ℹ️ No investigators selected to receive notification.");
