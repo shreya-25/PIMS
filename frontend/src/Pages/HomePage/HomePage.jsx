@@ -722,21 +722,21 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
   </div>
   </div>
       <div className="left-content">
-      {/* <div className="stats-bar"> */}
+      <div className="stats-bar">
         
-          {/* <span
+          <span
             className={`hoverable ${activeTab === "cases" ? "active" : ""}`}
             onClick={() => setActiveTab("cases")}
           >
             My Ongoing Cases: {cases.length}
-          </span> */}
+          </span>
 
-            {/* <span
+            <span
             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
             onClick={() => setActiveTab("assignedLeads")}
           >
             Assigned Leads: {leads.assignedLeads.length}
-          </span> */}
+          </span>
 
           {/* <span
             className={`hoverable ${activeTab === "pendingLeads" ? "active" : ""}`}
@@ -744,13 +744,13 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
           >
             Pending Leads: {leads?.pendingLeads?.length || 0}
           </span> */}
-          {/* <span
+          <span
             className={`hoverable ${activeTab === "pendingLeadReturns" ? "active" : ""}`}
             onClick={() => setActiveTab("pendingLeadReturns")}
           >
             Lead Returns for Review: {leads.pendingLeadReturns.length}
-          </span> */}
-        {/* </div> */}
+          </span>
+        </div>
 
         <div className="content-section">
 
