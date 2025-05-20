@@ -4,8 +4,9 @@ import { useContext } from "react";
 import "./Slidebar.css";
 import api from "../../api"
 
-export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
+export const SlideBar = ({ onAddCase, buttonClass = "add-case-button", refreshNotifications }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { triggerRefresh } = useContext(CaseContext);
   const [caseDetails, setCaseDetails] = useState({
     title: "",
     number: "",
@@ -210,7 +211,10 @@ if (notificationRecipients.length > 0) {
   const notificationPayload = {
     notificationId: Date.now().toString(),
     assignedBy:     caseDetails.managerName,
-    assignedTo:     notificationRecipients,      // array of strings
+      assignedTo:     notificationRecipients.map(name => ({
+    username: name,
+    status: "pending"
+  })),     // array of strings
     action1:        "assigned you to a new case",
     action2:        "",                          // optional
     post1:          `${caseDetails.number}: ${caseDetails.title}`,
@@ -236,6 +240,8 @@ if (notificationRecipients.length > 0) {
       }
     );
     console.log("✅ Notification sent:", notifResponse.data);
+    refreshNotifications();
+    triggerRefresh();
   } catch (notifErr) {
     console.error("❌ Notification error:", notifErr.response?.data || notifErr);
   }

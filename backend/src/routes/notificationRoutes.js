@@ -11,7 +11,8 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Notification already exists" });
     }
 
-     const assignedTo = (req.body.assignedTo || []).map(u => ({ username: u }));
+    const assignedTo = req.body.assignedTo || [];
+
 
     const newNotification = new Notification({
       notificationId: req.body.notificationId,
@@ -114,22 +115,67 @@ router.put("/mark-read/:notificationId", async (req, res) => {
   }
 });
 
-// ✅ Accept a lead (Mark as Read & Accepted)
 router.put("/accept/:notificationId", async (req, res) => {
+  const { username } = req.body; // Officer's username like "Officer 916"
+
   try {
-    const notification = await Notification.findOneAndUpdate(
-      { notificationId: req.params.notificationId },
-      { unread: false, accepted: true },
-      { new: true }
-    );
+    const notification = await Notification.findOne({ notificationId: req.params.notificationId });
+
     if (!notification) {
       return res.status(404).json({ error: "Notification not found" });
     }
+
+    const assignee = notification.assignedTo.find(u => u.username === username);
+    if (!assignee) {
+      return res.status(404).json({ error: "Assigned user not found in notification" });
+    }
+
+    // ✅ Update the nested subdocument fields
+    assignee.status = "accepted";
+    assignee.respondedAt = new Date();
+    notification.unread = false;
+
+    // ✅ Tell Mongoose this nested array was modified
+    notification.markModified("assignedTo");
+
+    await notification.save();
     res.json(notification);
   } catch (error) {
     res.status(500).json({ error: "Error accepting lead", details: error.message });
   }
 });
+
+router.put("/decline/:notificationId", async (req, res) => {
+  const { username } = req.body; // Officer's username like "Officer 916"
+
+  try {
+    const notification = await Notification.findOne({ notificationId: req.params.notificationId });
+
+    if (!notification) {
+      return res.status(404).json({ error: "Notification not found" });
+    }
+
+    const assignee = notification.assignedTo.find(u => u.username === username);
+    if (!assignee) {
+      return res.status(404).json({ error: "Assigned user not found in notification" });
+    }
+
+    // ✅ Update the nested subdocument fields
+    assignee.status = "declined";
+    assignee.respondedAt = new Date();
+    notification.unread = false;
+
+    // ✅ Tell Mongoose this nested array was modified
+    notification.markModified("assignedTo");
+
+    await notification.save();
+    res.json(notification);
+  } catch (error) {
+    res.status(500).json({ error: "Error accepting lead", details: error.message });
+  }
+});
+
+
 
 // ✅ Delete a notification
 router.delete("/:notificationId", async (req, res) => {
