@@ -26,7 +26,14 @@ export const HomePage = () => {
     const totalPages = 10;
     const totalEntries = 100;
   
+const notificationRef = useRef(); // create a ref
 
+// pass a method to call the refresh method in NotificationCard
+const refreshNotifications = () => {
+  if (notificationRef.current) {
+    notificationRef.current.refresh();
+  }
+};
 
 const [showCaseSelector, setShowCaseSelector] = useState(false);
   const [navigateTo, setNavigateTo] = useState(""); 
@@ -709,7 +716,9 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
            <div className="main-page-contenthp">
            <div className="main-page-abovepart">
 
-           <NotificationCard acceptLead={acceptLead} signedInOfficer={signedInOfficer} />
+           {/* <NotificationCard acceptLead={acceptLead} signedInOfficer={signedInOfficer} /> */}
+           <NotificationCard ref={notificationRef} acceptLead={acceptLead} signedInOfficer={signedInOfficer} />
+
 
 <div className= "add-case-section">
     <h2> Click here to add a new case</h2>
@@ -717,6 +726,7 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
         <SlideBar
         onAddCase={(newCase) => addCase(newCase)}
         buttonClass="custom-add-case-btn1"
+        refreshNotifications={refreshNotifications}
       />
       {/* </div> */}
   </div>
