@@ -29,10 +29,11 @@ export const LRPerson = () => {
           const [loading, setLoading] = useState(true);
           const [error, setError] = useState("");
           const [rawPersons, setRawPersons] = useState([]);
-            const { selectedCase, selectedLead, setSelectedLead, setSelectedCase, leadStatus, setLeadPersons } = useContext(CaseContext);
+            const { selectedCase, selectedLead, setSelectedLead, setSelectedCase, leadStatus, setLeadPersons, setLeadStatus } = useContext(CaseContext);
 
                 const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
                 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+                
               
                 const onShowCaseSelector = (route) => {
                   navigate(route, { state: { caseDetails } });
@@ -116,22 +117,8 @@ export const LRPerson = () => {
       }
     }, [caseDetails, leadDetails]);
   
-  const [leadData, setLeadData] = useState({
-    leadNumber: '16',
-    leadOrigin: '7',
-    incidentNumber: 'C000006',
-    subNumber: 'C0000045',
-    assignedDate: '09/29/24',
-    leadSummary: 'Interview Mr. John',
-    assignedBy: 'Officer 5',
-    leadDescription: 'Mr. John was in California on Saturday, details verifyed from delta airlines',
-    assignedOfficer: ['Officer 1','Officer 2'],
-  });
+  const [leadData, setLeadData] = useState({});
   const [dropdownOpen, setDropdownOpen] = useState(false);
-
-  const handleInputChange = (field, value) => {
-    setLeadData({ ...leadData, [field]: value });
-  };
 
   const handleGenerateLead = () => {
     const { leadNumber, leadSummary, assignedDate, assignedOfficer, assignedBy } = leadData;
@@ -167,6 +154,100 @@ export const LRPerson = () => {
     const handlePrevPage = () => {
     navigate('/LRInstruction'); // Replace '/nextpage' with the actual next page route
   };
+
+    useEffect(() => {
+    const fetchLeadData = async () => {
+      if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+      const token = localStorage.getItem("token");
+
+      try {
+        const response = await api.get(
+          `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+
+        if (response.data.length > 0) {
+          setLeadData({
+            ...response.data[0],
+            assignedTo: response.data[0].assignedTo || [],
+            leadStatus: response.data[0].leadStatus || ''
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch lead data:", error);
+      }
+    };
+
+    fetchLeadData();
+  }, [selectedLead, selectedCase]);
+
+   const handleSubmitReport = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!selectedLead || !selectedCase) {
+        alert("No lead or case selected!");
+        return;
+      }
+
+      const body = {
+        leadNo: selectedLead.leadNo,
+        description: selectedLead.leadName,
+        caseNo: selectedCase.caseNo,
+        caseName: selectedCase.caseName,
+        submittedDate: new Date(),
+        assignedTo: {
+          assignees: leadData.assignedTo || [],
+          lRStatus: "Submitted"
+        },
+        assignedBy: {
+          assignee: localStorage.getItem("officerName") || "Unknown Officer",
+          lRStatus: "Pending"
+        }
+      };
+
+      const response = await api.post("/api/leadReturn/create", body, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (response.status === 201) {
+        const statusResponse = await api.put(
+          "/api/lead/status/in-review",
+          {
+            leadNo: selectedLead.leadNo,
+            description: selectedLead.leadName,
+            caseNo: selectedCase.caseNo,
+            caseName: selectedCase.caseName
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+
+        if (statusResponse.status === 200) {
+          setLeadStatus("In Review");
+          alert("Lead Return submitted and status set to 'In Review'");
+        } else {
+          alert("Lead Return submitted but status update failed.");
+        }
+      } else {
+        alert("Failed to submit Lead Return");
+      }
+    } catch (error) {
+      console.error("Error during Lead Return submission or status update:", error);
+      alert("Something went wrong while submitting the report.");
+    }
+  };
+
+  
 
   const fetchPersons = async () => {
     const token = localStorage.getItem("token");
@@ -593,6 +674,20 @@ Case Page
 
       onClick={() => handleNavigation('/LRPerson1')} className="save-btn1">Add Person</button>
       </div>
+
+       {selectedLead?.leadStatus !== "Completed" && !isCaseManager && (
+  <div className="form-buttons-finish">
+    <h4> Click here to submit the lead</h4>
+    <button
+      disabled={selectedLead?.leadStatus === "In Review"}
+      className="save-btn1"
+      onClick={handleSubmitReport}
+    >
+      Submit 
+    </button>
+  </div>
+)}
+
       <Comment tag = "Person"/>
 </div>
 </div>

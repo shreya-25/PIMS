@@ -30,10 +30,10 @@ export function LoginAdmin() {
               <button className="google-signup">
                 Login with Email
               </button>
-              <button type="submit" className="register">Admin Login</button>
-              <p>
+              <button type="submit" className="register">Login</button>
+              {/* <p>
                 Don't have an account? <Link to="/register">Sign up</Link>
-              </p>
+              </p> */}
             </form>
           </div>
         </div>
