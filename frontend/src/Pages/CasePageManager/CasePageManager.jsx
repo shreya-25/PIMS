@@ -1966,7 +1966,15 @@ Add Lead
             <tr key={lead.id}>
               <td>{lead.id}</td>
               <td>{lead.description}</td>
-              <td>{lead.leadStatus}</td>
+              <td style={{
+  color:
+    lead.leadStatus === "Completed" ? "green" :
+    lead.leadStatus === "In Review" ? "red" :
+    lead.leadStatus === "Pending" ? "orange" : "black"
+}}>
+  {lead.leadStatus}
+</td>
+
               <td>{lead.dueDate}</td>
               <td>{lead.priority}</td>
               <td>{calculateRemainingDays(lead.dueDate)}</td>
