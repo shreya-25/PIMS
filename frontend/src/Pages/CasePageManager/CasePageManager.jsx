@@ -65,7 +65,7 @@ export const CasePageManager = () => {
         .catch(console.error);
     }, [selectedCase.caseNo]);
 
-  
+  console.log("selectedLead", selectedLead);
   
     const handleNavigation = (route) => {
       navigate(route); // Navigate to respective page
@@ -259,7 +259,7 @@ const handleSelectLead = (lead) => {
 
  const handleLeadClick = (lead) => {
   setSelectedLead({
-      leadNo: lead.leadNo,
+      leadNo: lead.leadNo || lead.id,
       incidentNo: lead.incidentNo,
       leadName: lead.description,
       dueDate: lead.dueDate || "N/A",
