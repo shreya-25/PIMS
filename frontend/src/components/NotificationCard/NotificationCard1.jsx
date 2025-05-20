@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, forwardRef, useImperativeHandle } from "react";
 import { CaseContext } from "../../Pages/CaseContext";
 import "./NotificationCard.css";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
 
-const NotificationCard1 = ({ signedInOfficer }) => {
+const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
   const [newNotifs, setNewNotifs]         = useState([]);
   const [openNotifs, setOpenNotifs]       = useState([]);
   const [showAll, setShowAll]             = useState(false);
@@ -13,7 +13,11 @@ const NotificationCard1 = ({ signedInOfficer }) => {
   const [collapsedAll, setCollapsedAll]   = useState(true);
 
   const { setSelectedCase, setSelectedLead } = useContext(CaseContext);
-  const navigate                            = useNavigate();
+  const navigate= useNavigate();
+    const signedInOfficer1 = localStorage.getItem("loggedInUser");
+    const { refreshKey } = useContext(CaseContext);
+
+    console.log("Officer", signedInOfficer1);
 
   const downArrow = `${process.env.PUBLIC_URL}/Materials/down_arrow.png`;
   const upArrow   = `${process.env.PUBLIC_URL}/Materials/up_arrow.png`;
@@ -55,7 +59,16 @@ const NotificationCard1 = ({ signedInOfficer }) => {
     fetchNew();
     fetchOpen();
     // optional: you can poll here if you like
-  }, [signedInOfficer]);
+  }, [signedInOfficer, refreshKey]);
+
+    const refresh = () => {
+    fetchNew();
+    fetchOpen();
+  };
+
+  useImperativeHandle(ref, () => ({
+    refresh
+  }));
 
   const getType = n => {
     if (n.type === "Case")       return { letter: "C", color: "blue" };
@@ -64,44 +77,139 @@ const NotificationCard1 = ({ signedInOfficer }) => {
     return { letter: "?", color: "gray" };
   };
 
-  const handleView = async _id => {
-    const n = newNotifs.find(x => x._id === _id);
-    if (!n) return;
-    const { notificationId, assignedBy, leadNo, leadName, caseNo, caseName, action1 } = n;
-    const role = signedInOfficer === assignedBy ? "Case Manager" : "Investigator";
+  // const handleView = async _id => {
+  //   const n = newNotifs.find(x => x._id === _id);
+  //   if (!n) return;
+  //   const { notificationId, assignedBy, leadNo, leadName, caseNo, caseName, action1 } = n;
+  //   const role = signedInOfficer === assignedBy ? "Case Manager" : "Investigator";
 
-    localStorage.setItem("role", role);
+  //   localStorage.setItem("role", role);
+  //   await api.put(`/api/notifications/mark-read/${notificationId}`);
+  //   setNewNotifs(prev => prev.filter(x => x._id !== _id));
+
+  //   const baseState = {
+  //     caseNo:   caseName,
+  //     caseName: caseNo,
+  //     role,
+  //     ...(leadNo && { leadNo, leadName })
+  //   };
+  //   setSelectedCase(baseState);
+  //   setSelectedLead({ leadNo, leadName });
+  //   localStorage.setItem("selectedCase", JSON.stringify(baseState));
+
+  //   if (action1.includes("new case"))      navigate("/Investigator",    { state: baseState });
+  //   else if (action1.includes("new lead")) navigate("/LeadReview",      { state: baseState });
+  //   else                                   navigate("/LRInstructions", { state: baseState });
+  // };
+
+  const handleView = async _id => {
+  // Try to find the notification in both new and open lists
+  const n = newNotifs.find(x => x._id === _id) || openNotifs.find(x => x._id === _id);
+  if (!n) return;
+
+  const { notificationId, assignedBy, leadNo, leadName, caseNo, caseName, action1 } = n;
+  const role = signedInOfficer === assignedBy ? "Case Manager" : "Investigator";
+
+  localStorage.setItem("role", role);
+
+  // Mark as read (only if unread)
+  if (n.unread) {
     await api.put(`/api/notifications/mark-read/${notificationId}`);
     setNewNotifs(prev => prev.filter(x => x._id !== _id));
+  }
 
-    const baseState = {
-      caseNo:   caseName,
-      caseName: caseNo,
-      role,
-      ...(leadNo && { leadNo, leadName })
-    };
-    setSelectedCase(baseState);
-    setSelectedLead({ leadNo, leadName });
-    localStorage.setItem("selectedCase", JSON.stringify(baseState));
-
-    if (action1.includes("new case"))      navigate("/Investigator",    { state: baseState });
-    else if (action1.includes("new lead")) navigate("/LeadReview",      { state: baseState });
-    else                                   navigate("/LRInstructions", { state: baseState });
+  const baseState = {
+    caseNo:   caseName,
+    caseName: caseNo,
+    role,
+    ...(leadNo && { leadNo, leadName })
   };
 
-  const handleAccept = async _id => {
-  if (!window.confirm("Accept this?")) return;
+  setSelectedCase(baseState);
+  setSelectedLead({ leadNo, leadName });
+  localStorage.setItem("selectedCase", JSON.stringify(baseState));
 
-  // immediately disable the Accept button
+  if (action1.includes("new case"))      navigate("/Investigator",    { state: baseState });
+  else if (action1.includes("new lead")) navigate("/LeadReview",      { state: baseState });
+  else                                   navigate("/LRInstructions", { state: baseState });
+};
+
+const handleDecline = async _id => {
+  if (!window.confirm("Are you sure you want to decline?")) return;
+
+  // Optimistic update for UI
   setNewNotifs(ns =>
     ns.map(n =>
       n._id === _id
         ? {
             ...n,
             assignedTo: n.assignedTo.map(r =>
-              r.username === signedInOfficer
-                ? { ...r, status: "accepted" }
-                : r
+              r.username === signedInOfficer ? { ...r, status: "declined" } : r
+            )
+          }
+        : n
+    )
+  );
+
+  setOpenNotifs(os =>
+    os.map(n =>
+      n._id === _id
+        ? {
+            ...n,
+            assignedTo: n.assignedTo.map(r =>
+              r.username === signedInOfficer ? { ...r, status: "declined" } : r
+            )
+          }
+        : n
+    )
+  );
+
+  try {
+    const n = newNotifs.find(x => x._id === _id) || openNotifs.find(x => x._id === _id);
+    const { notificationId } = n;
+
+    await api.put(`/api/notifications/decline/${notificationId}`, {
+      username: signedInOfficer
+    });
+
+    await api.put(`/api/notifications/mark-read/${notificationId}`);
+
+    // Re-fetch to ensure consistency
+    fetchNew();
+    fetchOpen();
+  } catch (err) {
+    console.error("❌ Failed to decline:", err);
+  }
+};
+
+
+
+  console.log("Officer", signedInOfficer);
+   const handleAccept = async _id => {
+    
+  if (!window.confirm("Accept this?")) return;
+
+  // Optimistic UI update
+  setNewNotifs(ns =>
+    ns.map(n =>
+      n._id === _id
+        ? {
+            ...n,
+            assignedTo: n.assignedTo.map(r =>
+              r.username === signedInOfficer ? { ...r, status: "accepted" } : r
+            )
+          }
+        : n
+    )
+  );
+
+  setOpenNotifs(os =>
+    os.map(n =>
+      n._id === _id
+        ? {
+            ...n,
+            assignedTo: n.assignedTo.map(r =>
+              r.username === signedInOfficer ? { ...r, status: "accepted" } : r
             )
           }
         : n
@@ -112,19 +220,19 @@ const NotificationCard1 = ({ signedInOfficer }) => {
     const n = newNotifs.find(x => x._id === _id);
     const { notificationId } = n;
 
-    // update on server
-    await api.put(`/api/notifications/respond/${notificationId}`, {
-      username: signedInOfficer,
-      status:   "accepted"
+    // ✅ Call your updated backend route
+    await api.put(`/api/notifications/accept/${notificationId}`, {
+      username: signedInOfficer
     });
+
     await api.put(`/api/notifications/mark-read/${notificationId}`);
 
-    // re-fetch lists so everything stays in sync
+    // Re-fetch to stay synced
     fetchNew();
     fetchOpen();
   } catch (err) {
     console.error("Failed to accept:", err);
-    // if you want, you can roll back the optimistic update here
+    // Optionally rollback optimistic update
   }
 };
 
@@ -147,35 +255,42 @@ const NotificationCard1 = ({ signedInOfficer }) => {
         ? <div className="notifications-list">
             {newNotifs.slice(0,1).map(n => {
               const { letter, color } = getType(n);
+               const thisAss = n.assignedTo.find(r => r.username === signedInOfficer);
+  const isPending = thisAss?.status === "pending";
               return (
-                <div key={n._id} className="notification-card unread">
+                <div
+  key={n._id}
+  className={`notification-card ${n.unread ? "unread" : "read"}`}
+>
                   <div className="circle-icon" style={{ backgroundColor: color }}>
                     <span className="notification-letter">{letter}</span>
                   </div>
                   <div className="notification-content">
+                    <div className="notification-text">
                     <p>
                       <strong>{n.assignedBy}</strong> {n.action1}
                       {n.post1 && <strong> {n.post1}</strong>}
                     </p>
                     <span className="time">{new Date(n.time).toLocaleString()}</span>
-                    <div className="buttons-container">
-                      <button className="view-btnNC"   onClick={() => handleView(n._id)}>View</button>
-                      {/* <button className="accept-btnNC" onClick={() => handleAccept(n._id)}>
+                    </div>
+                     <div className="buttons-container">
+                      <button className="view-btnNC" onClick={()=>handleView(n._id)}>
+                        View
+                      </button>
+                      <button
+                        className="accept-btnNC"
+                        onClick={()=>handleAccept(n._id)}
+                        disabled={!isPending}
+                      >
                         Accept
-                      </button> */}
-                      {(() => {
-    const thisAssign = n.assignedTo.find(r => r.username === signedInOfficer);
-    const isPending  = thisAssign?.status === "pending";
-    return (
-      <button
-        className="accept-btnNC"
-        onClick={() => handleAccept(n._id)}
-        disabled={!isPending}
-      >
-        Accept
-      </button>
-    );
-  })()}
+                      </button>
+                       <button
+    className="decline-btnNC"
+    onClick={() => handleDecline(n._id)}
+    disabled={!isPending}
+  >
+    Decline
+  </button>
                     </div>
                   </div>
                 </div>
@@ -218,26 +333,42 @@ const NotificationCard1 = ({ signedInOfficer }) => {
               }}
             >
               {(collapsedAll
-                ? openNotifs.filter(x => x.assignedTo.some(r=>r.status==="pending")).slice(0,1)
-                : openNotifs.filter(x => x.assignedTo.some(r=>r.status==="pending"))
-              ).map(n => {
+  ? openNotifs.filter(x => x.assignedTo.some(r => r.username === signedInOfficer)).slice(0, 1)
+  : openNotifs.filter(x => x.assignedTo.some(r => r.username === signedInOfficer))
+)
+.map(n => {
                 const { letter, color } = getType(n);
+                const thisAss = n.assignedTo.find(r=>r.username===signedInOfficer);
+                const isPending = thisAss?.status==="pending";
                 return (
-                  <div key={n._id} className="notification-card">
+                  <div key={n._id} className={`notification-card ${n.unread ? "unread" : "read"}`}>
                     <div className="circle-icon" style={{ backgroundColor: color }}>
                       <span className="notification-letter">{letter}</span>
                     </div>
                     <div className="notification-content">
+                      <div className="notification-text">
                       <p>
                         <strong>{n.assignedBy}</strong> {n.action1}
                         {n.post1 && <strong> {n.post1}</strong>}
                       </p>
                       <span className="time">{new Date(n.time).toLocaleString()}</span>
+                      </div>
                       <div className="buttons-container">
-                        <button className="view-btnNC"   onClick={() => handleView(n._id)}>View</button>
-                        <button className="accept-btnNC" onClick={() => handleAccept(n._id)}>
+                        <button className="view-btnNC" onClick={() => handleView(n._id)}>View</button>
+                         <button
+                          className="accept-btnNC"
+                          onClick={()=>handleAccept(n._id)}
+                          disabled={!isPending}
+                        >
                           Accept
                         </button>
+                         <button
+    className="decline-btnNC"
+    onClick={() => handleDecline(n._id)}
+    disabled={!isPending}
+  >
+    Decline
+  </button>
                       </div>
                     </div>
                   </div>
@@ -248,6 +379,6 @@ const NotificationCard1 = ({ signedInOfficer }) => {
       }
     </div>
   );
-};
+});
 
 export default NotificationCard1;
