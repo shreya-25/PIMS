@@ -33,7 +33,7 @@ const NotificationSchema = new mongoose.Schema({
     type: {
     type: String,
     required: true,
-    enum: ["Case", "Lead", "LeadReturn"]
+    enum: ["Case", "Lead", "LeadReturn","General"]
   },
   unread: { type: Boolean, default: true },
   time:   { type: Date, default: Date.now }

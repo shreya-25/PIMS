@@ -215,7 +215,7 @@ const handleSelectLead = (lead) => {
         id: leadNo,
         leadNo: leadNo,
         description: description,
-        leadStatus: "Pending",
+        leadStatus: "Accepted",
         dueDate: "NA",          // Default due date (adjust if needed)
         priority: "NA",         // Default priority (adjust if needed)
         flags: [],              // Defaults to empty array
@@ -365,7 +365,7 @@ const handleSelectLead = (lead) => {
           .map(mapLead);
   
         const pendingLeads = filteredLeadsArray
-          .filter((lead) => lead.leadStatus === "Pending")
+          .filter((lead) => lead.leadStatus === "Accepted")
           .map(mapLead);
   
         const LRInReview = filteredLeadsArray
@@ -1169,6 +1169,12 @@ Add Lead
 
              
                     <div className="stats-bar">
+                          <span
+                            className={`hoverable ${activeTab === "allLeads" ? "active" : ""}`}
+                            onClick={() => handleTabClick("allLeads")}
+                        >
+                            All Leads: {leads.allLeads.length}
+                        </span>
                         <span
                             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("assignedLeads")}
@@ -1187,12 +1193,7 @@ Add Lead
                         >
                             Lead Returns for Review: {leads.pendingLeadReturns.length}
                         </span>
-                        <span
-                            className={`hoverable ${activeTab === "allLeads" ? "active" : ""}`}
-                            onClick={() => handleTabClick("allLeads")}
-                        >
-                            All Leads: {leads.allLeads.length}
-                        </span>
+                    
                     </div>
                   
 
@@ -1437,12 +1438,16 @@ Add Lead
               <td>{lead.priority || "N/A"}</td>
               <td>{calculateRemainingDays(lead.dueDate) }</td>
               <td>{lead.flags?.join(", ") || "None"}</td>
-              <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
-                {/* {lead.assignedOfficers.join(", ")} */}
+              {/* <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
+              
                 {lead.assignedOfficers.map((officer, index) => (
                   <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
                 ))}
-                </td>
+                </td> */}
+
+                <td style={{ wordBreak:"break-word" }}>
+                {(lead.assignedOfficers||[]).join(", ")}
+              </td>
               <td>
                 <button
                   className="view-btn1"
@@ -1724,12 +1729,15 @@ Add Lead
               <td>{calculateRemainingDays(lead.dueDate)}</td>
               <td>{lead.flags.join(", ") || "None"}</td>
               {/* <td>{lead.assignedOfficers.join(", ")}</td> */}
-              <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
-                {/* {lead.assignedOfficers.join(", ")} */}
+              {/* <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
+            
                 {lead.assignedOfficers.map((officer, index) => (
                   <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
                 ))}
-                </td>
+                </td> */}
+                <td style={{ wordBreak:"break-word" }}>
+                {(lead.assignedOfficers||[]).join(", ")}
+              </td>
               <td>
                 <button
                   className="view-btn1"
@@ -1915,12 +1923,9 @@ Add Lead
           <tr>
             {[
               { label:"Lead No.",         key:"id",               width:"10%" },
-              { label:"Lead Log Summary", key:"description", width:"14%" },
+              { label:"Lead Log Summary", key:"description", width:"24%" },
               { label:"Lead Status",      key:"leadStatus", width:"10%" },
-              { label:"Due Date",         key:"dueDate", width:"10%" },
-              { label:"Priority  ",         key:"priority" , width:"10%"},
-              { label:"Days Left",        key:"remainingDays", width:"10%" },
-              { label:"Assigned Officers",key:"assignedOfficers", width:"12%" }
+              { label:"Assigned Officers",key:"assignedOfficers", width:"15%" }
             ].map(col => (
              <th key={col.key} style={{ width: col.width }}>
   <div className="header-title">{col.label}</div>
@@ -1968,16 +1973,17 @@ Add Lead
               <td>{lead.description}</td>
               <td style={{
   color:
-    lead.leadStatus === "Completed" ? "green" :
-    lead.leadStatus === "In Review" ? "red" :
-    lead.leadStatus === "Pending" ? "orange" : "black"
+    ["Assigned", "Accepted", "Approved", "Returned", "Completed"].includes(lead.leadStatus)
+      ? "green"
+      : lead.leadStatus === "In Review"
+      ? "red"
+      : "black"
 }}>
-  {lead.leadStatus}
+   {lead.leadStatus === "In Review" ? "To review" : lead.leadStatus}
 </td>
 
-              <td>{lead.dueDate}</td>
-              <td>{lead.priority}</td>
-              <td>{calculateRemainingDays(lead.dueDate)}</td>
+
+             
               <td style={{ wordBreak:"break-word" }}>
                 {(lead.assignedOfficers||[]).join(", ")}
               </td>
@@ -1989,7 +1995,7 @@ Add Lead
             </tr>
           )) : (
             <tr>
-              <td colSpan={8} style={{ textAlign:"center" }}>
+              <td colSpan={5} style={{ textAlign:"center" }}>
                 No Leads Available
               </td>
             </tr>

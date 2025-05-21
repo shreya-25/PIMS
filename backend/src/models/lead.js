@@ -17,7 +17,7 @@ const leadSchema = new mongoose.Schema(
         assignedBy: { type: String, required: true },
         summary: { type: String, required: true },
         description: { type: String, required: true },
-        leadStatus: { type: String, required: true, enum: ["Assigned", "Pending", "In Review", "Approved","Returned", "Completed"], default: "Assigned"},
+        leadStatus: { type: String, required: true, enum: ["Assigned", "Accepted", "In Review", "Approved","Returned", "Completed"], default: "Assigned"},
         dueDate: { type: Date },
         priority:  { type: String },
         caseName: { type: String, required: true},
