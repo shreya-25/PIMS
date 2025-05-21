@@ -1795,6 +1795,98 @@ function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
 //   return y + boxHeight + 20;
 // }
 
+// function drawTextBox(doc, x, y, width, title, content) {
+//   const padding   = 5;
+//   const fontSize  = 10;
+//   const bodyFont  = "Helvetica";
+//   const titleFont = "Helvetica-Bold";
+//   const topMargin = doc.page.margins.top;
+//   const bottomY   = doc.page.height - doc.page.margins.bottom;
+
+//   // prepare your wrapped lines
+//   doc.font(bodyFont).fontSize(fontSize);
+//   const words = content.split(/\s+/);
+//   const lines = [];
+//   let line = "";
+//   for (let w of words) {
+//     const test = line ? line + " " + w : w;
+//     if (doc.widthOfString(test) > width - 2 * padding) {
+//       lines.push(line);
+//       line = w;
+//     } else {
+//       line = test;
+//     }
+//   }
+//   if (line) lines.push(line);
+
+//   // iterate chunks that fit each page
+//   let idx = 0, currY = y, first = true;
+//   while (idx < lines.length) {
+//     // 1) decide how many lines fit
+//     let fit = 0;
+//     // walk forward until we exceed the bottom margin
+//     while (idx + fit < lines.length) {
+//       // measure title on first chunk
+//       const titleH   = first && title
+//                        ? doc.heightOfString(title, { width: width - 2*padding })
+//                        : 0;
+//       // measure these lines as a single block
+//       const block    = lines.slice(idx, idx + fit + 1).join("\n");
+//       const textH    = doc.heightOfString(block, { width: width - 2*padding });
+//       const boxH     = titleH + textH + 2 * padding;
+//       if (currY + boxH > bottomY) break;
+//       fit++;
+//     }
+//     // if none fit, force at least one to avoid infinite loop
+//     if (fit === 0) fit = 1;
+
+//     // 2) compute exact heights
+//     const chunkLines = lines.slice(idx, idx + fit);
+//     const titleH     = first && title
+//                        ? doc.heightOfString(title, { width: width - 2*padding })
+//                        : 0;
+//     const textBlock  = chunkLines.join("\n");
+//     const textH      = doc.heightOfString(textBlock, { width: width - 2*padding });
+//     const boxH       = titleH + textH + 2 * padding;
+
+//     // 3) draw the box
+//     doc.save()
+//        .lineWidth(1)
+//        .strokeColor("#999999")
+//        .rect(x, currY, width, boxH)
+//        .stroke()
+//        .restore();
+
+//     // 4) draw the title + text
+//     let textY = currY + padding;
+//     if (first && title) {
+//       doc.font(titleFont)
+//          .fontSize(fontSize)
+//          .text(title, x + padding, textY, { width: width - 2*padding });
+//       textY += titleH;
+//     }
+//     doc.font(bodyFont)
+//        .fontSize(fontSize)
+//        .text(textBlock, x + padding, textY, {
+//          width: width - 2 * padding,
+//          align: "justify"
+//        });
+
+//     // advance
+//     idx   += fit;
+//     first  = false;
+//     currY += boxH;
+
+//     // if there’s more, new page
+//     if (idx < lines.length) {
+//       doc.addPage();
+//       currY = topMargin;
+//     }
+//   }
+
+//   return currY + padding;
+// }
+
 function drawTextBox(doc, x, y, width, title, content) {
   const padding   = 5;
   const fontSize  = 10;

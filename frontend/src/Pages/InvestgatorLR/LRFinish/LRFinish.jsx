@@ -29,10 +29,39 @@ export const LRFinish = () => {
   const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus} = useContext(CaseContext);
   const location = useLocation();
   const [loading, setLoading] = useState(true);
+  const [leadData, setLeadData] = useState({});
   const getCasePageRoute = () => {
     if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
     return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
 };
+
+useEffect(() => {
+    const fetchLeadData = async () => {
+      if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+      const token = localStorage.getItem("token");
+
+      try {
+        const response = await api.get(
+          `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+
+        if (response.data.length > 0) {
+          setLeadData({
+            ...response.data[0],
+            assignedTo: response.data[0].assignedTo || [],
+            leadStatus: response.data[0].leadStatus || ''
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch lead data:", error);
+      }
+    };
+
+    fetchLeadData();
+  }, [selectedLead, selectedCase]);
 
 useEffect(() => {
   // 1) Must have a case
@@ -361,12 +390,12 @@ useEffect(() => {
   const handleSubmitReport = async () => {
     try {
       const token = localStorage.getItem("token");
-  
+
       if (!selectedLead || !selectedCase) {
         alert("No lead or case selected!");
         return;
       }
-  
+
       const body = {
         leadNo: selectedLead.leadNo,
         description: selectedLead.leadName,
@@ -374,29 +403,23 @@ useEffect(() => {
         caseName: selectedCase.caseName,
         submittedDate: new Date(),
         assignedTo: {
-          assignees: ["Officer 916", "Officer 91"],
+          assignees: leadData.assignedTo || [],
           lRStatus: "Submitted"
         },
         assignedBy: {
-          assignee: "Officer 912",
+          assignee: localStorage.getItem("officerName") || "Unknown Officer",
           lRStatus: "Pending"
         }
       };
-  
-      // Step 1: Submit the LeadReturn
-      const response = await api.post(
-        "/api/leadReturn/create",
-        body,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-          }
+
+      const response = await api.post("/api/leadReturn/create", body, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         }
-      );
-  
+      });
+
       if (response.status === 201) {
-        // Step 2: Update lead status to 'In Review' via PUT
         const statusResponse = await api.put(
           "/api/lead/status/in-review",
           {
@@ -412,7 +435,7 @@ useEffect(() => {
             }
           }
         );
-  
+
         if (statusResponse.status === 200) {
           setLeadStatus("In Review");
           alert("Lead Return submitted and status set to 'In Review'");
@@ -967,10 +990,7 @@ Case Page
         </div>
         </div>
 
-        <Comment tag= "Finish"/>
-        {/* Buttons */}
-      {/* Buttons */}
-{selectedLead?.leadStatus !== "Completed" && (
+        {selectedLead?.leadStatus !== "Completed" && (
   isCaseManager ? (
     <div className="form-buttons-finish">
       <button className="save-btn1" onClick={() => submitReturnAndUpdate("complete")}>Approve</button>
@@ -978,17 +998,22 @@ Case Page
     </div>
   ) : (
     <div className="form-buttons-finish">
+         <h4> Click here to submit the lead</h4>
       <button
         disabled={selectedLead?.leadStatus === "In Review"}
         className="save-btn1"
         onClick={handleSubmitReport}
       >
-        Submit Lead Return
+        Submit
       </button>
     </div>
   )
 )}
 
+
+        <Comment tag= "Finish"/>
+        {/* Buttons */}
+      {/* Buttons */}
 
 
         </div>

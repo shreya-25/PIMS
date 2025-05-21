@@ -1059,40 +1059,131 @@ function measureTableHeight(table) {
 }
 
 // Simple text box
+// function drawTextBox(doc, x, y, width, title, content) {
+//   const paddingX = 5;
+//   const paddingY = 10;
+//   const titleHeight = title ? 15 : 0;
+//   doc.font("Helvetica").fontSize(12);
+
+//   // Calculate text height
+//   const contentHeight = doc.heightOfString(content, {
+//     width: width - 2 * paddingX,
+//     align: "justify",
+//   });
+//   const boxHeight = titleHeight + contentHeight + 2 * paddingY;
+
+//   // Draw box border
+//   doc.save();
+//   doc.lineWidth(1);
+//   doc.strokeColor("#999999");
+//   doc.roundedRect(x, y, width, boxHeight, 2).stroke();
+//   doc.restore();
+
+//   // Title
+//   if (title) {
+//     doc.font("Helvetica-Bold").fontSize(10).text(title, x + paddingX, y + paddingY);
+//   }
+
+//   // Content
+//   doc.font("Helvetica").fontSize(10).text(content, x + paddingX, y + paddingY + titleHeight, {
+//     width: width - 2 * paddingX,
+//     align: "justify",
+//   });
+
+//   return y + boxHeight + 20;
+// }
+
 function drawTextBox(doc, x, y, width, title, content) {
-  const paddingX = 5;
-  const paddingY = 10;
-  const titleHeight = title ? 15 : 0;
-  doc.font("Helvetica").fontSize(12);
+  const padding   = 5;
+  const fontSize  = 10;
+  const bodyFont  = "Helvetica";
+  const titleFont = "Helvetica-Bold";
+  const topMargin = doc.page.margins.top;
+  const bottomY   = doc.page.height - doc.page.margins.bottom;
 
-  // Calculate text height
-  const contentHeight = doc.heightOfString(content, {
-    width: width - 2 * paddingX,
-    align: "justify",
-  });
-  const boxHeight = titleHeight + contentHeight + 2 * paddingY;
+  // prepare your wrapped lines
+  doc.font(bodyFont).fontSize(fontSize);
+  const words = content.split(/\s+/);
+  const lines = [];
+  let line = "";
+  for (let w of words) {
+    const test = line ? line + " " + w : w;
+    if (doc.widthOfString(test) > width - 2 * padding) {
+      lines.push(line);
+      line = w;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
 
-  // Draw box border
-  doc.save();
-  doc.lineWidth(1);
-  doc.strokeColor("#999999");
-  doc.roundedRect(x, y, width, boxHeight, 2).stroke();
-  doc.restore();
+  // iterate chunks that fit each page
+  let idx = 0, currY = y, first = true;
+  while (idx < lines.length) {
+    // 1) decide how many lines fit
+    let fit = 0;
+    // walk forward until we exceed the bottom margin
+    while (idx + fit < lines.length) {
+      // measure title on first chunk
+      const titleH   = first && title
+                       ? doc.heightOfString(title, { width: width - 2*padding })
+                       : 0;
+      // measure these lines as a single block
+      const block    = lines.slice(idx, idx + fit + 1).join("\n");
+      const textH    = doc.heightOfString(block, { width: width - 2*padding });
+      const boxH     = titleH + textH + 2 * padding;
+      if (currY + boxH > bottomY) break;
+      fit++;
+    }
+    // if none fit, force at least one to avoid infinite loop
+    if (fit === 0) fit = 1;
 
-  // Title
-  if (title) {
-    doc.font("Helvetica-Bold").fontSize(10).text(title, x + paddingX, y + paddingY);
+    // 2) compute exact heights
+    const chunkLines = lines.slice(idx, idx + fit);
+    const titleH     = first && title
+                       ? doc.heightOfString(title, { width: width - 2*padding })
+                       : 0;
+    const textBlock  = chunkLines.join("\n");
+    const textH      = doc.heightOfString(textBlock, { width: width - 2*padding });
+    const boxH       = titleH + textH + 2 * padding;
+
+    // 3) draw the box
+    doc.save()
+       .lineWidth(1)
+       .strokeColor("#999999")
+       .rect(x, currY, width, boxH)
+       .stroke()
+       .restore();
+
+    // 4) draw the title + text
+    let textY = currY + padding;
+    if (first && title) {
+      doc.font(titleFont)
+         .fontSize(fontSize)
+         .text(title, x + padding, textY, { width: width - 2*padding });
+      textY += titleH;
+    }
+    doc.font(bodyFont)
+       .fontSize(fontSize)
+       .text(textBlock, x + padding, textY, {
+         width: width - 2 * padding,
+         align: "justify"
+       });
+
+    // advance
+    idx   += fit;
+    first  = false;
+    currY += boxH;
+
+    // if there’s more, new page
+    if (idx < lines.length) {
+      doc.addPage();
+      currY = topMargin;
+    }
   }
 
-  // Content
-  doc.font("Helvetica").fontSize(10).text(content, x + paddingX, y + paddingY + titleHeight, {
-    width: width - 2 * paddingX,
-    align: "justify",
-  });
-
-  return y + boxHeight + 20;
+  return currY + padding;
 }
-
 /* ---------------------------------------
    Your "structured" lead detail drawing
 -----------------------------------------*/
@@ -1241,7 +1332,7 @@ function generateCaseReport(req, res) {
               currentY += 20;
               currentY = ensureSpace(doc, currentY, 100);
 
-              currentY = safeDrawTextBox(doc, 50, currentY, 512, "", lr.leadReturnResult || "") + 20;
+              currentY = drawTextBox(doc, 50, currentY, 512, "", lr.leadReturnResult || "") + 20;
 
 
               // 2) Person Details

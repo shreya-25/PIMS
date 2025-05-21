@@ -33,6 +33,9 @@ export const CaseProvider = ({ children }) => {
         return localStorage.getItem("token") || "";
     });
 
+    const [refreshKey, setRefreshKey] = useState(0); // <- key to force re-fetch
+    const triggerRefresh = () => setRefreshKey(prev => prev + 1); // <- call this when a change happens
+
     const [leadInstructions, setLeadInstructions] = useState(null);
     const [leadReturns, setLeadReturns] = useState(null);
     const [leadPersons, setLeadPersons] = useState(null);
@@ -85,7 +88,8 @@ export const CaseProvider = ({ children }) => {
             leadPersons, setLeadPersons,
             selectedReports, setSelectedReports,
             withAutoRefresh, leadStatus,         
-            setLeadStatus 
+            setLeadStatus,
+            refreshKey, triggerRefresh
         }}>
             {children}
         </CaseContext.Provider>

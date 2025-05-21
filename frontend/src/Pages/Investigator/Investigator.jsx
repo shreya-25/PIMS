@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useRef, useMemo} from 'react';
+import React, { useContext, useState, useEffect, useRef, useMemo, useCallback} from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import Searchbar from '../../components/Searchbar/Searchbar';
 import Button from '../../components/Button/Button';
@@ -299,88 +299,155 @@ const handleLeadClick = (lead) => {
   //  }, [selectedCase, token]);
 
 
-  useEffect(() => {
-    const fetchLeads = async () => {
-      if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+  // useEffect(() => {
+  //   const fetchLeads = useCallback(async () => {
+  //     if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
   
-      try {
-        const token = localStorage.getItem("token");
+  //     try {
+  //       const token = localStorage.getItem("token");
   
-        const response = await api.get(
-          `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+  //       const response = await api.get(
+  //         `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${token}`,
+  //           },
+  //         }
+  //       );
   
-        const data = response.data;
-        console.log("✅ Fetched Leads Data:", data);
+  //       const data = response.data;
+  //       console.log("✅ Fetched Leads Data:", data);
   
-        const leadsArray = Array.isArray(data) ? data : [];
+  //       const leadsArray = Array.isArray(data) ? data : [];
   
-        const filteredLeadsArray = leadsArray.filter((lead) => {
-          if (
-            lead.accessLevel === "Only Case Manager and Assignees" &&
-            !lead.assignedTo?.includes(signedInOfficer) &&
-            lead.assignedBy !== signedInOfficer
-          ) {
-            return false;
-          }
-          return true;
-        });
+  //       const filteredLeadsArray = leadsArray.filter((lead) => {
+  //         if (
+  //           lead.accessLevel === "Only Case Manager and Assignees" &&
+  //           !lead.assignedTo?.includes(signedInOfficer) &&
+  //           lead.assignedBy !== signedInOfficer
+  //         ) {
+  //           return false;
+  //         }
+  //         return true;
+  //       });
   
-        const mapLead = (lead) => ({
-          id: lead.leadNo,
-          description: lead.description,
-          dueDate: lead.dueDate
-            ? new Date(lead.dueDate).toISOString().split("T")[0]
-            : "N/A",
-          priority: lead.priority || "Medium",
-          flags: Array.isArray(lead.associatedFlags)
-            ? lead.associatedFlags
-            : [],
-          assignedOfficers: Array.isArray(lead.assignedTo)
-            ? lead.assignedTo
-            : [],
-          leadStatus: lead.leadStatus,
-          caseName: lead.caseName,
-          caseNo: String(lead.caseNo),
-        });
+  //       const mapLead = (lead) => ({
+  //         id: lead.leadNo,
+  //         description: lead.description,
+  //         dueDate: lead.dueDate
+  //           ? new Date(lead.dueDate).toISOString().split("T")[0]
+  //           : "N/A",
+  //         priority: lead.priority || "Medium",
+  //         flags: Array.isArray(lead.associatedFlags)
+  //           ? lead.associatedFlags
+  //           : [],
+  //         assignedOfficers: Array.isArray(lead.assignedTo)
+  //           ? lead.assignedTo
+  //           : [],
+  //         leadStatus: lead.leadStatus,
+  //         caseName: lead.caseName,
+  //         caseNo: String(lead.caseNo),
+  //       });
   
-        const assignedLeads = filteredLeadsArray
-          .filter((lead) => lead.leadStatus === "Assigned")
-          .map(mapLead);
+  //       const assignedLeads = filteredLeadsArray
+  //         .filter((lead) => lead.leadStatus === "Assigned")
+  //         .map(mapLead);
   
-        const pendingLeads = filteredLeadsArray
-          .filter((lead) => lead.leadStatus === "Pending")
-          .map(mapLead);
+  //       const pendingLeads = filteredLeadsArray
+  //         .filter((lead) => lead.leadStatus === "Pending")
+  //         .map(mapLead);
   
-        const LRInReview = filteredLeadsArray
-          .filter((lead) => lead.leadStatus === "In Review")
-          .map(mapLead);
+  //       const LRInReview = filteredLeadsArray
+  //         .filter((lead) => lead.leadStatus === "In Review")
+  //         .map(mapLead);
 
-           const allLeads = filteredLeadsArray
-          .map(mapLead);
+  //          const allLeads = filteredLeadsArray
+  //         .map(mapLead);
   
-        console.log("✅ Assigned Leads:", assignedLeads);
-        console.log("✅ Pending Leads:", pendingLeads);
+  //       console.log("✅ Assigned Leads:", assignedLeads);
+  //       console.log("✅ Pending Leads:", pendingLeads);
   
-        setLeads((prev) => ({
-          ...prev,
-          allLeads,
-          assignedLeads,
-          pendingLeads,
-          pendingLeadReturns: LRInReview,
-        }));
-      } catch (error) {
-        console.error("❌ Error fetching leads:", error.message);
-      }
-    };
+  //       setLeads((prev) => ({
+  //         ...prev,
+  //         allLeads,
+  //         assignedLeads,
+  //         pendingLeads,
+  //         pendingLeadReturns: LRInReview,
+  //       }));
+  //     } catch (error) {
+  //       console.error("❌ Error fetching leads:", error.message);
+  //     }
+  //   };
   
-    fetchLeads();
-  }, [selectedCase, token, signedInOfficer]);
+  //   fetchLeads();
+  // }, [selectedCase, token, signedInOfficer]);
+
+  useEffect(() => {
+  // 1) define your async fetch:
+  const fetchLeads = async () => {
+    if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await api.get(
+        `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = Array.isArray(response.data) ? response.data : [];
+
+      // your existing filter/map logic…
+      const filtered = data.filter(lead => {
+        return !(
+          lead.accessLevel === "Only Case Manager and Assignees" &&
+          !lead.assignedTo?.includes(signedInOfficer) &&
+          lead.assignedBy !== signedInOfficer
+        );
+      });
+
+      const mapLead = lead => ({
+        id: lead.leadNo,
+        description: lead.description,
+        dueDate: lead.dueDate
+          ? new Date(lead.dueDate).toISOString().slice(0,10)
+          : "N/A",
+        priority: lead.priority || "Medium",
+        flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [],
+        assignedOfficers: Array.isArray(lead.assignedTo) ? lead.assignedTo : [],
+        leadStatus: lead.leadStatus,
+        caseName: lead.caseName,
+        caseNo: String(lead.caseNo),
+      });
+
+      const allLeads = filtered.map(mapLead);
+      const assignedLeads = filtered.filter(l => l.leadStatus === "Assigned").map(mapLead);
+      const pendingLeads  = filtered.filter(l => l.leadStatus === "Accepted" ).map(mapLead);
+      const inReview      = filtered.filter(l => l.leadStatus === "In Review").map(mapLead);
+
+      setLeads({
+        allLeads,
+        assignedLeads,
+        pendingLeads,
+        pendingLeadReturns: inReview,
+      });
+    } catch (err) {
+      console.error("Error fetching leads:", err);
+    }
+  };
+
+  // 2) fire once now...
+  fetchLeads();
+
+  // 3) ...then every 15s
+  const intervalId = setInterval(fetchLeads, 15_000);
+
+  // 4) cleanup on unmount / deps change
+  return () => clearInterval(intervalId);
+}, [
+  selectedCase?.caseNo,
+  selectedCase?.caseName,
+  signedInOfficer
+]);
+
     
     // Handler to accept the assigned lead
     const handleAcceptAssignedLead = (lead) => {
@@ -448,7 +515,7 @@ const handleLeadClick = (lead) => {
           id: leadNo,
           leadNo: leadNo,
           description: description,
-          leadStatus: "Pending",
+          leadStatus: "Accepted",
           dueDate: "NA",          // Default due date (adjust if needed)
           priority: "NA",         // Default priority (adjust if needed)
           flags: [],              // Defaults to empty array
@@ -1070,7 +1137,14 @@ const handleSortAll = colKey => {
                 {/* Content Area */}
                 <div className="content">
               
-                    {/* <div className="stats-bar">
+                    <div className="stats-bar">
+                       <span
+                            className={`hoverable ${activeTab === "allLeads" ? "active" : ""}`}
+                            onClick={() => handleTabClick("allLeads")}
+                        >
+                            All Leads: {leads.allLeads.length}
+                        </span>
+                        
                         <span
                             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("assignedLeads")}
@@ -1081,21 +1155,16 @@ const handleSortAll = colKey => {
                             className={`hoverable ${activeTab === "pendingLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("pendingLeads")}
                           >
-                            Pending Leads: {leads.pendingLeads.length}
+                            Accepted Leads: {leads.pendingLeads.length}
                           </span>
                         <span
                             className={`hoverable ${activeTab === "pendingLeadReturns" ? "active" : ""}`}
                             onClick={() => handleTabClick("pendingLeadReturns")}
                         >
-                            Lead Returns In Review: {leads.pendingLeadReturns.length}
+                            Lead Returns Under Review: {leads.pendingLeadReturns.length}
                         </span>
-                        <span
-                            className={`hoverable ${activeTab === "allLeads" ? "active" : ""}`}
-                            onClick={() => handleTabClick("allLeads")}
-                        >
-                            All Leads: {leads.allLeads.length}
-                        </span>
-                    </div> */}
+                       
+                    </div>
 
                        {/* Tab Content */}
                        <div className="content-section">
@@ -1309,7 +1378,8 @@ const handleSortAll = colKey => {
         </tr>
       </thead>
       <tbody>
-        {leads.assignedLeads
+        {leads.assignedLeads.length > 0 ? (
+        leads.assignedLeads
           .filter(
             (lead) =>
               lead.description
@@ -1363,7 +1433,14 @@ const handleSortAll = colKey => {
                 </button>
               </td>
             </tr>
-          ))}
+           ))
+          ) : (
+            <tr>
+              <td colSpan="8" style={{ textAlign: 'center' }}>
+                No Assigned Leads Available
+              </td>
+            </tr>
+          )}
       </tbody>
     </table>
     </div>
@@ -1385,13 +1462,13 @@ const handleSortAll = colKey => {
     </button>
   </div>
 </AlertModal>
-    <Pagination
+    {/* <Pagination
   currentPage={currentPage}
-  totalEntries={totalEntries}  // Automatically calculate total entries
-  onPageChange={setCurrentPage} // Update current page state
+  totalEntries={totalEntries}  
+  onPageChange={setCurrentPage} 
   pageSize={pageSize}
-  onPageSizeChange={setPageSize} // Update page size state
-/>
+  onPageSizeChange={setPageSize} 
+/> */}
   </div>
 )}
 
@@ -1583,7 +1660,8 @@ const handleSortAll = colKey => {
         </tr>
       </thead>
       <tbody>
-        {leads.pendingLeads
+           {leads.pendingLeads.length > 0 ? (
+        leads.pendingLeads
           .filter(
             (lead) =>
               lead.description
@@ -1630,18 +1708,25 @@ const handleSortAll = colKey => {
                 </button>
               </td>
             </tr>
-          ))}
+          ))
+            ) : (
+              <tr>
+                <td colSpan="8" style={{ textAlign: 'center' }}>
+                  No Accepted Leads Available
+                </td>
+              </tr>
+            )}
       </tbody>
 
     </table>
     </div>
-    <Pagination
+    {/* <Pagination
   currentPage={currentPage}
-  totalEntries={totalEntries}  // Automatically calculate total entries
-  onPageChange={setCurrentPage} // Update current page state
+  totalEntries={totalEntries}  
+  onPageChange={setCurrentPage} 
   pageSize={pageSize}
-  onPageSizeChange={setPageSize} // Update page size state
-/>
+  onPageSizeChange={setPageSize} 
+/> */}
   </div>
 )}
 {activeTab === "pendingLeadReturns" && (
@@ -1677,9 +1762,10 @@ const handleSortAll = colKey => {
                 </tr>
               </thead>
               <tbody>
-                {leads.pendingLeadReturns.map((lead) => (
+                {leads.pendingLeadReturns.length > 0 ? (
+                leads.pendingLeadReturns.map((lead) => (
                     <tr key={lead.id}>
-                      <td>{lead.leadNo }</td>
+                      <td>{lead.id }</td>
                       <td>{lead.description}</td>
                       <td>
                         <button
@@ -1692,17 +1778,24 @@ const handleSortAll = colKey => {
                             </button>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                    ) : (
+                      <tr>
+                        <td colSpan="3" style={{ textAlign: 'center' }}>
+                          No Pending Lead Returns Available
+                        </td>
+                      </tr>
+                    )}
               </tbody>
             </table>
             </div>
-            <Pagination
+            {/* <Pagination
   currentPage={currentPage}
-  totalEntries={totalEntries}  // Automatically calculate total entries
-  onPageChange={setCurrentPage} // Update current page state
+  totalEntries={totalEntries}  
+  onPageChange={setCurrentPage} 
   pageSize={pageSize}
-  onPageSizeChange={setPageSize} // Update page size state
-/>
+  onPageSizeChange={setPageSize} 
+/> */}
   </div>
 )}  
 
@@ -1784,12 +1877,9 @@ const handleSortAll = colKey => {
           <tr>
             {[
               { label:"Lead No.",         key:"id",               width:"10%" },
-              { label:"Lead Log Summary", key:"description", width:"14%" },
+              { label:"Lead Log Summary", key:"description", width:"24%" },
               { label:"Lead Status",      key:"leadStatus", width:"10%" },
-              { label:"Due Date",         key:"dueDate", width:"10%" },
-              { label:"Priority  ",         key:"priority" , width:"10%"},
-              { label:"Days Left",        key:"remainingDays", width:"10%" },
-              { label:"Assigned Officers",key:"assignedOfficers", width:"12%" }
+              { label:"Assigned Officers",key:"assignedOfficers", width:"15%" }
             ].map(col => (
            <th key={col.key} style={{ width: col.width }}>
    <div className="header-title">{col.label}</div>
@@ -1836,10 +1926,17 @@ const handleSortAll = colKey => {
             <tr key={lead.id}>
               <td>{lead.id}</td>
               <td>{lead.description}</td>
-              <td>{lead.leadStatus}</td>
-              <td>{lead.dueDate}</td>
-              <td>{lead.priority}</td>
-              <td>{calculateRemainingDays(lead.dueDate)}</td>
+              <td style={{
+  color:
+    ["Assigned", "Accepted", "Returned"].includes(lead.leadStatus)
+      ? "red"
+      : ["In Review", "Approved", "Completed"].includes(lead.leadStatus)
+      ? "green"
+      : "black"
+}}>
+   {lead.leadStatus === "In Review" ? "Under review" : lead.leadStatus}
+</td>
+             
               <td style={{ wordBreak:"break-word" }}>
                 {(lead.assignedOfficers||[]).join(", ")}
               </td>
@@ -1851,7 +1948,7 @@ const handleSortAll = colKey => {
             </tr>
           )) : (
             <tr>
-              <td colSpan={8} style={{ textAlign:"center" }}>
+              <td colSpan={5} style={{ textAlign:"center" }}>
                 No Leads Available
               </td>
             </tr>

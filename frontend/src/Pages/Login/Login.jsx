@@ -78,9 +78,9 @@ export function Login() {
       <div className="overlay">
         <div className="img-container">
           <div className="logo">
-            <Link to="/LoginAdmin">
+            {/* <Link to="/LoginAdmin"> */}
               <img src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} alt="Endicott Police Logo" />
-            </Link>
+            {/* </Link> */}
           </div>
           <h1 className="main_heading">PIMS</h1>
         </div>
@@ -111,9 +111,9 @@ export function Login() {
                 Login with Email
               </button>
             <button type="submit" className="register">Login</button>
-            <p>
+            {/* <p>
               Don't have an account? <Link to="/register">Sign up</Link>
-            </p>
+            </p> */}
           </form>
         </div>
       </div>
