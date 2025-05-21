@@ -187,7 +187,7 @@ const updateLeadStatus = async (req, res) => {
     }
 
     // Set leadStatus as "pending" by default
-    lead.leadStatus = "Pending";
+    lead.leadStatus = "Accepted";
     await lead.save();
 
     res.status(200).json({ message: "Status updated successfully", lead });
@@ -242,7 +242,7 @@ const updateLRStatusToPending = async (req, res) => {
       },
       {
         $set: {
-          "assignedTo.lRStatus": "Pending",
+          "assignedTo.lRStatus": "Accepted",
         },
       },
       { new: true }
