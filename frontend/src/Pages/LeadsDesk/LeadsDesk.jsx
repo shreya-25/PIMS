@@ -2153,16 +2153,16 @@ const handleShowLeadsInRange = () => {
           </h5> */}
           </div>
 
-          <div className="header-ld-exec">
+          {/* <div className="header-ld-exec"> */}
         {/* <div className="case-header-ldExecSummary">
             <h2>LEADS DESK</h2>
           </div> */}
-          <div className="center-section-ldExecSummary">
+          {/* <div className="center-section-ldExecSummary">
             <h1>
               CASE: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
             </h1>
-          </div>
-          </div>
+          </div> */}
+          {/* </div> */}
 
              <div className="top-menu">
         <div className="menu-items">
@@ -2172,18 +2172,18 @@ const handleShowLeadsInRange = () => {
         <span className="menu-item " onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}>
             Generate Report
           </span>
-          <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
+          {/* <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
             Add/View Case Notes
-          </span>
+          </span> */}
           <span className="menu-item" onClick={() => navigate('/SearchLead', { state: { caseDetails } } )} >
             Search Leads
           </span>
           <span className="menu-item" onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}>
           View Timelines
           </span>
-          <span className="menu-item" onClick={() => navigate("/FlaggedLead", { state: { caseDetails } } )}>
+          {/* <span className="menu-item" onClick={() => navigate("/FlaggedLead", { state: { caseDetails } } )}>
           View Flagged Leads
-          </span>
+          </span> */}
          </div>
        </div>
        <div className="down-content"> 

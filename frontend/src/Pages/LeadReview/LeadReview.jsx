@@ -295,6 +295,27 @@ const dueDateISO = leadData?.dueDate
 ? new Date(leadData.dueDate).toISOString().split("T")[0]
 : "";
 
+const isInvestigator = selectedCase?.role === "Investigator";
+const [allUsers, setAllUsers] = useState([]);
+
+useEffect(() => {
+  const fetchUsers = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const { data } = await api.get("/api/users/usernames");
+      setAllUsers(data.usernames || []);
+    } catch (err) {
+      console.error("❌ Error fetching users:", err);
+      setError("Could not load user list");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchUsers();
+}, []);
 
 
   return (
@@ -527,6 +548,7 @@ const dueDateISO = leadData?.dueDate
                       className="input-field"
                       value={leadData.caseNo}
                       onChange={(e) => handleInputChange('caseNo', e.target.value)}
+                      readOnly={isInvestigator}
                     />
                   </td>
                 </tr>
@@ -538,6 +560,7 @@ const dueDateISO = leadData?.dueDate
                       className="input-field"
                       value={leadData.caseName}
                       onChange={(e) => handleInputChange('caseName', e.target.value)}
+                      readOnly={isInvestigator}
                     />
                   </td>
                 </tr>
@@ -550,6 +573,7 @@ const dueDateISO = leadData?.dueDate
                       value={formatDate(leadData.assignedDate)}
                       onChange={(e) => handleInputChange('assignedDate', e.target.value)}
                       placeholder="MM/DD/YY"
+                      readOnly={isInvestigator}
                     />
                   </td>
                 </tr>
@@ -562,6 +586,7 @@ const dueDateISO = leadData?.dueDate
                       value={leadData.description}
                       onChange={(e) => handleInputChange('description', e.target.value)}
                       placeholder=""
+                      readOnly={isInvestigator}
                     ></textarea>
                   </td>
                 </tr>
@@ -573,6 +598,7 @@ const dueDateISO = leadData?.dueDate
                       value={leadData.summary}
                       onChange={(e) => handleInputChange('summary', e.target.value)}
                       placeholder=""
+                      readOnly={isInvestigator}
                     ></textarea>
                   </td>
                 </tr>
@@ -586,6 +612,7 @@ const dueDateISO = leadData?.dueDate
                       value={leadData.parentLeadNo}
                       onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
                       placeholder="NA"
+                      readOnly={isInvestigator}
                     />
                   </td>
                 </tr>
@@ -593,45 +620,54 @@ const dueDateISO = leadData?.dueDate
                 <tr>
   <td className="info-label">Assigned Officers</td>
   <td>
-    <div className="custom-dropdown">
-      <div
-        className="dropdown-header"
-        onClick={() => setDropdownOpen(!dropdownOpen)}
-      >
+    {isInvestigator ? (
+      <div className="dropdown-header" >
         {assignedOfficers.length > 0
           ? assignedOfficers.join(", ")
-          : "Select Officers"}
-        <span className="dropdown-icon">{dropdownOpen ? "▲" : "▼"}</span>
+          : ""}
       </div>
-      {dropdownOpen && (
-        <div className="dropdown-options">
-          {["Officer 99", "Officer 24", "Officer 1", "Officer 2", "Officer 3"].map((officer) => (
-            <div key={officer} className="dropdown-item">
-              <input
-                type="checkbox"
-                id={officer}
-                value={officer}
-                checked={assignedOfficers.includes(officer)}
-                onChange={(e) => {
-                  const updatedOfficers = e.target.checked
-                    ? [...assignedOfficers, e.target.value]
-                    : assignedOfficers.filter((o) => o !== e.target.value);
-
-                  setAssignedOfficers(updatedOfficers); // Update UI state
-                  setLeadData((prevData) => ({
-                    ...prevData,
-                    assignedTo: updatedOfficers, // Ensure backend gets updated
-                  }));
-                }}
-              />
-              <label htmlFor={officer}>{officer}</label>
-            </div>
-          ))}
+    ) : (
+      <div className="custom-dropdown">
+        <div
+          className="dropdown-header"
+          onClick={() => setDropdownOpen(!dropdownOpen)}
+        >
+          {assignedOfficers.length > 0
+            ? assignedOfficers.join(", ")
+            : "Select Officers"}
+          <span className="dropdown-icon">{dropdownOpen ? "▲" : "▼"}</span>
         </div>
-      )}
-    </div>
+        {dropdownOpen && (
+          <div className="dropdown-options">
+            {allUsers.map((officer) => (
+              <div key={officer} className="dropdown-item">
+                <input
+                  type="checkbox"
+                  id={officer}
+                  value={officer}
+                  checked={assignedOfficers.includes(officer)}
+                  onChange={(e) => {
+                    const updatedOfficers = e.target.checked
+                      ? [...assignedOfficers, e.target.value]
+                      : assignedOfficers.filter((o) => o !== e.target.value);
+
+                    setAssignedOfficers(updatedOfficers);
+                    setLeadData((prevData) => ({
+                      ...prevData,
+                      assignedTo: updatedOfficers,
+                    }));
+                  }}
+                />
+                <label htmlFor={officer}>{officer}</label>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )}
   </td>
 </tr>
+
 
 
                 <tr>
@@ -643,6 +679,7 @@ const dueDateISO = leadData?.dueDate
                       value={leadData.assignedBy}
                       onChange={(e) => handleInputChange('assignedBy', e.target.value)}
                       placeholder=""
+                      readOnly={isInvestigator}
                     />
                   </td>
                 </tr>
@@ -669,6 +706,7 @@ const dueDateISO = leadData?.dueDate
         // now update your leadData however you persist it:
         setLeadData({ ...leadData, dueDate: newIso });
       }}
+      readOnly={isInvestigator}
     />
                   </td>
                 </tr>
@@ -679,54 +717,69 @@ const dueDateISO = leadData?.dueDate
                       type="text"
                       className="input-field"
                       value={leadData.subNumber}
-                    placeholder="NA"
+                    placeholder=""
+                    readOnly={isInvestigator}
                     />
                   </td>
                 </tr>
 
-                               {/* Associated Subnumbers */}
-                               <tr>
-  <td className="info-label"style={{ width: "25%" }}>Associated Subnumbers</td>
+                <tr>
+  <td className="info-label" style={{ width: "25%" }}>Associated Subnumbers</td>
   <td>
-    <div className="custom-dropdown">
-      <div
-        className="dropdown-header"
-        onClick={() => setSubDropdownOpen(!subDropdownOpen)}
-      >
+    {isInvestigator ? (
+      <div className="dropdown-header"   style={{
+          padding: "8px 10px",
+          minHeight: "25px",
+          border: "1px solid #ccc",
+          borderRadius: "4px",
+         
+        }}>
         {associatedSubNumbers.length > 0
           ? associatedSubNumbers.join(", ")
-          : "Select Subnumbers"}
-        <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
+          : ""}
       </div>
-      {subDropdownOpen && (
-        <div className="dropdown-options">
-          {availableSubNumbers.map((subNum) => (
-            <div key={subNum} className="dropdown-item">
-              <input
-                type="checkbox"
-                id={subNum}
-                value={subNum}
-                checked={associatedSubNumbers.includes(subNum)}
-                onChange={(e) => {
-                  const updatedSubs = e.target.checked
-                    ? [...associatedSubNumbers, e.target.value]
-                    : associatedSubNumbers.filter((num) => num !== e.target.value);
-
-                  setAssociatedSubNumbers(updatedSubs); // Update dropdown selection
-                  setLeadData((prevData) => ({
-                    ...prevData,
-                    associatedSubNumbers: updatedSubs, // Update leadData
-                  }));
-                }}
-              />
-              <label htmlFor={subNum}>{subNum}</label>
-            </div>
-          ))}
+    ) : (
+      <div className="custom-dropdown">
+        <div
+          className="dropdown-header"
+          onClick={() => setSubDropdownOpen(!subDropdownOpen)}
+        >
+          {associatedSubNumbers.length > 0
+            ? associatedSubNumbers.join(", ")
+            : "Select Subnumbers"}
+          <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
         </div>
-      )}
-    </div>
+        {subDropdownOpen && (
+          <div className="dropdown-options">
+            {availableSubNumbers.map((subNum) => (
+              <div key={subNum} className="dropdown-item">
+                <input
+                  type="checkbox"
+                  id={subNum}
+                  value={subNum}
+                  checked={associatedSubNumbers.includes(subNum)}
+                  onChange={(e) => {
+                    const updatedSubs = e.target.checked
+                      ? [...associatedSubNumbers, e.target.value]
+                      : associatedSubNumbers.filter((num) => num !== e.target.value);
+
+                    setAssociatedSubNumbers(updatedSubs);
+                    setLeadData((prevData) => ({
+                      ...prevData,
+                      associatedSubNumbers: updatedSubs,
+                    }));
+                  }}
+                />
+                <label htmlFor={subNum}>{subNum}</label>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )}
   </td>
 </tr>
+
               </tbody>
             </table>
           </div>

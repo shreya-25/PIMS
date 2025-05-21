@@ -187,7 +187,14 @@
   background-color: rgba(25, 58, 73, 0.795);
 }
 
+.notification-card.read {
+  background-color: #f0f0f0; /* Light grey */
+  opacity: 0.8;
+}
 
+.notification-card.unread {
+  background-color: #b7e3f346; /* grey background for read */
+}
 
 .accept-btnNC:hover {
   background-color: rgba(25, 58, 73, 0.459);
@@ -205,6 +212,24 @@
   background-color: #787a7c !important;
   color: white !important;
 }
+
+.decline-btnNC {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+ font-size: 16px;
+    width: 100px;
+    height: 45px; 
+    padding: 5px;
+  
+  cursor: pointer;
+}
+
+.decline-btnNC:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
 
 .circle-icon {
   width: 40px;
