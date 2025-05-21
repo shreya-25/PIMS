@@ -1378,7 +1378,8 @@ const handleSortAll = colKey => {
         </tr>
       </thead>
       <tbody>
-        {leads.assignedLeads
+        {leads.assignedLeads.length > 0 ? (
+        leads.assignedLeads
           .filter(
             (lead) =>
               lead.description
@@ -1432,7 +1433,14 @@ const handleSortAll = colKey => {
                 </button>
               </td>
             </tr>
-          ))}
+           ))
+          ) : (
+            <tr>
+              <td colSpan="8" style={{ textAlign: 'center' }}>
+                No Assigned Leads Available
+              </td>
+            </tr>
+          )}
       </tbody>
     </table>
     </div>
@@ -1652,7 +1660,8 @@ const handleSortAll = colKey => {
         </tr>
       </thead>
       <tbody>
-        {leads.pendingLeads
+           {leads.pendingLeads.length > 0 ? (
+        leads.pendingLeads
           .filter(
             (lead) =>
               lead.description
@@ -1699,7 +1708,14 @@ const handleSortAll = colKey => {
                 </button>
               </td>
             </tr>
-          ))}
+          ))
+            ) : (
+              <tr>
+                <td colSpan="8" style={{ textAlign: 'center' }}>
+                  No Accepted Leads Available
+                </td>
+              </tr>
+            )}
       </tbody>
 
     </table>
@@ -1746,7 +1762,8 @@ const handleSortAll = colKey => {
                 </tr>
               </thead>
               <tbody>
-                {leads.pendingLeadReturns.map((lead) => (
+                {leads.pendingLeadReturns.length > 0 ? (
+                leads.pendingLeadReturns.map((lead) => (
                     <tr key={lead.id}>
                       <td>{lead.id }</td>
                       <td>{lead.description}</td>
@@ -1761,7 +1778,14 @@ const handleSortAll = colKey => {
                             </button>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                    ) : (
+                      <tr>
+                        <td colSpan="3" style={{ textAlign: 'center' }}>
+                          No Pending Lead Returns Available
+                        </td>
+                      </tr>
+                    )}
               </tbody>
             </table>
             </div>
