@@ -19,7 +19,7 @@ const CommentSchema = new mongoose.Schema(
                 type: String, 
                 enum: ["Assigned", "Pending"], 
                 default: "Assigned" 
-            }
+            } 
         },
         enteredBy: { type: String, required: true },
         caseName: { type: String, required: true },

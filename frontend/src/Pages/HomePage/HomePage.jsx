@@ -26,7 +26,14 @@ export const HomePage = () => {
     const totalPages = 10;
     const totalEntries = 100;
   
+const notificationRef = useRef(); // create a ref
 
+// pass a method to call the refresh method in NotificationCard
+const refreshNotifications = () => {
+  if (notificationRef.current) {
+    notificationRef.current.refresh();
+  }
+};
 
 const [showCaseSelector, setShowCaseSelector] = useState(false);
   const [navigateTo, setNavigateTo] = useState(""); 
@@ -556,34 +563,25 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
   const assignedColumns = [
     "Lead No.",
     "Lead Name",
-    "Due Date",
-    "Priority",
-    "Days Left",
-    "Flags",
+    "Case Name",
     "Assigned Officers"
   ];
   const assignedColKey = {
     "Lead No.":          "id",
     "Lead Name":   "description",
-    "Due Date":         "dueDate",
-    "Priority":       "priority",
-    "Days Left":   "remainingDays",
-    "Flags":             "flags",
+    "Case Name":         "caseName",
     "Assigned Officers":"assignedOfficers"
   };
   const assignedColWidths = {
     "Lead No.":           "15%",
     "Lead Name":         "30%",
-    "Due Date":          "12%",
-    "Priority":           "12%",
-    "Days Left":         "10%",
-    "Flags":              "10%",
+    "Case Name":          "30%",
     "Assigned Officers": "18%"
   };
 
   // filter + sort state
   const [assignedFilterConfig, setAssignedFilterConfig] = useState({
-    id: "", description: "", dueDate: "", priority: "", remainingDays: "", flags: "", assignedOfficers: ""
+    id: "", description: "", caseName: "", assignedOfficers: ""
   });
   const [assignedSortConfig, setAssignedSortConfig] = useState({ key: null, direction: "asc" });
   const [openAssignedFilter, setOpenAssignedFilter] = useState(null);
@@ -603,51 +601,47 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
 
   // distinct values for each filter dropdown
   const distinctAssigned = useMemo(() => {
-    const map = Object.fromEntries(assignedColumns.map(c => [c, new Set()]));
-    leads.assignedLeads.forEach(lead => {
-      assignedColumns.forEach(col => {
-        const key = assignedColKey[col];
-        let val = key === "remainingDays"
-          ? calculateRemainingDays(lead.dueDate)
-          : lead[key];
-        if (Array.isArray(val)) val.forEach(v => map[col].add(v));
-        else map[col].add(String(val));
-      });
+  const map = Object.fromEntries(assignedColumns.map(c => [c, new Set()]));
+  leads.assignedLeads.forEach(lead => {
+    assignedColumns.forEach(col => {
+      const key = assignedColKey[col];
+      const val = lead[key];
+      if (Array.isArray(val)) val.forEach(v => map[col].add(v));
+      else map[col].add(String(val));
     });
-    return Object.fromEntries(
-      Object.entries(map).map(([c, set]) => [c, Array.from(set)])
-    );
-  }, [leads.assignedLeads]);
+  });
+  return Object.fromEntries(
+    Object.entries(map).map(([c, set]) => [c, Array.from(set)])
+  );
+}, [leads.assignedLeads]);
+
 
   // sorted + filtered data
   const sortedAssignedLeads = useMemo(() => {
-    return leads.assignedLeads
-      // 1) filter
-      .filter(lead =>
-        Object.entries(assignedFilterConfig).every(([field, val]) => {
-          if (!val) return true;
-          let cell = field === "remainingDays"
-            ? calculateRemainingDays(lead.dueDate)
-            : lead[field];
-          if (Array.isArray(cell)) return cell.includes(val);
-          return String(cell) === val;
-        })
-      )
-      // 2) sort
-      .sort((a, b) => {
-        const { key, direction } = assignedSortConfig;
-        if (!key) return 0;
-        let aV = key === "remainingDays"
-          ? calculateRemainingDays(a.dueDate)
-          : a[key];
-        let bV = key === "remainingDays"
-          ? calculateRemainingDays(b.dueDate)
-          : b[key];
-        if (aV < bV) return direction === "asc" ? -1 : 1;
-        if (aV > bV) return direction === "asc" ? 1 : -1;
-        return 0;
-      });
-  }, [leads.assignedLeads, assignedFilterConfig, assignedSortConfig]);
+  return leads.assignedLeads
+    // 1. Filter
+    .filter(lead =>
+      Object.entries(assignedFilterConfig).every(([field, val]) => {
+        if (!val) return true;
+        const cell = lead[field];
+        if (Array.isArray(cell)) return cell.includes(val);
+        return String(cell) === val;
+      })
+    )
+    // 2. Sort
+    .sort((a, b) => {
+      const { key, direction } = assignedSortConfig;
+      if (!key) return 0;
+      let aVal = a[key];
+      let bVal = b[key];
+      if (Array.isArray(aVal)) aVal = aVal[0];
+      if (Array.isArray(bVal)) bVal = bVal[0];
+      return direction === "asc"
+        ? String(aVal).localeCompare(String(bVal))
+        : String(bVal).localeCompare(String(aVal));
+    });
+}, [leads.assignedLeads, assignedFilterConfig, assignedSortConfig]);
+
 
   // close filter popups on outside click
   useEffect(() => {
@@ -709,7 +703,9 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
            <div className="main-page-contenthp">
            <div className="main-page-abovepart">
 
-           <NotificationCard acceptLead={acceptLead} signedInOfficer={signedInOfficer} />
+           {/* <NotificationCard acceptLead={acceptLead} signedInOfficer={signedInOfficer} /> */}
+           <NotificationCard ref={notificationRef} acceptLead={acceptLead} signedInOfficer={signedInOfficer} />
+
 
 <div className= "add-case-section">
     <h2> Click here to add a new case</h2>
@@ -717,26 +713,27 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
         <SlideBar
         onAddCase={(newCase) => addCase(newCase)}
         buttonClass="custom-add-case-btn1"
+        refreshNotifications={refreshNotifications}
       />
       {/* </div> */}
   </div>
   </div>
       <div className="left-content">
-      {/* <div className="stats-bar"> */}
+      <div className="stats-bar">
         
-          {/* <span
+          <span
             className={`hoverable ${activeTab === "cases" ? "active" : ""}`}
             onClick={() => setActiveTab("cases")}
           >
             My Ongoing Cases: {cases.length}
-          </span> */}
+          </span>
 
-            {/* <span
+            <span
             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
             onClick={() => setActiveTab("assignedLeads")}
           >
             Assigned Leads: {leads.assignedLeads.length}
-          </span> */}
+          </span>
 
           {/* <span
             className={`hoverable ${activeTab === "pendingLeads" ? "active" : ""}`}
@@ -744,13 +741,13 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
           >
             Pending Leads: {leads?.pendingLeads?.length || 0}
           </span> */}
-          {/* <span
+          <span
             className={`hoverable ${activeTab === "pendingLeadReturns" ? "active" : ""}`}
             onClick={() => setActiveTab("pendingLeadReturns")}
           >
             Lead Returns for Review: {leads.pendingLeadReturns.length}
-          </span> */}
-        {/* </div> */}
+          </span>
+        </div>
 
         <div className="content-section">
 
@@ -844,13 +841,6 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                 )}
               </tbody>
             </table>
-                      {/* <Pagination
-              currentPage={currentPage}
-              totalEntries={totalEntries}
-              onPageChange={setCurrentPage}
-              pageSize={pageSize}
-              onPageSizeChange={setPageSize}
-            /> */}
              </div>
                     
            )}
@@ -937,18 +927,13 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                     <tr key={lead.id}>
                       <td>{lead.id}</td>
                       <td>{lead.description}</td>
-                      <td>{lead.dueDate || "N/A"}</td>
-                      <td>{lead.priority || "N/A"}</td>
-                      <td>{calculateRemainingDays(lead.dueDate)}</td>
-                      <td>{lead.flags.join(", ")}</td>
+                      <td>{lead.caseName}</td>
                       <td>{lead.assignedOfficers.join(", ")}</td>
                       <td>
                         <button className="view-btn1" onClick={() => handleCaseClick(lead)}>
                           View
                         </button>
-                        <button className="accept-btn" onClick={() => acceptLead(lead.id)}>
-                          Accept
-                        </button>
+                      
                       </td>
                     </tr>
                   ))
@@ -1026,14 +1011,6 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
         )}
       </tbody>
     </table>
-    
-    <Pagination
-  currentPage={currentPage}
-  totalEntries={totalEntries}  
-  onPageChange={setCurrentPage} 
-  pageSize={pageSize}
-  onPageSizeChange={setPageSize} 
-/>
     </div>
 
   </div>
@@ -1041,50 +1018,6 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
 
 {activeTab === "pendingLeadReturns" && (
   <div className="pending-lead-returns">
-
-    {/* <div className="filter-sort-icons">
-                    <button onClick={() => setShowFilter(true)} className="icon-button">
-                      <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
-                        alt="Filter Icon"
-                        className="icon-image"
-                      />
-                    </button>
-                    <button onClick={() => setShowSort(true)} className="icon-button">
-                      <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
-                        alt="Sort Icon"
-                        className="icon-image"
-                      />
-                    </button>
-                  </div>
-
-     
-      {showFilter && (
-        <div className="popup-overlay">
-          <div className="popup-content">
-            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
-              &times;
-            </button>
-            <Filter filtersConfig={filtersConfigPLR} onApply={handleFilterApply} />
-          </div>
-        </div>
-      )}
-
-     
-      {showSort && (
-        <div className="popup-overlay">
-          <div className="popup-content">
-            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
-              &times;
-            </button>
-            <Sort columns={["Lead Number", "Lead Name","Priority", "Flag"]} onApplySort={handleSort} />
-            </div>
-          </div>
-      )} */}
-
-
-
 <div className="table-scroll-container">
 <table className="leads-table" style={{ minWidth: "1000px" }}>
               <thead>

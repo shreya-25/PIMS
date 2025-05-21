@@ -24,6 +24,7 @@ export const LRReturn = () => {
   const navigate = useNavigate();
    const location = useLocation();
 const [username, setUsername] = useState("");
+ const [leadData, setLeadData] = useState({});
 
 useEffect(() => {
    const loggedInUser = localStorage.getItem("loggedInUser");
@@ -115,6 +116,99 @@ useEffect(() => {
 
     fetchLeadData();
   }, [leadDetails, caseDetails, setLeadReturns ]);
+
+    useEffect(() => {
+    const fetchLeadData = async () => {
+      if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+      const token = localStorage.getItem("token");
+
+      try {
+        const response = await api.get(
+          `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+
+        if (response.data.length > 0) {
+          setLeadData({
+            ...response.data[0],
+            assignedTo: response.data[0].assignedTo || [],
+            leadStatus: response.data[0].leadStatus || ''
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch lead data:", error);
+      }
+    };
+
+    fetchLeadData();
+  }, [selectedLead, selectedCase]);
+
+   const handleSubmitReport = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (!selectedLead || !selectedCase) {
+        alert("No lead or case selected!");
+        return;
+      }
+
+      const body = {
+        leadNo: selectedLead.leadNo,
+        description: selectedLead.leadName,
+        caseNo: selectedCase.caseNo,
+        caseName: selectedCase.caseName,
+        submittedDate: new Date(),
+        assignedTo: {
+          assignees: leadData.assignedTo || [],
+          lRStatus: "Submitted"
+        },
+        assignedBy: {
+          assignee: localStorage.getItem("officerName") || "Unknown Officer",
+          lRStatus: "Pending"
+        }
+      };
+
+      const response = await api.post("/api/leadReturn/create", body, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (response.status === 201) {
+        const statusResponse = await api.put(
+          "/api/lead/status/in-review",
+          {
+            leadNo: selectedLead.leadNo,
+            description: selectedLead.leadName,
+            caseNo: selectedCase.caseNo,
+            caseName: selectedCase.caseName
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+
+        if (statusResponse.status === 200) {
+          setLeadStatus("In Review");
+          alert("Lead Return submitted and status set to 'In Review'");
+        } else {
+          alert("Lead Return submitted but status update failed.");
+        }
+      } else {
+        alert("Failed to submit Lead Return");
+      }
+    } catch (error) {
+      console.error("Error during Lead Return submission or status update:", error);
+      alert("Something went wrong while submitting the report.");
+    }
+  };
+
 
 
   // State for managing form input
@@ -851,6 +945,20 @@ Case Page
 </tbody>
 
         </table>
+
+        
+       {selectedLead?.leadStatus !== "Completed" && !isCaseManager && (
+  <div className="form-buttons-finish">
+    <h4> Click here to submit the lead</h4>
+    <button
+      disabled={selectedLead?.leadStatus === "In Review"}
+      className="save-btn1"
+      onClick={handleSubmitReport}
+    >
+      Submit 
+    </button>
+  </div>
+)}
 
         <Comment tag= "Return"/>
 
