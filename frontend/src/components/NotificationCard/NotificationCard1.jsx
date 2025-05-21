@@ -3,6 +3,7 @@ import { CaseContext } from "../../Pages/CaseContext";
 import "./NotificationCard.css";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
+import { v4 as uuidv4 } from "uuid";
 
 const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
   const [newNotifs, setNewNotifs]         = useState([]);
@@ -174,6 +175,19 @@ const handleDecline = async _id => {
 
     await api.put(`/api/notifications/mark-read/${notificationId}`);
 
+    await api.post("/api/notifications", {
+  notificationId: Date.now().toString(),
+  assignedBy: signedInOfficer,
+  assignedTo: [
+    { username: n.assignedBy }         // case-manager
+  ],
+  action1: `${signedInOfficer} declined the task`,  // required
+  post1:   "",                                   // required (can be empty)
+  caseNo:   n.caseNo,
+  caseName: n.caseName,
+  type:     "General"                            // now in your enum
+});
+
     // Re-fetch to ensure consistency
     fetchNew();
     fetchOpen();
@@ -228,6 +242,24 @@ const handleDecline = async _id => {
     await api.put(`/api/notifications/mark-read/${notificationId}`);
 
     // Re-fetch to stay synced
+    await api.post("/api/notifications", {
+  notificationId: Date.now().toString(),
+  assignedBy: signedInOfficer,
+  assignedTo: [
+    { username: n.assignedBy, 
+      status:   "pending"  
+     }         // case-manager
+  ],
+  action1: `${signedInOfficer} accepted the task`,  // required
+  action2:   "",   
+   post1:   "",
+    post2:          "",                                 // required (can be empty)
+  caseNo:   n.caseNo,
+  caseName: n.caseName,
+  caseStatus:     "Open",
+  type:     "Case"                            // now in your enum
+});
+
     fetchNew();
     fetchOpen();
   } catch (err) {
