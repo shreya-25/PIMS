@@ -25,14 +25,7 @@ export const LRReturn = () => {
    const location = useLocation();
 const [username, setUsername] = useState("");
  const [leadData, setLeadData] = useState({});
-
-useEffect(() => {
-   const loggedInUser = localStorage.getItem("loggedInUser");
-   if (loggedInUser) {
-     setUsername(loggedInUser);
-   }
-  })
-   console.log(username);
+ const [officerName, setOfficerName] = useState("");
    const todayDate = new Date().toLocaleDateString();
     
   const { leadDetails, caseDetails } = location.state || {};
@@ -42,6 +35,20 @@ useEffect(() => {
     const [error, setError] = useState("");
     const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus, setLeadReturns  } = useContext(CaseContext);
     const isDisabled = leadStatus === "In Review" || leadStatus === "Completed";
+      // Sample returns data
+  const [returns, setReturns] = useState([
+    { leadReturnId: '', enteredDate: "",enteredBy: "", leadReturnResult: "" },
+
+  ]);
+
+      useEffect(() => {
+    const storedOfficer = localStorage.getItem("loggedInUser");
+    if (storedOfficer) {
+      const name = storedOfficer.trim();
+      setOfficerName(name);
+      setReturnData(prev => ({ ...prev, enteredBy: name }));
+    }
+  }, []);
 
   
     console.log(selectedCase, selectedLead);
@@ -70,14 +77,6 @@ useEffect(() => {
         fetchLeadStatus();
       }
     }, [selectedLead, selectedCase, leadStatus, setLeadStatus]);
-
-  // Sample returns data
-  const [returns, setReturns] = useState([
-    // { id: 1, dateEntered: "12/01/2024",enteredBy: "Officer 916", results: "Returned item A" },
-    // { id: 2, dateEntered: "12/02/2024", enteredBy: "Officer 916",results: "Returned item B" },
-    { leadReturnId: '', enteredDate: "",enteredBy: "", leadReturnResult: "" },
-
-  ]);
 
   console.log("Lead Status from context:", leadStatus);
   
@@ -196,6 +195,11 @@ useEffect(() => {
 
         if (statusResponse.status === 200) {
           setLeadStatus("In Review");
+
+          setSelectedLead(prev => ({
+            ...prev,
+            leadStatus: "In Review"
+          }));
           alert("Lead Return submitted and status set to 'In Review'");
         } else {
           alert("Lead Return submitted but status update failed.");
@@ -214,11 +218,12 @@ useEffect(() => {
   // State for managing form input
 
   const [returnData, setReturnData] = useState({
-    results: "",
-    leadReturnId: "",
-    enteredDate: todayDate,
-    enteredBy: username
-  });
+  results: "",
+  leadReturnId: "",
+  enteredDate: todayDate,
+  enteredBy: officerName?.trim()
+});
+
   
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -403,7 +408,12 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
       return;
     }
   
-    const officerName = localStorage.getItem("officerName") || "Officer 916";
+    const officerName = localStorage.getItem("loggedInUser");
+    console.log(officerName);
+    if (!officerName) {
+  alert("Officer name not found. Please log in again.");
+  return;
+}
     const token = localStorage.getItem("token");
   
     try {
@@ -431,10 +441,8 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
           });
   
         const existingReturns = response.data || [];
-        const latestReturn = existingReturns.length > 0 ? existingReturns[existingReturns.length - 1] : null;
-  
-        const assignedTo = latestReturn ? latestReturn.assignedTo : { assignees: [officerName], lRStatus: "Pending" };
-        const assignedBy = latestReturn ? latestReturn.assignedBy : { assignee: officerName, lRStatus: "Pending" };
+        const assignedTo = { assignees: [officerName], lRStatus: "Pending" };
+        const assignedBy = { assignee: officerName, lRStatus: "Pending" };
   
         const nextNumericId = maxReturnId + 1;
         const newReturnId = numberToAlphabet(nextNumericId);
@@ -443,14 +451,20 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
           leadNo: selectedLead?.leadNo,
           description: selectedLead?.leadName,
           enteredDate: new Date().toISOString(),
-          enteredBy: officerName,
+          enteredBy: officerName?.trim(),
           caseName: selectedLead?.caseName,
           caseNo: selectedLead?.caseNo,
           leadReturnId: newReturnId,
           leadReturnResult: returnData.results,
-          assignedTo,
-          assignedBy,
-          access: returnData.access
+          assignedTo: {
+    assignees: [officerName?.trim()],
+    lRStatus: "Pending"
+  },
+  assignedBy: {
+    assignee: officerName?.trim(),
+    lRStatus: "Pending"
+  },
+          accessLevel: returnData.access
         };
   
         const createResponse = await api.post(
@@ -474,7 +488,7 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
     results: "",
     leadReturnId: numberToAlphabet(nextNumericId + 1),
     enteredDate: todayDate,
-    enteredBy: username,
+    enteredBy: officerName,
     access: "Everyone"
   });
 }
@@ -483,6 +497,16 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
       alert("Failed to save return. Please try again.");
     }
   };
+
+  useEffect(() => {
+  if (officerName) {
+    setReturnData((prev) => ({
+      ...prev,
+      enteredBy: officerName.trim()
+    }));
+  }
+}, [officerName]);
+
   
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -786,7 +810,8 @@ Case Page
           </div>
           <div className="form-row4">
             <label>Entered By*</label>
-            <input type="text" value={returnData.enteredBy || username} readOnly />
+            <input type="text" value={returnData.enteredBy || officerName} readOnly />
+
 
           </div>
         </div>
@@ -882,7 +907,9 @@ Case Page
 
 <tbody>
   {returns.length > 0 ? returns.map((ret, idx) => {
-    const canModify = ret.enteredBy.trim() === username.trim();
+    const canModify = ret.enteredBy.trim() === officerName.trim();
+
+    console.log("Can Modify?", canModify, "| enteredBy:", ret.enteredBy, "| officerName:", officerName);
     const disableActions =
       selectedLead?.leadStatus === "In Review" ||
       selectedLead?.leadStatus === "Completed" ||

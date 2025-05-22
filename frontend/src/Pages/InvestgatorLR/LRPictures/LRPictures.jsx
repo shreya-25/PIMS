@@ -273,6 +273,12 @@ const handleAddPicture = async () => {
 
         if (statusResponse.status === 200) {
           setLeadStatus("In Review");
+
+            setSelectedLead(prev => ({
+            ...prev,
+            leadStatus: "In Review"
+          }));
+
           alert("Lead Return submitted and status set to 'In Review'");
         } else {
           alert("Lead Return submitted but status update failed.");
@@ -649,7 +655,7 @@ Case Page
         <h4 className="evidence-form-h4">Enter Picture Details</h4>
         <div className="picture-form">
           <div className="form-row-pic">
-            <label  className="evidence-head">Date Picture Taken:</label>
+            <label  className="evidence-head">Date Picture Taken*</label>
             <input
               type="date"
               value={pictureData.datePictureTaken}
@@ -658,7 +664,7 @@ Case Page
             />
           </div>
           <div className="form-row-pic">
-            <label  className="evidence-head">Lead Return Id:</label>
+            <label  className="evidence-head">Return Id*</label>
             <input
               type="leadReturnId"
               value={pictureData.leadReturnId}
@@ -667,7 +673,7 @@ Case Page
             />
           </div>
           <div className="form-row-pic">
-            <label  className="evidence-head">Description:</label>
+            <label  className="evidence-head">Description</label>
             <textarea
               value={pictureData.description}
                className="evidence-head"
@@ -676,7 +682,7 @@ Case Page
           </div>
         {/* … above your “Upload Image” row … */}
 <div className="form-row-pic">
-  <label>Upload Type:</label>
+  <label>Upload Type</label>
   <select
     value={pictureData.isLink ? "link" : "file"}
     onChange={e =>
@@ -703,7 +709,7 @@ Case Page
 {/* File vs Link input */}
 {!pictureData.isLink ? (
   <div className="form-row-pic">
-    <label>{isEditing ? "Replace Image (optional):" : "Upload Image*:"}</label>
+    <label>{isEditing ? "Replace Image (optional)" : "Upload Image*"}</label>
     <input
       type="file"
       accept="image/*"

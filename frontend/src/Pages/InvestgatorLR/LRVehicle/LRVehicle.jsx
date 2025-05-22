@@ -159,6 +159,11 @@ const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus }
 
         if (statusResponse.status === 200) {
           setLeadStatus("In Review");
+            setSelectedLead(prev => ({
+            ...prev,
+            leadStatus: "In Review"
+          }));
+
           alert("Lead Return submitted and status set to 'In Review'");
         } else {
           alert("Lead Return submitted but status update failed.");
@@ -350,7 +355,7 @@ const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus }
     const token = localStorage.getItem("token");
     const payload = {
       leadNo:        selectedLead.leadNo,
-      leadName:   selectedLead.leadName,
+      description:   selectedLead.leadName,
       caseNo:        selectedCase.caseNo,
       caseName:      selectedCase.caseName,
       enteredBy:     username,
