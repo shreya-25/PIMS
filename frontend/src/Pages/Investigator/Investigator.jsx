@@ -1101,7 +1101,8 @@ const handleSortAll = colKey => {
         rows={6}
         style={{ width: '100%', fontSize: 20, padding: 8 }}
         value={summary}
-        onChange={e => setSummary(e.target.value)}
+        // onChange={e => setSummary(e.target.value)}
+          readOnly
       />
       <div style={{ marginTop: 8, fontSize: 20, minHeight: '1em' }}>
         {isSaving
