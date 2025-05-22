@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { CaseContext } from "../../Pages/CaseContext";
 import { useContext } from "react";
 import "./Slidebar.css";
@@ -7,6 +7,7 @@ import api from "../../api"
 export const SlideBar = ({ onAddCase, buttonClass = "add-case-button", refreshNotifications }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { triggerRefresh } = useContext(CaseContext);
+  const dropdownRef = useRef(null);
   const [caseDetails, setCaseDetails] = useState({
     title: "",
     number: "",
@@ -35,6 +36,22 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button", refreshNo
     const { name, value } = e.target;
     setCaseDetails({ ...caseDetails, [name]: value });
   };
+
+    useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    }
+    if (dropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownOpen]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -314,7 +331,8 @@ if (notificationRecipients.length > 0) {
           </div>
           <div className="form-group">
             <label>Investigators Assigned:</label>
-            <div className="custom-dropdown">
+            <div className="custom-dropdown" ref={dropdownRef}  >
+              
               <div className="input-field" onClick={toggleDropdown}>
                 {caseDetails.investigators.length > 0 ? caseDetails.investigators.join(", ") : "Select Officers"}
                 <span className="dropdown-icon"></span>
