@@ -234,6 +234,12 @@ export const LRPerson = () => {
 
         if (statusResponse.status === 200) {
           setLeadStatus("In Review");
+
+            setSelectedLead(prev => ({
+            ...prev,
+            leadStatus: "In Review"
+          })); 
+          
           alert("Lead Return submitted and status set to 'In Review'");
         } else {
           alert("Lead Return submitted but status update failed.");

@@ -439,6 +439,12 @@ export const LREvidence = () => {
 
         if (statusResponse.status === 200) {
           setLeadStatus("In Review");
+
+            setSelectedLead(prev => ({
+            ...prev,
+            leadStatus: "In Review"
+          }));
+
           alert("Lead Return submitted and status set to 'In Review'");
         } else {
           alert("Lead Return submitted but status update failed.");
@@ -684,14 +690,14 @@ Case Page
         <h4 className="evidence-form-h4">Enter Evidence Details</h4>
         <div className="evidence-form">
           <div className="form-row-evidence">
-            <label  className="evidence-head">Collection Date</label>
+            <label  className="evidence-head">Collection Date*</label>
             <input
               type="date"
               value={evidenceData.collectionDate}
              
               onChange={(e) => handleInputChange("collectionDate", e.target.value)}
             />
-            <label className="evidence-head">Disposed Date</label>
+            <label className="evidence-head">Disposed Date*</label>
             <input
               type="date"
               value={evidenceData.disposedDate}
@@ -715,14 +721,14 @@ Case Page
               onChange={(e) => handleInputChange("type", e.target.value)}
             />
           </div>
-          <label className="evidence-head">Description</label>
+          <label className="evidence-head">Description*</label>
 <textarea
   value={evidenceData.evidenceDescription}
   onChange={e => handleInputChange("evidenceDescription", e.target.value)}
 />
 {/* Upload Type */}
 <div className="form-row-evidence">
-  <label>Upload Type:</label>
+  <label>Upload Type</label>
   <select
     value={evidenceData.isLink ? "link" : "file"}
     onChange={e =>
