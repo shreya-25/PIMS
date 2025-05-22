@@ -3,6 +3,7 @@ import { CaseContext } from "../../Pages/CaseContext";
 import "./NotificationCard.css";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
+import { v4 as uuidv4 } from "uuid";
 
 const NotificationCard = forwardRef(({ signedInOfficer }, ref) => {
   const [newNotifs, setNewNotifs]         = useState([]);
@@ -134,6 +135,68 @@ const NotificationCard = forwardRef(({ signedInOfficer }, ref) => {
   else                                   navigate("/LRInstructions", { state: baseState });
 };
 
+const handleDecline = async _id => {
+  if (!window.confirm("Are you sure you want to decline?")) return;
+
+  // Optimistic update for UI
+  setNewNotifs(ns =>
+    ns.map(n =>
+      n._id === _id
+        ? {
+            ...n,
+            assignedTo: n.assignedTo.map(r =>
+              r.username === signedInOfficer ? { ...r, status: "declined" } : r
+            )
+          }
+        : n
+    )
+  );
+
+  setOpenNotifs(os =>
+    os.map(n =>
+      n._id === _id
+        ? {
+            ...n,
+            assignedTo: n.assignedTo.map(r =>
+              r.username === signedInOfficer ? { ...r, status: "declined" } : r
+            )
+          }
+        : n
+    )
+  );
+
+  try {
+    const n = newNotifs.find(x => x._id === _id) || openNotifs.find(x => x._id === _id);
+    const { notificationId } = n;
+
+    await api.put(`/api/notifications/decline/${notificationId}`, {
+      username: signedInOfficer
+    });
+
+    await api.put(`/api/notifications/mark-read/${notificationId}`);
+
+    await api.post("/api/notifications", {
+  notificationId: Date.now().toString(),
+  assignedBy: signedInOfficer,
+  assignedTo: [
+    { username: n.assignedBy }         // case-manager
+  ],
+  action1: `${signedInOfficer} declined the task`,  // required
+  post1:   "",                                   // required (can be empty)
+  caseNo:   n.caseNo,
+  caseName: n.caseName,
+  type:     "General"                            // now in your enum
+});
+
+    // Re-fetch to ensure consistency
+    fetchNew();
+    fetchOpen();
+  } catch (err) {
+    console.error("❌ Failed to decline:", err);
+  }
+};
+
+
 
   console.log("Officer", signedInOfficer);
    const handleAccept = async _id => {
@@ -179,6 +242,24 @@ const NotificationCard = forwardRef(({ signedInOfficer }, ref) => {
     await api.put(`/api/notifications/mark-read/${notificationId}`);
 
     // Re-fetch to stay synced
+    await api.post("/api/notifications", {
+  notificationId: Date.now().toString(),
+  assignedBy: signedInOfficer,
+  assignedTo: [
+    { username: n.assignedBy, 
+      status:   "pending"  
+     }         // case-manager
+  ],
+  action1: `${signedInOfficer} accepted the task`,  // required
+  action2:   "",   
+   post1:   "",
+    post2:          "",                                 // required (can be empty)
+  caseNo:   n.caseNo,
+  caseName: n.caseName,
+  caseStatus:     "Open",
+  type:     "Case"                            // now in your enum
+});
+
     fetchNew();
     fetchOpen();
   } catch (err) {
@@ -235,6 +316,13 @@ const NotificationCard = forwardRef(({ signedInOfficer }, ref) => {
                       >
                         Accept
                       </button>
+                       <button
+    className="decline-btnNC"
+    onClick={() => handleDecline(n._id)}
+    disabled={!isPending}
+  >
+    Decline
+  </button>
                     </div>
                   </div>
                 </div>
@@ -306,6 +394,13 @@ const NotificationCard = forwardRef(({ signedInOfficer }, ref) => {
                         >
                           Accept
                         </button>
+                         <button
+    className="decline-btnNC"
+    onClick={() => handleDecline(n._id)}
+    disabled={!isPending}
+  >
+    Decline
+  </button>
                       </div>
                     </div>
                   </div>

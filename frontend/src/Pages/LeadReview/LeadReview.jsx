@@ -61,13 +61,46 @@ export const LeadReview = () => {
 
   const statusToIndex = {
     Assigned:               1,  // maps to "Lead Assigned"
-    Pending:                2,  // maps to "Lead Accepted"
+    Accepted:                2,  // maps to "Lead Accepted"
     "In Review":            3,  // if you also use "In Review"
     Submitted:              3,  // or map your own submission status here
     Approved:               4,  // "Lead Approved"
     Returned:               5,  // "Lead Returned"
     Completed:              6,  // "Lead Completed"
   };
+
+  // inside LeadReview()
+const handleSave = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    setLoading(true);
+    // hit your new update endpoint:
+    // Convert parentLeadNo string to array of numbers
+const processedLeadData = {
+  ...leadData,
+  parentLeadNo: typeof leadData.parentLeadNo === "string"
+    ? leadData.parentLeadNo
+        .split(",")
+        .map((item) => Number(item.trim()))
+        .filter((num) => !isNaN(num))
+    : leadData.parentLeadNo
+};
+
+await api.put(
+  `/api/lead/update/${leadData.leadNo}/${encodeURIComponent(leadData.description)}/${leadData.caseNo}/${encodeURIComponent(leadData.caseName)}`,
+  processedLeadData,
+  { headers: { Authorization: `Bearer ${token}` } }
+);
+
+    alert("Lead updated successfully!");
+  } catch (err) {
+    console.error("Save failed:", err);
+    setError("Failed to save changes.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 
   const formatDate = (dateString) => {
@@ -317,6 +350,18 @@ useEffect(() => {
   fetchUsers();
 }, []);
 
+const isEditableByCaseManager = field => {
+  const editableFields = [
+    "parentLeadNo",        // Lead Origin
+    "assignedTo",          // Assigned Officers
+    "dueDate",             // Due Date
+    "subNumber",           // Subnumber
+    "associatedSubNumbers" // Associated Subnumbers
+  ];
+  return selectedCase?.role === "Case Manager" && editableFields.includes(field);
+};
+
+
 
   return (
     <div className="lead-review-page">
@@ -548,7 +593,8 @@ useEffect(() => {
                       className="input-field"
                       value={leadData.caseNo}
                       onChange={(e) => handleInputChange('caseNo', e.target.value)}
-                      readOnly={isInvestigator}
+                      // readOnly={isInvestigator}
+                       readOnly={true}
                     />
                   </td>
                 </tr>
@@ -560,7 +606,8 @@ useEffect(() => {
                       className="input-field"
                       value={leadData.caseName}
                       onChange={(e) => handleInputChange('caseName', e.target.value)}
-                      readOnly={isInvestigator}
+                      // readOnly={isInvestigator}
+                       readOnly={true}
                     />
                   </td>
                 </tr>
@@ -573,7 +620,7 @@ useEffect(() => {
                       value={formatDate(leadData.assignedDate)}
                       onChange={(e) => handleInputChange('assignedDate', e.target.value)}
                       placeholder="MM/DD/YY"
-                      readOnly={isInvestigator}
+                       readOnly={true}
                     />
                   </td>
                 </tr>
@@ -586,7 +633,8 @@ useEffect(() => {
                       value={leadData.description}
                       onChange={(e) => handleInputChange('description', e.target.value)}
                       placeholder=""
-                      readOnly={isInvestigator}
+                      // readOnly={isInvestigator}
+                       readOnly={true}
                     ></textarea>
                   </td>
                 </tr>
@@ -598,7 +646,8 @@ useEffect(() => {
                       value={leadData.summary}
                       onChange={(e) => handleInputChange('summary', e.target.value)}
                       placeholder=""
-                      readOnly={isInvestigator}
+                      // readOnly={isInvestigator}
+                       readOnly={true}
                     ></textarea>
                   </td>
                 </tr>
@@ -610,9 +659,9 @@ useEffect(() => {
                       type="text"
                       className="input-field"
                       value={leadData.parentLeadNo}
-                      onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
+                      onChange={(e) => handleInputChange('parentLeadNo', e.target.value)}
                       placeholder="NA"
-                      readOnly={isInvestigator}
+                      readOnly={!isEditableByCaseManager("parentLeadNo")}
                     />
                   </td>
                 </tr>
@@ -679,7 +728,7 @@ useEffect(() => {
                       value={leadData.assignedBy}
                       onChange={(e) => handleInputChange('assignedBy', e.target.value)}
                       placeholder=""
-                      readOnly={isInvestigator}
+                      readOnly={true}
                     />
                   </td>
                 </tr>
@@ -706,7 +755,7 @@ useEffect(() => {
         // now update your leadData however you persist it:
         setLeadData({ ...leadData, dueDate: newIso });
       }}
-      readOnly={isInvestigator}
+      readOnly={!isEditableByCaseManager("dueDate")}
     />
                   </td>
                 </tr>
@@ -718,7 +767,8 @@ useEffect(() => {
                       className="input-field"
                       value={leadData.subNumber}
                     placeholder=""
-                    readOnly={isInvestigator}
+                     onChange={(e) => handleInputChange('subNumber', e.target.value)}
+  readOnly={!isEditableByCaseManager("subNumber")}
                     />
                   </td>
                 </tr>
@@ -726,7 +776,7 @@ useEffect(() => {
                 <tr>
   <td className="info-label" style={{ width: "25%" }}>Associated Subnumbers</td>
   <td>
-    {isInvestigator ? (
+    {!isEditableByCaseManager("associatedSubNumbers") ? (
       <div className="dropdown-header"   style={{
           padding: "8px 10px",
           minHeight: "25px",
@@ -782,7 +832,16 @@ useEffect(() => {
 
               </tbody>
             </table>
+             {!isInvestigator && (
+  <div className="update-lead-btn">
+    <button className="save-btn1" onClick={handleSave}>
+      Save Changes
+    </button>
+    {error && <div className="error">{error}</div>}
+  </div>
+)}
           </div>
+         
 
           {/* <div className="lead-tracker-container">
                   {statuses.map((status, index) => (
