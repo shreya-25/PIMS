@@ -2001,6 +2001,7 @@ Add Lead
                 <button className="view-btn1" onClick={()=>handleLeadClick(lead)}>
                   View
                 </button>
+                
               </td>
             </tr>
           )) : (

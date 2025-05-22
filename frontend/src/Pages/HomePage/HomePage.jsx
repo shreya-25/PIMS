@@ -954,13 +954,13 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
             </table>
           </div>
 
-          <Pagination
+          {/* <Pagination
             currentPage={currentPage}
             totalEntries={totalEntries}
             onPageChange={setCurrentPage}
             pageSize={pageSize}
             onPageSizeChange={setPageSize}
-          />
+          /> */}
         </div>
       )}
 
