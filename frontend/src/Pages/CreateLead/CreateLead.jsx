@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect, useRef} from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from "axios";
 import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
@@ -14,6 +14,7 @@ import {SideBar } from "../../components/Sidebar/Sidebar";
 export const CreateLead = () => {
   const navigate = useNavigate(); // Initialize useNavigate hook
   const location = useLocation();
+  const dropdownRef = useRef(null);
        const [loading, setLoading] = useState(true);
         const [error, setError] = useState("");
   const leadEntries = location.state?.leadEntries || [];
@@ -43,6 +44,8 @@ useEffect(() => {
      setUsername(loggedInUser);
    }
   })
+
+
 
   // State for all input fields
   const [leadData, setLeadData] = useState({
@@ -467,7 +470,21 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
     fetchAssociatedSubNumbers();
   }, [caseDetails]);
   
-
+    useEffect(() => {
+      function handleClickOutside(e) {
+        if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+          setDropdownOpen(false);
+        }
+      }
+      if (dropdownOpen) {
+        document.addEventListener("mousedown", handleClickOutside);
+      } else {
+        document.removeEventListener("mousedown", handleClickOutside);
+      }
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, [dropdownOpen]);
 
 
   return (
@@ -669,9 +686,10 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
             <tr>
   <td>Associated Subnumbers</td>
   <td>
-    <div className="custom-dropdown-cl">
+    <div className="custom-dropdown-cl" ref={dropdownRef}>
       <div
         className="dropdown-header-cl"
+        ref={dropdownRef}
         onClick={() => setSubDropdownOpen(!subDropdownOpen)}
       >
         {associatedSubNumbers.length > 0
@@ -853,7 +871,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
     )}
   </div> */}
 
-<div className="custom-dropdown-cl">
+<div className="custom-dropdown-cl" ref={dropdownRef}>
                         <div
                           className="dropdown-header-cl"
                           onClick={() => setDropdownOpen(!dropdownOpen)}
