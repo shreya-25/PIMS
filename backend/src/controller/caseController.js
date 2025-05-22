@@ -77,11 +77,13 @@ exports.createCase = async (req, res) => {
         const assignedOfficers = [
             {
                 name: username,  // User from request body
-                role: "Case Manager"
+                role: "Case Manager",
+                status: "accepted"
             },
             ...selectedOfficers.map(officer => ({
                 name: officer.name,
-                role: "Investigator"
+                role: "Investigator",
+                status: "pending"
             }))
         ];
 
@@ -460,4 +462,43 @@ exports.getExecutiveCaseSummary = async (req, res) => {
       return res.status(500).json({ message: "Server error", error: err.message });
     }
   };
+
+  exports.updateOfficerStatus = async (req, res) => {
+  try {
+    const { caseNo, caseName, officerName, status } = req.body;
+
+    // Validate input
+    if (!caseNo || !caseName || !officerName || !status) {
+      return res.status(400).json({
+        message: "caseNo, caseName, officerName, and status are required"
+      });
+    }
+
+    // Find the case
+    const existingCase = await Case.findOne({ caseNo, caseName });
+    if (!existingCase) {
+      return res.status(404).json({ message: "Case not found" });
+    }
+
+    // Find the officer in assignedOfficers and update the status
+    const officer = existingCase.assignedOfficers.find(o => o.name === officerName);
+    if (!officer) {
+      return res.status(404).json({ message: "Officer not assigned to this case" });
+    }
+
+    officer.status = status; // e.g., "accepted", "declined", etc.
+
+    await existingCase.save();
+
+    return res.status(200).json({
+      message: `Officer status updated to '${status}' successfully.`,
+      data: existingCase
+    });
+
+  } catch (err) {
+    console.error("❌ Error updating officer status:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
   

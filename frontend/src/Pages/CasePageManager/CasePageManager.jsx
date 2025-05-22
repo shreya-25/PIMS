@@ -392,7 +392,16 @@ const handleSelectLead = (lead) => {
     };
   
     fetchLeadsForCase();
-  }, [selectedCase, signedInOfficer]);
+
+    const intervalId = setInterval(fetchLeadsForCase, 15_000);
+
+  // 4) cleanup on unmount / deps change
+  return () => clearInterval(intervalId);
+}, [
+  selectedCase?.caseNo,
+  selectedCase?.caseName,
+  signedInOfficer
+]);
   
   
 
@@ -1069,6 +1078,7 @@ const handleSortAll = colKey => {
                 <div className="left-content">
 
                 {/* <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5> */}
+          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
 
 {/* Display Case Number and Name */}
 <div className="case-header">
