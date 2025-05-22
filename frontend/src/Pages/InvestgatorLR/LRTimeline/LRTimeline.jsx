@@ -26,7 +26,7 @@ export const LRTimeline = () => {
   const navigate = useNavigate();
    const location = useLocation();
    const [leadData, setLeadData] = useState({});
-   const { selectedCase, selectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
+   const { selectedCase, selectedLead, setSelectedLead,  leadStatus, setLeadStatus } = useContext(CaseContext);
    const [entries, setEntries] = useState([]);
         
           const formatDate = (dateString) => {
@@ -227,6 +227,12 @@ export const LRTimeline = () => {
 
         if (statusResponse.status === 200) {
           setLeadStatus("In Review");
+
+            setSelectedLead(prev => ({
+            ...prev,
+            leadStatus: "In Review"
+          }));
+
           alert("Lead Return submitted and status set to 'In Review'");
         } else {
           alert("Lead Return submitted but status update failed.");

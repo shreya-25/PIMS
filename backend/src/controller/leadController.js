@@ -437,11 +437,36 @@ const setLeadStatusToPending = async (req, res) => {
   }
 };
 
+const updateLead = async (req, res) => {
+  try {
+    const { leadNo, description, caseNo, caseName } = req.params;
+    // All other fields come in req.body
+    const update = req.body;
+
+    const lead = await Lead.findOneAndUpdate(
+      {
+        leadNo: Number(leadNo),
+        description,
+        caseNo,
+        caseName
+      },
+      update,
+      { new: true }
+    );
+    if (!lead) return res.status(404).json({ message: "Lead not found" });
+
+    res.status(200).json(lead);
+  } catch (err) {
+    console.error("Error updating lead:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 
 
 module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword , setLeadStatusToInReview, 
-  setLeadStatusToComplete, setLeadStatusToPending
+  setLeadStatusToComplete, setLeadStatusToPending, updateLead
 };
 
 

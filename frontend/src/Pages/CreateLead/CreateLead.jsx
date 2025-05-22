@@ -299,23 +299,25 @@ const handleGenerateLead = async () => {
 
     if (response.status === 201) {
       alert("Lead successfully added!");
+      
+      const assignedToFormatted = assignedOfficer.map(name => ({ username: name }));
 
       const token = localStorage.getItem("token");
       const notificationPayload = {
         notificationId: Date.now().toString(), // Use timestamp as a unique ID; customize if needed
         assignedBy: username, // the logged-in user creates the lead
-        assignedTo: assignedOfficer, // send notification to the selected officers
+        assignedTo: assignedToFormatted, // send notification to the selected officers
         action1: "assigned you to a new lead ", // action text; change as needed
         post1: `${leadNumber}: ${leadDescription}`, // you might want to use the case title or lead summary here
         action2:"related to the case",
         post2: `${selectedCase.caseNo}: ${selectedCase.caseName}`,
         leadNo: leadNumber,         // include lead details if desired
         leadName: leadDescription,      // or leave empty as per your requirements
-        caseNo: selectedCase.caseName,     // using the case ID
-        caseName: selectedCase.caseNo,
+        caseNo: selectedCase.caseNo,     // using the case ID
+        caseName: selectedCase.caseName,
         caseStatus: "Open",
         unread: true,
-        accepted: false,
+        type: "Lead",
         time: new Date().toISOString(),
       };
 

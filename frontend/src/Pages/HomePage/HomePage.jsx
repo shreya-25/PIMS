@@ -84,15 +84,18 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
         console.log("✅ API Response:", response.data); // Debugging log
 
         // ✅ Filter cases where the signed-in officer is assigned
-        const assignedCases = response.data
-          .filter(c => c.assignedOfficers.some(o => o.name === signedInOfficer)) // ✅ Remove cases where officer is not assigned
-          .map((c) => {
-            const officerInfo = c.assignedOfficers.find(o => o.name === signedInOfficer);
+       const assignedCases = response.data
+          .filter(c =>
+            c.caseStatus === "Ongoing" &&
+            c.assignedOfficers.some(o => o.name === signedInOfficer && o.status === "accepted")
+          )
+          .map(c => {
+            const officer = c.assignedOfficers.find(o => o.name === signedInOfficer);
             return {
               id: c.caseNo,
               title: c.caseName,
               status: c.caseStatus,
-              role: officerInfo ? officerInfo.role : "Unknown", // ✅ Ensure correct role is displayed
+              role: officer?.role || "Unknown",
             };
           });
 
@@ -102,8 +105,11 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
       }
     };
 
-    fetchCases();
-  }, [signedInOfficer]);
+  fetchCases(); // Initial call
+  const intervalId = setInterval(fetchCases, 15_000); // Poll every 15s
+
+  return () => clearInterval(intervalId); // Cleanup on unmount
+}, [signedInOfficer]);
 
   // Handler to view the assigned lead details (can be updated to show a modal or navigate)
 const handleViewAssignedLead = (lead) => {
