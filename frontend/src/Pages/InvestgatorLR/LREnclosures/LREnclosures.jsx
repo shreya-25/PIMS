@@ -393,6 +393,11 @@ export const LREnclosures = () => {
 
         if (statusResponse.status === 200) {
           setLeadStatus("In Review");
+
+            setSelectedLead(prev => ({
+            ...prev,
+            leadStatus: "In Review"
+          }));
           alert("Lead Return submitted and status set to 'In Review'");
         } else {
           alert("Lead Return submitted but status update failed.");
@@ -828,7 +833,7 @@ Case Page
         <div className = "timeline-form-sec">
         <div className="enclosure-form">
         <div className="form-row-evidence">
-            <label>Associated Return Id:</label>
+            <label>Return Id *</label>
             <input
               type="returnId"
               value={enclosureData.returnId}
@@ -836,7 +841,7 @@ Case Page
             />
           </div>
           <div className="form-row-evidence">
-            <label>Enclosure Type:</label>
+            <label>Enclosure Type</label>
             <input
               type="text"
               value={enclosureData.type}
@@ -844,7 +849,7 @@ Case Page
             />
           </div>
           <div className="form-row-evidence">
-            <label>Enclosure Description:</label>
+            <label>Enclosure Description</label>
             <textarea
               value={enclosureData.enclosure}
               onChange={(e) => handleInputChange("enclosure", e.target.value)}
@@ -862,7 +867,7 @@ Case Page
 
           </div> */}
           <div className="form-row-evidence">
-  <label>Upload Type:</label>
+  <label>Upload Type</label>
   <select
     value={enclosureData.isLink ? "link" : "file"}
     onChange={(e) =>
@@ -912,7 +917,7 @@ Case Page
 
 {!enclosureData.isLink ? (
   <div className="form-row-evidence">
-    <label>{editIndex === null ? 'Upload File:' : 'Replace File (optional):'}</label>
+    <label>{editIndex === null ? 'Upload File*' : 'Replace File (optional):'}</label>
     <input
       type="file"
       name="file"

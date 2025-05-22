@@ -1,5 +1,6 @@
 const express = require("express");
 const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, searchLeadsByKeyword, setLeadStatusToInReview,
+  updateLead,
   setLeadStatusToComplete, setLeadStatusToPending
  } = require("../controller/leadController");
 const verifyToken = require("../middleware/authMiddleware");
@@ -34,6 +35,13 @@ router.put("/status/in-review", verifyToken, setLeadStatusToInReview);
 router.put("/status/complete", verifyToken, setLeadStatusToComplete);
 
 router.put("/status/pending", verifyToken, setLeadStatusToPending);
+
+router.put(
+  "/update/:leadNo/:description/:caseNo/:caseName",
+  verifyToken,
+  roleMiddleware("CaseManager"),
+  updateLead
+);
 
 
 // API to get the maximum lead number
