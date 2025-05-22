@@ -35,8 +35,9 @@ router.put("/status/in-review", verifyToken, setLeadStatusToInReview);
 router.put("/status/complete", verifyToken, setLeadStatusToComplete);
 
 router.put("/status/pending", verifyToken, setLeadStatusToPending);
+
 router.put(
-  "/:leadNo/:leadName/:caseNo/:caseName",
+  "/update/:leadNo/:description/:caseNo/:caseName",
   verifyToken,
   roleMiddleware("CaseManager"),
   updateLead

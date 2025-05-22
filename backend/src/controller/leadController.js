@@ -439,14 +439,14 @@ const setLeadStatusToPending = async (req, res) => {
 
 const updateLead = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName } = req.params;
+    const { leadNo, description, caseNo, caseName } = req.params;
     // All other fields come in req.body
     const update = req.body;
 
     const lead = await Lead.findOneAndUpdate(
       {
         leadNo: Number(leadNo),
-        description: leadName,
+        description,
         caseNo,
         caseName
       },
