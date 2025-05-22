@@ -81,6 +81,15 @@ router.get("/summary/:caseNo", verifyToken, async (req, res) => {
   }
 });
 
+  // Update status of an assigned officer in a case (Authenticated)
+router.put("/update-officer-status", verifyToken, async (req, res) => {
+  try {
+    await caseController.updateOfficerStatus(req, res);
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+});
+
 
 // Get a specific case by ID (Authenticated)
 router.get("/:id", verifyToken, async (req, res) => {
@@ -132,5 +141,7 @@ router.get("/:id/subNumbers", async (req, res) => {
   });
 
   router.get("/:caseNo/team", caseController.getCaseTeam);
+
+
 
 module.exports = router;

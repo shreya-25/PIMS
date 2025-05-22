@@ -57,11 +57,26 @@ const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
     }
   };
 
+  // useEffect(() => {
+  //   fetchNew();
+  //   fetchOpen();
+  // }, [signedInOfficer, refreshKey]);
+
   useEffect(() => {
+  // Fetch immediately
+  fetchNew();
+  fetchOpen();
+
+  // Then poll every 15s
+  const intervalId = setInterval(() => {
     fetchNew();
     fetchOpen();
-    // optional: you can poll here if you like
-  }, [signedInOfficer, refreshKey]);
+  }, 15000);
+
+  // Clear interval on component unmount or when dependencies change
+  return () => clearInterval(intervalId);
+}, [signedInOfficer, refreshKey]);
+
 
     const refresh = () => {
     fetchNew();
@@ -110,8 +125,26 @@ const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
   if (!n) return;
 
   const { notificationId, assignedBy, leadNo, leadName, caseNo, caseName, action1 } = n;
-  const role = signedInOfficer === assignedBy ? "Case Manager" : "Investigator";
+  // const role = signedInOfficer === assignedBy ? "Case Manager" : "Investigator";
 
+  // 2. Fetch role from the case table
+  let role = "Investigator"; // default
+  try {
+    const token = localStorage.getItem("token");
+    const caseRes = await api.get(`/api/cases/${caseNo}/team`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (caseRes.data.caseManager === signedInOfficer) {
+      role = "Case Manager";
+    } else if (caseRes.data.investigators.includes(signedInOfficer)) {
+      role = "Investigator";
+    }
+  } catch (err) {
+    console.error("❌ Failed to fetch case role:", err);
+  }
+
+  // 3. Save and navigate
   localStorage.setItem("role", role);
 
   // Mark as read (only if unread)
@@ -131,7 +164,13 @@ const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
   setSelectedLead({ leadNo, leadName });
   localStorage.setItem("selectedCase", JSON.stringify(baseState));
 
-  if (action1.includes("case"))      navigate("/Investigator",    { state: baseState });
+if (action1.includes("case")) {
+  if (role === "Case Manager") {
+    navigate("/CasePageManager", { state: baseState });
+  } else {
+    navigate("/Investigator", { state: baseState });
+  }
+}
   else if (action1.includes("lead")) navigate("/LeadReview",      { state: baseState });
   else                                   navigate("/LRInstruction", { state: baseState });
 };
@@ -255,19 +294,35 @@ const handleDecline = async _id => {
   notificationId: Date.now().toString(),
   assignedBy: signedInOfficer,
   assignedTo: [
-    { username: n.assignedBy, 
-      status:   "pending"  
-     }         // case-manager
+    { username: n.assignedBy }         // case-manager
   ],
-  action1: `${signedInOfficer} accepted the task`,  // required
-  action2:   "",   
-   post1:   "",
-    post2:          "",                                 // required (can be empty)
+  action1: `accepted the case titled`,  // required
+  post1:   `${n.caseNo}: ${n.caseName}`,                                   // required (can be empty)
   caseNo:   n.caseNo,
   caseName: n.caseName,
-  caseStatus:     "Open",
+  caseStatus:     n.caseStatus || "Open", 
   type:     "Case"                            // now in your enum
+},
+  {
+    headers: {
+      "Content-Type":  "application/json",
+      Authorization:   `Bearer ${token}`
+    }
+  }
+);
+
+await api.put("/api/cases/update-officer-status", {
+  caseNo: n.caseNo,
+  caseName: n.caseName,
+  officerName: signedInOfficer,
+  status: "accepted"
+}, {
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`
+  }
 });
+
 
     fetchNew();
     fetchOpen();
@@ -318,22 +373,15 @@ const handleDecline = async _id => {
                       <button className="view-btnNC" onClick={()=>handleView(n._id)}>
                         View
                       </button>
-                      {isPending && (
-    <>
-      <button
-        className="accept-btnNC"
-        onClick={() => handleAccept(n._id)}
-      >
-        Accept
-      </button>
-      <button
-        className="decline-btnNC"
-        onClick={() => handleDecline(n._id)}
-      >
-        Decline
-      </button>
-    </>
-  )}
+                     {isPending && 
+ !n.action1?.toLowerCase().includes("accepted") &&
+ !n.action1?.toLowerCase().includes("declined") && (
+  <>
+    <button className="accept-btnNC" onClick={() => handleAccept(n._id)}>Accept</button>
+    <button className="decline-btnNC" onClick={() => handleDecline(n._id)}>Decline</button>
+  </>
+)}
+
                     </div>
                   </div>
                 </div>
@@ -398,22 +446,15 @@ const handleDecline = async _id => {
                       </div>
                       <div className="buttons-container">
                         <button className="view-btnNC" onClick={() => handleView(n._id)}>View</button>
-                       {isPending && (
-    <>
-      <button
-        className="accept-btnNC"
-        onClick={() => handleAccept(n._id)}
-      >
-        Accept
-      </button>
-      <button
-        className="decline-btnNC"
-        onClick={() => handleDecline(n._id)}
-      >
-        Decline
-      </button>
-    </>
-  )}
+                      {isPending && 
+ !n.action1?.toLowerCase().includes("accepted") &&
+ !n.action1?.toLowerCase().includes("declined") && (
+  <>
+    <button className="accept-btnNC" onClick={() => handleAccept(n._id)}>Accept</button>
+    <button className="decline-btnNC" onClick={() => handleDecline(n._id)}>Decline</button>
+  </>
+)}
+
                       </div>
                     </div>
                   </div>
