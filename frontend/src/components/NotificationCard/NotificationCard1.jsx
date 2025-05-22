@@ -12,13 +12,14 @@ const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
   const [loading, setLoading]             = useState(false);
   const [error, setError]                 = useState(null);
   const [collapsedAll, setCollapsedAll]   = useState(true);
+  const token = localStorage.getItem("token");
 
   const { setSelectedCase, setSelectedLead } = useContext(CaseContext);
   const navigate= useNavigate();
-    const signedInOfficer1 = localStorage.getItem("loggedInUser");
-    const { refreshKey } = useContext(CaseContext);
+  const signedInOfficer1 = localStorage.getItem("loggedInUser");
+  const { refreshKey } = useContext(CaseContext);
 
-    console.log("Officer", signedInOfficer1);
+  console.log("Officer", signedInOfficer1);
 
   const downArrow = `${process.env.PUBLIC_URL}/Materials/down_arrow.png`;
   const upArrow   = `${process.env.PUBLIC_URL}/Materials/up_arrow.png`;
@@ -74,7 +75,7 @@ const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
   const getType = n => {
     if (n.type === "Case")       return { letter: "C", color: "blue" };
     if (n.type === "Lead")       return { letter: "L", color: "green" };
-    if (n.type === "LeadReturn") return { letter: "R", color: "red" };
+    if (n.type === "LeadReturn") return { letter: "LR", color: "red" };
     return { letter: "?", color: "gray" };
   };
 
@@ -120,8 +121,8 @@ const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
   }
 
   const baseState = {
-    caseNo:   caseName,
-    caseName: caseNo,
+    caseNo:   caseNo,
+    caseName: caseName,
     role,
     ...(leadNo && { leadNo, leadName })
   };
@@ -130,9 +131,9 @@ const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
   setSelectedLead({ leadNo, leadName });
   localStorage.setItem("selectedCase", JSON.stringify(baseState));
 
-  if (action1.includes("new case"))      navigate("/Investigator",    { state: baseState });
-  else if (action1.includes("new lead")) navigate("/LeadReview",      { state: baseState });
-  else                                   navigate("/LRInstructions", { state: baseState });
+  if (action1.includes("case"))      navigate("/Investigator",    { state: baseState });
+  else if (action1.includes("lead")) navigate("/LeadReview",      { state: baseState });
+  else                                   navigate("/LRInstruction", { state: baseState });
 };
 
 const handleDecline = async _id => {
@@ -181,12 +182,20 @@ const handleDecline = async _id => {
   assignedTo: [
     { username: n.assignedBy }         // case-manager
   ],
-  action1: `${signedInOfficer} declined the task`,  // required
-  post1:   "",                                   // required (can be empty)
+  action1: `declined the case titled`,  // required
+  post1:   `${n.caseNo}: ${n.caseName}`,                                   // required (can be empty)
   caseNo:   n.caseNo,
   caseName: n.caseName,
-  type:     "General"                            // now in your enum
-});
+  caseStatus:     n.caseStatus || "Open", 
+  type:     "Case"                            // now in your enum
+},
+  {
+    headers: {
+      "Content-Type":  "application/json",
+      Authorization:   `Bearer ${token}`
+    }
+  }
+);
 
     // Re-fetch to ensure consistency
     fetchNew();
@@ -309,20 +318,22 @@ const handleDecline = async _id => {
                       <button className="view-btnNC" onClick={()=>handleView(n._id)}>
                         View
                       </button>
-                      <button
-                        className="accept-btnNC"
-                        onClick={()=>handleAccept(n._id)}
-                        disabled={!isPending}
-                      >
-                        Accept
-                      </button>
-                       <button
-    className="decline-btnNC"
-    onClick={() => handleDecline(n._id)}
-    disabled={!isPending}
-  >
-    Decline
-  </button>
+                      {isPending && (
+    <>
+      <button
+        className="accept-btnNC"
+        onClick={() => handleAccept(n._id)}
+      >
+        Accept
+      </button>
+      <button
+        className="decline-btnNC"
+        onClick={() => handleDecline(n._id)}
+      >
+        Decline
+      </button>
+    </>
+  )}
                     </div>
                   </div>
                 </div>
@@ -387,20 +398,22 @@ const handleDecline = async _id => {
                       </div>
                       <div className="buttons-container">
                         <button className="view-btnNC" onClick={() => handleView(n._id)}>View</button>
-                         <button
-                          className="accept-btnNC"
-                          onClick={()=>handleAccept(n._id)}
-                          disabled={!isPending}
-                        >
-                          Accept
-                        </button>
-                         <button
-    className="decline-btnNC"
-    onClick={() => handleDecline(n._id)}
-    disabled={!isPending}
-  >
-    Decline
-  </button>
+                       {isPending && (
+    <>
+      <button
+        className="accept-btnNC"
+        onClick={() => handleAccept(n._id)}
+      >
+        Accept
+      </button>
+      <button
+        className="decline-btnNC"
+        onClick={() => handleDecline(n._id)}
+      >
+        Decline
+      </button>
+    </>
+  )}
                       </div>
                     </div>
                   </div>

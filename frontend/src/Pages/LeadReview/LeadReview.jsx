@@ -61,13 +61,34 @@ export const LeadReview = () => {
 
   const statusToIndex = {
     Assigned:               1,  // maps to "Lead Assigned"
-    Pending:                2,  // maps to "Lead Accepted"
+    Accepted:                2,  // maps to "Lead Accepted"
     "In Review":            3,  // if you also use "In Review"
     Submitted:              3,  // or map your own submission status here
     Approved:               4,  // "Lead Approved"
     Returned:               5,  // "Lead Returned"
     Completed:              6,  // "Lead Completed"
   };
+
+  // inside LeadReview()
+const handleSave = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    setLoading(true);
+    // hit your new update endpoint:
+    await api.put(
+      `/api/lead/${leadData.leadNo}/${encodeURIComponent(leadData.description)}/${leadData.caseNo}/${encodeURIComponent(leadData.caseName)}`,
+      leadData,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    alert("Lead updated successfully!");
+  } catch (err) {
+    console.error("Save failed:", err);
+    setError("Failed to save changes.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 
   const formatDate = (dateString) => {
@@ -783,6 +804,14 @@ useEffect(() => {
               </tbody>
             </table>
           </div>
+          {!isInvestigator && (
+  <div className="form-actions">
+    <button className="save-btn" onClick={handleSave}>
+      Save Changes
+    </button>
+    {error && <div className="error">{error}</div>}
+  </div>
+)}
 
           {/* <div className="lead-tracker-container">
                   {statuses.map((status, index) => (
