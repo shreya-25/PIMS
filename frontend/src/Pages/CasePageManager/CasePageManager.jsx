@@ -353,8 +353,8 @@ const handleSelectLead = (lead) => {
             ? lead.associatedFlags
             : [],
           assignedOfficers: Array.isArray(lead.assignedTo)
-            ? lead.assignedTo
-            : [],
+    ? lead.assignedTo.map(a => a.username)
+    : [],
           leadStatus: lead.leadStatus,
           caseName: lead.caseName,
           caseNo: String(lead.caseNo),
@@ -1995,7 +1995,10 @@ Add Lead
 
              
               <td style={{ wordBreak:"break-word" }}>
-                {(lead.assignedOfficers||[]).join(", ")}
+                  {lead.assignedOfficers.length
+    ? lead.assignedOfficers.join(", ")
+    : <em>None</em>}
+  
               </td>
               <td>
                 <button className="view-btn1" onClick={()=>handleLeadClick(lead)}>

@@ -87,7 +87,7 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
        const assignedCases = response.data
           .filter(c =>
             c.caseStatus === "Ongoing" &&
-            c.assignedOfficers.some(o => o.name === signedInOfficer && o.status === "accepted")
+            c.assignedOfficers.some(o => o.name === signedInOfficer)
           )
           .map(c => {
             const officer = c.assignedOfficers.find(o => o.name === signedInOfficer);

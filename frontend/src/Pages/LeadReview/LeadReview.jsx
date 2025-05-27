@@ -28,6 +28,7 @@ export const LeadReview = () => {
   const [error, setError] = useState("");
     const [pendingRoute, setPendingRoute]   = useState(null);
 
+        const signedInOfficer = localStorage.getItem("loggedInUser");
 
     useEffect(() => {
     // as soon as we land on this screen, jump to top
@@ -101,7 +102,99 @@ await api.put(
   }
 };
 
+const acceptLead = async (leadNo, description) => {
+  console.log("Accept button clicked for lead:", leadNo);
 
+  try {
+    const token = localStorage.getItem("token");
+    const url = `/api/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`;
+    console.log("PUT request URL:", url);
+
+    const response = await api.put(
+      url,
+      {}, // backend handles default payload
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+     await api.post(
+      "/api/notifications",
+      {
+        notificationId: Date.now().toString(),
+        assignedBy: signedInOfficer,
+        assignedTo: [{ username: leadData.assignedBy }],
+        action1: "sccepted the lead",
+        post1:   `${leadNo}: ${description}`,
+        caseNo:   selectedCase.caseNo,
+        caseName: selectedCase.caseName,
+        caseStatus: selectedCase.caseStatus || "Open",
+        type: "Lead"
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    console.log("PUT request succeeded. Response data:", response.data);
+
+    // Update UI immediately
+    setLeadData(prev => ({
+      ...prev,
+      leadStatus: "Accepted",
+    }));
+
+    alert("✅ Lead accepted successfully!");
+  } catch (error) {
+    console.error("Error updating lead status:", error.response?.data || error);
+    alert("❌ Failed to accept lead.");
+  }
+};
+
+
+ const declineLead = async (leadNo, description) => {
+  const token = localStorage.getItem("token");
+  try {
+
+    // 2) Remove *this* officer from the assignedTo array
+    await api.put(
+      `/api/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/removeAssigned/${signedInOfficer}`,
+
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // 3) Optimistically update local UI
+    setLeadData(prev => ({
+      ...prev,
+      assignedTo: prev.assignedTo.filter(u => u.username !== signedInOfficer)
+    }));
+
+    // 4) Notify the Case Manager
+    await api.post(
+      "/api/notifications",
+      {
+        notificationId: Date.now().toString(),
+        assignedBy: signedInOfficer,          // you
+        assignedTo: [{ username: leadData.assignedBy }], // the CM
+        action1: "declined the lead",
+        post1:   `${leadNo}: ${description}`,
+        caseNo:   selectedCase.caseNo,
+        caseName: selectedCase.caseName,
+        caseStatus: selectedCase.caseStatus || "Open",
+        type: "Lead"
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    alert("❌ You’ve declined the lead, been removed from assigned list, and the Case Manager has been notified.");
+    navigate('/Investigator', { replace: true });
+  } catch (err) {
+    console.error("Error declining lead:", err);
+    alert("❌ Failed to decline lead.");
+  }
+};
 
   const formatDate = (dateString) => {
     if (!dateString) return ""; // Handle empty dates
@@ -271,7 +364,7 @@ const currentStatusIndex = statusToIndex[leadData.leadStatus] ?? 0;
 
   useEffect(() => {
     if (leadData.assignedTo) {
-      setAssignedOfficers(leadData.assignedTo);
+      setAssignedOfficers(leadData.assignedTo.map(o => o.username));
     }
   }, [leadData]);
   
@@ -486,7 +579,7 @@ const isEditableByCaseManager = field => {
 
           </div>
 
-
+                  {(leadData.leadStatus !== "Assigned" || selectedCase.role === "Case Manager") && (
                    <div className="top-menu">
         <div className="menu-items">
         <span className="menu-item active" > Lead Information</span>
@@ -523,6 +616,7 @@ const isEditableByCaseManager = field => {
           
         </div>
       </div>
+                  )}
 
           {/* Case Summary Textarea */}
           {/* <div className="form-section">
@@ -545,6 +639,41 @@ const isEditableByCaseManager = field => {
     </button>
   </div>
 ) } */}
+
+ {leadData.leadStatus === "Assigned" && selectedCase.role !== "Case Manager" &&  (
+  <div
+    className="accept-reject-section"
+    style={{
+      marginTop: "30px",
+      padding: "20px",
+      border: "1px solid #ccc",
+      borderRadius: "8px",
+      backgroundColor: "#f9f9f9",
+    }}
+  >
+    <h3 style={{ marginBottom: "15px" }}>
+      Do you want to Accept / Reject this lead?
+    </h3>
+    <div style={{ display: "flex", gap: "20px" }}>
+      <button
+        className="save-btn1"
+        onClick={() => acceptLead(leadData.leadNo, leadData.description)}
+      >
+        Accept
+      </button>
+
+      <button
+        className="decline-btnNC"
+        // style={{ backgroundColor: "#ffdddd", color: "#a00" }}
+        onClick={() => declineLead(leadData.leadNo, leadData.description)}
+          
+      >
+        Reject
+      </button>
+    </div>
+  </div>
+)}
+
 
 
           {/* Additional Lead Details (Bottom Table) */}
@@ -874,6 +1003,8 @@ const isEditableByCaseManager = field => {
                       ))}
                 </div> */}
 
+
+            {(leadData.leadStatus !== "Assigned" || selectedCase.role === "Case Manager") && (
             <div className="lead-tracker-container">
               {statuses.map((status, idx) => (
                 <div
@@ -899,7 +1030,9 @@ const isEditableByCaseManager = field => {
                 </div>
               ))}
             </div>
+            )}
                 </div>
+
         </div>
       </div>
     </div>
