@@ -134,7 +134,7 @@ const handleCaseClick = (caseDetails) => {
       role: caseDetails.role
     });
     navigate("/Investigator", { state: { caseDetails } });
-  } else if (caseDetails.role === "Case Manager") {
+  } else if (caseDetails.role === "Case Manager" || caseDetails.role === "Detective Supervisor") {
     localStorage.setItem("role", "Case Manager");
     setSelectedCase({
       caseNo: caseDetails.id,
