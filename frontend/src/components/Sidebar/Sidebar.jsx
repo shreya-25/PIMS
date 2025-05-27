@@ -28,10 +28,18 @@ export const SideBar = ({ leads = {}, cases = [], activePage,   activeTab,   set
   const logIcon    = `${process.env.PUBLIC_URL}/Materials/log2.png`;
 
   const isCasePage = activePage === 'CasePageManager' || activePage === 'Investigator';
-  const goToCasePage = () => {
-    const dest = selectedCase.role === 'Investigator'
-      ? '/Investigator'
-      : '/CasePageManager';
+ const goToCasePage = () => {
+    const { role } = selectedCase;
+    let dest;
+        if (role === 'Investigator') {
+      dest = '/Investigator';
+    } else if (role === 'Case Manager' || role === 'Detective Supervisor') {
+      // both Case Manager and DS land on the same manager page
+      dest = '/CasePageManager';
+    } else {
+      // fallback
+      dest = '/HomePage';
+    }
     navigate(dest, { state: { caseDetails: selectedCase } });
   };
 

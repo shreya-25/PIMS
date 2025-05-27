@@ -377,8 +377,8 @@ await api.put("/api/cases/update-officer-status", {
  !n.action1?.toLowerCase().includes("accepted") &&
  !n.action1?.toLowerCase().includes("declined") && (
   <>
-    <button className="accept-btnNC" onClick={() => handleAccept(n._id)}>Accept</button>
-    <button className="decline-btnNC" onClick={() => handleDecline(n._id)}>Decline</button>
+    {/* <button className="accept-btnNC" onClick={() => handleAccept(n._id)}>Accept</button>
+    <button className="decline-btnNC" onClick={() => handleDecline(n._id)}>Decline</button> */}
   </>
 )}
 
@@ -450,8 +450,8 @@ await api.put("/api/cases/update-officer-status", {
  !n.action1?.toLowerCase().includes("accepted") &&
  !n.action1?.toLowerCase().includes("declined") && (
   <>
-    <button className="accept-btnNC" onClick={() => handleAccept(n._id)}>Accept</button>
-    <button className="decline-btnNC" onClick={() => handleDecline(n._id)}>Decline</button>
+    {/* <button className="accept-btnNC" onClick={() => handleAccept(n._id)}>Accept</button>
+    <button className="decline-btnNC" onClick={() => handleDecline(n._id)}>Decline</button> */}
   </>
 )}
 
