@@ -1,7 +1,7 @@
 const express = require("express");
 const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, searchLeadsByKeyword, setLeadStatusToInReview,
-  updateLead,
-  setLeadStatusToComplete, setLeadStatusToPending
+  updateLead, removeAssignedOfficer,
+  setLeadStatusToComplete, setLeadStatusToPending, updateAssignedToStatus
  } = require("../controller/leadController");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
@@ -43,6 +43,12 @@ router.put(
   updateLead
 );
 
+router.put(
+  "/:leadNo/:description/:caseNo/:caseName/removeAssigned/:username",
+  verifyToken,       // if you protect routes
+  removeAssignedOfficer
+);
+
 
 // API to get the maximum lead number
 // router.get("/maxLeadNumber", async (req, res) => {
@@ -80,6 +86,10 @@ router.get("/maxLeadNumber", async (req, res) => {
 });
 
   // router.patch("/updateStatus", verifyToken, leadController.updateLeadLRStatus);
-  
+router.put(
+  '/lead/:leadNo/:description/:caseNo/:caseName/assignedTo',
+  verifyToken,
+  updateAssignedToStatus
+);
 
 module.exports = router;
