@@ -127,7 +127,7 @@ const acceptLead = async (leadNo, description) => {
         notificationId: Date.now().toString(),
         assignedBy: signedInOfficer,
         assignedTo: [{ username: leadData.assignedBy }],
-        action1: "sccepted the lead",
+        action1: "accepted the lead",
         post1:   `${leadNo}: ${description}`,
         caseNo:   selectedCase.caseNo,
         caseName: selectedCase.caseName,
