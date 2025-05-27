@@ -7,14 +7,14 @@ import { CaseSelector } from "../CaseSelector/CaseSelector";
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from "../../api";
 
-export const SideBar = ({ leads = {}, cases = [], activePage,   activeTab,   setActiveTab, onShowCaseSelector }) => {
+export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   activeTab,   setActiveTab, onShowCaseSelector }) => {
   const navigate = useNavigate(); 
 
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(false);
   const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
   const location = useLocation();
   const { caseDetails } = location.state || {};
-  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+  const { selectedCase, selectedLead, setSelectedLead , setSelectedCase} = useContext(CaseContext);
   const {
     assignedLeads = [],
     pendingLeads = [],
@@ -22,6 +22,11 @@ export const SideBar = ({ leads = {}, cases = [], activePage,   activeTab,   set
     allLeads = []
   } = leads;
   
+   const signedInOfficer = localStorage.getItem("loggedInUser");
+  const [caseList, setCaseList] = useState(initialCases);
+  const [assignedLeadsList, setAssignedLeadsList] = useState([]);
+  const [open, setOpen]               = useState(false);
+
   const folderIcon    = `${process.env.PUBLIC_URL}/Materials/case1.png`;
   const folderIcon1    = `${process.env.PUBLIC_URL}/Materials/case.png`;
   const homeIcon    = `${process.env.PUBLIC_URL}/Materials/home.png`;
@@ -50,6 +55,95 @@ export const SideBar = ({ leads = {}, cases = [], activePage,   activeTab,   set
     ['pendingLeadReturns',  'Lead Returns In Review',   pendingLeadReturns.length],
     ['allLeads',            'All Leads',                 allLeads.length],
   ];
+
+  useEffect(() => {
+    const fetchCases = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const { data } = await api.get("/api/cases", {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { officerName: signedInOfficer }
+        });
+
+        const ongoing = data
+          .filter(c =>
+            c.caseStatus === "Ongoing" &&
+            c.assignedOfficers.some(o => o.name === signedInOfficer)
+          )
+          .map(c => ({
+            id: c.caseNo,
+            title: c.caseName,
+            role: c.assignedOfficers.find(o => o.name === signedInOfficer)?.role || "Unknown"
+          }));
+
+        setCaseList(ongoing);
+      } catch (err) {
+        console.error("Error fetching cases", err);
+      }
+    };
+    fetchCases();
+  }, [signedInOfficer]);
+
+  // 2) Fetch all leads assigned to this officer — then filter by those same ongoing cases
+  useEffect(() => {
+    const fetchLeads = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const { data } = await api.get("/api/lead/assignedTo-leads", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        // only keep leads in our ongoing cases
+        const caseNos = new Set(caseList.map(c => c.id));
+      const filtered = data
+        .filter(l =>
+          caseNos.has(l.caseNo) &&
+          l.leadStatus === "Assigned" &&
+          l.assignedTo.some(a => a.username === signedInOfficer)
+        )
+        .map(l => ({
+          id: l.leadNo,
+          description: l.description,
+          caseNo: l.caseNo,
+          assignedTo: l.assignedTo,  // we’ll need this if you want to drill in
+          leadStatus: l.leadStatus
+        }));
+
+      setAssignedLeadsList(filtered);
+      } catch (err) {
+        console.error("Error fetching assigned leads", err);
+      }
+    };
+
+    if (caseList.length) fetchLeads();
+  }, [signedInOfficer, caseList]);
+
+   const leadsByCase = assignedLeadsList.reduce((acc, lead) => {
+    (acc[lead.caseNo] ||= []).push(lead);
+    return acc;
+  }, {});
+
+  // when you click a case header
+  const handleCaseSelect = (c) => {
+    setSelectedCase({
+      caseNo: c.id,
+      caseName: c.title,
+      role: c.role,
+    });
+    // go to that case’s page
+    const dest = c.role === 'Investigator'
+      ? '/Investigator'
+      : '/CasePageManager';
+    navigate(dest, { state: { caseDetails: c } });
+  };
+
+  // when you click one of the nested leads
+  const handleLeadSelect = (lead) => {
+    setSelectedLead(lead);
+    // navigate to whatever lead‐details page you have
+    navigate('/LeadReview', { state: { caseDetails: selectedCase, leadDetails: lead } });
+  };
+
 
   return (
     <div className="sideitem">
@@ -129,7 +223,71 @@ export const SideBar = ({ leads = {}, cases = [], activePage,   activeTab,   set
               Leads Desk</li>
 
 
+  {/* Toggle Cases dropdown */}
+      {/* Toggle Cases dropdown */}
+{/* 1) Toggle button */}
+<li
+  className="sidebar-item"
+  onClick={() => setCaseDropdownOpen(o => !o)}
+>
+  <img src={folderIcon} className="sidebar-icon" alt="" /> My Ongoing Cases {caseDropdownOpen ? '▲' : '▼'}
+</li>
+
+{/* 2) Dropdown list as a sibling, not inside the <li> */}
+{/* 2) Dropdown list as a sibling */}
+{caseDropdownOpen && (
+  <ul className="dropdown-list1">
+    {caseList.map(c => {
+      const myLeads = leadsByCase[c.id] || [];
+      const count   = myLeads.length;
+      const isActive = selectedCase.caseNo === c.id;
+
+      return (
+        <li
+          key={c.id}
+          className={`sidebar-item ${isActive ? ' active' : ''}`}
+        >
+          <div
+            className="case-header"
+            onClick={() => handleCaseSelect(c)}
+          >
+            {/* Case title */}
+            {c.id} | {c.title}
+            {/* Lead count badge */}
+            <span className="sidebar-number">{count}</span>
+          </div>
+
+          {/* nested leads */}
+         {/* {count > 0 && (
+            <ul className="nested-list">
+              {myLeads.map(lead => {
+                const leadActive =
+                  isActive && selectedCase.leadId === lead.id;
+                return (
+                  <li
+                    key={lead.id}
+                    className={`sidebar-item lead-item${leadActive ? ' active' : ''}`}
+                    onClick={() => handleLeadSelect(lead)}
+                  >
+                    Lead {lead.id}: {lead.description}
+                  </li>
+                );
+              })}
+            </ul> */}
+            
+        
+        </li>
+      );
+    })}
+  </ul>
+)}
+
+
+
+
     </div>
+
+    
   );
 };
 

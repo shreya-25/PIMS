@@ -13,7 +13,18 @@ const leadSchema = new mongoose.Schema(
         associatedSubNumbers: [{ type: String}],
         assignedDate: { type: Date, required: true },
         completedDate: { type: Date },
-        assignedTo: [{ type: String , required: true }], 
+         assignedTo: [{
+    username: {
+      type: String,
+      required: true
+    },
+    status: {
+      type: String,
+      required: true,
+      enum: ["pending", "accepted", "declined"],
+      default: "pending"
+    }
+  }],
         assignedBy: { type: String, required: true },
         summary: { type: String, required: true },
         description: { type: String, required: true },
