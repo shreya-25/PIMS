@@ -8,6 +8,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button", refreshNo
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { triggerRefresh } = useContext(CaseContext);
   const dropdownRef = useRef(null);
+   const [currentRole, setCurrentRole] = useState(""); 
   const [caseDetails, setCaseDetails] = useState({
     title: "",
     number: "",
@@ -101,7 +102,10 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button", refreshNo
         const { data } = await api.get("/api/users/usernames", {
           // headers: { Authorization: `Bearer ${token}` }
         });
-        setAllUsers(data.usernames);
+        setAllUsers(data.users);
+         const loggedInUsername = localStorage.getItem("loggedInUser");
+        const me = data.users.find(u => u.username === loggedInUsername);
+        if (me) setCurrentRole(me.role);
       } catch (err) {
         console.error("❌ Error fetching users:", err);
         setError("Could not load user list");
@@ -334,8 +338,9 @@ if (notificationRecipients.length > 0) {
               className="input-field"
             />
           </div>
+            {currentRole === "Detective Supervisor" && (
            <div className="form-group">
-                        <label>Detective Supervisor:</label>
+            <label>Detective Supervisor:</label>
             <select
               name="detectiveSupervisor"
               value={caseDetails.detectiveSupervisor}
@@ -343,14 +348,15 @@ if (notificationRecipients.length > 0) {
               className="input-field"
             >
               <option value="">Select Supervisor</option>
-              {allUsers.map((user, idx) => (
-                <option key={idx} value={user}>
-                  {user}
+              {allUsers.map((u) => (
+                <option key={u.username} value={u.username}>
+                  {u.firstName} {u.lastName} ({u.username})
                 </option>
               ))}
             </select>
           </div>
-          <div className="form-group">
+          )}
+           <div className="form-group">
             <label>Case Manager Name:</label>
             <select
               name="managerName"
@@ -359,14 +365,15 @@ if (notificationRecipients.length > 0) {
               className="input-field"
             >
               <option value="">Select Case Manager</option>
-              {allUsers.map((manager, index) => (
-                <option key={index} value={manager}>
-                  {manager}
+              {allUsers.map((u) => (
+                <option key={u.username} value={u.username}>
+                  {u.firstName} {u.lastName} ({u.username})
                 </option>
               ))}
             </select>
           </div>
-          <div className="form-group">
+            
+          {/* <div className="form-group">
             <label>Investigators Assigned:</label>
             <div className="custom-dropdown" ref={dropdownRef}  >
               
@@ -376,28 +383,8 @@ if (notificationRecipients.length > 0) {
               </div>
               {dropdownOpen && (
                 <div className="dropdown-options">
-                  {/* {allUsers.map((officer) => {
-                    const isAvailable =
-                      officer.unavailableDays === 0
-                        ? "Available"
-                        : `Unavailable for ${officer.unavailableDays} days`;
-
-                    return (
-                      <div key={officer.name} className="dropdown-item">
-                        <input
-                          type="checkbox"
-                          id={officer.name}
-                          value={officer.name}
-                          checked={caseDetails.investigators.includes(officer.name)}
-                          onChange={handleCheckboxChange}
-                        />
-                        <label htmlFor={officer.name}>
-                          {officer.name} [{officer.assignedLeads}] [{officer.totalAssignedLeads}] 
-                          <em style={{ fontSize: "20px", color: "gray" }}>({isAvailable})</em>
-                        </label>
-                      </div>
-                    );
-                  })} */}
+                 
+               
 
                   {allUsers.map((officerName, index) => (
                             <div key={index} className="dropdown-item">
@@ -411,6 +398,39 @@ if (notificationRecipients.length > 0) {
                               <label htmlFor={officerName}>{officerName}</label>
                             </div>
                           ))}
+                </div>
+              )}
+            </div>
+          </div> */}
+
+          {/* Investigators Assigned */}
+          <div className="form-group">
+            <label>Investigators Assigned:</label>
+            <div className="custom-dropdown" ref={dropdownRef}>
+              <div className="input-field" onClick={toggleDropdown}>
+                {caseDetails.investigators.length > 0
+                  ? caseDetails.investigators.join(", ")
+                  : "Select Officers"}
+                <span className="dropdown-icon" />
+              </div>
+              {dropdownOpen && (
+                <div className="dropdown-options">
+                  {allUsers.map((u) => (
+                    <div key={u.username} className="dropdown-item">
+                      <input
+                        type="checkbox"
+                        id={`inv-${u.username}`}
+                        value={u.username}
+                        checked={caseDetails.investigators.includes(
+                          u.username
+                        )}
+                        onChange={handleCheckboxChange}
+                      />
+                      <label htmlFor={`inv-${u.username}`}>
+                        {u.firstName} {u.lastName} ({u.username})
+                      </label>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

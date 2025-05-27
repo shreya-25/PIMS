@@ -346,6 +346,10 @@ const handleSelectLead = (lead) => {
           return true;
         });
   
+              const filtered = filteredLeadsArray.filter(
+  lead => lead.assignedTo?.some(o => o.username === signedInOfficer)
+);
+
         const mapLead = (lead) => ({
            id: Number(lead.leadNo), 
           description: lead.description,
@@ -1461,7 +1465,12 @@ Add Lead
                 </td> */}
 
                 <td style={{ wordBreak:"break-word" }}>
-                {(lead.assignedOfficers||[]).join(", ")}
+                {lead.assignedOfficers && lead.assignedOfficers.length > 0
+    ? lead.assignedOfficers.map((officer, idx) => (
+        <div key={idx}>{officer}</div>
+      ))
+    : <em>None</em>
+  }
               </td>
               <td>
                 <button
@@ -1751,7 +1760,12 @@ Add Lead
                 ))}
                 </td> */}
                 <td style={{ wordBreak:"break-word" }}>
-                {(lead.assignedOfficers||[]).join(", ")}
+                 {lead.assignedOfficers && lead.assignedOfficers.length > 0
+    ? lead.assignedOfficers.map((officer, idx) => (
+        <div key={idx}>{officer}</div>
+      ))
+    : <em>None</em>
+  }
               </td>
               <td>
                 <button
@@ -2000,9 +2014,12 @@ Add Lead
 
              
               <td style={{ wordBreak:"break-word" }}>
-                  {lead.assignedOfficers.length
-    ? lead.assignedOfficers.join(", ")
-    : <em>None</em>}
+                 {lead.assignedOfficers && lead.assignedOfficers.length > 0
+    ? lead.assignedOfficers.map((officer, idx) => (
+        <div key={idx}>{officer}</div>
+      ))
+    : <em>None</em>
+  }
   
               </td>
               <td>

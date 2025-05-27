@@ -421,7 +421,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
           // }
         });
         // Assuming the API returns an object with a "usernames" property that is an array.
-        setUsernames(response.data.usernames);
+        setUsernames(response.data.users);
       } catch (error) {
         console.error("Error fetching usernames:", error);
       }
@@ -872,41 +872,56 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
   </div> */}
 
 <div className="custom-dropdown-cl" ref={dropdownRef}>
-                        <div
-                          className="dropdown-header-cl"
-                          onClick={() => setDropdownOpen(!dropdownOpen)}
-                        >
-                          {leadData.assignedOfficer.length > 0
-                            ? leadData.assignedOfficer.join(', ')
-                            : 'Select Officers'}
-                          <span className="dropdown-icon">{dropdownOpen ? '▲' : '▼'}</span>
-                        </div>
-                        {dropdownOpen && (
-                          <div className="dropdown-options">
-                            {usernames.length > 0 ? (
-                              usernames.map((username) => (
-                                <div key={username} className="dropdown-item">
-                                  <input
-                                    type="checkbox"
-                                    id={username}
-                                    value={username}
-                                    checked={leadData.assignedOfficer.includes(username)}
-                                    onChange={(e) => {
-                                      const newAssignedOfficers = e.target.checked
-                                        ? [...leadData.assignedOfficer, e.target.value]
-                                        : leadData.assignedOfficer.filter((o) => o !== e.target.value);
-                                      handleInputChange('assignedOfficer', newAssignedOfficers);
-                                    }}
-                                  />
-                                  <label htmlFor={username}>{username}</label>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="dropdown-item">No officers found</div>
-                            )}
-                          </div>
-                        )}
-                      </div>
+  {/* Header */}
+  <div
+    className="dropdown-header-cl"
+    onClick={() => setDropdownOpen(!dropdownOpen)}
+  >
+    {leadData.assignedOfficer.length > 0
+      ? // map each assigned username back to its user object
+        leadData.assignedOfficer
+          .map((uName) => {
+            const user = usernames.find((u) => u.username === uName);
+            return user
+              ? `${user.firstName} ${user.lastName} (${user.username})`
+              : uName;
+          })
+          .join(", ")
+      : "Select Officers"}
+    <span className="dropdown-icon">{dropdownOpen ? "▲" : "▼"}</span>
+  </div>
+
+  {/* Options */}
+  {dropdownOpen && (
+    <div className="dropdown-options">
+      {usernames.length > 0 ? (
+        usernames.map((user) => (
+          <div key={user.username} className="dropdown-item">
+            <input
+              type="checkbox"
+              id={user.username}
+              value={user.username}
+              checked={leadData.assignedOfficer.includes(user.username)}
+              onChange={(e) => {
+                const { checked, value } = e.target;
+                const newList = checked
+                  ? [...leadData.assignedOfficer, value]
+                  : leadData.assignedOfficer.filter((o) => o !== value);
+                handleInputChange("assignedOfficer", newList);
+              }}
+            />
+            <label htmlFor={user.username}>
+              {user.firstName} {user.lastName} ({user.username})
+            </label>
+          </div>
+        ))
+      ) : (
+        <div className="dropdown-item">No officers found</div>
+      )}
+    </div>
+  )}
+</div>
+
 </td>
 </tr>
 <tr>
