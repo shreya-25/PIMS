@@ -8,7 +8,7 @@ const caseSchema = new mongoose.Schema(
             {
                 name: { type: String, required: true },
                 // badgeNumber: { type: String, required: true },
-                role: { type: String, enum: ['Case Manager', 'Investigator'], required: true },
+                role: { type: String, enum: ['Case Manager', 'Investigator', 'Detective Supervisor'], required: true },
                 status: { type: String, enum: ['pending', 'accepted', 'declined'], default: 'pending' }
             }
         ],

@@ -42,9 +42,9 @@ export const CasePageManager = () => {
   const [error, setError] = useState('');
   const saveTimer = useRef(null);
   const isFirstLoad = useRef(true);
-  
 
   const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+  const isSupervisor = selectedCase.role === "Detective Supervisor";
 
 
     const [activeTab, setActiveTab] = useState("allLeads"); // Default to All Leads tab
@@ -331,6 +331,11 @@ const handleSelectLead = (lead) => {
         const leadsArray = Array.isArray(data) ? data : [];
   
         const filteredLeadsArray = leadsArray.filter((lead) => {
+
+           if (isSupervisor) {
+    return true;
+  }
+
           if (
             lead.accessLevel === "Only Case Manager and Assignees" &&
             !lead.assignedTo?.includes(signedInOfficer) &&
@@ -341,6 +346,10 @@ const handleSelectLead = (lead) => {
           return true;
         });
   
+              const filtered = filteredLeadsArray.filter(
+  lead => lead.assignedTo?.some(o => o.username === signedInOfficer)
+);
+
         const mapLead = (lead) => ({
            id: Number(lead.leadNo), 
           description: lead.description,
@@ -1456,7 +1465,12 @@ Add Lead
                 </td> */}
 
                 <td style={{ wordBreak:"break-word" }}>
-                {(lead.assignedOfficers||[]).join(", ")}
+                {lead.assignedOfficers && lead.assignedOfficers.length > 0
+    ? lead.assignedOfficers.map((officer, idx) => (
+        <div key={idx}>{officer}</div>
+      ))
+    : <em>None</em>
+  }
               </td>
               <td>
                 <button
@@ -1746,7 +1760,12 @@ Add Lead
                 ))}
                 </td> */}
                 <td style={{ wordBreak:"break-word" }}>
-                {(lead.assignedOfficers||[]).join(", ")}
+                 {lead.assignedOfficers && lead.assignedOfficers.length > 0
+    ? lead.assignedOfficers.map((officer, idx) => (
+        <div key={idx}>{officer}</div>
+      ))
+    : <em>None</em>
+  }
               </td>
               <td>
                 <button
@@ -1995,9 +2014,12 @@ Add Lead
 
              
               <td style={{ wordBreak:"break-word" }}>
-                  {lead.assignedOfficers.length
-    ? lead.assignedOfficers.join(", ")
-    : <em>None</em>}
+                 {lead.assignedOfficers && lead.assignedOfficers.length > 0
+    ? lead.assignedOfficers.map((officer, idx) => (
+        <div key={idx}>{officer}</div>
+      ))
+    : <em>None</em>
+  }
   
               </td>
               <td>

@@ -49,61 +49,73 @@ const Case = require("../models/case");
 // };
 
 exports.createCase = async (req, res) => {
-    try {
-        const { caseNo, caseName, caseSummary, selectedOfficers, username, executiveCaseSummary } = req.body;
+  try {
+    const {
+      caseNo,
+      caseName,
+      caseSummary,
+      executiveCaseSummary,
+      selectedOfficers = [],
+      username,               // Case Manager
+      detectiveSupervisor     // new
+    } = req.body;
 
-        // ✅ Ensure `username` is provided
-        if (!username) {
-            return res.status(400).json({ message: "Username is required to assign Case Manager" });
-        }
-
-                // Ensure the user is authenticated and available in request
-        if (!req.user || !req.user.name) {
-            return res.status(401).json({ message: "Unauthorized: User details not found" });
-        }
-        // Validate required fields
-        if (!caseNo || !caseName || !Array.isArray(selectedOfficers) || selectedOfficers.length === 0) {
-            return res.status(400).json({ message: "caseNo, caseName, and selectedOfficers are required" });
-          }
-          
-
-        // Ensure unique case number
-        const existingCase = await Case.findOne({ caseNo });
-        if (existingCase) {
-            return res.status(400).json({ message: "Case number already exists. Please use a unique caseNo." });
-        }
-
-        // ✅ Automatically assign the given `username` as `Case Manager`
-        const assignedOfficers = [
-            {
-                name: username,  // User from request body
-                role: "Case Manager",
-                status: "accepted"
-            },
-            ...selectedOfficers.map(officer => ({
-                name: officer.name,
-                role: "Investigator",
-                status: "pending"
-            }))
-        ];
-
-        // ✅ Create a new case
-        const newCase = new Case({
-            caseNo,
-            caseName,
-            caseSummary,
-            executiveCaseSummary,
-            assignedOfficers,  // Now contains Case Manager + Investigators
-            caseStatus: "Ongoing" // Default status
-        });
-
-        await newCase.save();
-
-        res.status(201).json({ message: "Case created successfully", data: newCase });
-    } catch (err) {
-        console.error("❌ Error creating case:", err);
-        res.status(500).json({ message: "Error creating case", error: err.message });
+    // --- validate required fields ---
+    if (!username) {
+      return res.status(400).json({ message: "Username is required to assign Case Manager" });
     }
+    if (!detectiveSupervisor) {
+      return res.status(400).json({ message: "Detective Supervisor is required" });
+    }
+    if (!caseNo || !caseName || !Array.isArray(selectedOfficers) || selectedOfficers.length === 0) {
+      return res.status(400).json({
+        message: "caseNo, caseName, detectiveSupervisor and selectedOfficers are required"
+      });
+    }
+
+    // --- ensure unique caseNo ---
+    const existingCase = await Case.findOne({ caseNo });
+    if (existingCase) {
+      return res.status(400).json({
+        message: "Case number already exists. Please use a unique caseNo."
+      });
+    }
+
+    // --- build assignedOfficers array ---
+    const assignedOfficers = [
+      {
+        name: username,
+        role: "Case Manager",
+        status: "accepted"
+      },
+      {
+        name: detectiveSupervisor,
+        role: "Detective Supervisor",
+        status: "accepted"
+      },
+      ...selectedOfficers.map(off => ({
+        name: off.name,
+        role: "Investigator",
+        status: "pending"
+      }))
+    ];
+
+    // --- save the new case ---
+    const newCase = new Case({
+      caseNo,
+      caseName,
+      caseSummary,
+      executiveCaseSummary,
+      assignedOfficers,
+      caseStatus: "Ongoing"
+    });
+    await newCase.save();
+
+    res.status(201).json({ message: "Case created successfully", data: newCase });
+  } catch (err) {
+    console.error("❌ Error creating case:", err);
+    res.status(500).json({ message: "Error creating case", error: err.message });
+  }
 };
 
 // Get all cases
