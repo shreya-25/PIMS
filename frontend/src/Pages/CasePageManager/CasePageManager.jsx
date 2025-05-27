@@ -42,9 +42,9 @@ export const CasePageManager = () => {
   const [error, setError] = useState('');
   const saveTimer = useRef(null);
   const isFirstLoad = useRef(true);
-  
 
   const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+  const isSupervisor = selectedCase.role === "Detective Supervisor";
 
 
     const [activeTab, setActiveTab] = useState("allLeads"); // Default to All Leads tab
@@ -331,6 +331,11 @@ const handleSelectLead = (lead) => {
         const leadsArray = Array.isArray(data) ? data : [];
   
         const filteredLeadsArray = leadsArray.filter((lead) => {
+
+           if (isSupervisor) {
+    return true;
+  }
+
           if (
             lead.accessLevel === "Only Case Manager and Assignees" &&
             !lead.assignedTo?.includes(signedInOfficer) &&
