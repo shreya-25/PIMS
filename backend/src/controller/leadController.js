@@ -13,7 +13,7 @@ const createLead = async (req, res) => {
         associatedSubNumbers,    // <-- Array of numbers
         assignedDate,
         completedDate,
-        assignedTo,              // <-- Array of strings
+        assignedTo: assignedToInput = [],
         assignedBy,
         summary,
         description,
@@ -28,6 +28,18 @@ const createLead = async (req, res) => {
         returnedDate,
 
       } = req.body;
+
+      const assignedTo = (assignedToInput || []).map(item => {
+  if (typeof item === 'string') {
+    return { username: item, status: 'pending' };
+  } else {
+    return {
+      username: item.username,
+      status: item.status || 'pending'
+    };
+  }
+});
+
   
       // Pass them directly into the new Lead object
       const newLead = new Lead({
@@ -83,19 +95,22 @@ const getLeadsByOfficer = async (req, res) => {
     }
 };
 
-const getLeadsForAssignedToOfficer= async (req, res) => {
+const getLeadsForAssignedToOfficer = async (req, res) => {
   try {
-      const officerName = req.user.name; // Extract officer's name from the authenticated request
+    const officerName = req.user.name; 
 
-      // Fetch leads where assignedTo contains the officer's name
-      const leads = await Lead.find({ assignedTo: officerName });
+    // find any lead where assignedTo array contains an object with this username
+    const leads = await Lead.find({ 
+      'assignedTo.username': officerName 
+    });
 
-      res.status(200).json(leads);
+    res.status(200).json(leads);
   } catch (err) {
-      console.error("Error fetching leads:", err.message);
-      res.status(500).json({ message: "Something went wrong" });
+    console.error("Error fetching leads for officer:", err);
+    res.status(500).json({ message: "Something went wrong" });
   }
 };
+
 
 
 const getLeadsByCase = async (req, res) => {
@@ -462,11 +477,81 @@ const updateLead = async (req, res) => {
   }
 };
 
+/**
+ * PUT /api/lead/:leadNo/:description/:caseNo/:caseName/assignedTo
+ * body: { officerUsername, status }
+ */
+const updateAssignedToStatus = async (req, res) => {
+  try {
+    const { leadNo, description, caseNo, caseName } = req.params;
+    const { officerUsername, status } = req.body;
+
+    if (!officerUsername || !status) {
+      return res.status(400).json({ message: "Need officerUsername and status" });
+    }
+
+    // positional operator to update only the matching array element
+    const lead = await Lead.findOneAndUpdate(
+      {
+        leadNo: Number(leadNo),
+        description,
+        caseNo,
+        caseName,
+        'assignedTo.username': officerUsername
+      },
+      {
+        $set: { 'assignedTo.$.status': status }
+      },
+      { new: true }
+    );
+
+    if (!lead) {
+      return res.status(404).json({ message: "Lead or officer not found" });
+    }
+
+    res.status(200).json({ message: "Officer status updated", lead });
+  } catch (err) {
+    console.error("Error updating officer status:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const removeAssignedOfficer = async (req, res) => {
+  try {
+    const { leadNo, description, caseNo, caseName, username } = req.params;
+
+    // Find & pull the matching username out of assignedTo
+    const lead = await Lead.findOneAndUpdate(
+      {
+        leadNo: Number(leadNo),
+        description,
+        caseNo,
+        caseName
+      },
+      {
+        $pull: { assignedTo: { username } }
+      },
+      { new: true }  // return the updated document
+    );
+
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found" });
+    }
+
+    res.status(200).json({
+      message: `Officer '${username}' removed from assignedTo`,
+      lead
+    });
+  } catch (err) {
+    console.error("Error removing assigned officer:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 
 
 module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword , setLeadStatusToInReview, 
-  setLeadStatusToComplete, setLeadStatusToPending, updateLead
+  setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer
 };
 
 

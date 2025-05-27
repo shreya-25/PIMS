@@ -46,6 +46,8 @@ export const LeadLog = () => {
     return `${month}/${day}/${year}`;
   };
 
+  const isInvestigator = selectedCase.role === 'Investigator';
+
   const generateIncidentNumber = () => {
     const numbers = leadEntries
       .map((entry) => Number(entry.leadNo))
@@ -115,8 +117,8 @@ export const LeadLog = () => {
   
           const filteredLeads = leadsArray.filter((lead) => {
             return !(
-              lead.accessLevel === "Only Case Manager and Assignees" &&
-              !lead.assignedTo?.includes(loggedInOfficer) &&
+               lead.accessLevel === "Only Case Manager and Assignees" &&
+               !lead.assignedTo?.some(o => o.username === loggedInOfficer) &&
               lead.assignedBy !== loggedInOfficer
             );
           });
@@ -591,22 +593,37 @@ const formatDate = (dateString) => {
           <tbody>
           {leadLogData.length > 0 ? (
               leadLogData.map((entry, index) => (
-                <tr key={index} onClick={() => handleLeadClick(entry)}>
+                <tr key={index} >
                   <td>{entry.leadNo}</td>
-                  <td 
+                  {/* <td 
           className="clickable-description" 
           onClick={() => handleLeadClick(entry)}
           style={{ color: "blue", cursor: "pointer", textDecoration: "underline" }}
         >
           {entry.description}
-        </td>
+        </td> */}
+         <td>
+                {isInvestigator
+                  ? entry.description
+                  : (
+                    <span
+                      className="clickable-description"
+                      onClick={() => handleLeadClick(entry)}
+                      style={{ color: 'blue', cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      {entry.description}
+                    </span>
+                  )
+                }
+              </td>
                   <td>{formatDate(entry.assignedDate)}</td>
                   <td>{entry.leadStatus }</td>
                   {/* <td>{entry.assignedTo?.join(", ")}</td> */}
                   <td style={{ whiteSpace: "pre-line" }}>
-          {entry.assignedTo?.map((officer, i) => (
+          {/* {entry.assignedTo?.map((officer, i) => (
             <span key={i} style={{ display: "block", padding: "2px 0" }}>{officer}</span>
-          ))}
+          ))} */}
+           {entry.assignedTo?.map(o => o.username).join(", ") || "None"}
         </td>
                   <td>{formatDate(entry.dateSubmitted)}</td> 
                   <td>{formatDate(entry.dateApproved)}</td> 
