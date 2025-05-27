@@ -1,7 +1,12 @@
 const mongoose = require("mongoose");
 const userSchema = new mongoose.Schema({
-    fullName:
+    firstName:
     {
+        type: String,
+        // required: true,
+    },
+    lastName:
+      {
         type: String,
         // required: true,
     },
@@ -20,7 +25,7 @@ const userSchema = new mongoose.Schema({
     {
         type: String,
         required: true,
-        enum : ["admin", "CaseManager", "Investigator"],
+        enum : ["admin", "CaseManager", "Investigator", "Detective Supervisor"],
     },
     email:
     {
