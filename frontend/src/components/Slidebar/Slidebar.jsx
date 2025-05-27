@@ -12,6 +12,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button", refreshNo
     title: "",
     number: "",
     managerName: "",
+    detectiveSupervisor: "",
     investigators: [], // Store selected investigators
     summary: "",
     executiveCaseSummary:"",
@@ -36,6 +37,15 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button", refreshNo
     const { name, value } = e.target;
     setCaseDetails({ ...caseDetails, [name]: value });
   };
+
+  useEffect(() => {
+    if (localStorage.getItem("loggedInUser")) {
+      setCaseDetails(cd => ({
+        ...cd,
+        detectiveSupervisor: localStorage.getItem("loggedInUser"),
+      }));
+    }
+  }, [localStorage.getItem("loggedInUser")]);
 
     useEffect(() => {
     function handleClickOutside(e) {
@@ -146,10 +156,20 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button", refreshNo
   // };
   
   const handleDone = async () => {
-    if (!caseDetails.title || !caseDetails.number || !caseDetails.managerName) {
-      alert("❌ Please fill all required fields: Case Title, Number, Manager");
-      return;
-    }
+    const {
+      title,
+      number,
+      managerName,
+      detectiveSupervisor,
+      investigators,
+      summary,
+      executiveCaseSummary
+    } = caseDetails;
+
+    if (!title || !number || !managerName || !detectiveSupervisor) {
+       alert("❌ Please fill all required fields: Case Title, Number, Manager");
+       return;
+     }
   
     setLoading(true);
     setError(null);
@@ -164,7 +184,8 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button", refreshNo
       caseSummary: caseDetails.summary,
       executiveCaseSummary: caseDetails.executiveCaseSummary,
       username: caseDetails.managerName,
-      selectedOfficers: caseDetails.investigators.map((name) => ({ name })),
+      detectiveSupervisor, 
+      selectedOfficers: investigators.map(name => ({ name })),
     };
   
     const token = localStorage.getItem("token");
@@ -312,6 +333,22 @@ if (notificationRecipients.length > 0) {
               onChange={handleInputChange}
               className="input-field"
             />
+          </div>
+           <div className="form-group">
+                        <label>Detective Supervisor:</label>
+            <select
+              name="detectiveSupervisor"
+              value={caseDetails.detectiveSupervisor}
+              onChange={handleInputChange}
+              className="input-field"
+            >
+              <option value="">Select Supervisor</option>
+              {allUsers.map((user, idx) => (
+                <option key={idx} value={user}>
+                  {user}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="form-group">
             <label>Case Manager Name:</label>
