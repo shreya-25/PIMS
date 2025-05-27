@@ -42,6 +42,10 @@ export const Investigator = () => {
          const saveTimer = useRef(null);
          const isFirstLoad = useRef(true);
 
+         const isNavDisabled = lead => lead.leadStatus === 'Assigned';
+const disabledStyle = { opacity: 0.5, cursor: 'not-allowed' };
+
+
   console.log("case context", selectedCase);
   const handleSaveClick = () => {
     setIsEditing(false);
@@ -396,13 +400,18 @@ const handleLeadClick = (lead) => {
       const data = Array.isArray(response.data) ? response.data : [];
 
       // your existing filter/map logic…
-      const filtered = data.filter(lead => {
-        return !(
-          lead.accessLevel === "Only Case Manager and Assignees" &&
-          !lead.assignedTo?.includes(signedInOfficer) &&
-          lead.assignedBy !== signedInOfficer
-        );
-      });
+      // const filtered = data.filter(lead => {
+      //   return !(
+      //     lead.accessLevel === "Only Case Manager and Assignees" &&
+      //     !lead.assignedTo?.some(o => o.username === signedInOfficer) &&
+      //     lead.assignedBy !== signedInOfficer
+      //   );
+      // });
+
+      const filtered = data.filter(
+  lead => lead.assignedTo?.some(o => o.username === signedInOfficer)
+);
+
 
       const mapLead = lead => ({
         id: lead.leadNo,
@@ -412,13 +421,17 @@ const handleLeadClick = (lead) => {
           : "N/A",
         priority: lead.priority || "Medium",
         flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [],
-        assignedOfficers: Array.isArray(lead.assignedTo) ? lead.assignedTo : [],
+         assignedOfficers: Array.isArray(lead.assignedTo)
+    ? lead.assignedTo.map(a => a.username)
+    : [],
+
         leadStatus: lead.leadStatus,
         caseName: lead.caseName,
         caseNo: String(lead.caseNo),
       });
 
       const allLeads = filtered.map(mapLead);
+      console.log("🔍 mapped leads:", allLeads);
       const assignedLeads = filtered.filter(l => l.leadStatus === "Assigned").map(mapLead);
       const pendingLeads  = filtered.filter(l => l.leadStatus === "Accepted" ).map(mapLead);
       const inReview      = filtered.filter(l => l.leadStatus === "In Review").map(mapLead);
@@ -1143,7 +1156,7 @@ const handleSortAll = colKey => {
                             className={`hoverable ${activeTab === "allLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("allLeads")}
                         >
-                            All Leads: {leads.allLeads.length}
+                            My Leads: {leads.allLeads.length}
                         </span>
                         
                         <span
@@ -1414,9 +1427,12 @@ const handleSortAll = colKey => {
               {/* <td>{lead.assignedOfficers.join(", ")}</td> */}
               <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
                 {/* {lead.assignedOfficers.join(", ")} */}
-                {lead.assignedOfficers.map((officer, index) => (
-                  <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
-                ))}
+                 {(lead.assignedOfficers || []).length
+    ? lead.assignedOfficers.map((officer, idx) => (
+        <div key={idx}>{officer}</div>
+      ))
+    : <span style={{ color: "#888" }}>None</span>
+  }
                 </td>
               <td>
                 <button
@@ -1938,9 +1954,21 @@ const handleSortAll = colKey => {
    {lead.leadStatus === "In Review" ? "Under review" : lead.leadStatus}
 </td>
              
-              <td style={{ wordBreak:"break-word" }}>
-                {(lead.assignedOfficers||[]).join(", ")}
-              </td>
+              {/* <td style={{ wordBreak:"break-word" }}>
+                 {(lead.assignedOfficers || []).length
+    ? lead.assignedOfficers.map((officer, idx) => (
+        <div key={idx}>{officer}</div>
+      ))
+    : <span style={{ color: "#888" }}>None</span>
+  }
+              </td> */}
+              <td style={{ wordBreak: "break-word", whiteSpace: "normal" }}>
+              {lead.assignedOfficers.length
+    ? lead.assignedOfficers.join(", ")
+    : <em>None</em>}
+  
+</td>
+
               <td>
                 <button className="view-btn1" onClick={()=>handleLeadClick(lead)}>
                   View

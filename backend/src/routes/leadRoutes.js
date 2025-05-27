@@ -1,7 +1,7 @@
 const express = require("express");
 const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, searchLeadsByKeyword, setLeadStatusToInReview,
-  updateLead,
-  setLeadStatusToComplete, setLeadStatusToPending
+  updateLead, removeAssignedOfficer,
+  setLeadStatusToComplete, setLeadStatusToPending, updateAssignedToStatus
  } = require("../controller/leadController");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
@@ -11,7 +11,7 @@ const Lead = require("../models/lead");
 
 const router = express.Router();
 
-router.post("/create", verifyToken, roleMiddleware("CaseManager"), createLead);
+router.post("/create", verifyToken, roleMiddleware("CaseManager", "Detective Supervisor"), createLead);
 
 // Fetch leads assigned by the logged-in officer
 router.get("/assigned-leads", verifyToken, getLeadsByOfficer);
@@ -41,6 +41,12 @@ router.put(
   verifyToken,
   roleMiddleware("CaseManager"),
   updateLead
+);
+
+router.put(
+  "/:leadNo/:description/:caseNo/:caseName/removeAssigned/:username",
+  verifyToken,       // if you protect routes
+  removeAssignedOfficer
 );
 
 
@@ -80,6 +86,10 @@ router.get("/maxLeadNumber", async (req, res) => {
 });
 
   // router.patch("/updateStatus", verifyToken, leadController.updateLeadLRStatus);
-  
+router.put(
+  '/lead/:leadNo/:description/:caseNo/:caseName/assignedTo',
+  verifyToken,
+  updateAssignedToStatus
+);
 
 module.exports = router;

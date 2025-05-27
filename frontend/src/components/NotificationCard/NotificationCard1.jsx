@@ -11,7 +11,7 @@ const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
   const [showAll, setShowAll]             = useState(false);
   const [loading, setLoading]             = useState(false);
   const [error, setError]                 = useState(null);
-  const [collapsedAll, setCollapsedAll]   = useState(true);
+  const [collapsedAll, setCollapsedAll]   = useState(false);
   const token = localStorage.getItem("token");
 
   const { setSelectedCase, setSelectedLead } = useContext(CaseContext);
@@ -32,7 +32,7 @@ const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
       const filtered = data
         .filter(n =>
           (n.type === "Case" || n.type === "Lead") &&
-          n.caseStatus === "Open" &&
+          n.caseStatus === "Open" && n.unread === true &&
           n.assignedTo.some(r => r.username === signedInOfficer && r.status === "pending")
         )
         .sort((a, b) => new Date(b.time) - new Date(a.time));
@@ -349,7 +349,7 @@ await api.put("/api/cases/update-officer-status", {
 
       { !showAll
         ? <div className="notifications-list">
-            {newNotifs.slice(0,1).map(n => {
+            {newNotifs.slice(0,).map(n => {
               const { letter, color } = getType(n);
                const thisAss = n.assignedTo.find(r => r.username === signedInOfficer);
   const isPending = thisAss?.status === "pending";
@@ -369,10 +369,13 @@ await api.put("/api/cases/update-officer-status", {
                     </p>
                     <span className="time">{new Date(n.time).toLocaleString()}</span>
                     </div>
-                     <div className="buttons-container">
-                      <button className="view-btnNC" onClick={()=>handleView(n._id)}>
-                        View
-                      </button>
+                    <div className="buttons-container">
+  { !/\b(accepted|declined)\b/i.test(n.action1 + (n.post1||"")) && (
+    <button className="view-btnNC" onClick={()=>handleView(n._id)}>
+      View
+    </button>
+  )}
+
                      {isPending && 
  !n.action1?.toLowerCase().includes("accepted") &&
  !n.action1?.toLowerCase().includes("declined") && (
@@ -445,7 +448,11 @@ await api.put("/api/cases/update-officer-status", {
                       <span className="time">{new Date(n.time).toLocaleString()}</span>
                       </div>
                       <div className="buttons-container">
-                        <button className="view-btnNC" onClick={() => handleView(n._id)}>View</button>
+  { !/\b(accepted|declined)\b/i.test(n.action1 + (n.post1||"")) && (
+    <button className="view-btnNC" onClick={()=>handleView(n._id)}>
+      View
+    </button> )}
+
                       {isPending && 
  !n.action1?.toLowerCase().includes("accepted") &&
  !n.action1?.toLowerCase().includes("declined") && (

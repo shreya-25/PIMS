@@ -3,10 +3,20 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const register = async (req, res) => {
     try{
-    const {username, password, role, email} = req.body;
+    const { firstName, lastName, username, password, role, email} = req.body;
+
+    if (!username || !password || !role || !email) {
+      return res.status(400).json({ message: "username, password, role & email are required" });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = new User({username, password: hashedPassword, role, email});
+    const newUser = new User({firstName,
+      lastName,
+      username,
+      password: hashedPassword,
+      role,
+      email,});
     await newUser.save();
     res.status(201).json({message: `User registered with username ${ username}`});
     } catch (err) {
@@ -28,7 +38,9 @@ const login = async (req, res) => {
         return res.status(400).json({message: `Invalid Credentials`})
     }
     const token = jwt.sign({id: user._id, name: user.username, role: user.role}, process.env.JWT_SECRET, {expiresIn: "1h"});
-    res.status(200).json({ token, role: user.role, name: user.username });
+    res.status(200).json({ token, id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName, role: user.role, name: user.username });
 
     }
     catch (err) {
