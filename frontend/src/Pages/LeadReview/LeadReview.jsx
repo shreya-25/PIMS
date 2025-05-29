@@ -362,11 +362,18 @@ const currentStatusIndex = statusToIndex[leadData.leadStatus] ?? 0;
     }
   }, [leadData]);
 
+  // useEffect(() => {
+  //   if (leadData.assignedTo) {
+  //     setAssignedOfficers(leadData.assignedTo.map(o => o.username));
+  //   }
+  // }, [leadData]);
+
   useEffect(() => {
-    if (leadData.assignedTo) {
-      setAssignedOfficers(leadData.assignedTo.map(o => o.username));
-    }
-  }, [leadData]);
+  if (Array.isArray(leadData.assignedTo)) {
+    // assignedTo is already ["alice","bob",…]
+    setAssignedOfficers(leadData.assignedTo);
+  }
+}, [leadData.assignedTo]);
   
 
   // Dropdown states
@@ -430,8 +437,10 @@ useEffect(() => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const { data } = await api.get("/api/users/usernames");
-      setAllUsers(data.usernames || []);
+      const { data } = await api.get("/api/users/usernames", {
+          // headers: { Authorization: `Bearer ${token}` }
+        });
+        setAllUsers(data.users);
     } catch (err) {
       console.error("❌ Error fetching users:", err);
       setError("Could not load user list");
@@ -818,12 +827,12 @@ const isEditableByCaseManager = field => {
         {dropdownOpen && (
           <div className="dropdown-options">
             {allUsers.map((officer) => (
-              <div key={officer} className="dropdown-item">
+              <div key={officer.username} className="dropdown-item">
                 <input
                   type="checkbox"
-                  id={officer}
-                  value={officer}
-                  checked={assignedOfficers.includes(officer)}
+                  id={officer.username}
+                  value={officer.username}
+                  checked={assignedOfficers.includes(officer.username)}
                   onChange={(e) => {
                     const updatedOfficers = e.target.checked
                       ? [...assignedOfficers, e.target.value]
@@ -836,7 +845,7 @@ const isEditableByCaseManager = field => {
                     }));
                   }}
                 />
-                <label htmlFor={officer}>{officer}</label>
+                <label htmlFor={officer.username}> {officer.firstName} {officer.lastName} ({officer.username})</label>
               </div>
             ))}
           </div>

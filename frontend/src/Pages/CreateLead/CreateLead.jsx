@@ -25,6 +25,8 @@ const { id: caseID, title: caseName } = caseDetails;  // Extract Case ID & Case 
 const [showSelectModal, setShowSelectModal] = useState(false);
 console.log(caseDetails, leadDetails, leadOrigin);
   const [pendingRoute, setPendingRoute]   = useState(null);
+  const [caseTeam, setCaseTeam] = useState({ caseManager: "", investigators: [] });
+
 
 const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -242,6 +244,28 @@ useEffect(() => {
   //   }
   // };
 
+  useEffect(() => {
+  if (!selectedCase.caseNo) return;
+  const fetchCaseTeam = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const resp = await api.get(
+        `/api/cases/${selectedCase.caseNo}/team`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setCaseTeam({
+        caseManager: resp.data.caseManager,
+        investigators: resp.data.investigators
+      });
+    } catch (err) {
+      console.error("Error fetching case team:", err);
+    }
+  };
+  fetchCaseTeam();
+}, [selectedCase.caseNo]);
+
+console.log("CAse Team", caseTeam);
+
 console.log("SC and Sl", selectedCase, selectedLead);
 const handleGenerateLead = async () => {
 
@@ -302,6 +326,51 @@ const handleGenerateLead = async () => {
 
     if (response.status === 201) {
       alert("Lead successfully added!");
+
+      // figure out which officers need to be added to the case
+    const newlyAdded = leadData.assignedOfficer.filter(u =>
+      !caseTeam.investigators.includes(u)
+    );
+    
+    if (newlyAdded.length) {
+    // 2) hit your add-officer endpoint for each
+    await Promise.all(newlyAdded.map(username =>
+      api.put(
+        `/api/cases/${selectedCase.id}/officers`,
+        { officerName: username, role: "Investigator" },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+    ));
+
+    // 3) refresh your local caseTeam so the UI stays in sync
+    const teamResp = await api.get(
+      `/api/cases/${selectedCase.caseNo}/team`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    setCaseTeam({
+      caseManager: teamResp.data.caseManager,
+      investigators: teamResp.data.investigators
+    });
+  }
+
+    // 3) notify each of them
+    await Promise.all(newlyAdded.map(username =>
+      api.post(
+        "/api/notifications",
+        {
+          notificationId: Date.now().toString(),
+          assignedBy: username,      // or whoever created the lead
+          assignedTo: [{ username }],
+          action1: "added you to a case",
+          post1: `${selectedCase.caseNo}: ${selectedCase.caseName}`,
+          type: "CaseAssignment",
+          time: new Date().toISOString(),
+          unread: true
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+    ));
+
       
       const assignedToFormatted = assignedOfficer.map(name => ({ username: name }));
 
