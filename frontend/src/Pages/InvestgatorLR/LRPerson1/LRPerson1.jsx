@@ -50,6 +50,7 @@ useEffect(() => {
     mi:           person?.middleInitial                || "",
     suffix:       person?.suffix                       || "",
     cellNumber:   person?.cellNumber                   || "",
+    alias:        person?.alias                || "",
     businessName: person?.businessName                 || "",
     street1:      person?.address?.street1             || "",
     street2:      person?.address?.street2             || "",
@@ -126,6 +127,7 @@ useEffect(() => {
       middleInitial: formData.mi,
       suffix: formData.suffix,
       cellNumber: formData.cellNumber,
+      alias: formData.alias,
       businessName: formData.businessName,
       address: {
         street1: formData.street1,
@@ -463,7 +465,7 @@ Case Page
               </td>
             </tr>
             <tr>
-              <td>Last Name *</td>
+              <td>Last Name </td>
               <td>
                 <input
                   type="text"
@@ -508,12 +510,12 @@ Case Page
                 />
               </td>
 
-              <td>Business Name</td>
+              <td>Alias</td>
               <td>
                 <input
                   type="text"
-                  value={formData.businessName}
-                  onChange={(e) => handleChange("businessName", e.target.value)}
+                  value={formData.Alias}
+                  onChange={(e) => handleChange("Alias", e.target.value)}
                 />
               </td>
             </tr>
@@ -538,12 +540,12 @@ Case Page
               </td>
             </tr>
             <tr>
-              <td>Building</td>
+                 <td>Business Name</td>
               <td>
                 <input
                   type="text"
-                  value={formData.building}
-                  onChange={(e) => handleChange("building", e.target.value)}
+                  value={formData.businessName}
+                  onChange={(e) => handleChange("businessName", e.target.value)}
                 />
               </td>
               <td>Apartment</td>

@@ -356,24 +356,21 @@ const currentStatusIndex = statusToIndex[leadData.leadStatus] ?? 0;
         setPendingRoute(null);
       };
 
-  useEffect(() => {
-    if (leadData.associatedSubNumbers) {
-      setAssociatedSubNumbers(leadData.associatedSubNumbers);
-    }
-  }, [leadData]);
+useEffect(() => {
+  if (Array.isArray(leadData.assignedTo)) {
+    const usernames = leadData.assignedTo.map(item =>
+      typeof item === "string" ? item : item.username
+    );
+    setAssignedOfficers(usernames);
+  }
+}, [leadData.assignedTo]);
+
 
   // useEffect(() => {
   //   if (leadData.assignedTo) {
   //     setAssignedOfficers(leadData.assignedTo.map(o => o.username));
   //   }
   // }, [leadData]);
-
-  useEffect(() => {
-  if (Array.isArray(leadData.assignedTo)) {
-    // assignedTo is already ["alice","bob",…]
-    setAssignedOfficers(leadData.assignedTo);
-  }
-}, [leadData.assignedTo]);
   
 
   // Dropdown states
@@ -440,7 +437,7 @@ useEffect(() => {
       const { data } = await api.get("/api/users/usernames", {
           // headers: { Authorization: `Bearer ${token}` }
         });
-        setAllUsers(data.users);
+        setAllUsers(data.users || []);
     } catch (err) {
       console.error("❌ Error fetching users:", err);
       setError("Could not load user list");
@@ -804,7 +801,7 @@ const isEditableByCaseManager = field => {
                   </td>
                 </tr>
 
-                <tr>
+                {/* <tr>
   <td className="info-label">Assigned Officers</td>
   <td>
     {isInvestigator ? (
@@ -853,7 +850,67 @@ const isEditableByCaseManager = field => {
       </div>
     )}
   </td>
+</tr> */}
+
+<tr>
+  <td className="info-label">Assigned Officers</td>
+  <td>
+    {isInvestigator ? (
+      <div className="dropdown-header">
+        {assignedOfficers.join(", ")}
+      </div>
+    ) : (
+      <div className="custom-dropdown">
+        <div
+          className="dropdown-header"
+          onClick={() => setDropdownOpen(!dropdownOpen)}
+        >
+          {assignedOfficers.length >0
+            ? assignedOfficers
+                .map(u => {
+                  const usr = allUsers.find(x => x.username === u);
+                  return usr
+                    ? `${usr.username}`
+                    : u;
+                })
+                .join(", ")
+            : "Select Officers"}
+          <span className="dropdown-icon">
+            {dropdownOpen ? "▲" : "▼"}
+          </span>
+        </div>
+        {dropdownOpen && (
+          <div className="dropdown-options">
+            {allUsers.map(user => (
+              <div key={user.username} className="dropdown-item">
+                <input
+                  type="checkbox"
+                  id={user.username}
+                  value={user.username}
+                  checked={assignedOfficers.includes(user.username)}
+                  onChange={e => {
+                    const next = e.target.checked
+                      ? [...assignedOfficers, user.username]
+                      : assignedOfficers.filter(u => u !== user.username);
+                    setAssignedOfficers(next);
+                    setLeadData(prev => ({
+                      ...prev,
+                      assignedTo: next
+                    }));
+                  }}
+                />
+                <label htmlFor={user.username}>
+                  {user.firstName} {user.lastName} ({user.username})
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )}
+  </td>
 </tr>
+
 
 
 

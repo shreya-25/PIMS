@@ -327,6 +327,10 @@ const handleGenerateLead = async () => {
     if (response.status === 201) {
       alert("Lead successfully added!");
 
+    const token = localStorage.getItem("token");
+    const cNo    = encodeURIComponent(selectedCase.caseNo);
+const cName  = encodeURIComponent(selectedCase.caseName);
+
       // figure out which officers need to be added to the case
     const newlyAdded = leadData.assignedOfficer.filter(u =>
       !caseTeam.investigators.includes(u)
@@ -336,7 +340,7 @@ const handleGenerateLead = async () => {
     // 2) hit your add-officer endpoint for each
     await Promise.all(newlyAdded.map(username =>
       api.put(
-        `/api/cases/${selectedCase.id}/officers`,
+         `/api/cases/${cNo}/${cName}/officers`,
         { officerName: username, role: "Investigator" },
         { headers: { Authorization: `Bearer ${token}` } }
       )
@@ -354,16 +358,18 @@ const handleGenerateLead = async () => {
   }
 
     // 3) notify each of them
-    await Promise.all(newlyAdded.map(username =>
+    await Promise.all(newlyAdded.map(officerUsername  =>
       api.post(
         "/api/notifications",
         {
           notificationId: Date.now().toString(),
           assignedBy: username,      // or whoever created the lead
-          assignedTo: [{ username }],
+          assignedTo: [{ username: officerUsername }],
           action1: "added you to a case",
           post1: `${selectedCase.caseNo}: ${selectedCase.caseName}`,
-          type: "CaseAssignment",
+          type: "Case",
+          caseNo:         selectedCase.caseNo,    // ← required!
+          caseName:       selectedCase.caseName,  // ← required!
           time: new Date().toISOString(),
           unread: true
         },
@@ -374,7 +380,6 @@ const handleGenerateLead = async () => {
       
       const assignedToFormatted = assignedOfficer.map(name => ({ username: name }));
 
-      const token = localStorage.getItem("token");
       const notificationPayload = {
         notificationId: Date.now().toString(), // Use timestamp as a unique ID; customize if needed
         assignedBy: username, // the logged-in user creates the lead

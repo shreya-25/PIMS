@@ -452,8 +452,8 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
           description: selectedLead?.leadName,
           enteredDate: new Date().toISOString(),
           enteredBy: officerName?.trim(),
-          caseName: selectedLead?.caseName,
-          caseNo: selectedLead?.caseNo,
+          caseName: selectedCase.caseName,
+          caseNo: selectedCase.caseNo,
           leadReturnId: newReturnId,
           leadReturnResult: returnData.results,
           assignedTo: {
