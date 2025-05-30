@@ -513,4 +513,32 @@ exports.getExecutiveCaseSummary = async (req, res) => {
   }
 };
 
+// in controller/caseController.js
+exports.addOfficerToCase = async (req, res) => {
+  try {
+    const { caseNo, caseName } = req.params;
+    const { officerName, role } = req.body;
+
+    const caseDoc = await Case.findOne({ caseNo, caseName });
+    if (!caseDoc) return res.status(404).json({ message: "Case not found" });
+
+    // don't add twice
+    if (!caseDoc.assignedOfficers.some(o => o.name === officerName)) {
+      caseDoc.assignedOfficers.push({
+        name: officerName,
+        role,
+        status: "pending"
+      });
+      await caseDoc.save();
+    }
+
+    return res.status(200).json({ message: "Officer added (or already present)", data: caseDoc });
+  } catch (err) {
+    console.error("Error adding officer:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+
+
   

@@ -27,11 +27,12 @@ const lrPersonSchema = new mongoose.Schema(
         caseNo: { type: String , required: true},
         leadReturnId: { type: String , required: true},
         enteredDate: { type: Date, required: true },  // Date field
-        lastName: { type: String, required: true },
+        lastName: { type: String},
         firstName: { type: String, required: true },
         middleInitial: { type: String },
         suffix: { type: String },
         cellNumber: { type: String },
+        alias: { type: String },
         businessName: { type: String },
         address: {
             street1: { type: String },

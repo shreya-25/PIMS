@@ -340,7 +340,6 @@ function generateReport(req, res) {
   doc.on("end", async () => {
   const pdfKitBuffer = Buffer.concat(chunks);
 
-  // We'll do the merging with pdf-lib here
   try {
     const mergedBuffer = await mergeWithAnotherPDF(pdfKitBuffer, "report_Officer 916_20250321T144351339Z.pdf");
    
