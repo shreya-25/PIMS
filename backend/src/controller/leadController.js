@@ -439,7 +439,7 @@ const setLeadStatusToPending = async (req, res) => {
       return res.status(404).json({ message: "Lead not found." });
     }
 
-    lead.leadStatus = "Completed";
+    lead.leadStatus = "Accepted";
     await lead.save();
 
     console.log(`✅ [DEBUG] Lead ${leadNo} status set to 'Completed' for case ${caseName} (${caseNo})`);
