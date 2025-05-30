@@ -125,6 +125,7 @@ return (
           ["Last Name",         person.lastName],
           ["Suffix",            person.suffix],
           ["Cell Number",       person.cellNumber],
+          ["Alias",       person.alias],
           ["Business Name",     person.businessName],
           ["Street 1",          person.address?.street1],
           ["Street 2",          person.address?.street2],
