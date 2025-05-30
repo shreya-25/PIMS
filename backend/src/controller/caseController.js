@@ -516,10 +516,10 @@ exports.getExecutiveCaseSummary = async (req, res) => {
 // in controller/caseController.js
 exports.addOfficerToCase = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { caseNo, caseName } = req.params;
     const { officerName, role } = req.body;
 
-    const caseDoc = await Case.findById(id);
+    const caseDoc = await Case.findOne({ caseNo, caseName });
     if (!caseDoc) return res.status(404).json({ message: "Case not found" });
 
     // don't add twice

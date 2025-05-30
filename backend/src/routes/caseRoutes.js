@@ -51,7 +51,7 @@ router.put(
 );
 
 router.put(
-  "/:id/officers",
+  "/:caseNo/:caseName/officers",
   verifyToken,
   addOfficerToCase
 );
