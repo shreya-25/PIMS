@@ -30,6 +30,7 @@ export const LRFinish = () => {
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [leadData, setLeadData] = useState({});
+  const [isDisabled, setIsDisabled] = useState(true);
   const getCasePageRoute = () => {
     if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
     return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
@@ -989,7 +990,9 @@ Case Page
     </tbody>
   </table>
   <div className="run-sec">
-  <button className="save-btn1" onClick={handleRunReport}>Run Report</button> </div>
+  <button className="save-btn1" onClick={handleRunReport}
+  disabled={isDisabled}
+  >Run Report</button> </div>
 </div>
 
 
