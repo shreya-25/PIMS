@@ -999,11 +999,22 @@ Case Page
         </div>
         </div>
 
+        {selectedLead?.leadStatus === "Completed" && isCaseManager && (
+  <div className="form-buttons-finish">
+    <button
+      className="save-btn1"
+      onClick={() => submitReturnAndUpdate("Accepted")}
+    >
+      Reopen
+    </button>
+  </div>
+)}
+
         {selectedLead?.leadStatus !== "Completed" && (
   isCaseManager ? (
     <div className="form-buttons-finish">
       <button className="save-btn1" onClick={() => submitReturnAndUpdate("complete")}>Approve</button>
-      <button className="save-btn1" onClick={() => submitReturnAndUpdate("pending")}>Return</button>
+      <button className="save-btn1" onClick={() => submitReturnAndUpdate("Accepted")}>Return</button>
     </div>
   ) : (
     <div className="form-buttons-finish">
