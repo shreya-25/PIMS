@@ -892,7 +892,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
       )}
     </div>
   </td> */}
-  <td>Assign Officers *</td>
+  <td>Assign Officers </td>
 <td>
   {/* <div className="custom-dropdown-cl">
     <div

@@ -16,7 +16,6 @@ const leadSchema = new mongoose.Schema(
          assignedTo: [{
     username: {
       type: String,
-      required: true
     },
     status: {
       type: String,

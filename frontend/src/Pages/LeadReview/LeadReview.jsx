@@ -71,27 +71,99 @@ export const LeadReview = () => {
   };
 
   // inside LeadReview()
+// const handleSave = async () => {
+//   try {
+//     const token = localStorage.getItem("token");
+//     setLoading(true);
+// const processedLeadData = {
+//   ...leadData,
+//   parentLeadNo: typeof leadData.parentLeadNo === "string"
+//     ? leadData.parentLeadNo
+//         .split(",")
+//         .map((item) => Number(item.trim()))
+//         .filter((num) => !isNaN(num))
+//     : leadData.parentLeadNo
+// };
+
+// await api.put(
+//   `/api/lead/update/${leadData.leadNo}/${encodeURIComponent(leadData.description)}/${leadData.caseNo}/${encodeURIComponent(leadData.caseName)}`,
+//   processedLeadData,
+//   { headers: { Authorization: `Bearer ${token}` } }
+// );
+
+//     alert("Lead updated successfully!");
+//   } catch (err) {
+//     console.error("Save failed:", err);
+//     setError("Failed to save changes.");
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
 const handleSave = async () => {
   try {
     const token = localStorage.getItem("token");
     setLoading(true);
-    // hit your new update endpoint:
-    // Convert parentLeadNo string to array of numbers
-const processedLeadData = {
-  ...leadData,
-  parentLeadNo: typeof leadData.parentLeadNo === "string"
-    ? leadData.parentLeadNo
-        .split(",")
-        .map((item) => Number(item.trim()))
-        .filter((num) => !isNaN(num))
-    : leadData.parentLeadNo
-};
 
-await api.put(
-  `/api/lead/update/${leadData.leadNo}/${encodeURIComponent(leadData.description)}/${leadData.caseNo}/${encodeURIComponent(leadData.caseName)}`,
-  processedLeadData,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
+    // 1) Normalize parentLeadNo exactly as before
+    const normalizedParent = typeof leadData.parentLeadNo === "string"
+      ? leadData.parentLeadNo
+          .split(",")
+          .map((item) => Number(item.trim()))
+          .filter((num) => !isNaN(num))
+      : leadData.parentLeadNo;
+
+       const previousUsernames = Array.isArray(leadData.assignedTo)
+      ? leadData.assignedTo.map((item) => item.username)
+      : [];
+
+    // 2) Build `assignedTo` from your array of usernames (`assignedOfficers`)
+    const processedAssignedTo = assignedOfficers.map((username) => {
+      // Preserve existing status if this user was already on leadData.assignedTo
+      const existing = Array.isArray(leadData.assignedTo)
+        ? leadData.assignedTo.find((item) => item.username === username)
+        : null;
+
+      return {
+        username,
+        status: existing?.status || "pending"
+      };
+    });
+
+    const newlyAdded = assignedOfficers.filter((u) => !previousUsernames.includes(u));
+
+    // 5) For each newly added officer, send a notification
+    for (let username of newlyAdded) {
+      await api.post(
+        "/api/notifications",
+        {
+          notificationId: Date.now().toString(),
+          assignedBy: signedInOfficer,         // the current user assigning the lead
+          assignedTo: [{ username }],          // the new recipient
+          action1: "was assigned to a lead",
+          post1:   `${leadData.leadNo}: ${leadData.description}`,
+          caseNo:   leadData.caseNo,
+          caseName: leadData.caseName,
+          caseStatus: selectedCase.caseStatus || "Open",
+          type: "Lead"
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    }
+
+    // 3) Merge everything into one payload
+    const processedLeadData = {
+      ...leadData,
+      parentLeadNo: normalizedParent,
+      assignedTo: processedAssignedTo
+    };
+
+    // 4) Fire the PUT exactly as before, but with `assignedTo` added
+    await api.put(
+      `/api/lead/update/${leadData.leadNo}/${encodeURIComponent(leadData.description)}/${leadData.caseNo}/${encodeURIComponent(leadData.caseName)}`,
+      processedLeadData,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
     alert("Lead updated successfully!");
   } catch (err) {
@@ -101,6 +173,7 @@ await api.put(
     setLoading(false);
   }
 };
+
 
 const acceptLead = async (leadNo, description) => {
   console.log("Accept button clicked for lead:", leadNo);
