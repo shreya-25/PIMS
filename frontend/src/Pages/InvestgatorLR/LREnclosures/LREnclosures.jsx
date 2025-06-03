@@ -573,7 +573,8 @@ export const LREnclosures = () => {
         enclosure: enc.enclosureDescription,
         returnId: enc.leadReturnId,
         originalName: enc.originalName,
-        link: enc.link || ""
+        link: enc.link || "",
+        filename: enc.filename, 
       }));
 
       const withAccess = mappedEnclosures.map(r => ({

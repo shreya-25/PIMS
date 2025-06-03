@@ -160,7 +160,9 @@ function drawStructuredLeadDetails(doc, x, y, lead) {
     .fillColor("#000")
     .text("Assigned Officers:", x + padding, y + 5);
 
-  const officersText = lead.assignedTo?.join(", ") || "N/A";
+    const officersText = Array.isArray(lead.assignedTo) && lead.assignedTo.length > 0
+    ? lead.assignedTo.map(o => o.username).join(", ")
+    : "N/A";
   doc.font("Helvetica").fontSize(12).text(officersText, x + 150 + padding, y + 5);
 
    // Second Row - Assigned Officers
@@ -742,26 +744,88 @@ function generateReport(req, res) {
 }
 
 
-    if (includeAll || leadEnclosures) {
+     if (includeAll || leadEnclosures) {
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage(); currentY = doc.page.margins.top;
+        doc.addPage();
+        currentY = doc.page.margins.top;
       }
-      doc.font("Helvetica-Bold").fontSize(12).text("Enclosure Details", 50, currentY);
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(12)
+        .text("Enclosure Details", 50, currentY);
       currentY += 20;
-    
+
       if (!Array.isArray(leadEnclosures) || leadEnclosures.length === 0) {
-        doc.font("Helvetica").fontSize(11)
-           .text("No enclosure data available.", 50, currentY);
+        doc
+          .font("Helvetica")
+          .fontSize(11)
+          .text("No enclosure data available.", 50, currentY);
         currentY += 20;
       } else {
-        const headers  = ["Date Entered","Type","Description"];
-        const widths   = [90, 100, 322];
-        const rows     = leadEnclosures.map(e => ({
-          "Date Entered":         formatDate(e.enteredDate),
-          "Type":                 e.type || "",
-          "Description":          e.enclosureDescription || ""
+        // Draw the “table of summary rows” for each enclosure first:
+        const headers = ["Date Entered", "Type", "Description"];
+        const widths = [90, 100, 322];
+        const rows = leadEnclosures.map((e) => ({
+          "Date Entered": formatDate(e.enteredDate),
+          "Type": e.type || "",
+          "Description": e.enclosureDescription || "",
         }));
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+
+        // Now loop through each enclosure and embed its single filePath
+        for (let i = 0; i < leadEnclosures.length; i++) {
+          const enc = leadEnclosures[i];
+          const fname = (enc.filename || "").toLowerCase();
+
+          // Only embed if the top‐level “filename” ends with .jpg/.jpeg/.png
+          if (
+            fname.endsWith(".jpg") ||
+            fname.endsWith(".jpeg") ||
+            fname.endsWith(".png")
+          ) {
+            // Use the top‐level “filePath” directly
+            const imagePath = path.normalize(enc.filePath);
+
+            if (fs.existsSync(imagePath)) {
+              // Page‐break check before drawing a 300px‐high image
+              const imageMaxHeight = 300;
+              if (
+                currentY + imageMaxHeight >
+                doc.page.height - doc.page.margins.bottom
+              ) {
+                doc.addPage();
+                currentY = doc.page.margins.top;
+              }
+
+              // Draw the image (fit into 300×300 box, maintain aspect ratio)
+              doc.image(imagePath, 50, currentY, { fit: [300, 300] });
+              currentY += 310; // 300 for the image + ~10px padding
+
+              // Caption under the image
+              doc
+                .font("Helvetica")
+                .fontSize(9)
+                .fillColor("#555555")
+                .text(enc.filename, 50, currentY, { width: 300, align: "left" });
+              currentY += 20;
+
+              // Reset fill color for subsequent text
+              doc.fillColor("black");
+            } else {
+              // File wasn’t found on disk—draw a red warning
+              doc
+                .font("Helvetica-Oblique")
+                .fontSize(10)
+                .fillColor("red")
+                .text(`(Missing file on server: ${enc.filename})`, 50, currentY);
+              doc.fillColor("black");
+              currentY += 20;
+            }
+          }
+        }
+
+        // Space after all enclosure images
+        currentY += 20;
       }
     }
     
@@ -788,9 +852,63 @@ function generateReport(req, res) {
           "Description":      ev.evidenceDescription || ""
         }));
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+      
+         // Now loop through each enclosure and embed its single filePath
+        for (let i = 0; i < leadEvidence.length; i++) {
+          const enc = leadEvidence[i];
+          const fname = (enc.filename || "").toLowerCase();
+
+          // Only embed if the top‐level “filename” ends with .jpg/.jpeg/.png
+          if (
+            fname.endsWith(".jpg") ||
+            fname.endsWith(".jpeg") ||
+            fname.endsWith(".png")
+          ) {
+            // Use the top‐level “filePath” directly
+            const imagePath = path.normalize(enc.filePath);
+
+            if (fs.existsSync(imagePath)) {
+              // Page‐break check before drawing a 300px‐high image
+              const imageMaxHeight = 300;
+              if (
+                currentY + imageMaxHeight >
+                doc.page.height - doc.page.margins.bottom
+              ) {
+                doc.addPage();
+                currentY = doc.page.margins.top;
+              }
+
+              // Draw the image (fit into 300×300 box, maintain aspect ratio)
+              doc.image(imagePath, 50, currentY, { fit: [300, 300] });
+              currentY += 310; // 300 for the image + ~10px padding
+
+              // Caption under the image
+              doc
+                .font("Helvetica")
+                .fontSize(9)
+                .fillColor("#555555")
+                .text(enc.filename, 50, currentY, { width: 300, align: "left" });
+              currentY += 20;
+
+              // Reset fill color for subsequent text
+              doc.fillColor("black");
+            } else {
+              // File wasn’t found on disk—draw a red warning
+              doc
+                .font("Helvetica-Oblique")
+                .fontSize(10)
+                .fillColor("red")
+                .text(`(Missing file on server: ${enc.filename})`, 50, currentY);
+              doc.fillColor("black");
+              currentY += 20;
+            }
+          }
+        }
+
+        // Space after all enclosure images
+        currentY += 20;
       }
     }
-    
     // ── Picture Details ─────────────────────────────────────────
     if (includeAll || leadPictures) {
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {

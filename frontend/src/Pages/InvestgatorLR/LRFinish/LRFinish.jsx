@@ -186,11 +186,9 @@ useEffect(() => {
           const encCase = encodeURIComponent(caseName);
           const token = localStorage.getItem("token");
           const headers = { headers: { Authorization: `Bearer ${token}` } };
-
-             console.log("🔍 fetching scratchpad for leadNo:", encLead, encCase, leadNo, caseNo);
         
           async function loadAll() {
-            console.log("🔍 fetching scratchpad for leadNo:", selectedLead.leadNo);
+      
             try {
               // 1) Fetch the “main” arrays in parallel
               const [
@@ -210,8 +208,8 @@ useEffect(() => {
                 api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
                 api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
                 api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                // api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                // api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
+                api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
                 // api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
                 // api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
                 // api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
@@ -224,19 +222,25 @@ useEffect(() => {
         
               // 3) For every section that can have files, 
               //    map over its array and fetch `/files/:id`
-              const attachFiles = async (items, idField, fetchUrlBase) => {
-                return Promise.all(
-                  (items || []).map(async item => {
-                    const fileRes = await api.get(
-                      `${fetchUrlBase}/${item[idField]}`,
-                      headers
-                    );
-                    // assume fileRes.data is an array of { filename, url, … }
-                    return { ...item, files: fileRes.data };
-                  })
-                );
-              };
-        
+              const attachFiles = async (items, idFieldName, filesEndpoint) => {
+    return Promise.all(
+      (items || []).map(async (item) => {
+        const realId = item[idFieldName];
+        if (!realId) return { ...item, files: [] };
+
+        try {
+          const { data: filesArray } = await api.get(
+            `${filesEndpoint}/${realId}`,
+            { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+          );
+          return { ...item, files: filesArray };
+        } catch (err) {
+          console.error(`Error fetching files for ${filesEndpoint}/${realId}:`, err);
+          return { ...item, files: [] };
+        }
+      })
+    );
+  };
               setLeadReturns(
                   returnsRes.data,
                   
@@ -244,20 +248,22 @@ useEffect(() => {
               );
               setLeadPersons(personsRes.data);
               setLeadVehicles(vehiclesRes.data);
-              setLeadEnclosures(
-                await attachFiles(
-                  enclosuresRes.data,
-                  "enclosureId",
-                  "/api/lrenclosures/files"
-                )
-              );
-              setLeadEvidence(
-                await attachFiles(
-                  evidenceRes.data,
-                  "evidenceId",
-                  "/api/lrevidence/files"
-                )
-              );
+             const enclosuresWithFiles = await attachFiles(
+          enclosuresRes.data,
+          "_id",
+          "/api/lrenclosures/files"
+        );
+        console.log("🚀 enclosuresWithFiles:", enclosuresWithFiles);
+        setLeadEnclosures(enclosuresWithFiles);
+      // ④ Now set state:
+        const evidenceWithFiles = await attachFiles(
+          evidenceRes.data,
+          "_id",
+          "/api/lrevidences/files"
+        );
+        console.log("🚀 evidenceWithFiles:", evidenceWithFiles);
+        setLeadEvidence(evidenceWithFiles);
+
               setLeadScratchpad(scratchpadRes.data);
               setLeadTimeline(timelineRes.data);
               setLeadPictures(
@@ -335,7 +341,7 @@ useEffect(() => {
             // to keep the payload small (optional). The server can also handle
             // skipping unselected sections if they come as null/undefined.
             const body = {
-              user: "Officer 916",  // Or from your auth context
+              user: "",  // Or from your auth context
               reportTimestamp: new Date().toLocaleString(),
       
               // Pass the entire object or only if selected
@@ -343,13 +349,13 @@ useEffect(() => {
               leadReturn: selectedReports.leadReturn ? leadReturns : null,
               leadPersons:     selectedReports.leadPersons     ? leadPersons     : null,
               leadVehicles: selectedReports.leadVehicles ? leadVehicles : null,
-              leadEnclosures: selectedReports.leadEnclosures ? leadVehicles : null,
-              leadEvidence: selectedReports.leadEvidence ? leadVehicles : null,
-              leadPictures: selectedReports.leadPictures ? leadVehicles : null,
-              leadAudio: selectedReports.leadAudio ? leadVehicles : null,
-              leadVideos: selectedReports.leadVideos ? leadVehicles : null,
-              leadScratchpad: selectedReports.leadScratchpad ? leadVehicles : null,
-              leadTimeline: selectedReports.leadTimeline ? leadVehicles : null,
+              leadEnclosures: selectedReports.leadEnclosures ? leadEnclosures : null,
+              leadEvidence: selectedReports.leadEvidence ? leadEvidence : null,
+              // leadPictures: selectedReports.leadPictures ? leadPictures : null,
+              // leadAudio: selectedReports.leadAudio ? leadAudio : null,
+              // leadVideos: selectedReports.leadVideos ? leadVideos : null,
+              // leadScratchpad: selectedReports.leadScratchpad ? leadScratchpad : null,
+              // leadTimeline: selectedReports.leadTimeline ? leadTimeline : null,
       
               // Also pass along which sections are selected
               selectedReports,
@@ -360,6 +366,8 @@ useEffect(() => {
 
             // generatePDF(pdfRef.current);
             console.log("📤 Report Data Sent to Backend:", JSON.stringify(body, null, 2));
+
+            console.log("→ Sending `leadEnclosures` to server:", leadEnclosures);
 
       
             // Call your Node server endpoint
