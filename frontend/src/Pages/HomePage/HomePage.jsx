@@ -26,19 +26,10 @@ export const HomePage = () => {
     const totalPages = 10;
     const totalEntries = 100;
   
-const notificationRef = useRef(); // create a ref
-
-// pass a method to call the refresh method in NotificationCard
-const refreshNotifications = () => {
-  if (notificationRef.current) {
-    notificationRef.current.refresh();
-  }
-};
-
 const [showCaseSelector, setShowCaseSelector] = useState(false);
   const [navigateTo, setNavigateTo] = useState(""); 
 
-  const { setSelectedCase, setToken, withAutoRefresh } = useContext(CaseContext);
+  const { setSelectedCase, setToken, setSelectedLead } = useContext(CaseContext);
 
   // Function to close CaseSelector
   const handleCloseCaseSelector = () => {
@@ -112,7 +103,48 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
 }, [signedInOfficer]);
 
   // Handler to view the assigned lead details (can be updated to show a modal or navigate)
-const handleViewAssignedLead = (lead) => {
+// Handler for “View” button in Assigned Leads → navigates to LeadReview
+const handleViewAssignedLead = async (lead) => {
+  let role = "Investigator"; // default
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No token");
+    // fetch the case’s team info so we know if current user is CM or Investigator
+    const caseRes = await api.get(
+      `/api/cases/${lead.caseNo}/team`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (caseRes.data.caseManager === signedInOfficer) {
+      role = "Case Manager";
+    } else if (
+      Array.isArray(caseRes.data.investigators) &&
+      caseRes.data.investigators.includes(signedInOfficer)
+    ) {
+      role = "Investigator";
+    }
+  } catch (err) {
+    console.error("❌ Failed to fetch case role:", err);
+  }
+
+  // 2) Build a single state object that matches what LeadReview.jsx expects
+  const caseDetails = {
+    caseNo: lead.caseNo,
+    caseName: lead.caseName,
+    role,
+  };
+  const leadId = lead.id;             // numeric leadNo
+  const leadDescription = lead.description;
+
+  // 3) Write into Context + localStorage
+  setSelectedCase(caseDetails);
+  setSelectedLead({ leadNo: leadId, leadName: leadDescription });
+  localStorage.setItem("role", role);
+  localStorage.setItem("selectedCase", JSON.stringify(caseDetails));
+
+  // 4) Finally navigate to /LeadReview
+  navigate("/LeadReview", {
+    state: { caseDetails, leadId, leadDescription },
+  });
 };
 
 const handleCaseClick = (caseDetails) => {
@@ -415,6 +447,74 @@ useEffect(() => {
   fetchPendingLeads();
 }, [signedInOfficer]);
 
+  // ─── Fetch only those leads where assignedTo.username === signedInOfficer AND leadStatus === "Assigned" ─────────
+  useEffect(() => {
+    const fetchAssignedLeads = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("❌ No token found. User is not authenticated.");
+          return;
+        }
+
+        // 1) Call the new server route. It already filters by leadStatus = "Assigned" and assignedTo.username.
+        const { data: serverLeads } = await api.get("/api/lead/assigned-only", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+        console.log("✅ API Response (Assigned-Only Leads):", serverLeads);
+
+        // 2) OPTIONAL: If you still want to show only "Ongoing" cases, fetch /api/cases and filter:
+        const { data: allCases } = await api.get("/api/cases", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+        const ongoingSet = new Set(
+          allCases
+            .filter(c => c.caseStatus === "Ongoing")
+            .map(c => `${c.caseNo}||${c.caseName}`)
+        );
+
+        // 3) Map serverLeads → front-end shape, and optionally filter by ongoing cases:
+        const mappedAssignedLeads = serverLeads
+          .filter(lead => ongoingSet.has(`${lead.caseNo}||${lead.caseName}`))
+          .map(lead => ({
+            id: lead.leadNo,
+            description: lead.description,
+            caseName: lead.caseName,
+            caseNo: lead.caseNo,
+            // assignedTo is an array of { username, status }:
+            assignedOfficers: lead.assignedTo.map(o => o.username),
+            dueDate: lead.dueDate
+              ? new Date(lead.dueDate).toISOString().split("T")[0]
+              : "N/A",
+            priority: lead.priority || "Medium",
+            flags: lead.associatedFlags || [],
+            leadStatus: lead.leadStatus
+          }));
+
+        console.log("✅ Filtered Assigned Leads (after ongoing filter):", mappedAssignedLeads);
+
+        setLeads(prev => ({
+          ...prev,
+          assignedLeads: mappedAssignedLeads
+        }));
+      } catch (err) {
+        console.error("❌ Error fetching assigned-only leads:", err.response?.data || err);
+      }
+    };
+
+    fetchAssignedLeads();
+
+    // If you want to poll every X seconds (e.g. 15s), you can uncomment:
+    const intervalId = setInterval(fetchAssignedLeads, 15000);
+    return () => clearInterval(intervalId);
+  }, [signedInOfficer]);
+
   const addPendingLead = (newLead) => {
     setLeads((prevLeads) => ({
       ...prevLeads,
@@ -710,7 +810,7 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
            <div className="main-page-abovepart">
 
            {/* <NotificationCard acceptLead={acceptLead} signedInOfficer={signedInOfficer} /> */}
-           <NotificationCard ref={notificationRef} acceptLead={acceptLead} signedInOfficer={signedInOfficer} />
+           <NotificationCard  acceptLead={acceptLead} signedInOfficer={signedInOfficer} />
 
 
 <div className= "add-case-section">
@@ -719,7 +819,6 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
         <SlideBar
         onAddCase={(newCase) => addCase(newCase)}
         buttonClass="custom-add-case-btn1"
-        refreshNotifications={refreshNotifications}
       />
       {/* </div> */}
   </div>
@@ -858,7 +957,7 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
 
 
 
-  {activeTab === "assignedLeads" && (
+   {activeTab === "assignedLeads" && (
         <div className="assigned-leads">
           <div className="table-scroll-container">
             <table className="leads-table">
@@ -936,10 +1035,12 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                       <td>{lead.caseName}</td>
                       <td>{lead.assignedOfficers.join(", ")}</td>
                       <td>
-                        <button className="view-btn1" onClick={() => handleCaseClick(lead)}>
+                        <button
+                          className="view-btn1"
+                          onClick={() =>  handleViewAssignedLead(lead)}
+                        >
                           View
                         </button>
-                      
                       </td>
                     </tr>
                   ))
@@ -953,6 +1054,8 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
               </tbody>
             </table>
           </div>
+        </div>
+      )}
 
           {/* <Pagination
             currentPage={currentPage}
@@ -961,8 +1064,7 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
             pageSize={pageSize}
             onPageSizeChange={setPageSize}
           /> */}
-        </div>
-      )}
+    
 
 
 

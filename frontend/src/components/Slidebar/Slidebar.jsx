@@ -4,9 +4,8 @@ import { useContext } from "react";
 import "./Slidebar.css";
 import api from "../../api"
 
-export const SlideBar = ({ onAddCase, buttonClass = "add-case-button", refreshNotifications }) => {
+export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { triggerRefresh } = useContext(CaseContext);
   const dropdownRef = useRef(null);
    const [currentRole, setCurrentRole] = useState(""); 
   const [caseDetails, setCaseDetails] = useState({
@@ -22,7 +21,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button", refreshNo
   const [error, setError] = useState(null);
   const [allUsers, setAllUsers] = useState([]);
   
-    const { setSelectedCase, setToken, withAutoRefresh } = useContext(CaseContext);
+    const { setSelectedCase, setToken } = useContext(CaseContext);
 
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -282,8 +281,8 @@ if (notificationRecipients.length > 0) {
       }
     );
     console.log("✅ Notification sent:", notifResponse.data);
-    refreshNotifications();
-    triggerRefresh();
+    // refreshNotifications();
+    // triggerRefresh();
   } catch (notifErr) {
     console.error("❌ Notification error:", notifErr.response?.data || notifErr);
   }
