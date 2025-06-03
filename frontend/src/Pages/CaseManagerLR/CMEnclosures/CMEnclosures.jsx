@@ -287,7 +287,7 @@ export const CMEnclosures = () => {
             size: e.size || "N/A",
             date: e.enteredDate ? new Date(e.enteredDate).toLocaleString() : "N/A",
             // Build a URL to view/download the file
-            url: `http://${BASE_URL}/uploads/${e.filename}`
+            url: `${BASE_URL}/uploads/${e.filename}`
           }))} />
 
         <Comment tag= "Enclosures"/>
