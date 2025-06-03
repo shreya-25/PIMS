@@ -1,6 +1,6 @@
 const express = require("express");
 const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, searchLeadsByKeyword, setLeadStatusToInReview,
-  updateLead, removeAssignedOfficer,
+  updateLead, removeAssignedOfficer, getAssignedLeadsForOfficer,
   setLeadStatusToComplete, setLeadStatusToPending, updateAssignedToStatus
  } = require("../controller/leadController");
 const verifyToken = require("../middleware/authMiddleware");
@@ -22,6 +22,8 @@ router.get("/assignedTo-leads", verifyToken, getLeadsForAssignedToOfficer);
 
 router.get("/lead/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLeadsByLeadNoandLeadName);
 router.get("/lead/:leadNo/:caseNo/:caseName", verifyToken, getLeadsforHierarchy);
+
+router.get("/assigned-only", verifyToken, getAssignedLeadsForOfficer);
 
 router.put('/:leadNo/:leadName/:caseNo/:caseName', verifyToken, updateLeadStatus);
 

@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import { v4 as uuidv4 } from "uuid";
 
-const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
+const NotificationCard1 = ({ signedInOfficer }) => {
   const [newNotifs, setNewNotifs]         = useState([]);
   const [openNotifs, setOpenNotifs]       = useState([]);
   const [showAll, setShowAll]             = useState(false);
@@ -17,7 +17,6 @@ const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
   const { setSelectedCase, setSelectedLead } = useContext(CaseContext);
   const navigate= useNavigate();
   const signedInOfficer1 = localStorage.getItem("loggedInUser");
-  const { refreshKey } = useContext(CaseContext);
 
   console.log("Officer", signedInOfficer1);
 
@@ -57,13 +56,8 @@ const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
     }
   };
 
-  // useEffect(() => {
-  //   fetchNew();
-  //   fetchOpen();
-  // }, [signedInOfficer, refreshKey]);
-
   useEffect(() => {
-  // Fetch immediately
+
   fetchNew();
   fetchOpen();
 
@@ -72,20 +66,10 @@ const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
     fetchNew();
     fetchOpen();
   }, 15000);
-
-  // Clear interval on component unmount or when dependencies change
+  
   return () => clearInterval(intervalId);
-}, [signedInOfficer, refreshKey]);
+}, [signedInOfficer]);
 
-
-    const refresh = () => {
-    fetchNew();
-    fetchOpen();
-  };
-
-  useImperativeHandle(ref, () => ({
-    refresh
-  }));
 
   const getType = n => {
     if (n.type === "Case")       return { letter: "C", color: "blue" };
@@ -336,6 +320,7 @@ await api.put("/api/cases/update-officer-status", {
   if (loading) return <p>Loading notifications…</p>;
   if (error)   return <p className="error">{error}</p>;
 
+
   return (
     <div className="notification-bar">
       <div className="headerNC">
@@ -472,6 +457,6 @@ await api.put("/api/cases/update-officer-status", {
       }
     </div>
   );
-});
+};
 
 export default NotificationCard1;
