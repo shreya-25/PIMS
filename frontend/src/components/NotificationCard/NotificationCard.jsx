@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import { v4 as uuidv4 } from "uuid";
 
-const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
+const NotificationCard1 = ({ signedInOfficer }) => {
   const [newNotifs, setNewNotifs]         = useState([]);
   const [openNotifs, setOpenNotifs]       = useState([]);
   const [showAll, setShowAll]             = useState(false);
@@ -56,19 +56,24 @@ const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
     }
   };
 
-  useEffect(() => {
+    useEffect(() => {
+    let intervalId;
 
-  fetchNew();
-  fetchOpen();
+    const pollNotifications = async () => {
+      setLoading(true);
+      await Promise.all([fetchNew(), fetchOpen()]);
+      setLoading(false);
+    };
 
-  // Then poll every 15s
-  const intervalId = setInterval(() => {
-    fetchNew();
-    fetchOpen();
-  }, 15000);
-  
-  return () => clearInterval(intervalId);
-}, [signedInOfficer]);
+    // 1) Fire once immediately:
+    pollNotifications();
+
+    // 2) Schedule it to run every 15 seconds:
+    intervalId = setInterval(pollNotifications, 15000);
+
+    // 3) Clear on unmount:
+    return () => clearInterval(intervalId);
+  }, [signedInOfficer]); // re-run effect if signedInOfficer changes
 
 
   const getType = n => {
@@ -146,6 +151,7 @@ const NotificationCard1 = forwardRef(({ signedInOfficer }, ref) => {
 
   setSelectedCase(baseState);
   setSelectedLead({ leadNo, leadName });
+  console.log("print lead no and name", n);
   localStorage.setItem("selectedCase", JSON.stringify(baseState));
 
 if (action1.includes("case")) {
@@ -155,7 +161,19 @@ if (action1.includes("case")) {
     navigate("/Investigator", { state: baseState });
   }
 }
-  else if (action1.includes("lead")) navigate("/LeadReview",      { state: baseState });
+  else if (action1.includes("lead")) {
+  if (role === "Case Manager") {
+    // case‐manager hitting a “lead” notification
+    navigate("/LeadReview", {
+      state: { ...baseState, role: "Case Manager" }
+    });
+  } else {
+    // investigator hitting a “lead” notification
+    navigate("/LeadReview", {
+      state: { ...baseState, role: "Investigator" }
+    });
+  }
+}
   else                                   navigate("/LRInstruction", { state: baseState });
 };
 
@@ -320,6 +338,7 @@ await api.put("/api/cases/update-officer-status", {
   if (loading) return <p>Loading notifications…</p>;
   if (error)   return <p className="error">{error}</p>;
 
+
   return (
     <div className="notification-bar">
       <div className="headerNC">
@@ -333,7 +352,7 @@ await api.put("/api/cases/update-officer-status", {
 
       { !showAll
         ? <div className="notifications-list">
-            {newNotifs.slice(0,).map(n => {
+            {newNotifs.slice(0,5).map(n => {
               const { letter, color } = getType(n);
                const thisAss = n.assignedTo.find(r => r.username === signedInOfficer);
   const isPending = thisAss?.status === "pending";
@@ -354,7 +373,9 @@ await api.put("/api/cases/update-officer-status", {
                     <span className="time">{new Date(n.time).toLocaleString()}</span>
                     </div>
                     <div className="buttons-container">
-  { !/\b(accepted|declined)\b/i.test(n.action1 + (n.post1||"")) && (
+
+                
+  {  (
     <button className="view-btnNC" onClick={()=>handleView(n._id)}>
       View
     </button>
@@ -432,7 +453,7 @@ await api.put("/api/cases/update-officer-status", {
                       <span className="time">{new Date(n.time).toLocaleString()}</span>
                       </div>
                       <div className="buttons-container">
-  { !/\b(accepted|declined)\b/i.test(n.action1 + (n.post1||"")) && (
+  { (
     <button className="view-btnNC" onClick={()=>handleView(n._id)}>
       View
     </button> )}
@@ -456,6 +477,6 @@ await api.put("/api/cases/update-officer-status", {
       }
     </div>
   );
-});
+};
 
 export default NotificationCard1;
