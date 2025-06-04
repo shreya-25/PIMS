@@ -592,7 +592,8 @@ export const LREnclosures = () => {
     }
   };
   
-  const isCaseManager = selectedCase?.role === "Case Manager";
+   const isCaseManager = 
+    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
   const handleAccessChange = (idx, newAccess) => {
     setEnclosures(rs => {
       const copy = [...rs];

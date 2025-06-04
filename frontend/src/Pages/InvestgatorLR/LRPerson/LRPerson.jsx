@@ -356,7 +356,8 @@ const handleDeletePerson = async (idx) => {
     });
   };
 
-  const isCaseManager = selectedCase?.role === "Case Manager";
+  const isCaseManager = 
+    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
   
   return (
     <div className="person-page">

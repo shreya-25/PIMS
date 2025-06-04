@@ -11,7 +11,7 @@ const Lead = require("../models/lead");
 
 const router = express.Router();
 
-router.post("/create", verifyToken, roleMiddleware("CaseManager", "Detective Supervisor"), createLead);
+router.post("/create", verifyToken, createLead);
 
 // Fetch leads assigned by the logged-in officer
 router.get("/assigned-leads", verifyToken, getLeadsByOfficer);
