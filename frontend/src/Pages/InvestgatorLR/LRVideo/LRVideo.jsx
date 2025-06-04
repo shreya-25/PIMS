@@ -295,7 +295,8 @@ export const LRVideo = () => {
                       return copy;
                     });
                   };
-                  const isCaseManager = selectedCase?.role === "Case Manager";   
+                    const isCaseManager = 
+    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";  
                   
                   const handleEditVideo = idx => {
                     const v = videos[idx];

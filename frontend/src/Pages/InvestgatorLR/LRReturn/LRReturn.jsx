@@ -567,7 +567,9 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
       navigate(route, { state: { caseDetails } });
   };
     
-  const isCaseManager = selectedCase?.role === "Case Manager";
+  const isCaseManager = 
+    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
+
 
 
   return (

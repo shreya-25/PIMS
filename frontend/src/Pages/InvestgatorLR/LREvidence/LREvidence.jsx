@@ -318,7 +318,8 @@ export const LREvidence = () => {
       return copy;
     });
   };
-  const isCaseManager = selectedCase?.role === "Case Manager";
+  const isCaseManager = 
+    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
 
   const handleEdit = idx => {
     const ev = evidences[idx];
