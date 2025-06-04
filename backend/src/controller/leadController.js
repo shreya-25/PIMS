@@ -128,6 +128,23 @@ const getAssignedLeadsForOfficer = async (req, res) => {
   }
 };
 
+const getLRForCM = async (req, res) => {
+  try {
+    const officerName = req.user.name; 
+
+    // Query: assignedTo.username must match, and leadStatus === "Assigned"
+    const leads = await Lead.find({
+      "assignedBy": officerName,
+      leadStatus: "In Review"
+    });
+
+    return res.status(200).json(leads);
+  } catch (err) {
+    console.error("Error fetching lead returns for review:", err);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
 
 
 const getLeadsByCase = async (req, res) => {
@@ -568,7 +585,7 @@ const removeAssignedOfficer = async (req, res) => {
 
 
 module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword , setLeadStatusToInReview, 
-  setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer
+  setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM
 };
 
 
