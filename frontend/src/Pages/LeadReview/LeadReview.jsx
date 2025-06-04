@@ -140,10 +140,12 @@ const handleSave = async () => {
           notificationId: Date.now().toString(),
           assignedBy: signedInOfficer,         // the current user assigning the lead
           assignedTo: [{ username }],          // the new recipient
-          action1: "was assigned to a lead",
+          action1: "assigned you to a new lead",
           post1:   `${leadData.leadNo}: ${leadData.description}`,
           caseNo:   leadData.caseNo,
           caseName: leadData.caseName,
+          leadNo: leadData.leadNo,
+          leadName: leadData.description,
           caseStatus: selectedCase.caseStatus || "Open",
           type: "Lead"
         },
@@ -204,6 +206,8 @@ const acceptLead = async (leadNo, description) => {
         post1:   `${leadNo}: ${description}`,
         caseNo:   selectedCase.caseNo,
         caseName: selectedCase.caseName,
+        leadNo: leadNo,
+        leadName: description,
         caseStatus: selectedCase.caseStatus || "Open",
         type: "Lead"
       },
@@ -255,6 +259,8 @@ const acceptLead = async (leadNo, description) => {
         post1:   `${leadNo}: ${description}`,
         caseNo:   selectedCase.caseNo,
         caseName: selectedCase.caseName,
+         leadNo: leadNo,
+        leadName: description,
         caseStatus: selectedCase.caseStatus || "Open",
         type: "Lead"
       },
