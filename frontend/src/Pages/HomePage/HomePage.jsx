@@ -179,10 +179,24 @@ const handleCaseClick = (caseDetails) => {
 
 console.log(localStorage);
 
-
 const handleLRClick = (lead) => {
-  navigate("/LRInstruction", { state: { leadDetails: lead } });
+  // Build “caseDetails” from the lead you clicked on:
+  console.log("inside continue btn", lead);
+  const caseDetails = {
+    caseNo:   lead.caseNo,
+    caseName: lead.caseName,
+    role:     "Case Manager", // or whatever role you need
+  };
+
+  navigate("/LRInstruction", {
+    state: {
+      caseDetails,
+      leadDetails: lead
+    }
+  });
 };
+
+
 const handleAssignInvestigator = (caseId) => {
   const investigator = prompt("Enter investigator name:");
   if (investigator) {
@@ -445,6 +459,74 @@ useEffect(() => {
   };
 
   fetchPendingLeads();
+}, [signedInOfficer]);
+
+useEffect(() => {
+  const fetchLeadReturnsForReview = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("❌ No token found. User is not authenticated.");
+        return;
+      }
+
+      // 1) Call the new server route. It already filters by:
+      //    assignedBy = signedInOfficer && leadStatus = "In Review"
+      const { data: serverLeadReturns } = await api.get("/api/lead/lead-returnforreview", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      console.log("✅ API Response (Lead Returns For Review):", serverLeadReturns);
+
+      // 2) (OPTIONAL) If you want to only show those whose case is still Ongoing,
+      //    fetch all cases and build a Set of “ongoing” caseNo||caseName.
+      const { data: allCases } = await api.get("/api/cases", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      const ongoingSet = new Set(
+        allCases
+          .filter(c => c.caseStatus === "Ongoing")
+          .map(c => `${c.caseNo}||${c.caseName}`)
+      );
+
+      // 3) Map serverLeadReturns → front-end shape, and optionally filter by ongoing cases
+      const mappedForReview = serverLeadReturns
+        .filter(lead =>
+          // If you only want those whose case is still ongoing:
+          ongoingSet.has(`${lead.caseNo}||${lead.caseName}`)
+        )
+        .map(lead => ({
+          id:          lead.leadNo,       // numeric leadNo
+          description: lead.description,  // leadName
+          caseName:    lead.caseName,
+          caseNo:      lead.caseNo,
+          // (You can add any other fields you need here: dueDate, priority, etc.)
+        }));
+
+      console.log("✅ Filtered Lead Returns For Review:", mappedForReview);
+
+      // 4) Save them into state. Here I’m choosing a new key: pendingLeadReturnsForCM.
+      setLeads(prev => ({
+        ...prev,
+        pendingLeadReturns: mappedForReview
+      }));
+    } catch (err) {
+      console.error(
+        "❌ Error fetching Lead Returns for review:",
+        err.response?.data || err
+      );
+    }
+  };
+console.log("pending LR",leads );
+  // Run once immediately, then every 15 seconds
+  fetchLeadReturnsForReview();
+  const intervalId = setInterval(fetchLeadReturnsForReview, 15000);
+  return () => clearInterval(intervalId);
 }, [signedInOfficer]);
 
   // ─── Fetch only those leads where assignedTo.username === signedInOfficer AND leadStatus === "Assigned" ─────────
