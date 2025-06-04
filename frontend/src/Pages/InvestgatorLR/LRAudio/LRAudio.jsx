@@ -60,6 +60,9 @@ export const LRAudio = () => {
     description: "",
     audioSrc: "",
     leadReturnId: "",
+     isLink: false,
+  link: "",   
+  accessLevel: "Everyone"    
   });
 
   const handleInputChange = (field, value) => {
@@ -178,70 +181,67 @@ export const LRAudio = () => {
   
 
   const handleAddAudio = async () => {
-    const formData = new FormData();
-  
-    // Validation
-    if (!file ||  !audioData.leadReturnId || !audioData.dateAudioRecorded || !audioData.description) {
-      alert("Please fill in all required fields and select a file.");
-      return;
-    }
-  
-    // File and fields
-    formData.append("file", file);
-    formData.append("leadNo", selectedLead?.leadNo);
-    formData.append("description", selectedLead?.leadName);
-    formData.append("enteredBy", localStorage.getItem("loggedInUser"));
-    formData.append("caseName", selectedCase?.caseName);
-    formData.append("caseNo", selectedCase?.caseNo);
-    formData.append("leadReturnId", audioData.leadReturnId);
-    formData.append("enteredDate", new Date().toISOString());
-    formData.append("dateAudioRecorded", audioData.dateAudioRecorded);
-    formData.append("audioDescription", audioData.description);
-  
-    const token = localStorage.getItem("token");
-  
-    try {
-      const response = await api.post(
-        "/api/lraudio/upload",
-        formData,
-        {
-          headers: {
-            "Content-Type": undefined,  
-            "Authorization": `Bearer ${token}`,
-          },
-        }
-      );
-  
-      const savedAudio = response.data.audio;
-  
-      setAudioFiles((prev) => [
-        ...prev,
-        {
-          dateEntered: formatDate(savedAudio.enteredDate),
-          returnId: savedAudio.leadReturnId,
-          dateAudioRecorded: formatDate(savedAudio.dateAudioRecorded),
-          description: savedAudio.audioDescription,
-          audioSrc: `${BASE_URL}/uploads/${savedAudio.filename}`,
-          id:                 savedAudio._id
-        },
-      ]);
+  // 1️⃣ Validation:
+  if (
+    audioData.isLink
+      ? !audioData.link.trim() || !audioData.leadReturnId || !audioData.dateAudioRecorded
+      : !file || !audioData.leadReturnId || !audioData.dateAudioRecorded || !audioData.description
+  ) {
+    alert("Please fill in all required fields and either select a file or enter a valid link.");
+    return;
+  }
 
-      await fetchAudioFiles();
-  
-      // Reset form
-      setAudioData({
-        dateAudioRecorded: "",
-        description: "",
-        audioSrc: "",
-        leadReturnId: "",
-      });
-      setFile(null);
-    } catch (error) {
-      console.error("Error uploading audio:", error);
-      alert("Failed to upload audio.");
-    }
-  };
-  
+  // 2️⃣ Build FormData
+  const formData = new FormData();
+  if (!audioData.isLink) {
+    formData.append("file", file);
+  }
+  formData.append("leadNo", selectedLead.leadNo);
+  formData.append("description", selectedLead.leadName);
+  formData.append("enteredBy", localStorage.getItem("loggedInUser"));
+  formData.append("caseName", selectedCase.caseName);
+  formData.append("caseNo", selectedCase.caseNo);
+  formData.append("leadReturnId", audioData.leadReturnId);
+  formData.append("enteredDate", new Date().toISOString());
+  formData.append("dateAudioRecorded", audioData.dateAudioRecorded);
+  formData.append("audioDescription", audioData.description);
+   formData.append("accessLevel", audioData.accessLevel);
+
+  // 3️⃣ Link fields
+  formData.append("isLink", audioData.isLink);
+  if (audioData.isLink) {
+    formData.append("link", audioData.link.trim());
+  }
+
+  try {
+    const token = localStorage.getItem("token");
+    const response = await api.post("/api/lraudio/upload", formData, {
+      headers: {
+        "Content-Type": undefined,
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    // 4️⃣ On success, append to your state and/or re‐fetch
+    await fetchAudioFiles();
+
+    // 5️⃣ Reset form state
+    setAudioData({
+      dateAudioRecorded: "",
+      description: "",
+      leadReturnId: "",
+      isLink: false,
+      link: "",
+      audioSrc: "",
+      filename: ""
+    });
+    setFile(null);
+  } catch (error) {
+    console.error("Error uploading audio:", error);
+    alert("Failed to upload audio.");
+  }
+};
+
 
   const handleNavigation = (route) => {
     navigate(route);
@@ -254,45 +254,45 @@ export const LRAudio = () => {
                 };
 
                 const fetchAudioFiles = async () => {
-                  const token = localStorage.getItem("token");
-                
-                  const leadNo = selectedLead?.leadNo;
-                  const leadName = encodeURIComponent(selectedLead?.leadName);
-                  const caseNo = selectedCase?.caseNo;
-                  const caseName = encodeURIComponent(selectedCase?.caseName);
-                
-                  try {
-                    const res = await api.get(
-                      `/api/lraudio/${leadNo}/${leadName}/${caseNo}/${caseName}`,
-                      {
-                        headers: {
-                          "Content-Type": undefined,  
-                          Authorization: `Bearer ${token}`,
-                        },
-                      }
-                    );
-                
-                    const mappedAudios = res.data.map((audio) => ({
-                      dateEntered: formatDate(audio.enteredDate),
-                      returnId: audio.leadReturnId,
-                      dateAudioRecorded: formatDate(audio.dateAudioRecorded),
-                      rawDateAudioRecorded:  audio.dateAudioRecorded,   
-                      description: audio.audioDescription,
-                      audioSrc: `${BASE_URL}/uploads/${audio.filename}`,
-                      id:                audio._id,   
-                      originalName: audio.originalName,
-                    }));
+  const token = localStorage.getItem("token");
+  const leadNo = selectedLead.leadNo;
+  const leadName = encodeURIComponent(selectedLead.leadName);
+  const caseNo = selectedCase.caseNo;
+  const caseName = encodeURIComponent(selectedCase.caseName);
 
-                    const withAccess = mappedAudios.map(r => ({
-                      ...r,
-                      access: r.access ?? "Everyone"
-                    }));
-                
-                    setAudioFiles(withAccess);
-                  } catch (error) {
-                    console.error("Error fetching audios:", error);
-                  }
-                };
+  try {
+    const res = await api.get(`/api/lraudio/${leadNo}/${leadName}/${caseNo}/${caseName}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const mappedAudios = res.data.map(a => ({
+      dateEntered: formatDate(a.enteredDate),
+      returnId: a.leadReturnId,
+      dateAudioRecorded: formatDate(a.dateAudioRecorded),
+      rawDateAudioRecorded: a.dateAudioRecorded,
+      description: a.audioDescription,
+      id: a._id,
+      originalName: a.originalName || "",
+       accessLevel: a.accessLevel || "Everyone" ,
+
+      // If server returns a 'link' field, use that. Otherwise build file URL:
+      isLink: a.isLink,
+      link: a.link || "",
+      audioSrc: a.isLink ? a.link : `${BASE_URL}/uploads/${a.filename}`
+    }));
+
+    // Default access:
+    const withAccess = mappedAudios.map(r => ({
+      ...r,
+      accessLevel: r.accessLevel ?? "Everyone"
+    }));
+
+    setAudioFiles(withAccess);
+  } catch (error) {
+    console.error("Error fetching audios:", error);
+  }
+};
+
 
                 useEffect(() => {
                   if (
@@ -306,13 +306,15 @@ export const LRAudio = () => {
                 }, [selectedLead, selectedCase]);
                   const isCaseManager = 
     selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
-                const handleAccessChange = (idx, newAccess) => {
-                  setAudioFiles(rs => {
-                    const copy = [...rs];
-                    copy[idx] = { ...copy[idx], access: newAccess };
-                    return copy;
-                  });
-                };
+                
+    const handleAccessChange = (idx, newAccessLevel) => {
+  setAudioFiles(rs => {
+    const copy = [...rs];
+    copy[idx] = { ...copy[idx], accessLevel: newAccessLevel };
+    return copy;
+  });
+};
+
 
 
                 const handleDeleteAudio = async idx => {
@@ -345,42 +347,68 @@ const handleEditAudio = idx => {
   const a = audioFiles[idx];
   setEditingId(idx);
   setFile(null);
+
   setAudioData({
     dateAudioRecorded: new Date(a.rawDateAudioRecorded).toISOString().slice(0,10),
-    leadReturnId:      a.returnId,
-    description:       a.description,
-    audioSrc:          a.audioSrc,
-    filename:          a.filename
+    leadReturnId: a.returnId,
+    description: a.description,
+    // NEW: populate isLink & link
+    isLink: a.isLink,
+    link: a.isLink ? a.link : "",
+    // existing file data
+    audioSrc: a.isLink ? "" : a.audioSrc,
+    filename: a.isLink ? "" : a.originalName,
+     accessLevel: a.accessLevel || "Everyone"
   });
 };
 
+const handleUpdateAudio = async () => {
+  const idx = editingId;
+  const a   = audioFiles[idx];
+  const fd  = new FormData();
 
-  const handleUpdateAudio = async () => {
-     const idx = editingId;
-    const a   = audioFiles[idx];
-      const fd  = new FormData();
-    fd.append("leadReturnId", audioData.leadReturnId);
-    fd.append("dateAudioRecorded", audioData.dateAudioRecorded);
-     fd.append("audioDescription", audioData.description);
-       if (file) fd.append("file", file);
-    const leadNo   = selectedLead.leadNo;
-      const leadName = encodeURIComponent(selectedLead.leadName);
-      const caseNo   = selectedCase.caseNo;
-      const caseName = encodeURIComponent(selectedCase.caseName);
- 
-     await api.put(
-        `/api/lraudio/${a.id}`,
-        fd,
-         { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-       );
+  // 1️⃣ Always send these:
+  fd.append("leadReturnId", audioData.leadReturnId);
+  fd.append("dateAudioRecorded", audioData.dateAudioRecorded);
+  fd.append("audioDescription", audioData.description);
+    fd.append("accessLevel", audioData.accessLevel);
 
-     await fetchAudioFiles();
 
-     setEditingId(null);
-        setAudioData({ dateAudioRecorded:"", leadReturnId:"", description:"", audioSrc:"", filename:"" });
-      setFile(null);
-      };
-      
+  // 2️⃣ Indicate link‐mode or file‐mode
+  fd.append("isLink", audioData.isLink);
+  if (audioData.isLink) {
+    fd.append("link", audioData.link.trim());
+  } else if (file) {
+    // only append a new file if they replaced it
+    fd.append("file", file);
+  }
+
+  try {
+    const token = localStorage.getItem("token");
+    await api.put(`/api/lraudio/${a.id}`, fd, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    await fetchAudioFiles();
+    setEditingId(null);
+    setAudioData({
+      dateAudioRecorded: "",
+      leadReturnId: "",
+      description: "",
+      isLink: false,
+      link: "",
+      audioSrc: "",
+      filename: ""
+    });
+    setFile(null);
+  } catch (error) {
+    console.error("Error updating audio:", error);
+    alert("Failed to update audio.");
+  }
+};
+
                       
 
   return (
@@ -634,10 +662,65 @@ Case Page
             ></textarea>
           </div>
           <div className="form-row-audio">
-            <label className="evidence-head">Upload Audio*</label>
-            
-            <input type="file" accept="audio/*" className="evidence-head" onChange={handleFileChange} />
-          </div>
+  <label>Upload Type</label>
+  <select
+    value={audioData.isLink ? "link" : "file"}
+    onChange={e =>
+      setAudioData(prev => ({
+        ...prev,
+        isLink: e.target.value === "link",
+        link: ""    // clear the link field whenever you flip back to “file”‐mode
+      }))
+    }
+  >
+    <option value="file">File</option>
+    <option value="link">Link</option>
+  </select>
+</div>
+        {/* If not link‐mode, show file input */}
+{!audioData.isLink ? (
+  <div className="form-row-audio">
+    <label>{isEditing ? "Replace Audio (optional)" : "Upload Audio*"}</label>
+    <input
+      type="file"
+      accept="audio/*"
+      onChange={handleFileChange}
+    />
+    {/* If editing and the entry already had a filename, show it: */}
+    {isEditing && audioData.filename && (
+      <div className="current-filename">
+        Current File: {audioData.filename}
+      </div>
+    )}
+  </div>
+) : (
+  /* Otherwise, link‐mode: */
+  <div className="form-row-audio">
+    <label>Paste Link*:</label>
+    <input
+      type="text"
+      placeholder="https://..."
+      value={audioData.link}
+      onChange={e =>
+        setAudioData(prev => ({ ...prev, link: e.target.value }))
+      }
+    />
+  </div>
+)}
+<div className="form-row-audio">
+  <label>Access Level</label>
+  <select
+    value={audioData.accessLevel}
+    onChange={e =>
+      setAudioData(prev => ({ ...prev, accessLevel: e.target.value }))
+    }
+  >
+    <option value="Everyone">Everyone</option>
+    <option value="Case Manager">Case Manager Only</option>
+  </select>
+</div>
+
+
         </div>
         <div className="form-buttons-audio">
         {/* <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
@@ -667,14 +750,73 @@ Case Page
           <h4 className="evidence-head">Uploaded Audio</h4>
           <div className="audio-gallery">
             {audioFiles.map((audio, index) => (
-              <div key={index} className="audio-card">
-                <audio controls>
-                  <source src={audio.audioSrc} type="audio/mp3" />
-                  Your browser does not support the audio element.
-                </audio>
-                <p>{audio.description}</p>
-              </div>
-            ))}
+  <tr key={index}>
+    <td>{audio.dateEntered}</td>
+    <td>{audio.returnId}</td>
+    <td>{audio.dateAudioRecorded}</td>
+
+    {/* Show either a link or a file‐download link */}
+    <td>
+      {audio.isLink ? (
+        <a
+          href={audio.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="link-button"
+        >
+          {audio.link}
+        </a>
+      ) : (
+        <a
+          href={audio.audioSrc}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="link-button"
+        >
+          {audio.originalName || "Download"}
+        </a>
+      )}
+    </td>
+
+    <td>{audio.description}</td>
+
+    <td>
+      <button
+        disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+        onClick={() => handleEditAudio(index)}
+      >
+        <img
+          src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+          alt="Edit Icon"
+          className="edit-icon"
+        />
+      </button>
+      <button
+        disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+        onClick={() => handleDeleteAudio(index)}
+      >
+        <img
+          src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+          alt="Delete Icon"
+          className="edit-icon"
+        />
+      </button>
+    </td>
+
+    {isCaseManager && (
+      <td>
+        <select
+          value={audio.accessLevel}
+          onChange={e => handleAccessChange(index, e.target.value)}
+        >
+          <option value="Everyone">Everyone</option>
+          <option value="Case Manager">Case Manager Only</option>
+        </select>
+      </td>
+    )}
+  </tr>
+))}
+
           </div>
         </div>
         </div>
@@ -736,7 +878,7 @@ Case Page
                 {isCaseManager && (
           <td>
             <select
-              value={audio.access}
+              value={audio.accessLevel}
               onChange={e => handleAccessChange(index, e.target.value)}
             >
               <option value="Everyone">Everyone</option>

@@ -180,18 +180,28 @@ const handleCaseClick = (caseDetails) => {
 console.log(localStorage);
 
 const handleLRClick = (lead) => {
-  // Build “caseDetails” from the lead you clicked on:
-  console.log("inside continue btn", lead);
+  // 1. Build caseDetails and leadDetails
   const caseDetails = {
     caseNo:   lead.caseNo,
-    caseName: lead.caseName,
-    role:     "Case Manager", // or whatever role you need
+    caseName: lead.caseName
+  };
+  const leadDetails = {
+    leadNo:   lead.id,
+    leadName: lead.description
   };
 
+  // 2. Update context
+  setSelectedCase(caseDetails);
+  setSelectedLead(leadDetails);
+
+  // 3. Persist role if needed (e.g. "Case Manager")
+  localStorage.setItem("role", "Case Manager");
+
+  // 4. Navigate to LRInstruction, passing both objects via state
   navigate("/LRInstruction", {
     state: {
       caseDetails,
-      leadDetails: lead
+      leadDetails
     }
   });
 };

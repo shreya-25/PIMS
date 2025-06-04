@@ -52,6 +52,7 @@ const disabledStyle = { opacity: 0.5, cursor: 'not-allowed' };
     // You can add logic here to update the backend with the new summary if needed
 };
 const [team, setTeam] = useState({
+  detectiveSupervisor: "",
   caseManager: "",
   investigators: []
 });
@@ -1133,6 +1134,10 @@ const handleSortAll = colKey => {
             <tr><th style={{ width: "20%" }}>Role</th><th>Name(s)</th></tr>
           </thead>
           <tbody>
+            <tr>
+              <td>Detective Supervisor</td>
+              <td>{team.detectiveSupervisor || "—"}</td>
+              </tr>
             <tr>
               <td>Case Manager</td>
               <td>{team.caseManager || "—"}</td>
