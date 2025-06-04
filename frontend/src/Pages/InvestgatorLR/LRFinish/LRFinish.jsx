@@ -519,7 +519,8 @@ useEffect(() => {
                       navigate(route, { state: { caseDetails } });
                   };
 
-  const isCaseManager = selectedCase?.role === "Case Manager";
+    const isCaseManager = 
+    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
 
   return (
     <div className="lrfinish-container">

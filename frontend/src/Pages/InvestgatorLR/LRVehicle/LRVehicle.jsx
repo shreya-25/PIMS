@@ -492,7 +492,8 @@ const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus }
   
 
   
-  const isCaseManager = selectedCase?.role === "Case Manager";
+    const isCaseManager = 
+    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
 
 
 

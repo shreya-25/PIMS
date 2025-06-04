@@ -421,7 +421,8 @@ const handleUpdatePicture = async () => {
     }
   };
 
-  const isCaseManager = selectedCase?.role === "Case Manager";
+    const isCaseManager = 
+    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
   // handler to change access per row
 const handleAccessChange = (idx, newAccess) => {
   setPictures(rs => {

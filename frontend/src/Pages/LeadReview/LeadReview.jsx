@@ -664,7 +664,7 @@ const isEditableByCaseManager = field => {
 
           </div>
 
-                  {(leadData.leadStatus !== "Assigned" || selectedCase.role === "Case Manager") && (
+                  {(leadData.leadStatus !== "Assigned" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
                    <div className="top-menu">
         <div className="menu-items">
         <span className="menu-item active" > Lead Information</span>
@@ -725,7 +725,7 @@ const isEditableByCaseManager = field => {
   </div>
 ) } */}
 
- {leadData.leadStatus === "Assigned" && selectedCase.role !== "Case Manager" &&  (
+ {leadData.leadStatus === "Assigned" && selectedCase.role !== "Case Manager" &&  selectedCase.role !== "Detective Supervisor" && (
   <div
     className="accept-reject-section"
     style={{
@@ -1149,7 +1149,7 @@ const isEditableByCaseManager = field => {
                 </div> */}
 
 
-            {(leadData.leadStatus !== "Assigned" || selectedCase.role === "Case Manager") && (
+            {(leadData.leadStatus !== "Assigned" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
             <div className="lead-tracker-container">
               {statuses.map((status, idx) => (
                 <div

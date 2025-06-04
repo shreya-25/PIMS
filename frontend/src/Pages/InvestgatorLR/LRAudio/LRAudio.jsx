@@ -304,7 +304,8 @@ export const LRAudio = () => {
                     fetchAudioFiles();
                   }
                 }, [selectedLead, selectedCase]);
-                const isCaseManager = selectedCase?.role === "Case Manager";  
+                  const isCaseManager = 
+    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
                 const handleAccessChange = (idx, newAccess) => {
                   setAudioFiles(rs => {
                     const copy = [...rs];

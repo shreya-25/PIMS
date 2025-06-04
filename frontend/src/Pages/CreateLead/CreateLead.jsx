@@ -426,7 +426,7 @@ const cName  = encodeURIComponent(selectedCase.caseName);
       alert(`Error: ${error.response.data.message}`);
     } else {
       // Handle unexpected errors
-      alert("An unexpected error occurred. Please try again.");
+      // alert("Notification not sent since no officer assigned");
     }
   }
 };  
