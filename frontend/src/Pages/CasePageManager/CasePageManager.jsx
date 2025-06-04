@@ -54,6 +54,7 @@ export const CasePageManager = () => {
       navigate("/CasePageManager", { state: { caseDetails } }); // Pass case details via state
     };
     const [team, setTeam] = useState({
+      detectiveSupervisor: "",
       caseManager: "",
       investigators: []
     });
@@ -1160,6 +1161,10 @@ Save
 <th>Name(s)</th></tr>
 </thead>
 <tbody>
+  <tr>
+<td>Detective Supervisor</td>
+<td>{team.detectiveSupervisor || "—"}</td>
+</tr>
 <tr>
 <td>Case Manager</td>
 <td>{team.caseManager || "—"}</td>

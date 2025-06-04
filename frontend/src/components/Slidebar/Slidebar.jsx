@@ -43,6 +43,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
       setCaseDetails(cd => ({
         ...cd,
         detectiveSupervisor: localStorage.getItem("loggedInUser"),
+        managerName: localStorage.getItem("loggedInUser"),
       }));
     }
   }, [localStorage.getItem("loggedInUser")]);
@@ -337,7 +338,7 @@ if (notificationRecipients.length > 0) {
               className="input-field"
             />
           </div>
-            {currentRole === "Detective Supervisor" && (
+            { (
            <div className="form-group">
             <label>Detective Supervisor:</label>
             <select
@@ -347,7 +348,9 @@ if (notificationRecipients.length > 0) {
               className="input-field"
             >
               <option value="">Select Supervisor</option>
-              {allUsers.map((u) => (
+              {allUsers
+              .filter(u => u.role === "Detective Supervisor")
+              .map((u) => (
                 <option key={u.username} value={u.username}>
                   {u.firstName} {u.lastName} ({u.username})
                 </option>

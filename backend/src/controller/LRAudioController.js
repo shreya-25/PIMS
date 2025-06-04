@@ -31,7 +31,7 @@ const createLRAudio = async (req, res) => {
             enteredDate: req.body.enteredDate,
             dateAudioRecorded: req.body.dateAudioRecorded,
             audioDescription:req.body.audioDescription,
-            accessLevel,
+            accessLevel: req.body.accessLevel, 
             // fileId, // Store the GridFS file reference here
             isLink,
             link: isLink ? req.body.link : null,
