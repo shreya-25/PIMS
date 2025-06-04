@@ -463,12 +463,13 @@ exports.getExecutiveCaseSummary = async (req, res) => {
       }
   
       // pull out manager + investigators
+      const detectiveSupervisor = c.assignedOfficers.find(o => o.role === "Detective Supervisor")?.name || "";
       const caseManager = c.assignedOfficers.find(o => o.role === "Case Manager")?.name || "";
       const investigators = c.assignedOfficers
         .filter(o => o.role === "Investigator")
         .map(o => o.name);
   
-      return res.json({ caseManager, investigators });
+      return res.json({ detectiveSupervisor, caseManager, investigators });
     } catch (err) {
       console.error("Error in getCaseTeamByNumber:", err);
       return res.status(500).json({ message: "Server error", error: err.message });
