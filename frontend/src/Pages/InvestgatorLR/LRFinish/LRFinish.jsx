@@ -190,7 +190,21 @@ useEffect(() => {
           async function loadAll() {
       
             try {
-              // 1) Fetch the “main” arrays in parallel
+
+              const calls = [
+                            api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: null })),
+                            api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+                            api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+                            api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+                            api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+                            api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+                            api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+                            api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+                            api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+                            api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+                            api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+                          ];
+
               const [
                 instrRes,
                 returnsRes,
@@ -198,24 +212,12 @@ useEffect(() => {
                 vehiclesRes,
                 enclosuresRes,
                 evidenceRes,
-                scratchpadRes,
-                timelineRes,
                 picturesRes,
                 audioRes,
                 videosRes,
-              ] = await Promise.all([
-                api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                // api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                // api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                // api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                // api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-                // api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers),
-              ]);
+                scratchpadRes,
+                timelineRes,
+              ] = await Promise.all(calls);
         
               // 2) Instructions is a single object
               setLeadInstructions(instrRes.data[0] || {});
@@ -264,8 +266,6 @@ useEffect(() => {
         console.log("🚀 evidenceWithFiles:", evidenceWithFiles);
         setLeadEvidence(evidenceWithFiles);
 
-              setLeadScratchpad(scratchpadRes.data);
-              setLeadTimeline(timelineRes.data);
               setLeadPictures(
                 await attachFiles(
                   picturesRes.data,
@@ -287,6 +287,9 @@ useEffect(() => {
                   "/api/lrvideo/files"
                 )
               );
+
+               setLeadScratchpad(scratchpadRes.data);
+              setLeadTimeline(timelineRes.data);
         
             } catch (err) {
               console.error("Error loading lead data:", err);
@@ -298,6 +301,11 @@ useEffect(() => {
         
           loadAll();
         }, [selectedCase, selectedLead]);
+
+          console.log("LeadInstructions fetched", leadInstructions);
+       
+
+      
         
         const [selectedReports, setSelectedReports] = useState({
           FullReport: false,
@@ -337,37 +345,38 @@ useEffect(() => {
         const token = localStorage.getItem("token");
         const handleRunReport = async () => {
           try {
-            // Build the request body. Only include data for selected sections
-            // to keep the payload small (optional). The server can also handle
-            // skipping unselected sections if they come as null/undefined.
+           
             const body = {
-              user: "",  // Or from your auth context
+              user: "", 
               reportTimestamp: new Date().toLocaleString(),
       
-              // Pass the entire object or only if selected
-              leadInstruction: selectedReports.leadInstruction ? leadInstruction : null,
+        
+              leadInstruction: selectedReports.leadInstruction ? leadInstructions : null,
               leadReturn: selectedReports.leadReturn ? leadReturns : null,
               leadPersons:     selectedReports.leadPersons     ? leadPersons     : null,
               leadVehicles: selectedReports.leadVehicles ? leadVehicles : null,
               leadEnclosures: selectedReports.leadEnclosures ? leadEnclosures : null,
               leadEvidence: selectedReports.leadEvidence ? leadEvidence : null,
-              // leadPictures: selectedReports.leadPictures ? leadPictures : null,
-              // leadAudio: selectedReports.leadAudio ? leadAudio : null,
-              // leadVideos: selectedReports.leadVideos ? leadVideos : null,
-              // leadScratchpad: selectedReports.leadScratchpad ? leadScratchpad : null,
-              // leadTimeline: selectedReports.leadTimeline ? leadTimeline : null,
+              leadPictures: selectedReports.leadPictures ? leadPictures : null,
+              leadAudio: selectedReports.leadAudio ? leadAudio : null,
+              leadVideos: selectedReports.leadVideos ? leadVideos : null,
+              leadScratchpad: selectedReports.leadScratchpad ? leadScratchpad : null,
+              leadTimeline: selectedReports.leadTimeline ? leadTimeline : null,
       
-              // Also pass along which sections are selected
+        
               selectedReports,
               leadInstructions,   
               leadReturns,      
-              // leadPersons,       
             };
+
+              console.log("lead Instruction ", leadInstructions);
+
+          
+
 
             // generatePDF(pdfRef.current);
             console.log("📤 Report Data Sent to Backend:", JSON.stringify(body, null, 2));
 
-            console.log("→ Sending `leadEnclosures` to server:", leadEnclosures);
 
       
             // Call your Node server endpoint
@@ -1000,7 +1009,7 @@ Case Page
   </table>
   <div className="run-sec">
   <button className="save-btn1" onClick={handleRunReport}
-  disabled={isDisabled}
+  // disabled={isDisabled}
   >Run Report</button> </div>
 </div>
 
