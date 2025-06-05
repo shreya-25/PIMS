@@ -1828,7 +1828,12 @@ const handleShowLeadsInRange = () => {
               <tr>
                 <td className="label-cell">Assigned Officers:</td>
                 <td className="input-cell" colSpan={7}>
-                  <input type="text" value={lead.assignedTo || ""} readOnly />
+                   <input type="text" value={ Array.isArray(lead.assignedTo) && lead.assignedTo.length ? lead.assignedTo
+                              .map((a) => a.username)            
+                              .join(", ") : ""
+                              }readOnly
+                   />
+
                 </td>
               </tr>
             </tbody>
