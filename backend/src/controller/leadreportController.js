@@ -322,7 +322,7 @@ function generateReport(req, res) {
   const {
     leadInstruction, leadReturn, leadPersons, leadVehicles,
     leadEnclosures, leadEvidence, leadPictures, leadAudio,
-    leadVideos, leadScratchpad, leadTimeline, selectedReports, leadInstructions
+    leadVideos, leadScratchpad, leadTimeline, selectedReports
   } = req.body;
 
   const includeAll = selectedReports && selectedReports.FullReport;
@@ -335,24 +335,24 @@ function generateReport(req, res) {
     const doc = new PDFDocument({ size: "LETTER", margin: 50 });
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline; filename=report.pdf");
-    // doc.pipe(res);
+    doc.pipe(res);
 
-    const chunks = [];
-  doc.on("data", (chunk) => chunks.push(chunk));
-  doc.on("end", async () => {
-  const pdfKitBuffer = Buffer.concat(chunks);
+//     const chunks = [];
+//   doc.on("data", (chunk) => chunks.push(chunk));
+//   doc.on("end", async () => {
+//   const pdfKitBuffer = Buffer.concat(chunks);
 
-  try {
-    const mergedBuffer = await mergeWithAnotherPDF(pdfKitBuffer, "report_Officer 916_20250321T144351339Z.pdf");
+//   try {
+//     const mergedBuffer = await mergeWithAnotherPDF(pdfKitBuffer, "report_Officer 916_20250321T144351339Z.pdf");
    
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "inline; filename=merged.pdf");
-    res.send(mergedBuffer);
-  } catch (err) {
-    console.error("Merge error:", err);
-    res.status(500).json({ error: "Failed to merge PDF" });
-  }
-});
+//     res.setHeader("Content-Type", "application/pdf");
+//     res.setHeader("Content-Disposition", "inline; filename=merged.pdf");
+//     res.send(mergedBuffer);
+//   } catch (err) {
+//     console.error("Merge error:", err);
+//     res.status(500).json({ error: "Failed to merge PDF" });
+//   }
+// });
 
     const headerHeight = 80;
     doc.rect(0, 0, doc.page.width, headerHeight).fill("#003366");
@@ -363,9 +363,9 @@ function generateReport(req, res) {
     if (fs.existsSync(logoPath)) doc.image(logoPath, 10, verticalCenterY, { width: 70, height: 70, align: "left" });
 
     let currentY = headerHeight - 50;
-    doc.fillColor("white").font("Helvetica-Bold").fontSize(14).text(`Case: ${leadInstructions?.caseNo || 'N/A'} | ${leadInstructions?.caseName || 'N/A'}`, 0, currentY, { align: "center" });
+    doc.fillColor("white").font("Helvetica-Bold").fontSize(14).text(`Case: ${leadInstruction?.caseNo || 'N/A'} | ${leadInstruction?.caseName || 'N/A'}`, 0, currentY, { align: "center" });
     currentY = doc.y + 5;
-    doc.fillColor("white").font("Helvetica-Bold").fontSize(12).text(`Lead: ${leadInstructions?.leadNo || 'N/A'} | ${leadInstructions?.description || 'N/A'}`, 0, currentY, { align: "center" });
+    doc.fillColor("white").font("Helvetica-Bold").fontSize(12).text(`Lead: ${leadInstruction?.leadNo || 'N/A'} | ${leadInstruction?.description || 'N/A'}`, 0, currentY, { align: "center" });
     currentY = doc.y + 20;
     doc.fillColor("black");
 
@@ -379,7 +379,7 @@ function generateReport(req, res) {
     currentY += 20;
     // currentY = drawTable(doc, 50, currentY, ["Lead No.", "Origin", "Assigned Date", "Due Date", "Completed Date"], [{ "Lead No.": leadInstructions?.leadNo || 'N/A', "Origin": leadInstructions?.parentLeadNo || 'N/A', "Assigned Date": formatDate(leadInstructions?.assignedDate) || 'N/A', "Due Date": formatDate(leadInstructions?.dueDate) || 'N/A', "Completed Date": "Still to add in db" }], [90, 90, 120, 120, 92]) + 20;
     // currentY = drawTable(doc, 50, currentY, ["Sub No.", "Associated Sub Nos.", "Assigned Officers", "Assigned By"], [{ "Sub No.": leadInstructions?.subNumber || 'N/A', "Associated Sub Nos.": leadInstructions?.associatedSubNumbers || 'N/A', "Assigned Officers": leadInstructions?.assignedTo|| 'N/A', "Assigned By": leadInstructions?.assignedBy || 'N/A' }], [90, 170, 170, 82]) + 20;
-    currentY = drawStructuredLeadDetails(doc, 50, currentY, leadInstructions);
+    currentY = drawStructuredLeadDetails(doc, 50, currentY, leadInstruction);
 
     if (includeAll || leadInstruction) {
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
@@ -388,7 +388,7 @@ function generateReport(req, res) {
       }
       doc.font("Helvetica-Bold").fontSize(12).text("Lead Log Summary", 50, currentY);
       currentY += 20;
-      currentY = drawTextBox(doc, 50, currentY, 512, "", leadInstructions?.description || 'N/A');
+      currentY = drawTextBox(doc, 50, currentY, 512, "", leadInstruction?.description || 'N/A');
 
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
         doc.addPage();
@@ -396,7 +396,7 @@ function generateReport(req, res) {
       }
       doc.font("Helvetica-Bold").fontSize(12).text("Lead Instruction", 50, currentY);
       currentY += 20;
-      currentY = drawTextBox(doc, 50, currentY, 512, "", leadInstructions?.summary || 'N/A');
+      currentY = drawTextBox(doc, 50, currentY, 512, "", leadInstruction?.summary || 'N/A');
 
     }
 
@@ -930,8 +930,64 @@ function generateReport(req, res) {
           "Description":         p.pictureDescription || ""
         }));
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+
+          // Now loop through each enclosure and embed its single filePath
+        for (let i = 0; i < leadPictures.length; i++) {
+          const enc = leadPictures[i];
+          const fname = (enc.filename || "").toLowerCase();
+
+          // Only embed if the top‐level “filename” ends with .jpg/.jpeg/.png
+          if (
+            fname.endsWith(".jpg") ||
+            fname.endsWith(".jpeg") ||
+            fname.endsWith(".png")
+          ) {
+            // Use the top‐level “filePath” directly
+            const imagePath = path.normalize(enc.filePath);
+
+            if (fs.existsSync(imagePath)) {
+              // Page‐break check before drawing a 300px‐high image
+              const imageMaxHeight = 300;
+              if (
+                currentY + imageMaxHeight >
+                doc.page.height - doc.page.margins.bottom
+              ) {
+                doc.addPage();
+                currentY = doc.page.margins.top;
+              }
+
+              // Draw the image (fit into 300×300 box, maintain aspect ratio)
+              doc.image(imagePath, 50, currentY, { fit: [300, 300] });
+              currentY += 310; // 300 for the image + ~10px padding
+
+              // Caption under the image
+              doc
+                .font("Helvetica")
+                .fontSize(9)
+                .fillColor("#555555")
+                .text(enc.filename, 50, currentY, { width: 300, align: "left" });
+              currentY += 20;
+
+              // Reset fill color for subsequent text
+              doc.fillColor("black");
+            } else {
+              // File wasn’t found on disk—draw a red warning
+              doc
+                .font("Helvetica-Oblique")
+                .fontSize(10)
+                .fillColor("red")
+                .text(`(Missing file on server: ${enc.filename})`, 50, currentY);
+              doc.fillColor("black");
+              currentY += 20;
+            }
+          }
+        }
+
+        // Space after all enclosure images
+        currentY += 20;
       }
     }
+    
     
     // ── Audio Details ────────────────────────────────────────────
     if (includeAll || leadAudio) {
