@@ -4,7 +4,7 @@ import FootBar from '../../../components/FootBar/FootBar';
 import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
@@ -24,6 +24,8 @@ export const LRAudio = () => {
     const [leadData, setLeadData] = useState({});
   const { selectedCase, selectedLead, setSelectedLead , leadStatus, setLeadStatus} = useContext(CaseContext);
    const [file, setFile] = useState(null);
+     const fileInputRef = useRef(null);
+
     
       const formatDate = (dateString) => {
         if (!dateString) return "";
@@ -274,6 +276,7 @@ export const LRAudio = () => {
       id: a._id,
       originalName: a.originalName || "",
        accessLevel: a.accessLevel || "Everyone" ,
+       filename: a.filename || "", 
 
       // If server returns a 'link' field, use that. Otherwise build file URL:
       isLink: a.isLink,
@@ -346,6 +349,9 @@ export const LRAudio = () => {
 const handleEditAudio = idx => {
   const a = audioFiles[idx];
   setEditingId(idx);
+    if (fileInputRef.current) {
+    fileInputRef.current.value = "";
+  }
   setFile(null);
 
   setAudioData({
@@ -362,36 +368,94 @@ const handleEditAudio = idx => {
   });
 };
 
+// const handleUpdateAudio = async () => {
+//   const idx = editingId;
+//   const a   = audioFiles[idx];
+//   const fd  = new FormData();
+
+//   fd.append("leadReturnId", audioData.leadReturnId);
+//   fd.append("dateAudioRecorded", audioData.dateAudioRecorded);
+//   fd.append("audioDescription", audioData.description);
+//     fd.append("accessLevel", audioData.accessLevel);
+
+
+  
+//   fd.append("isLink", audioData.isLink);
+//   if (audioData.isLink) {
+//     fd.append("link", audioData.link.trim());
+//   } else if (file) {
+//     fd.append("file", file);
+//   }
+
+//   try {
+//     const token = localStorage.getItem("token");
+//     await api.put(`/api/lraudio/${a.id}`, fd, {
+//       headers: {
+//         Authorization: `Bearer ${token}`
+//       }
+//     });
+
+//     await fetchAudioFiles();
+//     setEditingId(null);
+//     setAudioData({
+//       dateAudioRecorded: "",
+//       leadReturnId: "",
+//       description: "",
+//       isLink: false,
+//       link: "",
+//       audioSrc: "",
+//       filename: ""
+//     });
+//     setFile(null);
+//   } catch (error) {
+//     console.error("Error updating audio:", error);
+//     alert("Failed to update audio.");
+//   }
+// };
+
 const handleUpdateAudio = async () => {
   const idx = editingId;
   const a   = audioFiles[idx];
   const fd  = new FormData();
 
-  // 1️⃣ Always send these:
+  // 1️⃣ Always send these fields:
   fd.append("leadReturnId", audioData.leadReturnId);
   fd.append("dateAudioRecorded", audioData.dateAudioRecorded);
   fd.append("audioDescription", audioData.description);
-    fd.append("accessLevel", audioData.accessLevel);
-
+  fd.append("accessLevel", audioData.accessLevel);
 
   // 2️⃣ Indicate link‐mode or file‐mode
   fd.append("isLink", audioData.isLink);
   if (audioData.isLink) {
     fd.append("link", audioData.link.trim());
   } else if (file) {
-    // only append a new file if they replaced it
+    // only append a new file if the user chose a replacement
     fd.append("file", file);
   }
 
   try {
     const token = localStorage.getItem("token");
-    await api.put(`/api/lraudio/${a.id}`, fd, {
-      headers: {
-        Authorization: `Bearer ${token}`
+    await api.put(
+      `/api/lraudio/${a.id}`,
+      fd,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+          // ⇢ No Content-Type here!
+        },
+        transformRequest: [(data, headers) => {
+          // ← UPDATED: remove any default Content-Type so the browser sets
+          //     multipart/form-data; boundary=… automatically
+          delete headers["Content-Type"];
+          return data;
+        }]
       }
-    });
+    );
 
+    // 3️⃣ Re-fetch the list from the server
     await fetchAudioFiles();
+
+    // 4️⃣ Clear editing state
     setEditingId(null);
     setAudioData({
       dateAudioRecorded: "",
@@ -403,6 +467,11 @@ const handleUpdateAudio = async () => {
       filename: ""
     });
     setFile(null);
+
+    // 5️⃣ Clear the file <input>
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   } catch (error) {
     console.error("Error updating audio:", error);
     alert("Failed to update audio.");
@@ -684,6 +753,8 @@ Case Page
     <input
       type="file"
       accept="audio/*"
+      ref={fileInputRef}                  
+
       onChange={handleFileChange}
     />
     {/* If editing and the entry already had a filename, show it: */}
@@ -746,77 +817,18 @@ Case Page
   )}
          </div>
          {/* Uploaded Audio Preview */}
-         <div className="uploaded-audio">
+        <div className="uploaded-audio">
           <h4 className="evidence-head">Uploaded Audio</h4>
           <div className="audio-gallery">
             {audioFiles.map((audio, index) => (
-  <tr key={index}>
-    <td>{audio.dateEntered}</td>
-    <td>{audio.returnId}</td>
-    <td>{audio.dateAudioRecorded}</td>
-
-    {/* Show either a link or a file‐download link */}
-    <td>
-      {audio.isLink ? (
-        <a
-          href={audio.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="link-button"
-        >
-          {audio.link}
-        </a>
-      ) : (
-        <a
-          href={audio.audioSrc}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="link-button"
-        >
-          {audio.originalName || "Download"}
-        </a>
-      )}
-    </td>
-
-    <td>{audio.description}</td>
-
-    <td>
-      <button
-        disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
-        onClick={() => handleEditAudio(index)}
-      >
-        <img
-          src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
-          alt="Edit Icon"
-          className="edit-icon"
-        />
-      </button>
-      <button
-        disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
-        onClick={() => handleDeleteAudio(index)}
-      >
-        <img
-          src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
-          alt="Delete Icon"
-          className="edit-icon"
-        />
-      </button>
-    </td>
-
-    {isCaseManager && (
-      <td>
-        <select
-          value={audio.accessLevel}
-          onChange={e => handleAccessChange(index, e.target.value)}
-        >
-          <option value="Everyone">Everyone</option>
-          <option value="Case Manager">Case Manager Only</option>
-        </select>
-      </td>
-    )}
-  </tr>
-))}
-
+              <div key={index} className="audio-card">
+                <audio controls>
+                  <source src={audio.audioSrc} type="audio/mp3" />
+                  Your browser does not support the audio element.
+                </audio>
+                <p>{audio.description}</p>
+              </div>
+            ))}
           </div>
         </div>
         </div>
@@ -842,16 +854,17 @@ Case Page
                 <td>{audio.dateEntered}</td>
                 <td>{audio.returnId}</td>
                 <td>{audio.dateAudioRecorded}</td>
-                  <td>
-                                                <a
-                                    href={`${BASE_URL}/uploads/${audio.filename}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="link-button"
-                                  >
-                                    {audio.originalName}
-                                  </a>
-                                  </td>
+                 <td>
+  <a
+    href={audio.audioSrc}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="link-button"
+  >
+    {audio.originalName || (audio.isLink ? audio.link : "Download")}
+  </a>
+</td>
+
                 <td>{audio.description}</td>
                 <td>
                   <div classname = "lr-table-btn">
