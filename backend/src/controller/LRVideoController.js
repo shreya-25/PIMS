@@ -30,7 +30,7 @@ const createLRVideo = async (req, res) => {
             enteredDate: req.body.enteredDate,
             dateVideoRecorded: req.body.dateVideoRecorded,
             videoDescription:req.body.videoDescription,
-            accessLevel,
+             accessLevel: req.body.accessLevel, 
             // fileId, // Store the GridFS file reference here
             isLink,
             link: isLink ? req.body.link : null,

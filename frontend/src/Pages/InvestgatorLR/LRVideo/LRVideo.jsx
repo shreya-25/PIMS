@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect,useRef } from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar/Navbar";
 import "./LRVideo.css"; // Custom CSS file for Video styling
@@ -8,10 +8,6 @@ import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
-
-
-
-
 
 export const LRVideo = () => {
     // useEffect(() => {
@@ -25,6 +21,7 @@ export const LRVideo = () => {
     //   }, []);
   const navigate = useNavigate();
   const location = useLocation();
+  const fileInputRef = useRef(null);
   const [file, setFile] = useState(null);
   const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
   const [editingIndex, setEditingIndex] = useState(null);
@@ -37,6 +34,18 @@ export const LRVideo = () => {
       setVideoData({ ...videoData, videoSrc: URL.createObjectURL(selectedFile) }); // preview
     }
   };
+
+  const [videoData, setVideoData] = useState({
+    dateVideoRecorded: "",
+    leadReturnId: "",
+    description: "",
+    // isLink + link allow toggling between file-upload vs URL
+    isLink: false,
+    link: "",
+    videoSrc: "",
+    filename: "",      // used for showing “Current file:” when editing
+    accessLevel: "Everyone" // default access level
+  });
   
       
         const formatDate = (dateString) => {
@@ -55,6 +64,18 @@ export const LRVideo = () => {
   // Sample video data
   const [videos, setVideos] = useState([
   ]);
+
+    const handleFileChangeWrapper = (event) => {
+    const selectedFile = event.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setVideoData({
+        ...videoData,
+        videoSrc: URL.createObjectURL(selectedFile),
+        filename: selectedFile.name
+      });
+    }
+  };
 
      useEffect(() => {
     const fetchLeadData = async () => {
@@ -154,72 +175,82 @@ export const LRVideo = () => {
     }
   };
 
-  // State to manage form data
-  const [videoData, setVideoData] = useState({
-    dateVideoRecorded: "",
-    description: "",
-    videoSrc: "",
-    leadReturnId: "",
-    filename: ""  
-  });
-
   const handleInputChange = (field, value) => {
     setVideoData({ ...videoData, [field]: value });
   };
 
-  const handleAddVideo = async () => {
-    if (!file || !videoData.dateVideoRecorded || !videoData.description || !videoData.leadReturnId) {
-      alert("Please fill in all required fields and select a file.");
+   const handleAddVideo = async () => {
+    // Validation:
+    if (
+      videoData.isLink
+        ? !videoData.link.trim() || !videoData.leadReturnId || !videoData.dateVideoRecorded
+        : !file || !videoData.leadReturnId || !videoData.dateVideoRecorded || !videoData.description
+    ) {
+      alert("Please fill in all required fields and either select a file or enter a valid link.");
       return;
     }
-  
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("leadNo", selectedLead?.leadNo);
-    formData.append("description", selectedLead?.leadName);
-    formData.append("enteredBy", localStorage.getItem("loggedInUser"));
-    formData.append("caseName", selectedCase?.caseName);
-    formData.append("caseNo", selectedCase?.caseNo);
-    formData.append("leadReturnId", videoData.leadReturnId);
-    formData.append("enteredDate", new Date().toISOString());
-    formData.append("dateVideoRecorded", videoData.dateVideoRecorded);
-    formData.append("videoDescription", videoData.description);
-  
-    const token = localStorage.getItem("token");
-  
+
+    // Build FormData
+    const fd = new FormData();
+    if (!videoData.isLink) {
+      fd.append("file", file);
+    }
+    fd.append("leadNo", selectedLead.leadNo);
+    fd.append("description", selectedLead.leadName);
+    fd.append("enteredBy", localStorage.getItem("loggedInUser"));
+    fd.append("caseName", selectedCase.caseName);
+    fd.append("caseNo", selectedCase.caseNo);
+    fd.append("leadReturnId", videoData.leadReturnId);
+    fd.append("enteredDate", new Date().toISOString());
+    fd.append("dateVideoRecorded", videoData.dateVideoRecorded);
+    fd.append("videoDescription", videoData.description);
+    fd.append("accessLevel", videoData.accessLevel);
+
+    // Link fields
+    fd.append("isLink", videoData.isLink);
+    if (videoData.isLink) {
+      fd.append("link", videoData.link.trim());
+    }
+
     try {
-      const response = await api.post(
+      const token = localStorage.getItem("token");
+      await api.post(
         "/api/lrvideo/upload",
-        formData,
+        fd,
         {
           headers: {
-            "Content-Type": undefined,  
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token}`
+            // ⇢ no Content-Type: let browser set multipart/form-data boundary
           },
+          transformRequest: [(data, headers) => {
+            delete headers["Content-Type"];
+            return data;
+          }]
         }
       );
-  
-      const savedVideo = response.data.video;
-      setVideos((prev) => [
-        ...prev,
-        {
-          dateEntered: formatDate(savedVideo.enteredDate),
-          returnId: savedVideo.leadReturnId,
-          dateVideoRecorded: formatDate(savedVideo.dateVideoRecorded),
-          description: savedVideo.videoDescription,
-          videoSrc: `${BASE_URL}/uploads/${savedVideo.filename}`,
-        },
-      ]);
-  
+
+      // Re-fetch video list
+      await fetchVideos();
+
+      // Reset form
       setVideoData({
         dateVideoRecorded: "",
-        description: "",
-        videoSrc: "",
         leadReturnId: "",
+        description: "",
+        isLink: false,
+        link: "",
+        videoSrc: "",
+        filename: "",
+        accessLevel: "Everyone"
       });
       setFile(null);
-    } catch (error) {
-      console.error("Error uploading video:", error);
+
+      // Clear native file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch (err) {
+      console.error("Error uploading video:", err);
       alert("Failed to upload video.");
     }
   };
@@ -266,20 +297,23 @@ export const LRVideo = () => {
                       );
                   
                       const mappedVideos = res.data.map((video) => ({
-                        id: video._id, 
-                        dateEntered: formatDate(video.enteredDate),
-                        returnId: video.leadReturnId,
-                        dateVideoRecorded: formatDate(video.dateVideoRecorded),
-                        description: video.videoDescription,
-                        videoSrc: `${BASE_URL}/uploads/${video.filename}`,
-                        rawDateVideoRecorded: video.dateVideoRecorded,
-                        filename: video.filename,  
-                        originalName: video.originalName
-                      }));
+        id: video._id,
+        dateEntered: formatDate(video.enteredDate),
+        returnId: video.leadReturnId,
+        dateVideoRecorded: formatDate(video.dateVideoRecorded),
+        rawDateVideoRecorded: video.dateVideoRecorded,
+        description: video.videoDescription,
+        filename: video.filename,       // needed to construct a download URL
+        originalName: video.originalName || "",
+        videoSrc: `${BASE_URL}/uploads/${video.filename}`,
+        link: video.link || "",
+        isLink: video.isLink,
+        accessLevel: video.accessLevel || "Everyone"
+      }));
 
                       const withAccess = mappedVideos.map(r => ({
                         ...r,
-                        access: r.access ?? "Everyone"
+                        accessLevel: r.accessLevel ?? "Everyone"
                       }));
                   
                       setVideos(withAccess);
@@ -291,70 +325,118 @@ export const LRVideo = () => {
                   const handleAccessChange = (idx, newAccess) => {
                     setVideos(rs => {
                       const copy = [...rs];
-                      copy[idx] = { ...copy[idx], access: newAccess };
+                      copy[idx] = { ...copy[idx], accessLevel: newAccess };
                       return copy;
                     });
                   };
                     const isCaseManager = 
     selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";  
                   
-                  const handleEditVideo = idx => {
-                    const v = videos[idx];
-                    setEditingIndex(idx);
-                    setVideoData({
-                      dateVideoRecorded: new Date(v.rawDateVideoRecorded)
-                                            .toISOString().slice(0,10),
-                      leadReturnId:      v.returnId,
-                      description:       v.description,
-                      videoSrc:          v.videoSrc,
-                      filename:          v.filename  
+                  const handleEditVideo = (idx) => {
+    const v = videos[idx];
+    setEditingIndex(idx);
 
-                    });
-                    setFile(null);
-                  };
+    // Clear any leftover file in <input>
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    setFile(null);
+
+    setVideoData({
+      dateVideoRecorded: new Date(v.rawDateVideoRecorded).toISOString().slice(0, 10),
+      leadReturnId: v.returnId,
+      description: v.description,
+      isLink: v.isLink,
+      link: v.isLink ? v.link : "",
+      videoSrc: v.isLink ? "" : v.videoSrc,
+      filename: v.isLink ? "" : v.originalName,
+      accessLevel: v.accessLevel || "Everyone"
+    });
+  };
                   
                   //  B) on “Update Video”
-                  const handleUpdateVideo = async () => {
-                    if (editingIndex === null) return;
-                    const v = videos[editingIndex];
-                    const fd = new FormData();
-                    fd.append("leadReturnId",    videoData.leadReturnId);
-                    fd.append("dateVideoRecorded", videoData.dateVideoRecorded);
-                    fd.append("videoDescription",  videoData.description);
-                    if (file) fd.append("file", file);
-                  
-                    try {
-                      await api.put(
-                        `/api/lrvideo/${v.id}`, 
-                        fd,
-                        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-                      );
-                      await fetchVideos();
-                    } catch(err) {
-                      console.error(err);
-                      alert("Failed to update video");
-                    } finally {
-                      setEditingIndex(null);
-                      setVideoData({ dateVideoRecorded:"", leadReturnId:"", description:"", videoSrc:"" });
-                      setFile(null);
-                    }
-                  };
+                   const handleUpdateVideo = async () => {
+    if (editingIndex === null) return;
+    const v = videos[editingIndex];
+
+    // Validation for “link” mode
+    if (videoData.isLink && !videoData.link.trim()) {
+      alert("Please enter a valid link.");
+      return;
+    }
+
+    // Build FormData
+    const fd = new FormData();
+    fd.append("leadReturnId", videoData.leadReturnId);
+    fd.append("dateVideoRecorded", videoData.dateVideoRecorded);
+    fd.append("videoDescription", videoData.description);
+    fd.append("accessLevel", videoData.accessLevel);
+    fd.append("isLink", videoData.isLink);
+
+    if (videoData.isLink) {
+      fd.append("link", videoData.link.trim());
+    } else if (file) {
+      fd.append("file", file);
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      await api.put(
+        `/api/lrvideo/${v.id}`,
+        fd,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          transformRequest: [(data, headers) => {
+            delete headers["Content-Type"];
+            return data;
+          }]
+        }
+      );
+
+      // Re-fetch video list
+      await fetchVideos();
+
+      // Reset form
+      setEditingIndex(null);
+      setVideoData({
+        dateVideoRecorded: "",
+        leadReturnId: "",
+        description: "",
+        isLink: false,
+        link: "",
+        videoSrc: "",
+        filename: "",
+        accessLevel: "Everyone"
+      });
+      setFile(null);
+
+      // Clear native file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch (err) {
+      console.error("Error updating video:", err);
+      alert("Failed to update video.");
+    }
+  };
                   
                   //  C) on “🗑” icon
-                  const handleDeleteVideo = async idx => {
-                    if (!window.confirm("Delete this video?")) return;
-                    const v = videos[idx];
-                    try {
-                      await api.delete(
-                        `/api/lrvideo/${v.id}`,
-                        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-                      );
-                      setVideos(vs => vs.filter((_,i) => i!==idx));
-                    } catch(err) {
-                      console.error(err);
-                      alert("Failed to delete video");
-                    }
-                  };
+                   const handleDeleteVideo = async (idx) => {
+    if (!window.confirm("Delete this video?")) return;
+    const v = videos[idx];
+    try {
+      await api.delete(`/api/lrvideo/${v.id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      });
+      setVideos((prev) => prev.filter((_, i) => i !== idx));
+    } catch (err) {
+      console.error("Error deleting video:", err);
+      alert("Failed to delete video.");
+    }
+  };
+
                   
   return (
     <div className="lrvideos-container">
@@ -602,39 +684,121 @@ Case Page
               onChange={(e) => handleInputChange("description", e.target.value)}
             ></textarea>
           </div>
-          <div className="form-row-video">
-            <label className="evidence-head">Upload Video*</label>
-            <input type="file" accept="video/*" className="evidence-head" onChange={handleFileChange} />
-            {editingIndex !== null && videoData.filename && (
-    <div style={{ marginTop: 4, marginLeft: 8 }}>
-      <em>Current file:</em> {videoData.filename}
-    </div>
-  )}
-          </div>
-        </div>
-        <div className="form-buttons-video">
-        <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+           <div className="form-row-video">
+                    <label>Upload Type</label>
+                    <select
+                      value={videoData.isLink ? "link" : "file"}
+                      onChange={(e) =>
+                        setVideoData((prev) => ({
+                          ...prev,
+                          isLink: e.target.value === "link",
+                          link: "" // clear link if switching back to file
+                        }))
+                      }
+                    >
+                      <option value="file">File</option>
+                      <option value="link">Link</option>
+                    </select>
+                  </div>
 
-className="save-btn1"
-onClick={editingIndex!==null ? handleUpdateVideo : handleAddVideo}
->
-{editingIndex!==null ? "Update Video" : "Add Video"}
-</button>
+                  {/* If link‐mode, show a text input for the URL */}
+                  {videoData.isLink ? (
+                    <div className="form-row-video">
+                      <label>Paste Link*:</label>
+                      <input
+                        type="text"
+                        placeholder="https://..."
+                        value={videoData.link}
+                        onChange={(e) =>
+                          setVideoData((prev) => ({
+                            ...prev,
+                            link: e.target.value
+                          }))
+                        }
+                      />
+                    </div>
+                  ) : (
+                    /* Otherwise, file‐mode: */
+                    <div className="form-row-video">
+                      <label>
+                        {editingIndex !== null
+                          ? "Replace Video (optional)"
+                          : "Upload Video*"}
+                      </label>
+                      <input
+                        type="file"
+                        accept="video/*"
+                        ref={fileInputRef}                 // ← attach the ref
+                        onChange={handleFileChangeWrapper}
+                      />
+                      {/* If we’re editing and we already had a filename, show it */}
+                      {editingIndex !== null && videoData.filename && (
+                        <div className="current-filename">
+                          Current File: {videoData.filename}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-{editingIndex!==null && (
-  <button
-    className="save-btn1"
-    onClick={() => {
-      setEditingIndex(null);
-      setVideoData({ dateVideoRecorded:"", leadReturnId:"", description:"", videoSrc:"" });
-      setFile(null);
-    }}
-  >
-    Cancel
-  </button>
-)}
+                  {/* Access level dropdown */}
+                  <div className="form-row-video">
+                    <label>Access Level</label>
+                    <select
+                      value={videoData.accessLevel}
+                      onChange={(e) =>
+                        setVideoData((prev) => ({
+                          ...prev,
+                          accessLevel: e.target.value
+                        }))
+                      }
+                    >
+                      <option value="Everyone">Everyone</option>
+                      <option value="Case Manager">Case Manager Only</option>
+                    </select>
+                  </div>
+                </div>
+      
+     <div className="form-buttons-video">
+                  <button
+                    disabled={
+                      selectedLead?.leadStatus === "In Review" ||
+                      selectedLead?.leadStatus === "Completed"
+                    }
+                    className="save-btn1"
+                    onClick={
+                      editingIndex !== null
+                        ? handleUpdateVideo
+                        : handleAddVideo
+                    }
+                  >
+                    {editingIndex !== null ? "Update Video" : "Add Video"}
+                  </button>
 
-        </div>
+                  {editingIndex !== null && (
+                    <button
+                      className="save-btn1"
+                      onClick={() => {
+                        setEditingIndex(null);
+                        setVideoData({
+                          dateVideoRecorded: "",
+                          leadReturnId: "",
+                          description: "",
+                          isLink: false,
+                          link: "",
+                          videoSrc: "",
+                          filename: "",
+                          accessLevel: "Everyone"
+                        });
+                        setFile(null);
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = "";
+                        }
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
 
         {/* Uploaded Video Preview */}
         <div className="uploaded-video">
@@ -677,16 +841,27 @@ onClick={editingIndex!==null ? handleUpdateVideo : handleAddVideo}
                 <td>{video.dateEntered}</td>
                 <td>{video.returnId} </td>
                 <td>{video.dateVideoRecorded}</td>
-                  <td>
-                                                <a
-                                     href={`${BASE_URL}/uploads/${video.filename}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="link-button"
-                                  >
-                                    {video.originalName}
-                                  </a>
-                                  </td>
+                 <td>
+                          {video.isLink ? (
+                            <a
+                              href={video.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="link-button"
+                            >
+                              {video.link}
+                            </a>
+                          ) : (
+                            <a
+                              href={`${BASE_URL}/uploads/${video.filename}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="link-button"
+                            >
+                              {video.originalName || "Download"}
+                            </a>
+                          )}
+                        </td>
                 <td>{video.description}</td>
                 <td>
                   <div classname = "lr-table-btn">
@@ -714,7 +889,7 @@ onClick={editingIndex!==null ? handleUpdateVideo : handleAddVideo}
                 {isCaseManager && (
           <td>
             <select
-              value={video.access}
+              value={video.accessLevel}
               onChange={e => handleAccessChange(index, e.target.value)}
             >
               <option value="Everyone">Everyone</option>
