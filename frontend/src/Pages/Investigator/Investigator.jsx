@@ -30,7 +30,7 @@ export const Investigator = () => {
     const [remainingDaysFilter, setRemainingDaysFilter] = useState("");
   const [flagsFilter, setFlagsFilter] = useState("");
   const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
-  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+  const { setSelectedCase, selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
    const [showSelectModal, setShowSelectModal] = useState(false);
     const [pendingRoute, setPendingRoute]   = useState(null);
     const [showAlert, setShowAlert] = useState(false);
@@ -180,23 +180,34 @@ const handleLeadClick = (lead) => {
     const handleCaseClick = (caseDetails) => {
       navigate("/CasePageManager", { state: { caseDetails } }); // Pass case details via state
     };
-    const handleLRClick = (lead) => {
-      setSelectedLead({
-          leadNo: lead.leadNo,
-          incidentNo: lead.incidentNo,
-          leadName: lead.description,
-          dueDate: lead.dueDate || "N/A",
-          priority: lead.priority || "Medium",
-          flags: lead.flags || [],
-          assignedOfficers: lead.assignedOfficers || [],
-          leadStatus: lead.leadStatus,
-          caseName: lead.caseName,
-          caseNo: lead.caseNo
-      });
-    
-      // Navigate to Lead Review Page
-      navigate("/LRInstruction", { state: { leadDetails: lead, caseDetails: selectedCase } });
-    };
+  const handleLRClick = (lead) => {
+  // 1. Build caseDetails and leadDetails
+  const caseDetails = {
+    caseNo:   lead.caseNo,
+    caseName: lead.caseName,
+    role: "Investigator"
+  };
+  const leadDetails = {
+    leadNo:   lead.id,
+    leadName: lead.description
+  };
+
+  // 2. Update context
+  setSelectedCase(caseDetails);
+  setSelectedLead(leadDetails);
+
+  // 3. Persist role if needed (e.g. "Case Manager")
+  localStorage.setItem("role", "Investigator");
+
+  // 4. Navigate to LRInstruction, passing both objects via state
+  navigate("/LRInstruction", {
+    state: {
+      caseDetails,
+      leadDetails
+    }
+  });
+};
+
 
     const handleNavigation = (route) => {
       navigate(route); // Navigate to respective page

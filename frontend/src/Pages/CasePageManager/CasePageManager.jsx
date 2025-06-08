@@ -32,6 +32,8 @@ export const CasePageManager = () => {
   const [flagsFilter, setFlagsFilter] = useState("");
   const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
   const [leadLogCount, setLeadLogCount] = useState(0);
+  const [investigatorsDropdownOpen, setInvestigatorsDropdownOpen] = useState(false);
+ const [loading, setLoading] = useState(false);
 
     const [showFilter, setShowFilter] = useState(false);
   const [showSort, setShowSort] = useState(false);
@@ -45,6 +47,9 @@ export const CasePageManager = () => {
 
   const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
   const isSupervisor = selectedCase.role === "Detective Supervisor";
+
+    const [allUsers, setAllUsers] = useState([]);
+  const [selectedInvestigators, setSelectedInvestigators] = useState([]);
 
 
     const [activeTab, setActiveTab] = useState("allLeads"); // Default to All Leads tab
@@ -60,11 +65,34 @@ export const CasePageManager = () => {
     });
 
     useEffect(() => {
+    async function fetchUsers() {
+      try {
+        const token = localStorage.getItem("token");
+        const { data } = await api.get("/api/users/usernames", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        // Assume data.users is an array of { username, firstName, lastName, role, … }
+        setAllUsers(data.users || []);
+      } catch (err) {
+        console.error("Could not load user list for investigators:", err);
+      }
+    }
+    fetchUsers();
+  }, []);
+
+    useEffect(() => {
       if (!selectedCase?.caseNo) return;
       api.get(`/api/cases/${selectedCase.caseNo}/team`)
         .then(({ data }) => setTeam(data))
         .catch(console.error);
     }, [selectedCase.caseNo]);
+
+
+      useEffect(() => {
+    if (team.investigators && Array.isArray(team.investigators)) {
+      setSelectedInvestigators(team.investigators);
+    }
+  }, [team.investigators]);
 
   console.log("selectedLead", selectedLead);
   
@@ -438,6 +466,92 @@ const handleSelectLead = (lead) => {
       ],
     }));
   };
+
+  const saveInvestigators = async () => {
+  try {
+    setLoading(true);
+    setError("");
+
+    const token = localStorage.getItem("token");
+    const leadData = selectedLead;
+
+    // 1) Extract the list of usernames that were already assigned to this lead
+    const previousUsernames = Array.isArray(leadData.assignedTo)
+      ? leadData.assignedTo.map((item) => item.username)
+      : [];
+
+    // 2) Figure out which investigators were newly added
+    const newlyAdded = selectedInvestigators.filter(
+      (uname) => !previousUsernames.includes(uname)
+    );
+
+    // 3) Build a new “assignedTo” array of { username, status } for the lead payload.
+    //    If a user was already on leadData.assignedTo, preserve their existing status;
+    //    otherwise default to "pending".
+    const processedAssignedTo = selectedInvestigators.map((username) => {
+      const existing = Array.isArray(leadData.assignedTo)
+        ? leadData.assignedTo.find((item) => item.username === username)
+        : null;
+
+      return {
+        username,
+        status: existing?.status || "pending",
+      };
+    });
+
+    // 4) Merge “assignedTo” into the full lead payload.
+    //    (You may already have other fields in leadData that you need to send,
+    //     so we spread them here, then overwrite assignedTo.)
+    const processedLeadData = {
+      ...leadData,
+      assignedTo: processedAssignedTo,
+    };
+
+    // 5) Fire the PUT to your lead-update endpoint (instead of /api/cases/team)
+    //    – the same pattern as your handleSave:
+    const url = `/api/lead/update/${leadData.leadNo}/` +
+                `${encodeURIComponent(leadData.description)}/` +
+                `${leadData.caseNo}/` +
+                `${encodeURIComponent(leadData.caseName)}`;
+
+    await api.put(
+      url,
+      processedLeadData,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // 6) For each investigator who was just added, send a notification
+    for (let username of newlyAdded) {
+      await api.post(
+        "/api/notifications",
+        {
+          notificationId: Date.now().toString(),
+          assignedBy: signedInOfficer,
+          assignedTo: [{ username }],
+          action1: "assigned you to a new lead",
+          post1: `${leadData.leadNo}: ${leadData.description}`,
+          caseNo: leadData.caseNo,
+          caseName: leadData.caseName,
+          leadNo: leadData.leadNo,
+          leadName: leadData.description,
+          caseStatus: selectedCase.caseStatus || "Open",
+          type: "Lead",
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    }
+
+    alert("Investigators updated on this lead successfully!");
+  } catch (err) {
+    console.error("Save failed:", err);
+    setError("Failed to save changes.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
 
 
 //   useEffect(() => {
@@ -1169,17 +1283,99 @@ Save
 <td>Case Manager</td>
 <td>{team.caseManager || "—"}</td>
 </tr>
-<tr>
+{/* <tr>
 <td>Investigator{team.investigators.length > 1 ? "s" : ""}</td>
 <td>
 {team.investigators.length
 ? team.investigators.join(", ")
 : "None assigned"}
 </td>
-</tr>
+</tr> */}
+
+ <tr>
+        <td>
+          Investigator{team.investigators.length > 1 ? "s" : ""}
+        </td>
+        <td>
+          {/*
+            Only show editable “dropdown with checkboxes” if role is Case Manager
+            or Detective Supervisor. Otherwise, just display plain text.
+          */}
+          {(selectedCase.role === "Case Manager" ||
+            selectedCase.role === "Detective Supervisor") ? (
+            <div className="custom-dropdown">
+              {/* 1) Header: shows currently selected investigators or placeholder */}
+              <div
+                className="dropdown-header"
+                onClick={() =>
+                  setInvestigatorsDropdownOpen(!investigatorsDropdownOpen)
+                }
+              >
+                {selectedInvestigators.length > 0
+                  ? selectedInvestigators
+                      .map((username) => {
+                        // Find full name from allUsers
+                        const u = allUsers.find(
+                          (x) => x.username === username
+                        );
+                        return u
+                          ? `${u.firstName} ${u.lastName} (${u.username})`
+                          : username;
+                      })
+                      .join(", ")
+                  : "Select Investigators"}
+
+                <span className="dropdown-icon">
+                  {investigatorsDropdownOpen ? "▲" : "▼"}
+                </span>
+              </div>
+
+              {/* 2) Options: only visible when dropdown is open */}
+              {investigatorsDropdownOpen && (
+                <div className="dropdown-options">
+                  {allUsers.map((user) => (
+                    <div key={user.username} className="dropdown-item">
+                      <input
+                        type="checkbox"
+                        id={`inv-${user.username}`}
+                        value={user.username}
+                        checked={selectedInvestigators.includes(user.username)}
+                        onChange={(e) => {
+                          const next = e.target.checked
+                            ? [...selectedInvestigators, user.username]
+                            : selectedInvestigators.filter(
+                                (u) => u !== user.username
+                              );
+                          setSelectedInvestigators(next);
+                        }}
+                      />
+                      <label htmlFor={`inv-${user.username}`}>
+                        {user.firstName} {user.lastName} ({user.username})
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            // If not editable, just show comma‐separated list
+            <div>
+              {team.investigators.length
+                ? team.investigators.join(", ")
+                : "None assigned"}
+            </div>
+          )}
+        </td>
+      </tr>
 </tbody>
 </table>
 </div>
+  <div className="update-lead-btn">
+    <button className="save-btn1" onClick={saveInvestigators}>
+      Save Changes
+    </button>
+    {error && <div className="error">{error}</div>}
+  </div>
 
 <div  className="add-lead-section">
 <div><h2>Click here to add a new lead</h2></div>
