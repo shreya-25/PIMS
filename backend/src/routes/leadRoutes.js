@@ -43,7 +43,7 @@ router.put("/status/pending", verifyToken, setLeadStatusToPending);
 router.put(
   "/update/:leadNo/:description/:caseNo/:caseName",
   verifyToken,
-  roleMiddleware("CaseManager"),
+  // roleMiddleware("CaseManager"),
   updateLead
 );
 
