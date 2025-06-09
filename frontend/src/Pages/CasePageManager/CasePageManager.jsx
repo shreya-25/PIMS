@@ -467,81 +467,106 @@ const handleSelectLead = (lead) => {
     }));
   };
 
-  const saveInvestigators = async () => {
+  // const saveInvestigators = async () => {
+  // try {
+  //   setLoading(true);
+  //   setError("");
+
+  //   const token = localStorage.getItem("token");
+  //   const officers = [
+  //       // keep the supervisor & manager
+  //       { name: team.detectiveSupervisor, role: "Detective Supervisor", status: "accepted" },
+  //       { name: team.caseManager,         role: "Case Manager",         status: "accepted" },
+  //       // then each selected investigator
+  //       ...selectedInvestigators.map(username => ({
+  //         name: username,
+  //         role: "Investigator",
+  //         status: "pending"
+  //       }))
+  //     ];
+
+  //      // 2) PUT to the case‐officers endpoint
+  //     await api.put(
+  //       `/api/cases/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/officers`,
+  //       { officers },
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+
+  //      setTeam(t => ({ ...t, investigators: [...selectedInvestigators] }));
+
+  //      alert("Investigators updated on this lead successfully!");
+  //    } catch (err) {
+  //      console.error("Save failed:", err);
+  //      setError("Failed to save changes.");
+  //    } finally {
+  //      setLoading(false);
+  //    }
+  //  };
+
+const saveInvestigators = async () => {
   try {
     setLoading(true);
     setError("");
 
     const token = localStorage.getItem("token");
-    const leadData = selectedLead;
 
-    // 1) Extract the list of usernames that were already assigned to this lead
-    const previousUsernames = Array.isArray(leadData.assignedTo)
-      ? leadData.assignedTo.map((item) => item.username)
-      : [];
+    // 1) Build the full officers array for the CASE
+    const officers = [
+      { name: team.detectiveSupervisor, role: "Detective Supervisor", status: "accepted" },
+      { name: team.caseManager,         role: "Case Manager",         status: "accepted" },
+      ...selectedInvestigators.map(username => ({
+        name: username,
+        role: "Investigator",
+        status: "pending"
+      }))
+    ];
 
-    // 2) Figure out which investigators were newly added
-    const newlyAdded = selectedInvestigators.filter(
-      (uname) => !previousUsernames.includes(uname)
-    );
+    // 2) Determine who’s brand-new
+    const previous = team.investigators || [];
+    const newlyAdded = selectedInvestigators.filter(u => !previous.includes(u));
 
-    // 3) Build a new “assignedTo” array of { username, status } for the lead payload.
-    //    If a user was already on leadData.assignedTo, preserve their existing status;
-    //    otherwise default to "pending".
-    const processedAssignedTo = selectedInvestigators.map((username) => {
-      const existing = Array.isArray(leadData.assignedTo)
-        ? leadData.assignedTo.find((item) => item.username === username)
-        : null;
-
-      return {
-        username,
-        status: existing?.status || "pending",
-      };
-    });
-
-    // 4) Merge “assignedTo” into the full lead payload.
-    //    (You may already have other fields in leadData that you need to send,
-    //     so we spread them here, then overwrite assignedTo.)
-    const processedLeadData = {
-      ...leadData,
-      assignedTo: processedAssignedTo,
-    };
-
-    // 5) Fire the PUT to your lead-update endpoint (instead of /api/cases/team)
-    //    – the same pattern as your handleSave:
-    const url = `/api/lead/update/${leadData.leadNo}/` +
-                `${encodeURIComponent(leadData.description)}/` +
-                `${leadData.caseNo}/` +
-                `${encodeURIComponent(leadData.caseName)}`;
-
+    // 3) PUT to the case‐officers endpoint
     await api.put(
-      url,
-      processedLeadData,
+      `/api/cases/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/officers`,
+      { officers },
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    // 6) For each investigator who was just added, send a notification
-    for (let username of newlyAdded) {
-      await api.post(
-        "/api/notifications",
-        {
-          notificationId: Date.now().toString(),
-          assignedBy: signedInOfficer,
-          assignedTo: [{ username }],
-          action1: "assigned you to a new lead",
-          post1: `${leadData.leadNo}: ${leadData.description}`,
-          caseNo: leadData.caseNo,
-          caseName: leadData.caseName,
-          leadNo: leadData.leadNo,
-          leadName: leadData.description,
-          caseStatus: selectedCase.caseStatus || "Open",
-          type: "Lead",
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+    // 4) Update local UI state
+    setTeam(t => ({ ...t, investigators: [...selectedInvestigators] }));
+
+    // 5) Notify only the newly added
+    if (newlyAdded.length) {
+      const payload = {
+        notificationId: Date.now().toString(),
+        assignedBy:     team.caseManager,
+        assignedTo:     newlyAdded.map(name => ({ username: name, status: "pending" })),
+        action1:        "assigned you to a new case",
+        post1:          `${selectedCase.caseNo}: ${selectedCase.caseName}`,
+        caseNo:         selectedCase.caseNo,
+        caseName:       selectedCase.caseName,
+        caseStatus:     selectedCase.caseStatus || "Open",
+        type:           "Case"
+      };
+
+      try {
+        await api.post(
+          "/api/notifications",
+          payload,
+          {
+            headers: {
+              "Content-Type":  "application/json",
+              Authorization:   `Bearer ${token}`
+            }
+          }
+        );
+        console.log("✅ Notified:", newlyAdded);
+      } catch (notifErr) {
+        console.error("❌ Notification error:", notifErr.response?.data || notifErr);
+      }
     }
 
-    alert("Investigators updated on this lead successfully!");
+    alert("Investigators updated on this case successfully!");
   } catch (err) {
     console.error("Save failed:", err);
     setError("Failed to save changes.");
