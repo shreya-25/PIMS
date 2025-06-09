@@ -3,6 +3,7 @@ const router = express.Router();
 const caseController = require("../controller/caseController");
 const verifyToken = require("../middleware/authMiddleware"); // Import the middleware
 const { addOfficerToCase } = require("../controller/caseController");
+const { updateCaseOfficers } = require("../controller/caseController");
 
 // Case Routes
 
@@ -23,6 +24,12 @@ router.get("/", verifyToken, async (req, res) => {
         res.status(500).json({ message: "Internal Server Error", error: error.message });
     }
 });
+
+router.put(
+  "/:caseNo/:caseName/officers",
+  verifyToken,
+  caseController.updateCaseOfficers
+);
 
 router.put(
   "/executive-summary",

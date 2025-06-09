@@ -309,7 +309,7 @@ useEffect(() => {
         
         const [selectedReports, setSelectedReports] = useState({
           FullReport: false,
-          leadInstruction: false,
+          leadInstruction: true,
           leadReturn: false,
           leadPersons: false,
           leadVehicles: false,
@@ -875,7 +875,7 @@ Case Page
         <td>
           <div className="checkbox-grid">
             <div className="checkbox-col">
-              <label className="checkbox-label">
+              {/* <label className="checkbox-label">
                 <input
                   type="checkbox"
                   name="report"
@@ -883,7 +883,7 @@ Case Page
                   onChange={() => toggleReportSection("leadInstruction")}
                 />
                 Lead Instruction
-              </label>
+              </label> */}
               <label className="checkbox-label">
                 <input
                   type="checkbox"
