@@ -540,6 +540,49 @@ exports.addOfficerToCase = async (req, res) => {
   }
 };
 
+exports.updateCaseOfficers = async (req, res) => {
+  try {
+    const { caseNo, caseName } = req.params;
+    const { officers } = req.body;
 
+    // basic validation
+    if (!caseNo || !caseName || !Array.isArray(officers)) {
+      return res.status(400).json({
+        message: "caseNo, caseName and an array of officers are required",
+      });
+    }
+    // validate each officer object
+    for (const off of officers) {
+      if (
+        typeof off.name !== "string" ||
+        typeof off.role !== "string" ||
+        !["pending", "accepted", "declined"].includes(off.status)
+      ) {
+        return res.status(400).json({
+          message:
+            "Each officer must have a string name, a string role, and a status of 'pending'|'accepted'|'declined'",
+        });
+      }
+    }
+
+    // find the case
+    const caseDoc = await Case.findOne({ caseNo, caseName });
+    if (!caseDoc) {
+      return res.status(404).json({ message: "Case not found" });
+    }
+
+    // replace assignedOfficers
+    caseDoc.assignedOfficers = officers;
+    await caseDoc.save();
+
+    return res.status(200).json({
+      message: "Assigned officers updated successfully",
+      data: caseDoc,
+    });
+  } catch (err) {
+    console.error("❌ Error updating case officers:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
 
   
