@@ -82,6 +82,11 @@ useEffect(() => {
     return navigate(leadPicker);
   }
 }, [selectedCase, selectedLead, navigate]);
+
+const getManagerName      = () => caseDetails.assignedOfficers.find(o=>o.role==="Case Manager")?.name;
+const getInvestigatorNames= () => caseDetails.assignedOfficers
+                                  .filter(o=>o.role==="Investigator")
+                                  .map(o=>o.name);
       
         const formatDate = (dateString) => {
           if (!dateString) return "";
@@ -463,6 +468,26 @@ useEffect(() => {
           }));
           
           alert("Lead Return submitted and status set to 'In Review'");
+              const manager = getManagerName();
+        if (manager) {
+          const payload = {
+            notificationId: Date.now().toString(),
+            assignedBy:     localStorage.getItem("officerName") || "Unknown Officer",
+            assignedTo:     [{ username: manager, status: "pending" }],
+            action1:        "submitted a lead return for review",
+            post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
+            caseNo:         selectedCase.caseNo,
+            caseName:       selectedCase.caseName,
+            leadNo:         selectedLead.leadNo,
+            leadName:       selectedLead.leadName,
+            type:           "Lead"
+          };
+          await api.post("/api/notifications", payload, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+
+        alert("Lead Return submitted and Case Manager notified.");
         } else {
           alert("Lead Return submitted but status update failed.");
         }
@@ -480,10 +505,6 @@ useEffect(() => {
   const submitReturnAndUpdate = async (newStatus) => {
     try {
       const token = localStorage.getItem("token");
-      if (!selectedLead || !selectedCase) {
-        alert("No lead or case selected!");
-        return;
-      }
   
       // --- 2) Update the leadStatus to either Complete or Pending ---
       const statusRes = await api.put(
@@ -500,12 +521,39 @@ useEffect(() => {
       if (statusRes.status === 200) {
         alert(`Lead Return submitted and status set to '${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}'`);
 
+      const human =
+        newStatus === "complete" ? "approved the lead" :
+        newStatus === "Accepted" ? "returned the lead" :
+        "reopened the lead";
+
+
         setSelectedLead((prev) => ({
           ...prev,
           leadStatus: newStatus === "complete" ? "Completed" : "Pending",
         }));
 
         setLeadStatus(newStatus === "complete" ? "Completed" : "Pending");
+         const investigators = getInvestigatorNames();
+      if (investigators.length) {
+        const payload = {
+          notificationId: Date.now().toString(),
+          assignedBy:     localStorage.getItem("officerName") || "Case Manager",
+          assignedTo:     investigators.map(u => ({ username: u, status: "pending" })),
+          action1:        human,
+          post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
+          caseNo:         selectedCase.caseNo,
+          caseName:       selectedCase.caseName,
+          leadNo:         selectedLead.leadNo,
+          leadName:       selectedLead.leadName,
+          type:           "Lead"
+        };
+        await api.post("/api/notifications", payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+
+      alert(`Lead ${human} and all investigators notified.`);
+    
 
       } else {
         alert("Return submitted but status update failed");
