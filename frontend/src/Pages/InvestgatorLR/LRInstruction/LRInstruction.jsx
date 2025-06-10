@@ -472,9 +472,9 @@ Case Page
                 <input
                   type="text"
                   className="input-field"
-                  value={leadData.summary}
-                  onChange={(e) => handleInputChange('summary', e.target.value)}
-                  placeholder="Enter Lead Summary"
+                  value={leadData.description}
+                  onChange={(e) => handleInputChange('leadDescription', e.target.value)}
+                  placeholder="Enter Lead Log Summary"
                 />
               </td>
             </tr>
@@ -483,9 +483,9 @@ Case Page
               <td>
                 <textarea
                   className="input-field"
-                  value={leadData.description}
-                  onChange={(e) => handleInputChange('leadDescription', e.target.value)}
-                  placeholder="Enter Lead Description"
+                  value={leadData.summary}
+                  onChange={(e) => handleInputChange('summary', e.target.value)}
+                  placeholder="Enter Lead Instruction"
                 ></textarea>
               </td>
             </tr>
