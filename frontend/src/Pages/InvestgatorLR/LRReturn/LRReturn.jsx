@@ -144,7 +144,7 @@ const [username, setUsername] = useState("");
     fetchLeadData();
   }, [selectedLead, selectedCase]);
 
-   const handleSubmitReport = async () => {
+    const handleSubmitReport = async () => {
     try {
       const token = localStorage.getItem("token");
 
@@ -196,11 +196,33 @@ const [username, setUsername] = useState("");
         if (statusResponse.status === 200) {
           setLeadStatus("In Review");
 
-          setSelectedLead(prev => ({
+            setSelectedLead(prev => ({
             ...prev,
             leadStatus: "In Review"
           }));
+          
           alert("Lead Return submitted and status set to 'In Review'");
+        const manager    = leadData.assignedBy;                  // string username
+        const investigators = (leadData.assignedTo || []).map(a => a.username);
+        if (manager) {
+          const payload = {
+            notificationId: Date.now().toString(),
+            assignedBy:     localStorage.getItem("loggedInUser"),
+            assignedTo:     [{ username: manager, status: "pending" }],
+            action1:        "submitted a lead return for review",
+            post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
+            caseNo:         selectedCase.caseNo,
+            caseName:       selectedCase.caseName,
+            leadNo:         selectedLead.leadNo,
+            leadName:       selectedLead.leadName,
+            type:           "Lead"
+          };
+          await api.post("/api/notifications", payload, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+
+        alert("Lead Return submitted and Case Manager notified.");
         } else {
           alert("Lead Return submitted but status update failed.");
         }
