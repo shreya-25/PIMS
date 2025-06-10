@@ -1065,7 +1065,7 @@ Case Page
   <div className="form-buttons-finish">
     <button
       className="save-btn1"
-      onClick={() => submitReturnAndUpdate("Accepted")}
+      onClick={() => submitReturnAndUpdate("pending")}
     >
       Reopen
     </button>
@@ -1076,7 +1076,7 @@ Case Page
   isCaseManager ? (
     <div className="form-buttons-finish">
       <button className="save-btn1" onClick={() => submitReturnAndUpdate("complete")}>Approve</button>
-      <button className="save-btn1" onClick={() => submitReturnAndUpdate("Accepted")}>Return</button>
+      <button className="save-btn1" onClick={() => submitReturnAndUpdate("pending")}>Return</button>
     </div>
   ) : (
     <div className="form-buttons-finish">
