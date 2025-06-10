@@ -82,11 +82,6 @@ useEffect(() => {
     return navigate(leadPicker);
   }
 }, [selectedCase, selectedLead, navigate]);
-
-const getManagerName      = () => caseDetails.assignedOfficers.find(o=>o.role==="Case Manager")?.name;
-const getInvestigatorNames= () => caseDetails.assignedOfficers
-                                  .filter(o=>o.role==="Investigator")
-                                  .map(o=>o.name);
       
         const formatDate = (dateString) => {
           if (!dateString) return "";
@@ -468,11 +463,12 @@ const getInvestigatorNames= () => caseDetails.assignedOfficers
           }));
           
           alert("Lead Return submitted and status set to 'In Review'");
-              const manager = getManagerName();
+        const manager    = leadData.assignedBy;                  // string username
+        const investigators = (leadData.assignedTo || []).map(a => a.username);
         if (manager) {
           const payload = {
             notificationId: Date.now().toString(),
-            assignedBy:     localStorage.getItem("officerName") || "Unknown Officer",
+            assignedBy:     localStorage.getItem("loggedInUser"),
             assignedTo:     [{ username: manager, status: "pending" }],
             action1:        "submitted a lead return for review",
             post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
@@ -523,21 +519,21 @@ const getInvestigatorNames= () => caseDetails.assignedOfficers
 
       const human =
         newStatus === "complete" ? "approved the lead" :
-        newStatus === "Accepted" ? "returned the lead" :
-        "reopened the lead";
+        newStatus === "Accepted" ? "returned the lead" : "reopened the lead";
 
 
         setSelectedLead((prev) => ({
           ...prev,
-          leadStatus: newStatus === "complete" ? "Completed" : "Pending",
+          leadStatus: newStatus === "complete" ? "Completed" : "Accepted",
         }));
 
-        setLeadStatus(newStatus === "complete" ? "Completed" : "Pending");
-         const investigators = getInvestigatorNames();
+        setLeadStatus(newStatus === "complete" ? "Completed" : "Accepted");
+        const investigators = (leadData.assignedTo || []).map(a => a.username);
+        const managerName    = leadData.assignedBy;
       if (investigators.length) {
         const payload = {
           notificationId: Date.now().toString(),
-          assignedBy:     localStorage.getItem("officerName") || "Case Manager",
+          assignedBy:     localStorage.getItem("loggedInUser"),
           assignedTo:     investigators.map(u => ({ username: u, status: "pending" })),
           action1:        human,
           post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
