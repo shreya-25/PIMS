@@ -254,6 +254,7 @@ useEffect(() => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setCaseTeam({
+        detectiveSupervisor: resp.data.detectiveSupervisor,
         caseManager: resp.data.caseManager,
         investigators: resp.data.investigators
       });
@@ -334,33 +335,93 @@ const handleGenerateLead = async () => {
       const newlyAdded = leadData.assignedOfficer.filter(u =>!caseTeam.investigators.includes(u)
    );
 
-  if (newlyAdded.length) {
-      const officerPayload = {
-        caseNo:   selectedCase.caseNo,
-        caseName: selectedCase.caseName,
-        assignedOfficers: newlyAdded.map(u => ({
-          name:   u,               // officer’s username
-          role:   "Investigator",  // must match your enum
-          status: "pending"        // default state
-        }))
-      };
-      // single PUT with required fields
-      await api.put(
-        `/api/cases/${encodeURIComponent(selectedCase.caseNo)}/${encodeURIComponent(selectedCase.caseName)}/officers`,
-        officerPayload,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+  // if (newlyAdded.length) {
+  //     const officerPayload = {
+  //       caseNo:   selectedCase.caseNo,
+  //       caseName: selectedCase.caseName,
+  //       assignedOfficers: newlyAdded.map(u => ({
+  //         name:   u,               // officer’s username
+  //         role:   "Investigator",  // must match your enum
+  //         status: "pending"        // default state
+  //       }))
+  //     };
+  //     // single PUT with required fields
+  //     await api.put(
+  //       `/api/cases/${encodeURIComponent(selectedCase.caseNo)}/${encodeURIComponent(selectedCase.caseName)}/officers`,
+  //       officerPayload,
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
 
-      // refresh your local caseTeam
-      const teamResp = await api.get(
-        `/api/cases/${selectedCase.caseNo}/team`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setCaseTeam({
-        caseManager:   teamResp.data.caseManager,
-        investigators: teamResp.data.investigators
-      });
-    }
+  //     // refresh your local caseTeam
+  //     const teamResp = await api.get(
+  //       `/api/cases/${selectedCase.caseNo}/team`,
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+  //     setCaseTeam({
+  //       caseManager:   teamResp.data.caseManager,
+  //       investigators: teamResp.data.investigators
+  //     });
+  //   }
+
+      if (newlyAdded.length) {
+        // 2) build the full case‐officers array
+        const updatedInvestigators = [
+          ...caseTeam.investigators,
+          ...newlyAdded
+        ];
+        // const officers = [
+        //   // keep your existing Detective Supervisor & Case Manager
+        //   { name: caseTeam.detectiveSupervisor, role: "Detective Supervisor", status: "accepted" },
+        //   { name: caseTeam.caseManager,         role: "Case Manager",         status: "accepted" },
+        //   // now all investigators (old + new)
+        //   ...updatedInvestigators.map(name => ({
+        //     name,
+        //     role:   "Investigator",
+        //     status: "pending"
+        //   }))
+        // ];
+
+        const officers = [
+                    // only add Supervisor if we actually fetched one
+                    ...(caseTeam.detectiveSupervisor
+                      ? [{ name: caseTeam.detectiveSupervisor,
+                            role: "Detective Supervisor",
+                            status: "accepted" }]
+                      : []),
+
+                    // only add CM if present
+                    ...(caseTeam.caseManager
+                      ? [{ name: caseTeam.caseManager,
+                            role: "Case Manager",
+                            status: "accepted" }]
+                      : []),
+
+                    // then all investigators (old + new)
+                    ...updatedInvestigators.map(name => ({
+                      name,
+                      role:   "Investigator",
+                      status: "pending"
+                    }))
+                  ];
+
+
+        // 3) push them in one PUT to your /officers route
+        await api.put(
+          `/api/cases/${encodeURIComponent(selectedCase.caseNo)}/${encodeURIComponent(selectedCase.caseName)}/officers`,
+          { officers },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        // 4) refresh local caseTeam so UI stays in sync
+        const teamResp = await api.get(
+          `/api/cases/${selectedCase.caseNo}/team`,
+                    { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setCaseTeam({
+          caseManager:   teamResp.data.caseManager,
+          investigators: teamResp.data.investigators
+        });
+      }
 
     // 3) notify each of them
     await Promise.all(newlyAdded.map(officerUsername  =>

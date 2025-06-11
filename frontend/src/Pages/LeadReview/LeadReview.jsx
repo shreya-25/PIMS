@@ -26,9 +26,10 @@ export const LeadReview = () => {
   const leadEntries = location.state?.leadEntries || [];
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-    const [pendingRoute, setPendingRoute]   = useState(null);
+  const [pendingRoute, setPendingRoute]   = useState(null);
+  const [caseTeam, setCaseTeam] = useState({ detectiveSupervisor: "", caseManager: "", investigators: [] });
 
-        const signedInOfficer = localStorage.getItem("loggedInUser");
+  const signedInOfficer = localStorage.getItem("loggedInUser");
 
     useEffect(() => {
     // as soon as we land on this screen, jump to top
@@ -69,6 +70,22 @@ export const LeadReview = () => {
     Returned:               5,  // "Lead Returned"
     Completed:              6,  // "Lead Completed"
   };
+
+  // pull in supervisor / manager / investigators for this case
+useEffect(() => {
+  if (!selectedCase?.caseNo) return;
+  const token = localStorage.getItem("token");
+  api.get(`/api/cases/${selectedCase.caseNo}/team`, {
+    headers: { Authorization: `Bearer ${token}` }
+  }).then(resp => {
+    setCaseTeam({
+      detectiveSupervisor: resp.data.detectiveSupervisor,
+      caseManager:         resp.data.caseManager,
+      investigators:       resp.data.investigators
+    });
+  }).catch(console.error);
+}, [selectedCase.caseNo]);
+
 
   // inside LeadReview()
 // const handleSave = async () => {
@@ -131,6 +148,47 @@ const handleSave = async () => {
     });
 
     const newlyAdded = assignedOfficers.filter((u) => !previousUsernames.includes(u));
+     if (newlyAdded.length) {
+       // build full investigators list (old caseTeam + new)
+       const updatedInvestigators = Array.from(new Set([
+        ...caseTeam.investigators,
+        ...newlyAdded
+      ]));
+       // assemble your officers array exactly as in CreateLead
+       const officers = [
+         ...(caseTeam.detectiveSupervisor
+            ? [{ name: caseTeam.detectiveSupervisor,
+                 role: "Detective Supervisor",
+                 status: "accepted" }]
+            : []),
+         ...(caseTeam.caseManager
+            ? [{ name: caseTeam.caseManager,
+                 role: "Case Manager",
+                 status: "accepted" }]
+            : []),
+         ...updatedInvestigators.map(name => ({
+           name,
+           role:   "Investigator",
+           status: "pending"
+         }))
+       ];
+       // push them into the case in one PUT
+       await api.put(
+         `/api/cases/${encodeURIComponent(selectedCase.caseNo)}/${encodeURIComponent(selectedCase.caseName)}/officers`,
+         { officers },
+         { headers: { Authorization: `Bearer ${token}` } }
+       );
+       // refresh your local caseTeam so the sidebar stays up-to-date
+       const teamResp = await api.get(
+         `/api/cases/${selectedCase.caseNo}/team`,
+         { headers: { Authorization: `Bearer ${token}` } }
+       );
+       setCaseTeam({
+         detectiveSupervisor: teamResp.data.detectiveSupervisor,
+         caseManager:         teamResp.data.caseManager,
+         investigators:       teamResp.data.investigators
+       });
+     }
 
     // 5) For each newly added officer, send a notification
     for (let username of newlyAdded) {
