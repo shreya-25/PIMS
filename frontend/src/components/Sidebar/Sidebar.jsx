@@ -260,7 +260,7 @@ export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   a
             onClick={() => handleCaseSelect(c)}
           >
             {/* Case title */}
-            {c.id} | {c.title}
+            Case: {c.id}
             {/* Lead count badge */}
             <span className="sidebar-number">{count}</span>
           </div>
