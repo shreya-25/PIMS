@@ -1011,7 +1011,7 @@ Case Page
                   checked={selectedReports.leadScratchpad}
                   onChange={() => toggleReportSection("leadScratchpad")}
                 />
-                Lead Scratchpad Entries
+                Lead Notes Entries
               </label>
               <label className="checkbox-label">
                 <input
