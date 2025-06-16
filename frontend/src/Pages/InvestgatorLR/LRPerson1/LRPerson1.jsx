@@ -82,7 +82,7 @@ useEffect(() => {
   const [miscDetails, setMiscDetails] = useState(person?.additionalData || []);
   
   const addNewRow = () => {
-    setMiscDetails([...miscDetails, { description: "", details: "" }]);
+    setMiscDetails([...miscDetails, { category: "", value: "" }]);
   };
 
   const handleInputChange = (index, field, value) => {
@@ -772,38 +772,46 @@ Case Page
                     } /></td>
       
                   </tr>
-            {/* Miscellaneous Section */}
-            <tr>
-              <td colSpan="4">
-                <h4>Miscellaneous Information</h4>
-                <table className="misc-table">
-                <tbody>
-            {miscDetails.map((row, index) => (
-              <tr key={index}>
-                <td>
-                  <input
-                    type="text"
-                    value={row.description}
-                    onChange={(e) =>
-                      handleInputChange(index, "description", e.target.value)
-                    }
-                  />
-                </td>
-                <td>
-                  <textarea
-                    rows="2"
-                    value={row.details}
-                    onChange={(e) =>
-                      handleInputChange(index, "details", e.target.value)
-                    }
-                  ></textarea>
-                </td>
-              </tr>
-                  ))}
-          </tbody>
-        </table>
-              </td>
-            </tr>
+                  {/* Miscellaneous Section */}
+                  <tr>
+                    <td colSpan="4">
+                      <h4>Miscellaneous Information</h4>
+                      <table className="misc-table">
+                        <thead>
+                          <tr>
+                            <th>Category</th>
+                            <th>Value</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {miscDetails.map((row, i) => (
+                            <tr key={i}>
+                              <td>
+                                <input
+                                  type="text"
+                                  placeholder="Category"
+                                  value={row.category}
+                                  onChange={e => handleInputChange(i, "category", e.target.value)}
+                                />
+                              </td>
+                              <td>
+                                <input
+                                  type="text"
+                                  placeholder="Value"
+                                  value={row.value}
+                                  onChange={e => handleInputChange(i, "value", e.target.value)}
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <button type="button" className ="save-btn1" onClick={addNewRow}>
+                        + Add Category / Value
+                      </button>
+                    </td>
+                  </tr>
+
           </tbody>
         </table>
         
