@@ -310,14 +310,18 @@ export const LRPerson = () => {
           person.address?.street1 &&
           `${person.address.street1}, ${person.address.city || ""}, ${person.address.state || ""}`,
         leadReturnId: person.leadReturnId,
-        access: "Everyone"
+        accessLevel: person.accessLevel || "Everyone"
       }));
 
       const withAccess = mappedPersons.map(r => ({
         ...r,
-        access: r.access ?? "Everyone"
+        accessLevel: r.accessLevel ?? "Everyone"
       }));
-      setPersons(withAccess);
+
+      const visible = isCaseManager
+                      ? withAccess
+                      : withAccess.filter(p => p.access === "Everyone");
+      setPersons(visible);
       setLeadPersons(personsFromApi);
       setError("");
       setLoading(false);
@@ -368,16 +372,52 @@ const handleDeletePerson = async (idx) => {
   }
 };
   
-  const handleAccessChange = (idx, newAccess) => {
-    setPersons(rs => {
-      const copy = [...rs];
-      copy[idx] = { ...copy[idx], access: newAccess };
-      return copy;
-    });
-  };
 
   const isCaseManager = 
     selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
+
+  const handleAccessChange = async (idx, newAccess) => {
+  const p     = rawPersons[idx];
+  const token = localStorage.getItem("token");
+
+  try {
+    // 1) Persist to server
+    const { data: updatedDoc } = await api.put(
+      `/api/lrperson/${selectedLead.leadNo}/${selectedCase.caseNo}/` +
+        `${p.leadReturnId}/${p.firstName}/${p.lastName}`,
+      { accessLevel: newAccess },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // 2) Swap it into rawPersons
+    const newRaw = rawPersons.map((r, i) =>
+      i === idx ? updatedDoc : r
+    );
+    setRawPersons(newRaw);
+
+    // 3) Remap to your UI shape
+    const remapped = newRaw.map(p => ({
+      returnId:    p.leadReturnId,
+      dateEntered: new Date(p.enteredDate).toLocaleDateString(),
+      name:         `${p.firstName} ${p.lastName}`,
+      phoneNo:      p.cellNumber || "N/A",
+      address:      `${p.address?.street1 || ""}, ${p.address?.city || ""}`,
+      accessLevel:  p.accessLevel || "Everyone"
+    }));
+
+    // 4) Filter again for non-CMs
+    const visible = isCaseManager
+      ? remapped
+      : remapped.filter(r => r.accessLevel === "Everyone");
+
+    setPersons(visible);
+
+  } catch (err) {
+    console.error("Failed to update accessLevel", err);
+    alert("Could not change access level. Please try again.");
+  }
+};
+
   
   return (
     <div className="person-page">
@@ -678,7 +718,7 @@ Case Page
               onChange={e => handleAccessChange(index, e.target.value)}
             >
               <option value="Everyone">Everyone</option>
-              <option value="Case Manager">Case Manager Only</option>
+              <option value="Case Manager">Only Case Manager</option>
             </select>
           </td>
         )}
