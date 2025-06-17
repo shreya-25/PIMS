@@ -243,7 +243,8 @@ const [username, setUsername] = useState("");
   results: "",
   leadReturnId: "",
   enteredDate: todayDate,
-  enteredBy: officerName?.trim()
+  enteredBy: officerName?.trim(),
+  accessLevel: "Everyone" 
 });
 
   
@@ -347,7 +348,7 @@ useEffect(() => {
         // 1. Ensure every return has an 'access' field
         const withAccess = raw.map(r => ({
           ...r,
-          access: r.access ?? "Everyone"
+          accessLevel: r.accessLevel || "Everyone"
         }));
 
         // 2. Compute the max numeric ID (for nextReturnId)
@@ -360,9 +361,9 @@ useEffect(() => {
         setMaxReturnId(maxNumericId);
 
         // 3. Filter based on role
-        const visible = selectedCase.role === "Case Manager"
+        const visible = isCaseManager
           ? withAccess
-          : withAccess.filter(r => r.access === "Everyone");
+          : withAccess.filter(r => r.accessLevel === "Everyone");
 
         // 4. Update state
         setReturns(visible);
@@ -386,12 +387,32 @@ useEffect(() => {
 
 
 // handler to change access per row
-const handleAccessChange = (idx, newAccess) => {
-  setReturns(rs => {
-    const copy = [...rs];
-    copy[idx] = { ...copy[idx], access: newAccess };
-    return copy;
-  });
+const handleAccessChange = async (idx, newAccess) => {
+  const ret = returns[idx];
+  const token = localStorage.getItem("token");
+
+  try {
+    const response = await api.patch(
+      `/api/leadReturnResult/update/${ret.leadNo}/${ret.caseNo}/${ret.leadReturnId}`,
+      { accessLevel: newAccess },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // update local state
+    setReturns(rs => {
+      const copy = [...rs];
+      copy[idx] = response.data;
+      return copy;
+    });
+    setLeadReturns(rs => {
+      const copy = [...rs];
+      copy[idx] = response.data;
+      return copy;
+    });
+  } catch (err) {
+    console.error("Failed to update accessLevel", err);
+    alert("Could not change access. Try again.");
+  }
 };
 
 // Calculate the next Return No (max return id plus one, converted back to alphabet)
@@ -479,14 +500,14 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
           leadReturnId: newReturnId,
           leadReturnResult: returnData.results,
           assignedTo: {
-    assignees: [officerName?.trim()],
-    lRStatus: "Pending"
-  },
-  assignedBy: {
-    assignee: officerName?.trim(),
-    lRStatus: "Pending"
-  },
-          accessLevel: returnData.access
+                assignees: [officerName?.trim()],
+                lRStatus: "Pending"
+              },
+              assignedBy: {
+                assignee: officerName?.trim(),
+                lRStatus: "Pending"
+              },
+          accessLevel: returnData.accessLevel
         };
   
         const createResponse = await api.post(
@@ -976,11 +997,11 @@ Case Page
         {isCaseManager && (
           <td>
             <select
-              value={ret.access}
+              value={ret.accessLevel}
               onChange={(e) => handleAccessChange(idx, e.target.value)}
             >
               <option value="Everyone">Everyone</option>
-              <option value="Case Manager">Case Manager Only</option>
+              <option value="Case Manager">Only Case Manager</option>
             </select>
           </td>
         )}
