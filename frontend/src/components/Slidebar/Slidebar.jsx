@@ -6,12 +6,14 @@ import api from "../../api"
 
 export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const managersRef = useRef(null);
+  // const dropdownRef = useRef(null);
+  const investigatorsRef = useRef(null);
    const [currentRole, setCurrentRole] = useState(""); 
   const [caseDetails, setCaseDetails] = useState({
     title: "",
     number: "",
-    managerName: "",
+    managers: [],
     detectiveSupervisor: "",
     investigators: [], // Store selected investigators
     summary: "",
@@ -21,7 +23,9 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   const [error, setError] = useState(null);
   const [allUsers, setAllUsers] = useState([]);
   
-    const { setSelectedCase, setToken } = useContext(CaseContext);
+  const { setSelectedCase, setToken } = useContext(CaseContext);
+  const [managersOpen, setManagersOpen] = useState(false);
+  const [investigatorsOpen, setInvestigatorsOpen] = useState(false);
 
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -38,6 +42,27 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
     setCaseDetails({ ...caseDetails, [name]: value });
   };
 
+    useEffect(() => {
+    function handleClickOutside(e) {
+      if (
+        managersOpen &&
+        managersRef.current &&
+        !managersRef.current.contains(e.target)
+      ) {
+        setManagersOpen(false);
+      }
+      if (
+        investigatorsOpen &&
+        investigatorsRef.current &&
+        !investigatorsRef.current.contains(e.target)
+      ) {
+        setInvestigatorsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [managersOpen, investigatorsOpen]);
+
   useEffect(() => {
     if (localStorage.getItem("loggedInUser")) {
       setCaseDetails(cd => ({
@@ -48,25 +73,28 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
     }
   }, [localStorage.getItem("loggedInUser")]);
 
-    useEffect(() => {
-    function handleClickOutside(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-      }
-    }
-    if (dropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [dropdownOpen]);
+  //   useEffect(() => {
+  //   function handleClickOutside(e) {
+  //     if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+  //       setDropdownOpen(false);
+  //     }
+  //   }
+  //   if (dropdownOpen) {
+  //     document.addEventListener("mousedown", handleClickOutside);
+  //   } else {
+  //     document.removeEventListener("mousedown", handleClickOutside);
+  //   }
+  //   return () => {
+  //     document.removeEventListener("mousedown", handleClickOutside);
+  //   };
+  // }, [dropdownOpen]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+  const toggleManagers   = () => setManagersOpen((o) => !o);
+  const toggleInvestigators = () =>
+    setInvestigatorsOpen((o) => !o);
 
   // useEffect(() => {
   //   const fetchUsers = async () => {
@@ -122,9 +150,9 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   //   setDropdownOpen(!dropdownOpen);
   // };
 
-  const toggleDropdown = () => {
-    setDropdownOpen((prev) => !prev);
-  };
+  // const toggleDropdown = () => {
+  //   setDropdownOpen((prev) => !prev);
+  // };
   
 
   const handleCheckboxChange = (e) => {
@@ -163,14 +191,14 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
     const {
       title,
       number,
-      managerName,
+      managers,
       detectiveSupervisor,
       investigators,
       summary,
       executiveCaseSummary
     } = caseDetails;
 
-    if (!title || !number || !managerName || !detectiveSupervisor) {
+    if (!title || !number || !managers || !detectiveSupervisor) {
        alert("❌ Please fill all required fields: Case Title, Number, Manager");
        return;
      }
@@ -187,7 +215,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
       role: "Case Manager",
       caseSummary: caseDetails.summary,
       executiveCaseSummary: caseDetails.executiveCaseSummary,
-      username: caseDetails.managerName,
+      managers: caseDetails.managers.map(username => ({ username })),
       detectiveSupervisor, 
       selectedOfficers: investigators.map(name => ({ name })),
     };
@@ -235,7 +263,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
       setCaseDetails({
         title: "",
         number: "",
-        managerName: "",
+        managers: [],
         investigators: [],
         summary: "",
         executiveCaseSummary: "",
@@ -358,64 +386,64 @@ if (notificationRecipients.length > 0) {
             </select>
           </div>
           )}
-           <div className="form-group">
-            <label>Case Manager Name:</label>
-            <select
-              name="managerName"
-              value={caseDetails.managerName}
-              onChange={handleInputChange}
-              className="input-field"
-            >
-              <option value="">Select Case Manager</option>
-              {allUsers.map((u) => (
-                <option key={u.username} value={u.username}>
-                  {u.firstName} {u.lastName} ({u.username})
-                </option>
-              ))}
-            </select>
-          </div>
-            
-          {/* <div className="form-group">
-            <label>Investigators Assigned:</label>
-            <div className="custom-dropdown" ref={dropdownRef}  >
-              
-              <div className="input-field" onClick={toggleDropdown}>
-                {caseDetails.investigators.length > 0 ? caseDetails.investigators.join(", ") : "Select Officers"}
-                <span className="dropdown-icon"></span>
-              </div>
-              {dropdownOpen && (
-                <div className="dropdown-options">
-                 
-               
+          
+        <div className="form-group" ref={managersRef}>
+  <label>Case Managers:</label>
+  <div className="custom-dropdown">
+    <div
+      className="input-field"
+      onClick={() => {
+        console.log("toggleManagers:", !managersOpen);
+        setManagersOpen(o => !o);
+      }}
+    >
+      {caseDetails.managers.length
+        ? caseDetails.managers.join(", ")
+        : "Select Case Managers"}
+      <span className="dropdown-icon" />
+    </div>
 
-                  {allUsers.map((officerName, index) => (
-                            <div key={index} className="dropdown-item">
-                              <input
-                                type="checkbox"
-                                id={officerName}
-                                value={officerName}
-                                checked={caseDetails.investigators.includes(officerName)}
-                                onChange={handleCheckboxChange}
-                              />
-                              <label htmlFor={officerName}>{officerName}</label>
-                            </div>
-                          ))}
-                </div>
-              )}
+    {managersOpen && (
+      <div className="dropdown-options">
+        {allUsers
+          .map(u => (
+            <div key={u.username} className="dropdown-item">
+              <label>
+                <input
+                  type="checkbox"
+                  value={u.username}
+                  checked={caseDetails.managers.includes(u.username)}
+                  onChange={e => {
+                    const { value, checked } = e.target;
+                    setCaseDetails(cd => ({
+                      ...cd,
+                      managers: checked
+                        ? [...cd.managers, value]
+                        : cd.managers.filter(x => x !== value),
+                    }));
+                  }}
+                />
+                {u.firstName} {u.lastName} ({u.username})
+              </label>
             </div>
-          </div> */}
+          ))}
+      </div>
+    )}
+  </div>
+</div>
 
-          {/* Investigators Assigned */}
-          <div className="form-group">
+
+          {/* ——— INVESTIGATORS ——— */}
+          <div className="form-group" ref={investigatorsRef}>
             <label>Investigators Assigned:</label>
-            <div className="custom-dropdown" ref={dropdownRef}>
-              <div className="input-field" onClick={toggleDropdown}>
+            <div className="custom-dropdown">
+              <div className="input-field" onClick={toggleInvestigators}>
                 {caseDetails.investigators.length > 0
                   ? caseDetails.investigators.join(", ")
                   : "Select Officers"}
                 <span className="dropdown-icon" />
               </div>
-              {dropdownOpen && (
+              {investigatorsOpen && (
                 <div className="dropdown-options">
                   {allUsers.map((u) => (
                     <div key={u.username} className="dropdown-item">
@@ -423,10 +451,16 @@ if (notificationRecipients.length > 0) {
                         type="checkbox"
                         id={`inv-${u.username}`}
                         value={u.username}
-                        checked={caseDetails.investigators.includes(
-                          u.username
-                        )}
-                        onChange={handleCheckboxChange}
+                        checked={caseDetails.investigators.includes(u.username)}
+                        onChange={(e) => {
+                          const { value, checked } = e.target;
+                          setCaseDetails((cd) => ({
+                            ...cd,
+                            investigators: checked
+                              ? [...cd.investigators, value]
+                              : cd.investigators.filter((x) => x !== value),
+                          }));
+                        }}
                       />
                       <label htmlFor={`inv-${u.username}`}>
                         {u.firstName} {u.lastName} ({u.username})

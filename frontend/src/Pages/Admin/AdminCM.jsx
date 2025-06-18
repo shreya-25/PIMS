@@ -437,9 +437,9 @@ export const AdminCM = () => {
          </div>
        </div>
       <div className="main-page-content">
-        <div className="main-page">
+        <div className="main-page-abovepart">
 
-           <NotificationCard acceptLead={acceptLead} signedInOfficer={signedInOfficer} />
+           {/* <NotificationCard acceptLead={acceptLead} signedInOfficer={signedInOfficer} /> */}
           
                 <div className= "add-case-section">
                     <h2> Click here to add a new case</h2>
@@ -475,8 +475,9 @@ export const AdminCM = () => {
               </tbody>
             </table>
           </div> */}
+          <div className = "left-content">
           <div className="stats-bar">
-          <span
+          {/* <span
             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
             onClick={() => setActiveTab("assignedLeads")}
           >
@@ -493,7 +494,7 @@ export const AdminCM = () => {
             onClick={() => setActiveTab("pendingLeadReturns")}
           >
             My Pending Lead Returns: {leads.pendingLeadReturns.length}
-          </span>
+          </span> */}
           <span
             className={`hoverable ${activeTab === "cases" ? "active" : ""}`}
             onClick={() => setActiveTab("cases")}
@@ -1092,6 +1093,7 @@ export const AdminCM = () => {
           <button className="view-all-cases-btn-admin" onClick={() => handleNavigation('/AdminCM1')}>View All Cases</button>
         </div>
       </div>
+    </div>
     </div>
     </div>
   );
