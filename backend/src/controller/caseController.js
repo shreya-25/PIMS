@@ -56,13 +56,15 @@ exports.createCase = async (req, res) => {
       caseSummary,
       executiveCaseSummary,
       selectedOfficers = [],
-      username,               // Case Manager
+      managers = [],              // Case Manager
       detectiveSupervisor     // new
     } = req.body;
 
     // --- validate required fields ---
-    if (!username) {
-      return res.status(400).json({ message: "Username is required to assign Case Manager" });
+     if (!Array.isArray(managers) || managers.length === 0) {
+      return res.status(400).json({
+        message: "At least one Case Manager is required (managers array)."
+      });
     }
     if (!detectiveSupervisor) {
       return res.status(400).json({ message: "Detective Supervisor is required" });
@@ -83,11 +85,11 @@ exports.createCase = async (req, res) => {
 
     // --- build assignedOfficers array ---
     const assignedOfficers = [
-      {
-        name: username,
+      ...managers.map(mgr => ({
+        name: mgr.username,
         role: "Case Manager",
         status: "accepted"
-      },
+      })),
       {
         name: detectiveSupervisor,
         role: "Detective Supervisor",
@@ -464,12 +466,14 @@ exports.getExecutiveCaseSummary = async (req, res) => {
   
       // pull out manager + investigators
       const detectiveSupervisor = c.assignedOfficers.find(o => o.role === "Detective Supervisor")?.name || "";
-      const caseManager = c.assignedOfficers.find(o => o.role === "Case Manager")?.name || "";
+      const caseManagers = c.assignedOfficers
+      .filter(o => o.role === "Case Manager")
+      .map(o => o.name);
       const investigators = c.assignedOfficers
         .filter(o => o.role === "Investigator")
         .map(o => o.name);
   
-      return res.json({ detectiveSupervisor, caseManager, investigators });
+      return res.json({ detectiveSupervisor, caseManagers, investigators });
     } catch (err) {
       console.error("Error in getCaseTeamByNumber:", err);
       return res.status(500).json({ message: "Server error", error: err.message });
