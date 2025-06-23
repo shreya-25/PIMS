@@ -29,56 +29,126 @@ function formatTime(dateString) {
 }
 
 
+// function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
+//   const minRowHeight = 20;
+//   doc.font("Helvetica-Bold").fontSize(10);
+//   let currentY = startY;
+
+//   let headerHeight = 20;
+//   let currentX = startX;
+//   headers.forEach((header, i) => {
+//     doc.strokeColor("#999999");
+//     doc.rect(currentX, currentY, colWidths[i], headerHeight).stroke();
+//     doc.text(header, currentX + padding, currentY + padding, {
+//       width: colWidths[i] - 2 * padding,
+//       align: "left"
+//     });
+//     currentX += colWidths[i];
+//   });
+
+//   currentY += headerHeight;
+//   doc.font("Helvetica").fontSize(10);
+
+//   rows.forEach((row) => {
+//     let maxHeight = 0;
+//     currentX = startX;
+
+//     headers.forEach((header, i) => {
+//       const cellText = row[header] || "";
+//       const cellHeight = doc.heightOfString(cellText, {
+//         width: colWidths[i] - 2 * padding,
+//         align: "left"
+//       });
+//       maxHeight = Math.max(maxHeight, cellHeight + 2 * padding);
+//     });
+
+//     maxHeight = Math.max(maxHeight, minRowHeight);
+
+//     headers.forEach((header, i) => {
+//       const cellText = row[header] || "";
+//       doc.rect(currentX, currentY, colWidths[i], maxHeight).stroke();
+//       doc.text(cellText, currentX + padding, currentY + padding, {
+//         width: colWidths[i] - 2 * padding,
+//         align: "left"
+//       });
+//       currentX += colWidths[i];
+//     });
+
+//     currentY += maxHeight;
+//   });
+
+//   return currentY;
+// }
+
 function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
   const minRowHeight = 20;
-  doc.font("Helvetica-Bold").fontSize(10);
+  const headerHeight = 20;
   let currentY = startY;
 
-  let headerHeight = 20;
+  // 1) Draw header row
+  doc.font("Helvetica-Bold").fontSize(10).fillColor("black");
   let currentX = startX;
   headers.forEach((header, i) => {
-    doc.strokeColor("#999999");
-    doc.rect(currentX, currentY, colWidths[i], headerHeight).stroke();
+    const w = colWidths[i];
+    doc.strokeColor("#999999")
+       .rect(currentX, currentY, w, headerHeight)
+       .stroke();
     doc.text(header, currentX + padding, currentY + padding, {
-      width: colWidths[i] - 2 * padding,
-      align: "left"
+      width:  w - 2*padding,
+      align:  "left"
     });
-    currentX += colWidths[i];
+    currentX += w;
   });
-
   currentY += headerHeight;
-  doc.font("Helvetica").fontSize(10);
 
-  rows.forEach((row) => {
-    let maxHeight = 0;
+  // 2) Draw body rows
+  doc.font("Helvetica").fontSize(10).fillColor("black");
+  rows.forEach(row => {
+    // 2a) Measure the max height needed by any cell in this row
+    let maxHeight = minRowHeight;
+    headers.forEach((h, i) => {
+      const text = row[h] || "";
+      const textHeight = doc.heightOfString(text, {
+        width: colWidths[i] - 2*padding,
+        align: "left"
+      });
+      maxHeight = Math.max(maxHeight, textHeight + 2*padding);
+    });
+
+    // 2b) Page-break if it won't fit
+    if (currentY + maxHeight > doc.page.height - doc.page.margins.bottom) {
+      doc.addPage();
+      currentY = doc.page.margins.top;
+    }
+
+    // 2c) Draw each cell
     currentX = startX;
+    headers.forEach((h, i) => {
+      const w = colWidths[i];
+      const text = row[h] || "";
 
-    headers.forEach((header, i) => {
-      const cellText = row[header] || "";
-      const cellHeight = doc.heightOfString(cellText, {
-        width: colWidths[i] - 2 * padding,
-        align: "left"
+      // border
+      doc.strokeColor("#999999")
+         .rect(currentX, currentY, w, maxHeight)
+         .stroke();
+
+      // text (full; row is tall enough)
+      doc.text(text, currentX + padding, currentY + padding, {
+        width:  w - 2*padding,
+        align:  "left"
       });
-      maxHeight = Math.max(maxHeight, cellHeight + 2 * padding);
+
+      currentX += w;
     });
 
-    maxHeight = Math.max(maxHeight, minRowHeight);
-
-    headers.forEach((header, i) => {
-      const cellText = row[header] || "";
-      doc.rect(currentX, currentY, colWidths[i], maxHeight).stroke();
-      doc.text(cellText, currentX + padding, currentY + padding, {
-        width: colWidths[i] - 2 * padding,
-        align: "left"
-      });
-      currentX += colWidths[i];
-    });
-
+    // advance to next row
     currentY += maxHeight;
   });
 
   return currentY;
 }
+
+
 
 function drawHardcodedContent(doc, currentY) {
   // Possibly force a new page if not enough space
@@ -325,6 +395,8 @@ function generateReport(req, res) {
     leadVideos, leadScratchpad, leadTimeline, selectedReports
   } = req.body;
 
+  console.log('📦  req.body =', JSON.stringify(req.body, null, 2));
+
   const includeAll = selectedReports && selectedReports.FullReport;
   //  const pdfUploads   = req.files.pdfFiles   || [];
   // const imageUploads = req.files.imageFiles || [];
@@ -333,9 +405,42 @@ function generateReport(req, res) {
 
   try {
     const doc = new PDFDocument({ size: "LETTER", margin: 50 });
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "inline; filename=report.pdf");
-    doc.pipe(res);
+    // res.setHeader("Content-Type", "application/pdf");
+    // res.setHeader("Content-Disposition", "inline; filename=report.pdf");
+    // doc.pipe(res);
+
+    const chunks = [];
+    doc.on("data", chunk => chunks.push(chunk));
+
+    doc.on("end", async () => {
+    try {
+      let pdfBuffer = Buffer.concat(chunks);
+
+      // find all on-disk PDFs in the enclosures
+      const pdfFiles = Array.isArray(leadEnclosures)
+        ? leadEnclosures
+            .filter(e => !e.isLink && e.filename.toLowerCase().endsWith(".pdf"))
+            .map(e => path.normalize(e.filePath))
+        : [];
+
+      // merge each one in sequence
+      for (const filePath of pdfFiles) {
+        if (fs.existsSync(filePath)) {
+          pdfBuffer = await mergeWithAnotherPDF(pdfBuffer, filePath);
+        } else {
+          console.warn(`Missing file: ${filePath}`);
+        }
+      }
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", "inline; filename=report.pdf");
+      res.send(pdfBuffer);
+
+    } catch (err) {
+      console.error("Merge error:", err);
+      res.status(500).json({ error: "Failed to merge external PDFs" });
+    }
+  });
 
 //     const chunks = [];
 //   doc.on("data", (chunk) => chunks.push(chunk));
@@ -770,6 +875,21 @@ function generateReport(req, res) {
           "Type": e.type || "",
           "Description": e.enclosureDescription || "",
         }));
+
+        const minRowHeight = 20;
+        const padding      = 5;
+        const headerH      = 20;
+        const estimatedH   = headerH 
+                          + rows.reduce((sum, row) => {
+                              // rough row-height: either measured or minRowHeight+2*padding
+                              return sum + (minRowHeight + 2*padding);
+                            }, 0);
+
+        // 3) page-break if it doesn't fit
+        if (currentY + estimatedH > doc.page.height - doc.page.margins.bottom) {
+          doc.addPage();
+          currentY = doc.page.margins.top;
+        }
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
 
         // Now loop through each enclosure and embed its single filePath
@@ -851,6 +971,16 @@ function generateReport(req, res) {
           "Disposed Date":    formatDate(ev.disposedDate),
           "Description":      ev.evidenceDescription || ""
         }));
+
+        // 2) estimate table height
+        const minRowHeight = 20, padding = 5, headerH = 20;
+        const estimatedH = headerH + rows.length * (minRowHeight + 2*padding);
+
+        // 3) page‐break if needed
+        if (currentY + estimatedH > doc.page.height - doc.page.margins.bottom) {
+          doc.addPage();
+          currentY = doc.page.margins.top;
+        }
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
       
          // Now loop through each enclosure and embed its single filePath
@@ -929,6 +1059,15 @@ function generateReport(req, res) {
           "Date Picture Taken":  formatDate(p.datePictureTaken),
           "Description":         p.pictureDescription || ""
         }));
+        // 2) estimate table height
+        const minRowHeight = 20, padding = 5, headerH = 20;
+        const estimatedH = headerH + rows.length * (minRowHeight + 2*padding);
+
+        // 3) page‐break if needed
+        if (currentY + estimatedH > doc.page.height - doc.page.margins.bottom) {
+          doc.addPage();
+          currentY = doc.page.margins.top;
+        }
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
 
           // Now loop through each enclosure and embed its single filePath
@@ -1009,6 +1148,15 @@ function generateReport(req, res) {
           "Date Audio Recorded":  formatDate(a.dateAudioRecorded),
           "Description":          a.audioDescription || ""
         }));
+        // 2) estimate table height
+        const minRowHeight = 20, padding = 5, headerH = 20;
+        const estimatedH = headerH + rows.length * (minRowHeight + 2*padding);
+
+        // 3) page‐break if needed
+        if (currentY + estimatedH > doc.page.height - doc.page.margins.bottom) {
+          doc.addPage();
+          currentY = doc.page.margins.top;
+        }
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
       }
     }
@@ -1033,6 +1181,15 @@ function generateReport(req, res) {
           "Date Video Recorded":  formatDate(v.dateVideoRecorded),
           "Description":          v.videoDescription || ""
         }));
+        // 2) estimate table height
+        const minRowHeight = 20, padding = 5, headerH = 20;
+        const estimatedH = headerH + rows.length * (minRowHeight + 2*padding);
+
+        // 3) page‐break if needed
+        if (currentY + estimatedH > doc.page.height - doc.page.margins.bottom) {
+          doc.addPage();
+          currentY = doc.page.margins.top;
+        }
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
       }
     }
@@ -1057,6 +1214,15 @@ function generateReport(req, res) {
           "Return Id": n.leadReturnId  || "",
           "Description":  n.text || ""
         }));
+        // 2) estimate table height
+        const minRowHeight = 20, padding = 5, headerH = 20;
+        const estimatedH = headerH + rows.length * (minRowHeight + 2*padding);
+
+        // 3) page‐break if needed
+        if (currentY + estimatedH > doc.page.height - doc.page.margins.bottom) {
+          doc.addPage();
+          currentY = doc.page.margins.top;
+        }
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
       }
     }
@@ -1075,7 +1241,7 @@ function generateReport(req, res) {
         currentY += 20;
       } else {
         const headers = ["Event Date","Time Range","Location","Flags","Description"];
-        const widths  = [80,100,100, 80, 142];
+        const widths  = [80,100,100, 80, 152];
         const rows    = leadTimeline.map(t => ({
           "Event Date":   formatDate(t.eventDate),
          "Time Range":  `${formatTime(t.eventStartTime)} – ${formatTime(t.eventEndTime)}`,
@@ -1084,6 +1250,15 @@ function generateReport(req, res) {
           "Flags":        Array.isArray(t.timelineFlag) ? t.timelineFlag.join(", ") : "",
           "Description":  t.eventDescription || ""
         }));
+        // 2) estimate table height
+        const minRowHeight = 20, padding = 5, headerH = 20;
+        const estimatedH = headerH + rows.length * (minRowHeight + 2*padding);
+
+        // 3) page‐break if needed
+        if (currentY + estimatedH > doc.page.height - doc.page.margins.bottom) {
+          doc.addPage();
+          currentY = doc.page.margins.top;
+        }
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
       }
     }
