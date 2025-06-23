@@ -417,11 +417,27 @@ function generateReport(req, res) {
       let pdfBuffer = Buffer.concat(chunks);
 
       // find all on-disk PDFs in the enclosures
-      const pdfFiles = Array.isArray(leadEnclosures)
-        ? leadEnclosures
-            .filter(e => !e.isLink && e.filename.toLowerCase().endsWith(".pdf"))
-            .map(e => path.normalize(e.filePath))
-        : [];
+      // const pdfFiles = Array.isArray(leadEnclosures)
+      //   ? leadEnclosures
+      //       .filter(e => !e.isLink && e.filename.toLowerCase().endsWith(".pdf"))
+      //       .map(e => path.normalize(e.filePath))
+      //   : [];
+      
+        const enclosurePdfs = Array.isArray(leadEnclosures)
+          ? leadEnclosures
+              .filter(e => !e.isLink && e.filename.toLowerCase().endsWith(".pdf"))
+              .map(e => path.normalize(e.filePath))
+          : [];
+
+        // collect evidence PDFs
+        const evidencePdfs = Array.isArray(leadEvidence)
+          ? leadEvidence
+              .filter(ev => !ev.isLink && ev.filename.toLowerCase().endsWith(".pdf"))
+              .map(ev => path.normalize(ev.filePath))
+          : [];
+
+        // combine both lists
+        const pdfFiles = [...enclosurePdfs, ...evidencePdfs];
 
       // merge each one in sequence
       for (const filePath of pdfFiles) {
