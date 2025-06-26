@@ -1064,7 +1064,7 @@ Case Page
                   }))} />
          */}
 
-          {selectedLead?.leadStatus !== "Completed" && !isCaseManager && (
+          {/* {selectedLead?.leadStatus !== "Completed" && !isCaseManager && (
   <div className="form-buttons-finish">
     <h4> Click here to submit the lead</h4>
     <button
@@ -1075,7 +1075,7 @@ Case Page
       Submit 
     </button>
   </div>
-)}
+)} */}
         <Comment tag= "Enclosures"/>
       </div>
       </div>
