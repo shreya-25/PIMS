@@ -894,7 +894,7 @@ Case Page
             <th style={{ width: "10%" }}>Return Id</th>
             <th style={{ width: "13%" }}>Date Entered</th>
             <th style={{ width: "9%" }}>Entered By</th>
-            <th className="results-col">Results</th>
+            <th className="results-col">Narrative</th>
             <th style={{ width: "14%" }}></th>
             {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
@@ -1019,7 +1019,7 @@ Case Page
         </table>
 
         
-       {selectedLead?.leadStatus !== "Completed" && !isCaseManager && (
+       {/* {selectedLead?.leadStatus !== "Completed" && !isCaseManager && (
   <div className="form-buttons-finish">
     <h4> Click here to submit the lead</h4>
     <button
@@ -1030,7 +1030,7 @@ Case Page
       Submit 
     </button>
   </div>
-)}
+)} */}
 
         <Comment tag= "Return"/>
 

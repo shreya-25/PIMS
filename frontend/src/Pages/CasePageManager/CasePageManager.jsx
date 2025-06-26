@@ -1336,7 +1336,7 @@ Save
             <div className="custom-dropdown">
               {/* 1) Header: shows currently selected investigators or placeholder */}
               <div
-                className="dropdown-header"
+                className="dropdown-header1"
                 onClick={() =>
                   setInvestigatorsDropdownOpen(!investigatorsDropdownOpen)
                 }
