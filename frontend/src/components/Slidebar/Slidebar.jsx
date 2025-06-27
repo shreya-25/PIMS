@@ -9,6 +9,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   const managersRef = useRef(null);
   // const dropdownRef = useRef(null);
   const investigatorsRef = useRef(null);
+  const signedInUser = localStorage.getItem("loggedInUser");
    const [currentRole, setCurrentRole] = useState(""); 
   const [caseDetails, setCaseDetails] = useState({
     title: "",
@@ -187,151 +188,256 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   //   setIsSidebarOpen(false);
   // };
   
-  const handleDone = async () => {
-    const {
-      title,
-      number,
-      managers,
-      detectiveSupervisor,
-      investigators,
-      summary,
-      executiveCaseSummary
-    } = caseDetails;
+//   const handleDone = async () => {
+//     const {
+//       title,
+//       number,
+//       managers,
+//       detectiveSupervisor,
+//       investigators,
+//       summary,
+//       executiveCaseSummary
+//     } = caseDetails;
 
-    if (!title || !number || !managers || !detectiveSupervisor) {
-       alert("❌ Please fill all required fields: Case Title, Number, Manager");
-       return;
-     }
+//     if (!title || !number || !managers || !detectiveSupervisor) {
+//        alert("❌ Please fill all required fields: Case Title, Number, Manager");
+//        return;
+//      }
   
-    setLoading(true);
-    setError(null);
+//     setLoading(true);
+//     setError(null);
   
-    const newCase = {
-      id: caseDetails.number,
-      title: caseDetails.title,
-      status: "Ongoing",
-      caseNo: caseDetails.number,
-      caseName: caseDetails.title,
-      role: "Case Manager",
-      caseSummary: caseDetails.summary,
-      executiveCaseSummary: caseDetails.executiveCaseSummary,
-      managers: caseDetails.managers.map(username => ({ username })),
-      detectiveSupervisor, 
-      selectedOfficers: investigators.map(name => ({ name })),
-    };
+//     const newCase = {
+//       id: caseDetails.number,
+//       title: caseDetails.title,
+//       status: "Ongoing",
+//       caseNo: caseDetails.number,
+//       caseName: caseDetails.title,
+//       role: "Case Manager",
+//       caseSummary: caseDetails.summary,
+//       executiveCaseSummary: caseDetails.executiveCaseSummary,
+//       managers: caseDetails.managers.map(username => ({ username })),
+//       detectiveSupervisor, 
+//       selectedOfficers: investigators.map(name => ({ name })),
+//     };
   
-    const token = localStorage.getItem("token");
+//     const token = localStorage.getItem("token");
   
-    try {
-      // 1) Create the case
-      const response = await api.post(
-        "/api/cases",
-        newCase,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      const data = response.data;
+//     try {
+//       // 1) Create the case
+//       const response = await api.post(
+//         "/api/cases",
+//         newCase,
+//         {
+//           headers: {
+//             "Content-Type": "application/json",
+//             Authorization: `Bearer ${token}`,
+//           },
+//         }
+//       );
+//       const data = response.data;
   
-      if (response.status !== 201) {
-        // replicate your original error checks
-        if (data.message === "Username is required to assign Case Manager") {
-          alert("Please enter a valid username");
-        } else if (
-          data.error &&
-          data.error.includes("dup key") &&
-          data.error.includes("caseName")
-        ) {
-          alert("A case with this name already exists. Please choose a unique case name.");
-        } else if (data.message === "Unauthorized: User details not found") {
-          alert("User details not found. Please sign in again");
-        } else if (data.message === "caseNo, caseName, and assignedOfficers are required") {
-          alert("Please fill in the case number, case name, and select at least one assigned officer");
-        } else if (data.message === "Case number already exists. Please use a unique caseNo.") {
-          alert("A case with this number already exists. Please use a unique case number.");
-        } else {
-          alert(`❌ Error: ${data.message}`);
-        }
-        throw new Error(data.message || "Failed to create case");
-      }
+//       if (response.status !== 201) {
+//         // replicate your original error checks
+//         if (data.message === "Username is required to assign Case Manager") {
+//           alert("Please enter a valid username");
+//         } else if (
+//           data.error &&
+//           data.error.includes("dup key") &&
+//           data.error.includes("caseName")
+//         ) {
+//           alert("A case with this name already exists. Please choose a unique case name.");
+//         } else if (data.message === "Unauthorized: User details not found") {
+//           alert("User details not found. Please sign in again");
+//         } else if (data.message === "caseNo, caseName, and assignedOfficers are required") {
+//           alert("Please fill in the case number, case name, and select at least one assigned officer");
+//         } else if (data.message === "Case number already exists. Please use a unique caseNo.") {
+//           alert("A case with this number already exists. Please use a unique case number.");
+//         } else {
+//           alert(`❌ Error: ${data.message}`);
+//         }
+//         throw new Error(data.message || "Failed to create case");
+//       }
   
-      alert("✅ Case Created Successfully!");
-      onAddCase(newCase);
-      setCaseDetails({
-        title: "",
-        number: "",
-        managers: [],
-        investigators: [],
-        summary: "",
-        executiveCaseSummary: "",
-        status: "Ongoing",
-      });
-      setIsSidebarOpen(false);
+//       alert("✅ Case Created Successfully!");
+//       onAddCase(newCase);
+//       setCaseDetails({
+//         title: "",
+//         number: "",
+//         managers: [],
+//         investigators: [],
+//         summary: "",
+//         executiveCaseSummary: "",
+//         status: "Ongoing",
+//       });
+//       setIsSidebarOpen(false);
 
-      const notificationRecipients = caseDetails.investigators.filter(
-        (name) => name !== caseDetails.managerName
-      );
+//       const notificationRecipients = caseDetails.investigators.filter(
+//         (name) => name !== caseDetails.managerName
+//       );
 
-      console.log("NotifRec", notificationRecipients);
+//       console.log("NotifRec", notificationRecipients);
   
-if (notificationRecipients.length > 0) {
-  const notificationPayload = {
-    notificationId: Date.now().toString(),
-    assignedBy:     caseDetails.managerName,
-      assignedTo:     notificationRecipients.map(name => ({
-    username: name,
-    status: "pending"
-  })),     // array of strings
-    action1:        "assigned you to a new case",
-    action2:        "",                          // optional
-    post1:          `${caseDetails.number}: ${caseDetails.title}`,
-    post2:          "",                          // optional
-    leadNo:         "",                          // optional for cases
-    leadName:       "",                          // optional for cases
-    caseNo:         caseDetails.number,
-    caseName:       caseDetails.title,
-    caseStatus:     "Open",
-    type:           "Case",                      // <— REQUIRED by your schema
-    // unread & time will get their defaults from the schema
+// if (notificationRecipients.length > 0) {
+//   const notificationPayload = {
+//     notificationId: Date.now().toString(),
+//     assignedBy:     caseDetails.managerName,
+//       assignedTo:     notificationRecipients.map(name => ({
+//     username: name,
+//     status: "pending"
+//   })),     // array of strings
+//     action1:        "assigned you to a new case",
+//     action2:        "",                          // optional
+//     post1:          `${caseDetails.number}: ${caseDetails.title}`,
+//     post2:          "",                          // optional
+//     leadNo:         "",                          // optional for cases
+//     leadName:       "",                          // optional for cases
+//     caseNo:         caseDetails.number,
+//     caseName:       caseDetails.title,
+//     caseStatus:     "Open",
+//     type:           "Case",                      // <— REQUIRED by your schema
+//     // unread & time will get their defaults from the schema
+//   };
+
+//   try {
+//     const notifResponse = await api.post(
+//       "/api/notifications",
+//       notificationPayload,
+//       {
+//         headers: {
+//           "Content-Type":  "application/json",
+//           Authorization:   `Bearer ${token}`
+//         }
+//       }
+//     );
+//     console.log("✅ Notification sent:", notifResponse.data);
+//     // refreshNotifications();
+//     // triggerRefresh();
+//   } catch (notifErr) {
+//     console.error("❌ Notification error:", notifErr.response?.data || notifErr);
+//   }
+// } else {
+//   console.log("ℹ️ No investigators selected to receive notification.");
+// }
+
+// } catch (err) {
+//   const msg = err.response?.data?.message;
+//   if (msg === "Case number already exists. Please use a unique caseNo.") {
+//     alert("A case with this number already exists. Please use a unique case number.");
+//   } else {
+//     alert(`❌ Error: ${msg || err.message}`);
+//   }
+//   setError(msg || err.message);
+//   console.error("❌ Error creating case:", err.response?.data || err.message);
+// } finally {
+//   setLoading(false);
+// }
+//   };
+
+const handleDone = async () => {
+  const {
+    title,
+    number,
+    managers,
+    detectiveSupervisor,
+    investigators,
+    summary,
+    executiveCaseSummary
+  } = caseDetails;
+
+  // 1) Validate
+  if (!title || !number || !managers.length || !detectiveSupervisor) {
+    alert("❌ Please fill all required fields: Case Title, Number, Manager");
+    return;
+  }
+
+  setLoading(true);
+  setError(null);
+
+  const newCase = {
+    id: number,
+    title,
+    status: "Ongoing",
+    caseNo: number,
+    caseName: title,
+    role: "Case Manager",
+    caseSummary: summary,
+    executiveCaseSummary,
+    managers: managers.map(username => ({ username })),
+    detectiveSupervisor,
+    selectedOfficers: investigators.map(name => ({ name }))
   };
+
+  const token = localStorage.getItem("token");
+  const creator = localStorage.getItem("loggedInUser");
 
   try {
-    const notifResponse = await api.post(
-      "/api/notifications",
-      notificationPayload,
-      {
-        headers: {
-          "Content-Type":  "application/json",
-          Authorization:   `Bearer ${token}`
-        }
-      }
+    // 2) Create the case
+    const { status, data } = await api.post(
+      "/api/cases",
+      newCase,
+      { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
     );
-    console.log("✅ Notification sent:", notifResponse.data);
-    // refreshNotifications();
-    // triggerRefresh();
-  } catch (notifErr) {
-    console.error("❌ Notification error:", notifErr.response?.data || notifErr);
-  }
-} else {
-  console.log("ℹ️ No investigators selected to receive notification.");
-}
+    if (status !== 201) {
+      alert(`❌ Error: ${data.message}`);
+      throw new Error(data.message);
+    }
 
-} catch (err) {
-  const msg = err.response?.data?.message;
-  if (msg === "Case number already exists. Please use a unique caseNo.") {
-    alert("A case with this number already exists. Please use a unique case number.");
-  } else {
-    alert(`❌ Error: ${msg || err.message}`);
+    alert("✅ Case Created Successfully!");
+    onAddCase(newCase);
+    setIsSidebarOpen(false);
+
+    // 3) Build a de-duplicated list of everyone to notify (except the creator)
+    const allUsersOnCase = [
+      detectiveSupervisor,
+      ...managers,
+      ...investigators
+    ].filter(u => u && u !== creator);
+
+    const recipients = Array.from(new Set(allUsersOnCase));
+
+    if (recipients.length) {
+      const notificationPayload = {
+        notificationId: Date.now().toString(),
+        assignedBy: creator,
+        assignedTo: recipients.map(username => ({ username, status: "pending" })),
+        action1: "assigned you to a new case",
+        post1: `${number}: ${title}`,
+        caseNo: number,
+        caseName: title,
+        caseStatus: "Open",
+        type: "Case"
+      };
+      await api.post(
+        "/api/notifications",
+        notificationPayload,
+        { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
+      );
+      console.log("✅ Notifications sent to:", recipients);
+    } else {
+      console.log("ℹ️ No one to notify.");
+    }
+
+    // 4) reset form
+    setCaseDetails({
+      title: "",
+      number: "",
+      managers: [],
+      investigators: [],
+      summary: "",
+      executiveCaseSummary: ""
+    });
+  } catch (err) {
+    const msg = err.response?.data?.message || err.message;
+    alert(`❌ Error: ${msg}`);
+    setError(msg);
+    console.error(err);
+  } finally {
+    setLoading(false);
   }
-  setError(msg || err.message);
-  console.error("❌ Error creating case:", err.response?.data || err.message);
-} finally {
-  setLoading(false);
-}
-  };
+};
+
+
   
   
 

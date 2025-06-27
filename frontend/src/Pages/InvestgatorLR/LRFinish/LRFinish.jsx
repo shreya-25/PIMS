@@ -462,7 +462,7 @@ useEffect(() => {
             leadStatus: "In Review"
           }));
           
-          alert("Lead Return submitted and status set to 'In Review'");
+          alert("Lead Return submitted");
         const manager    = leadData.assignedBy;                  // string username
         const investigators = (leadData.assignedTo || []).map(a => a.username);
         if (manager) {
@@ -515,7 +515,7 @@ useEffect(() => {
       );
   
       if (statusRes.status === 200) {
-        alert(`Lead Return submitted and status set to '${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}'`);
+        alert(`Lead Return submitted`);
 
       const human =
         newStatus === "complete" ? "approved the lead" :
