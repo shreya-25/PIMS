@@ -320,7 +320,7 @@ export const LRPerson = () => {
 
       const visible = isCaseManager
                       ? withAccess
-                      : withAccess.filter(p => p.access === "Everyone");
+                      : withAccess.filter(p => p.accessLevel === "Everyone");
       setPersons(visible);
       setLeadPersons(personsFromApi);
       setError("");

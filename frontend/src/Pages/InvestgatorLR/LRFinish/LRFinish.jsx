@@ -548,7 +548,7 @@ useEffect(() => {
         });
       }
 
-      alert(`Lead ${human} and all investigators notified.`);
+      // alert(`${assignedBy} ${human} and all investigators notified.`);
     
 
       } else {
@@ -1080,7 +1080,7 @@ Case Page
     </div>
   ) : (
     <div className="form-buttons-finish">
-         <h4> Click here to submit the lead</h4>
+         <h4> Click here to submit the lead return</h4>
       <button
         disabled={selectedLead?.leadStatus === "In Review"}
         className="save-btn1"
