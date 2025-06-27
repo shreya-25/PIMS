@@ -88,6 +88,12 @@ html, body {
   display: block;
 }
 
+.case-header1
+{
+  margin: 30px;
+  text-align:center;
+}
+
 /* Large text area for case summary */
 .case-summary-textarea {
   width: 90%;
