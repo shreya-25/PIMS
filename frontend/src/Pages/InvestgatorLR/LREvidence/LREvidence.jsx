@@ -698,7 +698,7 @@ Case Page
              
               onChange={(e) => handleInputChange("collectionDate", e.target.value)}
             />
-            <label className="evidence-head">Disposed Date*</label>
+            <label className="evidence-head">Disposed Date</label>
             <input
               type="date"
               value={evidenceData.disposedDate}
