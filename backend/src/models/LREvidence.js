@@ -27,7 +27,7 @@ const lrEvidenceSchema = new mongoose.Schema(
         leadReturnId: { type: String, required: true },
         enteredDate: { type: Date, required: true },
         collectionDate: { type: Date, required: true },
-        disposedDate: { type: Date, required: true },
+        disposedDate: { type: Date},
         type: { type: String },
         evidenceDescription: { type: String, required: true  }, 
         // fileId: { type: mongoose.Schema.Types.ObjectId, ref: "uploads" },

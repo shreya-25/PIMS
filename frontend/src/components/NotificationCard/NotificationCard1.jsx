@@ -113,11 +113,17 @@ const NotificationCard1 = ({ signedInOfficer }) => {
       const caseRes = await api.get(`/api/cases/${caseNo}/team`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (caseRes.data.caseManager === signedInOfficer) {
-        role = "Case Manager";
-      } else if (caseRes.data.investigators.includes(signedInOfficer)) {
-        role = "Investigator";
-      }
+      // if (caseRes.data.caseManager === signedInOfficer) {
+      //   role = "Case Manager";
+      // } else if (caseRes.data.investigators.includes(signedInOfficer)) {
+      //   role = "Investigator";
+      // }
+      const { caseManagers = [], investigators = [], detectiveSupervisor } = caseRes.data;
+    if (caseManagers.includes(signedInOfficer) || detectiveSupervisor === signedInOfficer) {
+      role = "Case Manager";
+    } else if (investigators.includes(signedInOfficer)) {
+      role = "Investigator";
+    }
     } catch (err) {
       console.error("Failed to fetch case role:", err);
     }

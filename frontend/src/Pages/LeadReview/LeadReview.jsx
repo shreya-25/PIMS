@@ -715,10 +715,10 @@ const isEditableByCaseManager = field => {
 
           </div>
 
-                    <div className="case-header">
-            <h1>
+                    <div className="case-header1">
+            <h2>
   {selectedLead?.leadNo ? `LEAD: ${selectedLead.leadNo} | ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"}
-</h1>
+</h2>
 
           </div>
 

@@ -834,7 +834,7 @@ Case Page
 
         {/* Center Section */}
         <div className="case-header">
-          <h2 className="">LEAD RETURNS</h2>
+          <h2 className="">RETURNS</h2>
         </div>
 
         <div className = "LRI-content-section">
@@ -966,9 +966,10 @@ Case Page
         <td>{formatDate(ret.enteredDate)}</td>
         <td>{ret.enteredBy}</td>
         <td className="results-col">
-            <div className="scrollable-cell">
+          {ret.leadReturnResult}
+            {/* <div className="scrollable-cell">
               {ret.leadReturnResult}
-            </div>
+            </div> */}
           </td>
         <td>
           <div className="lr-table-btn">
