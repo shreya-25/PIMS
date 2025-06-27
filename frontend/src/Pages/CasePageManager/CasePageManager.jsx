@@ -511,15 +511,33 @@ const saveInvestigators = async () => {
     const token = localStorage.getItem("token");
 
     // 1) Build the full officers array for the CASE
-    const officers = [
-      { name: team.detectiveSupervisor, role: "Detective Supervisor", status: "accepted" },
-      { name: team.caseManager,         role: "Case Manager",         status: "accepted" },
-      ...selectedInvestigators.map(username => ({
-        name: username,
-        role: "Investigator",
-        status: "pending"
-      }))
-    ];
+    // const officers = [
+    //   { name: team.detectiveSupervisor, role: "Detective Supervisor", status: "accepted" },
+    //   { name: team.caseManager,         role: "Case Manager",         status: "accepted" },
+    //   ...selectedInvestigators.map(username => ({
+    //     name: username,
+    //     role: "Investigator",
+    //     status: "pending"
+    //   }))
+    // ];
+     const sv = team.detectiveSupervisor;              // string
+  const mgrs = team.caseManagers || [];             // array of strings
+  const officers = [
+    { name: sv, role: "Detective Supervisor", status: "accepted" },
+    // map each of your caseManagers correctly:
+    ...mgrs.map(username => ({
+      name: username,
+      role: "Case Manager",
+      status: "accepted"
+    })),
+    // then your investigators:
+    ...selectedInvestigators.map(username => ({
+      name: username,
+      role: "Investigator",
+      status: "pending"
+    }))
+  ];
+
 
     // 2) Determine who’s brand-new
     const previous = team.investigators || [];
@@ -1336,7 +1354,7 @@ Save
             <div className="custom-dropdown">
               {/* 1) Header: shows currently selected investigators or placeholder */}
               <div
-                className="dropdown-header"
+                className="dropdown-header1"
                 onClick={() =>
                   setInvestigatorsDropdownOpen(!investigatorsDropdownOpen)
                 }
