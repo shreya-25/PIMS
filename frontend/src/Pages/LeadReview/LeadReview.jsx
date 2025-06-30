@@ -27,7 +27,7 @@ export const LeadReview = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [pendingRoute, setPendingRoute]   = useState(null);
-  const [caseTeam, setCaseTeam] = useState({ detectiveSupervisor: "", caseManager: "", investigators: [] });
+  const [caseTeam, setCaseTeam] = useState({ detectiveSupervisor: "", caseManagers: [], investigators: [] });
 
   const signedInOfficer = localStorage.getItem("loggedInUser");
 
@@ -80,12 +80,13 @@ useEffect(() => {
   }).then(resp => {
     setCaseTeam({
       detectiveSupervisor: resp.data.detectiveSupervisor,
-      caseManager:         resp.data.caseManager,
+      caseManagers:         resp.data.caseManagers,
       investigators:       resp.data.investigators
     });
   }).catch(console.error);
 }, [selectedCase.caseNo]);
 
+console.log ("case team ====", caseTeam);
 
   // inside LeadReview()
 // const handleSave = async () => {
@@ -161,11 +162,11 @@ const handleSave = async () => {
                  role: "Detective Supervisor",
                  status: "accepted" }]
             : []),
-         ...(caseTeam.caseManager
-            ? [{ name: caseTeam.caseManager,
-                 role: "Case Manager",
-                 status: "accepted" }]
-            : []),
+          ...caseTeam.caseManagers.map(name => ({
+          name,
+          role:   "Case Manager",
+          status: "accepted"
+         })),
          ...updatedInvestigators.map(name => ({
            name,
            role:   "Investigator",
@@ -185,7 +186,7 @@ const handleSave = async () => {
        );
        setCaseTeam({
          detectiveSupervisor: teamResp.data.detectiveSupervisor,
-         caseManager:         teamResp.data.caseManager,
+         caseManagers:         teamResp.data.caseManagers,
          investigators:       teamResp.data.investigators
        });
      }
