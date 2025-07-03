@@ -492,6 +492,7 @@ useEffect(() => {
         } else {
           alert("Lead Return submitted but status update failed.");
         }
+        navigate(getCasePageRoute());
       } else {
         alert("Failed to submit Lead Return");
       }
@@ -559,7 +560,7 @@ useEffect(() => {
       }
 
       // alert(`${assignedBy} ${human} and all investigators notified.`);
-    
+      navigate(getCasePageRoute());
 
       } else {
         alert("Return submitted but status update failed");
