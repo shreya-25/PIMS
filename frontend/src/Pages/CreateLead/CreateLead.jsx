@@ -444,12 +444,17 @@ const handleGenerateLead = async () => {
     ));
 
       
-      const assignedToFormatted = assignedOfficer.map(name => ({ username: name }));
+      const assignedToEntries = leadData.assignedOfficer.map(username => ({
+      username,
+      role:     "Investigator",   // everyone here is an investigator
+      status:   "pending",
+      unread:   true
+    }));
 
       const notificationPayload = {
         notificationId: Date.now().toString(), // Use timestamp as a unique ID; customize if needed
         assignedBy: username, // the logged-in user creates the lead
-        assignedTo: assignedToFormatted, // send notification to the selected officers
+        assignedTo: assignedToEntries, // send notification to the selected officers
         action1: "assigned you to a new lead ", // action text; change as needed
         post1: `${leadNumber}: ${leadDescription}`, // you might want to use the case title or lead summary here
         action2:"related to the case",

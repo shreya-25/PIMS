@@ -29,27 +29,32 @@ export const CasePageManager = () => {
     const [selectedPriority, setSelectedPriority] = useState(""); // State for priority filter
     const [sortOrder, setSortOrder] = useState(""); // State for sort order
     const [remainingDaysFilter, setRemainingDaysFilter] = useState("");
-  const [flagsFilter, setFlagsFilter] = useState("");
-  const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
-  const [leadLogCount, setLeadLogCount] = useState(0);
-  const [investigatorsDropdownOpen, setInvestigatorsDropdownOpen] = useState(false);
- const [loading, setLoading] = useState(false);
+    const [flagsFilter, setFlagsFilter] = useState("");
+    const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
+    const [leadLogCount, setLeadLogCount] = useState(0);
+    const [investigatorsDropdownOpen, setInvestigatorsDropdownOpen] = useState(false);
+    const [caseManagersDropdownOpen, setCaseManagersDropdownOpen] = useState(false);
+    const [detectiveSupervisorDropdownOpen, setDetectiveSupervisorDropdownOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const [showFilter, setShowFilter] = useState(false);
-  const [showSort, setShowSort] = useState(false);
-  const [pendingRoute, setPendingRoute]   = useState(null);
+    const [showSort, setShowSort] = useState(false);
+    const [pendingRoute, setPendingRoute]   = useState(null);
 
-  const [summary, setSummary] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState('');
-  const saveTimer = useRef(null);
-  const isFirstLoad = useRef(true);
+    const [summary, setSummary] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState('');
+    const saveTimer = useRef(null);
+    const isFirstLoad = useRef(true);
 
-  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
-  const isSupervisor = selectedCase.role === "Detective Supervisor";
+    const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+    const isSupervisor = selectedCase.role === "Detective Supervisor";
 
     const [allUsers, setAllUsers] = useState([]);
-  const [selectedInvestigators, setSelectedInvestigators] = useState([]);
+    const [selectedInvestigators, setSelectedInvestigators] = useState([]);
+    const [selectedCaseManagers,    setSelectedCaseManagers]    = useState([]);
+    const [selectedDetectiveSupervisor, setSelectedDetectiveSupervisor] = useState("");
+
 
 
     const [activeTab, setActiveTab] = useState("allLeads"); // Default to All Leads tab
@@ -77,8 +82,8 @@ export const CasePageManager = () => {
         console.error("Could not load user list for investigators:", err);
       }
     }
-    fetchUsers();
-  }, []);
+      fetchUsers();
+    }, []);
 
     useEffect(() => {
       if (!selectedCase?.caseNo) return;
@@ -88,13 +93,19 @@ export const CasePageManager = () => {
     }, [selectedCase.caseNo]);
 
 
-      useEffect(() => {
-    if (team.investigators && Array.isArray(team.investigators)) {
-      setSelectedInvestigators(team.investigators);
-    }
-  }, [team.investigators]);
+    useEffect(() => {
+        if (team.investigators && Array.isArray(team.investigators)) {
+          setSelectedInvestigators(team.investigators);
+        }
+        if (team.caseManagers && Array.isArray(team.caseManagers)) {
+          setSelectedCaseManagers(team.caseManagers);
+        }
+         if (team.detectiveSupervisor) {
+          setSelectedDetectiveSupervisor(team.detectiveSupervisor);
+        }
+    }, [team.investigators , team.caseManagers , team.detectiveSupervisor]);
 
-  console.log("selectedLead", selectedLead);
+    console.log("selectedLead", selectedLead);
   
     const handleNavigation = (route) => {
       navigate(route); // Navigate to respective page
@@ -102,37 +113,37 @@ export const CasePageManager = () => {
 
     const [showSelectModal, setShowSelectModal] = useState(false);
 
-const handleNavigateToLeadReturn = () => {
-  // if (!leads.pendingLeadReturns.length) {
-  //   alert("No lead returns available to continue.");
-  //   return;
-  // }
-  setShowSelectModal(true);
-};
+    const handleNavigateToLeadReturn = () => {
+      // if (!leads.pendingLeadReturns.length) {
+      //   alert("No lead returns available to continue.");
+      //   return;
+      // }
+      setShowSelectModal(true);
+    };
 
-const handleSelectLead = (lead) => {
-  setSelectedLead({
-    leadNo: lead.leadNo,
-    leadName: lead.description,
-    caseName: lead.caseName,
-    caseNo: lead.caseNo,
-  });
+    const handleSelectLead = (lead) => {
+      setSelectedLead({
+        leadNo: lead.leadNo,
+        leadName: lead.description,
+        caseName: lead.caseName,
+        caseNo: lead.caseNo,
+      });
 
-  setShowSelectModal(false);
-  navigate(pendingRoute, {
-    state: {
-      caseDetails: selectedCase,
-      leadDetails: lead
-    }
-  });
-  
-  setPendingRoute(null);
-};
+      setShowSelectModal(false);
+      navigate(pendingRoute, {
+        state: {
+          caseDetails: selectedCase,
+          leadDetails: lead
+        }
+      });
+      
+      setPendingRoute(null);
+    };
 
     const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-  const totalPages = 10; // Change based on your data
-  const totalEntries = 100;
+    const [pageSize, setPageSize] = useState(50);
+    const totalPages = 10; // Change based on your data
+    const totalEntries = 100;
 
     const signedInOfficer = localStorage.getItem("loggedInUser");
 
@@ -512,8 +523,12 @@ const saveInvestigators = async () => {
 
     // 1) Build the full officers array for the CASE
     const officers = [
-      { name: team.detectiveSupervisor, role: "Detective Supervisor", status: "accepted" },
-      { name: team.caseManager,         role: "Case Manager",         status: "accepted" },
+      { name: selectedDetectiveSupervisor, role: "Detective Supervisor", status: "accepted" },
+       ...selectedCaseManagers.map(username=>({
+        name: username,
+        role: "Case Manager",
+        status: "accepted"
+      })),
       ...selectedInvestigators.map(username => ({
         name: username,
         role: "Investigator",
@@ -522,8 +537,36 @@ const saveInvestigators = async () => {
     ];
 
     // 2) Determine who’s brand-new
-    const previous = team.investigators || [];
-    const newlyAdded = selectedInvestigators.filter(u => !previous.includes(u));
+   const prevSupervisor    = team.detectiveSupervisor;
+    const prevManagers      = team.caseManagers    || [];
+    const prevInvestigators = team.investigators   || [];
+
+    const newlyAddedSupervisor   = (selectedDetectiveSupervisor && selectedDetectiveSupervisor !== prevSupervisor)
+      ? [selectedDetectiveSupervisor]
+      : [];
+
+    const newlyAddedManagers = selectedCaseManagers
+      .filter(u => !prevManagers.includes(u));
+
+    const newlyAddedInvestigators = selectedInvestigators
+      .filter(u => !prevInvestigators.includes(u));
+
+    const newlyAdded = [
+      // Supervisor
+      ...(selectedDetectiveSupervisor && selectedDetectiveSupervisor !== team.detectiveSupervisor
+        ? [{ username: selectedDetectiveSupervisor, role: "Detective Supervisor" }]
+        : []),
+
+      // Case Managers
+      ...selectedCaseManagers
+        .filter(u => !team.caseManagers.includes(u))
+        .map(u => ({ username: u, role: "Case Manager" })),
+
+      // Investigators
+      ...selectedInvestigators
+        .filter(u => !team.investigators.includes(u))
+        .map(u => ({ username: u, role: "Investigator" }))
+    ];
 
     // 3) PUT to the case‐officers endpoint
     await api.put(
@@ -533,14 +576,24 @@ const saveInvestigators = async () => {
     );
 
     // 4) Update local UI state
-    setTeam(t => ({ ...t, investigators: [...selectedInvestigators] }));
+      setTeam(t => ({
+       ...t,
+      detectiveSupervisor: selectedDetectiveSupervisor,
+      caseManagers:    [...selectedCaseManagers],
+      investigators:   [...selectedInvestigators]
+     }));
 
     // 5) Notify only the newly added
     if (newlyAdded.length) {
       const payload = {
         notificationId: Date.now().toString(),
-        assignedBy:     team.caseManager,
-        assignedTo:     newlyAdded.map(name => ({ username: name, status: "pending" })),
+        assignedBy:     signedInOfficer,
+        assignedTo:     newlyAdded.map(person => ({
+          username: person.username,
+          role:     person.role,
+          status:   "pending",
+          unread:   true
+        })),
         action1:        "assigned you to a new case",
         post1:          `${selectedCase.caseNo}: ${selectedCase.caseName}`,
         caseNo:         selectedCase.caseNo,
@@ -566,7 +619,7 @@ const saveInvestigators = async () => {
       }
     }
 
-    alert("Investigators updated on this case successfully!");
+    alert("Officers updated on this case successfully!");
   } catch (err) {
     console.error("Save failed:", err);
     setError("Failed to save changes.");
@@ -1301,17 +1354,110 @@ Save
 </thead>
 <tbody>
   <tr>
-<td>Detective Supervisor</td>
-<td>{team.detectiveSupervisor || "—"}</td>
+  <td>Detective Supervisor</td>
+  <td>
+    {(selectedCase.role === "Detective Supervisor") ? (
+      <div className="custom-dropdown">
+        <div
+          className="dropdown-header1"
+          onClick={() => setDetectiveSupervisorDropdownOpen(prev => !prev)}
+        >
+          {selectedDetectiveSupervisor
+            ? (() => {
+                const usr = allUsers.find(x => x.username === selectedDetectiveSupervisor);
+                return usr ? `${usr.firstName} ${usr.lastName} (${usr.username})` : selectedDetectiveSupervisor;
+              })()
+            : "Select Detective Supervisor"}
+          <span className="dropdown-icon">
+            {detectiveSupervisorDropdownOpen ? "▲" : "▼"}
+          </span>
+        </div>
+        {detectiveSupervisorDropdownOpen && (
+          <div className="dropdown-options">
+            {allUsers.map(user => (
+              <div key={user.username} className="dropdown-item">
+                <input
+                  type="radio"
+                  name="detectiveSupervisor"
+                  id={`ds-${user.username}`}
+                  value={user.username}
+                  checked={selectedDetectiveSupervisor === user.username}
+                  onChange={() => setSelectedDetectiveSupervisor(user.username)}
+                />
+                <label htmlFor={`ds-${user.username}`}>
+                  {user.firstName} {user.lastName} ({user.username})
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    ) : (
+      team.detectiveSupervisor || "—"
+    )}
+  </td>
 </tr>
-<tr>
+
+{/* <tr>
 <td>Case Manager</td>
-{/* <td>{team.caseManager || "—"}</td> */}
 <td>
   {(team.caseManagers || []).length
     ? team.caseManagers.join(", ")
     : "—"}
 </td>
+</tr> */}
+<tr>
+  <td>Case Manager{team.caseManagers.length>1 ? "s" : ""}</td>
+  <td>
+    {(selectedCase.role==="Case Manager" || selectedCase.role==="Detective Supervisor") ? (
+      <div className="custom-dropdown">
+        <div
+          className="dropdown-header1"
+          onClick={() => setCaseManagersDropdownOpen(prev => !prev)}
+        >          {selectedCaseManagers.length>0
+            ? selectedCaseManagers
+                .map(u=>{
+                  const usr=allUsers.find(x=>x.username===u);
+                  return usr
+                    ? `${usr.firstName} ${usr.lastName} (${usr.username})`
+                    : u;
+                })
+                .join(", ")
+            : "Select Case Manager(s)"}
+          <span className="dropdown-icon">
+            {caseManagersDropdownOpen ? "▲" : "▼"}
+          </span>
+        </div>
+        {caseManagersDropdownOpen && (
+          <div className="dropdown-options">
+            {allUsers
+              // .filter(u=>u.role==="Case Manager")
+              .map(user=>(
+                <div key={user.username} className="dropdown-item">
+                  <input
+                    type="checkbox"
+                    id={`cm-${user.username}`}
+                    value={user.username}
+                    checked={selectedCaseManagers.includes(user.username)}
+                   onChange={e=>{
+                      const next = e.target.checked
+                        ? [...selectedCaseManagers, user.username]
+                        : selectedCaseManagers.filter(u=>u!==user.username);
+                      setSelectedCaseManagers(next);
+                    }}
+                  />
+                  <label htmlFor={`cm-${user.username}`}>
+                    {user.firstName} {user.lastName} ({user.username})
+                  </label>
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
+    ) : (
+      (team.caseManagers||[]).join(", ") || "—"
+    )}
+  </td>
 </tr>
 {/* <tr>
 <td>Investigator{team.investigators.length > 1 ? "s" : ""}</td>
@@ -1336,7 +1482,7 @@ Save
             <div className="custom-dropdown">
               {/* 1) Header: shows currently selected investigators or placeholder */}
               <div
-                className="dropdown-header"
+                className="dropdown-header1"
                 onClick={() =>
                   setInvestigatorsDropdownOpen(!investigatorsDropdownOpen)
                 }

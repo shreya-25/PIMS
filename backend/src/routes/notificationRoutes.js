@@ -27,7 +27,6 @@ router.post("/", async (req, res) => {
       caseNo:         req.body.caseNo,
       caseName:       req.body.caseName,
       caseStatus:     req.body.caseStatus,
-      unread:         true,
       type:           req.body.type,  
       time:           new Date(),
     });
@@ -100,18 +99,40 @@ router.get("/unread/user/:username", async (req, res) => {
 
 // ✅ Update unread status
 router.put("/mark-read/:notificationId", async (req, res) => {
+  const { notificationId } = req.params;
+  const { username }       = req.body;
+
+  if (!username) {
+    return res.status(400).json({ error: "username is required in request body" });
+  }
+
   try {
     const notification = await Notification.findOneAndUpdate(
-      { notificationId: req.params.notificationId },
-      { unread: false },
+      {
+        notificationId,
+        "assignedTo.username": username
+      },
+      {
+        $set: {
+          "assignedTo.$.unread": false,
+          // optionally record when they read it:
+          // "assignedTo.$.respondedAt": new Date()
+        }
+      },
       { new: true }
     );
+
     if (!notification) {
-      return res.status(404).json({ error: "Notification not found" });
+      return res.status(404).json({ error: "Notification or user slice not found" });
     }
+
     res.json(notification);
   } catch (error) {
-    res.status(500).json({ error: "Error marking as read", details: error.message });
+    console.error("Error marking notification as read:", error);
+    res.status(500).json({
+      error:   "Error marking as read",
+      details: error.message
+    });
   }
 });
 
