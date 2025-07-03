@@ -69,9 +69,9 @@ exports.createCase = async (req, res) => {
     if (!detectiveSupervisor) {
       return res.status(400).json({ message: "Detective Supervisor is required" });
     }
-    if (!caseNo || !caseName || !Array.isArray(selectedOfficers) || selectedOfficers.length === 0) {
+    if (!caseNo || !caseName) {
       return res.status(400).json({
-        message: "caseNo, caseName, detectiveSupervisor and selectedOfficers are required"
+        message: "caseNo, caseName are required"
       });
     }
 

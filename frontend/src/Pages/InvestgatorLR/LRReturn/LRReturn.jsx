@@ -840,7 +840,7 @@ Case Page
            <h4>Entered By</h4>
            <label className='input-field'></label> */}
      
-    <h4 className="return-form-h4">{editMode ? "Edit Return" : "Add Return"}</h4>
+    <h4 className="return-form-h4">{editMode ? "Edit Return" : "Save Narrative"}</h4>
       <div className="return-form">
         <textarea
         type = "text"
@@ -853,7 +853,7 @@ Case Page
       <div className="form-buttons-return">
       <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
 
-        className="save-btn1" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Return"}</button>
+        className="save-btn1" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Save Narrative"}</button>
         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
