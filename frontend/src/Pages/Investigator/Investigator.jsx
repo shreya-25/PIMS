@@ -74,19 +74,13 @@ useEffect(() => {
     load();
   }, [selectedCase.caseNo]);
 
-// useEffect(() => {
-//   if (!selectedCase?.caseNo) return;
-//   api.get(`/api/cases/${selectedCase.caseNo}/team`)
-//     .then(({ data }) => setTeam(data))
-//     .catch(console.error);
-// }, [selectedCase.caseNo]);
-
 useEffect(() => {
   if (!selectedCase?.caseNo) return;
-   api.get(`/api/cases/${selectedCase.caseNo}/team`)
-  .then(({ data }) => setTeam(data))
+  api.get(`/api/cases/${selectedCase.caseNo}/team`)
+    .then(({ data }) => setTeam(data))
     .catch(console.error);
 }, [selectedCase.caseNo]);
+
 
   // modal state
   const [confirmConfig, setConfirmConfig] = useState({
@@ -1145,7 +1139,7 @@ const handleSortAll = colKey => {
       </div>
     </div>
 
-            {/* <div className="case-team">
+            <div className="case-team">
         <table className="leads-table">
           <thead>
             <tr><th style={{ width: "20%" }}>Role</th><th>Name(s)</th></tr>
@@ -1157,7 +1151,7 @@ const handleSortAll = colKey => {
               </tr>
             <tr>
               <td>Case Manager</td>
-              <td>{team.caseManagers || "—"}</td>
+              <td>{(team.caseManagers||[]).join(", ") || "—"}</td>
             </tr>
             <tr>
               <td>Investigator{team.investigators.length > 1 ? "s" : ""}</td>
@@ -1169,42 +1163,7 @@ const handleSortAll = colKey => {
             </tr>
           </tbody>
         </table>
-      </div> */}
-      <div className="case-team">
-  <table className="leads-table">
-    <thead>
-      <tr>
-        <th style={{ width: "20%" }}>Role</th>
-        <th>Name(s)</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Detective Supervisor</td>
-        <td>{team.detectiveSupervisor || "—"}</td>
-      </tr>
-      <tr>
-        <td>Case Manager</td>
-        <td>
-          {team.caseManagers.length > 0
-            ? team.caseManagers.join(", ")
-            : "—"}
-        </td>
-      </tr>
-      <tr>
-        <td>
-          Investigator{team.investigators.length > 1 ? "s" : ""}
-        </td>
-        <td>
-          {team.investigators.length > 0
-            ? team.investigators.join(", ")
-            : "None assigned"}
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
+      </div>
                 {/* Content Area */}
                 <div className="content">
               

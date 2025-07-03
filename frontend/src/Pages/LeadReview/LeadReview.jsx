@@ -27,7 +27,7 @@ export const LeadReview = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [pendingRoute, setPendingRoute]   = useState(null);
-  const [caseTeam, setCaseTeam] = useState({ detectiveSupervisor: "", caseManager: "", investigators: [] });
+  const [caseTeam, setCaseTeam] = useState({ detectiveSupervisor: "", caseManagers: [], investigators: [] });
 
   const signedInOfficer = localStorage.getItem("loggedInUser");
 
@@ -80,12 +80,13 @@ useEffect(() => {
   }).then(resp => {
     setCaseTeam({
       detectiveSupervisor: resp.data.detectiveSupervisor,
-      caseManager:         resp.data.caseManager,
+      caseManagers:         resp.data.caseManagers,
       investigators:       resp.data.investigators
     });
   }).catch(console.error);
 }, [selectedCase.caseNo]);
 
+console.log ("case team ====", caseTeam);
 
   // inside LeadReview()
 // const handleSave = async () => {
@@ -161,11 +162,11 @@ const handleSave = async () => {
                  role: "Detective Supervisor",
                  status: "accepted" }]
             : []),
-         ...(caseTeam.caseManager
-            ? [{ name: caseTeam.caseManager,
-                 role: "Case Manager",
-                 status: "accepted" }]
-            : []),
+          ...caseTeam.caseManagers.map(name => ({
+          name,
+          role:   "Case Manager",
+          status: "accepted"
+         })),
          ...updatedInvestigators.map(name => ({
            name,
            role:   "Investigator",
@@ -185,7 +186,7 @@ const handleSave = async () => {
        );
        setCaseTeam({
          detectiveSupervisor: teamResp.data.detectiveSupervisor,
-         caseManager:         teamResp.data.caseManager,
+         caseManagers:         teamResp.data.caseManagers,
          investigators:       teamResp.data.investigators
        });
      }
@@ -197,7 +198,12 @@ const handleSave = async () => {
         {
           notificationId: Date.now().toString(),
           assignedBy: signedInOfficer,         // the current user assigning the lead
-          assignedTo: [{ username }],          // the new recipient
+          assignedTo: [{
+            username,
+            role:     "Investigator",           
+            status:   "pending",
+            unread:   true
+          }],
           action1: "assigned you to a new lead",
           post1:   `${leadData.leadNo}: ${leadData.description}`,
           caseNo:   leadData.caseNo,
@@ -259,7 +265,12 @@ const acceptLead = async (leadNo, description) => {
       {
         notificationId: Date.now().toString(),
         assignedBy: signedInOfficer,
-        assignedTo: [{ username: leadData.assignedBy }],
+        assignedTo: [{
+            username: leadData.assignedBy,
+            role:     "Case Manager",           
+            status:   "pending",
+            unread:   true
+          }],
         action1: "accepted the lead",
         post1:   `${leadNo}: ${description}`,
         caseNo:   selectedCase.caseNo,
@@ -312,7 +323,12 @@ const acceptLead = async (leadNo, description) => {
       {
         notificationId: Date.now().toString(),
         assignedBy: signedInOfficer,          // you
-        assignedTo: [{ username: leadData.assignedBy }], // the CM
+        assignedTo: [{
+            username: leadData.assignedBy,
+            role:     "Case Manager",           
+            status:   "pending",
+            unread:   true
+          }],
         action1: "declined the lead",
         post1:   `${leadNo}: ${description}`,
         caseNo:   selectedCase.caseNo,
@@ -715,10 +731,10 @@ const isEditableByCaseManager = field => {
 
           </div>
 
-                    <div className="case-header1">
-            <h2>
+                    <div className="case-header">
+            <h1>
   {selectedLead?.leadNo ? `LEAD: ${selectedLead.leadNo} | ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"}
-</h2>
+</h1>
 
           </div>
 

@@ -25,7 +25,7 @@ const { id: caseID, title: caseName } = caseDetails;  // Extract Case ID & Case 
 const [showSelectModal, setShowSelectModal] = useState(false);
 console.log(caseDetails, leadDetails, leadOrigin);
   const [pendingRoute, setPendingRoute]   = useState(null);
-  const [caseTeam, setCaseTeam] = useState({ caseManager: "", investigators: [] });
+  const [caseTeam, setCaseTeam] = useState({detectiveSupervisor: "", caseManagers: [], investigators: [] });
 
 
 const formatDate = (dateString) => {
@@ -63,7 +63,7 @@ useEffect(() => {
     leadSummary: '',
     assignedBy: '',
     leadDescription: '',
-    assignedOfficer: '',
+    assignedOfficer: [],
     accessLevel: 'Everyone',
   });
 
@@ -247,257 +247,327 @@ useEffect(() => {
   useEffect(() => {
   if (!selectedCase.caseNo) return;
   const fetchCaseTeam = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const resp = await api.get(
-        `/api/cases/${selectedCase.caseNo}/team`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setCaseTeam({
-        detectiveSupervisor: resp.data.detectiveSupervisor,
-        caseManager: resp.data.caseManager,
-        investigators: resp.data.investigators
-      });
-    } catch (err) {
-      console.error("Error fetching case team:", err);
-    }
+    const token = localStorage.getItem("token");
+    const resp = await api.get(
+      `/api/cases/${selectedCase.caseNo}/team`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // Make sure caseManagers is always an array
+    const managers = resp.data.caseManagers;
+    setCaseTeam({
+      detectiveSupervisor: resp.data.detectiveSupervisor || "",
+      caseManagers: Array.isArray(managers) ? managers : managers ? [managers] : [],
+      investigators: Array.isArray(resp.data.investigators)
+        ? resp.data.investigators
+        : resp.data.investigators
+        ? [resp.data.investigators]
+        : [],
+    });
   };
-  fetchCaseTeam();
+  fetchCaseTeam().catch(console.error);
 }, [selectedCase.caseNo]);
 
-console.log("CAse Team", caseTeam);
 
-console.log("SC and Sl", selectedCase, selectedLead);
 const handleGenerateLead = async () => {
-
+  // parse comma-lists
   const originNumbers = leadData.leadOrigin
-  .split(',')
-  .map((val) => parseInt(val.trim()))
-  .filter((num) => !isNaN(num));
+    .split(',')
+    .map((v) => parseInt(v.trim(), 10))
+    .filter((n) => !isNaN(n));
 
   const subNumbersArray = leadData.subNumber
-  .split(',')
-  .map((val) => val.trim())
-  .filter((val) => val !== '');
-
-
-  const {
-    caseName,
-    caseNo,
-    leadNumber,
-    leadOrigin,
-    incidentNumber,
-    subNumber,
-    associatedSubNumbers,
-    assignedDate,
-    dueDate,
-    assignedOfficer,
-    assignedBy,
-    leadSummary,
-    leadDescription,
-    accessLevel,
-  } = leadData;
+    .split(',')
+    .map((v) => v.trim())
+    .filter((s) => s);
 
   try {
+    // 1) Create the lead
     const response = await api.post(
-      "/api/lead/create", // Replace with your backend endpoint
+      "/api/lead/create",
       {
-        caseName:  selectedCase.caseName,
-        caseNo: selectedCase.caseNo,
-        leadNo: leadNumber,
-        parentLeadNo: originNumbers,
-        incidentNo: incidentNumber,
-        subNumber: subNumbersArray,
-        associatedSubNumbers: associatedSubNumbers,
-        dueDate,
-        assignedDate,
-        assignedTo: assignedOfficer,
-        assignedBy: username,
-        summary: leadSummary,
-        description: leadDescription,
-        accessLevel: leadData.accessLevel,
+        caseName:            selectedCase.caseName,
+        caseNo:              selectedCase.caseNo,
+        leadNo:              leadData.leadNumber,
+        parentLeadNo:        originNumbers,
+        incidentNo:          leadData.incidentNumber,
+        subNumber:           subNumbersArray,
+        associatedSubNumbers: leadData.associatedSubNumbers,
+        dueDate:             leadData.dueDate,
+        assignedDate:        leadData.assignedDate,
+        assignedTo:          leadData.assignedOfficer,
+        assignedBy:          username,
+        summary:             leadData.leadSummary,
+        description:         leadData.leadDescription,
+        accessLevel:         leadData.accessLevel,
       },
       {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       }
     );
 
-
-    if (response.status === 201) {
+    // treat any 2xx as success
+    if (response.status >= 200 && response.status < 300) {
       alert("Lead successfully added!");
 
       const token = localStorage.getItem("token");
-      const cNo    = encodeURIComponent(selectedCase.caseNo);
-      const cName  = encodeURIComponent(selectedCase.caseName);
 
-      const newlyAdded = leadData.assignedOfficer.filter(u =>!caseTeam.investigators.includes(u)
-   );
+      // 2) Determine which officers are truly new
+      const already = [
+        ...caseTeam.investigators,
+        ...caseTeam.caseManagers,
+        caseTeam.detectiveSupervisor,
+      ].filter(Boolean);
 
-  // if (newlyAdded.length) {
-  //     const officerPayload = {
-  //       caseNo:   selectedCase.caseNo,
-  //       caseName: selectedCase.caseName,
-  //       assignedOfficers: newlyAdded.map(u => ({
-  //         name:   u,               // officer’s username
-  //         role:   "Investigator",  // must match your enum
-  //         status: "pending"        // default state
-  //       }))
-  //     };
-  //     // single PUT with required fields
-  //     await api.put(
-  //       `/api/cases/${encodeURIComponent(selectedCase.caseNo)}/${encodeURIComponent(selectedCase.caseName)}/officers`,
-  //       officerPayload,
-  //       { headers: { Authorization: `Bearer ${token}` } }
-  //     );
+      const newlyAdded = leadData.assignedOfficer.filter((u) => !already.includes(u));
 
-  //     // refresh your local caseTeam
-  //     const teamResp = await api.get(
-  //       `/api/cases/${selectedCase.caseNo}/team`,
-  //       { headers: { Authorization: `Bearer ${token}` } }
-  //     );
-  //     setCaseTeam({
-  //       caseManager:   teamResp.data.caseManager,
-  //       investigators: teamResp.data.investigators
-  //     });
-  //   }
-
+      // 3) If any new, push updated officers list
       if (newlyAdded.length) {
-        // 2) build the full case‐officers array
         const updatedInvestigators = [
           ...caseTeam.investigators,
-          ...newlyAdded
+          ...newlyAdded,
         ];
-        // const officers = [
-        //   // keep your existing Detective Supervisor & Case Manager
-        //   { name: caseTeam.detectiveSupervisor, role: "Detective Supervisor", status: "accepted" },
-        //   { name: caseTeam.caseManager,         role: "Case Manager",         status: "accepted" },
-        //   // now all investigators (old + new)
-        //   ...updatedInvestigators.map(name => ({
-        //     name,
-        //     role:   "Investigator",
-        //     status: "pending"
-        //   }))
-        // ];
 
         const officers = [
-                    // only add Supervisor if we actually fetched one
-                    ...(caseTeam.detectiveSupervisor
-                      ? [{ name: caseTeam.detectiveSupervisor,
-                            role: "Detective Supervisor",
-                            status: "accepted" }]
-                      : []),
+          ...(caseTeam.detectiveSupervisor
+            ? [{ name: caseTeam.detectiveSupervisor, role: "Detective Supervisor", status: "accepted" }]
+            : []),
+          ...((caseTeam.caseManagers || []).map((name) => ({
+            name,
+            role:   "Case Manager",
+            status: "accepted",
+          }))),
+          ...updatedInvestigators.map((name) => ({
+            name,
+            role:   "Investigator",
+            status: "pending",
+          })),
+        ];
 
-                    // only add CM if present
-                    ...(caseTeam.caseManager
-                      ? [{ name: caseTeam.caseManager,
-                            role: "Case Manager",
-                            status: "accepted" }]
-                      : []),
-
-                    // then all investigators (old + new)
-                    ...updatedInvestigators.map(name => ({
-                      name,
-                      role:   "Investigator",
-                      status: "pending"
-                    }))
-                  ];
-
-
-        // 3) push them in one PUT to your /officers route
         await api.put(
           `/api/cases/${encodeURIComponent(selectedCase.caseNo)}/${encodeURIComponent(selectedCase.caseName)}/officers`,
           { officers },
           { headers: { Authorization: `Bearer ${token}` } }
         );
-
-        // 4) refresh local caseTeam so UI stays in sync
-        const teamResp = await api.get(
-          `/api/cases/${selectedCase.caseNo}/team`,
-                    { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setCaseTeam({
-          caseManager:   teamResp.data.caseManager,
-          investigators: teamResp.data.investigators
-        });
       }
 
-    // 3) notify each of them
-    await Promise.all(newlyAdded.map(officerUsername  =>
-      api.post(
-        "/api/notifications",
-        {
+      // 4) Build & send a single notification payload
+      if (leadData.assignedOfficer.length) {
+        const assignedToEntries = leadData.assignedOfficer.map((u) => ({
+          username: u,
+          role: (caseTeam.caseManagers || []).includes(u)
+            ? "Case Manager"
+            : u === caseTeam.detectiveSupervisor
+            ? "Detective Supervisor"
+            : "Investigator",
+          status: "pending",
+          unread: true,
+        }));
+
+        const notificationPayload = {
           notificationId: Date.now().toString(),
-          assignedBy: username,      // or whoever created the lead
-          assignedTo: [{ username: officerUsername }],
-          action1: "added you to a case",
-          post1: `${selectedCase.caseNo}: ${selectedCase.caseName}`,
-          type: "Case",
-          caseNo:         selectedCase.caseNo,    // ← required!
-          caseName:       selectedCase.caseName,  // ← required!
-          time: new Date().toISOString(),
-          unread: true
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-    ));
+          assignedBy:     username,
+          assignedTo:     assignedToEntries,
+          action1:        "assigned you to a new lead",
+          post1:          `${leadData.leadNumber}: ${leadData.leadDescription}`,
+          action2:        "related to the case",
+          post2:          `${selectedCase.caseNo}: ${selectedCase.caseName}`,
+          leadNo:         leadData.leadNumber,
+          leadName:       leadData.leadDescription,
+          caseNo:         selectedCase.caseNo,
+          caseName:       selectedCase.caseName,
+          caseStatus:     "Open",
+          unread:         true,
+          type:           "Lead",
+          time:           new Date().toISOString(),
+        };
 
-      
-      const assignedToFormatted = assignedOfficer.map(name => ({ username: name }));
-
-      const notificationPayload = {
-        notificationId: Date.now().toString(), // Use timestamp as a unique ID; customize if needed
-        assignedBy: username, // the logged-in user creates the lead
-        assignedTo: assignedToFormatted, // send notification to the selected officers
-        action1: "assigned you to a new lead ", // action text; change as needed
-        post1: `${leadNumber}: ${leadDescription}`, // you might want to use the case title or lead summary here
-        action2:"related to the case",
-        post2: `${selectedCase.caseNo}: ${selectedCase.caseName}`,
-        leadNo: leadNumber,         // include lead details if desired
-        leadName: leadDescription,      // or leave empty as per your requirements
-        caseNo: selectedCase.caseNo,     // using the case ID
-        caseName: selectedCase.caseName,
-        caseStatus: "Open",
-        unread: true,
-        type: "Lead",
-        time: new Date().toISOString(),
-      };
-
-      // Send notification using axios
-      try {
-        const notifResponse = await api.post(
+        await api.post(
           "/api/notifications",
           notificationPayload,
           {
             headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
+              "Content-Type":  "application/json",
+              Authorization:   `Bearer ${token}`,
             },
           }
         );
-        console.log("Notification sent successfully:", notifResponse.data);
-      } catch (notifError) {
-        console.error(
-          "Error sending notification:",
-          notifError.response ? notifError.response.data : notifError.message
-        );
-        // Optionally show a user alert or handle notification errors as needed.
       }
-      navigate(-1); // Navigate to Lead Log page
-    }
-  } catch (error) {
-    if (error.response) {
-      // Handle known error messages from backend
-      alert(`Error: ${error.response.data.message}`);
-    } else {
-      // Handle unexpected errors
-      // alert("Notification not sent since no officer assigned");
-    }
-  }
-};  
 
-console.log("Submitting leadData:", leadData);
+      // 5) Finally navigate back and stop
+      navigate(-1);
+      return;
+    }
+
+    // if we get here it wasn’t a 2xx
+    const text = await response.text();
+    throw new Error(`Unexpected status ${response.status}: ${text}`);
+  } catch (err) {
+    console.error("handleGenerateLead failed:", err);
+    const msg =
+      err.response?.data?.message ||
+      err.response?.data ||
+      err.message ||
+      "Unknown error";
+    alert(`Error: ${typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg}`);
+  }
+};
+
+
+
+
+// const handleGenerateLead = async () => {
+
+//   const originNumbers = leadData.leadOrigin
+//   .split(',')
+//   .map((val) => parseInt(val.trim()))
+//   .filter((num) => !isNaN(num));
+
+//   const subNumbersArray = leadData.subNumber
+//   .split(',')
+//   .map((val) => val.trim())
+//   .filter((val) => val !== '');
+
+//   try {
+//     const response = await api.post(
+//       "/api/lead/create", // Replace with your backend endpoint
+//       {
+//         caseName: selectedCase.caseName,
+//         caseNo:   selectedCase.caseNo,
+//         leadNo:   leadData.leadNumber,
+//         parentLeadNo:       originNumbers,
+//         incidentNo:         leadData.incidentNumber,
+//         subNumber:          subNumbersArray,
+//         associatedSubNumbers: leadData.associatedSubNumbers,
+//         dueDate:      leadData.dueDate,
+//         assignedDate: leadData.assignedDate,
+//         assignedTo:   leadData.assignedOfficer,
+//         assignedBy:   username,
+//         summary:      leadData.leadSummary,
+//         description:  leadData.leadDescription,
+//         accessLevel:  leadData.accessLevel,
+//       },
+//       {
+//         headers: {
+//           Authorization: `Bearer ${localStorage.getItem("token")}`,
+//         },
+//       }
+//     );
+
+
+//     if (response.status === 201) {
+//       alert("Lead successfully added!");
+      
+
+//       const token = localStorage.getItem("token");
+//       const cNo    = encodeURIComponent(selectedCase.caseNo);
+//       const cName  = encodeURIComponent(selectedCase.caseName);
+
+//       const allAlreadyOnCase = [
+//         ...caseTeam.investigators,
+//         ...caseTeam.caseManagers,
+//         caseTeam.detectiveSupervisor
+//       ].filter(Boolean);
+
+//       const newlyAdded = leadData.assignedOfficer.filter(
+//         u => !allAlreadyOnCase.includes(u)
+//       );
+
+//       if (newlyAdded.length) {
+
+//         const officers = [
+//                     // only add Supervisor if we actually fetched one
+//                     ...(caseTeam.detectiveSupervisor
+//                       ? [{ name: caseTeam.detectiveSupervisor,
+//                             role: "Detective Supervisor",
+//                             status: "accepted" }]
+//                       : []),
+
+//                     // only add CM if present
+//                     ...((caseTeam.caseManagers || []).map(n => ({
+//                           name: n,
+//                           role:   "Case Manager",
+//                           status: "accepted"
+//                     }))),
+
+//                     // then all investigators (old + new)
+//                     ...updatedInvestigators.map(n => ({
+//                       name: n,
+//                       role:   "Investigator",
+//                       status: "pending"
+//                     }))
+//                   ];
+
+
+//         // 3) push them in one PUT to your /officers route
+//         await api.put(
+//           `/api/cases/${encodeURIComponent(selectedCase.caseNo)}/${encodeURIComponent(selectedCase.caseName)}/officers`,
+//           { officers },
+//           { headers: { Authorization: `Bearer ${token}` } }
+//         );
+
+//         const assignedToEntries = leadData.assignedOfficer.map((u) => ({
+//           username: u,
+//           role: (caseTeam.caseManagers || []).includes(u)
+//             ? "Case Manager"
+//             : u === caseTeam.detectiveSupervisor
+//             ? "Detective Supervisor"
+//             : "Investigator",
+//           status: "pending",
+//           unread: true,
+//         }));
+
+//       const notificationPayload = {
+//         notificationId: Date.now().toString(), // Use timestamp as a unique ID; customize if needed
+//         assignedBy: username, // the logged-in user creates the lead
+//         assignedTo: assignedToEntries, // send notification to the selected officers
+//         action1: "assigned you to a new lead ", // action text; change as needed
+//         post1: `${leadNumber}: ${leadDescription}`, // you might want to use the case title or lead summary here
+//         action2:"related to the case",
+//         post2: `${selectedCase.caseNo}: ${selectedCase.caseName}`,
+//         leadNo: leadNumber,         // include lead details if desired
+//         leadName: leadDescription,      // or leave empty as per your requirements
+//         caseNo: selectedCase.caseNo,     // using the case ID
+//         caseName: selectedCase.caseName,
+//         caseStatus: "Open",
+//         unread: true,
+//         type: "Lead",
+//         time: new Date().toISOString(),
+//       };
+
+//       // Send notification using axios
+//         const notifResponse = await api.post(
+//           "/api/notifications",
+//           notificationPayload,
+//           {
+//             headers: {
+//               "Content-Type": "application/json",
+//               Authorization: `Bearer ${token}`,
+//             },
+//           }
+//         );
+//         console.log("Notification sent successfully:", notifResponse.data);
+      
+//       navigate(-1); // Navigate to Lead Log page
+//       return;
+//     }
+
+//     throw new Error(`Unexpected status code ${createResp.status}`);
+//      } catch (err) {
+//     console.error("handleGenerateLead failed:", err);
+
+//     // peel off the most helpful message you can
+//     const msg =
+//       err.response?.data?.message ||
+//       err.response?.data ||
+//       err.message ||
+//       "Unknown error";
+
+//     alert(`Error: ${typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg}`);
+//   }
+// };
+
+// console.log("Submitting leadData:", leadData);
 
 
 const defaultCaseSummary = "";
