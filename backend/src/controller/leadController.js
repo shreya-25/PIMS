@@ -582,10 +582,38 @@ const removeAssignedOfficer = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/lead/status/:leadNo/:leadName/:caseNo/:caseName
+ * Returns only the leadStatus string for the matching Lead document.
+ */
+const getLeadStatus = async (req, res) => {
+  try {
+    const { leadNo, leadName, caseNo, caseName } = req.params;
+
+    // find the single lead document
+    const lead = await Lead.findOne({
+      leadNo:   Number(leadNo),
+      description: leadName,
+      caseNo,
+      caseName
+    });
+
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found" });
+    }
+
+    // return only the status
+    res.status(200).json({ leadStatus: lead.leadStatus });
+  } catch (err) {
+    console.error("Error fetching lead status:", err);
+    res.status(500).json({ message: "Server error while fetching lead status" });
+  }
+};
+
 
 
 module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword , setLeadStatusToInReview, 
-  setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM
+  setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM, getLeadStatus
 };
 
 

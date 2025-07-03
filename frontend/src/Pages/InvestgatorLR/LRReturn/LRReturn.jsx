@@ -56,29 +56,32 @@ const [username, setUsername] = useState("");
       const fetchLeadStatus = async () => {
         try {
           const token = localStorage.getItem("token");
+          const { leadNo, leadName } = selectedLead;
+          const { caseNo, caseName } = selectedCase;
     
-          const response = await api.get(
-            `/api/lead/${selectedLead?.leadNo}/${selectedCase?.caseNo}`,
-            {
-              headers: { Authorization: `Bearer ${token}` }
-            }
-          );
-    
-          const status = response.data.leadStatus;
-          setLeadStatus(status); // ✅ Store in context
-          setLoading(false);
-        } catch (err) {
-          console.error("Failed to fetch lead status", err);
-          setError("Could not load lead status");
-        }
-      };
-    
-      if (selectedLead?.leadNo && selectedCase?.caseNo) {
-        fetchLeadStatus();
-      }
-    }, [selectedLead, selectedCase, leadStatus, setLeadStatus]);
+         const resp = await api.get(
+          `/api/lead/lead/${leadNo}/${encodeURIComponent(leadName)}/${caseNo}/${encodeURIComponent(caseName)}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-  console.log("Lead Status from context:", leadStatus);
+        if (Array.isArray(resp.data) && resp.data.length > 0) {
+          setLeadStatus(resp.data[0].leadStatus);
+        } else {
+          console.warn("No lead returned when fetching status");
+                    setLeadStatus("Unknown");
+        }
+      } catch (err) {
+        console.error("Failed to fetch lead status", err);
+        setError("Could not load lead status");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+     if (selectedLead?.leadNo && selectedLead?.leadName && selectedCase?.caseNo && selectedCase?.caseName) {
+      fetchLeadStatus();
+    }
+   }, [selectedLead, selectedCase, setLeadStatus]); 
   
 
   useEffect(() => {

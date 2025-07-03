@@ -7,6 +7,8 @@ const NotificationSchema = new mongoose.Schema({
   // now an array of objects rather than just strings
   assignedTo: [{
     username:    { type: String, required: true },
+    unread: { type: Boolean, default: true },
+    role: { type: String, required: true },
     status:      {
       type: String,
       required: true,
@@ -30,12 +32,11 @@ const NotificationSchema = new mongoose.Schema({
     enum: ["Open", "Close"],
     default: "Open"
   },
-    type: {
+  type: {
     type: String,
     required: true,
     enum: ["Case", "Lead", "LeadReturn","General"]
   },
-  unread: { type: Boolean, default: true },
   time:   { type: Date, default: Date.now }
 });
 
