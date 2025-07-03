@@ -28,8 +28,7 @@ const NotificationCard1 = ({ signedInOfficer }) => {
       .filter(n =>
         (n.type === "Case" || n.type === "Lead") &&
         n.caseStatus === "Open" &&
-        n.unread === true &&
-        n.assignedTo.some(r => r.username === signedInOfficer && r.status === "pending")
+        n.assignedTo.some(r => r.username === signedInOfficer && r.status === "pending" && r.unread === true  )
       )
       .sort((a, b) => new Date(b.time) - new Date(a.time));
   };
@@ -106,33 +105,16 @@ const NotificationCard1 = ({ signedInOfficer }) => {
     if (!n) return;
 
     const { notificationId, leadNo, leadName, caseNo, caseName, action1 } = n;
-    let role = "Investigator";
 
-    try {
-      const token = localStorage.getItem("token");
-      const caseRes = await api.get(`/api/cases/${caseNo}/team`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      // if (caseRes.data.caseManager === signedInOfficer) {
-      //   role = "Case Manager";
-      // } else if (caseRes.data.investigators.includes(signedInOfficer)) {
-      //   role = "Investigator";
-      // }
-      const { caseManagers = [], investigators = [], detectiveSupervisor } = caseRes.data;
-    if (caseManagers.includes(signedInOfficer) || detectiveSupervisor === signedInOfficer) {
-      role = "Case Manager";
-    } else if (investigators.includes(signedInOfficer)) {
-      role = "Investigator";
-    }
-    } catch (err) {
-      console.error("Failed to fetch case role:", err);
-    }
-
-    localStorage.setItem("role", role);
+    const myAss = n.assignedTo.find(r => r.username === signedInOfficer);
+    let role = myAss.role;
 
     // Mark as read if still unread
-    if (n.unread) {
-      await api.put(`/api/notifications/mark-read/${notificationId}`);
+     if (myAss.unread) {
+      await api.put(
+        `/api/notifications/mark-read/${notificationId}`,
+        { username: signedInOfficer }
+      );
       setNewNotifs(prev => prev.filter(x => x._id !== _id));
     }
 
@@ -142,11 +124,9 @@ const NotificationCard1 = ({ signedInOfficer }) => {
     localStorage.setItem("selectedCase", JSON.stringify(baseState));
 
     if (action1.includes("case")) {
-      if (role === "Case Manager") {
-        navigate("/CasePageManager", { state: baseState });
-      } else {
-        navigate("/Investigator", { state: baseState });
-      }
+        const dest = (role === "Case Manager" || role === "Detective Supervisor")
+        ? "/CasePageManager": "/Investigator";
+      navigate(dest, { state: baseState });
     }
     else if (action1.includes("lead")) {
       navigate("/LeadReview", { state: { ...baseState, role } });
@@ -158,6 +138,43 @@ const NotificationCard1 = ({ signedInOfficer }) => {
 
   if (loading) return <p>Loading notifications…</p>;
   if (error)   return <p className="error">{error}</p>;
+
+  const renderCard = n => {
+    const { letter, color } = getType(n);
+    const thisAss = n.assignedTo.find(r => r.username === signedInOfficer);
+    const isPending = thisAss.status === "pending";
+
+    return (
+      <div
+        key={n._id}
+        className={`notification-card ${thisAss.unread ? "unread" : "read"}`}
+      >
+        <div className="circle-icon" style={{ backgroundColor: color }}>
+          <span className="notification-letter">{letter}</span>
+        </div>
+        <div className="notification-content">
+          <div className="notification-text">
+            <p>
+              <strong>{n.assignedBy}</strong> {n.action1}
+              {n.post1 && <strong> {n.post1}</strong>}
+            </p>
+            <span className="time">Role: {thisAss.role}</span>
+            <span className="time">{new Date(n.time).toLocaleString()}</span>
+          </div>
+          <div className="buttons-container">
+            <button className="view-btnNC" onClick={() => handleView(n._id)}>
+              View
+            </button>
+            {isPending &&
+              !n.action1.toLowerCase().includes("accepted") &&
+              !n.action1.toLowerCase().includes("declined") && (
+                <>{/* Accept/Decline buttons here */}</>
+              )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="notification-bar">
@@ -172,44 +189,7 @@ const NotificationCard1 = ({ signedInOfficer }) => {
 
       {!showAll ? (
         <div className="notifications-list">
-          {newNotifs.slice(0,5).map(n => {
-            const { letter, color } = getType(n);
-            const thisAss = n.assignedTo.find(r => r.username === signedInOfficer);
-            const isPending = thisAss?.status === "pending";
-
-            return (
-              <div key={n._id} className={`notification-card ${n.unread ? "unread" : "read"}`}>
-                <div className="circle-icon" style={{ backgroundColor: color }}>
-                  <span className="notification-letter">{letter}</span>
-                </div>
-                <div className="notification-content">
-                  <div className="notification-text">
-                    <p>
-                      <strong>{n.assignedBy}</strong> {n.action1}
-                      {n.post1 && <strong> {n.post1}</strong>}
-                    </p>
-                    {n.action1.toLowerCase().includes("assigned") ? (
-            <span className="time">Role: Investigator</span>
-          ) : (
-            <span className="time">Role: Case Manager</span>
-          )}
-                    <span className="time">{new Date(n.time).toLocaleString()}</span>
-                  </div>
-                  <div className="buttons-container">
-                    <button className="view-btnNC" onClick={() => handleView(n._id)}>
-                      View
-                    </button>
-                    {isPending &&
-                      !n.action1.toLowerCase().includes("accepted") &&
-                      !n.action1.toLowerCase().includes("declined") && (
-                        <>{/* Accept/Decline buttons */}</>
-                      )
-                    }
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {newNotifs.slice(0, 5).map(renderCard)}
         </div>
       ) : (
         <>
@@ -248,50 +228,13 @@ const NotificationCard1 = ({ signedInOfficer }) => {
             }}
           >
             {(collapsedAll
-              ? openNotifs.filter(x =>
-                  x.assignedTo.some(r => r.username === signedInOfficer)
+              ? openNotifs.filter(n =>
+                  n.assignedTo.some(r => r.username === signedInOfficer)
                 ).slice(0, 1)
-              : openNotifs.filter(x =>
-                  x.assignedTo.some(r => r.username === signedInOfficer)
+              : openNotifs.filter(n =>
+                  n.assignedTo.some(r => r.username === signedInOfficer)
                 )
-            ).map(n => {
-              const { letter, color } = getType(n);
-              const thisAss = n.assignedTo.find(r => r.username === signedInOfficer);
-              const isPending = thisAss?.status === "pending";
-
-              return (
-                <div key={n._id} className={`notification-card ${n.unread ? "unread" : "read"}`}>
-                  <div className="circle-icon" style={{ backgroundColor: color }}>
-                    <span className="notification-letter">{letter}</span>
-                  </div>
-                  <div className="notification-content">
-                    <div className="notification-text">
-                      <p>
-                        <strong>{n.assignedBy}</strong> {n.action1}
-                        {n.post1 && <strong> {n.post1}</strong>}
-                      </p>
-                       {n.action1.toLowerCase().includes("assigned") ? (
-            <span className="time">Role: Investigator</span>
-          ) : (
-            <span className="time">Role: Case Manager</span>
-          )}
-                      <span className="time">{new Date(n.time).toLocaleString()}</span>
-                    </div>
-                    <div className="buttons-container">
-                      <button className="view-btnNC" onClick={() => handleView(n._id)}>
-                        View
-                      </button>
-                      {isPending &&
-                        !n.action1.toLowerCase().includes("accepted") &&
-                        !n.action1.toLowerCase().includes("declined") && (
-                          <>{/* Accept/Decline buttons */}</>
-                        )
-                      }
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            ).map(renderCard)}
           </div>
         </>
       )}
@@ -300,3 +243,145 @@ const NotificationCard1 = ({ signedInOfficer }) => {
 };
 
 export default NotificationCard1;
+
+//   return (
+//     <div className="notification-bar">
+//       <div className="headerNC">
+//         <h3 className="clickable-header" onClick={() => setShowAll(false)}>
+//           New Notifications <span className="count">{newNotifs.length}</span>
+//         </h3>
+//         <h3 className="clickable-header" onClick={() => setShowAll(true)}>
+//           View All Notifications
+//         </h3>
+//       </div>
+
+//       {!showAll ? (
+//         <div className="notifications-list">
+//           {newNotifs.slice(0,5).map(n => {
+//             const { letter, color } = getType(n);
+//             const thisAss = n.assignedTo.find(r => r.username === signedInOfficer);
+//             const isPending = thisAss?.status === "pending";
+
+//             return (
+//               <div key={n._id} className={`notification-card ${n.unread ? "unread" : "read"}`}>
+//                 <div className="circle-icon" style={{ backgroundColor: color }}>
+//                   <span className="notification-letter">{letter}</span>
+//                 </div>
+//                 <div className="notification-content">
+//                   <div className="notification-text">
+//                     <p>
+//                       <strong>{n.assignedBy}</strong> {n.action1}
+//                       {n.post1 && <strong> {n.post1}</strong>}
+//                     </p>
+//                     {n.action1.toLowerCase().includes("assigned") ? (
+//             <span className="time">Role: Investigator</span>
+//           ) : (
+//             <span className="time">Role: Case Manager</span>
+//           )}
+//                     <span className="time">{new Date(n.time).toLocaleString()}</span>
+//                   </div>
+//                   <div className="buttons-container">
+//                     <button className="view-btnNC" onClick={() => handleView(n._id)}>
+//                       View
+//                     </button>
+//                     {isPending &&
+//                       !n.action1.toLowerCase().includes("accepted") &&
+//                       !n.action1.toLowerCase().includes("declined") && (
+//                         <>{/* Accept/Decline buttons */}</>
+//                       )
+//                     }
+//                   </div>
+//                 </div>
+//               </div>
+//             );
+//           })}
+//         </div>
+//       ) : (
+//         <>
+//           <div className="view-all-collapse-toggle">
+//             <button
+//               onClick={() => setCollapsedAll(c => !c)}
+//               aria-label={collapsedAll ? "Expand" : "Collapse"}
+//               style={{
+//                 position: "relative",
+//                 width: "100%",
+//                 height: "40px",
+//                 background: "transparent",
+//                 border: "none",
+//                 cursor: "pointer"
+//               }}
+//             >
+//               <img
+//                 src={collapsedAll ? downArrow : upArrow}
+//                 alt={collapsedAll ? "Expand" : "Collapse"}
+//                 style={{
+//                   position: "absolute",
+//                   bottom: "4px",
+//                   left: "50%",
+//                   transform: "translateX(-50%)",
+//                   width: "24px",
+//                   height: "24px"
+//                 }}
+//               />
+//             </button>
+//           </div>
+//           <div
+//             className="notifications-list view-all"
+//             style={{
+//               height: collapsedAll ? "80px" : "auto",
+//               overflowY: collapsedAll ? "hidden" : "auto"
+//             }}
+//           >
+//             {(collapsedAll
+//               ? openNotifs.filter(x =>
+//                   x.assignedTo.some(r => r.username === signedInOfficer)
+//                 ).slice(0, 1)
+//               : openNotifs.filter(x =>
+//                   x.assignedTo.some(r => r.username === signedInOfficer)
+//                 )
+//             ).map(n => {
+//               const { letter, color } = getType(n);
+//               const thisAss = n.assignedTo.find(r => r.username === signedInOfficer);
+//               const isPending = thisAss?.status === "pending";
+
+//               return (
+//                 <div key={n._id} className={`notification-card ${n.unread ? "unread" : "read"}`}>
+//                   <div className="circle-icon" style={{ backgroundColor: color }}>
+//                     <span className="notification-letter">{letter}</span>
+//                   </div>
+//                   <div className="notification-content">
+//                     <div className="notification-text">
+//                       <p>
+//                         <strong>{n.assignedBy}</strong> {n.action1}
+//                         {n.post1 && <strong> {n.post1}</strong>}
+//                       </p>
+//                        {n.action1.toLowerCase().includes("assigned") ? (
+//             <span className="time">Role: Investigator</span>
+//           ) : (
+//             <span className="time">Role: Case Manager</span>
+//           )}
+//                       <span className="time">{new Date(n.time).toLocaleString()}</span>
+//                     </div>
+//                     <div className="buttons-container">
+//                       <button className="view-btnNC" onClick={() => handleView(n._id)}>
+//                         View
+//                       </button>
+//                       {isPending &&
+//                         !n.action1.toLowerCase().includes("accepted") &&
+//                         !n.action1.toLowerCase().includes("declined") && (
+//                           <>{/* Accept/Decline buttons */}</>
+//                         )
+//                       }
+//                     </div>
+//                   </div>
+//                 </div>
+//               );
+//             })}
+//           </div>
+//         </>
+//       )}
+//     </div>
+//   );
+// };
+
+// export default NotificationCard1;
