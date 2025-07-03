@@ -52,72 +52,7 @@ const [username, setUsername] = useState("");
 
   
     console.log(selectedCase, selectedLead);
-    useEffect(() => {
-      const fetchLeadStatus = async () => {
-        try {
-          const token = localStorage.getItem("token");
-          const { leadNo, leadName } = selectedLead;
-          const { caseNo, caseName } = selectedCase;
-    
-         const resp = await api.get(
-          `/api/lead/lead/${leadNo}/${encodeURIComponent(leadName)}/${caseNo}/${encodeURIComponent(caseName)}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        if (Array.isArray(resp.data) && resp.data.length > 0) {
-          setLeadStatus(resp.data[0].leadStatus);
-        } else {
-          console.warn("No lead returned when fetching status");
-                    setLeadStatus("Unknown");
-        }
-      } catch (err) {
-        console.error("Failed to fetch lead status", err);
-        setError("Could not load lead status");
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-     if (selectedLead?.leadNo && selectedLead?.leadName && selectedCase?.caseNo && selectedCase?.caseName) {
-      fetchLeadStatus();
-    }
-   }, [selectedLead, selectedCase, setLeadStatus]); 
   
-
-  useEffect(() => {
-    const fetchLeadData = async () => {
-      try {
-        if (selectedLead?.leadNo && selectedLead?.leadName && selectedLead?.caseNo && selectedLead?.caseName) {
-          const token = localStorage.getItem("token");
-
-          const response = await api.get(`/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
-            selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-  
-
-          console.log("Fetched Lead RR1:", response.data);
-
-          setReturns(response.data.length > 0 ? response.data : []);
-          setLeadReturns(response.data);
-
-          // if (response.data.length > 0) {
-          //   setReturns({
-          //     ...response.data[0], 
-          //   });
-          // }
-          
-        }
-      } catch (err) {
-        console.error("Error fetching lead data:", err);
-        setError("Failed to fetch lead data.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLeadData();
-  }, [leadDetails, caseDetails, setLeadReturns ]);
 
     useEffect(() => {
     const fetchLeadData = async () => {
@@ -146,6 +81,40 @@ const [username, setUsername] = useState("");
 
     fetchLeadData();
   }, [selectedLead, selectedCase]);
+
+   useEffect(() => {
+      const fetchLeadStatus = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const { leadNo, leadName } = selectedLead;
+          const { caseNo, caseName } = selectedCase;
+    
+         const resp = await api.get(
+          `/api/lead/status/${leadNo}/${encodeURIComponent(leadName)}/${caseNo}/${encodeURIComponent(caseName)}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        const leadStatus = resp.data.leadStatus;
+
+        if (Array.isArray(resp.data) && resp.data.length > 0) {
+          setLeadStatus(resp.data.leadStatus);
+        } else {
+          console.warn("No lead returned when fetching status");
+                    setLeadStatus("Unknown");
+        }
+      } catch (err) {
+        console.error("Failed to fetch lead status", err);
+        setError("Could not load lead status");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+     if (selectedLead?.leadNo && selectedLead?.leadName && selectedCase?.caseNo && selectedCase?.caseName) {
+      fetchLeadStatus();
+    }
+   }, [selectedLead, selectedCase, setLeadStatus]); 
+  
 
     const handleSubmitReport = async () => {
     try {
@@ -819,8 +788,8 @@ Case Page
           <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
-    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
-    : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
+    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${ leadStatus || selectedLead.leadStatus || "Unknown Status"}`
+    : `LEAD DETAILS | ${leadStatus || selectedLead?.leadStatus || "Unknown Status"}`}
 </h5>
 
           </div>
