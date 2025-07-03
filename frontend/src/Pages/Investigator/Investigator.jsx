@@ -53,7 +53,7 @@ const disabledStyle = { opacity: 0.5, cursor: 'not-allowed' };
 };
 const [team, setTeam] = useState({
   detectiveSupervisor: "",
-  caseManager: "",
+  caseManagers: [],
   investigators: []
 });
 
@@ -1151,7 +1151,7 @@ const handleSortAll = colKey => {
               </tr>
             <tr>
               <td>Case Manager</td>
-              <td>{team.caseManager || "—"}</td>
+              <td>{(team.caseManagers||[]).join(", ") || "—"}</td>
             </tr>
             <tr>
               <td>Investigator{team.investigators.length > 1 ? "s" : ""}</td>

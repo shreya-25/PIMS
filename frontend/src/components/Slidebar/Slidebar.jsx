@@ -9,7 +9,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   const managersRef = useRef(null);
   // const dropdownRef = useRef(null);
   const investigatorsRef = useRef(null);
-   const [currentRole, setCurrentRole] = useState(""); 
+  const [currentRole, setCurrentRole] = useState(""); 
   const [caseDetails, setCaseDetails] = useState({
     title: "",
     number: "",
@@ -23,20 +23,10 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   const [error, setError] = useState(null);
   const [allUsers, setAllUsers] = useState([]);
   
-  const { setSelectedCase, setToken } = useContext(CaseContext);
   const [managersOpen, setManagersOpen] = useState(false);
   const [investigatorsOpen, setInvestigatorsOpen] = useState(false);
+  const signedInOfficer = localStorage.getItem("loggedInUser");
 
-
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-
-  const caseManagers = ["Officer 1", "Officer 2", "Officer 3", "Officer 916"];
-  const investigators = [
-    // { name: "Officer 1", assignedLeads: 2, totalAssignedLeads: 1, assignedDays: 5, unavailableDays: 4 },
-    // { name: "Officer 2", assignedLeads: 3, totalAssignedLeads: 3, assignedDays: 3, unavailableDays: 3 },
-    // { name: "Officer 3", assignedLeads: 3, totalAssignedLeads: 3, assignedDays: 2, unavailableDays: 1 },
-    // { name: "Officer 4", assignedLeads: 4, totalAssignedLeads: 2, assignedDays: 6, unavailableDays: 2 },
-  ];
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setCaseDetails({ ...caseDetails, [name]: value });
@@ -73,22 +63,6 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
     }
   }, [localStorage.getItem("loggedInUser")]);
 
-  //   useEffect(() => {
-  //   function handleClickOutside(e) {
-  //     if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-  //       setDropdownOpen(false);
-  //     }
-  //   }
-  //   if (dropdownOpen) {
-  //     document.addEventListener("mousedown", handleClickOutside);
-  //   } else {
-  //     document.removeEventListener("mousedown", handleClickOutside);
-  //   }
-  //   return () => {
-  //     document.removeEventListener("mousedown", handleClickOutside);
-  //   };
-  // }, [dropdownOpen]);
-
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
@@ -96,30 +70,6 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   const toggleInvestigators = () =>
     setInvestigatorsOpen((o) => !o);
 
-  // useEffect(() => {
-  //   const fetchUsers = async () => {
-  //     const token = localStorage.getItem("token");
-  //     try {
-  //       const response = await api.get("/api/users/usernames", {
-  //         // headers: {
-  //         //   Authorization: `Bearer ${token}`,
-  //         // },
-  //       });
-  
-  //       const data = await response.json();
-  
-  //       if (!response.ok) {
-  //         throw new Error(data.message || "Failed to fetch users");
-  //       }
-  
-  //       setAllUsers(data.usernames); // assuming your API returns a list of user objects
-  //     } catch (error) {
-  //       console.error("❌ Error fetching users:", error);
-  //     }
-  //   };
-  
-  //   fetchUsers();
-  // }, []);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -146,15 +96,6 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   }, []);
   
 
-  // const toggleDropdown = () => {
-  //   setDropdownOpen(!dropdownOpen);
-  // };
-
-  // const toggleDropdown = () => {
-  //   setDropdownOpen((prev) => !prev);
-  // };
-  
-
   const handleCheckboxChange = (e) => {
     const { value, checked } = e.target;
     setCaseDetails((prevDetails) => ({
@@ -164,28 +105,6 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
         : prevDetails.investigators.filter((inv) => inv !== value),
     }));
   };
-
-
-  
-
-  // const handleDone = () => {
-  //   if (caseDetails.title && caseDetails.number) {
-  //     onAddCase({
-  //       id: caseDetails.number,
-  //       title: caseDetails.title,
-  //       status: "ongoing",
-  //       investigators: caseDetails.investigators,
-  //     });
-  //   }
-  //   setCaseDetails({
-  //     title: "",
-  //     number: "",
-  //     managerName: "",
-  //     investigators: [],
-  //     summary: "",
-  //   });
-  //   setIsSidebarOpen(false);
-  // };
   
   const handleDone = async () => {
     const {
@@ -271,66 +190,73 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
       });
       setIsSidebarOpen(false);
 
-      const notificationRecipients = caseDetails.investigators.filter(
-        (name) => name !== caseDetails.managerName
-      );
+      const creator = signedInOfficer;
+      const everyone = [
+       { username: caseDetails.detectiveSupervisor, role: "Detective Supervisor" },
+       ...caseDetails.managers.map(u => ({ username: u, role: "Case Manager" })),
+       ...caseDetails.investigators.map(u => ({ username: u, role: "Investigator" }))
+      ];
 
-      console.log("NotifRec", notificationRecipients);
+      const notificationRecipients = everyone.filter(person => person.username !== creator);
+
+      const assignedToPayload = notificationRecipients.map(person => ({
+       username: person.username,
+       role:     person.role,
+       status:   "pending",
+       unread:   true
+     }));
   
-if (notificationRecipients.length > 0) {
-  const notificationPayload = {
-    notificationId: Date.now().toString(),
-    assignedBy:     caseDetails.managerName,
-      assignedTo:     notificationRecipients.map(name => ({
-    username: name,
-    status: "pending"
-  })),     // array of strings
-    action1:        "assigned you to a new case",
-    action2:        "",                          // optional
-    post1:          `${caseDetails.number}: ${caseDetails.title}`,
-    post2:          "",                          // optional
-    leadNo:         "",                          // optional for cases
-    leadName:       "",                          // optional for cases
-    caseNo:         caseDetails.number,
-    caseName:       caseDetails.title,
-    caseStatus:     "Open",
-    type:           "Case",                      // <— REQUIRED by your schema
-    // unread & time will get their defaults from the schema
-  };
+      if (notificationRecipients.length > 0) {
+        const notificationPayload = {
+          notificationId: Date.now().toString(),
+          assignedBy:     caseDetails.managerName,
+          assignedTo:     assignedToPayload,
+          action1:        "assigned you to a new case",
+          action2:        "",                          // optional
+          post1:          `${caseDetails.number}: ${caseDetails.title}`,
+          post2:          "",                          // optional
+          leadNo:         "",                          // optional for cases
+          leadName:       "",                          // optional for cases
+          caseNo:         caseDetails.number,
+          caseName:       caseDetails.title,
+          caseStatus:     "Open",
+          type:           "Case",                      // <— REQUIRED by your schema
+          // unread & time will get their defaults from the schema
+        };
 
-  try {
-    const notifResponse = await api.post(
-      "/api/notifications",
-      notificationPayload,
-      {
-        headers: {
-          "Content-Type":  "application/json",
-          Authorization:   `Bearer ${token}`
+        try {
+          const notifResponse = await api.post(
+            "/api/notifications",
+            notificationPayload,
+            {
+              headers: {
+                "Content-Type":  "application/json",
+                Authorization:   `Bearer ${token}`
+              }
+            }
+          );
+          console.log("✅ Notification sent:", notifResponse.data);
+          // refreshNotifications();
+          // triggerRefresh();
+        } catch (notifErr) {
+          console.error("❌ Notification error:", notifErr.response?.data || notifErr);
         }
+      } else {
+        console.log("ℹ️ No investigators selected to receive notification.");
       }
-    );
-    console.log("✅ Notification sent:", notifResponse.data);
-    // refreshNotifications();
-    // triggerRefresh();
-  } catch (notifErr) {
-    console.error("❌ Notification error:", notifErr.response?.data || notifErr);
-  }
-} else {
-  console.log("ℹ️ No investigators selected to receive notification.");
-}
 
-} catch (err) {
-  const msg = err.response?.data?.message;
-  if (msg === "Case number already exists. Please use a unique caseNo.") {
-    alert("A case with this number already exists. Please use a unique case number.");
-  } else {
-    alert(`❌ Error: ${msg || err.message}`);
-  }
-  setError(msg || err.message);
-  console.error("❌ Error creating case:", err.response?.data || err.message);
-} finally {
-  setLoading(false);
-}
+      } catch (err) {
+        const msg = err.response?.data?.message;
+        if (msg === "Case number already exists. Please use a unique caseNo.") {
+          alert("A case with this number already exists. Please use a unique case number.");
+        } else {
+          alert(`❌ Error: ${msg || err.message}`);
+        }
+        setError(msg || err.message);
+        console.error("❌ Error creating case:", err.response?.data || err.message);
+      } finally {
+        setLoading(false);
+      }
   };
   
   

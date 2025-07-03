@@ -469,7 +469,12 @@ useEffect(() => {
           const payload = {
             notificationId: Date.now().toString(),
             assignedBy:     localStorage.getItem("loggedInUser"),
-            assignedTo:     [{ username: manager, status: "pending" }],
+            assignedTo: [{
+              username: manager,
+              role:     "Case Manager",           
+              status:   "pending",
+              unread:   true
+            }],
             action1:        "submitted a lead return for review",
             post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
             caseNo:         selectedCase.caseNo,
@@ -534,7 +539,12 @@ useEffect(() => {
         const payload = {
           notificationId: Date.now().toString(),
           assignedBy:     localStorage.getItem("loggedInUser"),
-          assignedTo:     investigators.map(u => ({ username: u, status: "pending" })),
+          assignedTo:     investigators.map(u => ({
+           username: u,
+           role:     "Investigator",
+           status:   "pending",
+           unread:   true
+         })),
           action1:        human,
           post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
           caseNo:         selectedCase.caseNo,
