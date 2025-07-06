@@ -797,7 +797,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -946,7 +946,7 @@ Case Page
                   checked={selectedReports.leadReturn}
                   onChange={() => toggleReportSection("leadReturn")}
                 />
-                Lead Returns
+                Narratives
               </label>
               <label className="checkbox-label">
                 <input
@@ -955,7 +955,7 @@ Case Page
                   checked={selectedReports.leadPersons}
                   onChange={() => toggleReportSection("leadPersons")}
                 />
-                Lead Persons
+                Person Entries
               </label>
               <label className="checkbox-label">
                 <input
@@ -964,7 +964,7 @@ Case Page
                   checked={selectedReports.leadVehicles}
                   onChange={() => toggleReportSection("leadVehicles")}
                 />
-                Lead Vehicles
+                Vehicle Entries
               </label>
               <label className="checkbox-label">
                 <input
@@ -973,7 +973,7 @@ Case Page
                   checked={selectedReports.leadEnclosures}
                   onChange={() => toggleReportSection("leadEnclosures")}
                 />
-                Lead Enclosures
+                Enclosures
               </label>
               <label className="checkbox-label">
                 <input
@@ -982,7 +982,7 @@ Case Page
                   checked={selectedReports.leadEvidence}
                   onChange={() => toggleReportSection("leadEvidence")}
                 />
-                Lead Evidences
+                Evidences
               </label>
             </div>
             <div className="checkbox-col">
@@ -995,7 +995,7 @@ Case Page
                   checked={selectedReports.leadPictures}
                   onChange={() => toggleReportSection("leadPictures")}
                 />
-                Lead Pictures
+                Pictures
               </label>
               <label className="checkbox-label">
                 <input
@@ -1004,7 +1004,7 @@ Case Page
                   checked={selectedReports.leadAudio}
                   onChange={() => toggleReportSection("leadAudio")}
                 />
-                Lead Audio Description
+                Audio Descriptions
               </label>
               <label className="checkbox-label">
                 <input
@@ -1013,7 +1013,7 @@ Case Page
                   checked={selectedReports.leadVideos}
                   onChange={() => toggleReportSection("leadVideos")}
                 />
-                Lead Videos Description
+                Video Descriptions
               </label>
               <label className="checkbox-label">
                 <input
@@ -1022,7 +1022,7 @@ Case Page
                   checked={selectedReports.leadScratchpad}
                   onChange={() => toggleReportSection("leadScratchpad")}
                 />
-                Lead Notes Entries
+                Note Entries
               </label>
               <label className="checkbox-label">
                 <input
@@ -1031,7 +1031,7 @@ Case Page
                   checked={selectedReports.leadTimeline}
                   onChange={() => toggleReportSection("leadTimeline")}
                 />
-                Lead Timeline Entries
+                Timeline Entries
               </label>
             </div>
           </div>

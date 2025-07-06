@@ -619,7 +619,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -686,7 +686,7 @@ Case Page
             />
           </div>
           <div className="form-row-pic">
-            <label  className="evidence-head">Return Id*</label>
+            <label  className="evidence-head">Narrative Id*</label>
             <input
               type="leadReturnId"
               value={pictureData.leadReturnId}
@@ -811,7 +811,7 @@ Case Page
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th>Return Id </th>
+              <th>Narrative Id </th>
               <th>Date Picture Taken</th>
               <th>File Name</th>
               <th>Description</th>

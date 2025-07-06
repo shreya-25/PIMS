@@ -668,7 +668,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -735,7 +735,7 @@ Case Page
             />
           </div>
           <div className="form-row-audio">
-            <label className="evidence-head">Return Id*</label>
+            <label className="evidence-head">Narrative Id*</label>
             <input
               type="text"
               value={audioData.leadReturnId}
@@ -858,11 +858,11 @@ Case Page
            <table className="leads-table">
           <thead>
             <tr>
-              <th style={{ width: "11%" }}>Date Entered</th>
-              <th style={{ width: "10%" }}>Return Id </th>
+              <th style={{ width: "11%" }}>Date Entered*</th>
+              <th style={{ width: "10%" }}>Narrative Id* </th>
               <th>Date Audio Recorded</th>
-              <th>File Name</th>
-              <th>Description</th>
+              <th>File Name*</th>
+              <th>Description*</th>
               <th style={{ width: "13%" }}></th>
               {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>

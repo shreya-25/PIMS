@@ -627,7 +627,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -705,7 +705,7 @@ Case Page
             
               onChange={(e) => handleInputChange("disposedDate", e.target.value)}
             />
-            <label className="evidence-head">Return Id*</label>
+            <label className="evidence-head">Narrative Id*</label>
             <input
               type="leadReturnId"
               value={evidenceData.leadReturnId}
@@ -827,10 +827,10 @@ Case Page
             <table className="leads-table">
           <thead>
             <tr>
-              <th>Date Entered</th>
-              <th style={{ width: "4%" }}> Return Id </th>
+              <th>Date Entered*</th>
+              <th style={{ width: "4%" }}> Narrative Id* </th>
               <th>Type</th>
-              <th>Collection Date</th>
+              <th>Collection Date*</th>
               <th>Disposed Date</th>
               <th>File Name</th>
               <th>Description</th>

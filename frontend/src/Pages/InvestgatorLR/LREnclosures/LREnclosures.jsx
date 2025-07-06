@@ -769,7 +769,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -835,7 +835,7 @@ Case Page
         <div className = "timeline-form-sec">
         <div className="enclosure-form">
         <div className="form-row-evidence">
-            <label>Return Id *</label>
+            <label>Narrative Id *</label>
             <input
               type="returnId"
               value={enclosureData.returnId}
@@ -973,10 +973,10 @@ Case Page
               <table className="leads-table">
           <thead>
             <tr>
-              <th>Date Entered</th>
-              <th>Return Id </th>
+              <th>Date Entered*</th>
+              <th>Narrative Id* </th>
               <th>Type</th>
-              <th>Enclosure</th>
+              <th>Enclosure*</th>
               <th>File Name</th>
               <th></th>
               {isCaseManager && (

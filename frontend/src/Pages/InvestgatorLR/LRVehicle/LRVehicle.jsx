@@ -714,7 +714,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -770,7 +770,7 @@ Case Page
         <div className = "timeline-form-sec">
         <div className="vehicle-form">
           <div className="form-row4">
-          <label>Return Id*</label>
+          <label>Narrative Id*</label>
             <input
               type="text"
               value={vehicleData.leadReturnId}
@@ -920,7 +920,7 @@ Case Page
           <thead>
             <tr>
               <th style={{ width: "12%" }}>Date Entered</th>
-              <th style={{ width: "10%" }}>Return Id</th>
+              <th style={{ width: "10%" }}>Narrative Id</th>
               <th>Make</th>
               <th>Model</th>
               <th>Color</th>
