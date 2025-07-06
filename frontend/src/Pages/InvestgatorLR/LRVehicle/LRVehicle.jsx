@@ -10,6 +10,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Comment from "../../../components/Comment/Comment";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
+import { AlertModal } from "../../../components/AlertModal/AlertModal";
 
 
 
@@ -30,7 +31,8 @@ export const LRVehicle = () => {
     const [rawVehicles, setRawVehicles] = useState([]);
     const [editIndex, setEditIndex] = useState(null);
       const [leadData, setLeadData] = useState({});
-
+ const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
 
     
     useEffect(() => {
@@ -107,97 +109,6 @@ const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus }
 
     fetchLeadData();
   }, [selectedLead, selectedCase]);
-
-   const handleSubmitReport = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      if (!selectedLead || !selectedCase) {
-        alert("No lead or case selected!");
-        return;
-      }
-
-      const body = {
-        leadNo: selectedLead.leadNo,
-        description: selectedLead.leadName,
-        caseNo: selectedCase.caseNo,
-        caseName: selectedCase.caseName,
-        submittedDate: new Date(),
-        assignedTo: {
-          assignees: leadData.assignedTo || [],
-          lRStatus: "Submitted"
-        },
-        assignedBy: {
-          assignee: localStorage.getItem("officerName") || "Unknown Officer",
-          lRStatus: "Pending"
-        }
-      };
-
-      const response = await api.post("/api/leadReturn/create", body, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      });
-
-      if (response.status === 201) {
-        const statusResponse = await api.put(
-          "/api/lead/status/in-review",
-          {
-            leadNo: selectedLead.leadNo,
-            description: selectedLead.leadName,
-            caseNo: selectedCase.caseNo,
-            caseName: selectedCase.caseName
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json"
-            }
-          }
-        );
-
-        if (statusResponse.status === 200) {
-          setLeadStatus("In Review");
-
-            setSelectedLead(prev => ({
-            ...prev,
-            leadStatus: "In Review"
-          }));
-          
-          alert("Lead Return submitted and status set to 'In Review'");
-        const manager    = leadData.assignedBy;                  // string username
-        const investigators = (leadData.assignedTo || []).map(a => a.username);
-        if (manager) {
-          const payload = {
-            notificationId: Date.now().toString(),
-            assignedBy:     localStorage.getItem("loggedInUser"),
-            assignedTo:     [{ username: manager, status: "pending" }],
-            action1:        "submitted a lead return for review",
-            post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
-            caseNo:         selectedCase.caseNo,
-            caseName:       selectedCase.caseName,
-            leadNo:         selectedLead.leadNo,
-            leadName:       selectedLead.leadName,
-            type:           "Lead"
-          };
-          await api.post("/api/notifications", payload, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-        }
-
-        alert("Lead Return submitted and Case Manager notified.");
-        } else {
-          alert("Lead Return submitted but status update failed.");
-        }
-      } else {
-        alert("Failed to submit Lead Return");
-      }
-    } catch (error) {
-      console.error("Error during Lead Return submission or status update:", error);
-      alert("Something went wrong while submitting the report.");
-    }
-  };
 
         
  const openVehicleModal = (leadNo, leadName, caseNo, caseName, leadReturnId, leadsDeskCode) => {
@@ -419,10 +330,13 @@ const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus }
         primaryColor:'', secondaryColor:'', state:'',
         leadReturnId:'', information:''
       });
-      alert(editIndex!==null ? "Vehicle updated" : "Vehicle added");
+        setAlertMessage(editIndex!==null ? "Vehicle updated" : "Vehicle added");
+     setAlertOpen(true);
     } catch (err) {
       console.error(err);
-      alert("Save failed: " + (err.response?.data?.message || err.message));
+  
+        setAlertMessage("Save failed: " + (err.response?.data?.message || err.message));
+     setAlertOpen(true);
     }
   };
   
@@ -508,7 +422,8 @@ const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus }
       setVehicles(newDisplay);
     } catch (e) {
       console.error(e);
-      alert("Failed to delete");
+       setAlertMessage("Failed to delete");
+     setAlertOpen(true);
     }
   };
   
@@ -525,6 +440,13 @@ const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus }
         <div className="person-page-content">
       {/* Navbar */}
       <Navbar />
+      <AlertModal
+                    isOpen={alertOpen}
+                    title="Notification"
+                    message={alertMessage}
+                    onConfirm={() => setAlertOpen(false)}
+                    onClose={()   => setAlertOpen(false)}
+                  />
 
       {/* Top Menu */}
       {/* <div className="top-menu">
@@ -594,7 +516,8 @@ const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus }
                       }
                     });
                   } else {
-                    alert("Please select a case and lead first.");
+                      setAlertMessage("Please select a case and lead first.");
+                      setAlertOpen(true);
                   }
                 }}>Lead Chain of Custody</span>
           

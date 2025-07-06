@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { CaseContext } from "../../Pages/CaseContext";
+import { AlertModal } from "../AlertModal/AlertModal";
 import { useContext } from "react";
 import "./Slidebar.css";
 import api from "../../api"
@@ -10,6 +11,8 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   // const dropdownRef = useRef(null);
   const investigatorsRef = useRef(null);
   const [currentRole, setCurrentRole] = useState(""); 
+   const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
   const [caseDetails, setCaseDetails] = useState({
     title: "",
     number: "",
@@ -118,7 +121,8 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
     } = caseDetails;
 
     if (!title || !number || !managers || !detectiveSupervisor) {
-       alert("❌ Please fill all required fields: Case Title, Number, Manager");
+       setAlertMessage("Please fill all required fields: Case Number, Name, and Managers");
+       setAlertOpen(true);
        return;
      }
   
@@ -158,26 +162,38 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
       if (response.status !== 201) {
         // replicate your original error checks
         if (data.message === "Username is required to assign Case Manager") {
-          alert("Please enter a valid username");
+          setAlertMessage("Please enter a valid username");
+          setAlertOpen(true);
         } else if (
           data.error &&
           data.error.includes("dup key") &&
           data.error.includes("caseName")
         ) {
-          alert("A case with this name already exists. Please choose a unique case name.");
+          // alert("A case with this name already exists. Please choose a unique case name.");
+          setAlertMessage("A case with this name already exists. Please choose a unique case name.");
+          setAlertOpen(true);
         } else if (data.message === "Unauthorized: User details not found") {
-          alert("User details not found. Please sign in again");
+          // alert("User details not found. Please sign in again");
+          setAlertMessage("User details not found. Please sign in again");
+          setAlertOpen(true);
         } else if (data.message === "caseNo, caseName, and assignedOfficers are required") {
-          alert("Please fill in the case number, case name, and select at least one assigned officer");
+          // alert("Please fill in the case number, case name, and select at least one assigned officer");
+          setAlertMessage("Please fill in the case number, case name, and select at least one assigned officer");
+          setAlertOpen(true);
         } else if (data.message === "Case number already exists. Please use a unique caseNo.") {
-          alert("A case with this number already exists. Please use a unique case number.");
+          // alert("A case with this number already exists. Please use a unique case number.");
+          setAlertMessage("A case with this number already exists. Please use a unique case number.");
+          setAlertOpen(true);
         } else {
-          alert(`❌ Error: ${data.message}`);
+          // alert(`❌ Error: ${data.message}`);
+          setAlertMessage(`Error: ${data.message}`);
+          setAlertOpen(true);
         }
         throw new Error(data.message || "Failed to create case");
       }
   
-      alert("✅ Case Created Successfully!");
+      setAlertMessage("Case Created Successfully!");
+      setAlertOpen(true);
       onAddCase(newCase);
       setCaseDetails({
         title: "",
@@ -246,23 +262,37 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
       }
 
       } catch (err) {
-        const msg = err.response?.data?.message;
-        if (msg === "Case number already exists. Please use a unique caseNo.") {
-          alert("A case with this number already exists. Please use a unique case number.");
-        } else {
-          alert(`❌ Error: ${msg || err.message}`);
-        }
-        setError(msg || err.message);
-        console.error("❌ Error creating case:", err.response?.data || err.message);
-      } finally {
-        setLoading(false);
-      }
+  // Try to pull out a server‐side “message” field
+  const serverData = err.response?.data;
+  const msg =
+    serverData?.message                                 // your API’s own .message
+    || (typeof serverData === "string"                  // if it’s just a string
+        ? serverData
+        : JSON.stringify(serverData, null, 2))         // or stringify the object
+    || err.message                                     // or the JS error
+    || "Unknown error";
+
+  setError(msg);
+  setAlertMessage(`Error creating case: ${msg}`);
+  setAlertOpen(true);
+} finally {
+  setLoading(false);
+}
   };
   
   
 
   return (
     <div>
+
+      <AlertModal
+        isOpen={alertOpen}
+        title="Notification"
+        message={alertMessage}
+        onConfirm={() => setAlertOpen(false)}
+        onClose={()   => setAlertOpen(false)}
+      />
+
       <button className={buttonClass} onClick={toggleSidebar}>
         <i className="fa-solid fa-plus"></i> Add Case
       </button>

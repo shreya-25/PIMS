@@ -8,6 +8,7 @@ import { CaseContext } from "../CaseContext";
 import api from "../../api";
 import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
 import {SideBar } from "../../components/Sidebar/Sidebar";
+import { AlertModal } from "../../components/AlertModal/AlertModal";
 
 
 
@@ -26,8 +27,8 @@ const [showSelectModal, setShowSelectModal] = useState(false);
 console.log(caseDetails, leadDetails, leadOrigin);
   const [pendingRoute, setPendingRoute]   = useState(null);
   const [caseTeam, setCaseTeam] = useState({detectiveSupervisor: "", caseManagers: [], investigators: [] });
-
-
+const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
 const formatDate = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
@@ -46,7 +47,6 @@ useEffect(() => {
      setUsername(loggedInUser);
    }
   })
-
 
 
   // State for all input fields
@@ -182,7 +182,9 @@ useEffect(() => {
   const handleInputChange = (field, value) => {
     // Ensure only numeric values (or empty)
     if (field === 'leadNumber' && !/^\d*$/.test(value)) {
-      alert("Lead Number must be a numeric value.");
+      // alert("Lead Number must be a numeric value.");
+      setAlertMessage("Lead Number must be a numeric value.");
+       setAlertOpen(true);
       return;
     }
   
@@ -308,8 +310,10 @@ const handleGenerateLead = async () => {
 
     // treat any 2xx as success
     if (response.status >= 200 && response.status < 300) {
-      alert("Lead successfully added!");
-
+      // alert("Lead successfully added!");
+  setAlertMessage("Lead successfully added!");
+  setAlertOpen(true);
+    
       const token = localStorage.getItem("token");
 
       // 2) Determine which officers are truly new
@@ -395,7 +399,7 @@ const handleGenerateLead = async () => {
       }
 
       // 5) Finally navigate back and stop
-      navigate(-1);
+      // navigate(-1);
       return;
     }
 
@@ -409,7 +413,9 @@ const handleGenerateLead = async () => {
       err.response?.data ||
       err.message ||
       "Unknown error";
-    alert(`Error: ${typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg}`);
+    // alert(`Error: ${typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg}`);
+    setAlertMessage(`Error: ${typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg}`);
+       setAlertOpen(true);
   }
 };
 
@@ -701,7 +707,17 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
     <div className="lead-instructions-page">
       {/* Navbar at the top */}
       <Navbar />
-
+       <AlertModal
+  isOpen={alertOpen}
+  title="Notification"
+  message={alertMessage}
+  onConfirm={() => {
+    setAlertOpen(false);
+    navigate(-1);
+  }}
+  onClose={() => setAlertOpen(false)}
+/>
+      
 
       <div className="LRI_Content">
        {/* <div className="sideitem">

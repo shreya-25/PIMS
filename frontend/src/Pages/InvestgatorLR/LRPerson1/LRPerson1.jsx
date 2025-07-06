@@ -7,6 +7,7 @@ import './LRPerson1.css';
 import { CaseContext } from "../../CaseContext";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
+import { AlertModal } from "../../../components/AlertModal/AlertModal";
 
 
 
@@ -31,6 +32,8 @@ const [username, setUsername] = useState("");
 const { selectedCase, selectedLead, leadInstructions, leadReturns } = useContext(CaseContext);
      const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
                 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+    const [alertOpen, setAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState("");
 const onShowCaseSelector = (route) => {
   navigate(route, { state: { caseDetails } });
 };
@@ -221,12 +224,16 @@ useEffect(() => {
     }
 
     console.log("Server response:", response.data);
-    alert(person ? "Updated successfully!" : "Created successfully!");
+    // alert(person ? "Updated successfully!" : "Created successfully!");
+    setAlertMessage(person ? "Updated successfully!" : "Created successfully!");
+                    setAlertOpen(true);
     // optionally redirect back or refresh your list here
 
   } catch (err) {
     console.error("Save failed:", err.response || err);
-    alert("Error: " + (err.response?.data?.message || err.message));
+    // alert("Error: " + (err.response?.data?.message || err.message));
+    setAlertMessage("Error: " + (err.response?.data?.message || err.message));
+                    setAlertOpen(true);
   }
 };
   
@@ -235,6 +242,14 @@ useEffect(() => {
     <div className="person-page">
       {/* Navbar at the top */}
       <Navbar />
+
+       <AlertModal
+              isOpen={alertOpen}
+              title="Notification"
+              message={alertMessage}
+              onConfirm={() => setAlertOpen(false)}
+              onClose={()   => setAlertOpen(false)}
+            />
 
       {/* <div className="top-menu">
         <div className="menu-items">
@@ -289,7 +304,9 @@ useEffect(() => {
                       }
                     });
                   } else {
-                    alert("Please select a case and lead first.");
+                    // alert("Please select a case and lead first.");
+                    setAlertMessage("Please select a case and lead first.");
+                    setAlertOpen(true);
                   }
                 }}>Lead Chain of Custody</span>
           

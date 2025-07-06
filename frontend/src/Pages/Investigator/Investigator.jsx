@@ -1482,7 +1482,7 @@ const handleSortAll = colKey => {
     <AlertModal
   isOpen={confirmConfig.isOpen}
   title="Confirm Accept"
-  message={`Are you sure you want to accept Lead #${confirmConfig.lead?.id}?`}
+  message={`Are you sure you want to accept Lead #${confirmConfig.lead?.id} -  ${confirmConfig.lead?.description} ?`}
   onClose={closeConfirm}
   onConfirm={handleConfirmAccept}
 >

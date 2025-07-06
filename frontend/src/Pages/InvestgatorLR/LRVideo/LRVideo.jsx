@@ -8,6 +8,8 @@ import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
+import { AlertModal } from "../../../components/AlertModal/AlertModal";
+
 
 export const LRVideo = () => {
     // useEffect(() => {
@@ -26,6 +28,8 @@ export const LRVideo = () => {
   const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
   const [editingIndex, setEditingIndex] = useState(null);
       const [leadData, setLeadData] = useState({});
+       const [alertOpen, setAlertOpen] = useState(false);
+          const [alertMessage, setAlertMessage] = useState("");
 
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
@@ -105,97 +109,6 @@ export const LRVideo = () => {
     fetchLeadData();
   }, [selectedLead, selectedCase]);
 
-    const handleSubmitReport = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      if (!selectedLead || !selectedCase) {
-        alert("No lead or case selected!");
-        return;
-      }
-
-      const body = {
-        leadNo: selectedLead.leadNo,
-        description: selectedLead.leadName,
-        caseNo: selectedCase.caseNo,
-        caseName: selectedCase.caseName,
-        submittedDate: new Date(),
-        assignedTo: {
-          assignees: leadData.assignedTo || [],
-          lRStatus: "Submitted"
-        },
-        assignedBy: {
-          assignee: localStorage.getItem("officerName") || "Unknown Officer",
-          lRStatus: "Pending"
-        }
-      };
-
-      const response = await api.post("/api/leadReturn/create", body, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      });
-
-      if (response.status === 201) {
-        const statusResponse = await api.put(
-          "/api/lead/status/in-review",
-          {
-            leadNo: selectedLead.leadNo,
-            description: selectedLead.leadName,
-            caseNo: selectedCase.caseNo,
-            caseName: selectedCase.caseName
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json"
-            }
-          }
-        );
-
-        if (statusResponse.status === 200) {
-          setLeadStatus("In Review");
-
-            setSelectedLead(prev => ({
-            ...prev,
-            leadStatus: "In Review"
-          }));
-          
-          alert("Lead Return submitted and status set to 'In Review'");
-        const manager    = leadData.assignedBy;                  // string username
-        const investigators = (leadData.assignedTo || []).map(a => a.username);
-        if (manager) {
-          const payload = {
-            notificationId: Date.now().toString(),
-            assignedBy:     localStorage.getItem("loggedInUser"),
-            assignedTo:     [{ username: manager, status: "pending" }],
-            action1:        "submitted a lead return for review",
-            post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
-            caseNo:         selectedCase.caseNo,
-            caseName:       selectedCase.caseName,
-            leadNo:         selectedLead.leadNo,
-            leadName:       selectedLead.leadName,
-            type:           "Lead"
-          };
-          await api.post("/api/notifications", payload, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-        }
-
-        alert("Lead Return submitted and Case Manager notified.");
-        } else {
-          alert("Lead Return submitted but status update failed.");
-        }
-      } else {
-        alert("Failed to submit Lead Return");
-      }
-    } catch (error) {
-      console.error("Error during Lead Return submission or status update:", error);
-      alert("Something went wrong while submitting the report.");
-    }
-  };
-
   const handleInputChange = (field, value) => {
     setVideoData({ ...videoData, [field]: value });
   };
@@ -207,7 +120,8 @@ export const LRVideo = () => {
         ? !videoData.link.trim() || !videoData.leadReturnId || !videoData.dateVideoRecorded
         : !file || !videoData.leadReturnId || !videoData.dateVideoRecorded || !videoData.description
     ) {
-      alert("Please fill in all required fields and either select a file or enter a valid link.");
+       setAlertMessage("Please fill in all required fields and either select a file or enter a valid link.");
+       setAlertOpen(true);
       return;
     }
 
@@ -272,7 +186,8 @@ export const LRVideo = () => {
       }
     } catch (err) {
       console.error("Error uploading video:", err);
-      alert("Failed to upload video.");
+      setAlertMessage("Failed to upload video.");
+       setAlertOpen(true);
     }
   };
   
@@ -382,7 +297,8 @@ export const LRVideo = () => {
 
     // Validation for “link” mode
     if (videoData.isLink && !videoData.link.trim()) {
-      alert("Please enter a valid link.");
+        setAlertMessage("Please enter a valid link.");
+       setAlertOpen(true);
       return;
     }
 
@@ -439,7 +355,9 @@ export const LRVideo = () => {
       }
     } catch (err) {
       console.error("Error updating video:", err);
-      alert("Failed to update video.");
+   
+      setAlertMessage("Failed to update video.");
+       setAlertOpen(true);
     }
   };
                   
@@ -454,7 +372,8 @@ export const LRVideo = () => {
       setVideos((prev) => prev.filter((_, i) => i !== idx));
     } catch (err) {
       console.error("Error deleting video:", err);
-      alert("Failed to delete video.");
+       setAlertMessage("Failed to delete video.");
+       setAlertOpen(true);
     }
   };
 
@@ -463,6 +382,13 @@ export const LRVideo = () => {
     <div className="lrvideos-container">
       {/* Navbar */}
       <Navbar />
+       <AlertModal
+                isOpen={alertOpen}
+                title="Notification"
+                message={alertMessage}
+                onConfirm={() => setAlertOpen(false)}
+                onClose={()   => setAlertOpen(false)}
+              />
 
       {/* Top Menu */}
       {/* <div className="top-menu">
@@ -510,7 +436,8 @@ export const LRVideo = () => {
                       }
                     });
                   } else {
-                    alert("Please select a case and lead first.");
+                     setAlertMessage("Please select a case and lead first.");
+                    setAlertOpen(true);
                   }
                 }}>Lead Chain of Custody</span>
           

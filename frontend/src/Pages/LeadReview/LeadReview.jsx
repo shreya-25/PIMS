@@ -12,6 +12,7 @@ import { CaseContext } from "../CaseContext";
 import api from "../../api"; // adjust the path as needed
 import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
 import {SideBar } from "../../components/Sidebar/Sidebar";
+import { AlertModal } from "../../components/AlertModal/AlertModal";
 
 
 
@@ -30,6 +31,8 @@ export const LeadReview = () => {
   const [caseTeam, setCaseTeam] = useState({ detectiveSupervisor: "", caseManagers: [], investigators: [] });
   const [originalAssigned, setOriginalAssigned] = useState([]);
   const signedInOfficer = localStorage.getItem("loggedInUser");
+  const [alertOpen, setAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState("");
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -201,7 +204,9 @@ const handleSave = async () => {
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    alert("Lead updated successfully!");
+    // alert("Lead updated successfully!");
+    setAlertMessage("Lead updated successfully!");
+       setAlertOpen(true);
       } catch (err) {
         console.error("Save failed:", err);
         setError("Failed to save changes.");
@@ -261,10 +266,14 @@ const acceptLead = async (leadNo, description) => {
       leadStatus: "Accepted",
     }));
 
-    alert("✅ Lead accepted successfully!");
+    // alert("✅ Lead accepted successfully!");
+    setAlertMessage("Lead accepted successfully!");
+       setAlertOpen(true);
   } catch (error) {
     console.error("Error updating lead status:", error.response?.data || error);
-    alert("❌ Failed to accept lead.");
+    // alert("❌ Failed to accept lead.");
+    setAlertMessage("Failed to accept lead.");
+       setAlertOpen(true);
   }
 };
 
@@ -311,11 +320,15 @@ const acceptLead = async (leadNo, description) => {
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    alert("❌ You’ve declined the lead, been removed from assigned list, and the Case Manager has been notified.");
+    // alert("❌ You’ve declined the lead, been removed from assigned list, and the Case Manager has been notified.");
+    setAlertMessage("Lead is successfully declined");
+       setAlertOpen(true);
     navigate('/Investigator', { replace: true });
   } catch (err) {
     console.error("Error declining lead:", err);
-    alert("❌ Failed to decline lead.");
+    // alert("❌ Failed to decline lead.");
+    setAlertMessage("Failed to decline lead.");
+       setAlertOpen(true);
   }
 };
 
@@ -485,7 +498,9 @@ useEffect(() => {
   const handleInputChange = (field, value) => {
     // Example: Only allow digits for 'leadNumber'
     if (field === 'leadNumber' && !/^\d*$/.test(value)) {
-      alert("Lead Number must be numeric.");
+      // alert("Lead Number must be numeric.");
+       setAlertMessage("Lead Number must be numeric.");
+       setAlertOpen(true);
       return;
     }
     setLeadData({ ...leadData, [field]: value });
@@ -567,7 +582,13 @@ const isEditableByCaseManager = field => {
     <div className="lead-review-page">
       {/* Navbar */}
       <Navbar />
-
+       <AlertModal
+              isOpen={alertOpen}
+              title="Notification"
+              message={alertMessage}
+              onConfirm={() => setAlertOpen(false)}
+              onClose={()   => setAlertOpen(false)}
+            />
 
       {/* Main Container */}
       <div className="lead-review-container1">
@@ -613,7 +634,9 @@ const isEditableByCaseManager = field => {
                       }
                     });
                   } else {
-                    alert("Please select a case and lead first.");
+                    // alert("Please select a case and lead first.");
+                     setAlertMessage("Please select a case and lead first.");
+                     setAlertOpen(true);
                   }
                 }}>Add/View Lead Return</span>
           <span className="menu-item" onClick={() => {
@@ -628,7 +651,9 @@ const isEditableByCaseManager = field => {
                       }
                     });
                   } else {
-                    alert("Please select a case and lead first.");
+                    // alert("Please select a case and lead first.");
+                     setAlertMessage("Please select a case and lead first.");
+                     setAlertOpen(true);
                   }
                 }}>Lead Chain of Custody</span>
           

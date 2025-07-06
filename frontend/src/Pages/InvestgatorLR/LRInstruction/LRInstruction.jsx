@@ -90,7 +90,6 @@ export const LRInstruction = () => {
   
     // Check if mandatory fields are filled
     if (!leadNumber || !leadSummary || !assignedDate || !assignedOfficer || !assignedBy) {
-      alert("Please fill in all the required fields before generating a lead.");
       return;
     }
   
