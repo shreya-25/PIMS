@@ -624,7 +624,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -689,7 +689,7 @@ Case Page
             />
           </div>
           <div className="form-row-video">
-            <label className="evidence-head">Lead Return Id*</label>
+            <label className="evidence-head">Narrative Id*</label>
             <input
               type="text"
               value={videoData.leadReturnId}
@@ -846,7 +846,7 @@ Case Page
           <thead>
             <tr>
               <th style={{ width: "12%" }}>Date Entered</th>
-              <th style={{ width: "10%" }}> Return Id </th>
+              <th style={{ width: "10%" }}> Narrative Id </th>
               <th>Date Video Recorded</th>
               <th>File Name</th>
               <th>Description</th>

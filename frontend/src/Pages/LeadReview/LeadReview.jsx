@@ -28,16 +28,15 @@ export const LeadReview = () => {
   const [error, setError] = useState("");
   const [pendingRoute, setPendingRoute]   = useState(null);
   const [caseTeam, setCaseTeam] = useState({ detectiveSupervisor: "", caseManagers: [], investigators: [] });
-
+  const [originalAssigned, setOriginalAssigned] = useState([]);
   const signedInOfficer = localStorage.getItem("loggedInUser");
 
-    useEffect(() => {
-    // as soon as we land on this screen, jump to top
+  useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
   
-   const [showSelectModal, setShowSelectModal] = useState(false);
-       const [leads, setLeads] = useState({
+  const [showSelectModal, setShowSelectModal] = useState(false);
+  const [leads, setLeads] = useState({
             assignedLeads: [],
             pendingLeads: [],
             pendingLeadReturns: [],
@@ -45,9 +44,6 @@ export const LeadReview = () => {
        } );
 
   const { selectedCase, setSelectedLead , selectedLead, leadStatus, setLeadStatus} = useContext(CaseContext);
-// const leadFromState = location.state?.lead || null;
-
-// const selectedLead = leadFromState || null;
   const statuses = [
     "Lead Created",
     "Lead Assigned",
@@ -57,9 +53,6 @@ export const LeadReview = () => {
     "Lead Returned",
     "Lead Completed",
   ];
-  
-  // Change this index to highlight the current status dynamically
-  // const currentStatusIndex = 1;
 
   const statusToIndex = {
     Assigned:               1,  // maps to "Lead Assigned"
@@ -71,52 +64,21 @@ export const LeadReview = () => {
     Completed:              6,  // "Lead Completed"
   };
 
-  // pull in supervisor / manager / investigators for this case
-useEffect(() => {
-  if (!selectedCase?.caseNo) return;
-  const token = localStorage.getItem("token");
-  api.get(`/api/cases/${selectedCase.caseNo}/team`, {
-    headers: { Authorization: `Bearer ${token}` }
-  }).then(resp => {
-    setCaseTeam({
-      detectiveSupervisor: resp.data.detectiveSupervisor,
-      caseManagers:         resp.data.caseManagers,
-      investigators:       resp.data.investigators
-    });
-  }).catch(console.error);
-}, [selectedCase.caseNo]);
+  useEffect(() => {
+    if (!selectedCase?.caseNo) return;
+    const token = localStorage.getItem("token");
+    api.get(`/api/cases/${selectedCase.caseNo}/team`, {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(resp => {
+      setCaseTeam({
+        detectiveSupervisor: resp.data.detectiveSupervisor,
+        caseManagers:         resp.data.caseManagers,
+        investigators:       resp.data.investigators
+      });
+    }).catch(console.error);
+  }, [selectedCase.caseNo]);
 
 console.log ("case team ====", caseTeam);
-
-  // inside LeadReview()
-// const handleSave = async () => {
-//   try {
-//     const token = localStorage.getItem("token");
-//     setLoading(true);
-// const processedLeadData = {
-//   ...leadData,
-//   parentLeadNo: typeof leadData.parentLeadNo === "string"
-//     ? leadData.parentLeadNo
-//         .split(",")
-//         .map((item) => Number(item.trim()))
-//         .filter((num) => !isNaN(num))
-//     : leadData.parentLeadNo
-// };
-
-// await api.put(
-//   `/api/lead/update/${leadData.leadNo}/${encodeURIComponent(leadData.description)}/${leadData.caseNo}/${encodeURIComponent(leadData.caseName)}`,
-//   processedLeadData,
-//   { headers: { Authorization: `Bearer ${token}` } }
-// );
-
-//     alert("Lead updated successfully!");
-//   } catch (err) {
-//     console.error("Save failed:", err);
-//     setError("Failed to save changes.");
-//   } finally {
-//     setLoading(false);
-//   }
-// };
 
 const handleSave = async () => {
   try {
@@ -131,30 +93,38 @@ const handleSave = async () => {
           .filter((num) => !isNaN(num))
       : leadData.parentLeadNo;
 
-       const previousUsernames = Array.isArray(leadData.assignedTo)
-      ? leadData.assignedTo.map((item) => item.username)
-      : [];
+    const previousUsernames = originalAssigned;
+
+    console.log("leadData.assignedTo (raw):", leadData.assignedTo);
+    console.log("previousUsernames:", originalAssigned);
+    console.log("assignedOfficers:", assignedOfficers);
 
     // 2) Build `assignedTo` from your array of usernames (`assignedOfficers`)
-    const processedAssignedTo = assignedOfficers.map((username) => {
-      // Preserve existing status if this user was already on leadData.assignedTo
-      const existing = Array.isArray(leadData.assignedTo)
-        ? leadData.assignedTo.find((item) => item.username === username)
-        : null;
+    const processedAssignedTo = assignedOfficers.map(username => {
+    const existing = Array.isArray(leadData.assignedTo)
+      ? leadData.assignedTo.find(item => {
+          const name = typeof item === 'string' ? item : item.username;
+          return name === username;
+        })
+      : null;
 
+      console.log("existing", existing);
       return {
         username,
         status: existing?.status || "pending"
       };
     });
 
-    const newlyAdded = assignedOfficers.filter((u) => !previousUsernames.includes(u));
+    // const newlyAdded = assignedOfficers.filter((u) => !previousUsernames.includes(u));
+    const newlyAdded = assignedOfficers.filter(u => !originalAssigned.includes(u));
+
      if (newlyAdded.length) {
        // build full investigators list (old caseTeam + new)
        const updatedInvestigators = Array.from(new Set([
         ...caseTeam.investigators,
         ...newlyAdded
       ]));
+
        // assemble your officers array exactly as in CreateLead
        const officers = [
          ...(caseTeam.detectiveSupervisor
@@ -232,12 +202,12 @@ const handleSave = async () => {
     );
 
     alert("Lead updated successfully!");
-  } catch (err) {
-    console.error("Save failed:", err);
-    setError("Failed to save changes.");
-  } finally {
-    setLoading(false);
-  }
+      } catch (err) {
+        console.error("Save failed:", err);
+        setError("Failed to save changes.");
+      } finally {
+        setLoading(false);
+      }
 };
 
 
@@ -428,6 +398,20 @@ console.log("SL, SC", selectedLead, selectedCase);
               leadStatus: response.data[0].leadStatus || ''
             });
           }
+
+          if (Array.isArray(response.data[0].assignedTo)) {
+            setOriginalAssigned(
+              response.data[0].assignedTo.map(item =>
+                typeof item === "string" ? item : item.username
+              )
+            );
+          // and initialize your “assignedOfficers” checkboxes to match:
+            setAssignedOfficers(
+              response.data[0].assignedTo.map(item =>
+                typeof item === "string" ? item : item.username
+              )
+            );
+          }
           
         }
       } catch (err) {
@@ -441,46 +425,19 @@ console.log("SL, SC", selectedLead, selectedCase);
     fetchLeadData();
   }, [selectedLead, selectedCase]);
 
+  // useEffect(() => {
+  //           // whenever leadData.assignedTo changes, snapshot its original usernames
+  //           if (Array.isArray(leadData.assignedTo)) {
+  //             setOriginalAssigned(
+  //               leadData.assignedTo.map(item =>
+  //                 typeof item === "string" ? item : item.username
+  //               )
+  //             );
+  //           }
+  //         }, [leadData.assignedTo]);
+
     // fall back to 0 (“Lead Created”) if you get an unexpected value
 const currentStatusIndex = statusToIndex[leadData.leadStatus] ?? 0;
-
-  // useEffect(() => {
-  //   const fetchAllLeads = async () => {
-  //     if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
-  
-  //     try {
-  //       const token = localStorage.getItem("token");
-  //       const resp = await api.get(
-  //         `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
-  //         { headers: { Authorization: `Bearer ${token}` } }
-  //       );
-  
-  //       // assume resp.data is an array
-  //       let leadsArray = Array.isArray(resp.data) ? resp.data : [];
-  
-  //       // if user is _not_ a Case Manager, strip out CM-only leads:
-  //       if (selectedCase.role !== "Case Manager") {
-  //         leadsArray = leadsArray.filter(
-  //           (l) => l.accessLevel !== "Only Case Manager and Assignees"
-  //         );
-  //       }
-  
-  //       setLeads((prev) => ({
-  //         ...prev,
-  //         allLeads: leadsArray.map((lead) => ({
-  //           leadNo: lead.leadNo,
-  //           description: lead.description,
-  //           leadStatus: lead.leadStatus,
-  //           // any other fields you need...
-  //         })),
-  //       }));
-  //     } catch (err) {
-  //       console.error("Error fetching all leads:", err);
-  //     }
-  //   };
-  
-  //   fetchAllLeads();
-  // }, [selectedCase])
 
 
   // For subnumbers
@@ -517,15 +474,6 @@ useEffect(() => {
     setAssignedOfficers(usernames);
   }
 }, [leadData.assignedTo]);
-
-
-  // useEffect(() => {
-  //   if (leadData.assignedTo) {
-  //     setAssignedOfficers(leadData.assignedTo.map(o => o.username));
-  //   }
-  // }, [leadData]);
-  
-
   // Dropdown states
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [subDropdownOpen, setSubDropdownOpen] = useState(false);
@@ -624,95 +572,6 @@ const isEditableByCaseManager = field => {
       {/* Main Container */}
       <div className="lead-review-container1">
 
-      {/* <div className="sideitem">
-
-      <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-      <li className="sidebar-item"   style={{ fontWeight: 'bold' }} onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
-        </li>
-        {caseDropdownOpen && (
-      <ul >
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
-            <li
-                className="sidebar-item"
-                onClick={() =>
-                  selectedCase.role === "Investigator"
-                    ? navigate("/Investigator")
-                    : navigate("/CasePageManager")
-                }
-              >
-              Case Page
-              </li>              
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-             <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li
-                className="sidebar-item"
-                onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/LRInstruction", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } else {
-                    alert("Please select a case and lead first.");
-                  }
-                }}
-              >
-                View Lead Return
-              </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-     
-              {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
-            </li>)}
-         
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-
-            </ul>
-            )}
-            <li className="sidebar-item active" onClick={() => setLeadDropdownOpen1(!leadDropdownOpen1)}>
-          Lead Related Tabs {leadDropdownOpen1 ?  "▲": "▼"}
-</li>
-        {leadDropdownOpen1 && (
-          <ul>
-                        <li className="sidebar-item active" onClick={() => navigate('/leadReview')}>Lead Information</li>
-
-
-            {selectedCase.role !== "Investigator" && (
-             <li
-             className="sidebar-item"
-             onClick={() => {
-               setPendingRoute("/ChainOfCustody", { state: { caseDetails } });
-               setShowSelectModal(true);
-             }}
-            >    View Lead Chain of Custody
-              </li>
-)}
-       
-  
-            {showSelectModal && (
-               <SelectLeadModal
-                 leads={leads.allLeads}
-                 onSelect={handleSelectLead}
-                 onClose={() => setShowSelectModal(false)}
-               />
-             )}
-             </ul>
-            )}
-        </div> */}
-
        <SideBar  activePage="CasePageManager" />
      
         {/* Content Area */}
@@ -776,29 +635,6 @@ const isEditableByCaseManager = field => {
         </div>
       </div>
                   )}
-
-          {/* Case Summary Textarea */}
-          {/* <div className="form-section">
-            <label className="input-label">Case Summary</label>
-            <textarea
-              className="case-summary-textarea"
-              value={caseSummary}
-              onChange={(e) => setCaseSummary(e.target.value)}
-            />
-          </div> */}
-
-{/* { caseDetails?.role === "Investigator" && (
-  <div className="lead-return-div">
-    <h2>Click here to start a lead return</h2>
-    <button
-      className="save-btn1"
-      onClick={() => navigate('/LRInstruction')}
-    >
-      Add Return
-    </button>
-  </div>
-) } */}
-
  {leadData.leadStatus === "Assigned" && selectedCase.role !== "Case Manager" &&  selectedCase.role !== "Detective Supervisor" && (
   <div
     className="accept-reject-section"
@@ -840,39 +676,6 @@ const isEditableByCaseManager = field => {
           <div className="form-section">
             <table className="details-table">
               <tbody>
-                {/* <tr>
-                  <td className="info-label">Case Name:</td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={leadData.caseName}
-                      onChange={(e) => handleInputChange('caseName', e.target.value)}
-                    />
-                  </td>
-                </tr> */}
-                {/* <tr>
-                  <td className="info-label">Case Summary:</td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-field read-only"
-                      value={leadData.caseSummary}
-                      readOnly
-                    />
-                  </td>
-                </tr> */}
-                {/* <tr>
-                  <td className="info-label">Lead Number:</td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-field read-only"
-                      value={leadData.leadNumber}
-                      readOnly
-                    />
-                  </td>
-                </tr> */}
                 <tr>
                   <td className="info-label">Case Number</td>
                   <td>
@@ -954,57 +757,6 @@ const isEditableByCaseManager = field => {
                   </td>
                 </tr>
 
-                {/* <tr>
-  <td className="info-label">Assigned Officers</td>
-  <td>
-    {isInvestigator ? (
-      <div className="dropdown-header" >
-        {assignedOfficers.length > 0
-          ? assignedOfficers.join(", ")
-          : ""}
-      </div>
-    ) : (
-      <div className="custom-dropdown">
-        <div
-          className="dropdown-header"
-          onClick={() => setDropdownOpen(!dropdownOpen)}
-        >
-          {assignedOfficers.length > 0
-            ? assignedOfficers.join(", ")
-            : "Select Officers"}
-          <span className="dropdown-icon">{dropdownOpen ? "▲" : "▼"}</span>
-        </div>
-        {dropdownOpen && (
-          <div className="dropdown-options">
-            {allUsers.map((officer) => (
-              <div key={officer.username} className="dropdown-item">
-                <input
-                  type="checkbox"
-                  id={officer.username}
-                  value={officer.username}
-                  checked={assignedOfficers.includes(officer.username)}
-                  onChange={(e) => {
-                    const updatedOfficers = e.target.checked
-                      ? [...assignedOfficers, e.target.value]
-                      : assignedOfficers.filter((o) => o !== e.target.value);
-
-                    setAssignedOfficers(updatedOfficers);
-                    setLeadData((prevData) => ({
-                      ...prevData,
-                      assignedTo: updatedOfficers,
-                    }));
-                  }}
-                />
-                <label htmlFor={officer.username}> {officer.firstName} {officer.lastName} ({officer.username})</label>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    )}
-  </td>
-</tr> */}
-
 <tr>
   <td className="info-label">Assigned Officers</td>
   <td>
@@ -1085,26 +837,18 @@ const isEditableByCaseManager = field => {
                 <tr>
                   <td className="info-label">Due Date</td>
                   <td>
-                    {/* <input
-                      type="text"
-                      className="input-field"
-                      // value={leadData.dueDate}
-                      value={formatDate(leadData.dueDate)}
-                      placeholder="MM/DD/YY"
-                      // onChange={e => setDueDate(e.target.value)}
-                    /> */}
                     <input
-      type="date"
-      className="input-field"
-      value={dueDateISO}
-      onChange={e => {
-        // e.target.value is “YYYY-MM-DD”
-        const newIso = new Date(e.target.value).toISOString();
-        // now update your leadData however you persist it:
-        setLeadData({ ...leadData, dueDate: newIso });
-      }}
-      readOnly={!isEditableByCaseManager("dueDate")}
-    />
+                          type="date"
+                          className="input-field"
+                          value={dueDateISO}
+                          onChange={e => {
+                            // e.target.value is “YYYY-MM-DD”
+                            const newIso = new Date(e.target.value).toISOString();
+                            // now update your leadData however you persist it:
+                            setLeadData({ ...leadData, dueDate: newIso });
+                          }}
+                          readOnly={!isEditableByCaseManager("dueDate")}
+                        />
                   </td>
                 </tr>
                 <tr>
@@ -1189,38 +933,6 @@ const isEditableByCaseManager = field => {
   </div>
 )}
           </div>
-         
-
-          {/* <div className="lead-tracker-container">
-                  {statuses.map((status, index) => (
-                       <div key={index} className="lead-tracker-row" onClick={() => {
-                        if (status === "Lead Return Submitted") {
-                          handleNavigation("/CMInstruction");
-                        }
-                      }}
-                      style={{ cursor: status === "Lead Return Submitted" ? "pointer" : "default" }}
-                    >
-                     
-                          <div
-                            className={`status-circle ${index <= currentStatusIndex ? "active" : ""}`}
-                          >
-                            {index <= currentStatusIndex && <span className="status-number">{index + 1}</span>}
-                         </div>
-
-                      
-                            {index < statuses.length && (
-                              <div className={`status-line ${index < currentStatusIndex ? "active" : ""}`}></div>
-                            )}
-
-                          
-                            <div
-                              className={`status-text-box ${index === currentStatusIndex ? "highlighted" : ""}`}
-                            >
-                              {status}
-                            </div>
-                        </div>
-                      ))}
-                </div> */}
 
 
             {(leadData.leadStatus !== "Assigned" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (

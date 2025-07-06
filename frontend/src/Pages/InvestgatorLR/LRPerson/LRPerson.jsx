@@ -597,7 +597,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item active" style={{fontWeight: '600' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -650,7 +650,7 @@ Case Page
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th style={{ width: "10%" }}>Return Id </th>
+              <th style={{ width: "10%" }}>Narrative Id </th>
               <th>Name</th>
               <th>Phone No</th>
               <th>Address</th>

@@ -402,7 +402,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item active" style={{fontWeight: '600' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -454,7 +454,7 @@ Case Page
                   onChange={(e) => handleChange("dateEntered", e.target.value)}
                 />
               </td>
-              <td>Lead Return Id *</td>
+              <td>Narrative Id *</td>
               <td>
                 <input
                   type="leadReturn"

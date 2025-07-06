@@ -502,7 +502,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -558,7 +558,7 @@ Case Page
         {/* Scratchpad Form */}
         <div className = "timeline-form-sec">
         <div className="scratchpad-form">
-            <label>Return Id*</label>
+            <label>Narrative Id*</label>
             <input
               type="returnId"
               value={noteData.returnId}
@@ -611,7 +611,7 @@ Case Page
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th>Return Id </th>
+              <th>Narrative Id </th>
               <th>Entered By</th>
               <th>Text</th>
               <th></th>

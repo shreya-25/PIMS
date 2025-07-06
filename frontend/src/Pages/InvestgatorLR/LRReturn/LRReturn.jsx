@@ -41,6 +41,8 @@ const [username, setUsername] = useState("");
 
   ]);
 
+const caseNo = selectedCase?.caseNo ?? caseDetails.caseNo;
+
       useEffect(() => {
     const storedOfficer = localStorage.getItem("loggedInUser");
     if (storedOfficer) {
@@ -81,6 +83,8 @@ const [username, setUsername] = useState("");
 
     fetchLeadData();
   }, [selectedLead, selectedCase]);
+
+  setLeadStatus(leadData.leadStatus);
 
    useEffect(() => {
       const fetchLeadStatus = async () => {
@@ -364,8 +368,9 @@ const handleAccessChange = async (idx, newAccess) => {
   const token = localStorage.getItem("token");
 
   try {
+    console.log("AnyCase", selectedCase);
     const response = await api.patch(
-      `/api/leadReturnResult/update/${ret.leadNo}/${ret.caseNo}/${ret.leadReturnId}`,
+      `/api/leadReturnResult/update/${ret.leadNo}/${caseNo}/${ret.leadReturnId}`,
       { accessLevel: newAccess },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -436,7 +441,7 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
         // Update existing return
         const updateData = { leadReturnResult: returnData.results };
         const response = await api.patch(
-          `/api/leadReturnResult/update/${selectedLead.leadNo}/${selectedLead.caseNo}/${editId}`,
+          `/api/leadReturnResult/update/${selectedLead.leadNo}/${caseNo}/${editId}`,
           updateData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -750,7 +755,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item active" style={{fontWeight: '600' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -788,8 +793,8 @@ Case Page
           <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
-    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${ leadStatus || selectedLead.leadStatus || "Unknown Status"}`
-    : `LEAD DETAILS | ${leadStatus || selectedLead?.leadStatus || "Unknown Status"}`}
+    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${ leadStatus}`
+    : `LEAD DETAILS | ${leadStatus}`}
 </h5>
 
           </div>
@@ -806,7 +811,7 @@ Case Page
 
         {/* Center Section */}
         <div className="case-header">
-          <h2 className="">RETURNS</h2>
+          <h2 className="">NARRATIVE</h2>
         </div>
 
         <div className = "LRI-content-section">
@@ -817,7 +822,7 @@ Case Page
       <div className = "content-to-add-first-row">
 
       <div className="form-row4">
-            <label>Return Id*</label>
+            <label>Narrative Id*</label>
             <input type="text" value={returnData.leadReturnId || nextReturnId} readOnly />
           </div>
           <div className="form-row4">
@@ -863,7 +868,7 @@ Case Page
       <table className="leads-table">
         <thead>
           <tr>
-            <th style={{ width: "10%" }}>Return Id</th>
+            <th style={{ width: "10%" }}>Narrative Id</th>
             <th style={{ width: "13%" }}>Date Entered</th>
             <th style={{ width: "9%" }}>Entered By</th>
             <th className="results-col">Narrative</th>
@@ -983,7 +988,7 @@ Case Page
   }) : (
     <tr>
       <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign: 'center' }}>
-        No Returns Available
+        No Narrative Available
       </td>
     </tr>
   )}

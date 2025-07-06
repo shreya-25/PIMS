@@ -107,8 +107,15 @@ export const LRInstruction = () => {
       });
     }
   };
+  
+
   const handleNavigation = (route) => {
-    navigate(route); // Navigate to the respective page
+    navigate(route, {
+      state: {
+        caseDetails,
+        leadDetails
+      }
+    });
   };
 
       const [assignedOfficers, setAssignedOfficers] = useState([]);
@@ -118,7 +125,7 @@ export const LRInstruction = () => {
     navigate('/LRReturn'); // Replace '/nextpage' with the actual next page route
   };
 
-            const { selectedCase, selectedLead, setSelectedLead, leadInstructions, leadStatus, setLeadStatus, setLeadInstructions } = useContext(CaseContext);
+  const { selectedCase, selectedLead, setSelectedLead, leadInstructions, leadStatus, setLeadStatus, setLeadInstructions } = useContext(CaseContext);
 
   
     const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
@@ -367,7 +374,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -462,7 +469,8 @@ Case Page
                   className="input-field"
                   value={leadData.caseName} // Display selected case name or an empty string
                   onChange={(e) => handleInputChange('caseName', e.target.value)} // Update 'caseName' in leadData
-                  placeholder="Enter Case Name"
+                  placeholder=""
+                  readOnly
     />
               </td>
             </tr>
@@ -474,7 +482,8 @@ Case Page
                   className="input-field"
                   value={leadData.description}
                   onChange={(e) => handleInputChange('leadDescription', e.target.value)}
-                  placeholder="Enter Lead Log Summary"
+                  placeholder=""
+                  readOnly
                 />
               </td>
             </tr>
@@ -485,11 +494,28 @@ Case Page
                   className="input-field"
                   value={leadData.summary}
                   onChange={(e) => handleInputChange('summary', e.target.value)}
-                  placeholder="Enter Lead Instruction"
+                  placeholder=""
+                  readOnly
                 ></textarea>
               </td>
             </tr>
-            <tr>
+              <tr>
+                <td>Assigned Officers:</td>
+                <td>
+                  <input
+                    type="text"
+                    className="input-field"
+                    value={Array.isArray(leadData.assignedTo)
+                      ? leadData.assignedTo
+                          .map(o => typeof o === "string" ? o : o.username)
+                          .join(", ")
+                      : ""}
+                    readOnly
+                  />
+                </td>
+              </tr>
+
+                 <tr>
                 <td>Lead Origin:</td>
                 <td>
                   <input
@@ -497,107 +523,37 @@ Case Page
                     className="input-field"
                     value={leadData.parentLeadNo}
                     onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
-                    placeholder="NA"
+                    placeholder=""
+                  readOnly
                   />
                 </td>
               </tr>
-              <tr>
-                  <td >Subnumber:</td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={leadData.subNumber}
-                      onChange={(e) => handleInputChange('subNumber', e.target.value)}
-                      placeholder=""
-                    />
-                  </td>
-                </tr>
-             
-              <tr>
-  <td >Associated Subnumbers:</td>
-  <td>
-    <div className="custom-dropdown">
-      <div
-        className="dropdown-header"
-        onClick={() => setSubDropdownOpen(!subDropdownOpen)}
-      >
-        {associatedSubNumbers.length > 0
-          ? associatedSubNumbers.join(", ")
-          : "NA"}
-        <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
-      </div>
-      {subDropdownOpen && (
-        <div className="dropdown-options">
-          {availableSubNumbers.map((subNum) => (
-            <div key={subNum} className="dropdown-item">
-              <input
-                type="checkbox"
-                id={subNum}
-                value={subNum}
-                checked={associatedSubNumbers.includes(subNum)}
-                onChange={(e) => {
-                  const updatedSubs = e.target.checked
-                    ? [...associatedSubNumbers, e.target.value]
-                    : associatedSubNumbers.filter((num) => num !== e.target.value);
 
-                  setAssociatedSubNumbers(updatedSubs); // Update dropdown selection
-                  setLeadData((prevData) => ({
-                    ...prevData,
-                    associatedSubNumbers: updatedSubs, // Update leadData
-                  }));
-                }}
-              />
-              <label htmlFor={subNum}>{subNum}</label>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+             <tr>
+  <td>Subnumber:</td>
+  <td>
+    <input
+      type="text"
+      className="input-field"
+      value={leadData.subNumber || ""}
+      readOnly
+    />
   </td>
 </tr>
 <tr>
-  <td >Assigned Officers:</td>
+  <td>Associated Subnumbers:</td>
   <td>
-    <div className="custom-dropdown">
-      <div
-        className="dropdown-header"
-        onClick={() => setDropdownOpen(!dropdownOpen)}
-      >
-        {assignedOfficers.length > 0
-          ? assignedOfficers.join(", ")
-          : "NA"}
-        <span className="dropdown-icon">{dropdownOpen ? "▲" : "▼"}</span>
-      </div>
-      {dropdownOpen && (
-        <div className="dropdown-options">
-          {["Officer 99", "Officer 24", "Officer 1", "Officer 2", "Officer 3"].map((officer) => (
-            <div key={officer} className="dropdown-item">
-              <input
-                type="checkbox"
-                id={officer}
-                value={officer}
-                checked={assignedOfficers.includes(officer)}
-                onChange={(e) => {
-                  const updatedOfficers = e.target.checked
-                    ? [...assignedOfficers, e.target.value]
-                    : assignedOfficers.filter((o) => o !== e.target.value);
-
-                  setAssignedOfficers(updatedOfficers); // Update UI state
-                  setLeadData((prevData) => ({
-                    ...prevData,
-                    assignedTo: updatedOfficers, // Ensure backend gets updated
-                  }));
-                }}
-              />
-              <label htmlFor={officer}>{officer}</label>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    <input
+      type="text"
+      className="input-field"
+      value={Array.isArray(leadData.associatedSubNumbers)
+        ? leadData.associatedSubNumbers.join(", ")
+        : ""}
+      readOnly
+    />
   </td>
 </tr>
+
           </tbody>
         </table>
       </div>
