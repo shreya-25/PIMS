@@ -9,6 +9,7 @@ import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
+import { AlertModal } from "../../../components/AlertModal/AlertModal";
 
 
 
@@ -28,6 +29,8 @@ export const LRTimeline = () => {
    const [leadData, setLeadData] = useState({});
    const { selectedCase, selectedLead, setSelectedLead,  leadStatus, setLeadStatus } = useContext(CaseContext);
    const [entries, setEntries] = useState([]);
+    const [alertOpen, setAlertOpen] = useState(false);
+               const [alertMessage, setAlertMessage] = useState("");
         
           const formatDate = (dateString) => {
             if (!dateString) return "";
@@ -176,101 +179,11 @@ export const LRTimeline = () => {
     fetchLeadData();
   }, [selectedLead, selectedCase]);
 
-    const handleSubmitReport = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      if (!selectedLead || !selectedCase) {
-        alert("No lead or case selected!");
-        return;
-      }
-
-      const body = {
-        leadNo: selectedLead.leadNo,
-        description: selectedLead.leadName,
-        caseNo: selectedCase.caseNo,
-        caseName: selectedCase.caseName,
-        submittedDate: new Date(),
-        assignedTo: {
-          assignees: leadData.assignedTo || [],
-          lRStatus: "Submitted"
-        },
-        assignedBy: {
-          assignee: localStorage.getItem("officerName") || "Unknown Officer",
-          lRStatus: "Pending"
-        }
-      };
-
-      const response = await api.post("/api/leadReturn/create", body, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      });
-
-      if (response.status === 201) {
-        const statusResponse = await api.put(
-          "/api/lead/status/in-review",
-          {
-            leadNo: selectedLead.leadNo,
-            description: selectedLead.leadName,
-            caseNo: selectedCase.caseNo,
-            caseName: selectedCase.caseName
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json"
-            }
-          }
-        );
-
-        if (statusResponse.status === 200) {
-          setLeadStatus("In Review");
-
-            setSelectedLead(prev => ({
-            ...prev,
-            leadStatus: "In Review"
-          }));
-          
-          alert("Lead Return submitted and status set to 'In Review'");
-        const manager    = leadData.assignedBy;                  // string username
-        const investigators = (leadData.assignedTo || []).map(a => a.username);
-        if (manager) {
-          const payload = {
-            notificationId: Date.now().toString(),
-            assignedBy:     localStorage.getItem("loggedInUser"),
-            assignedTo:     [{ username: manager, status: "pending" }],
-            action1:        "submitted a lead return for review",
-            post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
-            caseNo:         selectedCase.caseNo,
-            caseName:       selectedCase.caseName,
-            leadNo:         selectedLead.leadNo,
-            leadName:       selectedLead.leadName,
-            type:           "Lead"
-          };
-          await api.post("/api/notifications", payload, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-        }
-
-        alert("Lead Return submitted and Case Manager notified.");
-        } else {
-          alert("Lead Return submitted but status update failed.");
-        }
-      } else {
-        alert("Failed to submit Lead Return");
-      }
-    } catch (error) {
-      console.error("Error during Lead Return submission or status update:", error);
-      alert("Something went wrong while submitting the report.");
-    }
-  };
-
 
   const handleAddEntry = async () => {
     if (!newEntry.date || !newEntry.eventStartDate || !newEntry.eventEndDate ||  !newEntry.startTime || !newEntry.endTime || !newEntry.location || !newEntry.description) {
-      alert("Please fill in all required fields.");
+       setAlertMessage("Please fill in all required fields.");
+                      setAlertOpen(true);
       return;
     }
   
@@ -327,7 +240,8 @@ export const LRTimeline = () => {
       });
     } catch (err) {
       console.error("Error saving timeline entry:", err);
-      alert("Failed to add timeline entry.");
+       setAlertMessage("Failed to add timeline entry.");
+       setAlertOpen(true);
     }
   };
   
@@ -384,7 +298,8 @@ async function handleSubmit() {
     startTime, endTime, location, description, flag
   } = newEntry;
   if (!date || !eventStartDate || !eventEndDate || !startTime || !endTime || !location || !description) {
-    return alert("Please fill in all required fields.");
+    setAlertMessage("Please fill in all required fields.");
+       setAlertOpen(true);
   }
   const token = localStorage.getItem("token");
   const payload = {
@@ -429,7 +344,8 @@ async function handleSubmit() {
     });
   } catch (err) {
     console.error(err);
-    alert(`Failed to ${editingIndex===null? 'add':'update'} entry`);
+    setAlertMessage(`Failed to ${editingIndex===null? 'add':'update'} entry`);
+       setAlertOpen(true);
   }
 }
 
@@ -445,7 +361,8 @@ async function handleDelete(idx) {
     setTimelineEntries(te => te.filter((_,i)=>i!==idx));
   } catch (err) {
     console.error(err);
-    alert("Failed to delete entry");
+      setAlertMessage("Failed to delete entry");
+       setAlertOpen(true);
   }
 }
 
@@ -470,6 +387,13 @@ function handleEdit(idx) {
   return (
     <div className="timeline-container">
       <Navbar />
+       <AlertModal
+                                isOpen={alertOpen}
+                                title="Notification"
+                                message={alertMessage}
+                                onConfirm={() => setAlertOpen(false)}
+                                onClose={()   => setAlertOpen(false)}
+                              />
 
       {/* <div className="top-menu">
         <div className="menu-items">
@@ -514,7 +438,8 @@ function handleEdit(idx) {
                       }
                     });
                   } else {
-                    alert("Please select a case and lead first.");
+                     setAlertMessage("Please select a case and lead first.");
+                      setAlertOpen(true);
                   }
                 }}>Lead Chain of Custody</span>
           

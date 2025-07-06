@@ -8,6 +8,7 @@ import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
+import { AlertModal } from "../../../components/AlertModal/AlertModal";
 
 
 
@@ -27,6 +28,8 @@ const [username, setUsername] = useState("");
  const [leadData, setLeadData] = useState({});
  const [officerName, setOfficerName] = useState("");
    const todayDate = new Date().toLocaleDateString();
+     const [alertOpen, setAlertOpen] = useState(false);
+     const [alertMessage, setAlertMessage] = useState("");
     
   const { leadDetails, caseDetails } = location.state || {};
   const [maxReturnId, setMaxReturnId] = useState(0);
@@ -125,7 +128,9 @@ const caseNo = selectedCase?.caseNo ?? caseDetails.caseNo;
       const token = localStorage.getItem("token");
 
       if (!selectedLead || !selectedCase) {
-        alert("No lead or case selected!");
+        // alert("No lead or case selected!");
+        setAlertMessage("No lead or case selected!");
+      setAlertOpen(true);
         return;
       }
 
@@ -177,7 +182,6 @@ const caseNo = selectedCase?.caseNo ?? caseDetails.caseNo;
             leadStatus: "In Review"
           }));
           
-          alert("Lead Return submitted and status set to 'In Review'");
         const manager    = leadData.assignedBy;                  // string username
         const investigators = (leadData.assignedTo || []).map(a => a.username);
         if (manager) {
@@ -388,7 +392,8 @@ const handleAccessChange = async (idx, newAccess) => {
     });
   } catch (err) {
     console.error("Failed to update accessLevel", err);
-    alert("Could not change access. Try again.");
+     setAlertMessage("Could not change access. Try again.");
+      setAlertOpen(true);
   }
 };
 
@@ -424,14 +429,18 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
 
   const handleAddOrUpdateReturn = async () => {
     if (!returnData.results) {
-      alert("Please enter return details!");
+      // alert("Please enter return details!");
+       setAlertMessage("Please enter narrative details!");
+      setAlertOpen(true);
       return;
     }
   
     const officerName = localStorage.getItem("loggedInUser");
     console.log(officerName);
     if (!officerName) {
-  alert("Officer name not found. Please log in again.");
+  // alert("Officer name not found. Please log in again.");
+   setAlertMessage("Officer name not found. Please log in again.");
+      setAlertOpen(true);
   return;
 }
     const token = localStorage.getItem("token");
@@ -514,7 +523,9 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
 }
     } catch (err) {
       console.error("Error saving return:", err);
-      alert("Failed to save return. Please try again.");
+      // alert("Failed to save return. Please try again.");
+       setAlertMessage("Failed to save narrative. Please try again.");
+      setAlertOpen(true);
     }
   };
 
@@ -571,7 +582,9 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
       setLeadReturns(filtered);
     } catch (err) {
       console.error("Error deleting return:", err);
-      alert("Failed to delete return.");
+      // alert("Failed to delete return.");
+      setAlertMessage("Failed to delete narrative.");
+      setAlertOpen(true);
     }
   };
   
@@ -595,6 +608,14 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
   return (
     <div className="lrenclosures-container">
       <Navbar />
+      <AlertModal
+              isOpen={alertOpen}
+              title="Notification"
+              message={alertMessage}
+              onConfirm={() => setAlertOpen(false)}
+              onClose={()   => setAlertOpen(false)}
+            />
+      
 
       {/* <div className="top-menu">
         <div className="menu-items">
@@ -639,7 +660,9 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
                       }
                     });
                   } else {
-                    alert("Please select a case and lead first.");
+                    // alert("Please select a case and lead first.");
+                    setAlertMessage("Please select a case and lead first.");
+                    setAlertOpen(true);
                   }
                 }}>Lead Chain of Custody</span>
           

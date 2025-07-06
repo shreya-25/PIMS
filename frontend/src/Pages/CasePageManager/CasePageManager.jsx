@@ -9,6 +9,7 @@ import './CasePageManager.css'; // Custom CSS file for styling
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
+import { AlertModal } from "../../components/AlertModal/AlertModal";
 import Pagination from "../../components/Pagination/Pagination";
 import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
@@ -36,6 +37,8 @@ export const CasePageManager = () => {
     const [caseManagersDropdownOpen, setCaseManagersDropdownOpen] = useState(false);
     const [detectiveSupervisorDropdownOpen, setDetectiveSupervisorDropdownOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+     const [alertOpen, setAlertOpen] = useState(false);
+      const [alertMessage, setAlertMessage] = useState("");
 
     const [showFilter, setShowFilter] = useState(false);
     const [showSort, setShowSort] = useState(false);
@@ -146,6 +149,24 @@ export const CasePageManager = () => {
     const totalEntries = 100;
 
     const signedInOfficer = localStorage.getItem("loggedInUser");
+
+     const [confirmConfig, setConfirmConfig] = useState({
+        isOpen:    false,
+        lead:    null,
+      });
+      const [alertConfig, setAlertConfig] = useState({
+        isOpen: false,
+        title:  "",
+        message:"",
+      });
+
+      const handleConfirmAccept = () => {
+    acceptLead(confirmConfig.lead.id, confirmConfig.lead.description);
+    closeConfirm();
+  };
+
+    const openConfirm  = (lead) => setConfirmConfig({ isOpen: true, lead });
+  const closeConfirm = ()      => setConfirmConfig({ isOpen: false, lead: null });
 
 
     const handleLRClick = (lead) => {
@@ -283,7 +304,9 @@ export const CasePageManager = () => {
       // await fetchLeadsForCase();
     } catch (error) {
       console.error("Error updating lead status:", error.response?.data || error);
-      alert("Failed to accept lead.");
+      // alert("Failed to accept lead.");
+      setAlertMessage("Failed to accept lead.");
+      setAlertOpen(true);
     }
   };
   
@@ -619,7 +642,9 @@ const saveInvestigators = async () => {
       }
     }
 
-    alert("Officers updated on this case successfully!");
+    // alert("Officers updated on this case successfully!");
+    setAlertMessage("Officers updated on this case successfully!");
+    setAlertOpen(true);
   } catch (err) {
     console.error("Save failed:", err);
     setError("Failed to save changes.");
@@ -1161,6 +1186,21 @@ const handleSortAll = colKey => {
         <div className="case-page-manager">
             {/* Navbar */}
             <Navbar />
+              <AlertModal
+              isOpen={confirmConfig.isOpen}
+              title="Confirm Accept"
+              message={`Are you sure you want to accept Lead #${confirmConfig.lead?.id} -  ${confirmConfig.lead?.description} ?`}
+              onClose={closeConfirm}
+              onConfirm={handleConfirmAccept}
+            > </AlertModal>
+
+             <AlertModal
+                    isOpen={alertOpen}
+                    title="Notification"
+                    message={alertMessage}
+                    onConfirm={() => setAlertOpen(false)}
+                    onClose={()   => setAlertOpen(false)}
+                  />
 
             {/* Main Container */}
             <div className="main-container">
@@ -1861,11 +1901,12 @@ Add Lead
                 {lead.assignedOfficers?.includes(signedInOfficer) && (
   <button
     className="accept-btn"
-    onClick={() => {
-      if (window.confirm(`Do you want to accept this lead?`)) {
-        acceptLead(lead.id, lead.description);
-      }
-    }}
+    onClick={() => openConfirm(lead)}
+    // onClick={() => {
+    //   if (window.confirm(`Do you want to accept this lead?`)) {
+    //     acceptLead(lead.id, lead.description);
+    //   }
+    // }}
   >
     Accept
   </button>
@@ -1873,6 +1914,7 @@ Add Lead
 
               </td>
             </tr>
+            
            ))
           ) : (
             <tr>
