@@ -8,6 +8,8 @@ import React, { useContext, useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
+import { AlertModal } from "../../../components/AlertModal/AlertModal";
+
 
 export const LRAudio = () => {
     // useEffect(() => {
@@ -25,6 +27,9 @@ export const LRAudio = () => {
   const { selectedCase, selectedLead, setSelectedLead , leadStatus, setLeadStatus} = useContext(CaseContext);
    const [file, setFile] = useState(null);
      const fileInputRef = useRef(null);
+
+     const [alertOpen, setAlertOpen] = useState(false);
+         const [alertMessage, setAlertMessage] = useState("");
 
     
       const formatDate = (dateString) => {
@@ -107,99 +112,6 @@ export const LRAudio = () => {
 
     fetchLeadData();
   }, [selectedLead, selectedCase]);
-
-    const handleSubmitReport = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      if (!selectedLead || !selectedCase) {
-        alert("No lead or case selected!");
-        return;
-      }
-
-      const body = {
-        leadNo: selectedLead.leadNo,
-        description: selectedLead.leadName,
-        caseNo: selectedCase.caseNo,
-        caseName: selectedCase.caseName,
-        submittedDate: new Date(),
-        assignedTo: {
-          assignees: leadData.assignedTo || [],
-          lRStatus: "Submitted"
-        },
-        assignedBy: {
-          assignee: localStorage.getItem("officerName") || "Unknown Officer",
-          lRStatus: "Pending"
-        }
-      };
-
-      const response = await api.post("/api/leadReturn/create", body, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      });
-
-      if (response.status === 201) {
-        const statusResponse = await api.put(
-          "/api/lead/status/in-review",
-          {
-            leadNo: selectedLead.leadNo,
-            description: selectedLead.leadName,
-            caseNo: selectedCase.caseNo,
-            caseName: selectedCase.caseName
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json"
-            }
-          }
-        );
-
-        if (statusResponse.status === 200) {
-          setLeadStatus("In Review");
-
-            setSelectedLead(prev => ({
-            ...prev,
-            leadStatus: "In Review"
-          }));
-          
-          alert("Lead Return submitted and status set to 'In Review'");
-        const manager    = leadData.assignedBy;                  // string username
-        const investigators = (leadData.assignedTo || []).map(a => a.username);
-        if (manager) {
-          const payload = {
-            notificationId: Date.now().toString(),
-            assignedBy:     localStorage.getItem("loggedInUser"),
-            assignedTo:     [{ username: manager, status: "pending" }],
-            action1:        "submitted a lead return for review",
-            post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
-            caseNo:         selectedCase.caseNo,
-            caseName:       selectedCase.caseName,
-            leadNo:         selectedLead.leadNo,
-            leadName:       selectedLead.leadName,
-            type:           "Lead"
-          };
-          await api.post("/api/notifications", payload, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-        }
-
-        alert("Lead Return submitted and Case Manager notified.");
-        } else {
-          alert("Lead Return submitted but status update failed.");
-        }
-      } else {
-        alert("Failed to submit Lead Return");
-      }
-    } catch (error) {
-      console.error("Error during Lead Return submission or status update:", error);
-      alert("Something went wrong while submitting the report.");
-    }
-  };
-
-
   
   
 
@@ -210,7 +122,8 @@ export const LRAudio = () => {
       ? !audioData.link.trim() || !audioData.leadReturnId || !audioData.dateAudioRecorded
       : !file || !audioData.leadReturnId || !audioData.dateAudioRecorded || !audioData.description
   ) {
-    alert("Please fill in all required fields and either select a file or enter a valid link.");
+    setAlertMessage("Please fill in all required fields and either select a file or enter a valid link.");
+    setAlertOpen(true);
     return;
   }
 
@@ -261,7 +174,8 @@ export const LRAudio = () => {
     setFile(null);
   } catch (error) {
     console.error("Error uploading audio:", error);
-    alert("Failed to upload audio.");
+    setAlertMessage("Failed to upload audio.");
+    setAlertOpen(true);
   }
 };
 
@@ -495,7 +409,8 @@ const handleUpdateAudio = async () => {
     }
   } catch (error) {
     console.error("Error updating audio:", error);
-    alert("Failed to update audio.");
+    setAlertMessage("Failed to update audio.");
+    setAlertOpen(true);
   }
 };
 
@@ -505,6 +420,13 @@ const handleUpdateAudio = async () => {
     <div className="lraudio-container">
       {/* Navbar */}
       <Navbar />
+       <AlertModal
+          isOpen={alertOpen}
+          title="Notification"
+          message={alertMessage}
+          onConfirm={() => setAlertOpen(false)}
+          onClose={()   => setAlertOpen(false)}
+        />
 
       {/* Top Menu */}
       {/* <div className="top-menu">
@@ -552,7 +474,8 @@ const handleUpdateAudio = async () => {
                       }
                     });
                   } else {
-                    alert("Please select a case and lead first.");
+                    setAlertMessage("Please select a case and lead first.");
+                    setAlertOpen(true);
                   }
                 }}>Lead Chain of Custody</span>
           
@@ -668,7 +591,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -735,7 +658,7 @@ Case Page
             />
           </div>
           <div className="form-row-audio">
-            <label className="evidence-head">Return Id*</label>
+            <label className="evidence-head">Narrative Id*</label>
             <input
               type="text"
               value={audioData.leadReturnId}
@@ -858,11 +781,11 @@ Case Page
            <table className="leads-table">
           <thead>
             <tr>
-              <th style={{ width: "11%" }}>Date Entered</th>
-              <th style={{ width: "10%" }}>Return Id </th>
+              <th style={{ width: "11%" }}>Date Entered*</th>
+              <th style={{ width: "10%" }}>Narrative Id* </th>
               <th>Date Audio Recorded</th>
-              <th>File Name</th>
-              <th>Description</th>
+              <th>File Name*</th>
+              <th>Description*</th>
               <th style={{ width: "13%" }}></th>
               {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>

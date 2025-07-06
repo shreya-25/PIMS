@@ -9,6 +9,7 @@ import Comment from "../../../components/Comment/Comment";
 import api, { BASE_URL } from "../../../api";
 import Attachment from "../../../components/Attachment/Attachment";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
+import { AlertModal } from "../../../components/AlertModal/AlertModal";
 
 
 
@@ -27,6 +28,9 @@ export const LREnclosures = () => {
   const [formData, setFormData] = useState({ /* your fields */ });
   const fileInputRef = useRef();
   const [leadData, setLeadData] = useState({});
+  const [alertOpen, setAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState("");
+  
 
   const { leadDetails, caseDetails } = location.state || {};
 
@@ -342,79 +346,12 @@ export const LREnclosures = () => {
     fetchLeadData();
   }, [selectedLead, selectedCase]);
 
-   const handleSubmitReport = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      if (!selectedLead || !selectedCase) {
-        alert("No lead or case selected!");
-        return;
-      }
-
-      const body = {
-        leadNo: selectedLead.leadNo,
-        description: selectedLead.leadName,
-        caseNo: selectedCase.caseNo,
-        caseName: selectedCase.caseName,
-        submittedDate: new Date(),
-        assignedTo: {
-          assignees: leadData.assignedTo || [],
-          lRStatus: "Submitted"
-        },
-        assignedBy: {
-          assignee: localStorage.getItem("officerName") || "Unknown Officer",
-          lRStatus: "Pending"
-        }
-      };
-
-      const response = await api.post("/api/leadReturn/create", body, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      });
-
-      if (response.status === 201) {
-        const statusResponse = await api.put(
-          "/api/lead/status/in-review",
-          {
-            leadNo: selectedLead.leadNo,
-            description: selectedLead.leadName,
-            caseNo: selectedCase.caseNo,
-            caseName: selectedCase.caseName
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json"
-            }
-          }
-        );
-
-        if (statusResponse.status === 200) {
-          setLeadStatus("In Review");
-
-            setSelectedLead(prev => ({
-            ...prev,
-            leadStatus: "In Review"
-          }));
-          alert("Lead Return submitted and status set to 'In Review'");
-        } else {
-          alert("Lead Return submitted but status update failed.");
-        }
-      } else {
-        alert("Failed to submit Lead Return");
-      }
-    } catch (error) {
-      console.error("Error during Lead Return submission or status update:", error);
-      alert("Something went wrong while submitting the report.");
-    }
-  };
-
   const handleSave = async () => {
     // Validation: must supply a file or link when creating
     if (editIndex === null && !file && !enclosureData.isLink) {
-      alert("Please select a file to upload or enter a valid link.");
+      // alert("Please select a file to upload or enter a valid link.");
+        setAlertMessage("Please select a file to upload or enter a valid link.");
+                      setAlertOpen(true);
       return;
     }
   
@@ -485,7 +422,8 @@ export const LREnclosures = () => {
       setOriginalDesc("");
     } catch (err) {
       console.error("Save error:", err.response || err);
-      alert("Save failed: " + (err.response?.data?.message || err.message));
+       setAlertMessage("Save failed: " + (err.response?.data?.message || err.message));
+                      setAlertOpen(true);
     }
   };
   
@@ -529,7 +467,9 @@ export const LREnclosures = () => {
       // alert("Deleted");
     } catch (err) {
       console.error(err);
-      alert("Failed to delete");
+      setAlertMessage("Failed to delete");
+                      setAlertOpen(true);
+      
     }
   };
   
@@ -607,6 +547,13 @@ export const LREnclosures = () => {
     <div className="lrenclosures-container">
       {/* Navbar */}
       <Navbar />
+       <AlertModal
+                          isOpen={alertOpen}
+                          title="Notification"
+                          message={alertMessage}
+                          onConfirm={() => setAlertOpen(false)}
+                          onClose={()   => setAlertOpen(false)}
+                        />
 
       {/* Top Menu */}
       {/* <div className="top-menu">
@@ -654,7 +601,8 @@ export const LREnclosures = () => {
                       }
                     });
                   } else {
-                    alert("Please select a case and lead first.");
+                      setAlertMessage("Please select a case and lead first.");
+                      setAlertOpen(true);
                   }
                 }}>Lead Chain of Custody</span>
           
@@ -769,7 +717,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -835,7 +783,7 @@ Case Page
         <div className = "timeline-form-sec">
         <div className="enclosure-form">
         <div className="form-row-evidence">
-            <label>Return Id *</label>
+            <label>Narrative Id *</label>
             <input
               type="returnId"
               value={enclosureData.returnId}
@@ -973,10 +921,10 @@ Case Page
               <table className="leads-table">
           <thead>
             <tr>
-              <th>Date Entered</th>
-              <th>Return Id </th>
+              <th>Date Entered*</th>
+              <th>Narrative Id* </th>
               <th>Type</th>
-              <th>Enclosure</th>
+              <th>Enclosure*</th>
               <th>File Name</th>
               <th></th>
               {isCaseManager && (
