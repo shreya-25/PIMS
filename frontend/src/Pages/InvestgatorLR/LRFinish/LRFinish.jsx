@@ -12,6 +12,7 @@ import jsPDF from "jspdf";
 import pdfRef from "../../refStore";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
+import { AlertModal } from "../../../components/AlertModal/AlertModal";
 
 
 export const LRFinish = () => {
@@ -35,6 +36,9 @@ export const LRFinish = () => {
     if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
     return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
 };
+
+ const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
 
 useEffect(() => {
     const fetchLeadData = async () => {
@@ -67,12 +71,16 @@ useEffect(() => {
 useEffect(() => {
   // 1) Must have a case
   if (!selectedCase?.caseNo || !selectedCase?.caseName) {
-    alert("Please select a case first.");
+    // alert("Please select a case first.");
+     setAlertMessage("Please select a case first.");
+     setAlertOpen(true);
     return navigate("/HomePage");
   }
   // 2) Must have a lead
   if (!selectedLead?.leadNo || !selectedLead?.leadName) {
-    alert("Please select a lead first.");
+    // alert("Please select a lead first.");
+     setAlertMessage("Please select a lead first.");
+     setAlertOpen(true);
     // if this user is an Investigator send them to /Investigator
     // otherwise send them to the Case Manager page
     const leadPicker =
@@ -396,10 +404,14 @@ useEffect(() => {
       if (err.response?.data instanceof Blob) {
         const text = await err.response.data.text();
         console.error("📋 Backend error message:", text);
-        alert("Error generating PDF:\n" + text);
+        // alert("Error generating PDF:\n" + text);
+         setAlertMessage("Error generating PDF:\n" + text);
+         setAlertOpen(true);
       } else {
         console.error("AxiosError:", err);
-        alert("Error generating PDF: " + err.message);
+        // alert("Error generating PDF: " + err.message);
+        setAlertMessage("Error generating PDF:\n" + err.message);
+         setAlertOpen(true);
       }
     }
   
@@ -411,6 +423,8 @@ useEffect(() => {
 
       if (!selectedLead || !selectedCase) {
         alert("No lead or case selected!");
+        setAlertMessage("No lead or case selected!");
+         setAlertOpen(true);
         return;
       }
 
@@ -462,7 +476,9 @@ useEffect(() => {
             leadStatus: "In Review"
           }));
           
-          alert("Lead Return submitted and status set to 'In Review'");
+          // alert("Lead Return submitted");
+           setAlertMessage("Lead Return submitted!");
+      setAlertOpen(true);
         const manager    = leadData.assignedBy;                  // string username
         const investigators = (leadData.assignedTo || []).map(a => a.username);
         if (manager) {
@@ -488,16 +504,22 @@ useEffect(() => {
           });
         }
 
-        alert("Lead Return submitted and Case Manager notified.");
+       
+         setAlertMessage("Lead Return submitted!");
+      setAlertOpen(true);
         } else {
-          alert("Lead Return submitted but status update failed.");
+           setAlertMessage("Lead Return submitted but status update failed.");
+      setAlertOpen(true);
         }
+        navigate(getCasePageRoute());
       } else {
-        alert("Failed to submit Lead Return");
+        setAlertMessage("Failed to submit Lead Return");
+        setAlertOpen(true);
       }
     } catch (error) {
       console.error("Error during Lead Return submission or status update:", error);
-      alert("Something went wrong while submitting the report.");
+      setAlertMessage("Something went wrong while submitting the report.");
+        setAlertOpen(true);
     }
   };
   
@@ -520,7 +542,8 @@ useEffect(() => {
       );
   
       if (statusRes.status === 200) {
-        alert(`Lead Return submitted`);
+         setAlertMessage("Lead Return submitted");
+        setAlertOpen(true);
 
       const human =
         newStatus === "complete" ? "approved the lead" :
@@ -559,15 +582,18 @@ useEffect(() => {
       }
 
       // alert(`${assignedBy} ${human} and all investigators notified.`);
-    
+      navigate(getCasePageRoute());
 
       } else {
-        alert("Return submitted but status update failed");
+          setAlertMessage("Lead Return submitted but status update failed");
+        setAlertOpen(true);
       }
   
     } catch (err) {
       console.error(err);
-      alert("Something went wrong");
+      // alert("Something went wrong");
+      setAlertMessage("Something went wrong");
+        setAlertOpen(true);
     }
   };
       
@@ -588,6 +614,13 @@ useEffect(() => {
   return (
     <div className="lrfinish-container">
       <Navbar />
+      <AlertModal
+              isOpen={alertOpen}
+              title="Notification"
+              message={alertMessage}
+              onConfirm={() => setAlertOpen(false)}
+              onClose={()   => setAlertOpen(false)}
+            />
 
       {/* Top Menu */}
       {/* <div className="top-menu">
@@ -681,7 +714,8 @@ useEffect(() => {
                       }
                     });
                   } else {
-                    alert("Please select a case and lead first.");
+                     setAlertMessage("Please select a case and lead first.");
+        setAlertOpen(true);
                   }
                 }}>Lead Chain of Custody</span>
           
@@ -796,7 +830,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -945,7 +979,7 @@ Case Page
                   checked={selectedReports.leadReturn}
                   onChange={() => toggleReportSection("leadReturn")}
                 />
-                Lead Returns
+                Narratives
               </label>
               <label className="checkbox-label">
                 <input
@@ -954,7 +988,7 @@ Case Page
                   checked={selectedReports.leadPersons}
                   onChange={() => toggleReportSection("leadPersons")}
                 />
-                Lead Persons
+                Person Entries
               </label>
               <label className="checkbox-label">
                 <input
@@ -963,7 +997,7 @@ Case Page
                   checked={selectedReports.leadVehicles}
                   onChange={() => toggleReportSection("leadVehicles")}
                 />
-                Lead Vehicles
+                Vehicle Entries
               </label>
               <label className="checkbox-label">
                 <input
@@ -972,7 +1006,7 @@ Case Page
                   checked={selectedReports.leadEnclosures}
                   onChange={() => toggleReportSection("leadEnclosures")}
                 />
-                Lead Enclosures
+                Enclosures
               </label>
               <label className="checkbox-label">
                 <input
@@ -981,7 +1015,7 @@ Case Page
                   checked={selectedReports.leadEvidence}
                   onChange={() => toggleReportSection("leadEvidence")}
                 />
-                Lead Evidences
+                Evidences
               </label>
             </div>
             <div className="checkbox-col">
@@ -994,7 +1028,7 @@ Case Page
                   checked={selectedReports.leadPictures}
                   onChange={() => toggleReportSection("leadPictures")}
                 />
-                Lead Pictures
+                Pictures
               </label>
               <label className="checkbox-label">
                 <input
@@ -1003,7 +1037,7 @@ Case Page
                   checked={selectedReports.leadAudio}
                   onChange={() => toggleReportSection("leadAudio")}
                 />
-                Lead Audio Description
+                Audio Descriptions
               </label>
               <label className="checkbox-label">
                 <input
@@ -1012,7 +1046,7 @@ Case Page
                   checked={selectedReports.leadVideos}
                   onChange={() => toggleReportSection("leadVideos")}
                 />
-                Lead Videos Description
+                Video Descriptions
               </label>
               <label className="checkbox-label">
                 <input
@@ -1021,7 +1055,7 @@ Case Page
                   checked={selectedReports.leadScratchpad}
                   onChange={() => toggleReportSection("leadScratchpad")}
                 />
-                Lead Notes Entries
+                Note Entries
               </label>
               <label className="checkbox-label">
                 <input
@@ -1030,7 +1064,7 @@ Case Page
                   checked={selectedReports.leadTimeline}
                   onChange={() => toggleReportSection("leadTimeline")}
                 />
-                Lead Timeline Entries
+                Timeline Entries
               </label>
             </div>
           </div>

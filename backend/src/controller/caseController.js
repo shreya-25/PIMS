@@ -63,15 +63,15 @@ exports.createCase = async (req, res) => {
     // --- validate required fields ---
      if (!Array.isArray(managers) || managers.length === 0) {
       return res.status(400).json({
-        message: "At least one Case Manager is required (managers array)."
+        message: "At least one Case Manager is required."
       });
     }
     if (!detectiveSupervisor) {
       return res.status(400).json({ message: "Detective Supervisor is required" });
     }
-    if (!caseNo || !caseName || !Array.isArray(selectedOfficers) || selectedOfficers.length === 0) {
+    if (!caseNo || !caseName) {
       return res.status(400).json({
-        message: "caseNo, caseName, detectiveSupervisor and selectedOfficers are required"
+        message: "caseNo, caseName are required"
       });
     }
 

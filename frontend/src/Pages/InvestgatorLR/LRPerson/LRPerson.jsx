@@ -10,6 +10,7 @@ import Navbar from '../../../components/Navbar/Navbar';
 import './LRPerson.css';
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
+import { AlertModal } from "../../../components/AlertModal/AlertModal";
 
 
 export const LRPerson = () => {
@@ -33,6 +34,8 @@ export const LRPerson = () => {
 
                 const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
                 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+                const [alertOpen, setAlertOpen] = useState(false);
+                const [alertMessage, setAlertMessage] = useState("");
                 
               
                 const onShowCaseSelector = (route) => {
@@ -74,30 +77,6 @@ export const LRPerson = () => {
     const handleAddPerson = () => {
       setPersons([...persons, { dateEntered: "", name: "", phoneNo: "", address: "" }]);
     };
-  
-    // const handleEditPerson = () => {
-    //   if (selectedRow === null) {
-    //     alert("Please select a row to edit.");
-    //     return;
-    //   }
-    //   const newName = prompt("Enter new name:", persons[selectedRow].name);
-    //   if (newName !== null) {
-    //     const updatedPersons = [...persons];
-    //     updatedPersons[selectedRow].name = newName;
-    //     setPersons(updatedPersons);
-    //   }
-    // };
-  
-    // const handleDeletePerson = () => {
-    //   if (selectedRow === null) {
-    //     alert("Please select a row to delete.");
-    //     return;
-    //   }
-    //   if (window.confirm("Are you sure you want to delete this person?")) {
-    //     setPersons(persons.filter((_, index) => index !== selectedRow));
-    //     setSelectedRow(null);
-    //   }
-    // };
 
     useEffect(() => {
       if (
@@ -125,7 +104,8 @@ export const LRPerson = () => {
   
     // Check if mandatory fields are filled
     if (!leadNumber || !leadSummary || !assignedDate || !assignedOfficer || !assignedBy) {
-      alert("Please fill in all the required fields before generating a lead.");
+       setAlertMessage("Please fill in all the required fields before generating a lead.");
+                      setAlertOpen(true);
       return;
     }
   
@@ -182,97 +162,6 @@ export const LRPerson = () => {
 
     fetchLeadData();
   }, [selectedLead, selectedCase]);
-
-    const handleSubmitReport = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      if (!selectedLead || !selectedCase) {
-        alert("No lead or case selected!");
-        return;
-      }
-
-      const body = {
-        leadNo: selectedLead.leadNo,
-        description: selectedLead.leadName,
-        caseNo: selectedCase.caseNo,
-        caseName: selectedCase.caseName,
-        submittedDate: new Date(),
-        assignedTo: {
-          assignees: leadData.assignedTo || [],
-          lRStatus: "Submitted"
-        },
-        assignedBy: {
-          assignee: localStorage.getItem("officerName") || "Unknown Officer",
-          lRStatus: "Pending"
-        }
-      };
-
-      const response = await api.post("/api/leadReturn/create", body, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      });
-
-      if (response.status === 201) {
-        const statusResponse = await api.put(
-          "/api/lead/status/in-review",
-          {
-            leadNo: selectedLead.leadNo,
-            description: selectedLead.leadName,
-            caseNo: selectedCase.caseNo,
-            caseName: selectedCase.caseName
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json"
-            }
-          }
-        );
-
-        if (statusResponse.status === 200) {
-          setLeadStatus("In Review");
-
-            setSelectedLead(prev => ({
-            ...prev,
-            leadStatus: "In Review"
-          }));
-          
-          alert("Lead Return submitted and status set to 'In Review'");
-        const manager    = leadData.assignedBy;                  // string username
-        const investigators = (leadData.assignedTo || []).map(a => a.username);
-        if (manager) {
-          const payload = {
-            notificationId: Date.now().toString(),
-            assignedBy:     localStorage.getItem("loggedInUser"),
-            assignedTo:     [{ username: manager, status: "pending" }],
-            action1:        "submitted a lead return for review",
-            post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
-            caseNo:         selectedCase.caseNo,
-            caseName:       selectedCase.caseName,
-            leadNo:         selectedLead.leadNo,
-            leadName:       selectedLead.leadName,
-            type:           "Lead"
-          };
-          await api.post("/api/notifications", payload, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-        }
-
-        alert("Lead Return submitted and Case Manager notified.");
-        } else {
-          alert("Lead Return submitted but status update failed.");
-        }
-      } else {
-        alert("Failed to submit Lead Return");
-      }
-    } catch (error) {
-      console.error("Error during Lead Return submission or status update:", error);
-      alert("Something went wrong while submitting the report.");
-    }
-  };
   
 
   const fetchPersons = async () => {
@@ -368,7 +257,8 @@ const handleDeletePerson = async (idx) => {
     })));
   } catch (err) {
     console.error("Delete failed", err);
-    alert("Failed to delete person.");
+     setAlertMessage("Failed to delete person.");
+     setAlertOpen(true);
   }
 };
   
@@ -414,7 +304,8 @@ const handleDeletePerson = async (idx) => {
 
   } catch (err) {
     console.error("Failed to update accessLevel", err);
-    alert("Could not change access level. Please try again.");
+    setAlertMessage("Could not change access level. Please try again.");
+     setAlertOpen(true);
   }
 };
 
@@ -424,6 +315,13 @@ const handleDeletePerson = async (idx) => {
         <div className="person-page-content">
       {/* Navbar at the top */}
       <Navbar />
+      <AlertModal
+                                isOpen={alertOpen}
+                                title="Notification"
+                                message={alertMessage}
+                                onConfirm={() => setAlertOpen(false)}
+                                onClose={()   => setAlertOpen(false)}
+                              />
 
       {/* <div className="top-menu">
         <div className="menu-items">
@@ -478,7 +376,8 @@ const handleDeletePerson = async (idx) => {
                       }
                     });
                   } else {
-                    alert("Please select a case and lead first.");
+                     setAlertMessage("Please select a case and lead first.");
+                      setAlertOpen(true);
                   }
                 }}>Lead Chain of Custody</span>
           
@@ -597,7 +496,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item active" style={{fontWeight: '600' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -650,7 +549,7 @@ Case Page
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th style={{ width: "10%" }}>Return Id </th>
+              <th style={{ width: "10%" }}>Narrative Id </th>
               <th>Name</th>
               <th>Phone No</th>
               <th>Address</th>

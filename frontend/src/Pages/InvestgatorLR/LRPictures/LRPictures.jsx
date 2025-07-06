@@ -8,6 +8,7 @@ import React, { useContext, useState, useEffect, useRef} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
+import { AlertModal } from "../../../components/AlertModal/AlertModal";
 
 
 
@@ -29,6 +30,8 @@ const [leadData, setLeadData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
 const [editingIndex, setEditingIndex] = useState(null);
  const fileInputRef = useRef();
+ const [alertOpen, setAlertOpen] = useState(false);
+     const [alertMessage, setAlertMessage] = useState("");
 
   
     const formatDate = (dateString) => {
@@ -137,7 +140,8 @@ const handleAddPicture = async () => {
     (!pictureData.isLink && !file) ||
     (pictureData.isLink && !pictureData.link.trim())
   ) {
-    alert("Please fill in all required fields and select a file or enter a valid link.");
+    setAlertMessage("Please fill in all required fields and select a file or enter a valid link.");
+                      setAlertOpen(true);
     return;
   }
 
@@ -190,7 +194,8 @@ const handleAddPicture = async () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   } catch (err) {
     console.error("Error uploading picture:", err);
-    alert("Failed to save picture. See console for details.");
+    setAlertMessage("Failed to save picture. See console for details.");
+                      setAlertOpen(true);
   }
 };
 
@@ -222,103 +227,13 @@ const handleAddPicture = async () => {
     fetchLeadData();
   }, [selectedLead, selectedCase]);
 
-   const handleSubmitReport = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      if (!selectedLead || !selectedCase) {
-        alert("No lead or case selected!");
-        return;
-      }
-
-      const body = {
-        leadNo: selectedLead.leadNo,
-        description: selectedLead.leadName,
-        caseNo: selectedCase.caseNo,
-        caseName: selectedCase.caseName,
-        submittedDate: new Date(),
-        assignedTo: {
-          assignees: leadData.assignedTo || [],
-          lRStatus: "Submitted"
-        },
-        assignedBy: {
-          assignee: localStorage.getItem("officerName") || "Unknown Officer",
-          lRStatus: "Pending"
-        }
-      };
-
-      const response = await api.post("/api/leadReturn/create", body, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      });
-
-      if (response.status === 201) {
-        const statusResponse = await api.put(
-          "/api/lead/status/in-review",
-          {
-            leadNo: selectedLead.leadNo,
-            description: selectedLead.leadName,
-            caseNo: selectedCase.caseNo,
-            caseName: selectedCase.caseName
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json"
-            }
-          }
-        );
-
-        if (statusResponse.status === 200) {
-          setLeadStatus("In Review");
-
-            setSelectedLead(prev => ({
-            ...prev,
-            leadStatus: "In Review"
-          }));
-          
-          alert("Lead Return submitted and status set to 'In Review'");
-        const manager    = leadData.assignedBy;                  // string username
-        const investigators = (leadData.assignedTo || []).map(a => a.username);
-        if (manager) {
-          const payload = {
-            notificationId: Date.now().toString(),
-            assignedBy:     localStorage.getItem("loggedInUser"),
-            assignedTo:     [{ username: manager, status: "pending" }],
-            action1:        "submitted a lead return for review",
-            post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
-            caseNo:         selectedCase.caseNo,
-            caseName:       selectedCase.caseName,
-            leadNo:         selectedLead.leadNo,
-            leadName:       selectedLead.leadName,
-            type:           "Lead"
-          };
-          await api.post("/api/notifications", payload, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-        }
-
-        alert("Lead Return submitted and Case Manager notified.");
-        } else {
-          alert("Lead Return submitted but status update failed.");
-        }
-      } else {
-        alert("Failed to submit Lead Return");
-      }
-    } catch (error) {
-      console.error("Error during Lead Return submission or status update:", error);
-      alert("Something went wrong while submitting the report.");
-    }
-  };
-
 const handleUpdatePicture = async () => {
   const pic = pictures[editingIndex];
 
   // 1️⃣ Validation for link-mode
   if (pictureData.isLink && !pictureData.link.trim()) {
-    alert("Please enter a valid link.");
+    setAlertMessage("Please enter a valid link.");
+                      setAlertOpen(true);
     return;
   }
 
@@ -377,7 +292,8 @@ const handleUpdatePicture = async () => {
     setFile(null);
   } catch (err) {
     console.error("Error updating LRPicture:", err);
-    alert("Failed to update picture. See console for details.");
+     setAlertMessage("Failed to update picture. See console for details.");
+                      setAlertOpen(true);
   }
 };
 
@@ -457,6 +373,13 @@ const handleAccessChange = (idx, newAccess) => {
     <div className="lrpictures-container">
       {/* Navbar */}
       <Navbar />
+      <AlertModal
+                isOpen={alertOpen}
+                title="Notification"
+                message={alertMessage}
+                onConfirm={() => setAlertOpen(false)}
+                onClose={()   => setAlertOpen(false)}
+              />
 
       {/* Top Menu */}
       {/* <div className="top-menu">
@@ -504,7 +427,8 @@ const handleAccessChange = (idx, newAccess) => {
                       }
                     });
                   } else {
-                    alert("Please select a case and lead first.");
+                    setAlertMessage("Please select a case and lead first.");
+                      setAlertOpen(true);
                   }
                 }}>Lead Chain of Custody</span>
           
@@ -619,7 +543,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -686,7 +610,7 @@ Case Page
             />
           </div>
           <div className="form-row-pic">
-            <label  className="evidence-head">Return Id*</label>
+            <label  className="evidence-head">Narrative Id*</label>
             <input
               type="leadReturnId"
               value={pictureData.leadReturnId}
@@ -811,7 +735,7 @@ Case Page
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th>Return Id </th>
+              <th>Narrative Id </th>
               <th>Date Picture Taken</th>
               <th>File Name</th>
               <th>Description</th>

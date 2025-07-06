@@ -8,7 +8,7 @@ import React, { useContext, useState, useEffect, useRef} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
-
+import { AlertModal } from "../../../components/AlertModal/AlertModal";
 
 
 export const LREvidence = () => {
@@ -30,7 +30,8 @@ export const LREvidence = () => {
       const [editIndex, setEditIndex]         = useState(null);
       const [originalDesc, setOriginalDesc]   = useState("");
       const [leadData, setLeadData] = useState({});
-
+ const [alertOpen, setAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState("");
   
   
      const formatDate = (dateString) => {
@@ -164,7 +165,8 @@ export const LREvidence = () => {
   const handleSaveEvidence = async () => {
     // require a file or a link on new entries
     if (editIndex === null && !file && !evidenceData.isLink) {
-      alert("Please select a file or enter a link.");
+       setAlertMessage("Please select a file or enter a link.");
+                      setAlertOpen(true);
       return;
     }
   
@@ -202,7 +204,7 @@ export const LREvidence = () => {
             return data;
           }]
         });
-        alert("Evidence added");
+        
       } else {
         // UPDATE
         const ev = evidences[editIndex];
@@ -220,7 +222,6 @@ export const LREvidence = () => {
             return data;
           }]
         });
-        alert("Evidence updated");
       }
   
       // refresh & reset
@@ -243,7 +244,8 @@ export const LREvidence = () => {
       setOriginalDesc("");
     } catch (err) {
       console.error("Save error:", err);
-      alert("Failed to save evidence. See console for details.");
+      setAlertMessage("Failed to save evidence.");
+                      setAlertOpen(true);
     }
   };
   
@@ -354,10 +356,11 @@ export const LREvidence = () => {
     try {
       await api.delete(url, { headers:{ Authorization:`Bearer ${token}` } });
       setEvidences(list => list.filter((_,i)=>i!==idx));
-      alert("Deleted");
+
     } catch (err) {
       console.error(err);
-      alert("Failed to delete: " + (err.response?.data?.message||err.message));
+      setAlertMessage("Failed to delete: " + (err.response?.data?.message||err.message));
+                      setAlertOpen(true);
     }
   };
 
@@ -388,83 +391,19 @@ export const LREvidence = () => {
 
     fetchLeadData();
   }, [selectedLead, selectedCase]);
-
-   const handleSubmitReport = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      if (!selectedLead || !selectedCase) {
-        alert("No lead or case selected!");
-        return;
-      }
-
-      const body = {
-        leadNo: selectedLead.leadNo,
-        description: selectedLead.leadName,
-        caseNo: selectedCase.caseNo,
-        caseName: selectedCase.caseName,
-        submittedDate: new Date(),
-        assignedTo: {
-          assignees: leadData.assignedTo || [],
-          lRStatus: "Submitted"
-        },
-        assignedBy: {
-          assignee: localStorage.getItem("officerName") || "Unknown Officer",
-          lRStatus: "Pending"
-        }
-      };
-
-      const response = await api.post("/api/leadReturn/create", body, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      });
-
-      if (response.status === 201) {
-        const statusResponse = await api.put(
-          "/api/lead/status/in-review",
-          {
-            leadNo: selectedLead.leadNo,
-            description: selectedLead.leadName,
-            caseNo: selectedCase.caseNo,
-            caseName: selectedCase.caseName
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json"
-            }
-          }
-        );
-
-        if (statusResponse.status === 200) {
-          setLeadStatus("In Review");
-
-            setSelectedLead(prev => ({
-            ...prev,
-            leadStatus: "In Review"
-          }));
-
-          alert("Lead Return submitted and status set to 'In Review'");
-        } else {
-          alert("Lead Return submitted but status update failed.");
-        }
-      } else {
-        alert("Failed to submit Lead Return");
-      }
-    } catch (error) {
-      console.error("Error during Lead Return submission or status update:", error);
-      alert("Something went wrong while submitting the report.");
-    }
-  };
-  
   
 
   return (
     <div className="lrevidence-container">
       {/* Navbar */}
       <Navbar />
+        <AlertModal
+          isOpen={alertOpen}
+          title="Notification"
+          message={alertMessage}
+          onConfirm={() => setAlertOpen(false)}
+          onClose={()   => setAlertOpen(false)}
+        />
 
       {/* Top Menu */}
       {/* <div className="top-menu">
@@ -512,7 +451,8 @@ export const LREvidence = () => {
                       }
                     });
                   } else {
-                    alert("Please select a case and lead first.");
+                     setAlertMessage("Please select a case and lead first.");
+                      setAlertOpen(true);
                   }
                 }}>Lead Chain of Custody</span>
           
@@ -627,7 +567,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -705,7 +645,7 @@ Case Page
             
               onChange={(e) => handleInputChange("disposedDate", e.target.value)}
             />
-            <label className="evidence-head">Return Id*</label>
+            <label className="evidence-head">Narrative Id*</label>
             <input
               type="leadReturnId"
               value={evidenceData.leadReturnId}
@@ -827,10 +767,10 @@ Case Page
             <table className="leads-table">
           <thead>
             <tr>
-              <th>Date Entered</th>
-              <th style={{ width: "4%" }}> Return Id </th>
+              <th>Date Entered*</th>
+              <th style={{ width: "4%" }}> Narrative Id* </th>
               <th>Type</th>
-              <th>Collection Date</th>
+              <th>Collection Date*</th>
               <th>Disposed Date</th>
               <th>File Name</th>
               <th>Description</th>

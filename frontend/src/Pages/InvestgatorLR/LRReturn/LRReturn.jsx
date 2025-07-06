@@ -8,6 +8,7 @@ import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
+import { AlertModal } from "../../../components/AlertModal/AlertModal";
 
 
 
@@ -27,6 +28,8 @@ const [username, setUsername] = useState("");
  const [leadData, setLeadData] = useState({});
  const [officerName, setOfficerName] = useState("");
    const todayDate = new Date().toLocaleDateString();
+     const [alertOpen, setAlertOpen] = useState(false);
+     const [alertMessage, setAlertMessage] = useState("");
     
   const { leadDetails, caseDetails } = location.state || {};
   const [maxReturnId, setMaxReturnId] = useState(0);
@@ -41,6 +44,8 @@ const [username, setUsername] = useState("");
 
   ]);
 
+const caseNo = selectedCase?.caseNo ?? caseDetails.caseNo;
+
       useEffect(() => {
     const storedOfficer = localStorage.getItem("loggedInUser");
     if (storedOfficer) {
@@ -52,72 +57,7 @@ const [username, setUsername] = useState("");
 
   
     console.log(selectedCase, selectedLead);
-    useEffect(() => {
-      const fetchLeadStatus = async () => {
-        try {
-          const token = localStorage.getItem("token");
-          const { leadNo, leadName } = selectedLead;
-          const { caseNo, caseName } = selectedCase;
-    
-         const resp = await api.get(
-          `/api/lead/lead/${leadNo}/${encodeURIComponent(leadName)}/${caseNo}/${encodeURIComponent(caseName)}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        if (Array.isArray(resp.data) && resp.data.length > 0) {
-          setLeadStatus(resp.data[0].leadStatus);
-        } else {
-          console.warn("No lead returned when fetching status");
-                    setLeadStatus("Unknown");
-        }
-      } catch (err) {
-        console.error("Failed to fetch lead status", err);
-        setError("Could not load lead status");
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-     if (selectedLead?.leadNo && selectedLead?.leadName && selectedCase?.caseNo && selectedCase?.caseName) {
-      fetchLeadStatus();
-    }
-   }, [selectedLead, selectedCase, setLeadStatus]); 
   
-
-  useEffect(() => {
-    const fetchLeadData = async () => {
-      try {
-        if (selectedLead?.leadNo && selectedLead?.leadName && selectedLead?.caseNo && selectedLead?.caseName) {
-          const token = localStorage.getItem("token");
-
-          const response = await api.get(`/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
-            selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-  
-
-          console.log("Fetched Lead RR1:", response.data);
-
-          setReturns(response.data.length > 0 ? response.data : []);
-          setLeadReturns(response.data);
-
-          // if (response.data.length > 0) {
-          //   setReturns({
-          //     ...response.data[0], 
-          //   });
-          // }
-          
-        }
-      } catch (err) {
-        console.error("Error fetching lead data:", err);
-        setError("Failed to fetch lead data.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLeadData();
-  }, [leadDetails, caseDetails, setLeadReturns ]);
 
     useEffect(() => {
     const fetchLeadData = async () => {
@@ -147,12 +87,50 @@ const [username, setUsername] = useState("");
     fetchLeadData();
   }, [selectedLead, selectedCase]);
 
+  setLeadStatus(leadData.leadStatus);
+
+   useEffect(() => {
+      const fetchLeadStatus = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const { leadNo, leadName } = selectedLead;
+          const { caseNo, caseName } = selectedCase;
+    
+         const resp = await api.get(
+          `/api/lead/status/${leadNo}/${encodeURIComponent(leadName)}/${caseNo}/${encodeURIComponent(caseName)}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        const leadStatus = resp.data.leadStatus;
+
+        if (Array.isArray(resp.data) && resp.data.length > 0) {
+          setLeadStatus(resp.data.leadStatus);
+        } else {
+          console.warn("No lead returned when fetching status");
+                    setLeadStatus("Unknown");
+        }
+      } catch (err) {
+        console.error("Failed to fetch lead status", err);
+        setError("Could not load lead status");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+     if (selectedLead?.leadNo && selectedLead?.leadName && selectedCase?.caseNo && selectedCase?.caseName) {
+      fetchLeadStatus();
+    }
+   }, [selectedLead, selectedCase, setLeadStatus]); 
+  
+
     const handleSubmitReport = async () => {
     try {
       const token = localStorage.getItem("token");
 
       if (!selectedLead || !selectedCase) {
-        alert("No lead or case selected!");
+        // alert("No lead or case selected!");
+        setAlertMessage("No lead or case selected!");
+      setAlertOpen(true);
         return;
       }
 
@@ -204,7 +182,6 @@ const [username, setUsername] = useState("");
             leadStatus: "In Review"
           }));
           
-          alert("Lead Return submitted and status set to 'In Review'");
         const manager    = leadData.assignedBy;                  // string username
         const investigators = (leadData.assignedTo || []).map(a => a.username);
         if (manager) {
@@ -395,8 +372,9 @@ const handleAccessChange = async (idx, newAccess) => {
   const token = localStorage.getItem("token");
 
   try {
+    console.log("AnyCase", selectedCase);
     const response = await api.patch(
-      `/api/leadReturnResult/update/${ret.leadNo}/${ret.caseNo}/${ret.leadReturnId}`,
+      `/api/leadReturnResult/update/${ret.leadNo}/${caseNo}/${ret.leadReturnId}`,
       { accessLevel: newAccess },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -414,7 +392,8 @@ const handleAccessChange = async (idx, newAccess) => {
     });
   } catch (err) {
     console.error("Failed to update accessLevel", err);
-    alert("Could not change access. Try again.");
+     setAlertMessage("Could not change access. Try again.");
+      setAlertOpen(true);
   }
 };
 
@@ -450,14 +429,18 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
 
   const handleAddOrUpdateReturn = async () => {
     if (!returnData.results) {
-      alert("Please enter return details!");
+      // alert("Please enter return details!");
+       setAlertMessage("Please enter narrative details!");
+      setAlertOpen(true);
       return;
     }
   
     const officerName = localStorage.getItem("loggedInUser");
     console.log(officerName);
     if (!officerName) {
-  alert("Officer name not found. Please log in again.");
+  // alert("Officer name not found. Please log in again.");
+   setAlertMessage("Officer name not found. Please log in again.");
+      setAlertOpen(true);
   return;
 }
     const token = localStorage.getItem("token");
@@ -467,7 +450,7 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
         // Update existing return
         const updateData = { leadReturnResult: returnData.results };
         const response = await api.patch(
-          `/api/leadReturnResult/update/${selectedLead.leadNo}/${selectedLead.caseNo}/${editId}`,
+          `/api/leadReturnResult/update/${selectedLead.leadNo}/${caseNo}/${editId}`,
           updateData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -540,7 +523,9 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
 }
     } catch (err) {
       console.error("Error saving return:", err);
-      alert("Failed to save return. Please try again.");
+      // alert("Failed to save return. Please try again.");
+       setAlertMessage("Failed to save narrative. Please try again.");
+      setAlertOpen(true);
     }
   };
 
@@ -597,7 +582,9 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
       setLeadReturns(filtered);
     } catch (err) {
       console.error("Error deleting return:", err);
-      alert("Failed to delete return.");
+      // alert("Failed to delete return.");
+      setAlertMessage("Failed to delete narrative.");
+      setAlertOpen(true);
     }
   };
   
@@ -621,6 +608,14 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
   return (
     <div className="lrenclosures-container">
       <Navbar />
+      <AlertModal
+              isOpen={alertOpen}
+              title="Notification"
+              message={alertMessage}
+              onConfirm={() => setAlertOpen(false)}
+              onClose={()   => setAlertOpen(false)}
+            />
+      
 
       {/* <div className="top-menu">
         <div className="menu-items">
@@ -665,7 +660,9 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
                       }
                     });
                   } else {
-                    alert("Please select a case and lead first.");
+                    // alert("Please select a case and lead first.");
+                    setAlertMessage("Please select a case and lead first.");
+                    setAlertOpen(true);
                   }
                 }}>Lead Chain of Custody</span>
           
@@ -781,7 +778,7 @@ Case Page
             Instructions
           </span>
           <span className="menu-item active" style={{fontWeight: '600' }} onClick={() => handleNavigation('/LRReturn')}>
-            Returns
+            Narrative
           </span>
           <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
@@ -819,8 +816,8 @@ Case Page
           <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
-    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
-    : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
+    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${ leadStatus}`
+    : `LEAD DETAILS | ${leadStatus}`}
 </h5>
 
           </div>
@@ -837,7 +834,7 @@ Case Page
 
         {/* Center Section */}
         <div className="case-header">
-          <h2 className="">RETURNS</h2>
+          <h2 className="">NARRATIVE</h2>
         </div>
 
         <div className = "LRI-content-section">
@@ -848,7 +845,7 @@ Case Page
       <div className = "content-to-add-first-row">
 
       <div className="form-row4">
-            <label>Return Id*</label>
+            <label>Narrative Id*</label>
             <input type="text" value={returnData.leadReturnId || nextReturnId} readOnly />
           </div>
           <div className="form-row4">
@@ -871,7 +868,7 @@ Case Page
            <h4>Entered By</h4>
            <label className='input-field'></label> */}
      
-    <h4 className="return-form-h4">{editMode ? "Edit Return" : "Add Return"}</h4>
+    <h4 className="return-form-h4">{editMode ? "Edit Return" : "Save Narrative"}</h4>
       <div className="return-form">
         <textarea
         type = "text"
@@ -884,7 +881,7 @@ Case Page
       <div className="form-buttons-return">
       <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
 
-        className="save-btn1" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Add Return"}</button>
+        className="save-btn1" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Save Narrative"}</button>
         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
@@ -894,7 +891,7 @@ Case Page
       <table className="leads-table">
         <thead>
           <tr>
-            <th style={{ width: "10%" }}>Return Id</th>
+            <th style={{ width: "10%" }}>Narrative Id</th>
             <th style={{ width: "13%" }}>Date Entered</th>
             <th style={{ width: "9%" }}>Entered By</th>
             <th className="results-col">Narrative</th>
@@ -1014,7 +1011,7 @@ Case Page
   }) : (
     <tr>
       <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign: 'center' }}>
-        No Returns Available
+        No Narrative Available
       </td>
     </tr>
   )}
