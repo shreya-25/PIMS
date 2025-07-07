@@ -427,107 +427,189 @@ const nextReturnId = numberToAlphabet(maxReturnId + 1);
   //   setReturnData({ results: "" });
   // };
 
-  const handleAddOrUpdateReturn = async () => {
-    if (!returnData.results) {
-      // alert("Please enter return details!");
-       setAlertMessage("Please enter narrative details!");
-      setAlertOpen(true);
-      return;
-    }
+//   const handleAddOrUpdateReturn = async () => {
+//     if (!returnData.results) {
+//       // alert("Please enter return details!");
+//        setAlertMessage("Please enter narrative details!");
+//       setAlertOpen(true);
+//       return;
+//     }
   
-    const officerName = localStorage.getItem("loggedInUser");
-    console.log(officerName);
-    if (!officerName) {
-  // alert("Officer name not found. Please log in again.");
-   setAlertMessage("Officer name not found. Please log in again.");
-      setAlertOpen(true);
-  return;
-}
-    const token = localStorage.getItem("token");
+//     const officerName = localStorage.getItem("loggedInUser");
+//     console.log(officerName);
+//     if (!officerName) {
+//   // alert("Officer name not found. Please log in again.");
+//    setAlertMessage("Officer name not found. Please log in again.");
+//       setAlertOpen(true);
+//   return;
+// }
+//     const token = localStorage.getItem("token");
   
-    try {
-      if (editMode && editId) {
-        // Update existing return
-        const updateData = { leadReturnResult: returnData.results };
-        const response = await api.patch(
-          `/api/leadReturnResult/update/${selectedLead.leadNo}/${caseNo}/${editId}`,
-          updateData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+//     try {
+//       if (editMode && editId) {
+//         // Update existing return
+//         const updateData = { leadReturnResult: returnData.results };
+//         const response = await api.patch(
+//           `/api/leadReturnResult/update/${selectedLead.leadNo}/${caseNo}/${editId}`,
+//           updateData,
+//           { headers: { Authorization: `Bearer ${token}` } }
+//         );
   
-        const updatedReturn = response.data;
-        const updatedList = returns.map((ret) =>
-          ret.leadReturnId === editId ? updatedReturn : ret
-        );
-        setReturns(updatedList);
-        setEditMode(false);
-        setEditId(null);
-      } else {
-        // Add new return
-        const response = await api.get(`/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
-          selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+//         const updatedReturn = response.data;
+//         const updatedList = returns.map((ret) =>
+//           ret.leadReturnId === editId ? updatedReturn : ret
+//         );
+//         setReturns(updatedList);
+//         setEditMode(false);
+//         setEditId(null);
+//       } else {
+//         // Add new return
+//         const response = await api.get(`/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
+//           selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
+//             headers: { Authorization: `Bearer ${token}` }
+//           });
   
-        const existingReturns = response.data || [];
-        const assignedTo = { assignees: [officerName], lRStatus: "Pending" };
-        const assignedBy = { assignee: officerName, lRStatus: "Pending" };
+//         const existingReturns = response.data || [];
+//         const assignedTo = { assignees: [officerName], lRStatus: "Pending" };
+//         const assignedBy = { assignee: officerName, lRStatus: "Pending" };
   
-        const nextNumericId = maxReturnId + 1;
-        const newReturnId = numberToAlphabet(nextNumericId);
+//         const nextNumericId = maxReturnId + 1;
+//         const newReturnId = numberToAlphabet(nextNumericId);
 
-        const newReturn = {
-          leadNo: selectedLead?.leadNo,
-          description: selectedLead?.leadName,
-          enteredDate: new Date().toISOString(),
-          enteredBy: officerName?.trim(),
-          caseName: selectedCase.caseName,
-          caseNo: selectedCase.caseNo,
-          leadReturnId: newReturnId,
-          leadReturnResult: returnData.results,
-          assignedTo: {
-                assignees: [officerName?.trim()],
-                lRStatus: "Pending"
-              },
-              assignedBy: {
-                assignee: officerName?.trim(),
-                lRStatus: "Pending"
-              },
-          accessLevel: returnData.accessLevel
-        };
+//         const newReturn = {
+//           leadNo: selectedLead?.leadNo,
+//           description: selectedLead?.leadName,
+//           enteredDate: new Date().toISOString(),
+//           enteredBy: officerName?.trim(),
+//           caseName: selectedCase.caseName,
+//           caseNo: selectedCase.caseNo,
+//           leadReturnId: newReturnId,
+//           leadReturnResult: returnData.results,
+//           assignedTo: {
+//                 assignees: [officerName?.trim()],
+//                 lRStatus: "Pending"
+//               },
+//               assignedBy: {
+//                 assignee: officerName?.trim(),
+//                 lRStatus: "Pending"
+//               },
+//           accessLevel: returnData.accessLevel
+//         };
   
-        const createResponse = await api.post(
-          "/api/leadReturnResult/create",
-          newReturn,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+//         const createResponse = await api.post(
+//           "/api/leadReturnResult/create",
+//           newReturn,
+//           { headers: { Authorization: `Bearer ${token}` } }
+//         );
   
-      //   setReturns([...existingReturns, createResponse.data]);
-      // }
+//       //   setReturns([...existingReturns, createResponse.data]);
+//       // }
   
-      // setReturnData({ results: "" });
-      // Update return list and maxReturnId
-  const updatedReturns = [...returns, createResponse.data];
-  setReturns(updatedReturns);
-  setLeadReturns(updatedReturns);
-  setMaxReturnId(nextNumericId); // <- update the counter
+//       // setReturnData({ results: "" });
+//       // Update return list and maxReturnId
+//   const updatedReturns = [...returns, createResponse.data];
+//   setReturns(updatedReturns);
+//   setLeadReturns(updatedReturns);
+//   setMaxReturnId(nextNumericId); // <- update the counter
 
-  // Update the next ID in the return form
-  setReturnData({
-    results: "",
-    leadReturnId: numberToAlphabet(nextNumericId + 1),
-    enteredDate: todayDate,
-    enteredBy: officerName,
-    access: "Everyone"
-  });
-}
-    } catch (err) {
-      console.error("Error saving return:", err);
-      // alert("Failed to save return. Please try again.");
-       setAlertMessage("Failed to save narrative. Please try again.");
-      setAlertOpen(true);
+//   // Update the next ID in the return form
+//   setReturnData({
+//     results: "",
+//     leadReturnId: numberToAlphabet(nextNumericId + 1),
+//     enteredDate: todayDate,
+//     enteredBy: officerName,
+//     access: "Everyone"
+//   });
+// }
+//     } catch (err) {
+//       console.error("Error saving return:", err);
+//       // alert("Failed to save return. Please try again.");
+//        setAlertMessage("Failed to save narrative. Please try again.");
+//       setAlertOpen(true);
+//     }
+//   };
+
+const handleAddOrUpdateReturn = async () => {
+  // 1) validation
+  if (!returnData.results.trim()) {
+    setAlertMessage("Please enter narrative details!");
+    return setAlertOpen(true);
+  }
+
+  const officerName = localStorage.getItem("loggedInUser")?.trim();
+  if (!officerName) {
+    setAlertMessage("Officer name not found. Please log in again.");
+    return setAlertOpen(true);
+  }
+  const token = localStorage.getItem("token");
+
+  try {
+    if (editMode && editId) {
+      // ─── UPDATE EXISTING ─────────────────────────────────────────────
+      const resp = await api.patch(
+        `/api/leadReturnResult/update/${selectedLead.leadNo}/${caseNo}/${editId}`,
+        { leadReturnResult: returnData.results },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // replace in state
+      setReturns(rs => rs.map(r => r.leadReturnId === editId ? resp.data : r));
+      setEditMode(false);
+      setEditId(null);
+
+    } else {
+      // ─── CREATE NEW ──────────────────────────────────────────────────
+      const payload = {
+        leadNo:             selectedLead.leadNo,
+        description:        selectedLead.leadName,
+        caseNo,
+        caseName:           selectedCase.caseName,
+        enteredDate:        new Date(),
+        enteredBy:          officerName,
+        assignedTo:  { assignees: [officerName], lRStatus: "Pending" },
+        assignedBy:  { assignee: officerName, lRStatus: "Pending" },
+        leadReturnResult:   returnData.results,
+        accessLevel:        returnData.accessLevel
+      };
+
+      const createResp = await api.post(
+        "/api/leadReturnResult/create",
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // 4) append the returned document (with its generated leadReturnId)
+      const newDoc = createResp.data;
+      setReturns(rs => [...rs, newDoc]);
+      setLeadReturns(rs => [...rs, newDoc]);
+
+      setReturnData(rd => ({
+      ...rd,
+      leadReturnId: newDoc.leadReturnId,
+      results:      ""    // clear out the textarea
+    }));
+
+    setMaxReturnId(n =>
+      Math.max(n, alphabetToNumber(newDoc.leadReturnId))
+    );
+
+      // 5) bump maxReturnId so nextReturnId preview advances
+      // const numeric = alphabetToNumber(newDoc.leadReturnId);
+      // setMaxReturnId(prev => Math.max(prev, numeric));
+
+      // 6) reset the form
+      setReturnData(rd => ({
+        ...rd,
+        results: "",
+      }));
     }
-  };
+  } catch (err) {
+    console.error("Error saving return:", err);
+    setAlertMessage("Failed to save narrative. Please try again.");
+    setAlertOpen(true);
+  }
+};
+
 
   useEffect(() => {
   if (officerName) {
@@ -846,7 +928,16 @@ Case Page
 
       <div className="form-row4">
             <label>Narrative Id*</label>
-            <input type="text" value={returnData.leadReturnId || nextReturnId} readOnly />
+            {/* <input type="text" value={returnData.leadReturnId || nextReturnId} readOnly /> */}
+            <input
+  readOnly
+  value={ editMode
+    ? returnData.leadReturnId    // when editing, show the saved one
+    : (returnData.leadReturnId    // after a create, you've written it into returnData
+       || nextReturnId)           // otherwise show the preview
+  }
+/>
+
           </div>
           <div className="form-row4">
             <label>Date Entered*</label>

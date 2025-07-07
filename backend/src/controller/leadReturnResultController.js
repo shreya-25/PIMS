@@ -1,52 +1,107 @@
 const LeadReturnResult = require("../models/leadReturnResult");
 
+// Helpers to convert between A…Z strings and numbers
+function alphabetToNumber(str) {
+  let result = 0;
+  for (let i = 0; i < str.length; i++) {
+    result = result * 26 + (str.charCodeAt(i) - 64); // 'A'→1, 'B'→2, …
+  }
+  return result;
+}
+function numberToAlphabet(num) {
+  let s = "";
+  while (num > 0) {
+    const rem = (num - 1) % 26;
+    s = String.fromCharCode(65 + rem) + s;
+    num = Math.floor((num - 1) / 26);
+  }
+  return s;
+}
+
 // Create a new Lead Return Result entry
 const createLeadReturnResult = async (req, res) => {
-    try {
-        const {
-            leadNo,
-            description,
-            assignedTo, 
-            assignedBy, 
-            enteredDate,
-            enteredBy,
-            caseName,
-            caseNo,
-            leadReturnId,
-            leadReturnResult,
-            accessLevel,
-        } = req.body;
+  try {
+    const {
+      leadNo,
+      description,
+      assignedTo,
+      assignedBy,
+      enteredDate,
+      enteredBy,
+      caseName,
+      caseNo,
+      leadReturnResult,
+      accessLevel,
+    } = req.body;
 
-        // Validate assignedBy format
-        if (!assignedBy || typeof assignedBy !== "object" || !assignedBy.assignee || !assignedBy.lRStatus) {
-            return res.status(400).json({ message: "Invalid assignedBy format. It should have 'assignee' and 'lRStatus'." });
-        }
-
-        // Validate assignedTo format
-        if (!assignedTo || !Array.isArray(assignedTo.assignees) || assignedTo.assignees.length === 0 || !assignedTo.lRStatus) {
-            return res.status(400).json({ message: "Invalid assignedTo format. It should have 'assignees' (array) and 'lRStatus'." });
-        }
-
-        const newLeadReturnResult = new LeadReturnResult({
-            leadNo,
-            description,
-            assignedTo,
-            assignedBy,
-            enteredDate,
-            enteredBy,
-            caseName,
-            caseNo,
-            leadReturnId,
-            leadReturnResult,
-            accessLevel,
+    // 1) validate payload shapes
+    if (
+      !assignedBy ||
+      typeof assignedBy !== "object" ||
+      !assignedBy.assignee ||
+      !assignedBy.lRStatus
+    ) {
+      return res
+        .status(400)
+        .json({
+          message:
+            "Invalid assignedBy format. It should have 'assignee' and 'lRStatus'.",
         });
-
-        await newLeadReturnResult.save();
-        res.status(201).json(newLeadReturnResult);
-    } catch (err) {
-        console.error("Error creating lead return result:", err.message);
-        res.status(500).json({ message: "Something went wrong" });
     }
+    if (
+      !assignedTo ||
+      !Array.isArray(assignedTo.assignees) ||
+      assignedTo.assignees.length === 0 ||
+      !assignedTo.lRStatus
+    ) {
+      return res
+        .status(400)
+        .json({
+          message:
+            "Invalid assignedTo format. It should have 'assignees' (array) and 'lRStatus'.",
+        });
+    }
+
+    // 2) fetch existing returns for this exact lead+case
+    const existing = await LeadReturnResult.find({
+      leadNo,
+      description,
+      caseNo,
+      caseName,
+    }).select("leadReturnId");
+
+    // 3) compute highest numeric ID so far
+    const maxNum = existing.reduce((max, doc) => {
+      const val = doc.leadReturnId
+        ? alphabetToNumber(doc.leadReturnId)
+        : 0;
+      return Math.max(max, val);
+    }, 0);
+
+    // 4) bump by one and turn back into letters
+    const newId = numberToAlphabet(maxNum + 1);
+
+    // 5) build & save
+    const newLeadReturnResult = new LeadReturnResult({
+      leadNo,
+      description,
+      assignedTo,
+      assignedBy,
+      enteredDate,
+      enteredBy,
+      caseName,
+      caseNo,
+      leadReturnId: newId,
+      leadReturnResult,
+      accessLevel,
+    });
+
+    await newLeadReturnResult.save();
+    return res.status(201).json(newLeadReturnResult);
+  } catch (err) {
+    console.error("Error creating lead return result:", err);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
 // Get all lead return results assigned to or assigned by an officer
