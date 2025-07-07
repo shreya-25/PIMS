@@ -39,6 +39,7 @@ export const CasePageManager = () => {
     const [loading, setLoading] = useState(false);
      const [alertOpen, setAlertOpen] = useState(false);
       const [alertMessage, setAlertMessage] = useState("");
+      const [confirmOfficersOpen, setConfirmOfficersOpen] = useState(false);
 
     const [showFilter, setShowFilter] = useState(false);
     const [showSort, setShowSort] = useState(false);
@@ -72,6 +73,20 @@ export const CasePageManager = () => {
       investigators: []
     });
 
+    const openConfirmOfficers = () => {
+  // 4) if no case managers, block
+  if (selectedCaseManagers.length === 0) {
+    setAlertMessage("You must assign at least one Case Manager.");
+    setAlertOpen(true);
+    return;
+  }
+  setConfirmOfficersOpen(true);
+};
+const closeConfirmOfficers = () => setConfirmOfficersOpen(false);
+const handleConfirmOfficers = () => {
+  saveInvestigators();
+  closeConfirmOfficers();
+};
     useEffect(() => {
     async function fetchUsers() {
       try {
@@ -543,6 +558,48 @@ const saveInvestigators = async () => {
     setError("");
 
     const token = localStorage.getItem("token");
+     // 1) Figure out who’s being removed
+    const prevSupervisor    = team.detectiveSupervisor;
+    const prevManagers      = team.caseManagers    || [];
+    const prevInvestigators = team.investigators   || [];
+
+    const removed = [
+      // Supervisor
+      ...(prevSupervisor && prevSupervisor !== selectedDetectiveSupervisor
+        ? [{ username: prevSupervisor, role: "Detective Supervisor" }]
+        : []),
+      // Case Managers
+      ...prevManagers
+        .filter(u => !selectedCaseManagers.includes(u))
+        .map(u => ({ username: u, role: "Case Manager" })),
+      // Investigators
+      ...prevInvestigators
+        .filter(u => !selectedInvestigators.includes(u))
+        .map(u => ({ username: u, role: "Investigator" })),
+    ];
+
+    // 2) Gather all incomplete leads (assigned or accepted)
+    const incompleteLeads = [
+      ...leads.assignedLeads,
+      ...leads.pendingLeads
+    ];
+
+    // 3) Block any removal-candidate who still appears on an incomplete lead
+    const blocked = removed.filter(o =>
+      incompleteLeads.some(lead =>
+        (lead.assignedOfficers || []).includes(o.username)
+      )
+    );
+
+    if (blocked.length) {
+      setAlertMessage(
+        "Cannot remove " +
+        blocked.map(b => `${b.role} ${b.username}`).join(", ") +
+        " because they have open leads."
+      );
+      setAlertOpen(true);
+      return;
+    }
 
     // 1) Build the full officers array for the CASE
     const officers = [
@@ -560,9 +617,6 @@ const saveInvestigators = async () => {
     ];
 
     // 2) Determine who’s brand-new
-   const prevSupervisor    = team.detectiveSupervisor;
-    const prevManagers      = team.caseManagers    || [];
-    const prevInvestigators = team.investigators   || [];
 
     const newlyAddedSupervisor   = (selectedDetectiveSupervisor && selectedDetectiveSupervisor !== prevSupervisor)
       ? [selectedDetectiveSupervisor]
@@ -1187,6 +1241,13 @@ const handleSortAll = colKey => {
             {/* Navbar */}
             <Navbar />
               <AlertModal
+                isOpen={confirmOfficersOpen}
+                title="Confirm Update"
+                message="Are you sure you want to update your case officers?"
+                onClose={closeConfirmOfficers}
+                onConfirm={handleConfirmOfficers}
+              />
+              <AlertModal
               isOpen={confirmConfig.isOpen}
               title="Confirm Accept"
               message={`Are you sure you want to accept Lead #${confirmConfig.lead?.id} -  ${confirmConfig.lead?.description} ?`}
@@ -1587,7 +1648,7 @@ Save
 </table>
 </div>
   <div className="update-lead-btn">
-    <button className="save-btn1" onClick={saveInvestigators}>
+    <button className="save-btn1" onClick={openConfirmOfficers}>
       Save Changes
     </button>
     {error && <div className="error">{error}</div>}

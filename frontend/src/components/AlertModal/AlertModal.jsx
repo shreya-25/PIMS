@@ -21,13 +21,13 @@ export const AlertModal = ({
         <div className="alert-body">{message}</div>
         <div className="alert-footer">
           <button 
-            className="save-btn1" 
+            className="save-btnalert" 
             onClick={onClose}
           >
             Cancel
           </button>
           <button 
-            className="save-btn1" 
+            className="save-btnalert" 
             onClick={onConfirm}
           >
             OK
