@@ -143,6 +143,7 @@ const NotificationCard1 = ({ signedInOfficer }) => {
     const { letter, color } = getType(n);
     const thisAss = n.assignedTo.find(r => r.username === signedInOfficer);
     const isPending = thisAss.status === "pending";
+    const isUnread = thisAss.unread;
 
     return (
       <div
@@ -162,7 +163,8 @@ const NotificationCard1 = ({ signedInOfficer }) => {
             <span className="time">{new Date(n.time).toLocaleString()}</span>
           </div>
           <div className="buttons-container">
-            <button className="view-btnNC" onClick={() => handleView(n._id)}>
+            <button className="view-btnNC" onClick={() => handleView(n._id)}
+               disabled={!isUnread}>
               View
             </button>
             {isPending &&
