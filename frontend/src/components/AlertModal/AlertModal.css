@@ -1,22 +1,24 @@
-
+/* 
 .alert-overlay {
     position: fixed;
     inset: 0;
     display: flex;
     justify-content: center;
-    align-items: top;
+    align-items: center;
     pointer-events: none;   
     z-index: 1001;
-    background-color: #000000d2;
+    background-color: #00000099;
   }
+  
+
   
   .alert-modal {
     pointer-events: auto;   
-    background: #fff;
+    background: whitesmoke;
     border-radius: 8px;
     padding: 16px;
-    width: 50%;
-    height: 15%;
+    width: 35%;
+    height: 30%;
     box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     display: flex;
     flex-direction: column;
@@ -26,27 +28,36 @@
   
   .alert-header {
     margin-bottom: 8px;
-    font-size: 20px;
+    font-size: 26px;
     font-weight: bold;
   }
   
   .alert-body {
     margin-bottom: 16px;
-    font-size: 22px;
-    /* color: #333; */
+    font-size: 24px;
   }
   
   .alert-footer {
-    text-align: right;
+   display:flex;
+   justify-content: center;
+   gap: 50px;
   }
   
   .alert-button {
     border: none;
-    padding: 6px 12px;
     border-radius: 4px;
     cursor: pointer;
-    margin-left: 8px;
-     font-size: 20px;
+     font-size: 24px;
+     background-color: #00000054;
+  }
+  .save-btnalert
+  {
+    color: white;
+    background-color: #00000054;
+    width: 180px;
+    height: 50px;
+    font-size: 26px;
+    padding: 4px;
   }
   
   .alert-button.cancel {
@@ -66,4 +77,84 @@
   .alert-button.confirm:hover {
     background: #0056b3;
   }
-  
+   */
+
+   .alert-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  z-index: 1001;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.alert-modal {
+  pointer-events: auto;
+  padding-left: 1%;
+  padding-right: 1%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  background: #fff;
+  border-radius: 20px;
+  width: 500px;
+  min-height: 300px;
+  height: auto;
+  max-width: 90%;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.alert-header {
+  padding: 16px 12px 4px;
+  font-size: 26px;
+  font-weight: 600;
+  text-align: center;
+  color: #000;
+}
+
+.alert-body {
+  padding: 0 1%;
+  font-size: 24px;
+  text-align: center;
+  color: #3c3c3c;
+  line-height: 1.4;
+  display:flex;
+  justify-content: center;
+  height: auto;
+}
+
+.alert-footer {
+  display: flex;
+  border-top: 1px solid #c7c7cc;
+  height: 44px;
+}
+
+.alert-footer button {
+  flex: 1;
+  border: none;
+  background: none;
+  font-size: 26px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+.save-btnalert
+{
+  color: rgb(41, 41, 139);
+}
+.alert-footer button + button {
+  border-left: 1px solid #c7c7cc;
+}
+
+.alert-footer .cancel {
+  color: #007aff;
+}
+
+.alert-footer .confirm {
+  color: #007aff;
+}
