@@ -24,55 +24,60 @@ export const LREnclosures = () => {
     //     };
     //   }, []);
   const navigate = useNavigate(); 
+  const FORM_KEY = "LREnclosures:form";
+  const LIST_KEY = "LREnclosures:list";
   const location = useLocation();
   const [formData, setFormData] = useState({ /* your fields */ });
   const fileInputRef = useRef();
   const [leadData, setLeadData] = useState({});
   const [alertOpen, setAlertOpen] = useState(false);
-    const [alertMessage, setAlertMessage] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
   
 
   const { leadDetails, caseDetails } = location.state || {};
 
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    if (isNaN(date)) return "";
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const day = date.getDate().toString().padStart(2, "0");
-    const year = date.getFullYear().toString().slice(-2);
-    return `${month}/${day}/${year}`;
-  };
+    const formatDate = (dateString) => {
+      if (!dateString) return "";
+      const date = new Date(dateString);
+      if (isNaN(date)) return "";
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
+      const day = date.getDate().toString().padStart(2, "0");
+      const year = date.getFullYear().toString().slice(-2);
+      return `${month}/${day}/${year}`;
+    };
 
-  
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);  
   
-      const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
-                const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
-              
-                const onShowCaseSelector = (route) => {
-                  navigate(route, { state: { caseDetails } });
-              };
+    const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+    const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+    
+    const onShowCaseSelector = (route) => {
+        navigate(route, { state: { caseDetails } });
+    };
 
-  // Sample enclosures data
-  const [enclosures, setEnclosures] = useState([
-    // { returnId:'',dateEntered: "", type: "", enclosure: "" },
-    // { returnId:2, dateEntered: "12/03/2024", type: "Evidence", enclosure: "Photo Evidence" },
-  ]);
+  const [enclosureData, setEnclosureData] = useState(() => {
+  const saved = sessionStorage.getItem(FORM_KEY);
+  return saved
+    ? JSON.parse(saved)
+    : {
+        returnId: '',
+        type: '',
+        enclosure: '',
+        isLink: false,
+        link: '',
+        originalName: '',
+        filename: ''
+      };
+});
 
-  // State to manage form data
-  const [enclosureData, setEnclosureData] = useState({
-    returnId:'',
-    type: "",
-    enclosure: "",
-     isLink: false,
-  link: "",
-  originalName: '',   // ← add this
-  filename: ''   
-  });
+// Master list
+const [enclosures, setEnclosures] = useState(() => {
+  const saved = sessionStorage.getItem(LIST_KEY);
+  return saved ? JSON.parse(saved) : [];
+});
 
   const handleInputChange = (field, value) => {
     setEnclosureData({ ...enclosureData, [field]: value });
@@ -110,6 +115,17 @@ export const LREnclosures = () => {
       enclosure: "",
     });
   };
+
+  // save draft
+useEffect(() => {
+  sessionStorage.setItem(FORM_KEY, JSON.stringify(enclosureData));
+}, [enclosureData]);
+
+// save list
+useEffect(() => {
+  sessionStorage.setItem(LIST_KEY, JSON.stringify(enclosures));
+}, [enclosures]);
+
 
    // Helper to get the current list for this lead+case
    const fetchEnclosuresForLead = async () => {

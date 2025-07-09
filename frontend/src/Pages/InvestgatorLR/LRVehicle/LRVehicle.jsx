@@ -26,13 +26,49 @@ export const LRVehicle = () => {
     //   }, []);
 
   const navigate = useNavigate(); // Initialize useNavigate hook
-    const location = useLocation();
-    const [username, setUsername] = useState("");
-    const [rawVehicles, setRawVehicles] = useState([]);
-    const [editIndex, setEditIndex] = useState(null);
-      const [leadData, setLeadData] = useState({});
- const [alertOpen, setAlertOpen] = useState(false);
+  const FORM_KEY = "LRVehicle:form";
+  const LIST_KEY = "LRVehicle:list";
+  const location = useLocation();
+  const [username, setUsername] = useState("");
+  const [editIndex, setEditIndex] = useState(null);
+  const [leadData, setLeadData] = useState({});
+  const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
+  const [rawVehicles, setRawVehicles] = useState(() => {
+    const saved = sessionStorage.getItem(LIST_KEY);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+    const [vehicleData, setVehicleData] = useState(() => {
+   const saved = sessionStorage.getItem(FORM_KEY);
+   return saved
+     ? JSON.parse(saved)
+     : {
+    year: '',
+    make: '',
+    model: '',
+    plate: '',
+    category: '',
+    type: '',
+    color:'',
+    vin: '',
+    primaryColor: '',
+    secondaryColor: '',
+    state: '',
+    leadReturnId:'',
+    information: '',
+     };
+  });
+
+
+  useEffect(() => {
+  sessionStorage.setItem(FORM_KEY, JSON.stringify(vehicleData));
+}, [vehicleData]);
+
+useEffect(() => {
+  sessionStorage.setItem(LIST_KEY, JSON.stringify(rawVehicles));
+}, [rawVehicles]);
+
 
     
     useEffect(() => {
@@ -157,22 +193,6 @@ const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus }
       });
     };
     
-  const [vehicleData, setVehicleData] = useState({
-    year: '',
-    make: '',
-    model: '',
-    plate: '',
-    category: '',
-    type: '',
-    color:'',
-    vin: '',
-    primaryColor: '',
-    secondaryColor: '',
-    state: '',
-    leadReturnId:'',
-    information: '',
-  });
-
   const handleChange = (field, value) => {
     setVehicleData({ ...vehicleData, [field]: value });
   };
@@ -432,6 +452,9 @@ const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus }
     const isCaseManager = 
     selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
 
+  if (!selectedCase && !caseDetails) {
+    return <div>Loading case/lead…</div>;
+  }
 
 
   return (

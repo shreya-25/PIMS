@@ -22,6 +22,9 @@ export const LREvidence = () => {
     //     };
     //   }, []);
   const navigate = useNavigate(); // Initialize navigate hook
+  const FORM_KEY = "LREvidence:form";
+const LIST_KEY = "LREvidence:list";
+
   const location = useLocation();
   const [loading, setLoading] = useState(true);
       const [error, setError] = useState("");
@@ -46,53 +49,41 @@ export const LREvidence = () => {
   
     const { leadDetails, caseDetails } = location.state || {};
 
-
-  // Sample evidence data
-  // const [evidence, setEvidence] = useState([
-  //   {
-  //     dateEntered: "12/01/2024",
-  //     returnId:1,
-  //     type: "Physical",
-  //     collectionDate: "12/01/2024",
-  //     disposedDate: "12/03/2024",
-  //     disposition: "Stored",
-  //   },
-  //   {
-  //     dateEntered: "12/02/2024",
-  //     returnId:2,
-  //     type: "Digital",
-  //     collectionDate: "12/02/2024",
-  //     disposedDate: "12/04/2024",
-  //     disposition: "Archived",
-  //   },
-  // ]);
-
-  const [evidences, setEvidences] = useState([
-    // {
-    //   dateEntered: "",
-    //   returnId:'',
-    //   type: "",
-    //   collectionDate: "",
-    //   disposedDate: "",
-    //   disposition: "",
-    // }
-  ]);
+    const [evidences, setEvidences] = useState(() => {
+      const saved = sessionStorage.getItem(LIST_KEY);
+      return saved ? JSON.parse(saved) : [];
+    });
 
 
   // State to manage form data
-  const [evidenceData, setEvidenceData] = useState({
-    leadReturnId:         "",
-   evidenceDescription:  "",
-   collectionDate:       "",
-   disposedDate:         "",
-   type:                 "",
-  disposition:          "",
-  isLink: false,
-  link: "",
-  originalName: '',   // ← add this
-  filename: ''   
-  });
-    const [file, setFile] = useState(null);
+   const [evidenceData, setEvidenceData] = useState(() => {
+    const saved = sessionStorage.getItem(FORM_KEY);
+      return saved
+        ? JSON.parse(saved)
+        : {
+        leadReturnId:         "",
+        evidenceDescription:  "",
+        collectionDate:       "",
+        disposedDate:         "",
+        type:                 "",
+        disposition:          "",
+        isLink: false,
+        link: "",
+        originalName: '',   
+        filename: '' 
+        };  
+    });
+
+  const [file, setFile] = useState(null);
+
+  useEffect(() => {
+  sessionStorage.setItem(FORM_KEY, JSON.stringify(evidenceData));
+}, [evidenceData]);
+
+// save the list
+useEffect(() => {
+  sessionStorage.setItem(LIST_KEY, JSON.stringify(evidences));
+}, [evidences]);
   
   const handleInputChange = (field, value) => {
     setEvidenceData({ ...evidenceData, [field]: value });
@@ -242,10 +233,12 @@ export const LREvidence = () => {
       if (fileInputRef.current) fileInputRef.current.value = "";
       setEditIndex(null);
       setOriginalDesc("");
+      sessionStorage.removeItem(FORM_KEY);
+
     } catch (err) {
       console.error("Save error:", err);
       setAlertMessage("Failed to save evidence.");
-                      setAlertOpen(true);
+      setAlertOpen(true);
     }
   };
   
