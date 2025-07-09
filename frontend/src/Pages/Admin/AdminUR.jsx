@@ -80,15 +80,7 @@ export const AdminUR = () => {
           </span>
          </div>
        </div>
-
-      <div className="logo-sec">
-        <img
-          src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
-          alt="Police Department Logo"
-          className="police-logo-main-page"
-        />
-        <h1 className="main-page-heading">PIMS</h1>
-      </div>
+       
 
       <div className="registration-form">
         <h1>Create Account</h1>

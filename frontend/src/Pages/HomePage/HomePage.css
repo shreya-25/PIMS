@@ -1163,6 +1163,14 @@
   font-size: 20px;
 }
 
+.close-btn
+{
+  background-color: rgb(160, 39, 39);
+  color:white;
+  height: 100px;
+  width:100px;
+}
+
 .clear-button:hover {
   background-color: #b9beb9;
 }
@@ -1225,9 +1233,12 @@
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
+/* at the bottom of HomePage.css */
+
 /* Styling for the buttons */
 .view-btn1,
-.accept-btn {
+.accept-btn,
+.case-close-btn {
   margin-left: 10px;
   padding: 10px;
   border: none;
@@ -1235,7 +1246,7 @@
   cursor: pointer;
   transition: background-color 0.3s ease, color 0.3s ease;
   font-size: 20px;margin-bottom: 10px;
-  width: 120px;
+  width: 140px;
 }
 
 .view-btn1 {
@@ -1247,6 +1258,17 @@
 .view-btn1:hover {
   background-color: #787a7c;
 }
+
+.case-close-btn {
+  /* background-color: #007bffde; */
+  background-color: #7c2121de;
+  color: #fff;
+}
+
+.case-close-btn:hover {
+  background-color: #ad29296c;
+}
+
 
 .accept-btn {
   background-color: rgba(25, 58, 73, 0.795);
