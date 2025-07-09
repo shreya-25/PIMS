@@ -320,7 +320,7 @@ const handleGenerateLead = async () => {
     // treat any 2xx as success
     if (response.status >= 200 && response.status < 300) {
       // alert("Lead successfully added!");
-  setAlertMessage(`Lead #${leadNo} created successfully!`);
+  setAlertMessage(`Lead #${leadData.leadNumber} created successfully!`);
   setAlertOpen(true);
   sessionStorage.removeItem(FORM_KEY);
     
