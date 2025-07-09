@@ -3,82 +3,89 @@ const Lead = require("../models/lead");
 // lead.controller.js (or wherever your createLead function is defined)
 
 const createLead = async (req, res) => {
-    try {
-      // Destructure all relevant fields from req.body
-      const {
-        leadNo,
-        parentLeadNo,            // <-- Expect an array of numbers if provided
-        incidentNo,
-        subNumber,
-        associatedSubNumbers,    // <-- Array of numbers
-        assignedDate,
-        completedDate,
-        assignedTo: assignedToInput = [],
-        assignedBy,
-        summary,
-        description,
-        leadStatus,
-        dueDate,
-        priority,
-        caseName,
-        caseNo,
-        accessLevel,
-        submittedDate,
-        approvedDate,
-        returnedDate,
+  try {
+    const {
+      parentLeadNo = [],
+      incidentNo,
+      subNumber = [],
+      associatedSubNumbers = [],
+      assignedDate,
+      completedDate,
+      assignedTo: assignedToInput = [],
+      assignedBy,
+      summary,
+      description,
+      leadStatus,
+      dueDate,
+      priority,
+      caseName,
+      caseNo,
+      accessLevel,
+      submittedDate,
+      approvedDate,
+      returnedDate,
+    } = req.body;
 
-      } = req.body;
+    const assignedTo = assignedToInput.map(item =>
+      typeof item === 'string'
+        ? { username: item, status: 'pending' }
+        : { username: item.username, status: item.status || 'pending' }
+    );
 
-      const assignedTo = (assignedToInput || []).map(item => {
-  if (typeof item === 'string') {
-    return { username: item, status: 'pending' };
-  } else {
-    return {
-      username: item.username,
-      status: item.status || 'pending'
-    };
-  }
-});
+    let savedLead = null;
+    while (!savedLead) {
+      // 1) compute next candidate
+      const last = await Lead
+        .findOne({ caseNo, caseName })
+        .sort({ leadNo: -1 })
+        .limit(1);
 
-  
-      // Pass them directly into the new Lead object
-      const newLead = new Lead({
-        leadNo,
-        parentLeadNo,      // Don't redefine type or default here; schema handles it
-        incidentNo,
-        subNumber,
-        associatedSubNumbers,
-        assignedDate,
-        completedDate,
-        assignedTo,
-        assignedBy,
-        summary,
-        description,
-        leadStatus,
-        dueDate,
-        priority,
-        caseName,
-        caseNo,
-        accessLevel,
-        submittedDate,
-        approvedDate,
-        returnedDate,
-      });
-  
-      await newLead.save();
-      res.status(201).json(newLead);
-      
-          // Update the corresponding case with the new subNumber if not already present
-    // const caseDoc = await Case.findById(caseNo);
-    // if (caseDoc && !caseDoc.subNumbers.includes(subNumber)) {
-    //   caseDoc.subNumbers.push(subNumber);
-    //   await caseDoc.save();
-    // }
-    } catch (err) {
-      console.error("Error creating lead:", err.message);
-      res.status(500).json({ message: "Something went wrong" });
+      const nextLeadNo = last ? last.leadNo + 1 : 1;
+
+      // 2) try to insert
+      try {
+        savedLead = await new Lead({
+          leadNo: nextLeadNo,
+          parentLeadNo,
+          incidentNo,
+          subNumber,
+          associatedSubNumbers,
+          assignedDate,
+          completedDate,
+          assignedTo,
+          assignedBy,
+          summary,
+          description,
+          leadStatus,
+          dueDate,
+          priority,
+          caseName,
+          caseNo,
+          accessLevel,
+          submittedDate,
+          approvedDate,
+          returnedDate,
+        }).save();
+
+        // on success, break out
+        return res.status(201).json(savedLead);
+
+      } catch (err) {
+        // if it's a duplicate‐key on (caseNo, leadNo), just retry
+        if (err.code === 11000) {
+          continue;
+        }
+        // otherwise propagate
+        throw err;
+      }
     }
-  };
+
+  } catch (err) {
+    console.error("Error creating lead:", err);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
   
 
 const getLeadsByOfficer = async (req, res) => {
