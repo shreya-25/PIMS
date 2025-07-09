@@ -4,15 +4,33 @@ export const CaseContext = createContext();
 
 export const CaseProvider = ({ children }) => {
     // Load from localStorage or initialize with null
-    const [selectedCase, setSelectedCase] = useState(() => {
-        const storedCase = localStorage.getItem("selectedCase");
-        return storedCase ? JSON.parse(storedCase) : null;
-    });
 
-    const [selectedLead, setSelectedLead] = useState(() => {
-        const storedLead = localStorage.getItem("selectedLead");
-        return storedLead ? JSON.parse(storedLead) : null;
-    });
+    const CASE_KEY  = "selectedCase";
+    const LEAD_KEY  = "selectedLead";
+    const TOKEN_KEY = "token";
+
+    const [selectedCase, setSelectedCase] = useState(() => {
+    const v = sessionStorage.getItem(CASE_KEY);
+    return v ? JSON.parse(v) : null;
+  });
+  const [selectedLead, setSelectedLead] = useState(() => {
+    const v = sessionStorage.getItem(LEAD_KEY);
+    return v ? JSON.parse(v) : null;
+  });
+  const [token, setToken] = useState(() => {
+    return sessionStorage.getItem(TOKEN_KEY) || "";
+  });
+
+
+    // const [selectedCase, setSelectedCase] = useState(() => {
+    //     const storedCase = localStorage.getItem("selectedCase");
+    //     return storedCase ? JSON.parse(storedCase) : null;
+    // });
+
+    // const [selectedLead, setSelectedLead] = useState(() => {
+    //     const storedLead = localStorage.getItem("selectedLead");
+    //     return storedLead ? JSON.parse(storedLead) : null;
+    // });
 
     const [selectedReports, setSelectedReports] = useState({
         leadInstruction: false,
@@ -29,9 +47,28 @@ export const CaseProvider = ({ children }) => {
       });
 
 
-    const [token, setToken] = useState(() => {
-        return localStorage.getItem("token") || "";
-    });
+    // const [token, setToken] = useState(() => {
+    //     return localStorage.getItem("token") || "";
+    // });
+
+    useEffect(() => {
+    if (selectedCase !== null) {
+      sessionStorage.setItem(CASE_KEY, JSON.stringify(selectedCase));
+    }
+  }, [selectedCase]);
+
+  useEffect(() => {
+    if (selectedLead !== null) {
+      sessionStorage.setItem(LEAD_KEY, JSON.stringify(selectedLead));
+    }
+  }, [selectedLead]);
+
+  useEffect(() => {
+    if (token) {
+      sessionStorage.setItem(TOKEN_KEY, token);
+    }
+  }, [token]);
+  
 
     const [refreshKey, setRefreshKey] = useState(0); // <- key to force re-fetch
     const triggerRefresh = () => setRefreshKey(prev => prev + 1); // <- call this when a change happens

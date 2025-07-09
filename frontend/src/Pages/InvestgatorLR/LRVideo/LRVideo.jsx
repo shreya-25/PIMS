@@ -22,6 +22,8 @@ export const LRVideo = () => {
     //     };
     //   }, []);
   const navigate = useNavigate();
+  const FORM_KEY = "LRVideo:form";
+  const LIST_KEY = "LRVideo:list";
   const location = useLocation();
   const fileInputRef = useRef(null);
   const [file, setFile] = useState(null);
@@ -39,17 +41,21 @@ export const LRVideo = () => {
     }
   };
 
-  const [videoData, setVideoData] = useState({
-    dateVideoRecorded: "",
-    leadReturnId: "",
-    description: "",
-    // isLink + link allow toggling between file-upload vs URL
-    isLink: false,
-    link: "",
-    videoSrc: "",
-    filename: "",      // used for showing “Current file:” when editing
-    accessLevel: "Everyone" // default access level
-  });
+  const [videoData, setVideoData] = useState(() => {
+   const saved = sessionStorage.getItem(FORM_KEY);
+   return saved
+     ? JSON.parse(saved)
+     : {
+         dateVideoRecorded: "",
+         leadReturnId: "",
+         description: "",
+         isLink: false,
+         link: "",
+         videoSrc: "",
+         filename: "",
+         accessLevel: "Everyone"
+       };
+ });
   
       
         const formatDate = (dateString) => {
@@ -66,8 +72,10 @@ export const LRVideo = () => {
       
 
   // Sample video data
-  const [videos, setVideos] = useState([
-  ]);
+  const [videos, setVideos] = useState(() => {
+   const saved = sessionStorage.getItem(LIST_KEY);
+   return saved ? JSON.parse(saved) : [];
+ });
 
     const handleFileChangeWrapper = (event) => {
     const selectedFile = event.target.files[0];
@@ -80,6 +88,17 @@ export const LRVideo = () => {
       });
     }
   };
+
+  // persist draft form
+useEffect(() => {
+  sessionStorage.setItem(FORM_KEY, JSON.stringify(videoData));
+}, [videoData]);
+
+// persist list
+useEffect(() => {
+  sessionStorage.setItem(LIST_KEY, JSON.stringify(videos));
+}, [videos]);
+
 
      useEffect(() => {
     const fetchLeadData = async () => {
@@ -179,6 +198,7 @@ export const LRVideo = () => {
         accessLevel: "Everyone"
       });
       setFile(null);
+      sessionStorage.removeItem(FORM_KEY);
 
       // Clear native file input
       if (fileInputRef.current) {
@@ -290,8 +310,8 @@ export const LRVideo = () => {
     });
   };
                   
-                  //  B) on “Update Video”
-                   const handleUpdateVideo = async () => {
+    //  B) on “Update Video”
+    const handleUpdateVideo = async () => {
     if (editingIndex === null) return;
     const v = videos[editingIndex];
 
@@ -348,6 +368,7 @@ export const LRVideo = () => {
         accessLevel: "Everyone"
       });
       setFile(null);
+      sessionStorage.removeItem(FORM_KEY);
 
       // Clear native file input
       if (fileInputRef.current) {

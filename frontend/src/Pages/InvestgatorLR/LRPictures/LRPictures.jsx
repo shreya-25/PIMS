@@ -23,6 +23,8 @@ export const LRPictures = () => {
     //     };
     //   }, []);
   const navigate = useNavigate();
+  const FORM_KEY = "LRPictures:form";
+  const LIST_KEY = "LRPictures:list";
     const location = useLocation();
   const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
   const [file, setFile] = useState(null);
@@ -54,39 +56,24 @@ const [editingIndex, setEditingIndex] = useState(null);
               };
 
   // Default pictures data
-  const [pictures, setPictures] = useState([
-    // {
-    //   dateEntered: "2024-12-01",
-    //   returnId:1,
-    //   datePictureTaken: "2024-11-25",
-    //   description: "Picture of the crime scene from Main Street.",
-    //   image: "/Materials/pict1.jpeg", // Path to your default image
-    // },
-    // {
-    //   dateEntered: "2024-12-02",
-    //   returnId:1,
-    //   datePictureTaken: "2024-11-26",
-    //   description: "Vehicle involved in the robbery.",
-    //   image: "/Materials/pict2.jpg", // Path to your default image
-    // },
-    // {
-    //   dateEntered: "2024-12-03",
-    //   returnId:2,
-    //   datePictureTaken: "2024-11-27",
-    //   description: "Evidence collected at the crime location.",
-    //   image: "/Materials/pict3.jpg", // Path to your default image
-    // },
-  ]);
-
-  // State to manage form data
-  const [pictureData, setPictureData] = useState({
-    datePictureTaken: "",
-    description: "",
-    image: "",
-    leadReturnId: "",
-    filename: "" 
+  const [pictures, setPictures] = useState(() => {
+   const saved = sessionStorage.getItem(LIST_KEY);
+   return saved ? JSON.parse(saved) : [];
   });
 
+  // State to manage form data
+  const [pictureData, setPictureData] = useState(() => {
+   const saved = sessionStorage.getItem(FORM_KEY);
+   return saved
+     ? JSON.parse(saved)
+     : {
+         datePictureTaken: "",
+         description: "",
+         image: "",
+         leadReturnId: "",
+         filename: ""
+       };
+ });
   const handleInputChange = (field, value) => {
     setPictureData({ ...pictureData, [field]: value });
   };
@@ -98,6 +85,17 @@ const [editingIndex, setEditingIndex] = useState(null);
       setPictureData({ ...pictureData, image: URL.createObjectURL(selectedFile), filename: selectedFile.name }); // for preview
     }
   };
+
+  // whenever the draft changes, save it
+useEffect(() => {
+  sessionStorage.setItem(FORM_KEY, JSON.stringify(pictureData));
+}, [pictureData]);
+
+// whenever the pictures list changes, save it
+useEffect(() => {
+  sessionStorage.setItem(LIST_KEY, JSON.stringify(pictures));
+}, [pictures]);
+
 
   // populate the form to edit a picture
   const handleEditPicture = idx => {
@@ -192,6 +190,8 @@ const handleAddPicture = async () => {
     });
     setFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    sessionStorage.removeItem(FORM_KEY);
+
   } catch (err) {
     console.error("Error uploading picture:", err);
     setAlertMessage("Failed to save picture. See console for details.");

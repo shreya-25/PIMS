@@ -1,5 +1,5 @@
 import './App.css';
-import React from 'react';
+import React, { useContext, useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 // import { BrowserRouter, Routes, Route } from "react-router-dom";
 import useTokenExpiryRedirect from "./useTokenExpiryRedirect";
@@ -71,6 +71,24 @@ import ProtectedLayout from './protectedLayout';
 
 
 function App() {
+
+  useEffect(() => {
+    const handler = (e) => {
+      // check any key in sessionStorage that you want to guard
+      if (
+        sessionStorage.getItem("selectedCase") ||
+        sessionStorage.getItem("selectedLead") ||
+        sessionStorage.getItem("token")
+      ) {
+        const msg = "You have unsaved changes—are you sure you want to leave?";
+        e.returnValue = msg;
+        return msg;
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
 
   useTokenExpiryRedirect(); 
   return (

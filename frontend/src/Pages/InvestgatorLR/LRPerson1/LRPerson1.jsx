@@ -21,8 +21,10 @@ export const LRPerson1 = () => {
       //       document.body.style.overflow = "auto";
       //     };
       //   }, []);
-    const navigate = useNavigate(); // Initialize useNavigate hook
+const navigate = useNavigate(); // Initialize useNavigate hook
 const location = useLocation();
+const FORM_KEY = "LRPerson1:form";
+const MISC_KEY = "LRPerson1:misc";
 const [username, setUsername] = useState("");
   // Handle form input changes
   const handleChange = (field, value) => {
@@ -80,9 +82,37 @@ useEffect(() => {
     scar:         person?.scar                         || "",
     mark:         person?.mark                         || ""
   };
-  
-  const [formData, setFormData]   = useState(initialForm);
-  const [miscDetails, setMiscDetails] = useState(person?.additionalData || []);
+
+  const [formData, setFormData] = useState(() => {
+    const saved = sessionStorage.getItem(FORM_KEY);
+    return saved
+      ? JSON.parse(saved)
+      : { 
+          dateEntered: person?.enteredDate?.slice(0,10) || "",
+          leadReturnId: person?.leadReturnId || "",
+          lastName: person?.lastName || "",
+          /* …everything else… */
+        };
+  });
+
+  const [miscDetails, setMiscDetails] = useState(() => {
+    const saved = sessionStorage.getItem(MISC_KEY);
+    return saved
+      ? JSON.parse(saved)
+      : person?.additionalData || [];
+  });
+
+  // 2) Whenever formData changes, persist it
+  useEffect(() => {
+    sessionStorage.setItem(FORM_KEY, JSON.stringify(formData));
+  }, [formData]);
+
+  // 3) Whenever miscDetails changes, persist it
+  useEffect(() => {
+    sessionStorage.setItem(MISC_KEY, JSON.stringify(miscDetails));
+  }, [miscDetails]);
+
+
   
   const addNewRow = () => {
     setMiscDetails([...miscDetails, { category: "", value: "" }]);
@@ -224,9 +254,14 @@ useEffect(() => {
     }
 
     console.log("Server response:", response.data);
+    sessionStorage.removeItem(FORM_KEY);
+    sessionStorage.removeItem(MISC_KEY);
+
     // alert(person ? "Updated successfully!" : "Created successfully!");
     setAlertMessage(person ? "Updated successfully!" : "Created successfully!");
-                    setAlertOpen(true);
+    setAlertOpen(true);
+
+    navigate(-1);
     // optionally redirect back or refresh your list here
 
   } catch (err) {
@@ -236,6 +271,10 @@ useEffect(() => {
                     setAlertOpen(true);
   }
 };
+
+ if (!selectedCase && !caseDetails) {
+    return <div>Loading case/lead…</div>;
+  }
   
   
   return (
@@ -421,8 +460,11 @@ Case Page
           <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
             Narrative
           </span>
-          <span className="menu-item active" style={{fontWeight: '600' }} onClick={() => handleNavigation('/LRPerson')} >
+          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
+          </span>
+           <span className="menu-item active" style={{fontWeight: '600' }} onClick={() => handleNavigation('/LRPerson1')} >
+            Add Person
           </span>
           <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
             Vehicles

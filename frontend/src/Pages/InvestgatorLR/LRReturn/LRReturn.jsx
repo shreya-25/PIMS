@@ -22,42 +22,38 @@ export const LRReturn = () => {
     //       document.body.style.overflow = "auto";
     //     };
     //   }, []);
-  const navigate = useNavigate();
-   const location = useLocation();
-const [username, setUsername] = useState("");
- const [leadData, setLeadData] = useState({});
- const [officerName, setOfficerName] = useState("");
-   const todayDate = new Date().toLocaleDateString();
-     const [alertOpen, setAlertOpen] = useState(false);
-     const [alertMessage, setAlertMessage] = useState("");
+    const FORM_KEY    = "LRReturn:form";
+    const LIST_KEY    = "LRReturn:list";
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [username, setUsername] = useState("");
+    const [leadData, setLeadData] = useState({});
+    const [officerName, setOfficerName] = useState("");
+    const todayDate = new Date().toLocaleDateString();
+    const [alertOpen, setAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState("");
     
-  const { leadDetails, caseDetails } = location.state || {};
-  const [maxReturnId, setMaxReturnId] = useState(0);
+    const { leadDetails, caseDetails } = location.state || {};
+    const [maxReturnId, setMaxReturnId] = useState(0);
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus, setLeadReturns  } = useContext(CaseContext);
     const isDisabled = leadStatus === "In Review" || leadStatus === "Completed";
-      // Sample returns data
-  const [returns, setReturns] = useState([
-    { leadReturnId: '', enteredDate: "",enteredBy: "", leadReturnResult: "" },
 
-  ]);
+    const caseNo = selectedCase?.caseNo ?? caseDetails.caseNo;
 
-const caseNo = selectedCase?.caseNo ?? caseDetails.caseNo;
-
-      useEffect(() => {
+    useEffect(() => {
     const storedOfficer = localStorage.getItem("loggedInUser");
     if (storedOfficer) {
-      const name = storedOfficer.trim();
-      setOfficerName(name);
-      setReturnData(prev => ({ ...prev, enteredBy: name }));
-    }
-  }, []);
+        const name = storedOfficer.trim();
+        setOfficerName(name);
+        setReturnData(prev => ({ ...prev, enteredBy: name }));
+      }
+    }, []);
 
-  
     console.log(selectedCase, selectedLead);
-  
+
 
     useEffect(() => {
     const fetchLeadData = async () => {
@@ -121,111 +117,22 @@ const caseNo = selectedCase?.caseNo ?? caseDetails.caseNo;
       fetchLeadStatus();
     }
    }, [selectedLead, selectedCase, setLeadStatus]); 
-  
-
-    const handleSubmitReport = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      if (!selectedLead || !selectedCase) {
-        // alert("No lead or case selected!");
-        setAlertMessage("No lead or case selected!");
-      setAlertOpen(true);
-        return;
-      }
-
-      const body = {
-        leadNo: selectedLead.leadNo,
-        description: selectedLead.leadName,
-        caseNo: selectedCase.caseNo,
-        caseName: selectedCase.caseName,
-        submittedDate: new Date(),
-        assignedTo: {
-          assignees: leadData.assignedTo || [],
-          lRStatus: "Submitted"
-        },
-        assignedBy: {
-          assignee: localStorage.getItem("officerName") || "Unknown Officer",
-          lRStatus: "Pending"
-        }
-      };
-
-      const response = await api.post("/api/leadReturn/create", body, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
-      });
-
-      if (response.status === 201) {
-        const statusResponse = await api.put(
-          "/api/lead/status/in-review",
-          {
-            leadNo: selectedLead.leadNo,
-            description: selectedLead.leadName,
-            caseNo: selectedCase.caseNo,
-            caseName: selectedCase.caseName
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json"
-            }
-          }
-        );
-
-        if (statusResponse.status === 200) {
-          setLeadStatus("In Review");
-
-            setSelectedLead(prev => ({
-            ...prev,
-            leadStatus: "In Review"
-          }));
-          
-        const manager    = leadData.assignedBy;                  // string username
-        const investigators = (leadData.assignedTo || []).map(a => a.username);
-        if (manager) {
-          const payload = {
-            notificationId: Date.now().toString(),
-            assignedBy:     localStorage.getItem("loggedInUser"),
-            assignedTo:     [{ username: manager, status: "pending" }],
-            action1:        "submitted a lead return for review",
-            post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
-            caseNo:         selectedCase.caseNo,
-            caseName:       selectedCase.caseName,
-            leadNo:         selectedLead.leadNo,
-            leadName:       selectedLead.leadName,
-            type:           "Lead"
-          };
-          await api.post("/api/notifications", payload, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-        }
-
-        alert("Lead Return submitted and Case Manager notified.");
-        } else {
-          alert("Lead Return submitted but status update failed.");
-        }
-      } else {
-        alert("Failed to submit Lead Return");
-      }
-    } catch (error) {
-      console.error("Error during Lead Return submission or status update:", error);
-      alert("Something went wrong while submitting the report.");
-    }
-  };
 
 
 
   // State for managing form input
 
-  const [returnData, setReturnData] = useState({
-  results: "",
-  leadReturnId: "",
-  enteredDate: todayDate,
-  enteredBy: officerName?.trim(),
-  accessLevel: "Everyone" 
-});
+const [returnData, setReturnData]   = useState(() => {
+    // Initialize from sessionStorage if present, otherwise default
+    const saved = sessionStorage.getItem(FORM_KEY);
+    return saved
+      ? JSON.parse(saved)
+      : { results: "", leadReturnId: "", enteredDate: new Date().toLocaleDateString(), enteredBy: officerName?.trim(), accessLevel: "Everyone" };
+  });
+  const [returns, setReturns] = useState(() => {
+    const saved = sessionStorage.getItem(LIST_KEY);
+    return saved ? JSON.parse(saved) : [];
+  });
 
   
   const [editMode, setEditMode] = useState(false);
@@ -258,6 +165,24 @@ const numberToAlphabet = (num) => {
   }
   return result;
 };
+
+// 1) On mount: restore saved draft & list
+    useEffect(() => {
+      const savedForm = sessionStorage.getItem(FORM_KEY);
+      const savedList = sessionStorage.getItem(LIST_KEY);
+      if (savedForm) setReturnData(JSON.parse(savedForm));
+      if (savedList) setReturns(JSON.parse(savedList));
+    }, []);
+
+    // 2) Persist the form draft whenever it changes
+    useEffect(() => {
+      sessionStorage.setItem(FORM_KEY, JSON.stringify(returnData));
+    }, [returnData]);
+
+    // 3) Persist the returns list whenever it changes
+    useEffect(() => {
+      sessionStorage.setItem(LIST_KEY, JSON.stringify(returns));
+    }, [returns]);
 
 
 
@@ -400,135 +325,6 @@ const handleAccessChange = async (idx, newAccess) => {
 // Calculate the next Return No (max return id plus one, converted back to alphabet)
 const nextReturnId = numberToAlphabet(maxReturnId + 1);
 
-
-  // const handleAddOrUpdateReturn = () => {
-  //   if (!returnData.results) {
-  //     alert("Please enter return details!");
-  //     return;
-  //   }
-
-  //   if (editMode) {
-  //     setReturns(
-  //       returns.map((ret) =>
-  //         ret.id === editId ? { ...ret, results: returnData.results } : ret
-  //       )
-  //     );
-  //     setEditMode(false);
-  //     setEditId(null);
-  //   } else {
-  //     const newReturn = {
-  //       id: returns.length + 1,
-  //       dateEntered: new Date().toLocaleDateString(),
-  //       results: returnData.results,
-  //     };
-  //     setReturns([...returns, newReturn]);
-  //   }
-
-  //   setReturnData({ results: "" });
-  // };
-
-//   const handleAddOrUpdateReturn = async () => {
-//     if (!returnData.results) {
-//       // alert("Please enter return details!");
-//        setAlertMessage("Please enter narrative details!");
-//       setAlertOpen(true);
-//       return;
-//     }
-  
-//     const officerName = localStorage.getItem("loggedInUser");
-//     console.log(officerName);
-//     if (!officerName) {
-//   // alert("Officer name not found. Please log in again.");
-//    setAlertMessage("Officer name not found. Please log in again.");
-//       setAlertOpen(true);
-//   return;
-// }
-//     const token = localStorage.getItem("token");
-  
-//     try {
-//       if (editMode && editId) {
-//         // Update existing return
-//         const updateData = { leadReturnResult: returnData.results };
-//         const response = await api.patch(
-//           `/api/leadReturnResult/update/${selectedLead.leadNo}/${caseNo}/${editId}`,
-//           updateData,
-//           { headers: { Authorization: `Bearer ${token}` } }
-//         );
-  
-//         const updatedReturn = response.data;
-//         const updatedList = returns.map((ret) =>
-//           ret.leadReturnId === editId ? updatedReturn : ret
-//         );
-//         setReturns(updatedList);
-//         setEditMode(false);
-//         setEditId(null);
-//       } else {
-//         // Add new return
-//         const response = await api.get(`/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
-//           selectedLead.leadName)}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`, {
-//             headers: { Authorization: `Bearer ${token}` }
-//           });
-  
-//         const existingReturns = response.data || [];
-//         const assignedTo = { assignees: [officerName], lRStatus: "Pending" };
-//         const assignedBy = { assignee: officerName, lRStatus: "Pending" };
-  
-//         const nextNumericId = maxReturnId + 1;
-//         const newReturnId = numberToAlphabet(nextNumericId);
-
-//         const newReturn = {
-//           leadNo: selectedLead?.leadNo,
-//           description: selectedLead?.leadName,
-//           enteredDate: new Date().toISOString(),
-//           enteredBy: officerName?.trim(),
-//           caseName: selectedCase.caseName,
-//           caseNo: selectedCase.caseNo,
-//           leadReturnId: newReturnId,
-//           leadReturnResult: returnData.results,
-//           assignedTo: {
-//                 assignees: [officerName?.trim()],
-//                 lRStatus: "Pending"
-//               },
-//               assignedBy: {
-//                 assignee: officerName?.trim(),
-//                 lRStatus: "Pending"
-//               },
-//           accessLevel: returnData.accessLevel
-//         };
-  
-//         const createResponse = await api.post(
-//           "/api/leadReturnResult/create",
-//           newReturn,
-//           { headers: { Authorization: `Bearer ${token}` } }
-//         );
-  
-//       //   setReturns([...existingReturns, createResponse.data]);
-//       // }
-  
-//       // setReturnData({ results: "" });
-//       // Update return list and maxReturnId
-//   const updatedReturns = [...returns, createResponse.data];
-//   setReturns(updatedReturns);
-//   setLeadReturns(updatedReturns);
-//   setMaxReturnId(nextNumericId); // <- update the counter
-
-//   // Update the next ID in the return form
-//   setReturnData({
-//     results: "",
-//     leadReturnId: numberToAlphabet(nextNumericId + 1),
-//     enteredDate: todayDate,
-//     enteredBy: officerName,
-//     access: "Everyone"
-//   });
-// }
-//     } catch (err) {
-//       console.error("Error saving return:", err);
-//       // alert("Failed to save return. Please try again.");
-//        setAlertMessage("Failed to save narrative. Please try again.");
-//       setAlertOpen(true);
-//     }
-//   };
-
 const handleAddOrUpdateReturn = async () => {
   // 1) validation
   if (!returnData.results.trim()) {
@@ -639,14 +435,6 @@ const handleAddOrUpdateReturn = async () => {
     setEditMode(true);
     setEditId(ret.leadReturnId);
   };
-
-  // setReturnData({
-  //   results: "",
-  //   leadReturnId: nextReturnId,
-  //   enteredDate: todayDate,
-  //   enteredBy: username
-  // });
-  
   
 
   const handleDeleteReturn = async (leadReturnId) => {
@@ -669,7 +457,6 @@ const handleAddOrUpdateReturn = async () => {
       setAlertOpen(true);
     }
   };
-  
 
   const handleNavigation = (route) => {
     navigate(route);
@@ -684,8 +471,10 @@ const handleAddOrUpdateReturn = async () => {
     
   const isCaseManager = 
     selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
-
-
+  
+      if (!selectedCase && !caseDetails) {
+    return <div>Loading case/lead…</div>;
+  }
 
   return (
     <div className="lrenclosures-container">
