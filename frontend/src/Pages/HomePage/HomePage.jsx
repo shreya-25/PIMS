@@ -80,6 +80,7 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
             c.caseStatus === "Ongoing" &&
             c.assignedOfficers.some(o => o.name === signedInOfficer)
           )
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
           .map(c => {
             const officer = c.assignedOfficers.find(o => o.name === signedInOfficer);
             return {
@@ -87,8 +88,11 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
               title: c.caseName,
               status: c.caseStatus,
               role: officer?.role || "Unknown",
+              // createdAt: c.createdAt 
             };
           });
+
+          // assignedCases.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
         setCases(assignedCases); // ✅ Set filtered cases in state
       } catch (error) {
@@ -240,6 +244,29 @@ const handleAcceptAssignedLead = (lead) => {
   }
 };
 
+const handleCloseCase = async (caseNo, caseName) => {
+  if (!window.confirm(`Really close case ${caseNo}: ${caseName}?`)) return;
+
+  try {
+    const token = localStorage.getItem("token");
+    await api.put(
+      `/api/cases/${encodeURIComponent(caseNo)}/close`,
+      {}, // no body needed—the route reads caseNo from the URL
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    // optimistically drop it from your "Ongoing" list
+    setCases(prev => prev.filter(c => c.id !== caseNo));
+  } catch (err) {
+    console.error("Failed to close case:", err);
+    alert("Error closing case. See console for details.");
+  }
+};
+
 
 const acceptLead = (leadId) => {
   const leadToAccept = leads.assignedLeads.find((lead) => lead.id === leadId);
@@ -346,6 +373,7 @@ const [leads, setLeads] = useState({
             // ✅ Extract only ongoing cases (caseStatus = "Ongoing")
             const ongoingCases = casesResponse.data
                 .filter(c => c.caseStatus === "Ongoing")
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .map(c => ({ caseNo: c.caseNo, caseName: c.caseName })); // Extract relevant fields
 
             console.log("✅ Ongoing Cases:", ongoingCases);
@@ -642,7 +670,7 @@ const addCase = (newCase) => {
     // alert("Case must have an ID, title, and status.");
     return;
   }
-    setCases((prevCases) => [...prevCases, newCase]);
+    setCases((prevCases) => [newCase, ...prevCases]);
 };
 
   // Continue a pending lead return
@@ -1026,6 +1054,15 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                         >
                           View
                         </button>
+
+                        { (c.role === "Detective Supervisor" || c.role === "Case Manager") && (
+                          <button
+                            className="case-close-btn"
+                            onClick={() => handleCloseCase(c.id, c.title)}
+                          >
+                            Close Case
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))
