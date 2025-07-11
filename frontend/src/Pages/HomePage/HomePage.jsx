@@ -54,6 +54,20 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
 
   const [cases, setCases] = useState([]);
 
+   const formatDate = (dateString) => {
+    if (!dateString) return ""; // Handle empty dates
+    const date = new Date(dateString);
+    if (isNaN(date)) return ""; // Handle invalid dates
+  
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const year = date.getFullYear().toString().slice(-4
+    ); // Get last two digits of the year
+  
+    return `${month}/${day}/${year}`;
+  };
+
+
   useEffect(() => {
     const fetchCases = async () => {
       try {
@@ -88,7 +102,7 @@ const [showCaseSelector, setShowCaseSelector] = useState(false);
               title: c.caseName,
               status: c.caseStatus,
               role: officer?.role || "Unknown",
-              // createdAt: c.createdAt 
+              createdAt: c.createdAt 
             };
           });
 
@@ -258,6 +272,13 @@ const handleCloseCase = async (caseNo, caseName) => {
         }
       }
     );
+
+     await api.put(
+      `/api/notifications/close/${encodeURIComponent(caseNo)}`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
 
     // optimistically drop it from your "Ongoing" list
     setCases(prev => prev.filter(c => c.id !== caseNo));
@@ -691,7 +712,9 @@ const addCase = (newCase) => {
 
   const columnWidths = {
   "Case No.":   "13%",
-  "Role":      "11%"
+  "Case Name":  "30%",         // you can tweak widths…
+  "Created At": "20%",         // ← new
+  "Role":       "11%",
 };
 
 // Columns + mapping to your data fields
@@ -716,6 +739,7 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
   const colKey = {
     "Case No.":  "id",
     "Case Name": "title",
+    "Created At": "createdAt",
     "Role":      "role"
   };
 
@@ -981,7 +1005,7 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
             <table className="leads-table">
               <thead>
                 <tr>
-                  {["Case No.","Case Name","Role"].map(col => {
+                  {["Case No.","Case Name","Created At","Role"].map(col => {
                     const key = colKey[col];
                     return (
                       <th key={col} className="column-header1" style={{ width: columnWidths[col] }}>
@@ -1046,6 +1070,7 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                     <tr key={c.id}>
                       <td>{c.id}</td>
                       <td>{c.title}</td>
+                      <td>{formatDate(c.createdAt)}</td> 
                       <td>{c.role}</td>
                       <td>
                         <button

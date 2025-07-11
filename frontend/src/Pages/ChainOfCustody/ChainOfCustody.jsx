@@ -148,7 +148,14 @@ export const ChainOfCustody = () => {
   return (
     <div className="admin-container">
       <Navbar />
-      <div className="top-menu">
+
+      <div className="main-container">
+          
+      <SideBar  activePage="CasePageManager" />
+
+      <div className="left-content">
+
+        <div className="top-menu">
         <div className="menu-items">
         <span className="menu-item " onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
@@ -195,83 +202,6 @@ export const ChainOfCustody = () => {
           
         </div>
       </div>
-
-      <div className="main-container">
-            {/* Sidebar */}
-            {/* <div className="sideitem">
-                    <ul className="sidebar-list">
-                    
-                    <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-                    <li className="sidebar-item " style={{ fontWeight: 'bold' }} onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
-        </li>
-        {caseDropdownOpen && (
-      <ul >
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
-            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
-            {selectedCase.role !== "Investigator" && (
-<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item "onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" 
-             onClick={() => {
-              selectedCase.role === "Investigator"
-              ? setPendingRoute("/LRInstruction")
-              : setPendingRoute("/CMInstruction")
-        
-              
-              setShowSelectModal(true);
-            }}>View Lead Return</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-         
-         
-              {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
-            </li>)}
-        
-        
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-           </ul>
-        )}
-
-<li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
-</li>
-        {leadDropdownOpen && (
-          <ul>
-               <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
-           
-           {selectedCase.role !== "Investigator" && (
- <li
- className="sidebar-item active"
- onClick={() => {
-   setPendingRoute("/ChainOfCustody", { state: { caseDetails } });
-   setShowSelectModal(true);
- }}
->    View Lead Chain of Custody
-  </li> )}
-  </ul>)}
-       
-
-                    </ul>
-
-                    {showSelectModal && (
-      <SelectLeadModal
-        leads={leads.allLeads}
-        onSelect={handleSelectLead}
-        onClose={() => setShowSelectModal(false)}
-      />
-    )}
-
-                </div> */}
-                  <SideBar  activePage="CasePageManager" />
-
-      <div className="left-content">
    
       <div className="caseandleadinfo">
           <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>

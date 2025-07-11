@@ -27,7 +27,7 @@ const NotificationCard1 = ({ signedInOfficer }) => {
     return data
       .filter(n =>
         (n.type === "Case" || n.type === "Lead") &&
-        n.caseStatus === "Ongoing" &&
+        n.caseStatus === "Open" &&
         n.assignedTo.some(r => r.username === signedInOfficer && r.status === "pending" && r.unread === true  )
       )
       .sort((a, b) => new Date(b.time) - new Date(a.time));
@@ -36,7 +36,7 @@ const NotificationCard1 = ({ signedInOfficer }) => {
   const fetchOpenOnly = async () => {
     const { data } = await api.get(`/api/notifications/open/user/${signedInOfficer}`);
      return data
-    .filter(n => n.caseStatus === "Ongoing")
+    .filter(n => n.caseStatus === "Open")
     .sort((a, b) => new Date(b.time) - new Date(a.time));
   };
 
