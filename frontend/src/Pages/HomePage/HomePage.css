@@ -373,7 +373,7 @@
 
 
 .table-scroll-container {
-  max-height: 400px;      /* adjust height */
+  max-height: 900px;      /* adjust height */
   overflow-y: auto;
   overflow-x: auto;
 }
@@ -966,7 +966,7 @@
   align-items: flex-start;
 }
 
-.filter-popup {
+/* .filter-popup {
   background-color: #ffffff;
   border: 1px solid #ddd;
   padding: 15px;
@@ -974,7 +974,7 @@
   margin-top: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   z-index:3000;
-}
+} */
 
 .filter-fields {
   display: flex;
@@ -1666,3 +1666,18 @@
   border: none;     /* if you also want no border */
   background: none; /* if you want no bg */
 }
+
+/* make the header cell a positioning context */
+.header-title {
+  position: relative;
+}
+
+ .left-content1 {
+ 
+    margin-bottom: 50px;
+    align-items: center;
+    height: calc(100vh - 10px);
+    min-width: 99%;
+    padding-bottom: 80px; 
+    box-sizing: border-box;
+  }

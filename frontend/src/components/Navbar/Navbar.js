@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { AlertModal } from "../AlertModal/AlertModal";
 import api from "../../api";
 import "./Navbar1.css";
 
@@ -10,6 +11,9 @@ const Navbar = () => {
   const [notifications, setNotifications] = useState(0);
   const [chats, setChats] = useState(0);
   const [emails, setEmails] = useState(0);
+   const [alertOpen,    setAlertOpen]    = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
   const [newNotifs, setNewNotifs]         = useState([]);
 
@@ -23,6 +27,10 @@ const Navbar = () => {
 
   const handleNavigation = (route) => {
     navigate(route); // Navigate to respective page
+  };
+   const doLogout = () => {
+    localStorage.removeItem("loggedInUser");
+    window.location.href = "/";
   };
 
   useEffect(() => {
@@ -77,7 +85,8 @@ const Navbar = () => {
   }, []);
 
   const handleNotificationClick = (index) => {
-    setNewNotifs(prev => prev.filter((_, i) => i !== index));
+    // setNewNotifs(prev => prev.filter((_, i) => i !== index));
+    navigate('/HomePage');
   };
 
   const handleChatClick = (index) => {
@@ -90,7 +99,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="NavbarItems">
+    <nav className="NavbarItems">    
       {/* Left Section: Logo and PIMS Text */}
       <div className="navbar-left-content">
         <img
@@ -184,20 +193,47 @@ const Navbar = () => {
             ></i>
             {newNotifs.length > 0 && <span className="badge">{newNotifs.length}</span>}
             {showNotifications && (
-              <div className="dropdown-list">
-                 {newNotifs.length > 0 
-                    ? newNotifs.map((n, idx) => (
-                        <div
-                          key={n._id}
-                          className="dropdown-item"
-                          onClick={() => handleNotificationClick(idx)}
-                        >
-                          <strong>{n.assignedBy}</strong> {n.action1}
-                        </div>
-                      ))
-                    : <div className="dropdown-item">No new notifications</div>
-                  }
+              // <div className="dropdown-list">
+              //    {newNotifs.length > 0 
+              //       ? newNotifs.map((n, idx) => (
+              //           <div
+              //             key={n._id}
+              //             className="dropdown-item"
+              //             onClick={() => handleNotificationClick(idx)}
+              //           >
+              //             <strong>{n.assignedBy}</strong> {n.action1}
+              //           </div>
+              //         ))
+              //       : <div className="dropdown-item">No new notifications</div>
+              //     }
+              // </div>
+               <div className="dropdown-list">
+      {newNotifs.length > 0
+        ? newNotifs.map((n, idx) => (
+            <div
+              key={n._id}
+              className="dropdown-item"
+              onClick={() => handleNotificationClick(idx)}
+            >
+              <div className="notif-content">
+                <strong>{n.assignedBy}</strong> {n.action1}
               </div>
+              <div className="notif-date">
+                {new Date(n.time).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric"
+                })}{" "}
+                {new Date(n.time).toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit"
+                })}
+              </div>
+            </div>
+          ))
+        : <div className="dropdown-item empty">No new notifications</div>
+      }
+    </div>
             )}
           </li>
 
@@ -212,19 +248,26 @@ const Navbar = () => {
           <li>
             <Link
               to="#"
-              onClick={(e) => {
-                e.preventDefault();
-                if (window.confirm("Are you sure you want to log out?")) {
-                  localStorage.removeItem("loggedInUser");
-                  window.location.href = "/";
-                }
-              }}
+               onClick={e => {
+              e.preventDefault();
+              setLogoutConfirmOpen(true);
+            }}
             >
               <i className="fa-solid fa-right-from-bracket"></i>
             </Link>
           </li>
         </ul>
       </div>
+       <AlertModal
+        isOpen={logoutConfirmOpen}
+        title="Confirm Logout"
+        message="Are you sure you want to log out?"
+        onConfirm={() => {
+          setLogoutConfirmOpen(false);
+          doLogout();
+        }}
+        onClose={() => setLogoutConfirmOpen(false)}
+      />
     </nav>
   );
 };
