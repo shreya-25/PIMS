@@ -196,6 +196,29 @@ router.put("/decline/:notificationId", async (req, res) => {
   }
 });
 
+router.put("/close/:notificationId", async (req, res) => {
+  const { notificationId } = req.params;
+
+  try {
+    const updated = await Notification.findOneAndUpdate(
+      { notificationId },
+      { caseStatus: "Close" },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ error: "Notification not found" });
+    }
+
+    res.json(updated);
+  } catch (err) {
+    console.error("Error closing notification case:", err);
+    res
+      .status(500)
+      .json({ error: "Failed to set caseStatus to Close", details: err.message });
+  }
+});
+
 
 
 // ✅ Delete a notification
