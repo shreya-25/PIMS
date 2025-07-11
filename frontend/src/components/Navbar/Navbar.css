@@ -203,3 +203,38 @@
   margin-top: 6px;
   margin-right: 5px; /* Add spacing if necessary */
 }
+
+
+.notifications-dropdown {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.dropdown-itemNB {
+   padding: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  border-bottom: 1px solid #ccc;
+  font-size: 15px;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+.dropdown-item:hover {
+  background: #f5f5f5;
+}
+.notif-content {
+  font-size: 20px;
+  line-height: 1.2;
+}
+.notif-date {
+  font-size: 16px;
+  color: #666;
+  margin-top: 4px;
+}
+.dropdown-item.empty {
+  text-align: center;
+  color: #999;
+}
