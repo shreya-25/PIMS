@@ -712,8 +712,8 @@ const addCase = (newCase) => {
 
   const columnWidths = {
   "Case No.":   "13%",
-  "Case Name":  "30%",         // you can tweak widths…
-  "Created At": "20%",         // ← new
+  "Case Name":  "20%",         // you can tweak widths…
+  "Created At": "13%",         // ← new
   "Role":       "11%",
 };
 
@@ -1009,11 +1009,60 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                     const key = colKey[col];
                     return (
                       <th key={col} className="column-header1" style={{ width: columnWidths[col] }}>
-                          <div className="header-title">{col}</div>
-                       <div className="header-controls"  ref={el => (popupRefs.current[col] = el)}>
-    <button onClick={() => handleFilterClick(col)}>
-      <img src={`${process.env.PUBLIC_URL}/Materials/filter.png`} className="icon-image"/>
+                          <div className="header-title">{col}
+                           <span  ref={el => (popupRefs.current[col] = el)}> <button onClick={() => handleFilterClick(col)}>
+      <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className="icon-image"/>
     </button>
+    {openFilter === col && (
+                            <div className="filter-popup">
+                              <select
+                                value={filterConfig[key]}
+                                onChange={e =>
+                                  setFilterConfig(cfg => ({
+                                    ...cfg,
+                                    [key]: e.target.value
+                                  }))
+                                }
+                              >
+                                <option value="">All</option>
+                                {distinctValues[key].map(v => (
+                                  <option key={v} value={v}>{v}</option>
+                                ))}
+                              </select>
+                              <div className="filter-popup-buttons">
+                                <button onClick={() => setOpenFilter(null)}>Apply</button>
+                                <button onClick={() => {
+                                  setFilterConfig(cfg => ({ ...cfg, [key]: "" }));
+                                  setOpenFilter(null);
+                                }}>Clear</button>
+                              </div>
+                            </div>
+                          )}</span>
+
+{/* <span>   <button onClick={() => handleSort(col)} >
+                            {sortConfig.key === key
+                              ? (sortConfig.direction === "asc" ?  <img 
+                                src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                                alt="Sort Icon"
+                                className="icon-image"
+                              /> :  <img 
+                              src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                              alt="Sort Icon"
+                              className="icon-image"
+                            />)
+                              :  <img 
+                              src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
+                              alt="Sort Icon"
+                              className="icon-image"
+                            />}
+                          </button></span> */}
+
+
+                          </div>
+                       <div className="header-controls"  ref={el => (popupRefs.current[col] = el)}>
+    {/* <button onClick={() => handleFilterClick(col)}>
+      <img src={`${process.env.PUBLIC_URL}/Materials/filter.png`} className="icon-image"/>
+    </button> */}
      {openFilter === col && (
                             <div className="filter-popup">
                               <select
@@ -1040,7 +1089,7 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                             </div>
                           )}
 
-     <button onClick={() => handleSort(col)} >
+     {/* <button onClick={() => handleSort(col)} >
                             {sortConfig.key === key
                               ? (sortConfig.direction === "asc" ?  <img 
                                 src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
@@ -1056,7 +1105,7 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                               alt="Sort Icon"
                               className="icon-image"
                             />}
-                          </button>
+                          </button> */}
   </div>
                       </th>
                     );
