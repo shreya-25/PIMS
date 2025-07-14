@@ -35,7 +35,9 @@ const NotificationCard1 = ({ signedInOfficer }) => {
 
   const fetchOpenOnly = async () => {
     const { data } = await api.get(`/api/notifications/open/user/${signedInOfficer}`);
-    return data.sort((a, b) => new Date(b.time) - new Date(a.time));
+     return data
+    .filter(n => n.caseStatus === "Open")
+    .sort((a, b) => new Date(b.time) - new Date(a.time));
   };
 
   // ————————————————

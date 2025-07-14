@@ -599,26 +599,7 @@ const isEditableByCaseManager = field => {
         <div className="lead-main-content">
           {/* Page Header */}
 
-
-          <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
-
-          <h5 className="side-title">
-  {selectedLead?.leadNo
-    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${leadData.leadStatus || leadStatus || "Unknown Status"}`
-    : `LEAD DETAILS | ${leadData?.leadStatus || leadStatus || "Unknown Status"}`}
-</h5>
-
-          </div>
-
-                    <div className="case-header">
-            <h1>
-  {selectedLead?.leadNo ? `LEAD: ${selectedLead.leadNo} | ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"}
-</h1>
-
-          </div>
-
-                  {(leadData.leadStatus !== "Assigned" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
+           {(leadData.leadStatus !== "Assigned" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
                    <div className="top-menu">
         <div className="menu-items">
         <span className="menu-item active" > Lead Information</span>
@@ -660,6 +641,27 @@ const isEditableByCaseManager = field => {
         </div>
       </div>
                   )}
+
+
+          <div className="caseandleadinfo">
+          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+
+          <h5 className="side-title">
+  {selectedLead?.leadNo
+    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${leadData.leadStatus || leadStatus || "Unknown Status"}`
+    : `LEAD DETAILS | ${leadData?.leadStatus || leadStatus || "Unknown Status"}`}
+</h5>
+
+          </div>
+
+                    <div className="case-header">
+            <h1>
+  {selectedLead?.leadNo ? `LEAD: ${selectedLead.leadNo} | ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"}
+</h1>
+
+          </div>
+
+               
  {leadData.leadStatus === "Assigned" && selectedCase.role !== "Case Manager" &&  selectedCase.role !== "Detective Supervisor" && (
   <div
     className="accept-reject-section"

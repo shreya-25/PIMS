@@ -14,10 +14,11 @@ import { AlertModal } from "../../components/AlertModal/AlertModal";
 
 export const CreateLead = () => {
   const navigate = useNavigate(); // Initialize useNavigate hook
+  const FORM_KEY = 'CreateLead:form';
   const location = useLocation();
   const dropdownRef = useRef(null);
-       const [loading, setLoading] = useState(true);
-        const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const leadEntries = location.state?.leadEntries || [];
 const caseDetails = location.state?.caseDetails || {}; // Get case details
 const leadDetails =  location.state?.leadDetails || {}; // Get case details
@@ -50,7 +51,11 @@ useEffect(() => {
 
 
   // State for all input fields
-  const [leadData, setLeadData] = useState({
+  const [leadData, setLeadData] = useState(() => {
+    const saved = sessionStorage.getItem(FORM_KEY);
+    return saved
+      ? JSON.parse(saved)
+      : {
     CaseName: '',
     CaseNo: '',
     leadNumber: '',
@@ -65,7 +70,12 @@ useEffect(() => {
     leadDescription: '',
     assignedOfficer: [],
     accessLevel: 'Everyone',
+      };
   });
+
+  useEffect(() => {
+    sessionStorage.setItem(FORM_KEY, JSON.stringify(leadData));
+  }, [leadData]);
 
  const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
 
@@ -290,7 +300,6 @@ const handleGenerateLead = async () => {
       {
         caseName:            selectedCase.caseName,
         caseNo:              selectedCase.caseNo,
-        leadNo:              leadData.leadNumber,
         parentLeadNo:        originNumbers,
         incidentNo:          leadData.incidentNumber,
         subNumber:           subNumbersArray,
@@ -311,8 +320,9 @@ const handleGenerateLead = async () => {
     // treat any 2xx as success
     if (response.status >= 200 && response.status < 300) {
       // alert("Lead successfully added!");
-  setAlertMessage("Lead successfully added!");
+  setAlertMessage(`Lead #${leadData.leadNumber} created successfully!`);
   setAlertOpen(true);
+  sessionStorage.removeItem(FORM_KEY);
     
       const token = localStorage.getItem("token");
 
@@ -792,7 +802,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
                 </div> */}
                 <SideBar activePage = "CasePageManager" />
 
-                <div className="left-content1">
+                <div className="left-content">
                 <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
 
 

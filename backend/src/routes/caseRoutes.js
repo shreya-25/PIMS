@@ -32,6 +32,19 @@ router.put(
 );
 
 router.put(
+  "/:caseNo/close",
+  verifyToken,
+  async (req, res) => {
+    try {
+      await caseController.closeCase(req, res);
+    } catch (error) {
+      console.error("Router error closing case:", error);
+      res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+  }
+);
+
+router.put(
   "/executive-summary",
   verifyToken,
   async (req, res) => {

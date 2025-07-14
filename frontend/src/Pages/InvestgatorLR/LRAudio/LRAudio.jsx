@@ -22,29 +22,28 @@ export const LRAudio = () => {
     //     };
     //   }, []);
   const navigate = useNavigate();
-   const location = useLocation();
-    const [leadData, setLeadData] = useState({});
+  const FORM_KEY = "LRAudio:form";
+  const LIST_KEY = "LRAudio:list";
+  const location = useLocation();
+  const [leadData, setLeadData] = useState({});
   const { selectedCase, selectedLead, setSelectedLead , leadStatus, setLeadStatus} = useContext(CaseContext);
-   const [file, setFile] = useState(null);
-     const fileInputRef = useRef(null);
-
-     const [alertOpen, setAlertOpen] = useState(false);
-         const [alertMessage, setAlertMessage] = useState("");
-
+  const [file, setFile] = useState(null);
+  const fileInputRef = useRef(null);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date)) return "";
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const year = date.getFullYear().toString().slice(-2);
+    return `${month}/${day}/${year}`;
+  };
     
-      const formatDate = (dateString) => {
-        if (!dateString) return "";
-        const date = new Date(dateString);
-        if (isNaN(date)) return "";
-        const month = (date.getMonth() + 1).toString().padStart(2, "0");
-        const day = date.getDate().toString().padStart(2, "0");
-        const year = date.getFullYear().toString().slice(-2);
-        return `${month}/${day}/${year}`;
-      };
-    
-      const { leadDetails, caseDetails } = location.state || {};
-      const [editingId, setEditingId] = useState(null);
-      const isEditing   = editingId !== null;
+  const { leadDetails, caseDetails } = location.state || {};
+  const [editingId, setEditingId] = useState(null);
+  const isEditing   = editingId !== null;
 // const formState   = isEditing ? editData : audioData;
 // const onField     = isEditing ? handleEditInput : handleInputChange;
 // const onFileField = isEditing ? handleEditFileChange : handleFileChange;
@@ -58,23 +57,41 @@ export const LRAudio = () => {
       // });
 
   // Sample audio data
-  const [audioFiles, setAudioFiles] = useState([
-  ]);
+  const [audioFiles, setAudioFiles] = useState(() => {
+   const saved = sessionStorage.getItem(LIST_KEY);
+   return saved ? JSON.parse(saved) : [];
+ });
 
   // State to manage form data
-  const [audioData, setAudioData] = useState({
-    dateAudioRecorded: "",
-    description: "",
-    audioSrc: "",
-    leadReturnId: "",
-     isLink: false,
-  link: "",   
-  accessLevel: "Everyone"    
-  });
+ const [audioData, setAudioData] = useState(() => {
+   const saved = sessionStorage.getItem(FORM_KEY);
+   return saved
+     ? JSON.parse(saved)
+     : {
+         dateAudioRecorded: "",
+         description: "",
+         audioSrc: "",
+         leadReturnId: "",
+         isLink: false,
+         link: "",
+         accessLevel: "Everyone"
+       };
+ });
 
   const handleInputChange = (field, value) => {
     setAudioData({ ...audioData, [field]: value });
   };
+
+  // Persist draft form whenever it changes
+useEffect(() => {
+  sessionStorage.setItem(FORM_KEY, JSON.stringify(audioData));
+}, [audioData]);
+
+// Persist list whenever it changes
+useEffect(() => {
+  sessionStorage.setItem(LIST_KEY, JSON.stringify(audioFiles));
+}, [audioFiles]);
+
 
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
@@ -172,6 +189,9 @@ export const LRAudio = () => {
       filename: ""
     });
     setFile(null);
+    // after resetting audioData and file...
+    sessionStorage.removeItem(FORM_KEY);
+
   } catch (error) {
     console.error("Error uploading audio:", error);
     setAlertMessage("Failed to upload audio.");
@@ -407,6 +427,9 @@ const handleUpdateAudio = async () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+    // after resetting audioData and file...
+sessionStorage.removeItem(FORM_KEY);
+
   } catch (error) {
     console.error("Error updating audio:", error);
     setAlertMessage("Failed to update audio.");

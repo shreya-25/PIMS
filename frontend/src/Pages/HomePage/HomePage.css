@@ -237,7 +237,7 @@
 /* Content sections container */
 .content-section {
   padding: 20px;
-  margin-top: 10%;
+  margin-top: 5%;
   width: 80%;
   margin: 0 auto; /* Centers horizontally */
 }
@@ -246,6 +246,9 @@
 {
   height: 20px;
   width: 20px;
+  filter: brightness(0) saturate(100%);
+  /* …then make it semi-transparent to look grey */
+  opacity: 0.6;
 }
 .filter-sort-icons
 {
@@ -370,7 +373,7 @@
 
 
 .table-scroll-container {
-  max-height: 400px;      /* adjust height */
+  max-height: 900px;      /* adjust height */
   overflow-y: auto;
   overflow-x: auto;
 }
@@ -378,7 +381,7 @@
 .table-scroll-container table thead th {
   position: sticky;
   top: 0;
-  z-index: 1;
+  /* z-index: 1; */
 }
 
 .table-scroll-container table {
@@ -397,7 +400,7 @@
 
 .leads-table th,
 .leads-table td {
-  padding: 10px;
+  padding: 5px;
   text-align: left;
   border: 1px solid #ddd;
   font-size: 20px;
@@ -963,15 +966,15 @@
   align-items: flex-start;
 }
 
-.filter-popup {
+/* .filter-popup {
   background-color: #ffffff;
   border: 1px solid #ddd;
   padding: 15px;
   border-radius: 5px;
   margin-top: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  z-index:10;
-}
+  z-index:3000;
+} */
 
 .filter-fields {
   display: flex;
@@ -1163,6 +1166,14 @@
   font-size: 20px;
 }
 
+.close-btn
+{
+  background-color: rgb(160, 39, 39);
+  color:white;
+  height: 100px;
+  width:100px;
+}
+
 .clear-button:hover {
   background-color: #b9beb9;
 }
@@ -1225,9 +1236,12 @@
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
+/* at the bottom of HomePage.css */
+
 /* Styling for the buttons */
 .view-btn1,
-.accept-btn {
+.accept-btn,
+.case-close-btn {
   margin-left: 10px;
   padding: 10px;
   border: none;
@@ -1235,7 +1249,7 @@
   cursor: pointer;
   transition: background-color 0.3s ease, color 0.3s ease;
   font-size: 20px;margin-bottom: 10px;
-  width: 120px;
+  width: 140px;
 }
 
 .view-btn1 {
@@ -1247,6 +1261,17 @@
 .view-btn1:hover {
   background-color: #787a7c;
 }
+
+.case-close-btn {
+  /* background-color: #007bffde; */
+  background-color: #7c2121de;
+  color: #fff;
+}
+
+.case-close-btn:hover {
+  background-color: #ad29296c;
+}
+
 
 .accept-btn {
   background-color: rgba(25, 58, 73, 0.795);
@@ -1628,3 +1653,31 @@
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
+.header-title
+{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-title button {
+  margin-left: 0;
+  padding: 0;
+  font-size: 20px;
+  border: none;     /* if you also want no border */
+  background: none; /* if you want no bg */
+}
+
+/* make the header cell a positioning context */
+.header-title {
+  position: relative;
+}
+
+ .left-content1 {
+ 
+    margin-bottom: 50px;
+    align-items: center;
+    height: calc(100vh - 10px);
+    min-width: 99%;
+    padding-bottom: 80px; 
+    box-sizing: border-box;
+  }

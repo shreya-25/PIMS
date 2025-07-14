@@ -259,6 +259,35 @@ exports.deleteCase = async (req, res) => {
     }
 };
 
+// PUT /api/cases/:caseNo/close
+exports.closeCase = async (req, res) => {
+  try {
+    const { caseNo } = req.params;
+    if (!caseNo) {
+      return res.status(400).json({ message: "caseNo is required" });
+    }
+
+    // find and update atomically
+    const updated = await Case.findOneAndUpdate(
+      { caseNo },
+      { caseStatus: "Completed" },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Case not found" });
+    }
+
+    return res
+      .status(200)
+      .json({ message: "Case closed successfully", data: updated });
+  } catch (err) {
+    console.error("❌ Error closing case:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+
 // Reject a case by setting its Case Manager to "Admin"
 exports.rejectCase = async (req, res) => {
     try {
