@@ -3,6 +3,7 @@ import React, { useContext, useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 // import { BrowserRouter, Routes, Route } from "react-router-dom";
 import useTokenExpiryRedirect from "./useTokenExpiryRedirect";
+import { AlertModal } from "./components/AlertModal/AlertModal";
 import {BrowserRouter as Router, Routes, Route} from 'react-router-dom';
 import ErrorBoundary from './ErrorBoundary';
 import {Login} from './Pages/Login/Login';
@@ -88,6 +89,8 @@ function App() {
   //   window.addEventListener("beforeunload", handler);
   //   return () => window.removeEventListener("beforeunload", handler);
   // }, []);
+const token = localStorage.getItem("token");
+const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
 
 
   useTokenExpiryRedirect(); 
@@ -157,7 +160,18 @@ function App() {
         <Route path="/Chatbot" element= {<ProtectedLayout>  <Chatbot /> </ProtectedLayout> } />
         {/* <Route path ="/Report" element= {<Report />} /> */}
       </Routes>
+
+           <AlertModal
+        isOpen={showExpiryWarning}
+        title="Session Expiring Soon"
+        message="Your session will expire in 2 minutes. Please save your work."
+        onConfirm={dismissWarning}
+        onClose={dismissWarning}
+      />
+      
       </ErrorBoundary>
+
+      
   );
 }
   // return <Login />;

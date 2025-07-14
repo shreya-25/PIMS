@@ -212,7 +212,7 @@ const Navbar = () => {
         ? newNotifs.map((n, idx) => (
             <div
               key={n._id}
-              className="dropdown-item"
+              className="dropdown-itemNB"
               onClick={() => handleNotificationClick(idx)}
             >
               <div className="notif-content">

@@ -603,7 +603,8 @@ Case Page
 <div className = "content-subsection">
 
         <div className="timeline-form-sec">
-          <h3>Add/Edit Entry</h3>
+             <h3>Add/Edit Entry</h3>
+        
           <div className="timeline-form">
             <label>Date *</label>
             <input
