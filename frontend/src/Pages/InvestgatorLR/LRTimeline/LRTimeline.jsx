@@ -25,12 +25,14 @@ export const LRTimeline = () => {
     //     };
     //   }, []);
   const navigate = useNavigate();
-   const location = useLocation();
-   const [leadData, setLeadData] = useState({});
-   const { selectedCase, selectedLead, setSelectedLead,  leadStatus, setLeadStatus } = useContext(CaseContext);
-   const [entries, setEntries] = useState([]);
-    const [alertOpen, setAlertOpen] = useState(false);
-               const [alertMessage, setAlertMessage] = useState("");
+  const FORM_KEY = "LRTimeline:form";
+  const LIST_KEY = "LRTimeline:list";
+  const location = useLocation();
+  const [leadData, setLeadData] = useState({});
+  const { selectedCase, selectedLead, setSelectedLead,  leadStatus, setLeadStatus } = useContext(CaseContext);
+  const [entries, setEntries] = useState([]);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
         
           const formatDate = (dateString) => {
             if (!dateString) return "";
@@ -49,36 +51,19 @@ export const LRTimeline = () => {
       navigate(route); // Navigate to the respective page
     };
   
-  const [timelineEntries, setTimelineEntries] = useState([
-    // {
-    //   date: '01/01/2024',
-    //   returnId:1,
-    //   timeRange: '10:30 AM - 12:00 PM',
-    //   location: '123 Main St, NY',
-    //   description: 'Suspect spotted leaving crime scene',
-    //   flags: ['High Priority'],
-    // },
-    // {
-    //   date: '01/05/2024',
-    //   returnId:2,
-    //   timeRange: '2:00 PM - 3:30 PM',
-    //   location: '456 Elm St, CA',
-    //   description: 'Suspect was going to the airport',
-    //   flags: [],
-    // },
-  ]);
+   const [timelineEntries, setTimelineEntries] = useState(() => {
+   const saved = sessionStorage.getItem(LIST_KEY);
+   return saved ? JSON.parse(saved) : [];
+ });
 
-  const [newEntry, setNewEntry] = useState({
-    date: '',
-    leadReturnId: '',
-    eventStartDate: '',
-    eventEndDate: '',
-    startTime: '',
-    endTime: '',
-    location: '',
-    description: '',
-    flag: ''
-  });
+  const [newEntry, setNewEntry] = useState(() => {
+   const saved = sessionStorage.getItem(FORM_KEY);
+   return saved
+     ? JSON.parse(saved)
+     : { date:'', leadReturnId:'', eventStartDate:'', eventEndDate:'',
+         startTime:'', endTime:'', location:'', description:'', flag:'' };
+ });
+
 
   const [timelineFlags, setTimelineFlags] = useState([
     'High Priority',
@@ -88,6 +73,17 @@ export const LRTimeline = () => {
 
   const [newFlag, setNewFlag] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
+
+  // whenever the draft form changes, save it
+useEffect(() => {
+  sessionStorage.setItem(FORM_KEY, JSON.stringify(newEntry));
+}, [newEntry]);
+
+// whenever the list changes, save it
+useEffect(() => {
+  sessionStorage.setItem(LIST_KEY, JSON.stringify(timelineEntries));
+}, [timelineEntries]);
+
 
   const handleInputChange = (field, value) => {
     setNewEntry({ ...newEntry, [field]: value });
@@ -238,6 +234,7 @@ export const LRTimeline = () => {
         description: "",
         flag: "",
       });
+      sessionStorage.removeItem(FORM_KEY);
     } catch (err) {
       console.error("Error saving timeline entry:", err);
        setAlertMessage("Failed to add timeline entry.");
@@ -606,7 +603,8 @@ Case Page
 <div className = "content-subsection">
 
         <div className="timeline-form-sec">
-          <h3>Add/Edit Entry</h3>
+             <h3>Add/Edit Entry</h3>
+        
           <div className="timeline-form">
             <label>Date *</label>
             <input

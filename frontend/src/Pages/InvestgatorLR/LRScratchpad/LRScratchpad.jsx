@@ -25,6 +25,9 @@ export const LRScratchpad = () => {
     //     };
     //   }, []);
   const navigate = useNavigate();
+  const FORM_KEY = "LRScratchpad:form";
+const LIST_KEY = "LRScratchpad:list";
+
    const location = useLocation();
        const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);  
     const [leadData, setLeadData] = useState({});
@@ -81,14 +84,18 @@ const [editingIndex, setEditingIndex] = useState(null);
   }, [selectedLead, selectedCase]);
 
   // Sample scratchpad data
-  const [notes, setNotes] = useState([
-  ]);
+  const [notes, setNotes] = useState(() => {
+   const saved = sessionStorage.getItem(LIST_KEY);
+   return saved ? JSON.parse(saved) : [];
+ });
 
   // State to manage form data
-  const [noteData, setNoteData] = useState({
-    text: "",
-    returnId: "",
-  });
+ const [noteData, setNoteData] = useState(() => {
+   const saved = sessionStorage.getItem(FORM_KEY);
+   return saved
+     ? JSON.parse(saved)
+     : { text: "", returnId: "" };
+ });
 
   const handleInputChange = (field, value) => {
     setNoteData({ ...noteData, [field]: value });
@@ -134,6 +141,7 @@ const [editingIndex, setEditingIndex] = useState(null);
       ]);
   
       setNoteData({ text: "" });
+      sessionStorage.removeItem(FORM_KEY);
     } catch (err) {
       console.error("Error saving scratchpad note:", err.message);
       setAlertMessage("Failed to save note.");
@@ -141,6 +149,15 @@ const [editingIndex, setEditingIndex] = useState(null);
     }
   };
   
+
+  useEffect(() => {
+  sessionStorage.setItem(FORM_KEY, JSON.stringify(noteData));
+}, [noteData]);
+
+useEffect(() => {
+  sessionStorage.setItem(LIST_KEY, JSON.stringify(notes));
+}, [notes]);
+
 
   const handleNavigation = (route) => {
     navigate(route);
@@ -229,6 +246,7 @@ const [editingIndex, setEditingIndex] = useState(null);
       // reset form
       setEditingIndex(null);
       setNoteData({ text: "", returnId: "" });
+      sessionStorage.removeItem(FORM_KEY);
     } catch (err) {
       console.error("Update failed", err);
       setAlertMessage("Failed to update note.");

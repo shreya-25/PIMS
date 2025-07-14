@@ -1,8 +1,9 @@
 import './App.css';
-import React from 'react';
+import React, { useContext, useState, useEffect, useRef } from "react";
 import ReactDOM from "react-dom";
 // import { BrowserRouter, Routes, Route } from "react-router-dom";
 import useTokenExpiryRedirect from "./useTokenExpiryRedirect";
+import { AlertModal } from "./components/AlertModal/AlertModal";
 import {BrowserRouter as Router, Routes, Route} from 'react-router-dom';
 import ErrorBoundary from './ErrorBoundary';
 import {Login} from './Pages/Login/Login';
@@ -72,6 +73,26 @@ import ProtectedLayout from './protectedLayout';
 
 function App() {
 
+  // useEffect(() => {
+  //   const handler = (e) => {
+  //     // check any key in sessionStorage that you want to guard
+  //     if (
+  //       sessionStorage.getItem("selectedCase") ||
+  //       sessionStorage.getItem("selectedLead") ||
+  //       sessionStorage.getItem("token")
+  //     ) {
+  //       const msg = "You have unsaved changes—are you sure you want to leave?";
+  //       e.returnValue = msg;
+  //       return msg;
+  //     }
+  //   };
+  //   window.addEventListener("beforeunload", handler);
+  //   return () => window.removeEventListener("beforeunload", handler);
+  // }, []);
+const token = localStorage.getItem("token");
+const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
+
+
   useTokenExpiryRedirect(); 
   return (
     <ErrorBoundary>
@@ -139,7 +160,18 @@ function App() {
         <Route path="/Chatbot" element= {<ProtectedLayout>  <Chatbot /> </ProtectedLayout> } />
         {/* <Route path ="/Report" element= {<Report />} /> */}
       </Routes>
+
+           <AlertModal
+        isOpen={showExpiryWarning}
+        title="Session Expiring Soon"
+        message="Your session will expire in 2 minutes. Please save your work."
+        onConfirm={dismissWarning}
+        onClose={dismissWarning}
+      />
+      
       </ErrorBoundary>
+
+      
   );
 }
   // return <Login />;

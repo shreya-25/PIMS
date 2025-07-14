@@ -188,9 +188,8 @@
 {
   display: flex;
   justify-content: center;
-  width: 85%;
+  width: 100%;
   gap: 20px;
-  margin-left: 130px;
 }
 
 .content-to-add-first-row h4

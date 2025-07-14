@@ -25,127 +25,120 @@ export const HomePage = () => {
     const [pageSize, setPageSize] = useState(50);
     const totalPages = 10;
     const totalEntries = 100;
-  
-const [showCaseSelector, setShowCaseSelector] = useState(false);
-  const [navigateTo, setNavigateTo] = useState(""); 
+    const [showCaseSelector, setShowCaseSelector] = useState(false);
+    const [navigateTo, setNavigateTo] = useState(""); 
 
-  const { setSelectedCase, setToken, setSelectedLead } = useContext(CaseContext);
-
-  // Function to close CaseSelector
-  const handleCloseCaseSelector = () => {
-    setShowCaseSelector(false);
-    setNavigateTo(""); // Reset navigation target
-  };
+    const { setSelectedCase, setToken, setSelectedLead } = useContext(CaseContext);
+    const signedInOfficer = localStorage.getItem("loggedInUser");
 
 
-  const handleAssignRole = (caseId) => {
-    const role = prompt("Assign role (Investigator/Case Manager):");
-    if (role) {
-      setCases((prevCases) =>
-        prevCases.map((c) =>
-          c.id === caseId ? { ...c, role: role } : c
-        )
-      );
-    }
-  };
+    const [cases, setCases] = useState([]);
 
-
-  const signedInOfficer = localStorage.getItem("loggedInUser");
-
-  const [cases, setCases] = useState([]);
-
-  useEffect(() => {
-    const fetchCases = async () => {
-      try {
-        const token = localStorage.getItem("token"); // Get JWT token
-
-        if (!token) {
-          console.error("❌ No token found. User is not authenticated.");
-          return;
-        }
-
-        const response = await api.get("/api/cases", {
-          headers: {
-            Authorization: `Bearer ${token}`, // ✅ Pass token in Authorization header
-            "Content-Type": "application/json",
-          },
-          params: { officerName: signedInOfficer }, // ✅ Send officerName as query param
-        });
-
-        console.log("✅ API Response:", response.data); // Debugging log
-
-        // ✅ Filter cases where the signed-in officer is assigned
-       const assignedCases = response.data
-          .filter(c =>
-            c.caseStatus === "Ongoing" &&
-            c.assignedOfficers.some(o => o.name === signedInOfficer)
-          )
-          .map(c => {
-            const officer = c.assignedOfficers.find(o => o.name === signedInOfficer);
-            return {
-              id: c.caseNo,
-              title: c.caseName,
-              status: c.caseStatus,
-              role: officer?.role || "Unknown",
-            };
-          });
-
-        setCases(assignedCases); // ✅ Set filtered cases in state
-      } catch (error) {
-        console.error("❌ Error fetching cases:", error.response?.data || error);
-      }
+    const formatDate = (dateString) => {
+        if (!dateString) return ""; // Handle empty dates
+        const date = new Date(dateString);
+        if (isNaN(date)) return ""; // Handle invalid dates
+      
+        const month = (date.getMonth() + 1).toString().padStart(2, "0");
+        const day = date.getDate().toString().padStart(2, "0");
+        const year = date.getFullYear().toString().slice(-4
+        ); // Get last two digits of the year
+      
+        return `${month}/${day}/${year}`;
     };
 
-  fetchCases(); // Initial call
-  const intervalId = setInterval(fetchCases, 15_000); // Poll every 15s
 
-  return () => clearInterval(intervalId); // Cleanup on unmount
-}, [signedInOfficer]);
+    useEffect(() => {
+      const fetchCases = async () => {
+        try {
+          const token = localStorage.getItem("token"); // Get JWT token
+          if (!token) {
+            console.error("❌ No token found. User is not authenticated.");
+            return;
+          }
 
-  // Handler to view the assigned lead details (can be updated to show a modal or navigate)
-// Handler for “View” button in Assigned Leads → navigates to LeadReview
-const handleViewAssignedLead = async (lead) => {
-  let role = "Investigator"; // default
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) throw new Error("No token");
-    // fetch the case’s team info so we know if current user is CM or Investigator
-    const caseRes = await api.get(
-      `/api/cases/${lead.caseNo}/team`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    if (caseRes.data.caseManager === signedInOfficer) {
-      role = "Case Manager";
-    } else if (
-      Array.isArray(caseRes.data.investigators) &&
-      caseRes.data.investigators.includes(signedInOfficer)
-    ) {
-      role = "Investigator";
-    }
-  } catch (err) {
-    console.error("❌ Failed to fetch case role:", err);
-  }
+          const response = await api.get("/api/cases", {
+            headers: {
+              Authorization: `Bearer ${token}`, // ✅ Pass token in Authorization header
+              "Content-Type": "application/json",
+            },
+            params: { officerName: signedInOfficer }, // ✅ Send officerName as query param
+          });
 
-  // 2) Build a single state object that matches what LeadReview.jsx expects
-  const caseDetails = {
-    caseNo: lead.caseNo,
-    caseName: lead.caseName,
-    role,
-  };
-  const leadId = lead.id;             // numeric leadNo
-  const leadDescription = lead.description;
+          console.log("✅ API Response:", response.data); // Debugging log
 
-  // 3) Write into Context + localStorage
-  setSelectedCase(caseDetails);
-  setSelectedLead({ leadNo: leadId, leadName: leadDescription });
-  localStorage.setItem("role", role);
-  localStorage.setItem("selectedCase", JSON.stringify(caseDetails));
+          // ✅ Filter cases where the signed-in officer is assigned
+          const assignedCases = response.data
+            .filter(c =>
+              c.caseStatus === "Ongoing" &&
+              c.assignedOfficers.some(o => o.name === signedInOfficer)
+            )
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .map(c => {
+              const officer = c.assignedOfficers.find(o => o.name === signedInOfficer);
+              return {
+                id: c.caseNo,
+                title: c.caseName,
+                status: c.caseStatus,
+                role: officer?.role || "Unknown",
+                createdAt: c.createdAt 
+              };
+            });
 
-  // 4) Finally navigate to /LeadReview
-  navigate("/LeadReview", {
-    state: { caseDetails, leadId, leadDescription },
-  });
-};
+            setCases(assignedCases); // ✅ Set filtered cases in state
+            } catch (error) {
+               console.error("❌ Error fetching cases:", error.response?.data || error);
+              }
+              };
+              fetchCases(); // Initial call
+              const intervalId = setInterval(fetchCases, 15_000); // Poll every 15s
+
+              return () => clearInterval(intervalId); // Cleanup on unmount
+    }, [signedInOfficer]);
+
+  
+    const handleViewAssignedLead = async (lead) => {
+      let role = "Investigator"; // default
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("No token");
+        // fetch the case’s team info so we know if current user is CM or Investigator
+        const caseRes = await api.get(
+          `/api/cases/${lead.caseNo}/team`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (caseRes.data.caseManager === signedInOfficer) {
+          role = "Case Manager";
+        } else if (
+          Array.isArray(caseRes.data.investigators) &&
+          caseRes.data.investigators.includes(signedInOfficer)
+        ) {
+          role = "Investigator";
+        }
+      } catch (err) {
+        console.error("❌ Failed to fetch case role:", err);
+      }
+
+      // 2) Build a single state object that matches what LeadReview.jsx expects
+      const caseDetails = {
+        caseNo: lead.caseNo,
+        caseName: lead.caseName,
+        role,
+      };
+      const leadId = lead.id;             // numeric leadNo
+      const leadDescription = lead.description;
+
+      // 3) Write into Context + localStorage
+      setSelectedCase(caseDetails);
+      setSelectedLead({ leadNo: leadId, leadName: leadDescription });
+      localStorage.setItem("role", role);
+      localStorage.setItem("selectedCase", JSON.stringify(caseDetails));
+
+      // 4) Finally navigate to /LeadReview
+      navigate("/LeadReview", {
+        state: { caseDetails, leadId, leadDescription },
+      });
+    };
 
 const handleCaseClick = (caseDetails) => {
  
@@ -240,6 +233,36 @@ const handleAcceptAssignedLead = (lead) => {
   }
 };
 
+const handleCloseCase = async (caseNo, caseName) => {
+  if (!window.confirm(`Really close case ${caseNo}: ${caseName}?`)) return;
+
+  try {
+    const token = localStorage.getItem("token");
+    await api.put(
+      `/api/cases/${encodeURIComponent(caseNo)}/close`,
+      {}, // no body needed—the route reads caseNo from the URL
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+     await api.put(
+      `/api/notifications/close/${encodeURIComponent(caseNo)}`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+
+    // optimistically drop it from your "Ongoing" list
+    setCases(prev => prev.filter(c => c.id !== caseNo));
+  } catch (err) {
+    console.error("Failed to close case:", err);
+    alert("Error closing case. See console for details.");
+  }
+};
+
 
 const acceptLead = (leadId) => {
   const leadToAccept = leads.assignedLeads.find((lead) => lead.id === leadId);
@@ -264,51 +287,9 @@ const acceptLead = (leadId) => {
 };
 
 const [leads, setLeads] = useState({
-  assignedLeads: [
-    // { id: 45, description: "Collect Audio Records from Dispatcher",dueDate: "12/28/2024",
-    //   priority: "High",
-    //   flags: ["Important"],
-    //   assignedOfficers: ["Officer 1", "Officer 3"], },
-    // { id: 20, description: "Interview Mr. John",dueDate: "12/31/2024",
-    //   priority: "Medium",
-    //   flags: [],
-    //   assignedOfficers: ["Officer 2"] },
-    // { id: 84, description: "Collect Evidence from 63 Mudray Street",dueDate: "12/20/2024",
-    //   priority: "Low",
-    //   flags: [],
-    //   assignedOfficers: ["Officer 4"] },
-  ],
-  pendingLeads: [
-    // {
-    //   id: 21,
-    //   description: "Interview Witness",
-    //   dueDate: "12/28/2024",
-    //   priority: "High",
-    //   flags: ["Important"],
-    //   assignedOfficers: ["Officer 1", "Officer 3", "Officer 8"],
-    // },
-    // {
-    //   id: 30,
-    //   description: "Interview Neighbours",
-    //   dueDate: "12/30/2024",
-    //   priority: "Medium",
-    //   flags: [],
-    //   assignedOfficers: ["Officer 2"],
-    // },
-    // {
-    //   id: 32,
-    //   description: "Collect Evidence",
-    //   dueDate: "12/31/2024",
-    //   priority: "Low",
-    //   flags: [],
-    //   assignedOfficers: ["Officer 4"],
-    // },
-  ],
-  pendingLeadReturns: [
-    // { id: 33, description: "Submit Crime Scene Photos" },
-    // { id: 32, description: "Collect Evidence", dueDate: "12/25/2024" },
-    // { id: 21, description: "Interview Witness", dueDate: "12/24/2024" },
-  ],
+  assignedLeads: [],
+  pendingLeads: [],
+  pendingLeadReturns: [],
 });
 
 
@@ -346,6 +327,7 @@ const [leads, setLeads] = useState({
             // ✅ Extract only ongoing cases (caseStatus = "Ongoing")
             const ongoingCases = casesResponse.data
                 .filter(c => c.caseStatus === "Ongoing")
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .map(c => ({ caseNo: c.caseNo, caseName: c.caseName })); // Extract relevant fields
 
             console.log("✅ Ongoing Cases:", ongoingCases);
@@ -642,7 +624,7 @@ const addCase = (newCase) => {
     // alert("Case must have an ID, title, and status.");
     return;
   }
-    setCases((prevCases) => [...prevCases, newCase]);
+    setCases((prevCases) => [newCase, ...prevCases]);
 };
 
   // Continue a pending lead return
@@ -663,7 +645,9 @@ const addCase = (newCase) => {
 
   const columnWidths = {
   "Case No.":   "13%",
-  "Role":      "11%"
+  "Case Name":  "20%",         // you can tweak widths…
+  "Created At": "13%",         // ← new
+  "Role":       "11%",
 };
 
 // Columns + mapping to your data fields
@@ -681,63 +665,73 @@ const assignedCols = [
   // Filter and Sort Function
 
 const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' });
-  const [filterConfig,setFilterConfig] = useState({ id: "", description: "", dueDate: "", priority: "", title: "", role: "" });
+const [filterConfig, setFilterConfig] = useState({
+  id:    [],
+  title: [],
+  createdAt: [],
+  role:  []
+});
+
   const [openFilter,  setOpenFilter]   = useState(null);
 
 
   const colKey = {
     "Case No.":  "id",
     "Case Name": "title",
+    "Created At": "createdAt",
     "Role":      "role"
   };
 
   // 1) Precompute distinct values for each field
     const distinctValues = useMemo(() => {
-      const map = { id: new Set(), description: new Set(), dueDate: new Set(), priority: new Set(), title: new Set(), role: new Set()  };
-      cases.forEach(lead => {
-        Object.entries(map).forEach(([field, set]) => {
-          set.add(String(lead[field]));
-        });
-      });
-      return Object.fromEntries(
-        Object.entries(map).map(([k, set]) => [k, Array.from(set)])
-      );
-    }, [cases]);
-  
-    // 2) Filter + sort
-    const sortedCases  = useMemo(() => {
-      // apply filters
-      const filtered = cases.filter(lead =>
-        Object.entries(filterConfig).every(([field, val]) => {
-          return !val || String(lead[field]) === val;
-        })
-      );
-      // apply sort
-      if (!sortConfig.key) return filtered;
-      const PRIORITY_ORDER = { Low:1, Medium:2, High:3 };
-      return [...filtered].sort((a,b) => {
-        let aV = a[sortConfig.key], bV = b[sortConfig.key];
-        if (sortConfig.key==="priority") {
-          aV = PRIORITY_ORDER[aV]||0; bV = PRIORITY_ORDER[bV]||0;
-        }
-        if (aV < bV) return sortConfig.direction==='asc' ? -1 : 1;
-        if (aV > bV) return sortConfig.direction==='asc' ?  1 : -1;
-        return 0;
-      });
-    }, [cases, sortConfig, filterConfig]);
-  
-    // 3) Handlers
-    const handleSort = col => {
-      const key = colKey[col];
-      setSortConfig(prev => ({
-        key,
-        direction: prev.key===key && prev.direction==='asc' ? 'desc' : 'asc'
-      }));
-    };
-    const handleFilterClick = col => {
-      setOpenFilter(prev => prev===col ? null : col);
-    };
-  
+  const map = {
+    id: new Set(),
+    title: new Set(),
+    createdAt: new Set(),
+    role: new Set(),
+  };
+
+  cases.forEach(c => {
+    map.id.add(String(c.id));
+    map.title.add(c.title);
+    map.createdAt.add(formatDate(c.createdAt));          // ← use your formatter
+    map.role.add(c.role);
+  });
+
+  return Object.fromEntries(
+    Object.entries(map).map(([key, set]) => [key, [...set]])
+  );
+}, [cases]);
+
+const sortedCases = useMemo(() => {
+  // 1) apply filters
+  const filtered = cases.filter(c => {
+    return Object.entries(filterConfig).every(([field, selectedValues]) => {
+      if (!selectedValues || selectedValues.length === 0) return true;
+
+      // get the cell value (format date for createdAt)
+      const cell = field === "createdAt"
+        ? formatDate(c.createdAt)
+        : String(c[field]);
+
+      return selectedValues.includes(cell);
+    });
+  });
+
+  // 2) apply your existing sort logic (unchanged)
+  if (!sortConfig.key) return filtered;
+  const PRIORITY_ORDER = { Low:1, Medium:2, High:3 };
+  return [...filtered].sort((a,b) => {
+    let aV = a[sortConfig.key], bV = b[sortConfig.key];
+    if (sortConfig.key === "priority") {
+      aV = PRIORITY_ORDER[aV]||0;
+      bV = PRIORITY_ORDER[bV]||0;
+    }
+    if (aV < bV) return sortConfig.direction === "asc" ? -1 : 1;
+    if (aV > bV) return sortConfig.direction === "asc" ?  1 : -1;
+    return 0;
+  });
+}, [cases, filterConfig, sortConfig]);
 
  
 
@@ -777,13 +771,101 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
     "Assigned Officers": "18%"
   };
 
-  // filter + sort state
-  const [assignedFilterConfig, setAssignedFilterConfig] = useState({
-    id: "", description: "", caseName: "", assignedOfficers: ""
+  // filter + sort state for Assigned Leads
+const [assignedFilterConfig,   setAssignedFilterConfig]   = useState({ id: [], description: [], caseName: [], assignedOfficers: [] });
+const [assignedSortConfig,     setAssignedSortConfig]     = useState({ key: null, direction: 'asc' });
+const [openAssignedFilter,     setOpenAssignedFilter]     = useState(null);
+const [tempAssignedSelections, setTempAssignedSelections] = useState({});
+const popupAssignedRefs = useRef({});
+
+const distinctAssigned = useMemo(() => {
+  const map = {
+    id: new Set(),
+    description: new Set(),
+    caseName: new Set(),
+    assignedOfficers: new Set(),
+  };
+  leads.assignedLeads.forEach(lead => {
+    map.id.add(String(lead.id));
+    map.description.add(lead.description);
+    map.caseName.add(lead.caseName);
+    lead.assignedOfficers.forEach(o => map.assignedOfficers.add(o));
   });
-  const [assignedSortConfig, setAssignedSortConfig] = useState({ key: null, direction: "asc" });
-  const [openAssignedFilter, setOpenAssignedFilter] = useState(null);
-  const popupAssignedRefs = useRef({});
+  return Object.fromEntries(
+    Object.entries(map).map(([k, set]) => [k, Array.from(set)])
+  );
+}, [leads.assignedLeads]);
+
+const filteredAssignedLeads = useMemo(() => {
+  // 1) filter
+  let data = leads.assignedLeads.filter(lead => {
+    return Object.entries(assignedFilterConfig).every(([key, sel]) => {
+      if (!sel.length) return true;
+      let cell = lead[key];
+      if (Array.isArray(cell)) {
+        return cell.some(v => sel.includes(v));
+      }
+      return sel.includes(String(cell));
+    });
+  });
+  // 2) sort
+  const { key, direction } = assignedSortConfig;
+  if (key) {
+    data = data.slice().sort((a, b) => {
+      let aV = a[key], bV = b[key];
+      if (Array.isArray(aV)) aV = aV[0];
+      if (Array.isArray(bV)) bV = bV[0];
+      return direction === 'asc'
+        ? String(aV).localeCompare(String(bV))
+        : String(bV).localeCompare(String(aV));
+    });
+  }
+  return data;
+}, [leads.assignedLeads, assignedFilterConfig, assignedSortConfig]);
+
+// 1) Track filter text per assigned-column
+const [assignedFilterSearch, setAssignedFilterSearch] = useState({});
+const handleAssignedFilterSearch = (dataKey, txt) =>
+  setAssignedFilterSearch(fs => ({ ...fs, [dataKey]: txt }));
+
+// 2) “Select all” checkbox logic
+const assignedAllChecked = dataKey => {
+  const sel = tempAssignedSelections[dataKey] || [];
+  return sel.length === (distinctAssigned[dataKey] || []).length;
+};
+const toggleAssignedSelectAll = dataKey => {
+  const all = distinctAssigned[dataKey] || [];
+  setTempAssignedSelections(ts => ({
+    ...ts,
+    [dataKey]: ts[dataKey]?.length === all.length ? [] : [...all]
+  }));
+};
+
+// 3) Individual checkbox toggle
+const handleAssignedCheckboxToggle = (dataKey, v) =>
+  setTempAssignedSelections(ts => {
+    const sel = ts[dataKey] || [];
+    return {
+      ...ts,
+      [dataKey]: sel.includes(v)
+        ? sel.filter(x => x !== v)
+        : [...sel, v]
+    };
+  });
+
+// 4) Apply the pending selections into your filterConfig
+const applyAssignedFilter = dataKey =>
+  setAssignedFilterConfig(fc => ({
+    ...fc,
+    [dataKey]: tempAssignedSelections[dataKey] || []
+  }));
+
+// 5) A generic onSort helper that takes you into your assignedSortConfig
+const sortAssignedColumn = (dataKey, direction) =>
+  setAssignedSortConfig({ key: dataKey, direction });
+
+
+
 
   // handle toggles
   const handleFilterAssignedClick = col => {
@@ -796,23 +878,6 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
       direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc"
     }));
   };
-
-  // distinct values for each filter dropdown
-  const distinctAssigned = useMemo(() => {
-  const map = Object.fromEntries(assignedColumns.map(c => [c, new Set()]));
-  leads.assignedLeads.forEach(lead => {
-    assignedColumns.forEach(col => {
-      const key = assignedColKey[col];
-      const val = lead[key];
-      if (Array.isArray(val)) val.forEach(v => map[col].add(v));
-      else map[col].add(String(val));
-    });
-  });
-  return Object.fromEntries(
-    Object.entries(map).map(([c, set]) => [c, Array.from(set)])
-  );
-}, [leads.assignedLeads]);
-
 
   // sorted + filtered data
   const sortedAssignedLeads = useMemo(() => {
@@ -851,53 +916,114 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
-  
+
+  const [filterSearch, setFilterSearch] = useState({})
+const [tempFilterSelections, setTempFilterSelections] = useState({})
+
+  // 3) Sort header A→Z / Z→A
+const sortColumn = (dataKey, direction) => {
+  setSortConfig({ key: dataKey, direction });
+};
+
+// track search by dataKey
+const handleFilterSearch = (dataKey, txt) =>
+  setFilterSearch(fs => ({ ...fs, [dataKey]: txt }));
+
+// toggle all by dataKey
+const toggleSelectAll = (dataKey) => {
+  const all = distinctValues[dataKey];
+  setTempFilterSelections(ts => ({ ...ts, [dataKey]: ts[dataKey]?.length === all.length ? [] : [...all] }));
+};
+
+// check “all” by dataKey
+const allChecked = (dataKey) => {
+  const sel = tempFilterSelections[dataKey] || [];
+  return sel.length === (distinctValues[dataKey] || []).length;
+};
+
+// single‐value toggle
+const handleCheckboxToggle = (dataKey, v) => {
+  setTempFilterSelections(ts => {
+    const sel = ts[dataKey] || [];
+    return {
+      ...ts,
+      [dataKey]: sel.includes(v)
+        ? sel.filter(x => x !== v)
+        : [...sel, v]
+    };
+  });
+};
+
+// apply filter by dataKey
+const applyFilter = (dataKey) => {
+  setFilterConfig(fc => ({ ...fc, [dataKey]: tempFilterSelections[dataKey] || [] }));
+  setOpenFilter(null);
+};
+
+// 9) Cancel → drop all temp selections
+const cancelFilter = () => {
+  setTempFilterSelections({})
+  setFilterSearch({})
+  setOpenFilter(null)
+}
+
+// Filter and Sort for pending lead returns 
+
+// State for filters & sorts on the Pending Returns tab
+const [pendingFilterConfig,   setPendingFilterConfig]   = useState({
+  id: [], description: [], caseName: []
+});
+const [pendingSortConfig,     setPendingSortConfig]     = useState({
+  key: null, direction: 'asc'
+});
+const [openPendingFilter,     setOpenPendingFilter]     = useState(null);
+const [tempPendingSelections, setTempPendingSelections] = useState({});
+const popupPendingRefs = useRef({});
+// Track search text if your Filter needs it
+const [pendingFilterSearch,   setPendingFilterSearch]   = useState({});
+const handlePendingFilterSearch = (dk, txt) =>
+  setPendingFilterSearch(ps => ({ ...ps, [dk]: txt }));
+
+const distinctPending = useMemo(() => {
+  const map = { id: new Set(), description: new Set(), caseName: new Set() };
+  leads.pendingLeadReturns.forEach(l => {
+    map.id.add(String(l.id));
+    map.description.add(l.description);
+    map.caseName.add(l.caseName);
+  });
+  return Object.fromEntries(
+    Object.entries(map).map(([k, s]) => [k, [...s]])
+  );
+}, [leads.pendingLeadReturns]);
+
+const sortedPendingReturns = useMemo(() => {
+  let data = leads.pendingLeadReturns.filter(l =>
+    Object.entries(pendingFilterConfig).every(([key, sel]) => {
+      if (!sel.length) return true;
+      const cell = key === 'id' ? String(l[key]) : l[key];
+      if (Array.isArray(cell)) return cell.some(v => sel.includes(v));
+      return sel.includes(cell);
+    })
+  );
+  const { key, direction } = pendingSortConfig;
+  if (key) {
+    data = data.slice().sort((a, b) => {
+      const aV = Array.isArray(a[key]) ? a[key][0] : a[key];
+      const bV = Array.isArray(b[key]) ? b[key][0] : b[key];
+      return direction === 'asc'
+        ? String(aV).localeCompare(String(bV))
+        : String(bV).localeCompare(String(aV));
+    });
+  }
+  return data;
+}, [leads.pendingLeadReturns, pendingFilterConfig, pendingSortConfig]);
+
+
+
 
   return (
     <div className = "main-page-bodyhp">
     <Navbar />
-    {/* <div className="main-container"> */}
-        {/* Pass down props for leads, cases, and modal visibility */}
-        {/* <SideBar
-          leads={leads} // Pass leads if needed
-          cases={cases}
-          setActiveTab={setActiveTab}
-          onShowCaseSelector={handleShowCaseSelector} // Pass handler
-        /> */}
-         {/* <div className="above-sec-MP"> */}
-        {/* <div className="logo-sec">
-          <img
-            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} 
-            alt="Police Department Logo"
-            className="police-logo-main-page"
-          />
-          <h1 className="main-page-heading"> PIMS</h1>
-        </div> */}
-        {/* </div> */}
-        {/* <div className="top-controlsMP"> */}
-            {/* <div className="search-container">
-                    <i className="fa-solid fa-magnifying-glass"></i>
-                    <input
-                      type="text"
-                      className="search-input"
-                      placeholder="Search Cases"
-                    />
-              </div> */}
-              {/* <div className="slidebartopcontrolMP">
-              <SlideBar
-              onAddCase={(newCase) => addCase(newCase)}
-              buttonClass="custom-add-case-btn1"
-            />
-            </div> */}
-          {/* </div> */}
-        {/* <div className="content-container"> */}
-          {/* {showCaseSelector && (
-            <CaseSelector
-              cases={cases}
-              navigateTo={navigateTo}
-              onClose={handleCloseCaseSelector} // Pass close functionality
-            />
-          )} */}
            <div className="main-page-contenthp">
            <div className="main-page-abovepart">
 
@@ -915,7 +1041,7 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
       {/* </div> */}
   </div>
   </div>
-      <div className="left-content">
+      <div className="left-content1">
       <div className="stats-bar">
         
           <span
@@ -953,59 +1079,31 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
             <table className="leads-table">
               <thead>
                 <tr>
-                  {["Case No.","Case Name","Role"].map(col => {
-                    const key = colKey[col];
+                  {["Case No.","Case Name","Created At","Role"].map(col => {
+                    const dataKey = colKey[col];
                     return (
-                      <th key={col} className="column-header1" style={{ width: columnWidths[col] }}>
-                          <div className="header-title">{col}</div>
-                       <div className="header-controls"  ref={el => (popupRefs.current[col] = el)}>
-    <button onClick={() => handleFilterClick(col)}>
-      <img src={`${process.env.PUBLIC_URL}/Materials/filter.png`} className="icon-image"/>
-    </button>
-     {openFilter === col && (
-                            <div className="filter-popup">
-                              <select
-                                value={filterConfig[key]}
-                                onChange={e =>
-                                  setFilterConfig(cfg => ({
-                                    ...cfg,
-                                    [key]: e.target.value
-                                  }))
-                                }
-                              >
-                                <option value="">All</option>
-                                {distinctValues[key].map(v => (
-                                  <option key={v} value={v}>{v}</option>
-                                ))}
-                              </select>
-                              <div className="filter-popup-buttons">
-                                <button onClick={() => setOpenFilter(null)}>Apply</button>
-                                <button onClick={() => {
-                                  setFilterConfig(cfg => ({ ...cfg, [key]: "" }));
-                                  setOpenFilter(null);
-                                }}>Clear</button>
-                              </div>
-                            </div>
-                          )}
-
-     <button onClick={() => handleSort(col)} >
-                            {sortConfig.key === key
-                              ? (sortConfig.direction === "asc" ?  <img 
-                                src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
-                                alt="Sort Icon"
-                                className="icon-image"
-                              /> :  <img 
-                              src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
-                              alt="Sort Icon"
-                              className="icon-image"
-                            />)
-                              :  <img 
-                              src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
-                              alt="Sort Icon"
-                              className="icon-image"
-                            />}
-                          </button>
-  </div>
+                      <th key={col} className="column-header1" style={{ width: columnWidths[col] , position: 'relative' }}>
+                          <div className="header-title">{col}
+                           <span  ref={el => (popupRefs.current[col] = el)}> 
+                               <button onClick={() => setOpenFilter(prev => prev===dataKey ? null : dataKey)}>
+                                 <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className="icon-image" />
+                               </button>
+                               <Filter
+                                dataKey={dataKey}
+                                distinctValues={distinctValues}
+                                open={openFilter === dataKey}
+                                searchValue={filterSearch[dataKey] || ''}
+                                selections={tempFilterSelections[dataKey] || []}
+                                onSort={sortColumn}
+                                onSearch={handleFilterSearch}
+                                allChecked={allChecked}
+                                onToggleAll={toggleSelectAll}
+                                onToggleOne={handleCheckboxToggle}
+                                onApply={applyFilter}
+                                onCancel={() => setOpenFilter(null)}
+                              />
+                           </span>
+                          </div>
                       </th>
                     );
                   })}
@@ -1018,6 +1116,7 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                     <tr key={c.id}>
                       <td>{c.id}</td>
                       <td>{c.title}</td>
+                      <td>{formatDate(c.createdAt)}</td> 
                       <td>{c.role}</td>
                       <td>
                         <button
@@ -1026,12 +1125,21 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
                         >
                           View
                         </button>
+
+                        { (c.role === "Detective Supervisor" || c.role === "Case Manager") && (
+                          <button
+                            className="case-close-btn"
+                            onClick={() => handleCloseCase(c.id, c.title)}
+                          >
+                            Close Case
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4} style={{ textAlign: "center" }}>
+                    <td colSpan={5} style={{ textAlign: "center" }}>
                       No cases found.
                     </td>
                   </tr>
@@ -1055,66 +1163,39 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
             <table className="leads-table">
               <thead>
                 <tr>
-                  {assignedColumns.map(col => (
-                    <th
-                      key={col}
-                      className="column-header1"
-                      style={{ width: assignedColWidths[col] }}
-                    >
-                      {col}
-                      <span
-                        className="column-controls1"
-                        ref={el => (popupAssignedRefs.current[col] = el)}
-                      >
-                        <button onClick={() => handleFilterAssignedClick(col)}>
-                          <img
-                            src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
-                            alt="Filter"
-                            className="icon-image"
-                          />
-                        </button>
-                        {openAssignedFilter === col && (
-                          <div className="filter-popup">
-                            <select
-                              value={assignedFilterConfig[assignedColKey[col]]}
-                              onChange={e =>
-                                setAssignedFilterConfig(cfg => ({
-                                  ...cfg,
-                                  [assignedColKey[col]]: e.target.value
-                                }))
-                              }
-                            >
-                              <option value="">All</option>
-                              {distinctAssigned[col].map(v => (
-                                <option key={v} value={v}>{v}</option>
-                              ))}
-                            </select>
-                            <div className="filter-popup-buttons">
-                              <button onClick={() => setOpenAssignedFilter(null)}>
-                                Apply
-                              </button>
-                              <button onClick={() => {
-                                setAssignedFilterConfig(cfg => ({
-                                  ...cfg,
-                                  [assignedColKey[col]]: ""
-                                }));
-                                setOpenAssignedFilter(null);
-                              }}>
-                                Clear
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                        <button onClick={() => handleSortAssigned(col)}>
-                          <img
-                            src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
-                            alt="Sort"
-                            className="icon-image"
-                          />
-                        </button>
-                      </span>
-                    </th>
-                  ))}
+                  {assignedColumns.map(col => {
+  const dataKey = assignedColKey[col]; // e.g. "id", "description", etc.
+  return (
+    <th key={col} style={{ width: assignedColWidths[col] }}>
+      <div className="header-title">
+        {col}
+        <span ref={el => (popupAssignedRefs.current[col] = el)}>
+          <button onClick={() => setOpenAssignedFilter(prev => prev === dataKey ? null : dataKey ) }>
+                        <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className="icon-image"/>
+                      </button>
+          <Filter
+                        dataKey={dataKey}
+                        distinctValues={distinctAssigned}
+                        open={openAssignedFilter === dataKey}
+                        searchValue={assignedFilterSearch[dataKey] || ''}
+                        selections={tempAssignedSelections[dataKey] || []}
+                        onSort={sortAssignedColumn}
+                        onSearch={handleAssignedFilterSearch}
+                        allChecked={assignedAllChecked}
+                        onToggleAll={toggleAssignedSelectAll}
+                        onToggleOne={handleAssignedCheckboxToggle}
+                        onApply={() => {
+                          applyAssignedFilter(dataKey);
+                          setOpenAssignedFilter(null);
+                        }}
+                        onCancel={() => setOpenAssignedFilter(null)}
+                      />
+        </span>
+      </div>
+    </th>
+  );
+})}
+                     
                   <th style={{ width: "10%" }}></th>
                 </tr>
               </thead>
@@ -1222,9 +1303,57 @@ const [sortConfig,   setSortConfig]   = useState({ key: null, direction: 'asc' }
 <table className="leads-table" style={{ minWidth: "1000px" }}>
               <thead>
                 <tr>
-                  <th style={{ width: "10%" }}>Lead No.</th>
-                  <th>Lead Name</th>
-                  <th style={{ width: "20%" }}>Case Name</th>
+    {["Lead No.","Lead Name","Case Name"].map(col => {
+      // map human column to your dataKey
+      const keyMap = { "Lead No.": "id", "Lead Name": "description", "Case Name":"caseName" };
+      const dataKey = keyMap[col];
+      return (
+        <th key={col} className="column-header1">
+          <div className="header-title">
+            {col}
+            <span ref={el => popupPendingRefs.current[col] = el}>
+              <button
+                onClick={() =>
+                  setOpenPendingFilter(prev => prev === dataKey ? null : dataKey)
+                }
+              >
+                <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className="icon-image" />
+              </button>
+              <Filter
+                dataKey={dataKey}
+                distinctValues={distinctPending}
+                open={openPendingFilter === dataKey}
+                searchValue={pendingFilterSearch[dataKey] || ''}
+                selections={tempPendingSelections[dataKey] || []}
+                onSearch={handlePendingFilterSearch}
+                allChecked={arr => (tempPendingSelections[arr] || []).length === (distinctPending[arr]||[]).length}
+                onToggleAll={dk => {
+                  const all = distinctPending[dk] || [];
+                  setTempPendingSelections(ts => ({
+                    ...ts,
+                    [dk]: ts[dk]?.length === all.length ? [] : [...all]
+                  }));
+                }}
+                onToggleOne={(dk, v) => {
+                  setTempPendingSelections(ts => {
+                    const sel = ts[dk]||[];
+                    return { ...ts, [dk]: sel.includes(v) ? sel.filter(x=>x!==v) : [...sel, v] };
+                  });
+                }}
+                onApply={dk => {
+                  setPendingFilterConfig(fc => ({
+                    ...fc,
+                    [dk]: tempPendingSelections[dk] || []
+                  }));
+                  setOpenPendingFilter(null);
+                }}
+                onCancel={() => setOpenPendingFilter(null)}
+              />
+            </span>
+          </div>
+        </th>
+      );
+    })}
                   <th style={{ width: "10%" }}></th>
                 </tr>
               </thead>

@@ -1,63 +1,103 @@
-.filter-container-tailwind {
-    display: flex;
-    flex-direction: row; 
-    gap: 10px; 
-    background-color: #f3f4f6;
-    padding: 10px;
-    border-radius: 6px;
-    align-items: center;
-    justify-content: center;
-    margin: 50px; 
-    min-width: 90%;
-    flex-wrap: wrap; /* Ensures items stay in one row */
-    overflow-x: auto; /* Allows horizontal scrolling if needed */
+/* —— the main popup panel —— */
+.filter-popupHome {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: 100%; left: 0;
+  width: 280px;             /* a bit wider */
+  max-height: 360px;        /* a bit taller */
+  background: #fff;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  font-size: 20px;           /* larger overall text */
+  z-index: 3000;
+  margin: 10px;
+  padding: 10px;
 }
 
-
-.filter-cat {
-    min-width: 200px;
-    min-height: 50px; 
-    display:flex;
-    align-items: center;
-    flex: 0 0 auto; /* Prevents items from growing or shrinking */
+/* —— header row with full labels —— */
+.fp-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+  color: black;
+}
+.fp-header .fp-btn {
+  flex: 1;
+  padding: 8px 12px;         /* more tap-area */
+  font-size: 14px;
+  background: none;
+  border: none;
+  /* text-align: left; */
+  cursor: pointer;
+  color: black;
+}
+.fp-header .fp-btn:hover {
+  background: #f5f5f5;
 }
 
-.filter-cat select{
-    min-width: 200px;
-    min-height: 50px; 
-    display:flex;
-    align-items: center;
+/* —— search box —— */
+.fp-search {
+  /* margin: 8px;
+  padding: 8px; */
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
 
-.filter-dropdown {
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
-    background-color: white;
-    font-size: 20px;
-    cursor: pointer;
-    width: 150px; 
-    appearance: none; 
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    text-align: left;
+/* —— scrollable checklist —— */
+.fp-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: 4px 4px;
+}
+.fp-list::-webkit-scrollbar {
+  width: 6px;
+}
+.fp-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+.fp-option {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 6px 0;
+  font-size: 16px;
+  gap: 10px;
+}
+.fp-option input {
+  transform: scale(1.2);
+  min-height: 20px;
+  min-width: 20px;
+  margin: 0;
 }
 
-
-.filter-buttonNC {
-    background-color: rgba(41, 41, 139, 0.795); 
-    color: white;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    border: none;
-    font-weight: bold;
-    font-size: 20px;
-    transition: background-color 0.2s ease-in-out;
-    text-align: center;
-    white-space: nowrap; 
+/* —— footer OK / Cancel —— */
+.fp-footer {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #eee;
+  padding: 8px 12px;
+  color:black;
 }
+.fp-apply,
+.fp-cancel {
+  margin-left: 8px;
+  padding: 6px 14px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  background: #f9f9f9;
+  cursor: pointer;
+    color:black;
 
-.filter-buttonNC:hover {
-    background-color: rgb(96, 96, 179);
+}
+.fp-apply:hover,
+.fp-cancel:hover {
+  background: #ececec;
 }

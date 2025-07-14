@@ -32,6 +32,51 @@ export const LRFinish = () => {
   const [loading, setLoading] = useState(true);
   const [leadData, setLeadData] = useState({});
   const [isDisabled, setIsDisabled] = useState(true);
+  const [onAlertConfirm, setOnAlertConfirm] = useState(() => () => {});
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [closeReason, setCloseReason]       = useState("");
+  const [closing, setClosing]               = useState(false);
+
+  const handleConfirmClose = async () => {
+    if (!closeReason.trim()) {
+      setAlertMessage("Please provide a reason before closing the lead.");
+      setAlertOpen(true);
+      return;
+    }
+
+    setClosing(true);
+    try {
+      const token = localStorage.getItem("token");
+      // adjust endpoint & payload as needed
+      await api.put(
+        `/api/lead/status/close`,
+        {
+          leadNo:      selectedLead.leadNo,
+          description: selectedLead.leadName,
+          caseNo:      selectedCase.caseNo,
+          caseName:    selectedCase.caseName,
+          reason:      closeReason
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // update UI
+      setLeadStatus("Closed");
+      setSelectedLead(prev => ({ ...prev, leadStatus: "Closed" }));
+      setShowCloseModal(false);
+      setCloseReason("");
+      setAlertMessage("Lead closed successfully.");
+      setAlertOpen(true);
+    } catch (err) {
+      console.error("Error closing lead:", err);
+      setAlertMessage("Error closing lead. See console for details.");
+      setAlertOpen(true);
+    } finally {
+      setClosing(false);
+    }
+  };
+
+
   const getCasePageRoute = () => {
     if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
     return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
@@ -418,8 +463,6 @@ useEffect(() => {
   };
 
   const handleSubmitReport = async () => {
-    try {
-      const token = localStorage.getItem("token");
 
       if (!selectedLead || !selectedCase) {
         alert("No lead or case selected!");
@@ -427,6 +470,23 @@ useEffect(() => {
          setAlertOpen(true);
         return;
       }
+
+
+     setAlertMessage(
+    "Once you submit, no assigned investigator can edit this anymore.\n\n" +
+    "Are you absolutely sure you want to submit the lead return for Case Manager approval?"
+  );
+  // store the “real submit” as the confirm callback
+  setOnAlertConfirm(() => async () => {
+    setAlertOpen(false);
+    actuallyDoSubmitReport();
+  });
+  setAlertOpen(true);
+};
+
+const actuallyDoSubmitReport = async () => {
+  try {
+    const token = localStorage.getItem("token");
 
       const body = {
         leadNo: selectedLead.leadNo,
@@ -621,6 +681,15 @@ useEffect(() => {
               onConfirm={() => setAlertOpen(false)}
               onClose={()   => setAlertOpen(false)}
             />
+
+      <AlertModal
+  isOpen={alertOpen}
+  title="Confirm Submission"
+  message={alertMessage}
+  onConfirm={() => onAlertConfirm()}
+  onClose={() => setAlertOpen(false)}
+/>
+
 
       {/* Top Menu */}
       {/* <div className="top-menu">
@@ -1116,11 +1185,17 @@ Case Page
   </div>
 )}
 
-        {selectedLead?.leadStatus !== "Completed" && (
+        {selectedLead?.leadStatus !== "Completed" && selectedLead?.leadStatus !== "Closed" &&(
   isCaseManager ? (
     <div className="form-buttons-finish">
       <button className="save-btn1" onClick={() => submitReturnAndUpdate("complete")}>Approve</button>
       <button className="save-btn1" onClick={() => submitReturnAndUpdate("pending")}>Return</button>
+       <button
+      className="save-btn1 close-lead-btn"
+      onClick={() => setShowCloseModal(true)}
+    >
+      Close
+    </button>
     </div>
   ) : (
     <div className="form-buttons-finish">
@@ -1144,6 +1219,38 @@ Case Page
 
         </div>
         </div>
+
+        {/* Close‐Lead Modal */}
+{showCloseModal && (
+  <div className="close-modal-backdrop">
+    <div className="close-modal">
+      <h3>Reason for Closing Lead</h3>
+      <textarea
+        rows={4}
+        value={closeReason}
+        onChange={e => setCloseReason(e.target.value)}
+        placeholder="Please explain why you're closing this lead"
+      />
+      <div className="modal-buttons">
+        <button
+          className="save-btn1"
+          onClick={handleConfirmClose}
+          disabled={closing}
+        >
+          {closing ? "Closing" : "Confirm"}
+        </button>
+        <button
+          className="save-btn1"
+          onClick={() => setShowCloseModal(false)}
+          disabled={closing}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
    
      
      <FootBar1
