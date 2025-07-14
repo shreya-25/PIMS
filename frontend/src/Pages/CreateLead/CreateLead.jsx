@@ -802,7 +802,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
                 </div> */}
                 <SideBar activePage = "CasePageManager" />
 
-                <div className="left-content1">
+                <div className="left-content">
                 <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
 
 

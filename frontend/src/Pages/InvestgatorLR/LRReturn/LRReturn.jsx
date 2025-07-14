@@ -713,6 +713,7 @@ Case Page
 <div className = "content-subsection">
     
       <div className = "timeline-form-sec">
+        <div className = "LR-EnteringContentBox">
       <div className = "content-to-add-first-row">
 
       <div className="form-row4">
@@ -754,7 +755,7 @@ Case Page
         type = "text"
           value={returnData.results}
           onChange={(e) => handleInputChange("results", e.target.value)}
-          placeholder="Enter return details"
+          placeholder="Enter narrative"
         ></textarea>
       </div>
 
@@ -765,6 +766,7 @@ Case Page
         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
         <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
         <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
+      </div>
       </div>
       </div>
 

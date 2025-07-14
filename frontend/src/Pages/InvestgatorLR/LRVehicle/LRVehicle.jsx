@@ -714,6 +714,7 @@ Case Page
 
         {/* Vehicle Form */}
         <div className = "timeline-form-sec">
+            <div className = "LR-EnteringContentBox">
         <div className="vehicle-form">
           <div className="form-row4">
           <label>Narrative Id*</label>
@@ -859,6 +860,7 @@ Case Page
           <button className="next-btn">Next</button>
           <button className="save-btn">Save</button>
           <button className="cancel-btn">Cancel</button> */}
+          </div>
         </div>
 
              {/* Vehicle Table */}

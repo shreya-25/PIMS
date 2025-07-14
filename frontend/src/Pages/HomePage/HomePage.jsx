@@ -31,6 +31,7 @@ export const HomePage = () => {
     const { setSelectedCase, setToken, setSelectedLead } = useContext(CaseContext);
     const signedInOfficer = localStorage.getItem("loggedInUser");
 
+
     const [cases, setCases] = useState([]);
 
     const formatDate = (dateString) => {
@@ -770,13 +771,101 @@ const sortedCases = useMemo(() => {
     "Assigned Officers": "18%"
   };
 
-  // filter + sort state
-  const [assignedFilterConfig, setAssignedFilterConfig] = useState({
-    id: "", description: "", caseName: "", assignedOfficers: ""
+  // filter + sort state for Assigned Leads
+const [assignedFilterConfig,   setAssignedFilterConfig]   = useState({ id: [], description: [], caseName: [], assignedOfficers: [] });
+const [assignedSortConfig,     setAssignedSortConfig]     = useState({ key: null, direction: 'asc' });
+const [openAssignedFilter,     setOpenAssignedFilter]     = useState(null);
+const [tempAssignedSelections, setTempAssignedSelections] = useState({});
+const popupAssignedRefs = useRef({});
+
+const distinctAssigned = useMemo(() => {
+  const map = {
+    id: new Set(),
+    description: new Set(),
+    caseName: new Set(),
+    assignedOfficers: new Set(),
+  };
+  leads.assignedLeads.forEach(lead => {
+    map.id.add(String(lead.id));
+    map.description.add(lead.description);
+    map.caseName.add(lead.caseName);
+    lead.assignedOfficers.forEach(o => map.assignedOfficers.add(o));
   });
-  const [assignedSortConfig, setAssignedSortConfig] = useState({ key: null, direction: "asc" });
-  const [openAssignedFilter, setOpenAssignedFilter] = useState(null);
-  const popupAssignedRefs = useRef({});
+  return Object.fromEntries(
+    Object.entries(map).map(([k, set]) => [k, Array.from(set)])
+  );
+}, [leads.assignedLeads]);
+
+const filteredAssignedLeads = useMemo(() => {
+  // 1) filter
+  let data = leads.assignedLeads.filter(lead => {
+    return Object.entries(assignedFilterConfig).every(([key, sel]) => {
+      if (!sel.length) return true;
+      let cell = lead[key];
+      if (Array.isArray(cell)) {
+        return cell.some(v => sel.includes(v));
+      }
+      return sel.includes(String(cell));
+    });
+  });
+  // 2) sort
+  const { key, direction } = assignedSortConfig;
+  if (key) {
+    data = data.slice().sort((a, b) => {
+      let aV = a[key], bV = b[key];
+      if (Array.isArray(aV)) aV = aV[0];
+      if (Array.isArray(bV)) bV = bV[0];
+      return direction === 'asc'
+        ? String(aV).localeCompare(String(bV))
+        : String(bV).localeCompare(String(aV));
+    });
+  }
+  return data;
+}, [leads.assignedLeads, assignedFilterConfig, assignedSortConfig]);
+
+// 1) Track filter text per assigned-column
+const [assignedFilterSearch, setAssignedFilterSearch] = useState({});
+const handleAssignedFilterSearch = (dataKey, txt) =>
+  setAssignedFilterSearch(fs => ({ ...fs, [dataKey]: txt }));
+
+// 2) “Select all” checkbox logic
+const assignedAllChecked = dataKey => {
+  const sel = tempAssignedSelections[dataKey] || [];
+  return sel.length === (distinctAssigned[dataKey] || []).length;
+};
+const toggleAssignedSelectAll = dataKey => {
+  const all = distinctAssigned[dataKey] || [];
+  setTempAssignedSelections(ts => ({
+    ...ts,
+    [dataKey]: ts[dataKey]?.length === all.length ? [] : [...all]
+  }));
+};
+
+// 3) Individual checkbox toggle
+const handleAssignedCheckboxToggle = (dataKey, v) =>
+  setTempAssignedSelections(ts => {
+    const sel = ts[dataKey] || [];
+    return {
+      ...ts,
+      [dataKey]: sel.includes(v)
+        ? sel.filter(x => x !== v)
+        : [...sel, v]
+    };
+  });
+
+// 4) Apply the pending selections into your filterConfig
+const applyAssignedFilter = dataKey =>
+  setAssignedFilterConfig(fc => ({
+    ...fc,
+    [dataKey]: tempAssignedSelections[dataKey] || []
+  }));
+
+// 5) A generic onSort helper that takes you into your assignedSortConfig
+const sortAssignedColumn = (dataKey, direction) =>
+  setAssignedSortConfig({ key: dataKey, direction });
+
+
+
 
   // handle toggles
   const handleFilterAssignedClick = col => {
@@ -789,23 +878,6 @@ const sortedCases = useMemo(() => {
       direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc"
     }));
   };
-
-  // distinct values for each filter dropdown
-  const distinctAssigned = useMemo(() => {
-  const map = Object.fromEntries(assignedColumns.map(c => [c, new Set()]));
-  leads.assignedLeads.forEach(lead => {
-    assignedColumns.forEach(col => {
-      const key = assignedColKey[col];
-      const val = lead[key];
-      if (Array.isArray(val)) val.forEach(v => map[col].add(v));
-      else map[col].add(String(val));
-    });
-  });
-  return Object.fromEntries(
-    Object.entries(map).map(([c, set]) => [c, Array.from(set)])
-  );
-}, [leads.assignedLeads]);
-
 
   // sorted + filtered data
   const sortedAssignedLeads = useMemo(() => {
@@ -895,6 +967,60 @@ const cancelFilter = () => {
   setOpenFilter(null)
 }
 
+// Filter and Sort for pending lead returns 
+
+// State for filters & sorts on the Pending Returns tab
+const [pendingFilterConfig,   setPendingFilterConfig]   = useState({
+  id: [], description: [], caseName: []
+});
+const [pendingSortConfig,     setPendingSortConfig]     = useState({
+  key: null, direction: 'asc'
+});
+const [openPendingFilter,     setOpenPendingFilter]     = useState(null);
+const [tempPendingSelections, setTempPendingSelections] = useState({});
+const popupPendingRefs = useRef({});
+// Track search text if your Filter needs it
+const [pendingFilterSearch,   setPendingFilterSearch]   = useState({});
+const handlePendingFilterSearch = (dk, txt) =>
+  setPendingFilterSearch(ps => ({ ...ps, [dk]: txt }));
+
+const distinctPending = useMemo(() => {
+  const map = { id: new Set(), description: new Set(), caseName: new Set() };
+  leads.pendingLeadReturns.forEach(l => {
+    map.id.add(String(l.id));
+    map.description.add(l.description);
+    map.caseName.add(l.caseName);
+  });
+  return Object.fromEntries(
+    Object.entries(map).map(([k, s]) => [k, [...s]])
+  );
+}, [leads.pendingLeadReturns]);
+
+const sortedPendingReturns = useMemo(() => {
+  let data = leads.pendingLeadReturns.filter(l =>
+    Object.entries(pendingFilterConfig).every(([key, sel]) => {
+      if (!sel.length) return true;
+      const cell = key === 'id' ? String(l[key]) : l[key];
+      if (Array.isArray(cell)) return cell.some(v => sel.includes(v));
+      return sel.includes(cell);
+    })
+  );
+  const { key, direction } = pendingSortConfig;
+  if (key) {
+    data = data.slice().sort((a, b) => {
+      const aV = Array.isArray(a[key]) ? a[key][0] : a[key];
+      const bV = Array.isArray(b[key]) ? b[key][0] : b[key];
+      return direction === 'asc'
+        ? String(aV).localeCompare(String(bV))
+        : String(bV).localeCompare(String(aV));
+    });
+  }
+  return data;
+}, [leads.pendingLeadReturns, pendingFilterConfig, pendingSortConfig]);
+
+
+
+
   return (
     <div className = "main-page-bodyhp">
     <Navbar />
@@ -956,7 +1082,7 @@ const cancelFilter = () => {
                   {["Case No.","Case Name","Created At","Role"].map(col => {
                     const dataKey = colKey[col];
                     return (
-                      <th key={col} className="column-header1" style={{ width: columnWidths[col] }}>
+                      <th key={col} className="column-header1" style={{ width: columnWidths[col] , position: 'relative' }}>
                           <div className="header-title">{col}
                            <span  ref={el => (popupRefs.current[col] = el)}> 
                                <button onClick={() => setOpenFilter(prev => prev===dataKey ? null : dataKey)}>
@@ -1037,66 +1163,39 @@ const cancelFilter = () => {
             <table className="leads-table">
               <thead>
                 <tr>
-                  {assignedColumns.map(col => (
-                    <th
-                      key={col}
-                      className="column-header1"
-                      style={{ width: assignedColWidths[col] }}
-                    >
-                      {col}
-                      <span
-                        className="column-controls1"
-                        ref={el => (popupAssignedRefs.current[col] = el)}
-                      >
-                        <button onClick={() => handleFilterAssignedClick(col)}>
-                          <img
-                            src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
-                            alt="Filter"
-                            className="icon-image"
-                          />
-                        </button>
-                        {openAssignedFilter === col && (
-                          <div className="filter-popup">
-                            <select
-                              value={assignedFilterConfig[assignedColKey[col]]}
-                              onChange={e =>
-                                setAssignedFilterConfig(cfg => ({
-                                  ...cfg,
-                                  [assignedColKey[col]]: e.target.value
-                                }))
-                              }
-                            >
-                              <option value="">All</option>
-                              {distinctAssigned[col].map(v => (
-                                <option key={v} value={v}>{v}</option>
-                              ))}
-                            </select>
-                            <div className="filter-popup-buttons">
-                              <button onClick={() => setOpenAssignedFilter(null)}>
-                                Apply
-                              </button>
-                              <button onClick={() => {
-                                setAssignedFilterConfig(cfg => ({
-                                  ...cfg,
-                                  [assignedColKey[col]]: ""
-                                }));
-                                setOpenAssignedFilter(null);
-                              }}>
-                                Clear
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                        <button onClick={() => handleSortAssigned(col)}>
-                          <img
-                            src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
-                            alt="Sort"
-                            className="icon-image"
-                          />
-                        </button>
-                      </span>
-                    </th>
-                  ))}
+                  {assignedColumns.map(col => {
+  const dataKey = assignedColKey[col]; // e.g. "id", "description", etc.
+  return (
+    <th key={col} style={{ width: assignedColWidths[col] }}>
+      <div className="header-title">
+        {col}
+        <span ref={el => (popupAssignedRefs.current[col] = el)}>
+          <button onClick={() => setOpenAssignedFilter(prev => prev === dataKey ? null : dataKey ) }>
+                        <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className="icon-image"/>
+                      </button>
+          <Filter
+                        dataKey={dataKey}
+                        distinctValues={distinctAssigned}
+                        open={openAssignedFilter === dataKey}
+                        searchValue={assignedFilterSearch[dataKey] || ''}
+                        selections={tempAssignedSelections[dataKey] || []}
+                        onSort={sortAssignedColumn}
+                        onSearch={handleAssignedFilterSearch}
+                        allChecked={assignedAllChecked}
+                        onToggleAll={toggleAssignedSelectAll}
+                        onToggleOne={handleAssignedCheckboxToggle}
+                        onApply={() => {
+                          applyAssignedFilter(dataKey);
+                          setOpenAssignedFilter(null);
+                        }}
+                        onCancel={() => setOpenAssignedFilter(null)}
+                      />
+        </span>
+      </div>
+    </th>
+  );
+})}
+                     
                   <th style={{ width: "10%" }}></th>
                 </tr>
               </thead>
@@ -1204,9 +1303,57 @@ const cancelFilter = () => {
 <table className="leads-table" style={{ minWidth: "1000px" }}>
               <thead>
                 <tr>
-                  <th style={{ width: "10%" }}>Lead No.</th>
-                  <th>Lead Name</th>
-                  <th style={{ width: "20%" }}>Case Name</th>
+    {["Lead No.","Lead Name","Case Name"].map(col => {
+      // map human column to your dataKey
+      const keyMap = { "Lead No.": "id", "Lead Name": "description", "Case Name":"caseName" };
+      const dataKey = keyMap[col];
+      return (
+        <th key={col} className="column-header1">
+          <div className="header-title">
+            {col}
+            <span ref={el => popupPendingRefs.current[col] = el}>
+              <button
+                onClick={() =>
+                  setOpenPendingFilter(prev => prev === dataKey ? null : dataKey)
+                }
+              >
+                <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className="icon-image" />
+              </button>
+              <Filter
+                dataKey={dataKey}
+                distinctValues={distinctPending}
+                open={openPendingFilter === dataKey}
+                searchValue={pendingFilterSearch[dataKey] || ''}
+                selections={tempPendingSelections[dataKey] || []}
+                onSearch={handlePendingFilterSearch}
+                allChecked={arr => (tempPendingSelections[arr] || []).length === (distinctPending[arr]||[]).length}
+                onToggleAll={dk => {
+                  const all = distinctPending[dk] || [];
+                  setTempPendingSelections(ts => ({
+                    ...ts,
+                    [dk]: ts[dk]?.length === all.length ? [] : [...all]
+                  }));
+                }}
+                onToggleOne={(dk, v) => {
+                  setTempPendingSelections(ts => {
+                    const sel = ts[dk]||[];
+                    return { ...ts, [dk]: sel.includes(v) ? sel.filter(x=>x!==v) : [...sel, v] };
+                  });
+                }}
+                onApply={dk => {
+                  setPendingFilterConfig(fc => ({
+                    ...fc,
+                    [dk]: tempPendingSelections[dk] || []
+                  }));
+                  setOpenPendingFilter(null);
+                }}
+                onCancel={() => setOpenPendingFilter(null)}
+              />
+            </span>
+          </div>
+        </th>
+      );
+    })}
                   <th style={{ width: "10%" }}></th>
                 </tr>
               </thead>

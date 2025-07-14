@@ -48,12 +48,16 @@ body {
   height: 100vh;
   /* background-color: #f4f4f4; */
 }
+.LR-EnteringContentBox
+{
+  width: 98%;
+}
 
 .content-to-add-first-row
 {
   display: flex;
   justify-content: center;
-  width: 82%;
+  width: 100%;
 }
 
 .form-row4 label{
@@ -188,12 +192,10 @@ body {
 .return-form-h4
 {
  font-size: 20px;
- margin: 20px 130px;
+ margin: 20px 0;
 }
 .return-form {
   margin-bottom: 20px;
-  margin-left: 130px;
-  margin-right: 130px;
   position: relative;
   font-size: 20px;
 }
