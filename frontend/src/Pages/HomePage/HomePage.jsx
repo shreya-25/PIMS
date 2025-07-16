@@ -172,32 +172,82 @@ const handleCaseClick = (caseDetails) => {
 
 console.log(localStorage);
 
-const handleLRClick = (lead) => {
-  // 1. Build caseDetails and leadDetails
-  const caseDetails = {
-    caseNo:   lead.caseNo,
-    caseName: lead.caseName
-  };
-  const leadDetails = {
-    leadNo:   lead.id,
-    leadName: lead.description
-  };
+// const handleLRClick = (lead) => {
+//   // 1. Build caseDetails and leadDetails
+//   const caseDetails = {
+//     caseNo:   lead.caseNo,
+//     caseName: lead.caseName
+//   };
+//   const leadDetails = {
+//     leadNo:   lead.id,
+//     leadName: lead.description
+//   };
 
-  // 2. Update context
+//   // 2. Update context
+//   setSelectedCase(caseDetails);
+//   setSelectedLead(leadDetails);
+
+//   // 3. Persist role if needed (e.g. "Case Manager")
+//   localStorage.setItem("role", "Case Manager");
+
+//   // 4. Navigate to LRInstruction, passing both objects via state
+//   navigate("/LRInstruction", {
+//     state: {
+//       caseDetails,
+//       leadDetails
+//     }
+//   });
+// };
+
+ const handleLRClick = async (lead) => {
+   let role = "";
+   try {
+     const token = localStorage.getItem("token");
+     if (!token) throw new Error("No token");
+     // fetch the case’s team info
+     const caseRes = await api.get(
+       `/api/cases/${lead.caseNo}/team`,
+       { headers: { Authorization: `Bearer ${token}` } }
+     );
+     if (caseRes.data.detectiveSupervisor === signedInOfficer) {
+       role = "Detective Supervisor";
+     } 
+      else if (
+       Array.isArray(caseRes.data.investigators) &&
+       caseRes.data.caseManagers.includes(signedInOfficer)
+     ) {
+       role = "Case Manager";
+     }else if (
+       Array.isArray(caseRes.data.investigators) &&
+       caseRes.data.investigators.includes(signedInOfficer)
+     ) {
+       role = "Investigator";
+     }
+     console.log("role", role);
+   } 
+   
+   catch (err) {
+     console.error("❌ Failed to fetch case role:", err);
+   }
+
+   const caseDetails = {
+     caseNo:   lead.caseNo,
+     caseName: lead.caseName,
+     role
+   };
+   const leadDetails = {
+     leadNo:   lead.id,
+     leadName: lead.description
+   };
+
   setSelectedCase(caseDetails);
-  setSelectedLead(leadDetails);
+   setSelectedLead(leadDetails);
+   localStorage.setItem("role", role);
 
-  // 3. Persist role if needed (e.g. "Case Manager")
-  localStorage.setItem("role", "Case Manager");
-
-  // 4. Navigate to LRInstruction, passing both objects via state
-  navigate("/LRInstruction", {
-    state: {
-      caseDetails,
-      leadDetails
-    }
-  });
-};
+   navigate("/LRInstruction", {
+     state: { caseDetails, leadDetails }
+   });
+ };
 
 
 const handleAssignInvestigator = (caseId) => {
@@ -416,9 +466,9 @@ useEffect(() => {
 
           // ✅ Filter leads where the signed-in officer is assigned and the case is ongoing
           const assignedLeads = leadsResponse.data
-              .filter(lead =>
-                  lead.assignedTo.includes(signedInOfficer) && 
-                  ongoingCases.some(c => c.caseNo === lead.caseNo && c.caseName === lead.caseName) // Match ongoing cases
+              .filter(lead => Array.isArray(lead.assignedTo) && 
+                  lead.assignedTo.some(o => o.username === signedInOfficer) &&
+                  ongoingCases.some(c => c.caseNo === lead.caseNo) // Match ongoing cases
               )
               .map(lead => ({
                   id: lead.leadNo,
@@ -879,13 +929,15 @@ const sortAssignedColumn = (dataKey, direction) =>
     }));
   };
 
+  console.log("check assigned leads", leads.assignedLeads);
+
   // sorted + filtered data
   const sortedAssignedLeads = useMemo(() => {
   return leads.assignedLeads
     // 1. Filter
     .filter(lead =>
       Object.entries(assignedFilterConfig).every(([field, val]) => {
-        if (!val) return true;
+        if (!val || val.length === 0) return true; 
         const cell = lead[field];
         if (Array.isArray(cell)) return cell.includes(val);
         return String(cell) === val;
@@ -904,6 +956,8 @@ const sortAssignedColumn = (dataKey, direction) =>
         : String(bVal).localeCompare(String(aVal));
     });
 }, [leads.assignedLeads, assignedFilterConfig, assignedSortConfig]);
+
+console.log("Sorted Assigned Leads", sortedAssignedLeads);
 
 
   // close filter popups on outside click
