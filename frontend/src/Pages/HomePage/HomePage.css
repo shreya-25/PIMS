@@ -176,15 +176,13 @@
   display: flex;
   justify-content: space-around;
   background-color: rgb(41, 41, 139); 
-  /* background-color: #0D8790; */
   padding: 10px;
   border-radius: 5px;
   margin-bottom: 20px;
   font-size: 20px;
-  /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);  */
   width: 90%;
   align-items: center;
-  margin: 0 auto; /* Centers horizontally */
+  margin: 0 auto; 
   margin-top: 20px;
 }
 
@@ -238,7 +236,7 @@
 .content-section {
   padding: 20px;
   margin-top: 5%;
-  width: 80%;
+  width: 90%;
   margin: 0 auto; /* Centers horizontally */
 }
 
