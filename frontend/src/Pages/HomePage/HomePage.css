@@ -1243,13 +1243,13 @@
 .accept-btn,
 .case-close-btn {
   margin-left: 10px;
-  padding: 10px;
+  padding: 8px;
   border: none;
   border-radius: 3px;
   cursor: pointer;
   transition: background-color 0.3s ease, color 0.3s ease;
   font-size: 20px;margin-bottom: 10px;
-  width: 140px;
+  width: 120px;
 }
 
 .view-btn1 {
@@ -1645,7 +1645,7 @@
 /* ✅ Ensure wrapping inside columns */
 .leads-table th,
 .leads-table td {
-  padding: 10px;
+  padding: 8px;
   border: 1px solid #ddd;
   text-align: left;
   font-size: 20px;
@@ -1676,7 +1676,8 @@
  
     margin-bottom: 50px;
     align-items: center;
-    height: calc(100vh - 10px);
+    /* height: calc(100vh - 10px); */
+    height: auto;
     min-width: 99%;
     padding-bottom: 80px; 
     box-sizing: border-box;

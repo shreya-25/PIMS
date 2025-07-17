@@ -14,12 +14,19 @@ import { useNavigate } from "react-router-dom";
 import { useContext } from "react";
 // import { FaFilter, FaSort } from "react-icons/fa";
 import Pagination from "../../components/Pagination/Pagination";
+import { AlertModal } from "../../components/AlertModal/AlertModal";
 import api from "../../api";
 
 
 export const HomePage = () => {
 
   const [activeTab, setActiveTab] = useState("cases"); // Default tab
+  const filterButtonRefs = useRef({});
+  const assignedFilterButtonRefs = useRef({});
+  const pendingFilterButtonRefs = useRef({});
+  const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+  const [caseToClose, setCaseToClose]       = useState({ caseNo: null, caseName: "" });
+
  
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(50);
@@ -284,7 +291,6 @@ const handleAcceptAssignedLead = (lead) => {
 };
 
 const handleCloseCase = async (caseNo, caseName) => {
-  if (!window.confirm(`Really close case ${caseNo}: ${caseName}?`)) return;
 
   try {
     const token = localStorage.getItem("token");
@@ -298,11 +304,11 @@ const handleCloseCase = async (caseNo, caseName) => {
       }
     );
 
-     await api.put(
-      `/api/notifications/close/${encodeURIComponent(caseNo)}`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    //  await api.put(
+    //   `/api/notifications/close/${encodeURIComponent(caseNo)}`,
+    //   {},
+    //   { headers: { Authorization: `Bearer ${token}` } }
+    // );
 
 
     // optimistically drop it from your "Ongoing" list
@@ -787,16 +793,16 @@ const sortedCases = useMemo(() => {
 
 
     // close popups when clicking outside
-    const popupRefs = useRef({});
-    useEffect(() => {
-      const onClick = e => {
-        if (!Object.values(popupRefs.current).some(el => el?.contains(e.target))) {
-          setOpenFilter(null);
-        }
-      };
-      document.addEventListener('mousedown', onClick);
-      return () => document.removeEventListener('mousedown', onClick);
-    }, []);
+    // const popupRefs = useRef({});
+    // useEffect(() => {
+    //   const onClick = e => {
+    //     if (!Object.values(popupRefs.current).some(el => el?.contains(e.target))) {
+    //       setOpenFilter(null);
+    //     }
+    //   };
+    //   document.addEventListener('mousedown', onClick);
+    //   return () => document.removeEventListener('mousedown', onClick);
+    // }, []);
 
 
   //
@@ -808,6 +814,8 @@ const sortedCases = useMemo(() => {
     "Case Name",
     "Assigned Officers"
   ];
+  const assignedFilterRefs   = useRef({});
+
   const assignedColKey = {
     "Lead No.":          "id",
     "Lead Name":   "description",
@@ -815,10 +823,10 @@ const sortedCases = useMemo(() => {
     "Assigned Officers":"assignedOfficers"
   };
   const assignedColWidths = {
-    "Lead No.":           "15%",
-    "Lead Name":         "30%",
-    "Case Name":          "30%",
-    "Assigned Officers": "18%"
+    "Lead No.":           "10%",
+    "Lead Name":         "28%",
+    "Case Name":          "15%",
+    "Assigned Officers": "15%"
   };
 
   // filter + sort state for Assigned Leads
@@ -826,7 +834,7 @@ const [assignedFilterConfig,   setAssignedFilterConfig]   = useState({ id: [], d
 const [assignedSortConfig,     setAssignedSortConfig]     = useState({ key: null, direction: 'asc' });
 const [openAssignedFilter,     setOpenAssignedFilter]     = useState(null);
 const [tempAssignedSelections, setTempAssignedSelections] = useState({});
-const popupAssignedRefs = useRef({});
+// const popupAssignedRefs = useRef({});
 
 const distinctAssigned = useMemo(() => {
   const map = {
@@ -961,15 +969,15 @@ console.log("Sorted Assigned Leads", sortedAssignedLeads);
 
 
   // close filter popups on outside click
-  useEffect(() => {
-    const handler = e => {
-      if (!Object.values(popupAssignedRefs.current).some(r => r?.contains(e.target))) {
-        setOpenAssignedFilter(null);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  // useEffect(() => {
+  //   const handler = e => {
+  //     if (!Object.values(popupAssignedRefs.current).some(r => r?.contains(e.target))) {
+  //       setOpenAssignedFilter(null);
+  //     }
+  //   };
+  //   document.addEventListener("mousedown", handler);
+  //   return () => document.removeEventListener("mousedown", handler);
+  // }, []);
 
   const [filterSearch, setFilterSearch] = useState({})
 const [tempFilterSelections, setTempFilterSelections] = useState({})
@@ -1078,6 +1086,18 @@ const sortedPendingReturns = useMemo(() => {
   return (
     <div className = "main-page-bodyhp">
     <Navbar />
+    <AlertModal
+  isOpen={closeConfirmOpen}
+  title="Confirm Close"
+  message={`Are you sure you want to close the case ${caseToClose.caseNo}: ${caseToClose.caseName}?`}
+  onConfirm={() => {
+    setCloseConfirmOpen(false);
+    // reuse your existing function:
+    handleCloseCase(caseToClose.caseNo, caseToClose.caseName);
+  }}
+  onClose={() => setCloseConfirmOpen(false)}
+/>
+
            <div className="main-page-contenthp">
            <div className="main-page-abovepart">
 
@@ -1138,14 +1158,20 @@ const sortedPendingReturns = useMemo(() => {
                     return (
                       <th key={col} className="column-header1" style={{ width: columnWidths[col] , position: 'relative' }}>
                           <div className="header-title">{col}
-                           <span  ref={el => (popupRefs.current[col] = el)}> 
-                               <button onClick={() => setOpenFilter(prev => prev===dataKey ? null : dataKey)}>
-                                 <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className="icon-image" />
-                               </button>
+                           <span> 
+                               <button
+                                ref={el => (filterButtonRefs.current[dataKey] = el)}
+                                onClick={() =>
+                                  setOpenFilter(prev => prev === dataKey ? null : dataKey)
+                                }
+                              >
+                                <img src="/Materials/fs.png" className="icon-image"  />
+                              </button>
                                <Filter
                                 dataKey={dataKey}
                                 distinctValues={distinctValues}
                                 open={openFilter === dataKey}
+                                anchorRef={{ current: filterButtonRefs.current[dataKey] }}
                                 searchValue={filterSearch[dataKey] || ''}
                                 selections={tempFilterSelections[dataKey] || []}
                                 onSort={sortColumn}
@@ -1183,9 +1209,12 @@ const sortedPendingReturns = useMemo(() => {
                         { (c.role === "Detective Supervisor" || c.role === "Case Manager") && (
                           <button
                             className="case-close-btn"
-                            onClick={() => handleCloseCase(c.id, c.title)}
+                            onClick={() => {
+                              setCaseToClose({ caseNo: c.id, caseName: c.title });
+                              setCloseConfirmOpen(true);
+                            }}
                           >
-                            Close Case
+                            Close
                           </button>
                         )}
                       </td>
@@ -1223,14 +1252,17 @@ const sortedPendingReturns = useMemo(() => {
     <th key={col} style={{ width: assignedColWidths[col] }}>
       <div className="header-title">
         {col}
-        <span ref={el => (popupAssignedRefs.current[col] = el)}>
-          <button onClick={() => setOpenAssignedFilter(prev => prev === dataKey ? null : dataKey ) }>
+        <span>
+          <button 
+           ref={el => (assignedFilterButtonRefs.current[dataKey] = el)}
+          onClick={() => setOpenAssignedFilter(prev => prev === dataKey ? null : dataKey ) }>
                         <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className="icon-image"/>
                       </button>
           <Filter
                         dataKey={dataKey}
                         distinctValues={distinctAssigned}
                         open={openAssignedFilter === dataKey}
+                        anchorRef={{ current: assignedFilterButtonRefs.current[dataKey] }}
                         searchValue={assignedFilterSearch[dataKey] || ''}
                         selections={tempAssignedSelections[dataKey] || []}
                         onSort={sortAssignedColumn}
@@ -1367,6 +1399,7 @@ const sortedPendingReturns = useMemo(() => {
             {col}
             <span ref={el => popupPendingRefs.current[col] = el}>
               <button
+              ref={el => (pendingFilterButtonRefs.current[dataKey] = el)}
                 onClick={() =>
                   setOpenPendingFilter(prev => prev === dataKey ? null : dataKey)
                 }
@@ -1377,6 +1410,7 @@ const sortedPendingReturns = useMemo(() => {
                 dataKey={dataKey}
                 distinctValues={distinctPending}
                 open={openPendingFilter === dataKey}
+                anchorRef={{ current: pendingFilterButtonRefs.current[dataKey] }}
                 searchValue={pendingFilterSearch[dataKey] || ''}
                 selections={tempPendingSelections[dataKey] || []}
                 onSearch={handlePendingFilterSearch}
