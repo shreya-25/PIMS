@@ -2011,7 +2011,7 @@ Add Lead
                       );
                     })}
                     {/* extra column for “View” button */}
-                    <th style={{ width: "11%" }}></th>
+                    <th style={{ width: "12%" }}></th>
                   </tr>
                 </thead>
                 <tbody>

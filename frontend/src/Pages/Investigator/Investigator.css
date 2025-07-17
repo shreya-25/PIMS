@@ -26,8 +26,9 @@
     display: flex;
     justify-content: center; 
     align-items: center; 
-    height: 5%; 
-    margin-top: 1%;
+    text-align: center;
+    height: auto; 
+    margin: 2%;
     font-weight: bold;
     color: #333333;
     font-size: 20px;
