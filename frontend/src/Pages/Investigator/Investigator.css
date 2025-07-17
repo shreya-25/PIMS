@@ -15,23 +15,19 @@
     flex-direction: row; /* Sidebar and content side-by-side */
     /* flex: 1; */
   }
-  .left-content
-  {
-    height:100vh;
-    width: 100%;
-    align-items: center;
-  }
 
   .case-header {
     display: flex;
+    width: 100%;
     justify-content: center; 
     align-items: center; 
     text-align: center;
     height: auto; 
-    margin: 2%;
+    margin: 8px;
     font-weight: bold;
     color: #333333;
     font-size: 20px;
+    background-color: #ff9800;
   }
   
  
