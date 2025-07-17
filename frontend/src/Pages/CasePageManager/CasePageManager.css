@@ -97,7 +97,7 @@
    /* Sidebar Container */
   /* Sidebar Container */
 .sideitem {
-  width: 23%;
+  width: 25%;
   background-color: rgba(12, 31, 32, 0.096);
   padding: 10px;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
@@ -251,14 +251,18 @@ ul {
   .caseandleadinfo
   {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     width: 90%;
+    margin: 0 1% 2% 1%;
+    gap: 20%;
+    background-color: #0073e6;
   }
 
   .side-title
   {
-    margin-left: 20px;
-    /* margin-top: -10px; */
+    /* margin-left: 20px; */
+    text-align: center;
+    
   }
 
   /* Stats Bar */
