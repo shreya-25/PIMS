@@ -1640,11 +1640,11 @@ const sortedAllLeads = useMemo(() => {
         {activeTab === 'pendingLeads' && <PendingLeadsList leads={leads.pendingLeads} />}
         {activeTab === 'pendingLeadReturns' && <LeadReturnsList leads={leads.pendingLeadReturns} />}
       </main> */}
-                <div className="left-content">
+<div className="left-content">
 
-                {/* <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5> */}
-          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
-
+  <div className = "side-title">
+    <h5>  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+  </div>
 {/* Display Case Number and Name */}
 <div className="case-header">
  {
