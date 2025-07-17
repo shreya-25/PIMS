@@ -34,14 +34,6 @@ html, body {
   display: flex;
 }
 
-.update-lead-btn
-{
-  margin-top: 2px;
-  width: 90%;
-  display: flex;
-  justify-content: flex-end;
-}
-
 /* Sidebar */
 .sideitem {
   min-height: 100vh; /* forces the sidebar to stretch the full viewport height */

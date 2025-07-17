@@ -225,45 +225,7 @@ const handleConfirmOfficers = () => {
       }
     };
     console.log("SelectedCase", selectedCase);
-  //   const acceptLead = async (leadNo) => {
-  //     const leadToAccept = leads.assignedLeads.find((lead) => lead.leadNo === leadNo);
-  //     if (!leadToAccept) return;
-
-  //     try {
-  //       const token = localStorage.getItem("token");
-    
-  //       // Update the lead status in the database to "Pending"
-  //       await api.patch(
-  //         `/api/lead/${leadToAccept.leadNo}/${leadToAccept.caseNo}/${encodeURIComponent(leadToAccept.caseName)}/status`,
-  //         { status: "Pending" },
-  //         {
-  //           headers: {
-  //             Authorization: `Bearer ${token}`,
-  //             "Content-Type": "application/json",
-  //           },
-  //         }
-  //       );
-    
-  //     // Add lead to pending leads with default fields if not present
-  //     const newPendingLead = {
-  //       ...leadToAccept,
-  //       leadStatus: "Pending",
-  //       dueDate: leadToAccept.dueDate || "12/31/2024", // Default due date
-  //       priority: leadToAccept.priority || "Medium", // Default priority
-  //       flags: leadToAccept.flags || [],
-  //       assignedOfficers: leadToAccept.assignedOfficers || ["Unassigned"],
-  //     };
-    
-  //     setLeads((prevLeads) => ({
-  //       ...prevLeads,
-  //       assignedLeads: prevLeads.assignedLeads.filter((lead) => lead.leadNo !== leadNo),
-  //       pendingLeads: [...prevLeads.pendingLeads, newPendingLead],
-  //     }));
-  //   } catch (error) {
-  //     console.error("Error updating lead status:", error.response?.data || error);
-  //     alert("Failed to accept lead.");
-  //   }
-  // };
+  
 
   const acceptLead = async (leadNo, description) => {
     console.log("Accept button clicked for lead:", leadNo);
@@ -356,37 +318,6 @@ const handleConfirmOfficers = () => {
 
   const token = localStorage.getItem('token') || '';
 
-  // 2) useEffect to fetch leads once the component mounts or caseDetails changes
-  // useEffect(() => {
-  //   if (caseDetails?.id && caseDetails?.title) {
-  //     fetch(`http://localhost:5000/api/lead/case/${caseDetails.id}/${caseDetails.title}`, {
-  //       headers: {
-  //         Authorization: `Bearer ${token}`,
-  //         'Content-Type': 'application/json'
-  //       },
-  //     })
-  //       .then((response) => {
-  //         if (!response.ok) {
-  //           throw new Error(`HTTP error! status: ${response.status}`);
-  //         }
-  //         return response.json();
-  //       })
-  //       .then((data) => {
-  //         const assignedLeads = data.filter(lead => lead.leadStatus === "Assigned");
-  //         const pendingLeads = data.filter(lead => lead.leadStatus === "Pending");
-
-  //         setLeads((prev) => ({
-  //           ...prev,
-  //           allLeads: data,
-  //           assignedLeads: assignedLeads,
-  //           pendingLeads: pendingLeads
-  //         }));
-  //       })
-  //       .catch((error) => {
-  //         console.error("Error fetching leads:", error.message);
-  //       });
-  //   }
-  // }, [caseDetails, token]);
   
   useEffect(() => {
     const fetchLeadsForCase = async () => {
@@ -516,41 +447,7 @@ const handleConfirmOfficers = () => {
     }));
   };
 
-  // const saveInvestigators = async () => {
-  // try {
-  //   setLoading(true);
-  //   setError("");
-
-  //   const token = localStorage.getItem("token");
-  //   const officers = [
-  //       // keep the supervisor & manager
-  //       { name: team.detectiveSupervisor, role: "Detective Supervisor", status: "accepted" },
-  //       { name: team.caseManager,         role: "Case Manager",         status: "accepted" },
-  //       // then each selected investigator
-  //       ...selectedInvestigators.map(username => ({
-  //         name: username,
-  //         role: "Investigator",
-  //         status: "pending"
-  //       }))
-  //     ];
-
-  //      // 2) PUT to the case‐officers endpoint
-  //     await api.put(
-  //       `/api/cases/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/officers`,
-  //       { officers },
-  //       { headers: { Authorization: `Bearer ${token}` } }
-  //     );
-
-  //      setTeam(t => ({ ...t, investigators: [...selectedInvestigators] }));
-
-  //      alert("Investigators updated on this lead successfully!");
-  //    } catch (err) {
-  //      console.error("Save failed:", err);
-  //      setError("Failed to save changes.");
-  //    } finally {
-  //      setLoading(false);
-  //    }
-  //  };
+ 
 
 const saveInvestigators = async () => {
   try {
@@ -706,128 +603,6 @@ const saveInvestigators = async () => {
     setLoading(false);
   }
 };
-
-
-
-
-
-//   useEffect(() => {
-//     const fetchPendingLeadReturns = async () => {
-//         try {
-//             const token = localStorage.getItem("token");
-//             if (!token) {
-//                 console.error("❌ No token found. User is not authenticated.");
-//                 return;
-//             }
-
-//             if (!selectedCase?.caseNo || !selectedCase?.caseName) {
-//                 console.error("⚠️ No valid case details provided.");
-//                 return;
-//             }
-
-//             console.log("🔍 Fetching pending lead returns for exact case:", caseDetails);
-
-//             // ✅ Fetch all lead returns assigned to or assigned by the officer
-//             const leadsResponse = await axios.get("http://localhost:5000/api/leadreturn/officer-leads", {
-//                 headers: {
-//                     Authorization: `Bearer ${token}`,
-//                     "Content-Type": "application/json",
-//                 }
-//             });
-
-//             // ✅ Filter pending lead returns that match the exact case details (caseNo & caseName)
-//             const pendingLeadReturns = leadsResponse.data.filter(lead => 
-//                 lead.assignedBy.lRStatus === "Pending"
-//                 &&
-//                 lead.caseNo === selectedCase.caseNo &&   // Match exact case number
-//                 lead.caseName === selectedCase.caseName // Match exact case name
-//             ).map(lead => ({
-//                 id: lead.leadNo,
-//                 description: lead.description,
-//                 caseName: lead.caseName,
-//                 caseNo: lead.caseNo,
-//             }));
-
-//             // ✅ Update state with filtered pending lead returns
-//             setLeads(prevLeads => ({
-//                 ...prevLeads,
-//                 pendingLeadReturns: pendingLeadReturns
-//             }));
-
-//         } catch (error) {
-//             console.error("Error fetching pending lead returns:", error.response?.data || error);
-//         }
-//     };
-
-//     fetchPendingLeadReturns();
-// }, [signedInOfficer, selectedCase]);
-
-
-// useEffect(() => {
-//   const fetchPendingLeads = async () => {
-//       try {
-//           const token = localStorage.getItem("token");
-//           if (!token) {
-//               console.error("❌ No token found. User is not authenticated.");
-//               return;
-//           }
-
-//           // ✅ Fetch all assigned leads
-//           const leadsResponse = await axios.get("http://localhost:5000/api/lead/assigned-leads", {
-//               headers: {
-//                   Authorization: `Bearer ${token}`,
-//                   "Content-Type": "application/json",
-//               }
-//           });
-
-//           console.log("✅ API Response (Assigned Leads):", leadsResponse.data); // Debugging log
-
-//           // ✅ Check if `caseDetails` is defined before proceeding
-//           if (!caseDetails?.id || !caseDetails?.title) {
-//               console.warn("⚠️ caseDetails not provided, skipping lead filtering.");
-//               return;
-//           }
-
-//           console.log("✅ Using caseDetails:", caseDetails);
-
-//           // ✅ Filter leads where the signed-in officer is assigned and the case matches exactly
-//           const assignedLeads = leadsResponse.data
-//               .filter(lead =>
-//                   lead.caseNo === caseDetails.id && 
-//                   lead.caseName === caseDetails.title // Ensure exact case match
-//               )
-//               .map(lead => ({
-//                   id: lead.leadNo,
-//                   description: lead.description,
-//                   dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
-//                   priority: lead.priority || "Medium",
-//                   flags: lead.associatedFlags || [],
-//                   assignedOfficers: lead.assignedTo, // Keep all assigned officers
-//                   leadStatus: lead.leadStatus, // Capture status
-//                   caseName: lead.caseName,
-//                   caseNo: lead.caseNo
-//               }));
-
-//           // ✅ Filter leads where status is "Pending"
-//           const pendingLeads = assignedLeads.filter(lead => lead.leadStatus === "Pending");
-
-//           console.log("✅ Filtered Assigned Leads:", assignedLeads);
-//           console.log("✅ Filtered Pending Leads:", pendingLeads);
-
-//           // ✅ Update state with filtered leads
-//           setLeads(prevLeads => ({
-//               ...prevLeads,
-//               assignedLeads: assignedLeads,
-//               pendingLeads: pendingLeads
-//           }));
-
-//       } catch (error) {
-//           console.error("❌ Error fetching assigned leads:", error.response?.data || error);
-//       }
-//   };
-
-//   fetchPendingLeads();
-// }, [signedInOfficer, caseDetails]);
 
 const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
@@ -1527,169 +1302,29 @@ const sortedAllLeads = useMemo(() => {
 
             {/* Main Container */}
             <div className="main-container">
-        
-                {/* <div className="sideitem">
-                <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Home Page</li>
-         <li className="sidebar-item active" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Case Page {leadDropdownOpen ?  "▲": "▼"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            {["assignedLeads", "pendingLeads", "pendingLeadReturns", "allLeads"].map((tab) => (
-  <li
-    key={tab}
-    className={`sidebar-item ${activeTab === tab ? "active" : ""}`}
-    onClick={() => handleTabClick(tab)}
-  >
-    <div className="sidebar-content">
-            <span className="sidebar-text">
-              {tab === "assignedLeads" && "Assigned Leads"}
-              {tab === "pendingLeads" && "Accepted Leads"}
-              {tab === "pendingLeadReturns" && "Lead Returns for Review"}
-              {tab === "allLeads" && "All Leads"}
-            </span>
-            <span className="sidebar-number">
-              {tab === "assignedLeads" && leads.assignedLeads.length}
-              {tab === "pendingLeads" && leads.pendingLeads.length}
-              {tab === "pendingLeadReturns" && leads.pendingLeadReturns.length}
-              {tab === "allLeads" && leads.allLeads.length}
-            </span>
-          </div>
-  </li>
-))}
-          </ul>
-        )} 
 
-<li className="sidebar-item" onClick={() => onShowCaseSelector("/CreateLead")}>
-              New Lead
-            </li>
-            <li className="sidebar-item"
-             onClick={() => onShowCaseSelector("/SearchLead")}
-          >Search Lead</li>
-            <li className="sidebar-item"    
-            onClick={() => {
-              setPendingRoute("/LRInstruction");
-              setShowSelectModal(true);
-            }} >View Lead Return</li>
+              <SideBar
+                activePage="CasePageManager"
+                leads={leads}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              />
 
+              <div className="left-content">
 
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>
-              View Lead Log
-            </li>
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
-            </li>
-            <li className="sidebar-item"    
-            onClick={() => navigate("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
+                <div className = "side-title">
+                  <h5>  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+                </div>
+                {/* Display Case Number and Name */}
+                <div className="case-header">
+                {
+                    <h1>
+                      CASE:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
+                    </h1>
+                }
+                </div>
 
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-            View Timeline Entries
-            </li>
-            <li className="sidebar-item" 
-            onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}
-             >View Leads Desk</li>
-            <li className="sidebar-item" 
-            onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}
-            >Generate Report</li>
- 
-
-<li className="sidebar-item "  style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen1(!leadDropdownOpen1)}>
-          Lead Related Tabs {leadDropdownOpen1 ?  "▲": "▼"}
-</li>
-        {leadDropdownOpen1 && (
-          <ul>
-           <li className="sidebar-item" 
-             onClick={() => {
-              setPendingRoute("/leadReview");
-              setShowSelectModal(true);
-            }}>Lead Information</li>
-                  
-    
-            <li className="sidebar-item"
-
-              onClick={() => {
-                setPendingRoute("/ChainOfCustody");
-                setShowSelectModal(true);
-              }}
-            >View Lead Chain of Custody</li>
-
-         {showSelectModal && (
-      <SelectLeadModal
-        leads={leads.allLeads}
-        onSelect={handleSelectLead}
-        onClose={() => setShowSelectModal(false)}
-      />
-    )}
-    </ul>
-  )}
-    
-                </div> */}
-
-                <SideBar
-  activePage="CasePageManager"
-  leads={leads}
-  activeTab={activeTab}
-  setActiveTab={setActiveTab}
-/>
-
-{/* <main>
-        {activeTab === 'allLeads' && <AllLeadsList leads={leads.allLeads} />}
-        {activeTab === 'assignedLeads' && <AssignedLeadsList leads={leads.assignedLeads} />}
-        {activeTab === 'pendingLeads' && <PendingLeadsList leads={leads.pendingLeads} />}
-        {activeTab === 'pendingLeadReturns' && <LeadReturnsList leads={leads.pendingLeadReturns} />}
-      </main> */}
-<div className="left-content">
-
-  <div className = "side-title">
-    <h5>  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
-  </div>
-{/* Display Case Number and Name */}
-<div className="case-header">
- {
-     <h1>
-       CASE:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
-     </h1>
- }
-</div>
-{/* <div className = "case-summary">
-<label className="input-label">Case Summary</label>
-     <textarea
-         className="textarea-field"
-         value={caseSummary}
-         onChange={handleCaseSummaryChange}
-         readOnly={!isEditing} // Read-only when not in edit mode
-     ></textarea>
-
-      <button className="save-btn1" onClick={handleSaveClick}>Save</button>
-
-</div> */}
-{/* Content Area */}
-{/* <div className="table-section1"> */}
-{/* <div className='searchContainer'>
- <Searchbar placeholder="Search Lead" />
- </div> */}
- {/* <Button
-     label="Generate Lead"
-     className="generate-lead-btn1"
-     onClick={handleGenerateLead}
- /> */}
-
- {/* Tab Navigation */}
- {/* <div className="case-summary">
-<label className="input-label">Case Summary</label>
-<textarea
-className="textarea-field"
-value={caseSummary}
-onChange={(e) => setCaseSummary(e.target.value)}
-/>
-<button className="save-btn1"  onClick={handleSaveClick}>
-Save
-</button>
-</div> */}
-
-<div className="case-summary">
+                <div className="case-summary">
       <label className="input-label">Case Summary</label>
       <textarea
         id="case-summary"
@@ -1706,228 +1341,207 @@ Save
             : <span>&nbsp;</span>
         }
       </div>
-    </div>
-
-<div className="case-team">
-<table className="leads-table">
-<thead>
-<tr>
-<th style={{ width: "20%" }}>Role</th>
-<th>Name(s)</th></tr>
-</thead>
-<tbody>
-  <tr>
-  <td>Detective Supervisor</td>
-  <td>
-    {(selectedCase.role === "Detective Supervisor") ? (
-      <div className="custom-dropdown">
-        <div
-          className="dropdown-header1"
-          onClick={() => setDetectiveSupervisorDropdownOpen(prev => !prev)}
-        >
-          {selectedDetectiveSupervisor
-            ? (() => {
-                const usr = allUsers.find(x => x.username === selectedDetectiveSupervisor);
-                return usr ? `${usr.firstName} ${usr.lastName} (${usr.username})` : selectedDetectiveSupervisor;
-              })()
-            : "Select Detective Supervisor"}
-          <span className="dropdown-icon">
-            {detectiveSupervisorDropdownOpen ? "▲" : "▼"}
-          </span>
-        </div>
-        {detectiveSupervisorDropdownOpen && (
-          <div className="dropdown-options">
-            {allUsers.map(user => (
-              <div key={user.username} className="dropdown-item">
-                <input
-                  type="radio"
-                  name="detectiveSupervisor"
-                  id={`ds-${user.username}`}
-                  value={user.username}
-                  checked={selectedDetectiveSupervisor === user.username}
-                  onChange={() => setSelectedDetectiveSupervisor(user.username)}
-                />
-                <label htmlFor={`ds-${user.username}`}>
-                  {user.firstName} {user.lastName} ({user.username})
-                </label>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    ) : (
-      team.detectiveSupervisor || "—"
-    )}
-  </td>
-</tr>
-
-{/* <tr>
-<td>Case Manager</td>
-<td>
-  {(team.caseManagers || []).length
-    ? team.caseManagers.join(", ")
-    : "—"}
-</td>
-</tr> */}
-<tr>
-  <td>Case Manager{team.caseManagers.length>1 ? "s" : ""}</td>
-  <td>
-    {(selectedCase.role==="Case Manager" || selectedCase.role==="Detective Supervisor") ? (
-      <div className="custom-dropdown">
-        <div
-          className="dropdown-header1"
-          onClick={() => setCaseManagersDropdownOpen(prev => !prev)}
-        >          {selectedCaseManagers.length>0
-            ? selectedCaseManagers
-                .map(u=>{
-                  const usr=allUsers.find(x=>x.username===u);
-                  return usr
-                    ? `${usr.firstName} ${usr.lastName} (${usr.username})`
-                    : u;
-                })
-                .join(", ")
-            : "Select Case Manager(s)"}
-          <span className="dropdown-icon">
-            {caseManagersDropdownOpen ? "▲" : "▼"}
-          </span>
-        </div>
-        {caseManagersDropdownOpen && (
-          <div className="dropdown-options">
-            {allUsers
-              // .filter(u=>u.role==="Case Manager")
-              .map(user=>(
-                <div key={user.username} className="dropdown-item">
-                  <input
-                    type="checkbox"
-                    id={`cm-${user.username}`}
-                    value={user.username}
-                    checked={selectedCaseManagers.includes(user.username)}
-                   onChange={e=>{
-                      const next = e.target.checked
-                        ? [...selectedCaseManagers, user.username]
-                        : selectedCaseManagers.filter(u=>u!==user.username);
-                      setSelectedCaseManagers(next);
-                    }}
-                  />
-                  <label htmlFor={`cm-${user.username}`}>
-                    {user.firstName} {user.lastName} ({user.username})
-                  </label>
                 </div>
-              ))}
-          </div>
-        )}
-      </div>
-    ) : (
-      (team.caseManagers||[]).join(", ") || "—"
-    )}
-  </td>
-</tr>
-{/* <tr>
-<td>Investigator{team.investigators.length > 1 ? "s" : ""}</td>
-<td>
-{team.investigators.length
-? team.investigators.join(", ")
-: "None assigned"}
-</td>
-</tr> */}
 
- <tr>
-        <td>
-          Investigator{team.investigators.length > 1 ? "s" : ""}
-        </td>
-        <td>
-          {/*
-            Only show editable “dropdown with checkboxes” if role is Case Manager
-            or Detective Supervisor. Otherwise, just display plain text.
-          */}
-          {(selectedCase.role === "Case Manager" ||
-            selectedCase.role === "Detective Supervisor") ? (
-            <div className="custom-dropdown">
-              {/* 1) Header: shows currently selected investigators or placeholder */}
-              <div
-                className="dropdown-header1"
-                onClick={() =>
-                  setInvestigatorsDropdownOpen(!investigatorsDropdownOpen)
-                }
-              >
-                {selectedInvestigators.length > 0
-                  ? selectedInvestigators
-                      .map((username) => {
-                        // Find full name from allUsers
-                        const u = allUsers.find(
-                          (x) => x.username === username
-                        );
-                        return u
-                          ? `${u.firstName} ${u.lastName} (${u.username})`
-                          : username;
-                      })
-                      .join(", ")
-                  : "Select Investigators"}
+                <div className="case-team">
+                <table className="leads-table">
+                <thead>
+                <tr>
+                <th style={{ width: "20%" }}>Role</th>
+                <th>Name(s)</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                  <td>Detective Supervisor</td>
+                  <td>
+                    {(selectedCase.role === "Detective Supervisor") ? (
+                      <div className="custom-dropdown">
+                        <div
+                          className="dropdown-header1"
+                          onClick={() => setDetectiveSupervisorDropdownOpen(prev => !prev)}
+                        >
+                          {selectedDetectiveSupervisor
+                            ? (() => {
+                                const usr = allUsers.find(x => x.username === selectedDetectiveSupervisor);
+                                return usr ? `${usr.firstName} ${usr.lastName} (${usr.username})` : selectedDetectiveSupervisor;
+                              })()
+                            : "Select Detective Supervisor"}
+                          <span className="dropdown-icon">
+                            {detectiveSupervisorDropdownOpen ? "▲" : "▼"}
+                          </span>
+                        </div>
+                        {detectiveSupervisorDropdownOpen && (
+                          <div className="dropdown-options">
+                            {allUsers.map(user => (
+                              <div key={user.username} className="dropdown-item">
+                                <input
+                                  type="radio"
+                                  name="detectiveSupervisor"
+                                  id={`ds-${user.username}`}
+                                  value={user.username}
+                                  checked={selectedDetectiveSupervisor === user.username}
+                                  onChange={() => setSelectedDetectiveSupervisor(user.username)}
+                                />
+                                <label htmlFor={`ds-${user.username}`}>
+                                  {user.firstName} {user.lastName} ({user.username})
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      team.detectiveSupervisor || "—"
+                    )}
+                  </td>
+                </tr>
+                <tr>
+                  <td>Case Manager{team.caseManagers.length>1 ? "s" : ""}</td>
+                  <td>
+                    {(selectedCase.role==="Case Manager" || selectedCase.role==="Detective Supervisor") ? (
+                      <div className="custom-dropdown">
+                        <div
+                          className="dropdown-header1"
+                          onClick={() => setCaseManagersDropdownOpen(prev => !prev)}
+                        >          {selectedCaseManagers.length>0
+                            ? selectedCaseManagers
+                                .map(u=>{
+                                  const usr=allUsers.find(x=>x.username===u);
+                                  return usr
+                                    ? `${usr.firstName} ${usr.lastName} (${usr.username})`
+                                    : u;
+                                })
+                                .join(", ")
+                            : "Select Case Manager(s)"}
+                          <span className="dropdown-icon">
+                            {caseManagersDropdownOpen ? "▲" : "▼"}
+                          </span>
+                        </div>
+                        {caseManagersDropdownOpen && (
+                          <div className="dropdown-options">
+                            {allUsers
+                              // .filter(u=>u.role==="Case Manager")
+                              .map(user=>(
+                                <div key={user.username} className="dropdown-item">
+                                  <input
+                                    type="checkbox"
+                                    id={`cm-${user.username}`}
+                                    value={user.username}
+                                    checked={selectedCaseManagers.includes(user.username)}
+                                  onChange={e=>{
+                                      const next = e.target.checked
+                                        ? [...selectedCaseManagers, user.username]
+                                        : selectedCaseManagers.filter(u=>u!==user.username);
+                                      setSelectedCaseManagers(next);
+                                    }}
+                                  />
+                                  <label htmlFor={`cm-${user.username}`}>
+                                    {user.firstName} {user.lastName} ({user.username})
+                                  </label>
+                                </div>
+                              ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      (team.caseManagers||[]).join(", ") || "—"
+                    )}
+                  </td>
+                </tr>
 
-                <span className="dropdown-icon">
-                  {investigatorsDropdownOpen ? "▲" : "▼"}
-                </span>
-              </div>
+                <tr>
+                        <td>
+                          Investigator{team.investigators.length > 1 ? "s" : ""}
+                        </td>
+                        <td>
+                        
+                          {(selectedCase.role === "Case Manager" ||
+                            selectedCase.role === "Detective Supervisor") ? (
+                            <div className="custom-dropdown">
+                              <div
+                                className="dropdown-header1"
+                                onClick={() =>
+                                  setInvestigatorsDropdownOpen(!investigatorsDropdownOpen)
+                                }
+                              >
+                                {selectedInvestigators.length > 0
+                                  ? selectedInvestigators
+                                      .map((username) => {
+                                        // Find full name from allUsers
+                                        const u = allUsers.find(
+                                          (x) => x.username === username
+                                        );
+                                        return u
+                                          ? `${u.firstName} ${u.lastName} (${u.username})`
+                                          : username;
+                                      })
+                                      .join(", ")
+                                  : "Select Investigators"}
 
-              {/* 2) Options: only visible when dropdown is open */}
-              {investigatorsDropdownOpen && (
-                <div className="dropdown-options">
-                  {allUsers.map((user) => (
-                    <div key={user.username} className="dropdown-item">
-                      <input
-                        type="checkbox"
-                        id={`inv-${user.username}`}
-                        value={user.username}
-                        checked={selectedInvestigators.includes(user.username)}
-                        onChange={(e) => {
-                          const next = e.target.checked
-                            ? [...selectedInvestigators, user.username]
-                            : selectedInvestigators.filter(
-                                (u) => u !== user.username
-                              );
-                          setSelectedInvestigators(next);
-                        }}
-                      />
-                      <label htmlFor={`inv-${user.username}`}>
-                        {user.firstName} {user.lastName} ({user.username})
-                      </label>
-                    </div>
-                  ))}
+                                <span className="dropdown-icon">
+                                  {investigatorsDropdownOpen ? "▲" : "▼"}
+                                </span>
+                              </div>
+
+                              {/* 2) Options: only visible when dropdown is open */}
+                              {investigatorsDropdownOpen && (
+                                <div className="dropdown-options">
+                                  {allUsers.map((user) => (
+                                    <div key={user.username} className="dropdown-item">
+                                      <input
+                                        type="checkbox"
+                                        id={`inv-${user.username}`}
+                                        value={user.username}
+                                        checked={selectedInvestigators.includes(user.username)}
+                                        onChange={(e) => {
+                                          const next = e.target.checked
+                                            ? [...selectedInvestigators, user.username]
+                                            : selectedInvestigators.filter(
+                                                (u) => u !== user.username
+                                              );
+                                          setSelectedInvestigators(next);
+                                        }}
+                                      />
+                                      <label htmlFor={`inv-${user.username}`}>
+                                        {user.firstName} {user.lastName} ({user.username})
+                                      </label>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            // If not editable, just show comma‐separated list
+                            <div>
+                              {team.investigators.length
+                                ? team.investigators.join(", ")
+                                : "None assigned"}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                </tbody>
+                </table>
                 </div>
-              )}
-            </div>
-          ) : (
-            // If not editable, just show comma‐separated list
-            <div>
-              {team.investigators.length
-                ? team.investigators.join(", ")
-                : "None assigned"}
-            </div>
-          )}
-        </td>
-      </tr>
-</tbody>
-</table>
-</div>
-  <div className="update-lead-btn">
-    <button className="save-btn1" onClick={openConfirmOfficers}>
-      Save Changes
-    </button>
-    {error && <div className="error">{error}</div>}
-  </div>
+                <div className="update-lead-btn">
+                  <button className="save-btn1" onClick={openConfirmOfficers}>
+                    Save Changes
+                  </button>
+                  {error && <div className="error">{error}</div>}
+                </div>
 
-<div  className="add-lead-section">
-<div><h2>Click here to add a new lead</h2></div>
-<div className = "add-lead-btn1">
-<button className="save-btn1"  onClick={() => navigate('/createlead', { state: { caseDetails: selectedCase } })}
-style={{ cursor: 'pointer' }} >
-Add Lead
-</button>
-</div>
-</div>
+                <div  className="add-lead-section">
+                <div><h2>Click here to add a new lead</h2></div>
+                <div className = "add-lead-btn1">
+                <button className="save-btn1"  onClick={() => navigate('/createlead', { state: { caseDetails: selectedCase } })}
+                style={{ cursor: 'pointer' }} >
+                Add Lead
+                </button>
+                </div>
+                </div>
 
              
-                    <div className="stats-bar">
+                <div className="stats-bar">
                           <span
                             className={`hoverable ${activeTab === "allLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("allLeads")}
@@ -1953,12 +1567,9 @@ Add Lead
                             Lead Returns for Review: {leads.pendingLeadReturns.length}
                         </span>
                     
-                    </div>
-                  
+                </div>
 
-                    {/* Tab Content */}
-                
-                    <div className="content-section">
+                <div className="content-section">
                     {activeTab === "assignedLeads" && (
 
 <div className="table-scroll-container">
@@ -2417,12 +2028,8 @@ Add Lead
   pageSize={pageSize}
   onPageSizeChange={setPageSize} // Update page size state
 />
-                    </div> 
-                {/* </div> */}
-                {/* <div className="gotomainpagebtn">
-                   <button className="mainpagebtn"onClick={() => handleNavigation("/HomePage")}>Go to Home Page</button>
-                </div> */}
-                </div>
+                </div> 
+              </div>
             </div>
         </div>
     );
