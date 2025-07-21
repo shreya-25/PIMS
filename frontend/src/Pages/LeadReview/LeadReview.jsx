@@ -235,28 +235,28 @@ const acceptLead = async (leadNo, description) => {
       }
     );
 
-     await api.post(
-      "/api/notifications",
-      {
-        notificationId: Date.now().toString(),
-        assignedBy: signedInOfficer,
-        assignedTo: [{
-            username: leadData.assignedBy,
-            role:     "Case Manager",           
-            status:   "pending",
-            unread:   true
-          }],
-        action1: "accepted the lead",
-        post1:   `${leadNo}: ${description}`,
-        caseNo:   selectedCase.caseNo,
-        caseName: selectedCase.caseName,
-        leadNo: leadNo,
-        leadName: description,
-        caseStatus: selectedCase.caseStatus || "Open",
-        type: "Lead"
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    //  await api.post(
+    //   "/api/notifications",
+    //   {
+    //     notificationId: Date.now().toString(),
+    //     assignedBy: signedInOfficer,
+    //     assignedTo: [{
+    //         username: leadData.assignedBy,
+    //         role:     "Case Manager",           
+    //         status:   "pending",
+    //         unread:   true
+    //       }],
+    //     action1: "accepted the lead",
+    //     post1:   `${leadNo}: ${description}`,
+    //     caseNo:   selectedCase.caseNo,
+    //     caseName: selectedCase.caseName,
+    //     leadNo: leadNo,
+    //     leadName: description,
+    //     caseStatus: selectedCase.caseStatus || "Open",
+    //     type: "Lead"
+    //   },
+    //   { headers: { Authorization: `Bearer ${token}` } }
+    // );
 
     console.log("PUT request succeeded. Response data:", response.data);
 
@@ -297,28 +297,28 @@ const acceptLead = async (leadNo, description) => {
     }));
 
     // 4) Notify the Case Manager
-    await api.post(
-      "/api/notifications",
-      {
-        notificationId: Date.now().toString(),
-        assignedBy: signedInOfficer,          // you
-        assignedTo: [{
-            username: leadData.assignedBy,
-            role:     "Case Manager",           
-            status:   "pending",
-            unread:   true
-          }],
-        action1: "declined the lead",
-        post1:   `${leadNo}: ${description}`,
-        caseNo:   selectedCase.caseNo,
-        caseName: selectedCase.caseName,
-         leadNo: leadNo,
-        leadName: description,
-        caseStatus: selectedCase.caseStatus || "Open",
-        type: "Lead"
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    // await api.post(
+    //   "/api/notifications",
+    //   {
+    //     notificationId: Date.now().toString(),
+    //     assignedBy: signedInOfficer,          // you
+    //     assignedTo: [{
+    //         username: leadData.assignedBy,
+    //         role:     "Case Manager",           
+    //         status:   "pending",
+    //         unread:   true
+    //       }],
+    //     action1: "declined the lead",
+    //     post1:   `${leadNo}: ${description}`,
+    //     caseNo:   selectedCase.caseNo,
+    //     caseName: selectedCase.caseName,
+    //      leadNo: leadNo,
+    //     leadName: description,
+    //     caseStatus: selectedCase.caseStatus || "Open",
+    //     type: "Lead"
+    //   },
+    //   { headers: { Authorization: `Bearer ${token}` } }
+    // );
 
     // alert("❌ You’ve declined the lead, been removed from assigned list, and the Case Manager has been notified.");
     setAlertMessage("Lead is successfully declined");

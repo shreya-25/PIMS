@@ -256,7 +256,7 @@ export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   a
           className={`sidebar-item ${isActive ? ' active' : ''}`}
         >
           <div
-            className="case-header"
+            className="case-headerSB"
             onClick={() => handleCaseSelect(c)}
           >
             {/* Case title */}
