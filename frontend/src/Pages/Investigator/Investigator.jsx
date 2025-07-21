@@ -1124,7 +1124,7 @@ const sortedAllLeads = useMemo(() => {
               >
                 <div className="header-title">
                   {col}
-                  <span ref={el => (popupAssignedRefs.current[col] = el)}>
+                  <span ref={el => (popupAssignedRefs.current[dataKey] = el)}>
                     {/* Filter button */}
                     <button
                       onClick={() =>
@@ -1142,6 +1142,7 @@ const sortedAllLeads = useMemo(() => {
                       dataKey={dataKey}
                       distinctValues={distinctAssigned}
                       open={openAssignedFilter === dataKey}
+                      anchorRef={{ current: popupAssignedRefs.current[dataKey] }}
                       searchValue={assignedFilterSearch[dataKey] || ""}
                       selections={tempAssignedSelections[dataKey] || []}
                       onSearch={handleAssignedFilterSearch}
@@ -1236,7 +1237,7 @@ const sortedAllLeads = useMemo(() => {
               >
                 <div className="header-title">
                   {col}
-                  <span ref={el => (popupPendingRefs.current[col] = el)}>
+                  <span ref={el => (popupPendingRefs.current[dataKey] = el)}>
                     {/* FILTER */}
                     <button onClick={() =>
                       setOpenPendingFilter(prev =>
@@ -1252,6 +1253,7 @@ const sortedAllLeads = useMemo(() => {
                       dataKey={dataKey}
                       distinctValues={distinctPending}
                       open={openPendingFilter === dataKey}
+                      anchorRef={{ current: popupPendingRefs.current[dataKey] }}
                       searchValue={pendingFilterSearch[dataKey] || ""}
                       selections={tempPendingSelections[dataKey] || []}
                       onSearch={handlePendingFilterSearch}
@@ -1324,7 +1326,7 @@ const sortedAllLeads = useMemo(() => {
               >
                 <div className="header-title">
                   {col}
-                  <span ref={el => (popupPendingLRRefs.current[col] = el)}>
+                  <span ref={el => (popupPendingLRRefs.current[dataKey] = el)}>
                     {/* FILTER */}
                     <button onClick={() =>
                       setOpenPendingLRFilter(prev =>
@@ -1340,6 +1342,7 @@ const sortedAllLeads = useMemo(() => {
                       dataKey={dataKey}
                       distinctValues={distinctPendingLR}
                       open={openPendingLRFilter === dataKey}
+                      anchorRef={{ current: popupPendingLRRefs.current[dataKey] }}
                       searchValue={pendingLRFilterSearch[dataKey] || ''}
                       selections={tempPendingLRSelections[dataKey] || []}
                       onSearch={handlePendingLRFilterSearch}
@@ -1413,7 +1416,7 @@ const sortedAllLeads = useMemo(() => {
               >
                 <div className="header-title">
                   {col}
-                  <span ref={el => (popupAllRefs.current[col] = el)}>
+                  <span ref={el => (popupAllRefs.current[dataKey] = el)}>
                     {/* FILTER button */}
                     <button
                       onClick={() =>
@@ -1431,6 +1434,7 @@ const sortedAllLeads = useMemo(() => {
                       dataKey={dataKey}
                       distinctValues={distinctAll}
                       open={openAllFilter === dataKey}
+                      anchorRef={{ current: popupAllRefs.current[dataKey] }}
                       searchValue={allFilterSearch[dataKey] || ''}
                       selections={tempAllSelections[dataKey] || []}
                       onSearch={handleAllFilterSearch}
