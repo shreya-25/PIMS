@@ -835,24 +835,22 @@ const handleSortAll = colKey => {
 // Filter and sort for assigned leads- 
 // ─── Assigned Leads filter/sort setup ──────────────────────────────────────
 // columns + mapping
-const assignedColumns   = ["Lead No.","Lead Name","Due Date","Priority","Days Left","Flags","Assigned Officers"];
+const assignedColumns   = ["Lead No.","Lead Name","Due Date","Priority","Days Left","Assigned Officers"];
 const assignedColKey    = {
   "Lead No.":          "id",
   "Lead Name":         "description",
   "Due Date":          "dueDate",
   "Priority":          "priority",
   "Days Left":         "remainingDays",
-  "Flags":             "flags",
   "Assigned Officers": "assignedOfficers",
 };
 const assignedColWidths = {
-  "Lead No.":           "10%",
-  "Lead Name":          "25%",
-  "Due Date":           "12%",
+  "Lead No.":           "12%",
+  "Lead Name":          "20%",
+  "Due Date":           "13%",
   "Priority":           "10%",
-  "Days Left":          "10%",
-  "Flags":              "10%",
-  "Assigned Officers":  "18%",
+  "Days Left":          "13%",
+  "Assigned Officers":  "20%",
 };
 
 // refs + state
@@ -956,7 +954,6 @@ const pendingColumns   = [
   "Due Date",
   "Priority",
   "Days Left",
-  "Flags",
   "Assigned Officers"
 ];
 const pendingColKey    = {
@@ -965,17 +962,15 @@ const pendingColKey    = {
   "Due Date":          "dueDate",
   "Priority":          "priority",
   "Days Left":         "remainingDays",
-  "Flags":             "flags",
   "Assigned Officers": "assignedOfficers",
 };
 const pendingColWidths = {
-  "Lead No.":          "10%",
-  "Lead Name":         "30%",
-  "Due Date":          "12%",
-  "Priority":          "10%",
-  "Days Left":         "10%",
-  "Flags":              "10%",
-  "Assigned Officers": "18%",
+  "Lead No.":           "12%",
+  "Lead Name":          "20%",
+  "Due Date":           "13%",
+  "Priority":           "10%",
+  "Days Left":          "13%",
+  "Assigned Officers":  "21%",
 };
 
 // Refs + state
@@ -1181,10 +1176,10 @@ const allColKey    = {
   "Assigned Officers":  "assignedOfficers"
 };
 const allColWidths = {
-  "Lead No.":           "10%",
+  "Lead No.":           "13%",
   "Lead Log Summary":   "40%",
-  "Lead Status":        "15%",
-  "Assigned Officers":  "35%"
+  "Lead Status":        "17%",
+  "Assigned Officers":  "22%"
 };
 
 // Refs & state
@@ -1312,7 +1307,7 @@ const sortedAllLeads = useMemo(() => {
 
               <div className="left-content">
 
-                <div className = "side-title">
+                <div className = "side-titleLeft">
                   <h5>  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
                 </div>
                 {/* Display Case Number and Name */}
@@ -1622,7 +1617,7 @@ const sortedAllLeads = useMemo(() => {
                       );
                     })}
                     {/* extra column for “View” button */}
-                    <th style={{ width: "12%" }}></th>
+                    <th style={{ width: "10%" }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1657,13 +1652,7 @@ const sortedAllLeads = useMemo(() => {
               <td>{lead.dueDate || "N/A"}</td>
               <td>{lead.priority || "N/A"}</td>
               <td>{calculateRemainingDays(lead.dueDate) }</td>
-              <td>{lead.flags?.join(", ") || "None"}</td>
-              {/* <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
-              
-                {lead.assignedOfficers.map((officer, index) => (
-                  <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
-                ))}
-                </td> */}
+            
 
                 <td style={{ wordBreak:"break-word" }}>
                 {lead.assignedOfficers && lead.assignedOfficers.length > 0
@@ -1702,7 +1691,7 @@ const sortedAllLeads = useMemo(() => {
            ))
           ) : (
             <tr>
-              <td colSpan="8" style={{ textAlign: 'center' }}>
+              <td colSpan="7" style={{ textAlign: 'center' }}>
                 No Assigned Leads Available
               </td>
             </tr>
@@ -1800,7 +1789,6 @@ const sortedAllLeads = useMemo(() => {
               <td>{lead.dueDate}</td>
               <td>{lead.priority}</td>
               <td>{calculateRemainingDays(lead.dueDate)}</td>
-              <td>{lead.flags.join(", ") || "None"}</td>
               {/* <td>{lead.assignedOfficers.join(", ")}</td> */}
               {/* <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
             
@@ -1828,7 +1816,7 @@ const sortedAllLeads = useMemo(() => {
              ))
             ) : (
               <tr>
-                <td colSpan="8" style={{ textAlign: 'center' }}>
+                <td colSpan="7" style={{ textAlign: 'center' }}>
                   No Accepted Leads Available
                 </td>
               </tr>
