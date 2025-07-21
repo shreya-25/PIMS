@@ -348,3 +348,8 @@ body {
   background-color: rgba(137, 51, 51, 0.705); /* Darker red on hover */
 }
 
+
+.edit-icon
+{
+  font-size: 10px;
+}

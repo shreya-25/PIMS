@@ -773,11 +773,11 @@ Case Page
       <table className="leads-table">
         <thead>
           <tr>
-            <th style={{ width: "10%" }}>Narrative Id</th>
+            <th style={{ width: "12%" }}>Narrative Id</th>
             <th style={{ width: "13%" }}>Date Entered</th>
-            <th style={{ width: "9%" }}>Entered By</th>
+            <th style={{ width: "11%" }}>Entered By</th>
             <th className="results-col">Narrative</th>
-            <th style={{ width: "14%" }}></th>
+            <th style={{ width: "12%" }}></th>
             {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
             )}

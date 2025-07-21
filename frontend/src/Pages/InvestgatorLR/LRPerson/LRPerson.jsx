@@ -548,12 +548,12 @@ Case Page
         <table className="leads-table">
           <thead>
             <tr>
-              <th>Date Entered</th>
-              <th style={{ width: "10%" }}>Narrative Id </th>
-              <th>Name</th>
-              <th>Phone No</th>
-              <th>Address</th>
-              <th style={{ width: "14%" }}>Additional Details</th>
+              <th style={{ width: "13%" }}>Date Entered</th>
+              <th style={{ width: "12%" }}>Narrative Id </th>
+              <th style={{ width: "12%" }}>Name</th>
+              <th style={{ width: "12%" }}>Phone No</th>
+              {/* <th>Address</th> */}
+              <th style={{ width: "14%" }}>More</th>
               <th style={{ width: "14%" }}></th>
               {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
@@ -571,7 +571,7 @@ Case Page
                 <td>{person.returnId}</td>  
                 <td>{person.name}</td>
                 <td>{person.phoneNo}</td>
-                <td>{person.address}</td>
+                {/* <td>{person.address}</td> */}
                 <td>  <button className="download-btn" onClick={() =>
                               openPersonModal(
                                 selectedLead.leadNo,
@@ -624,7 +624,7 @@ Case Page
       </tr>
        )) : (
         <tr>
-          <td colSpan={isCaseManager ? 8 : 7} style={{ textAlign:'center' }}>
+          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
             No Details Available
           </td>
         </tr>

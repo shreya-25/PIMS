@@ -867,13 +867,13 @@ Case Page
         <table className="leads-table">
           <thead>
             <tr>
-              <th style={{ width: "12%" }}>Date Entered</th>
-              <th style={{ width: "10%" }}>Narrative Id</th>
-              <th>Make</th>
-              <th>Model</th>
-              <th>Color</th>
-              <th>State</th>
-              <th style={{ width: "15%" }}>Additional Details</th>
+              <th style={{ width: "13%" }}>Date Entered</th>
+              <th style={{ width: "12%" }}>Narrative Id</th>
+              {/* <th style={{ width: "10%" }}>Make</th> */}
+              <th style={{ width: "10%" }}>Model</th>
+              <th style={{ width: "10%" }}>Color</th>
+              {/* <th>State</th> */}
+              <th style={{ width: "15%" }}>More</th>
               <th style={{ width: "14%" }}></th>
               {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
@@ -885,7 +885,7 @@ Case Page
       <tr key={index}>
         <td>{vehicle.dateEntered}</td>
         <td>{vehicle.returnId}</td>
-        <td>{vehicle.make}</td>
+        {/* <td>{vehicle.make}</td> */}
         <td>{vehicle.model}</td>
         <td style={{ textAlign: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -902,7 +902,7 @@ Case Page
         </div>
       </td>
      
-        <td>{vehicle.state}</td>
+        {/* <td>{vehicle.state}</td> */}
         <td> <button className="download-btn" onClick={() => openVehicleModal(
                       selectedLead.leadNo,
                       selectedLead.leadName,
@@ -957,7 +957,7 @@ Case Page
       </tr>
        )) : (
         <tr>
-          <td colSpan={isCaseManager ? 9 : 8} style={{ textAlign:'center' }}>
+          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
             No Vehicle Data Available
           </td>
         </tr>

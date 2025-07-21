@@ -137,3 +137,22 @@
     margin-left: auto;
   }
   
+  /* drop the giant indent on the “My Ongoing Cases” dropdown */
+.dropdown-list1 {
+  list-style: none;
+  padding-left: 0;
+  margin-left: 0;
+  text-align: left;
+}
+
+/* then indent each item only a bit, to line up under the toggle */
+.dropdown-list1 .sidebar-item {
+  padding-left: 8px; /* tweak that to taste */
+}
+
+.case-headerSB
+{
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
