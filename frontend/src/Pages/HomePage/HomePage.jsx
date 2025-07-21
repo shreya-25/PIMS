@@ -700,10 +700,10 @@ const addCase = (newCase) => {
 
 
   const columnWidths = {
-  "Case No.":   "13%",
+  "Case No.":   "7%",
   "Case Name":  "20%",         // you can tweak widths…
-  "Created At": "13%",         // ← new
-  "Role":       "11%",
+  "Created At": "6%",         // ← new
+  "Role":       "7%",
 };
 
 // Columns + mapping to your data fields
@@ -1187,7 +1187,7 @@ const sortedPendingReturns = useMemo(() => {
                       </th>
                     );
                   })}
-                  <th style={{ width: "10%" }} ></th>{/* extra column for “View” button */}
+                  <th style={{ width: "4%" }} ></th>{/* extra column for “View” button */}
                 </tr>
               </thead>
               <tbody>

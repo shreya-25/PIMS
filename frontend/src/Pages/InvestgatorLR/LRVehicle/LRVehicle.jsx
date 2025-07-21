@@ -653,7 +653,7 @@ Case Page
 <SideBar  activePage="CasePageManager" />
 
                 <div className="left-content">
-                <div className="top-menu" style={{ marginTop: '2px', backgroundColor: '#3333330e' }}>
+                <div className="top-menu1" style={{ marginTop: '2px', backgroundColor: '#3333330e' }}>
        <div className="menu-items" style={{ fontSize: '19px' }}>
        
         <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
