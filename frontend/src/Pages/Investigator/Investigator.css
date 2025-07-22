@@ -15,23 +15,6 @@
     flex-direction: row; /* Sidebar and content side-by-side */
     /* flex: 1; */
   }
-  .left-content
-  {
-    height:100vh;
-    width: 100%;
-    align-items: center;
-  }
-
-  .case-header {
-    display: flex;
-    justify-content: center; 
-    align-items: center; 
-    height: 5%; 
-    margin-top: 1%;
-    font-weight: bold;
-    color: #333333;
-    font-size: 20px;
-  }
   
  
   /* Sidebar styling */
@@ -97,13 +80,13 @@
   /* background-color: #0D8790; */
   padding: 10px;
   border-radius: 5px;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
   font-size: 14px;
   /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
-  width: 80%;
+  /* width: 80%; */
   align-items: center;
   margin: 0 auto; /* Centers horizontally */
-  margin-top: 40px;
+  margin-top: 8px;
   font-size: 16px;
 }
 
@@ -128,8 +111,8 @@
 
 /* Content Section */
 .content-section {
-  padding: 20px;
-  width: 80%;
+  padding: 2px;
+  /* width: 80%; */
   margin: 0 auto;
 }
 

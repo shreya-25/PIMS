@@ -1,6 +1,6 @@
   /* Sidebar Container */
   .sideitem {
-    width: 23%;
+    width: 20%;
     background-color: rgba(12, 31, 32, 0.096);
     padding: 10px;
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
@@ -137,3 +137,22 @@
     margin-left: auto;
   }
   
+  /* drop the giant indent on the “My Ongoing Cases” dropdown */
+.dropdown-list1 {
+  list-style: none;
+  padding-left: 0;
+  margin-left: 0;
+  text-align: left;
+}
+
+/* then indent each item only a bit, to line up under the toggle */
+.dropdown-list1 .sidebar-item {
+  padding-left: 8px; /* tweak that to taste */
+}
+
+.case-headerSB
+{
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}

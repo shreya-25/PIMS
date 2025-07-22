@@ -468,24 +468,22 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
 // Filter and sort for assigned leads- 
 // ─── Assigned Leads filter/sort setup ──────────────────────────────────────
 // columns + mapping
-const assignedColumns   = ["Lead No.","Lead Name","Due Date","Priority","Days Left","Flags","Assigned Officers"];
+const assignedColumns   = ["Lead No.","Lead Name","Due Date","Priority","Days Left","Assigned Officers"];
 const assignedColKey    = {
   "Lead No.":          "id",
   "Lead Name":         "description",
   "Due Date":          "dueDate",
   "Priority":          "priority",
   "Days Left":         "remainingDays",
-  "Flags":             "flags",
   "Assigned Officers": "assignedOfficers",
 };
 const assignedColWidths = {
-  "Lead No.":           "10%",
-  "Lead Name":          "30%",
-  "Due Date":           "12%",
+   "Lead No.":           "12%",
+  "Lead Name":          "20%",
+  "Due Date":           "13%",
   "Priority":           "10%",
-  "Days Left":          "10%",
-  "Flags":              "10%",
-  "Assigned Officers":  "18%",
+  "Days Left":          "13%",
+  "Assigned Officers":  "21%",
 };
 
 // refs + state
@@ -589,7 +587,6 @@ const pendingColumns   = [
   "Due Date",
   "Priority",
   "Days Left",
-  "Flags",
   "Assigned Officers"
 ];
 const pendingColKey    = {
@@ -598,17 +595,15 @@ const pendingColKey    = {
   "Due Date":          "dueDate",
   "Priority":          "priority",
   "Days Left":         "remainingDays",
-  "Flags":             "flags",
   "Assigned Officers": "assignedOfficers",
 };
 const pendingColWidths = {
-  "Lead No.":          "10%",
-  "Lead Name":         "30%",
-  "Due Date":          "12%",
-  "Priority":          "10%",
-  "Days Left":         "10%",
-  "Flags":              "10%",
-  "Assigned Officers": "18%",
+   "Lead No.":           "12%",
+  "Lead Name":          "20%",
+  "Due Date":           "13%",
+  "Priority":           "10%",
+  "Days Left":          "13%",
+  "Assigned Officers":  "21%",
 };
 
 // Refs + state
@@ -814,10 +809,10 @@ const allColKey    = {
   "Assigned Officers":  "assignedOfficers"
 };
 const allColWidths = {
-  "Lead No.":           "10%",
+  "Lead No.":           "13%",
   "Lead Log Summary":   "40%",
-  "Lead Status":        "15%",
-  "Assigned Officers":  "35%"
+  "Lead Status":        "17%",
+  "Assigned Officers":  "22%"
 };
 
 // Refs & state
@@ -1026,7 +1021,7 @@ const sortedAllLeads = useMemo(() => {
                
                 <div className="left-content">
 
-          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+          <h5 className = "side-titleLeft">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
 
                    {/* Display Case Number and Name */}
                 <div className="case-header">
@@ -1107,7 +1102,7 @@ const sortedAllLeads = useMemo(() => {
                             className={`hoverable ${activeTab === "pendingLeadReturns" ? "active" : ""}`}
                             onClick={() => handleTabClick("pendingLeadReturns")}
                         >
-                            Lead Returns Under Review: {leads.pendingLeadReturns.length}
+                            Lead Returns In Review: {leads.pendingLeadReturns.length}
                         </span>
                        
                     </div>
@@ -1129,7 +1124,7 @@ const sortedAllLeads = useMemo(() => {
               >
                 <div className="header-title">
                   {col}
-                  <span ref={el => (popupAssignedRefs.current[col] = el)}>
+                  <span ref={el => (popupAssignedRefs.current[dataKey] = el)}>
                     {/* Filter button */}
                     <button
                       onClick={() =>
@@ -1147,6 +1142,7 @@ const sortedAllLeads = useMemo(() => {
                       dataKey={dataKey}
                       distinctValues={distinctAssigned}
                       open={openAssignedFilter === dataKey}
+                      anchorRef={{ current: popupAssignedRefs.current[dataKey] }}
                       searchValue={assignedFilterSearch[dataKey] || ""}
                       selections={tempAssignedSelections[dataKey] || []}
                       onSearch={handleAssignedFilterSearch}
@@ -1177,7 +1173,6 @@ const sortedAllLeads = useMemo(() => {
               <td>{lead.dueDate}</td>
               <td>{lead.priority}</td>
               <td>{calculateRemainingDays(lead.dueDate)}</td>
-              <td>{lead.flags.join(", ") || "None"}</td>
               <td>{(lead.assignedOfficers || []).join(", ")}</td>
               <td>
                 <button
@@ -1242,7 +1237,7 @@ const sortedAllLeads = useMemo(() => {
               >
                 <div className="header-title">
                   {col}
-                  <span ref={el => (popupPendingRefs.current[col] = el)}>
+                  <span ref={el => (popupPendingRefs.current[dataKey] = el)}>
                     {/* FILTER */}
                     <button onClick={() =>
                       setOpenPendingFilter(prev =>
@@ -1258,6 +1253,7 @@ const sortedAllLeads = useMemo(() => {
                       dataKey={dataKey}
                       distinctValues={distinctPending}
                       open={openPendingFilter === dataKey}
+                      anchorRef={{ current: popupPendingRefs.current[dataKey] }}
                       searchValue={pendingFilterSearch[dataKey] || ""}
                       selections={tempPendingSelections[dataKey] || []}
                       onSearch={handlePendingFilterSearch}
@@ -1277,7 +1273,7 @@ const sortedAllLeads = useMemo(() => {
             );
           })}
           {/* extra column for “View” */}
-          <th style={{ width: "11%" }}></th>
+          <th style={{ width: "10%" }}></th>
         </tr>
       </thead>
       <tbody>
@@ -1289,7 +1285,6 @@ const sortedAllLeads = useMemo(() => {
               <td>{lead.dueDate}</td>
               <td>{lead.priority}</td>
               <td>{calculateRemainingDays(lead.dueDate)}</td>
-              <td>{lead.flags.join(", ") || "None"}</td>
               <td>{(lead.assignedOfficers || []).join(", ")}</td>
               <td>
                 <button
@@ -1331,7 +1326,7 @@ const sortedAllLeads = useMemo(() => {
               >
                 <div className="header-title">
                   {col}
-                  <span ref={el => (popupPendingLRRefs.current[col] = el)}>
+                  <span ref={el => (popupPendingLRRefs.current[dataKey] = el)}>
                     {/* FILTER */}
                     <button onClick={() =>
                       setOpenPendingLRFilter(prev =>
@@ -1347,6 +1342,7 @@ const sortedAllLeads = useMemo(() => {
                       dataKey={dataKey}
                       distinctValues={distinctPendingLR}
                       open={openPendingLRFilter === dataKey}
+                      anchorRef={{ current: popupPendingLRRefs.current[dataKey] }}
                       searchValue={pendingLRFilterSearch[dataKey] || ''}
                       selections={tempPendingLRSelections[dataKey] || []}
                       onSearch={handlePendingLRFilterSearch}
@@ -1365,7 +1361,7 @@ const sortedAllLeads = useMemo(() => {
             );
           })}
           {/* extra column for “Continue” */}
-          <th style={{ width: '11%' }}></th>
+          <th style={{ width: '10%' }}></th>
         </tr>
       </thead>
       <tbody>
@@ -1420,7 +1416,7 @@ const sortedAllLeads = useMemo(() => {
               >
                 <div className="header-title">
                   {col}
-                  <span ref={el => (popupAllRefs.current[col] = el)}>
+                  <span ref={el => (popupAllRefs.current[dataKey] = el)}>
                     {/* FILTER button */}
                     <button
                       onClick={() =>
@@ -1438,6 +1434,7 @@ const sortedAllLeads = useMemo(() => {
                       dataKey={dataKey}
                       distinctValues={distinctAll}
                       open={openAllFilter === dataKey}
+                      anchorRef={{ current: popupAllRefs.current[dataKey] }}
                       searchValue={allFilterSearch[dataKey] || ''}
                       selections={tempAllSelections[dataKey] || []}
                       onSearch={handleAllFilterSearch}

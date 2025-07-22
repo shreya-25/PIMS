@@ -27,7 +27,7 @@
   align-items: center;
   width: 90%;
   justify-content: center;
-  flex: 0 0 auto; 
+  flex: 0 0 auto;
 }
 
 .main-page-content {
@@ -43,7 +43,7 @@
 }
 
 .main-pagehp {
-  width: 90%;
+  width: 99%;
   display: flex;
   flex-direction: column;
   padding: 20px;
@@ -79,6 +79,11 @@
   display: flex;
   gap: 10px;
   align-items: center;
+  margin:8px;
+  padding: 8px;
+}
+.add-case-section h2{
+  margin: 8px 0px;
 }
 
 /* Sidebar styling */
@@ -176,16 +181,13 @@
   display: flex;
   justify-content: space-around;
   background-color: rgb(41, 41, 139); 
-  /* background-color: #0D8790; */
-  padding: 10px;
+  /* padding: 8px; */
   border-radius: 5px;
-  margin-bottom: 20px;
+  /* margin-bottom: 20px; */
   font-size: 20px;
-  /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);  */
-  width: 90%;
+  width:90%;
   align-items: center;
-  margin: 0 auto; /* Centers horizontally */
-  margin-top: 20px;
+  /* margin: 0 auto;  */
 }
 
 /* Header items (tabs) */
@@ -194,10 +196,10 @@
   font-weight: bold;
   color: white; /* White text for contrast */
   text-align: center;
-  padding: 5px 10px;
+  padding: 5px;
   border-radius: 5px;
   transition: all 0.3s ease-in-out; /* Smooth hover and active transitions */
-  font-size: 20px;
+  font-size: 18px;
 }
 
 /* Hover effect for header items */
@@ -236,9 +238,9 @@
 
 /* Content sections container */
 .content-section {
-  padding: 20px;
-  margin-top: 5%;
-  width: 80%;
+  padding: 8px;
+  margin-top: 8px;
+  width: 90%;
   margin: 0 auto; /* Centers horizontally */
 }
 
@@ -394,13 +396,13 @@
 .leads-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
+  margin-top: 8px;
   table-layout: fixed; 
 }
 
 .leads-table th,
 .leads-table td {
-  padding: 5px;
+  padding: 2px;
   text-align: left;
   border: 1px solid #ddd;
   font-size: 20px;
@@ -467,12 +469,17 @@
   max-width: 190px;
 }
 
-.leads-table th:last-child,
 .leads-table td:last-child {
   /* width: auto; */
   min-width: 50px; /* Flags */
   max-width: 50px;
-  text-align: center;
+
+}
+
+.btn-sec-HP
+{
+  display: flex;
+  /* justify-content: center; */
 }
 
 
@@ -880,7 +887,7 @@
 .leads-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
+  margin-top: 8px;
 }
 
 .leads-table th,
@@ -1004,13 +1011,13 @@
 .leads-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
+  margin-top: 8px;
 }
 
 .leads-table th,
 .leads-table td {
   border: 1px solid #ddd;
-  padding: 8px;
+  padding: 5px;
   text-align: left;
 }
 
@@ -1242,14 +1249,13 @@
 .view-btn1,
 .accept-btn,
 .case-close-btn {
-  margin-left: 10px;
-  padding: 10px;
+  padding: 8px;
   border: none;
   border-radius: 3px;
   cursor: pointer;
   transition: background-color 0.3s ease, color 0.3s ease;
-  font-size: 20px;margin-bottom: 10px;
-  width: 140px;
+  font-size: 20px;
+  width: 100px;
 }
 
 .view-btn1 {
@@ -1441,110 +1447,6 @@
   background-color: #a05252; /* Darker red */
 }
 
-/* @media (max-width: 600px) {
-  .popup-content {
-    width: 95%;
-  }
-
-  .filter-item {
-    width: 100%;
-  }
-} */
-
-/* Responsive Design */
-/* @media (max-width: 992px) {
-  .sideitem {
-    width: 40%;
-  }
-} */
-
-/* @media (max-width: 600px) {
-  .SideBar {
-    width: 100%;
-    height: auto;
-  }
-
-  .case-item,
-  .lead-item {
-    flex-direction: column;
-    align-items: flex-start;
-
-
-  }
-
-  .case-actions,
-  .lead-item button {
-    width: 100%;
-    margin-top: 10px;
-  }
-} */
-
-/* Add horizontal scrolling for small screens */
-/* @media (max-width: 768px) {
-  .leads-table {
-    display: block;
-    overflow-x: auto; 
-    white-space: nowrap; 
-  }
-
-  .leads-table th,
-  .leads-table td {
-    font-size: 14px; 
-  }
-}
-
-
-@media (max-width: 480px) {
-  .leads-table {
-    display: none; 
-  }
-
-  .lead-cards {
-    display: block;
-  }
-
-  .lead-card {
-    display: flex;
-    flex-direction: column;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    padding: 10px;
-    background-color: #fff;
-  }
-
-  .lead-card div {
-    margin-bottom: 5px;
-  }
-
-  .lead-card .card-title {
-    font-weight: bold;
-    font-size: 16px;
-  }
-
-  .lead-card .card-actions {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 10px;
-  }
-
-  .lead-card button {
-    padding: 8px 12px;
-    font-size: 14px;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-
-  .view-btn1 {
-    color: white;
-  }
-
-  .accept-btn {
-    background-color: #0D8790;
-    color: white;
-  }
-} */
-
 @media (max-width: 480px) {
   .leads-table {
     display: none; 
@@ -1645,7 +1547,7 @@
 /* ✅ Ensure wrapping inside columns */
 .leads-table th,
 .leads-table td {
-  padding: 10px;
+  padding: 8px;
   border: 1px solid #ddd;
   text-align: left;
   font-size: 20px;
@@ -1674,10 +1576,10 @@
 
  .left-content1 {
  
-    margin-bottom: 50px;
     align-items: center;
-    height: calc(100vh - 10px);
-    min-width: 99%;
-    padding-bottom: 80px; 
+    /* height: calc(100vh - 10px); */
+    height: auto;
+    width: 99%;
+    /* padding-bottom: 80px;  */
     box-sizing: border-box;
   }
