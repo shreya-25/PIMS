@@ -27,7 +27,7 @@
   align-items: center;
   width: 90%;
   justify-content: center;
-  flex: 0 0 auto; 
+  flex: 0 0 auto;
 }
 
 .main-page-content {
@@ -79,6 +79,11 @@
   display: flex;
   gap: 10px;
   align-items: center;
+  margin:8px;
+  padding: 8px;
+}
+.add-case-section h2{
+  margin: 8px 0px;
 }
 
 /* Sidebar styling */

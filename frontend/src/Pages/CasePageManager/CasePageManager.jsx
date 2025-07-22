@@ -824,13 +824,6 @@ useEffect(() => {
 const handleFilterAllClick = col => {
   setOpenAllFilter(prev => prev===col ? null : col);
 };
-const handleSortAll = colKey => {
-  setAllSortConfig(prev => ({
-    key: prev.key===colKey && prev.direction==="asc" ? null : colKey,
-    direction: prev.key===colKey && prev.direction==="asc" ? "desc" : "asc"
-  }));
-};
-
 
 // Filter and sort for assigned leads- 
 // ─── Assigned Leads filter/sort setup ──────────────────────────────────────
@@ -1248,25 +1241,58 @@ const applyAllFilter = key =>
 
 // Apply filters + sort
 const sortedAllLeads = useMemo(() => {
-  let data = leads.allLeads.filter(lead =>
-    (!allFilterConfig.id           || String(lead.id)            === allFilterConfig.id)           &&
-    (!allFilterConfig.description  || lead.description           === allFilterConfig.description)  &&
-    (!allFilterConfig.leadStatus   || lead.leadStatus            === allFilterConfig.leadStatus)   &&
-    (!allFilterConfig.assignedOfficers ||
-       (lead.assignedOfficers || []).includes(allFilterConfig.assignedOfficers))
-  );
+  const { id: fId, description: fDesc, leadStatus: fStatus, assignedOfficers: fOffs } = allFilterConfig;
+
+  // 1) Filter
+  let data = leads.allLeads.filter(lead => {
+    // id filter
+    if (fId.length && !fId.includes(String(lead.id))) return false;
+
+    // description filter
+    if (fDesc.length && !fDesc.includes(lead.description)) return false;
+
+    // leadStatus filter
+    if (fStatus.length && !fStatus.includes(lead.leadStatus)) return false;
+
+    // assignedOfficers filter (lead.assignedOfficers is an array)
+    if (
+      fOffs.length &&
+      !lead.assignedOfficers.some(off => fOffs.includes(off))
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // 2) Sort
   const { key, direction } = allSortConfig;
   if (key) {
     data = data.slice().sort((a, b) => {
+      // if the field is an array, grab the first element for sorting
       const aV = Array.isArray(a[key]) ? a[key][0] : String(a[key]);
       const bV = Array.isArray(b[key]) ? b[key][0] : String(b[key]);
-      return direction === 'asc'
+      return direction === "asc"
         ? aV.localeCompare(bV)
         : bV.localeCompare(aV);
     });
   }
+
   return data;
 }, [leads.allLeads, allFilterConfig, allSortConfig]);
+
+
+const handleSortAll = columnKey => {
+  setAllSortConfig(prev => ({
+    key: prev.key === columnKey && prev.direction === "asc"
+      ? columnKey     // still sort by the same column, but flip direction
+      : columnKey,
+    direction: prev.key === columnKey && prev.direction === "asc"
+      ? "desc"
+      : "asc"
+  }));
+};
+
 
 
 
@@ -1668,9 +1694,8 @@ const sortedAllLeads = useMemo(() => {
               <td>
                 <button
                   className="view-btn1"
-                  onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.summary} } )}
-
-                  // }
+                  onClick={()=>handleLeadClick(lead)}
+                  // onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.summary} } )}
                 >
                   View
                 </button>
@@ -1951,6 +1976,7 @@ const sortedAllLeads = useMemo(() => {
                              searchValue={allFilterSearch[dataKey] || ''}
                              selections={tempAllSelections[dataKey] || []}
                              onSearch={handleAllFilterSearch}
+                             onSort={handleSortAll} 
                              allChecked={allAllChecked}
                              onToggleAll={toggleAllSelectAll}
                              onToggleOne={handleAllCheckboxToggle}
