@@ -260,7 +260,7 @@ const handleLeadClick = (lead) => {
         caseNo: String(lead.caseNo),
       });
 
-      const allLeads = filtered.map(mapLead);
+      const allLeads = filtered.map(mapLead).sort((a, b) => Number(b.id) - Number(a.id));;
       console.log("🔍 mapped leads:", allLeads);
       const assignedLeads = filtered.filter(l => l.leadStatus === "Assigned").map(mapLead);
       const pendingLeads  = filtered.filter(l => l.leadStatus === "Accepted" ).map(mapLead);

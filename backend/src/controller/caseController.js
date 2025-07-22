@@ -83,6 +83,13 @@ exports.createCase = async (req, res) => {
       });
     }
 
+    const duplicateName = await Case.findOne({ caseName: caseName.trim() });
+if (duplicateName) {
+  return res.status(409).json({
+    message: "Case name already exists. Please choose a different name."
+  });
+}
+
     // --- build assignedOfficers array ---
     const assignedOfficers = [
       ...managers.map(mgr => ({

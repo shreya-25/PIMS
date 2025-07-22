@@ -318,9 +318,29 @@ const handleGenerateLead = async () => {
     );
 
     // treat any 2xx as success
+
     if (response.status >= 200 && response.status < 300) {
-      // alert("Lead successfully added!");
-  setAlertMessage(`Lead #${leadData.leadNumber} created successfully!`);
+      const payload = response.data;
+
+  // If the server returns an array, pick [0]; else if it wraps it in .data, use that; otherwise assume top‑level.
+  let createdLead;
+  if (Array.isArray(payload)) {
+    createdLead = payload[0];
+  } else if (payload.data && typeof payload.data === "object") {
+    createdLead = payload.data;
+  } else {
+    createdLead = payload;
+  }
+
+  // 3) Safely read leadNo:
+  const realLeadNo = createdLead?.leadNo;
+  if (!realLeadNo) {
+    console.error("⚠️ Couldn’t find leadNo in response", payload);
+    setAlertMessage("Lead created, but could not read its number.");
+  } else {
+    setAlertMessage(`Lead #${realLeadNo} created successfully!`);
+  }
+
   setAlertOpen(true);
   sessionStorage.removeItem(FORM_KEY);
     
@@ -383,10 +403,10 @@ const handleGenerateLead = async () => {
           assignedBy:     username,
           assignedTo:     assignedToEntries,
           action1:        "assigned you to a new lead",
-          post1:          `${leadData.leadNumber}: ${leadData.leadDescription}`,
+          post1:          `${realLeadNo}: ${leadData.leadDescription}`,
           action2:        "related to the case",
           post2:          `${selectedCase.caseNo}: ${selectedCase.caseName}`,
-          leadNo:         leadData.leadNumber,
+          leadNo:         realLeadNo,
           leadName:       leadData.leadDescription,
           caseNo:         selectedCase.caseNo,
           caseName:       selectedCase.caseName,
@@ -803,7 +823,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
                 <SideBar activePage = "CasePageManager" />
 
                 <div className="left-content">
-                <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+                <h5 className = "side-titleLeft">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
 
 
 
@@ -963,7 +983,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
   </td>
 </tr>
 <tr>
-  <td>Due Date *</td>
+  <td>Due Date </td>
   <td>
     <input
       type="date"

@@ -1,7 +1,7 @@
 const express = require("express");
 const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, searchLeadsByKeyword, setLeadStatusToInReview,
   updateLead, removeAssignedOfficer, getAssignedLeadsForOfficer,
-  setLeadStatusToComplete, setLeadStatusToPending, updateAssignedToStatus, getLRForCM, getLeadStatus
+  setLeadStatusToComplete, setLeadStatusToPending, updateAssignedToStatus, getLRForCM, getLeadStatus,setLeadStatusToClosed
  } = require("../controller/leadController");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
@@ -32,6 +32,8 @@ router.get(
   verifyToken,        // if you protect this route
   getLeadStatus
 );
+
+router.put("/lead/status/close", setLeadStatusToClosed);
 
 router.put('/:leadNo/:leadName/:caseNo/:caseName', verifyToken, updateLeadStatus);
 

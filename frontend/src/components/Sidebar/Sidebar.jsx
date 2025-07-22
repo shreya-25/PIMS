@@ -51,34 +51,39 @@ export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   a
 
   useEffect(() => {
   const fetchNotifications = async () => {
-    const token = localStorage.getItem("token"); 
+    const token = localStorage.getItem("token");
     try {
-      const resp = await api.get("/api/notifications/officer", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      // if they return { notifications: [...] }
-      setNotifications(Array.isArray(resp.data)
-        ? resp.data
-        : Array.isArray(resp.data.notifications)
-          ? resp.data.notifications
-          : []);
+      const resp = await api.get(
+        `/api/notifications/unread/user/${signedInOfficer}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      let list = [];
+      if (Array.isArray(resp.data)) {
+        list = resp.data;
+      } else if (Array.isArray(resp.data.notifications)) {
+        list = resp.data.notifications;
+      }
+      setNotifications(list);
     } catch (err) {
       console.error("Error fetching notifications", err);
       setNotifications([]);
     }
   };
   fetchNotifications();
-}, []);
+}, [signedInOfficer]);
+
 
 
   const notificationsByCase = useMemo(() => {
   if (!Array.isArray(notifications)) return {};
   return notifications.reduce((acc, note) => {
-    const key = note.caseNo;
+    const key = String(note.caseNo);
     (acc[key] ||= []).push(note);
     return acc;
   }, {});
 }, [notifications]);
+
+
 
 
 
@@ -297,7 +302,11 @@ export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   a
             {/* Case title */}
             Case: {c.id}
             {/* Lead count badge */}
-            <span className="sidebar-number">{count}</span>
+            {/* <span className="sidebar-number">{count}</span> */}
+            <span className="sidebar-number">
+              {notificationsByCase[String(c.id)]?.length || 0}
+            </span>
+
           </div>
 
           {/* nested leads */}
