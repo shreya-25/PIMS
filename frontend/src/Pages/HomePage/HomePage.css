@@ -464,12 +464,17 @@
   max-width: 190px;
 }
 
-.leads-table th:last-child,
 .leads-table td:last-child {
   /* width: auto; */
   min-width: 50px; /* Flags */
   max-width: 50px;
-  text-align: left;
+
+}
+
+.btn-sec-HP
+{
+  display: flex;
+  /* justify-content: center; */
 }
 
 
