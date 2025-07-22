@@ -49,31 +49,29 @@ export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   a
     navigate(dest, { state: { caseDetails: selectedCase } });
   };
 
-    // 1) fetch notifications once on mount
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const { data } = await api.get("/api/notifications/officer", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        // assuming `data` is an array of { caseNo, … } objects
-        setNotifications(data);
-      } catch (err) {
-        console.error("Error fetching notifications", err);
-      }
-    };
-    fetchNotifications();
-  }, []);
+  const fetchNotifications = async () => {
+    try {
+      const { data } = await api.get("/api/notifications/officer");
+      // force an array
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Error fetching notifications", err);
+      setNotifications([]);  // fallback
+    }
+  };
+  fetchNotifications();
+}, []);
 
-  // 2) group them by caseNo
   const notificationsByCase = useMemo(() => {
-    return notifications.reduce((acc, note) => {
-      const key = note.caseNo;
-      (acc[key] ||= []).push(note);
-      return acc;
-    }, {});
-  }, [notifications]);
+  const list = Array.isArray(notifications) ? notifications : [];
+  return list.reduce((acc, note) => {
+    const key = note.caseNo;
+    (acc[key] ||= []).push(note);
+    return acc;
+  }, {});
+}, [notifications]);
+
 
 
   // helper array for dropdown items
