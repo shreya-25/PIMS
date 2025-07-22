@@ -36,6 +36,17 @@ export const LRFinish = () => {
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [closeReason, setCloseReason]       = useState("");
   const [closing, setClosing]               = useState(false);
+   const [confirmConfig, setConfirmConfig] = useState({
+    open: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
+  const [notifyConfig, setNotifyConfig] = useState({
+    open: false,
+    title: 'Notification',
+    message: ''
+  });
 
   const [notifyOpen, setNotifyOpen] = useState(false);
 const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
@@ -78,6 +89,50 @@ const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
       setClosing(false);
     }
   };
+
+  const handleSubmitReport = () => {
+  setConfirmConfig({
+    open: true,
+    title: 'Confirm Submission',
+    message:
+      `Once you submit, no assigned investigator can edit this anymore.\n\n`
+      + `Are you absolutely sure you want to submit the lead return for Case Manager approval?`,
+    onConfirm: actuallyDoSubmitReport
+  });
+};
+const handleApprove = () => {
+  setConfirmConfig({
+    open: true,
+    title: 'Confirm Approve',
+    message: 'Are you sure you want to APPROVE this lead return?',
+    onConfirm: () => submitReturnAndUpdate('complete')
+  });
+};
+const handleReturn = () => {
+  setConfirmConfig({
+    open: true,
+    title: 'Confirm Return',
+    message: 'Are you sure you want to RETURN this lead for changes?',
+    onConfirm: () => submitReturnAndUpdate('pending')
+  });
+};
+const handleReopen = () => {
+  setConfirmConfig({
+    open: true,
+    title: 'Confirm Reopen',
+    message: 'Are you sure you want to REOPEN this lead?',
+    onConfirm: () => submitReturnAndUpdate('pending')
+  });
+};
+const handleClose = () => {
+  setConfirmConfig({
+    open: true,
+    title: 'Confirm Close',
+    message: 'Are you sure you want to close this lead?',
+    onConfirm: handleConfirmClose
+  });
+};
+
 
 
 
@@ -466,28 +521,6 @@ useEffect(() => {
   
   };
 
-  const handleSubmitReport = async () => {
-
-      if (!selectedLead || !selectedCase) {
-        alert("No lead or case selected!");
-        setAlertMessage("No lead or case selected!");
-         setAlertOpen(true);
-        return;
-      }
-
-
-     setAlertMessage(
-    "Once you submit, no assigned investigator can edit this anymore.\n\n" +
-    "Are you absolutely sure you want to submit the lead return for Case Manager approval?"
-  );
-  // store the “real submit” as the confirm callback
-  setOnAlertConfirm(() => async () => {
-    setAlertOpen(false);
-    actuallyDoSubmitReport();
-  });
-  setAlertOpen(true);
-};
-
 const actuallyDoSubmitReport = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -680,7 +713,7 @@ const actuallyDoSubmitReport = async () => {
   return (
     <div className="lrfinish-container">
       <Navbar />
-      <AlertModal
+      {/* <AlertModal
               isOpen={alertOpen}
               title="Notification"
               message={alertMessage}
@@ -694,7 +727,7 @@ const actuallyDoSubmitReport = async () => {
   message={alertMessage}
   onConfirm={() => setNotifyOpen(false)}
   onClose={() => setNotifyOpen(false)}
-/>
+/> */}
  {/* <AlertModal
         isOpen={notifyOpen}
         title="Notification"
@@ -710,6 +743,28 @@ const actuallyDoSubmitReport = async () => {
   onConfirm={() => onAlertConfirm()}
   onClose={() => setConfirmCloseOpen(false)}
 /> */}
+
+{/* confirmation modal (yes/no) */}
+<AlertModal
+  isOpen={confirmConfig.open}
+  title={confirmConfig.title}
+  message={confirmConfig.message}
+  onConfirm={() => {
+    setConfirmConfig(c => ({ ...c, open: false }));
+    confirmConfig.onConfirm();
+  }}
+  onClose={() => setConfirmConfig(c => ({ ...c, open: false }))}
+/>
+
+{/* notification modal (info only) */}
+<AlertModal
+  isOpen={notifyConfig.open}
+  title={notifyConfig.title}
+  message={notifyConfig.message}
+  onConfirm={() => setNotifyConfig(n => ({ ...n, open: false }))}
+  onClose={() => setNotifyConfig(n => ({ ...n, open: false }))}
+/>
+
 
 
 
@@ -1200,7 +1255,7 @@ Case Page
   <div className="form-buttons-finish">
     <button
       className="save-btn1"
-      onClick={() => submitReturnAndUpdate("pending")}
+      onClick={handleReopen}
     >
       Reopen
     </button>
@@ -1210,12 +1265,11 @@ Case Page
         {selectedLead?.leadStatus !== "Completed" && selectedLead?.leadStatus !== "Closed" &&(
   isCaseManager ? (
     <div className="form-buttons-finish">
-      <button className="save-btn1" onClick={() => submitReturnAndUpdate("complete")}>Approve</button>
-      <button className="save-btn1" onClick={() => submitReturnAndUpdate("pending")}>Return</button>
+      <button className="save-btn1" onClick={handleApprove}>Approve</button>
+      <button className="save-btn1" onClick={handleReturn}>Return</button>
        <button
       className="save-btn1 close-lead-btn"
-      onClick={() => setShowCloseModal(true)}
-    >
+      onClick={() => setShowCloseModal(true)}>
       Close
     </button>
     </div>
