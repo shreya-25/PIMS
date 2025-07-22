@@ -52,25 +52,33 @@ export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   a
   useEffect(() => {
   const fetchNotifications = async () => {
     try {
-      const { data } = await api.get("/api/notifications/officer");
-      // force an array
-      setNotifications(Array.isArray(data) ? data : []);
+      const resp = await api.get("/api/notifications/officer", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // if they return { notifications: [...] }
+      setNotifications(Array.isArray(resp.data)
+        ? resp.data
+        : Array.isArray(resp.data.notifications)
+          ? resp.data.notifications
+          : []);
     } catch (err) {
       console.error("Error fetching notifications", err);
-      setNotifications([]);  // fallback
+      setNotifications([]);
     }
   };
   fetchNotifications();
 }, []);
 
+
   const notificationsByCase = useMemo(() => {
-  const list = Array.isArray(notifications) ? notifications : [];
-  return list.reduce((acc, note) => {
+  if (!Array.isArray(notifications)) return {};
+  return notifications.reduce((acc, note) => {
     const key = note.caseNo;
     (acc[key] ||= []).push(note);
     return acc;
   }, {});
 }, [notifications]);
+
 
 
 
