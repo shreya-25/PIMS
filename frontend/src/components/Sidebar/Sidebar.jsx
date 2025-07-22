@@ -51,6 +51,7 @@ export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   a
 
   useEffect(() => {
   const fetchNotifications = async () => {
+    const token = localStorage.getItem("token"); 
     try {
       const resp = await api.get("/api/notifications/officer", {
         headers: { Authorization: `Bearer ${token}` }
