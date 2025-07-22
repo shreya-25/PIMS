@@ -30,7 +30,7 @@ export const Investigator = () => {
     const [remainingDaysFilter, setRemainingDaysFilter] = useState("");
   const [flagsFilter, setFlagsFilter] = useState("");
   const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
-  const { setSelectedCase, selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+  const { setSelectedCase, selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus} = useContext(CaseContext);
    const [showSelectModal, setShowSelectModal] = useState(false);
     const [pendingRoute, setPendingRoute]   = useState(null);
     const [showAlert, setShowAlert] = useState(false);
@@ -169,6 +169,7 @@ const handleLeadClick = (lead) => {
     caseName: lead.caseName,
     caseNo: lead.caseNo
 });
+setLeadStatus(lead.leadStatus);  
 
   // Navigate to Lead Review Page
   navigate("/leadReview", { state: { leadDetails: lead, caseDetails: selectedCase } });
@@ -709,8 +710,8 @@ const pendingLRColKey    = {
 };
 const pendingLRColWidths = {
   "Lead No.":  "15%",
-  "Lead Name": "50%",
-  "Case Name": "35%",
+  "Lead Name": "35%",
+  "Case Name": "30%",
 };
 
 // Refs + state
