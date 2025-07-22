@@ -617,10 +617,45 @@ const getLeadStatus = async (req, res) => {
   }
 };
 
+// at the bottom of controllers/lead.controller.js
+/**
+ * PUT /api/lead/status/close
+ * body: { leadNo, description, caseNo, caseName, reason }
+ */
+const setLeadStatusToClosed = async (req, res) => {
+  try {
+    const { leadNo, description, caseNo, caseName, reason } = req.body;
+    if (!leadNo || !description || !caseNo || !caseName || !reason) {
+      return res.status(400).json({ message: "All fields (including reason) are required." });
+    }
+
+    const lead = await Lead.findOne({
+      leadNo: Number(leadNo),
+      description,
+      caseNo,
+      caseName
+    });
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found." });
+    }
+
+    // update status, completedDate, and store the reason
+    lead.leadStatus     = "Close";
+    lead.completedDate  = new Date();
+    lead.comment        = reason;           // or a new `closeReason` field
+    await lead.save();
+
+    return res.status(200).json({ message: "Lead closed successfully.", lead });
+  } catch (err) {
+    console.error("Error closing lead:", err);
+    return res.status(500).json({ message: "Server error while closing lead." });
+  }
+};
+
 
 
 module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword , setLeadStatusToInReview, 
-  setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM, getLeadStatus
+  setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM, getLeadStatus, setLeadStatusToClosed
 };
 
 

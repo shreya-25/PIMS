@@ -130,11 +130,11 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
     setError(null);
   
     const newCase = {
-      id: caseDetails.number,
-      title: caseDetails.title,
+      id: caseDetails.number.trim(),
+      title: caseDetails.title.trim(),
       status: "Ongoing",
-      caseNo: caseDetails.number,
-      caseName: caseDetails.title,
+      caseNo: caseDetails.number.trim(),
+      caseName: caseDetails.title.trim(),
       role: "Case Manager",
       caseSummary: caseDetails.summary,
       executiveCaseSummary: caseDetails.executiveCaseSummary,

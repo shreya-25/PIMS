@@ -37,19 +37,21 @@ export const LRFinish = () => {
   const [closeReason, setCloseReason]       = useState("");
   const [closing, setClosing]               = useState(false);
 
+  const [notifyOpen, setNotifyOpen] = useState(false);
+const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
+
   const handleConfirmClose = async () => {
     if (!closeReason.trim()) {
       setAlertMessage("Please provide a reason before closing the lead.");
-      setAlertOpen(true);
+      setNotifyOpen(true);
       return;
     }
 
     setClosing(true);
     try {
       const token = localStorage.getItem("token");
-      // adjust endpoint & payload as needed
       await api.put(
-        `/api/lead/status/close`,
+        `/api/lead/lead/status/close`,
         {
           leadNo:      selectedLead.leadNo,
           description: selectedLead.leadName,
@@ -60,21 +62,23 @@ export const LRFinish = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // update UI
+      // update local state
       setLeadStatus("Closed");
       setSelectedLead(prev => ({ ...prev, leadStatus: "Closed" }));
       setShowCloseModal(false);
       setCloseReason("");
       setAlertMessage("Lead closed successfully.");
-      setAlertOpen(true);
+      setNotifyOpen(true);
+
     } catch (err) {
       console.error("Error closing lead:", err);
       setAlertMessage("Error closing lead. See console for details.");
-      setAlertOpen(true);
+      setNotifyOpen(true);
     } finally {
       setClosing(false);
     }
   };
+
 
 
   const getCasePageRoute = () => {
@@ -606,7 +610,7 @@ const actuallyDoSubmitReport = async () => {
         setAlertOpen(true);
 
       const human =
-        newStatus === "complete" ? "approved the lead" :
+        // newStatus === "complete" ? "approved the lead" :
         newStatus === "Accepted" ? "returned the lead" : "reopened the lead";
 
 
@@ -630,6 +634,8 @@ const actuallyDoSubmitReport = async () => {
          })),
           action1:        human,
           post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
+          action2:        "related to the case",
+          post2:          `${selectedCase.caseNo}: ${selectedCase.caseName}`,
           caseNo:         selectedCase.caseNo,
           caseName:       selectedCase.caseName,
           leadNo:         selectedLead.leadNo,
@@ -674,7 +680,7 @@ const actuallyDoSubmitReport = async () => {
   return (
     <div className="lrfinish-container">
       <Navbar />
-      <AlertModal
+      {/* <AlertModal
               isOpen={alertOpen}
               title="Notification"
               message={alertMessage}
@@ -688,7 +694,23 @@ const actuallyDoSubmitReport = async () => {
   message={alertMessage}
   onConfirm={() => onAlertConfirm()}
   onClose={() => setAlertOpen(false)}
-/>
+/> */}
+ <AlertModal
+        isOpen={notifyOpen}
+        title="Notification"
+        message={alertMessage}
+        onConfirm={() => setNotifyOpen(false)}
+        onClose={() => setNotifyOpen(false)}
+      />
+
+{/* <AlertModal
+  isOpen={confirmCloseOpen}
+  title="Confirm Close Lead"
+  message={alertMessage}
+  onConfirm={() => onAlertConfirm()}
+  onClose={() => setConfirmCloseOpen(false)}
+/> */}
+
 
 
       {/* Top Menu */}
@@ -1174,7 +1196,7 @@ Case Page
         </div>
         </div>
 
-        {selectedLead?.leadStatus === "Completed" && isCaseManager && (
+        {(selectedLead?.leadStatus === "Completed" || selectedLead?.leadStatus === "Close") && isCaseManager && (
   <div className="form-buttons-finish">
     <button
       className="save-btn1"
@@ -1185,7 +1207,7 @@ Case Page
   </div>
 )}
 
-        {selectedLead?.leadStatus !== "Completed" && selectedLead?.leadStatus !== "Closed" &&(
+        {selectedLead?.leadStatus !== "Completed" && selectedLead?.leadStatus !== "Close" &&(
   isCaseManager ? (
     <div className="form-buttons-finish">
       <button className="save-btn1" onClick={() => submitReturnAndUpdate("complete")}>Approve</button>
@@ -1221,7 +1243,7 @@ Case Page
         </div>
 
         {/* Close‐Lead Modal */}
-{showCloseModal && (
+{/* {showCloseModal && (
   <div className="close-modal-backdrop">
     <div className="close-modal">
       <h3>Reason for Closing Lead</h3>
@@ -1229,7 +1251,6 @@ Case Page
         rows={4}
         value={closeReason}
         onChange={e => setCloseReason(e.target.value)}
-        placeholder="Please explain why you're closing this lead"
       />
       <div className="modal-buttons">
         <button
@@ -1237,7 +1258,7 @@ Case Page
           onClick={handleConfirmClose}
           disabled={closing}
         >
-          {closing ? "Closing" : "Confirm"}
+          {closing ? "Closing…" : "Confirm"}
         </button>
         <button
           className="save-btn1"
@@ -1249,7 +1270,36 @@ Case Page
       </div>
     </div>
   </div>
-)}
+)} */}
+
+ {showCloseModal && (
+        <div className="close-modal-backdrop">
+          <div className="close-modal">
+            <h3>Reason for Closing Lead</h3>
+            <textarea
+              rows={4}
+              value={closeReason}
+              onChange={e => setCloseReason(e.target.value)}
+            />
+            <div className="modal-buttons">
+              <button
+                className="save-btn1"
+                onClick={handleConfirmClose}
+                disabled={closing}
+              >
+                {closing ? "Closing…" : "Confirm"}
+              </button>
+              <button
+                className="save-btn1"
+                onClick={() => setShowCloseModal(false)}
+                disabled={closing}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
    
      

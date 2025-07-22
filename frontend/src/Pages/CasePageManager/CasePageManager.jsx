@@ -391,7 +391,8 @@ const handleConfirmOfficers = () => {
           .map(mapLead);
 
         const allLeads = filteredLeadsArray
-          .map(mapLead);
+          .map(mapLead)
+          .sort((a, b) => Number(b.id) - Number(a.id));
   
         console.log("✅ Assigned Leads:", assignedLeads);
         console.log("✅ Pending Leads:", pendingLeads);

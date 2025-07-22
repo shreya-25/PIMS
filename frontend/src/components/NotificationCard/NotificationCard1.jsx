@@ -160,6 +160,9 @@ const NotificationCard1 = ({ signedInOfficer }) => {
             <p>
               <strong>{n.assignedBy}</strong> {n.action1}
               {n.post1 && <strong> {n.post1}</strong>}
+               {n.action2 && (
+    <> {n.action2}{n.post2 && <strong> {n.post2}</strong>}</>
+  )}
             </p>
             <span className="time">Role: {thisAss.role}</span>
             <span className="time">{new Date(n.time).toLocaleString()}</span>
