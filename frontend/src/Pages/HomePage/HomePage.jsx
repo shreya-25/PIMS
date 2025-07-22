@@ -947,8 +947,13 @@ const sortAssignedColumn = (dataKey, direction) =>
       Object.entries(assignedFilterConfig).every(([field, val]) => {
         if (!val || val.length === 0) return true; 
         const cell = lead[field];
-        if (Array.isArray(cell)) return cell.includes(val);
-        return String(cell) === val;
+        if (Array.isArray(cell)) {
+         // keep the lead if ANY of the selectedValues is in the cell‐array
+         return val.some(val => cell.includes(val));
+       } else {
+         // scalar cell: keep if it matches one of the selectedValues
+         return val.includes(String(cell));
+       }
       })
     )
     // 2. Sort
