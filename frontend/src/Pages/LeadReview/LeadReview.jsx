@@ -179,6 +179,8 @@ const handleSave = async () => {
           }],
           action1: "assigned you to a new lead",
           post1:   `${leadData.leadNo}: ${leadData.description}`,
+          action2:  "related to the case",
+          post2:   `${selectedCase.caseNo}: ${selectedCase.caseName}`,
           caseNo:   leadData.caseNo,
           caseName: leadData.caseName,
           leadNo: leadData.leadNo,

@@ -583,11 +583,11 @@ const formatDate = (dateString) => {
             <tr>
               <th style={{ width: "10%" }}>Lead #</th>
               <th>Lead Log Summary</th>
-              <th style={{ width: "10%" }}>Date Created</th>
+              <th style={{ width: "11%" }}>Date Created</th>
               <th style={{ width: "10%" }}>Status</th>
-              <th style={{ width: "10%" }}>Assigned To</th>
-              <th style={{ width: "11%" }}>Date Submitted</th>
-              <th style={{ width: "11%" }}>Date Approved</th>
+              <th style={{ width: "11%" }}>Assigned To</th>
+              <th style={{ width: "13%" }}>Date Submitted</th>
+              <th style={{ width: "12%" }}>Date Approved</th>
             </tr>
           </thead>
           <tbody>
@@ -625,8 +625,8 @@ const formatDate = (dateString) => {
           ))} */}
            {entry.assignedTo?.map(o => o.username).join(", ") || "None"}
         </td>
-                  <td>{formatDate(entry.dateSubmitted)}</td> 
-                  <td>{formatDate(entry.dateApproved)}</td> 
+                  <td>{formatDate(entry.submittedDate)}</td> 
+                  <td>{formatDate(entry.approvedDate)}</td> 
                 </tr>
               ))
             ) : (
