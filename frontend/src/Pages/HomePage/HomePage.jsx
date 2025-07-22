@@ -1187,7 +1187,7 @@ const sortedPendingReturns = useMemo(() => {
                       </th>
                     );
                   })}
-                  <th style={{ width: "4%" }} ></th>{/* extra column for “View” button */}
+                  <th style={{ width: "7%", textAlign: "center" }} ></th>{/* extra column for “View” button */}
                 </tr>
               </thead>
               <tbody>
@@ -1199,6 +1199,7 @@ const sortedPendingReturns = useMemo(() => {
                       <td>{formatDate(c.createdAt)}</td> 
                       <td>{c.role}</td>
                       <td>
+                        <div className="btn-sec-HP">
                         <button
                           className="view-btn1"
                           onClick={() => handleCaseClick(c)}
@@ -1217,6 +1218,7 @@ const sortedPendingReturns = useMemo(() => {
                             Close
                           </button>
                         )}
+                        </div>
                       </td>
                     </tr>
                   ))
