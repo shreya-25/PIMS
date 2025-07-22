@@ -700,11 +700,11 @@ Case Page
             <thead>
               <tr>
                 <th style={{ width: "10%" }} >Event Date</th>
-                <th style={{ width: "10%" }}> Narrative Id </th>
-                <th style={{ width: "15%" }}>Event Time Range</th>
+                <th style={{ width: "12%" }}> Narrative Id </th>
+                <th style={{ width: "17%" }}>Event Time Range</th>
                 <th style={{ width: "15%" }}>Event Location</th>
-                <th >Event Description</th>
-                <th style={{ width: "13%" }}></th>
+                <th style={{ width: "11%" }}>Description</th>
+                <th style={{ width: "11%" }}></th>
                 {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
             )}

@@ -804,11 +804,11 @@ Case Page
            <table className="leads-table">
           <thead>
             <tr>
-              <th style={{ width: "11%" }}>Date Entered*</th>
-              <th style={{ width: "10%" }}>Narrative Id* </th>
-              <th>Date Audio Recorded</th>
-              <th>File Name*</th>
-              <th>Description*</th>
+              <th style={{ width: "12%" }}>Date Entered</th>
+              <th style={{ width: "12%" }}>Narrative Id </th>
+              {/* <th>Date Audio Recorded</th> */}
+              <th>File Name</th>
+              <th>Description</th>
               <th style={{ width: "13%" }}></th>
               {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
@@ -820,7 +820,7 @@ Case Page
               <tr key={index}>
                 <td>{audio.dateEntered}</td>
                 <td>{audio.returnId}</td>
-                <td>{audio.dateAudioRecorded}</td>
+                {/* <td>{audio.dateAudioRecorded}</td> */}
                  <td>
   <a
     href={audio.audioSrc}
@@ -869,7 +869,7 @@ Case Page
       </tr>
        )) : (
         <tr>
-          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
+          <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign:'center' }}>
             No Audio Data Available
           </td>
         </tr>

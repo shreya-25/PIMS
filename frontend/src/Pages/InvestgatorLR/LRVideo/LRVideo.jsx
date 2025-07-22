@@ -794,8 +794,8 @@ Case Page
           <thead>
             <tr>
               <th style={{ width: "12%" }}>Date Entered</th>
-              <th style={{ width: "10%" }}> Narrative Id </th>
-              <th>Date Video Recorded</th>
+              <th style={{ width: "12%" }}> Narrative Id </th>
+              {/* <th>Date Video Recorded</th> */}
               <th>File Name</th>
               <th>Description</th>
               <th style={{ width: "13%" }}></th>
@@ -809,7 +809,7 @@ Case Page
               <tr key={index}>
                 <td>{video.dateEntered}</td>
                 <td>{video.returnId} </td>
-                <td>{video.dateVideoRecorded}</td>
+                {/* <td>{video.dateVideoRecorded}</td> */}
                  <td>
                           {video.isLink ? (
                             <a
@@ -869,7 +869,7 @@ Case Page
       </tr>
        )) : (
         <tr>
-          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
+          <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign:'center' }}>
             No Video Data Available
           </td>
         </tr>
