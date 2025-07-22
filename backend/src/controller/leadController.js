@@ -26,6 +26,18 @@ const createLead = async (req, res) => {
       returnedDate,
     } = req.body;
 
+     const missing = [];
+    if (!caseName)    missing.push('Case Name');
+    if (!caseNo)      missing.push('Case Number');
+    if (!summary)     missing.push('Lead Log Summary');
+    if (!description) missing.push('Lead Description');
+
+    if (missing.length) {
+      return res.status(400).json({
+        message: `${missing.length > 1 ? 's' : ''} ${missing.join(', ')} field missing`
+      });
+    }
+
     const assignedTo = assignedToInput.map(item =>
       typeof item === 'string'
         ? { username: item, status: 'pending' }

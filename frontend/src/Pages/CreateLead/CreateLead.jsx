@@ -318,6 +318,11 @@ const handleGenerateLead = async () => {
     );
 
     // treat any 2xx as success
+    if (!leadData.leadDescription?.trim() || !leadData.leadSummary?.trim()) {
+    setAlertMessage("Mandatory fields missing");
+    setAlertOpen(true);
+    return;
+  }
 
     if (response.status >= 200 && response.status < 300) {
       const payload = response.data;
