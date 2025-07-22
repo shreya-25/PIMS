@@ -522,6 +522,7 @@ useEffect(() => {
   };
 
 const actuallyDoSubmitReport = async () => {
+  const now = new Date().toISOString();
   try {
     const token = localStorage.getItem("token");
 
@@ -555,7 +556,8 @@ const actuallyDoSubmitReport = async () => {
             leadNo: selectedLead.leadNo,
             description: selectedLead.leadName,
             caseNo: selectedCase.caseNo,
-            caseName: selectedCase.caseName
+            caseName: selectedCase.caseName,
+            submittedDate: now
           },
           {
             headers: {
@@ -633,7 +635,8 @@ const actuallyDoSubmitReport = async () => {
           leadNo:     selectedLead.leadNo,
           description: selectedLead.leadName,
           caseNo:     selectedCase.caseNo,
-          caseName:   selectedCase.caseName
+          caseName:   selectedCase.caseName,
+           ...(newStatus === "complete" && { approvedDate: new Date().toISOString() })
         },
         { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }}
       );

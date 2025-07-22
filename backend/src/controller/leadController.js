@@ -399,7 +399,7 @@ const searchLeadsByKeyword = async (req, res) => {
 
 const setLeadStatusToInReview = async (req, res) => {
   try {
-    const { leadNo, description, caseName, caseNo } = req.body;
+    const { leadNo, description, caseName, caseNo, submittedDate } = req.body;
 
     if (!leadNo || !description || !caseName || !caseNo) {
       return res.status(400).json({ message: "All fields are required." });
@@ -417,6 +417,7 @@ const setLeadStatusToInReview = async (req, res) => {
     }
 
     lead.leadStatus = "In Review";
+    lead.submittedDate  = submittedDate ? new Date(submittedDate) : new Date();
     await lead.save();
 
     console.log(`✅ [DEBUG] Lead ${leadNo} status set to 'In Review' for case ${caseName} (${caseNo})`);
@@ -431,7 +432,7 @@ const setLeadStatusToInReview = async (req, res) => {
 
 const setLeadStatusToComplete = async (req, res) => {
   try {
-    const { leadNo, description, caseName, caseNo } = req.body;
+    const { leadNo, description, caseName, caseNo, approvedDate } = req.body;
 
     if (!leadNo || !description || !caseName || !caseNo) {
       return res.status(400).json({ message: "All fields are required." });
@@ -449,6 +450,7 @@ const setLeadStatusToComplete = async (req, res) => {
     }
 
     lead.leadStatus = "Completed";
+    lead.approvedDate  = approvedDate ? new Date(approvedDate): new Date();
     await lead.save();
 
     console.log(`✅ [DEBUG] Lead ${leadNo} status set to 'Completed' for case ${caseName} (${caseNo})`);
