@@ -14,32 +14,10 @@ html, body {
   font-family: Arial, sans-serif;
 }
 
-
-/* .lead-review-container {
-  display: flex;
-}
-.lead-main-content {
-  flex: 1;
-  align-items:center;
-  justify-content: center;
-  margin-left: 10%;
-}
-
-.sideitem
-{
-  min-height: 100%;
-} */
-
 .lead-review-container1 {
   display: flex;
-}
-
-.update-lead-btn
-{
-  margin-top: 2px;
-  width: 90%;
-  display: flex;
-  justify-content: flex-end;
+  width:100%;
+  overflow-x: auto;
 }
 
 /* Sidebar */
@@ -49,11 +27,30 @@ html, body {
 
 /* Content area */
 .lead-main-content {
+  display: flex;
+  flex-direction: column;
   flex: 1;      
   /* padding: 20px; */
   box-sizing: border-box;
-  min-width: 83%;
+  width: 75%;
+  overflow-x: auto;
 }
+ .caseandleadinfo
+  {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    height: auto;
+  }
+  .side-titleRight
+  {
+    /* margin-left: 20px; */
+    text-align: center;
+    display:flex;
+    justify-content: flex-end;
+    /* width: 100%; */
+    padding-right: 16px;    
+  }
 
 .lead-return-div
 {
@@ -67,12 +64,10 @@ html, body {
 .form_and_tracker
 {
   display: flex;
-  margin-top: 20px;
-  width: 95%;
-  padding-left: 20px;
+  width: 100%;
+  padding-left: 16px;
   align-items: center;
   justify-content: center;
-  gap: 10px;
 }
 
 /* Form Section container (groups fields) */
@@ -111,7 +106,7 @@ html, body {
 
 /* Info Table styling (top) */
 .details-table {
-  width: 90%;
+  width: 95%;
   border-collapse: collapse;
   margin-top: 10px;
 }
@@ -124,7 +119,10 @@ html, body {
   vertical-align: middle;
   border-bottom: 1px solid #eee;
 }
-
+/* first column 60%, second 40% */
+.details-table td:first-child {
+  width: 30%;
+}
 .info-label {
   width: 500px;
   font-weight: 600;
@@ -245,7 +243,6 @@ html, body {
 .secondary-button:hover {
   background-color: #a05252; /* Darker red */
 }
-
 
 
 /* Lead Tracker Container */

@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect, useMemo} from 'react';
 import axios from "axios";
 import "./Sidebar.css";
 import { CaseContext } from "../../Pages/CaseContext";
@@ -12,6 +12,7 @@ export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   a
 
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(false);
   const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+    const [notifications, setNotifications] = useState([]);
   const location = useLocation();
   const { caseDetails } = location.state || {};
   const { selectedCase, selectedLead, setSelectedLead , setSelectedCase} = useContext(CaseContext);
@@ -47,6 +48,32 @@ export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   a
     }
     navigate(dest, { state: { caseDetails: selectedCase } });
   };
+
+    // 1) fetch notifications once on mount
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const { data } = await api.get("/api/notifications/officer", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        // assuming `data` is an array of { caseNo, … } objects
+        setNotifications(data);
+      } catch (err) {
+        console.error("Error fetching notifications", err);
+      }
+    };
+    fetchNotifications();
+  }, []);
+
+  // 2) group them by caseNo
+  const notificationsByCase = useMemo(() => {
+    return notifications.reduce((acc, note) => {
+      const key = note.caseNo;
+      (acc[key] ||= []).push(note);
+      return acc;
+    }, {});
+  }, [notifications]);
 
 
   // helper array for dropdown items
@@ -246,8 +273,9 @@ export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   a
 {caseDropdownOpen && (
   <ul className="dropdown-list1">
     {caseList.map(c => {
-      const myLeads = leadsByCase[c.id] || [];
-      const count   = myLeads.length;
+      // const myLeads = leadsByCase[c.id] || [];
+      // const count   = myLeads.length;
+      const count = notificationsByCase[c.id]?.length || 0;
       const isActive = selectedCase.caseNo === c.id;
 
       return (
@@ -256,7 +284,7 @@ export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   a
           className={`sidebar-item ${isActive ? ' active' : ''}`}
         >
           <div
-            className="case-header"
+            className="case-headerSB"
             onClick={() => handleCaseSelect(c)}
           >
             {/* Case title */}

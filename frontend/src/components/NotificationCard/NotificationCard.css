@@ -1,14 +1,15 @@
 .notification-bar {
-    width: 70%;
+    width: 90%;
     /* height: 450px; */
     height: 10%;
     background: white;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    padding: 15px;
+    padding: 8px;
     font-family: Arial, sans-serif;
     overflow: hidden;
-    margin: 20px;
+    /* margin: 8px 8px 0px 8px ; */
+    margin: 16px 16px 8px 16px;
     overflow-y: auto; /* Makes it scrollable */
 
   }

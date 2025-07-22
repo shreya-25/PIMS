@@ -235,28 +235,28 @@ const acceptLead = async (leadNo, description) => {
       }
     );
 
-     await api.post(
-      "/api/notifications",
-      {
-        notificationId: Date.now().toString(),
-        assignedBy: signedInOfficer,
-        assignedTo: [{
-            username: leadData.assignedBy,
-            role:     "Case Manager",           
-            status:   "pending",
-            unread:   true
-          }],
-        action1: "accepted the lead",
-        post1:   `${leadNo}: ${description}`,
-        caseNo:   selectedCase.caseNo,
-        caseName: selectedCase.caseName,
-        leadNo: leadNo,
-        leadName: description,
-        caseStatus: selectedCase.caseStatus || "Open",
-        type: "Lead"
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    //  await api.post(
+    //   "/api/notifications",
+    //   {
+    //     notificationId: Date.now().toString(),
+    //     assignedBy: signedInOfficer,
+    //     assignedTo: [{
+    //         username: leadData.assignedBy,
+    //         role:     "Case Manager",           
+    //         status:   "pending",
+    //         unread:   true
+    //       }],
+    //     action1: "accepted the lead",
+    //     post1:   `${leadNo}: ${description}`,
+    //     caseNo:   selectedCase.caseNo,
+    //     caseName: selectedCase.caseName,
+    //     leadNo: leadNo,
+    //     leadName: description,
+    //     caseStatus: selectedCase.caseStatus || "Open",
+    //     type: "Lead"
+    //   },
+    //   { headers: { Authorization: `Bearer ${token}` } }
+    // );
 
     console.log("PUT request succeeded. Response data:", response.data);
 
@@ -297,28 +297,28 @@ const acceptLead = async (leadNo, description) => {
     }));
 
     // 4) Notify the Case Manager
-    await api.post(
-      "/api/notifications",
-      {
-        notificationId: Date.now().toString(),
-        assignedBy: signedInOfficer,          // you
-        assignedTo: [{
-            username: leadData.assignedBy,
-            role:     "Case Manager",           
-            status:   "pending",
-            unread:   true
-          }],
-        action1: "declined the lead",
-        post1:   `${leadNo}: ${description}`,
-        caseNo:   selectedCase.caseNo,
-        caseName: selectedCase.caseName,
-         leadNo: leadNo,
-        leadName: description,
-        caseStatus: selectedCase.caseStatus || "Open",
-        type: "Lead"
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    // await api.post(
+    //   "/api/notifications",
+    //   {
+    //     notificationId: Date.now().toString(),
+    //     assignedBy: signedInOfficer,          // you
+    //     assignedTo: [{
+    //         username: leadData.assignedBy,
+    //         role:     "Case Manager",           
+    //         status:   "pending",
+    //         unread:   true
+    //       }],
+    //     action1: "declined the lead",
+    //     post1:   `${leadNo}: ${description}`,
+    //     caseNo:   selectedCase.caseNo,
+    //     caseName: selectedCase.caseName,
+    //      leadNo: leadNo,
+    //     leadName: description,
+    //     caseStatus: selectedCase.caseStatus || "Open",
+    //     type: "Lead"
+    //   },
+    //   { headers: { Authorization: `Bearer ${token}` } }
+    // );
 
     // alert("❌ You’ve declined the lead, been removed from assigned list, and the Case Manager has been notified.");
     setAlertMessage("Lead is successfully declined");
@@ -646,7 +646,7 @@ const isEditableByCaseManager = field => {
           <div className="caseandleadinfo">
           <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
 
-          <h5 className="side-title">
+          <h5 className="side-titleRight">
   {selectedLead?.leadNo
     ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${leadData.leadStatus || leadStatus || "Unknown Status"}`
     : `LEAD DETAILS | ${leadData?.leadStatus || leadStatus || "Unknown Status"}`}
@@ -654,11 +654,8 @@ const isEditableByCaseManager = field => {
 
           </div>
 
-                    <div className="case-header">
-            <h1>
-  {selectedLead?.leadNo ? `LEAD: ${selectedLead.leadNo} | ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"}
-</h1>
-
+          <div className="case-header">
+            <h1> {selectedLead?.leadNo ? `LEAD: ${selectedLead.leadNo} | ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"} </h1>
           </div>
 
                
