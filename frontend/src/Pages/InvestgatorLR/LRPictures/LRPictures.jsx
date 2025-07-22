@@ -736,7 +736,7 @@ Case Page
             <tr>
               <th>Date Entered</th>
               <th>Narrative Id </th>
-              <th>Date Picture Taken</th>
+              {/* <th>Date Picture Taken</th> */}
               <th>File Name</th>
               <th>Description</th>
               <th></th>
@@ -750,7 +750,7 @@ Case Page
               <tr key={index}>
                 <td>{picture.dateEntered}</td>
                 <td>{picture.returnId}</td>
-                <td>{picture.datePictureTaken}</td>
+                {/* <td>{picture.datePictureTaken}</td> */}
                 <td>
   {picture.link ? (
     // if it was saved as a URL
@@ -806,7 +806,7 @@ Case Page
       </tr>
        )) : (
         <tr>
-          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
+          <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign:'center' }}>
             No Pictures Available
           </td>
         </tr>

@@ -59,12 +59,19 @@
   .case-summary
   {
     width: 90%;
+    margin-bottom: 0px;
   }
 
+  .case-summary textarea
+  {
+    margin-bottom: 0px;
+    height: 80%;
+  }
    .case-team
   {
     width: 90%;
-
+    margin: 0px;
+    padding:0px;
   }
   .update-lead-btn
   {
@@ -82,6 +89,12 @@
     align-items: center;
     justify-content: center;
     gap: 16px;
+    margin: 0px;
+  }
+
+  .add-lead-section h2
+  {
+    margin: 8px 0px;
   }
   .add-lead-title
   {

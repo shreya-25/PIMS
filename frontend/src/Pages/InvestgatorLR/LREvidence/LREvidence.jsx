@@ -760,11 +760,11 @@ Case Page
             <table className="leads-table">
           <thead>
             <tr>
-              <th>Date Entered*</th>
-              <th style={{ width: "4%" }}> Narrative Id* </th>
+              <th>Date Entered</th>
+              <th style={{ width: "11%" }}> Narrative Id </th>
               <th>Type</th>
-              <th>Collection Date*</th>
-              <th>Disposed Date</th>
+              {/* <th>Collection Date</th> */}
+              {/* <th>Disposed Date</th> */}
               <th>File Name</th>
               <th>Description</th>
               <th></th>
@@ -779,8 +779,8 @@ Case Page
                 <td>{item.dateEntered}</td>
                 <td> {item.returnId} </td>
                 <td>{item.type}</td>
-                <td>{item.collectionDate}</td>
-                <td>{item.disposedDate}</td>
+                {/* <td>{item.collectionDate}</td> */}
+                {/* <td>{item.disposedDate}</td> */}
                 <td>
   {item.link ? (
     // if it's a link‐type upload
@@ -842,7 +842,7 @@ Case Page
       </tr>
        )) : (
         <tr>
-          <td colSpan={isCaseManager ? 9 : 8} style={{ textAlign:'center' }}>
+          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
             No Evidences Available
           </td>
         </tr>

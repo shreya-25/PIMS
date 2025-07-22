@@ -937,10 +937,10 @@ Case Page
               <table className="leads-table">
           <thead>
             <tr>
-              <th>Date Entered*</th>
-              <th>Narrative Id* </th>
+              <th>Date Entered</th>
+              <th>Narrative Id </th>
               <th>Type</th>
-              <th>Enclosure*</th>
+              <th>Enclosure</th>
               <th>File Name</th>
               <th></th>
               {isCaseManager && (
