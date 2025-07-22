@@ -51,7 +51,7 @@ export const CasePageManager = () => {
     const saveTimer = useRef(null);
     const isFirstLoad = useRef(true);
 
-    const { selectedCase, selectedLead, setSelectedLead } = useContext(CaseContext);
+    const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
     const isSupervisor = selectedCase.role === "Detective Supervisor";
 
     const [allUsers, setAllUsers] = useState([]);
@@ -299,7 +299,7 @@ const handleConfirmOfficers = () => {
 
  const handleLeadClick = (lead) => {
   setSelectedLead({
-      leadNo: lead.leadNo || lead.id,
+      leadNo: lead.leadNo != null ? lead.leadNo : lead.id,
       incidentNo: lead.incidentNo,
       leadName: lead.description,
       dueDate: lead.dueDate || "N/A",
@@ -311,6 +311,7 @@ const handleConfirmOfficers = () => {
       caseNo: lead.caseNo,
       summary: lead.summary
   });
+  setLeadStatus(lead.leadStatus);  
 
   // Navigate to Lead Review Page
   navigate("/leadReview", { state: { leadDetails: lead, caseDetails: selectedCase } });
@@ -1070,7 +1071,7 @@ const pendingLRColKey    = {
 };
 const pendingLRColWidths = {
   "Lead No.":  "15%",
-  "Lead Name": "50%",
+  "Lead Name": "40%",
   "Case Name": "35%",
 };
 
@@ -1916,6 +1917,7 @@ const handleSortAll = columnKey => {
                     <tr key={lead.id}>
                       <td>{lead.id}</td>
                       <td>{lead.description}</td>
+                       <td>{lead.caseName}</td>
                       <td>
                         <button
                               className="continue-btn"
