@@ -640,7 +640,7 @@ const setLeadStatusToClosed = async (req, res) => {
     }
 
     // update status, completedDate, and store the reason
-    lead.leadStatus     = "Close";
+    lead.leadStatus     = "Closed";
     lead.completedDate  = new Date();
     lead.comment        = reason;           // or a new `closeReason` field
     await lead.save();

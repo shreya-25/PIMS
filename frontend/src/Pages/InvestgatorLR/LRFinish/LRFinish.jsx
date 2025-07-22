@@ -680,7 +680,7 @@ const actuallyDoSubmitReport = async () => {
   return (
     <div className="lrfinish-container">
       <Navbar />
-      {/* <AlertModal
+      <AlertModal
               isOpen={alertOpen}
               title="Notification"
               message={alertMessage}
@@ -689,19 +689,19 @@ const actuallyDoSubmitReport = async () => {
             />
 
       <AlertModal
-  isOpen={alertOpen}
+  isOpen={notifyOpen}
   title="Confirm Submission"
   message={alertMessage}
-  onConfirm={() => onAlertConfirm()}
-  onClose={() => setAlertOpen(false)}
-/> */}
- <AlertModal
+  onConfirm={() => setNotifyOpen(false)}
+  onClose={() => setNotifyOpen(false)}
+/>
+ {/* <AlertModal
         isOpen={notifyOpen}
         title="Notification"
         message={alertMessage}
         onConfirm={() => setNotifyOpen(false)}
         onClose={() => setNotifyOpen(false)}
-      />
+      /> */}
 
 {/* <AlertModal
   isOpen={confirmCloseOpen}
@@ -1196,7 +1196,7 @@ Case Page
         </div>
         </div>
 
-        {(selectedLead?.leadStatus === "Completed" || selectedLead?.leadStatus === "Close") && isCaseManager && (
+        {(selectedLead?.leadStatus === "Completed" ||  selectedLead?.leadStatus === "Closed") && isCaseManager && (
   <div className="form-buttons-finish">
     <button
       className="save-btn1"
@@ -1207,7 +1207,7 @@ Case Page
   </div>
 )}
 
-        {selectedLead?.leadStatus !== "Completed" && selectedLead?.leadStatus !== "Close" &&(
+        {selectedLead?.leadStatus !== "Completed" && selectedLead?.leadStatus !== "Closed" &&(
   isCaseManager ? (
     <div className="form-buttons-finish">
       <button className="save-btn1" onClick={() => submitReturnAndUpdate("complete")}>Approve</button>
