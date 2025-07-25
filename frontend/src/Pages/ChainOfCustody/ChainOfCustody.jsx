@@ -155,7 +155,7 @@ export const ChainOfCustody = () => {
 
       <div className="left-content">
 
-        <div className="top-menu">
+        <div className="top-menu1">
         <div className="menu-items">
         <span className="menu-item " onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
@@ -215,14 +215,11 @@ export const ChainOfCustody = () => {
           </div>
 
           <div className="case-header">
-            {/* <h1>LEAD:{selectedLead.leadNo} | {selectedLead.leadName.toUpperCase()}</h1> */}
             <h1>
   {selectedLead?.leadNo ? `LEAD: ${selectedLead.leadNo} | ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"}
 </h1>
 
           </div>
-
-             {/* Main Table */}
         <div className="table-container1">
           <table className="leads-table">
             <thead>
