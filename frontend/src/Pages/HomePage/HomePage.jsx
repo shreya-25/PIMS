@@ -304,11 +304,15 @@ const handleCloseCase = async (caseNo, caseName) => {
       }
     );
 
-    //  await api.put(
-    //   `/api/notifications/close/${encodeURIComponent(caseNo)}`,
-    //   {},
-    //   { headers: { Authorization: `Bearer ${token}` } }
-    // );
+    await api.put(
+      `/api/notifications/close/${encodeURIComponent(caseNo)}`,
+      {}, // no request body
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
 
 
     // optimistically drop it from your "Ongoing" list
