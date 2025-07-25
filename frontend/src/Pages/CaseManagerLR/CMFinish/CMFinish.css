@@ -93,15 +93,6 @@ input[type="radio"] {
   margin-right: 30px;
 }
 
-/* Example of bigger buttons */
-.form-buttons-finish {
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-  margin-top: 50px;
-  margin-bottom: 50px;
-}
-
 button {
   padding: 12px;
   border: none;
