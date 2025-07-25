@@ -96,6 +96,33 @@ router.get("/unread/user/:username", async (req, res) => {
   res.json(notifications);
 });
 
+router.put("/close/:caseNo", async (req, res) => {
+  const rawCaseNo = req.params.caseNo;
+  const caseNo = String(rawCaseNo).trim();
+
+  console.log("🔎 Searching for caseNo:", caseNo);
+
+  try {
+    const match = await Notification.findOne({ caseNo });
+    console.log("🔍 Found Notification:", match);
+
+    if (!match) {
+      return res.status(404).json({ error: "Notification not found", caseNo });
+    }
+
+    const updated = await Notification.findOneAndUpdate(
+      { caseNo },
+      { caseStatus: "Close" },
+      { new: true }
+    );
+
+    res.json(updated);
+  } catch (err) {
+    console.error("❌ Error:", err);
+    res.status(500).json({ error: "Failed to close notification", details: err.message });
+  }
+});
+
 
 // ✅ Update unread status
 router.put("/mark-read/:notificationId", async (req, res) => {
@@ -218,6 +245,7 @@ router.put("/close/:notificationId", async (req, res) => {
       .json({ error: "Failed to set caseStatus to Close", details: err.message });
   }
 });
+
 
 
 

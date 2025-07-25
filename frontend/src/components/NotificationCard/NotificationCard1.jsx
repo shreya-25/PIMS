@@ -19,26 +19,68 @@ const NotificationCard1 = ({ signedInOfficer }) => {
   const upArrow   = `${process.env.PUBLIC_URL}/Materials/up_arrow.png`;
 
 
+  const fetchOngoingCases = async () => {
+  try {
+    const { data } = await api.get(`/api/cases?officerName=${signedInOfficer}`);
+    return data.filter(c => c.caseStatus === "Ongoing").map(c => c.caseNo);
+  } catch (err) {
+    console.error("❌ Error fetching ongoing cases:", err.response?.data || err.message);
+    return []; // fallback
+  }
+};
+
+
   // ————————————————
   // 1) “fetch‐only” helpers return arrays (no setState inside)
   // ————————————————
+  // const fetchNewOnly = async () => {
+  //   const { data } = await api.get(`/api/notifications/user/${signedInOfficer}`);
+  //   return data
+  //     .filter(n =>
+  //       (n.type === "Case" || n.type === "Lead") &&
+  //       n.caseStatus === "Open" &&
+  //       n.assignedTo.some(r => r.username === signedInOfficer && r.status === "pending" && r.unread === true  )
+  //     )
+  //     .sort((a, b) => new Date(b.time) - new Date(a.time));
+  // };
+
   const fetchNewOnly = async () => {
-    const { data } = await api.get(`/api/notifications/user/${signedInOfficer}`);
-    return data
-      .filter(n =>
-        (n.type === "Case" || n.type === "Lead") &&
-        n.caseStatus === "Open" &&
-        n.assignedTo.some(r => r.username === signedInOfficer && r.status === "pending" && r.unread === true  )
-      )
-      .sort((a, b) => new Date(b.time) - new Date(a.time));
-  };
+  const [notifResp, caseNos] = await Promise.all([
+    api.get(`/api/notifications/user/${signedInOfficer}`),
+    fetchOngoingCases()
+  ]);
+
+  return notifResp.data
+    .filter(n =>
+      (n.type === "Case" || n.type === "Lead") &&
+      n.assignedTo.some(r => r.username === signedInOfficer && r.status === "pending" && r.unread === true) &&
+      caseNos.includes(n.caseNo) // ✅ only for ongoing cases
+    )
+    .sort((a, b) => new Date(b.time) - new Date(a.time));
+};
+
+
+  // const fetchOpenOnly = async () => {
+  //   const { data } = await api.get(`/api/notifications/open/user/${signedInOfficer}`);
+  //    return data
+  //   .filter(n => n.caseStatus === "Open")
+  //   .sort((a, b) => new Date(b.time) - new Date(a.time));
+  // };
 
   const fetchOpenOnly = async () => {
-    const { data } = await api.get(`/api/notifications/open/user/${signedInOfficer}`);
-     return data
-    .filter(n => n.caseStatus === "Open")
+  const [notifResp, caseNos] = await Promise.all([
+    api.get(`/api/notifications/open/user/${signedInOfficer}`),
+    fetchOngoingCases()
+  ]);
+
+  return notifResp.data
+    .filter(n =>
+      n.assignedTo.some(r => r.username === signedInOfficer) &&
+      caseNos.includes(n.caseNo) // ✅ only for ongoing cases
+    )
     .sort((a, b) => new Date(b.time) - new Date(a.time));
-  };
+};
+
 
   // ————————————————
   // 2) Utility to compare two arrays of notifications
