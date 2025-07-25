@@ -49,7 +49,9 @@
     display: flex;
     flex-direction: column;
     gap: 15px;
-    margin: 20px 130px;
+    /* margin: 20px 130px; */
+    width: 100%;
+    margin-bottom: 16px;
   }
   
   .form-row {

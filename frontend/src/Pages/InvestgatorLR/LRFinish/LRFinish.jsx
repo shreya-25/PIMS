@@ -1056,11 +1056,52 @@ Case Page
 
       <div className = "content-subsection">
 
+        <div className="return-action-sec">
+
+          <h4> Do you wish to perform any of the following actions on the lead return? </h4>
+     {(selectedLead?.leadStatus === "Completed" ||  selectedLead?.leadStatus === "Closed") && isCaseManager && (
+  <div className="form-buttons-finish">
+    <button
+      className="save-btn1"
+      onClick={handleReopen}
+    >
+      Reopen
+    </button>
+  </div>
+)}
+        {selectedLead?.leadStatus !== "Completed" && selectedLead?.leadStatus !== "Closed" &&(
+  isCaseManager ? (
+    <div className="form-buttons-finish">
+      <button className="save-btn1" onClick={handleApprove}>Approve</button>
+      <button className="save-btn1" onClick={handleReturn}>Return</button>
+       <button
+      className="save-btn1 close-lead-btn"
+      onClick={() => setShowCloseModal(true)}>
+      Close
+    </button>
+    </div>
+  ) : (
+    <div className="form-buttons-finish">
+         <h4> Click here to submit the lead return</h4>
+      <button
+        disabled={selectedLead?.leadStatus === "In Review"}
+        className="save-btn1"
+        onClick={handleSubmitReport}
+      >
+        Submit
+      </button>
+    </div>
+  )
+)}
+</div>
+
         {/* Logged Information */}
         <div className="timeline-form-sec">
 
+          
+
         <div className="finish-content">
-        <div className="logged-info">
+        {/* <div className="logged-info">
         <div className="info-item">
             <label>Assigned Date:</label>
             <input type="date" value ="03/12/2024" readOnly />
@@ -1077,10 +1118,10 @@ Case Page
             <label>Completed Date:</label>
             <input type="date" />
           </div>
-        </div>
+        </div> */}
 
         {/* Reports and Destination */}
-        <h2>Generate Report</h2>
+        <h4>Generate Report</h4>
 <div className="reports-destination-lr">
   <table className="report-table">
     <thead>
@@ -1253,43 +1294,6 @@ Case Page
 
         </div>
         </div>
-
-        {(selectedLead?.leadStatus === "Completed" ||  selectedLead?.leadStatus === "Closed") && isCaseManager && (
-  <div className="form-buttons-finish">
-    <button
-      className="save-btn1"
-      onClick={handleReopen}
-    >
-      Reopen
-    </button>
-  </div>
-)}
-
-        {selectedLead?.leadStatus !== "Completed" && selectedLead?.leadStatus !== "Closed" &&(
-  isCaseManager ? (
-    <div className="form-buttons-finish">
-      <button className="save-btn1" onClick={handleApprove}>Approve</button>
-      <button className="save-btn1" onClick={handleReturn}>Return</button>
-       <button
-      className="save-btn1 close-lead-btn"
-      onClick={() => setShowCloseModal(true)}>
-      Close
-    </button>
-    </div>
-  ) : (
-    <div className="form-buttons-finish">
-         <h4> Click here to submit the lead return</h4>
-      <button
-        disabled={selectedLead?.leadStatus === "In Review"}
-        className="save-btn1"
-        onClick={handleSubmitReport}
-      >
-        Submit
-      </button>
-    </div>
-  )
-)}
-
 
         <Comment tag= "Finish"/>
         {/* Buttons */}
