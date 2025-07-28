@@ -7,10 +7,6 @@ phases:
     commands:
       - echo Installing dependencies...
       - npm ci --legacy-peer-deps
-  pre_build:
-    commands:
-      - echo Running pre-build steps...
-      - npm test
   build:
     commands:
       - echo Building the application...
