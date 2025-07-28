@@ -625,4 +625,24 @@ exports.updateCaseOfficers = async (req, res) => {
   }
 };
 
+exports.getCasesByOfficer = async (req, res) => {
+  const officerName = req.query.officerName;
+  if (!officerName) {
+    return res.status(400).json({ message: "officerName query is required" });
+  }
+
+  try {
+    // find only Ongoing cases where assignedOfficers.name matches
+    const cases = await Case.find({
+      caseStatus: "Ongoing",
+      "assignedOfficers.name": officerName
+    });
+
+    // return the raw docs (or you could map down to just caseNo if you prefer)
+    res.status(200).json(cases);
+  } catch (error) {
+    console.error("Error in getCasesByOfficer:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
   

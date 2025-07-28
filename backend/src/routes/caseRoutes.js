@@ -4,6 +4,8 @@ const caseController = require("../controller/caseController");
 const verifyToken = require("../middleware/authMiddleware"); // Import the middleware
 const { addOfficerToCase } = require("../controller/caseController");
 const { updateCaseOfficers } = require("../controller/caseController");
+const { getCasesByOfficer } = require("../controller/caseController");
+
 
 // Case Routes
 
@@ -15,6 +17,12 @@ router.post("/", verifyToken, async (req, res) => {
         res.status(500).json({ message: "Internal Server Error", error: error.message });
     }
 });
+
+router.get(
+  "/cases-by-officer",
+  verifyToken,
+  getCasesByOfficer
+);
 
 // Get all cases (Authenticated)
 router.get("/", verifyToken, async (req, res) => {

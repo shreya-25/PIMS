@@ -1556,7 +1556,7 @@ const handleSortAll = columnKey => {
                 </div>
 
                 <div  className="add-lead-section">
-                <div><h2>Click here to add a new lead</h2></div>
+                <div className="add-lead-section-content"><h2>Click here to add a new lead</h2></div>
                 <div className = "add-lead-btn1">
                 <button className="save-btn1"  onClick={() => navigate('/createlead', { state: { caseDetails: selectedCase } })}
                 style={{ cursor: 'pointer' }} >

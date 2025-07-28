@@ -56,6 +56,10 @@
     font-size: 20px;
   }
 
+  .case-header h2{
+    margin: 8px 0px;
+  }
+
   .case-summary
   {
     width: 90%;
@@ -90,6 +94,12 @@
     justify-content: center;
     gap: 16px;
     margin: 0px;
+    background-color: green;;
+  }
+
+  .add-lead-section-content h2, h4
+  {
+    margin: 8px 0px;
   }
 
   .add-lead-section h2
