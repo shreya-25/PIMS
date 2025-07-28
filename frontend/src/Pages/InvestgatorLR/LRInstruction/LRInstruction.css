@@ -11,10 +11,9 @@
     justify-content: flex-start;
     width: 90%;
     min-height: 70vh;
-    padding-top: 2%;
     gap: 20px;
-    margin-left: 60px;
-    background-color: pink;
+    /* margin-left: 60px; */
+    margin-top: 8px;
 }
 
 .info-table-sec

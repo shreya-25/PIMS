@@ -21,6 +21,21 @@
     border-radius: 4px;
     background-color: #f0f0f0;
   }
+
+  .return-action-sec
+  {
+    display: flex;
+    height: auto;
+    justify-content: center;;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .save-btn1
+  {
+    height: 50px;
+    /* width: 120px; */
+  }
   
   .reports-destination {
     display: flex;
@@ -85,7 +100,6 @@
     display: flex;
     gap: 15px;
     justify-content: center;
-    margin-top: 50px;
   }
   
   button {
