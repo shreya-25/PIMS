@@ -2181,7 +2181,7 @@ const handleShowLeadsInRange = () => {
             Add/View Case Notes
           </span> */}
           <span className="menu-item" onClick={() => navigate('/SearchLead', { state: { caseDetails } } )} >
-            Search Leads
+            Advanced Search
           </span>
           <span className="menu-item" onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}>
           View Timelines

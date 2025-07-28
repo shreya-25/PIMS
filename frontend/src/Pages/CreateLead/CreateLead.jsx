@@ -21,6 +21,7 @@ export const CreateLead = () => {
   const [error, setError] = useState("");
   const leadEntries = location.state?.leadEntries || [];
 const caseDetails = location.state?.caseDetails || {}; // Get case details
+const routerOrigin = location.state?.leadOrigin;
 const leadDetails =  location.state?.leadDetails || {}; // Get case details
 const leadOrigin = location.state?.leadOrigin || null; // Directly assign leadOrigin
 const { id: caseID, title: caseName } = caseDetails;  // Extract Case ID & Case Title
@@ -43,6 +44,12 @@ const formatDate = (dateString) => {
 const [username, setUsername] = useState("");
 
 useEffect(() => {
+    if (routerOrigin == null) {
+      sessionStorage.removeItem(FORM_KEY);
+    }
+  }, [routerOrigin]);
+
+useEffect(() => {
    const loggedInUser = localStorage.getItem("loggedInUser");
    if (loggedInUser) {
      setUsername(loggedInUser);
@@ -53,9 +60,7 @@ useEffect(() => {
   // State for all input fields
   const [leadData, setLeadData] = useState(() => {
     const saved = sessionStorage.getItem(FORM_KEY);
-    return saved
-      ? JSON.parse(saved)
-      : {
+    const base = saved ? JSON.parse(saved) : {
     CaseName: '',
     CaseNo: '',
     leadNumber: '',
@@ -71,7 +76,14 @@ useEffect(() => {
     assignedOfficer: [],
     accessLevel: 'Everyone',
       };
-  });
+
+      return {
+    ...base,
+    // always override or seed from the router
+           leadOrigin: routerOrigin != null ? String(routerOrigin) : '',
+
+  };
+});
 
   useEffect(() => {
     sessionStorage.setItem(FORM_KEY, JSON.stringify(leadData));
