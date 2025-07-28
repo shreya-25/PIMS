@@ -434,6 +434,17 @@ Case Page
         {/* Right Section */}
 
         <div className="LRI-content-section">
+
+        <div  className="add-lead-section">
+                <div className="add-lead-section-content"><h4>Click here to add a new lead</h4></div>
+                <div className = "add-lead-btn1">
+                <button className="save-btn1"  onClick={() => navigate('/createlead', { state: { caseDetails: selectedCase } })}
+                style={{ cursor: 'pointer' }} >
+                Add Lead
+                </button>
+                </div>
+                </div>
+
         <table className="leads-table">
     <thead>
       <tr>
