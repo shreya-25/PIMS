@@ -1550,7 +1550,7 @@ const handleSortAll = columnKey => {
                 </div>
                 <div className="update-lead-btn">
                   <button className="save-btn1" onClick={openConfirmOfficers}>
-                    Save Changes
+                    Save
                   </button>
                   {error && <div className="error">{error}</div>}
                 </div>
