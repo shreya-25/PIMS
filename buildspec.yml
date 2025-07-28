@@ -19,7 +19,7 @@ phases:
 artifacts:
   files:
     - 'artifacts/**/*'
-  base-directory: dist
+  base-directory: build
   discard-paths: no
 
 cache:
