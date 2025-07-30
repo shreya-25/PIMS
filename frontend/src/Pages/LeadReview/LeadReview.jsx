@@ -646,7 +646,7 @@ const isEditableByCaseManager = field => {
 
 
           <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} |  Your Role: {selectedCase.role || ""}</h5>
 
           <h5 className="side-titleRight">
   {selectedLead?.leadNo

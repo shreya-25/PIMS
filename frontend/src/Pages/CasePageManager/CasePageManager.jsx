@@ -59,6 +59,19 @@ export const CasePageManager = () => {
     const [selectedCaseManagers,    setSelectedCaseManagers]    = useState([]);
     const [selectedDetectiveSupervisor, setSelectedDetectiveSupervisor] = useState("");
 
+     const dsRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dsRef.current && !dsRef.current.contains(e.target)) {
+        setDetectiveSupervisorDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dsRef]);
+
+
 
 
     const [activeTab, setActiveTab] = useState("allLeads"); // Default to All Leads tab
@@ -1338,7 +1351,9 @@ const handleSortAll = columnKey => {
               <div className="left-content">
 
                 <div className = "side-titleLeft">
-                  <h5>  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+                  <h5>  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} |  
+                     Your Role: {selectedCase.role || ""}
+                 </h5>
                 </div>
                 {/* Display Case Number and Name */}
                 <div className="case-header">
