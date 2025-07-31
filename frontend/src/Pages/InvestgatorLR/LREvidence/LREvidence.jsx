@@ -594,7 +594,7 @@ Case Page
           </span>
          </div> </div>
                 <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+          <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
     ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
@@ -620,9 +620,8 @@ Case Page
 <div className = "content-subsection">
 
         {/* Evidence Form */}
-        <div className = "timeline-form-sec">
-        <h4 className="evidence-form-h4">Enter Evidence Details</h4>
-        <div className="evidence-form">
+        <div className = "timeline-form-sec-enc">
+          <div className="enclosure-form">
           <div className="form-row-evidence">
             <label  className="evidence-head">Collection Date*</label>
             <input
@@ -715,8 +714,7 @@ Case Page
 )}
 
         </div>
-        </div>
-        <div className="form-buttons">
+  
         <div className="form-buttons">
   <button
     disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
@@ -755,6 +753,7 @@ Case Page
 </div>
 
         </div>  
+  
 
             {/* Evidence Table */}
             <table className="leads-table">

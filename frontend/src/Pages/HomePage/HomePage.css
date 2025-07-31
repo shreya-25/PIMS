@@ -16,7 +16,6 @@
   align-items: center;
   overflow: hidden;
   flex: 1 1 auto;     /* fill remaining height under Navbar */
-
 }
 
 .main-page-abovepart
@@ -80,7 +79,6 @@
   gap: 10px;
   align-items: center;
   margin:8px;
-  padding: 8px;
 }
 .add-case-section h2{
   margin: 8px 0px;
@@ -146,6 +144,7 @@
   background-color: rgba(25, 58, 73, 0.795);
   color: white; 
   border: none;
+  font-size: 20px;
 }
 
 .add-case-button:hover {
@@ -176,6 +175,18 @@
   padding: 20px;
 }
 
+ .main-page-belowpart
+ {
+ display: flex;
+ flex-direction: column;
+    align-items: center;
+    /* height: calc(100vh - 10px); */
+    height: auto;
+    width: 99%;
+    /* padding-bottom: 80px;  */
+    box-sizing: border-box;
+  }
+
 /* Header bar styling */
 .stats-bar {
   display: flex;
@@ -187,8 +198,45 @@
   font-size: 20px;
   width:90%;
   align-items: center;
-  /* margin: 0 auto;  */
+ margin-top: 8px;
 }
+
+/* Stats Bar */
+.stats-bar {
+  display: flex;
+  justify-content: space-around;
+  /* background-color: rgba(22, 83, 87, 0.88);  */
+  /* background-color: #0D8790; */
+  padding: 10px;
+  border-radius: 5px;
+  /* margin-bottom: 8px; */
+  font-size: 14px;
+  /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
+  /* width: 80%; */
+  align-items: center;
+  /* margin-top: 8px; */
+  font-size: 16px;
+}
+
+.stats-bar .hoverable {
+  cursor: pointer;
+  font-weight: bold;
+  color: white; /* White text */
+  text-align: center;
+  padding: 5px 10px;
+  border-radius: 5px;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Active Tab */
+.stats-bar .active {
+  /* background-color: #46494bbe; */
+  color: white;
+  font-weight: bold;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
 
 /* Header items (tabs) */
 .stats-bar .hoverable {
@@ -1573,13 +1621,3 @@
 .header-title {
   position: relative;
 }
-
- .left-content1 {
- 
-    align-items: center;
-    /* height: calc(100vh - 10px); */
-    height: auto;
-    width: 99%;
-    /* padding-bottom: 80px;  */
-    box-sizing: border-box;
-  }

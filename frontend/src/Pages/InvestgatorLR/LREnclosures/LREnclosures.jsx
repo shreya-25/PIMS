@@ -767,7 +767,7 @@ Case Page
           </span>
          </div> </div>
                 <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+          <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
     ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
@@ -796,7 +796,7 @@ Case Page
 <div className = "content-subsection">
 
         {/* Enclosure Form */}
-        <div className = "timeline-form-sec">
+        <div className = "timeline-form-sec-enc">
         <div className="enclosure-form">
         <div className="form-row-evidence">
             <label>Narrative Id *</label>
@@ -907,8 +907,8 @@ Case Page
 
 
         </div>
-        </div>
-          {/* Action Buttons */}
+
+           {/* Action Buttons */}
           <div className="form-buttons">
               <button
                 disabled={selectedLead?.leadStatus==="In Review" || selectedLead?.leadStatus==="Completed"}
@@ -932,6 +932,7 @@ Case Page
               )}
             </div>
     
+        </div>
 
               {/* Enclosures Table */}
               <table className="leads-table">
