@@ -83,18 +83,25 @@ export const LeadReview = () => {
 
 console.log ("case team ====", caseTeam);
 
-const handleSave = async () => {
+const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = leadData) => {
+
+  if (!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")) {
+       setAlertMessage("Unauthorized: Only Case Managers or Detective Supervisors can make changes.");
+       setAlertOpen(true);
+    return;
+  }
+
   try {
     const token = localStorage.getItem("token");
     setLoading(true);
 
     // 1) Normalize parentLeadNo exactly as before
-    const normalizedParent = typeof leadData.parentLeadNo === "string"
-      ? leadData.parentLeadNo
+    const normalizedParent = typeof updatedLeadData.parentLeadNo === "string"
+      ? updatedLeadData.parentLeadNo
           .split(",")
           .map((item) => Number(item.trim()))
           .filter((num) => !isNaN(num))
-      : leadData.parentLeadNo;
+      : updatedLeadData.parentLeadNo;
 
     const previousUsernames = originalAssigned;
 
@@ -103,9 +110,12 @@ const handleSave = async () => {
     console.log("assignedOfficers:", assignedOfficers);
 
     // 2) Build `assignedTo` from your array of usernames (`assignedOfficers`)
-    const processedAssignedTo = assignedOfficers.map(username => {
-    const existing = Array.isArray(leadData.assignedTo)
-      ? leadData.assignedTo.find(item => {
+    const processedAssignedTo = updatedOfficers
+    .map(username => {
+    const existing = Array.isArray(updatedLeadData
+      .assignedTo)
+      ? updatedLeadData
+      .assignedTo.find(item => {
           const name = typeof item === 'string' ? item : item.username;
           return name === username;
         })
@@ -119,7 +129,8 @@ const handleSave = async () => {
     });
 
     // const newlyAdded = assignedOfficers.filter((u) => !previousUsernames.includes(u));
-    const newlyAdded = assignedOfficers.filter(u => !originalAssigned.includes(u));
+    const newlyAdded = updatedOfficers
+    .filter(u => !originalAssigned.includes(u));
 
      if (newlyAdded.length) {
        // build full investigators list (old caseTeam + new)
@@ -194,7 +205,7 @@ const handleSave = async () => {
 
     // 3) Merge everything into one payload
     const processedLeadData = {
-      ...leadData,
+      ...updatedLeadData,
       parentLeadNo: normalizedParent,
       assignedTo: processedAssignedTo
     };
@@ -646,13 +657,13 @@ const isEditableByCaseManager = field => {
 
 
           <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} |  Your Role: {selectedCase.role || ""}</h5>
+          <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} |  Your Role: {selectedCase.role || ""}</h5>
 
-          <h5 className="side-titleRight">
+          {/* <h5 className="side-titleRight">
   {selectedLead?.leadNo
     ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${leadData.leadStatus || leadStatus || "Unknown Status"}`
     : `LEAD DETAILS | ${leadData?.leadStatus || leadStatus || "Unknown Status"}`}
-</h5>
+</h5> */}
 
           </div>
 
@@ -776,9 +787,18 @@ const isEditableByCaseManager = field => {
                       type="text"
                       className="input-field"
                       value={leadData.parentLeadNo}
-                      onChange={(e) => handleInputChange('parentLeadNo', e.target.value)}
+                      // onChange={(e) => handleInputChange('parentLeadNo', e.target.value)}
                       placeholder="NA"
-                      readOnly={!isEditableByCaseManager("parentLeadNo")}
+                      readOnly={!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")}
+      onChange={async (e) => {
+        const value = e.target.value;
+        setLeadData((prev) => ({ ...prev, parentLeadNo: value }));
+
+        // Auto-save if Case Manager or Detective Supervisor
+        if (selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") {
+          await handleSave(assignedOfficers, { ...leadData, parentLeadNo: value });
+        }
+      }}
                     />
                   </td>
                 </tr>
@@ -819,15 +839,38 @@ const isEditableByCaseManager = field => {
                   id={user.username}
                   value={user.username}
                   checked={assignedOfficers.includes(user.username)}
-                  onChange={e => {
+                  disabled={!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")}
+
+                  // onChange={e => {
+                  //   const next = e.target.checked
+                  //     ? [...assignedOfficers, user.username]
+                  //     : assignedOfficers.filter(u => u !== user.username);
+                  //   setAssignedOfficers(next);
+                  //   setLeadData(prev => ({
+                  //     ...prev,
+                  //     assignedTo: next
+                  //   }));
+                  // }}
+                  onChange={async e => {
+                    if (!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")) return;
+
                     const next = e.target.checked
                       ? [...assignedOfficers, user.username]
                       : assignedOfficers.filter(u => u !== user.username);
+
                     setAssignedOfficers(next);
                     setLeadData(prev => ({
                       ...prev,
                       assignedTo: next
                     }));
+
+                    try {
+                      await handleSave(next); // auto-save after change
+                    } catch (err) {
+                      console.error("Error during auto-save:", err);
+                      setAlertMessage("An error occurred while updating assigned officers. Please try again.");
+                      setAlertOpen(true);
+                    }
                   }}
                 />
                 <label htmlFor={user.username}>
@@ -950,14 +993,14 @@ const isEditableByCaseManager = field => {
 
               </tbody>
             </table>
-             {!isInvestigator && (
+             {/* {!isInvestigator && (
   <div className="update-lead-btn">
     <button className="save-btn1" onClick={handleSave}>
       Save Changes
     </button>
     {error && <div className="error">{error}</div>}
   </div>
-)}
+)} */}
           </div>
 
 

@@ -1096,35 +1096,29 @@ const sortedPendingReturns = useMemo(() => {
     <div className = "main-page-bodyhp">
     <Navbar />
     <AlertModal
-  isOpen={closeConfirmOpen}
-  title="Confirm Close"
-  message={`Are you sure you want to close the case ${caseToClose.caseNo}: ${caseToClose.caseName}?`}
-  onConfirm={() => {
-    setCloseConfirmOpen(false);
-    // reuse your existing function:
-    handleCloseCase(caseToClose.caseNo, caseToClose.caseName);
-  }}
-  onClose={() => setCloseConfirmOpen(false)}
-/>
+      isOpen={closeConfirmOpen}
+      title="Confirm Close"
+      message={`Are you sure you want to close the case ${caseToClose.caseNo}: ${caseToClose.caseName}?`}
+      onConfirm={() => {
+        setCloseConfirmOpen(false);
+        // reuse your existing function:
+        handleCloseCase(caseToClose.caseNo, caseToClose.caseName);
+      }}
+      onClose={() => setCloseConfirmOpen(false)}
+    />
 
-           <div className="main-page-contenthp">
-           <div className="main-page-abovepart">
-
-           {/* <NotificationCard acceptLead={acceptLead} signedInOfficer={signedInOfficer} /> */}
-           <NotificationCard  acceptLead={acceptLead} signedInOfficer={signedInOfficer} />
-
-
-<div className= "add-case-section">
-    <h2> Click here to add a new case</h2>
-    {/* <div className="slidebartopcontrolMP"> */}
-        <SlideBar
-        onAddCase={(newCase) => addCase(newCase)}
-        buttonClass="custom-add-case-btn1"
-      />
-      {/* </div> */}
-  </div>
-  </div>
-      <div className="left-content1">
+    <div className="main-page-contenthp">
+      <div className="main-page-abovepart">
+        <NotificationCard  acceptLead={acceptLead} signedInOfficer={signedInOfficer} 
+        />
+        <div className= "add-case-section">
+            <SlideBar
+                  onAddCase={(newCase) => addCase(newCase)}
+                  buttonClass="custom-add-case-btn1"
+            />
+        </div>
+      </div>
+      <div className="main-page-belowpart">
       <div className="stats-bar">
         
           <span
@@ -1213,7 +1207,7 @@ const sortedPendingReturns = useMemo(() => {
                           className="view-btn1"
                           onClick={() => handleCaseClick(c)}
                         >
-                          View
+                          Manage
                         </button>
 
                         { (c.role === "Detective Supervisor" || c.role === "Case Manager") && (
@@ -1309,7 +1303,7 @@ const sortedPendingReturns = useMemo(() => {
                           className="view-btn1"
                           onClick={() =>  handleViewAssignedLead(lead)}
                         >
-                          View
+                         Manage
                         </button>
                       </td>
                     </tr>
@@ -1375,7 +1369,7 @@ const sortedPendingReturns = useMemo(() => {
                 <button
                   className="view-btn1"
                 >
-                  View
+                 Manage
                 </button>
               </td>
             </tr>

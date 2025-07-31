@@ -407,7 +407,7 @@ Case Page
           </span>
          </div> </div>
        <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+          <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
     ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${leadStatus}`
@@ -437,9 +437,9 @@ Case Page
 
       {(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
   <div className="add-lead-section">
-    <div className="add-lead-section-content">
+    {/* <div className="add-lead-section-content">
       <h4>Click here to add a new lead</h4>
-    </div>
+    </div> */}
     <div className="add-lead-btn1">
       <button
         className="save-btn1"
@@ -454,7 +454,7 @@ Case Page
           })
         }
       >
-        Add Lead
+       <i className="fa-solid fa-plus"></i> Add Lead
       </button>
     </div>
   </div>

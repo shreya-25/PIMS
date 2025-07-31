@@ -2149,7 +2149,7 @@ const handleShowLeadsInRange = () => {
 
         <div className="right-sec">
         <div className="caseandleadinfo">
-        <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+        <h5 className = "side-title">  Case:{selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
 
 
           {/* <h5 className = "side-title"> 

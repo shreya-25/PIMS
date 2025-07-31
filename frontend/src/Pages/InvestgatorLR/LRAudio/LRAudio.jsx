@@ -649,7 +649,7 @@ Case Page
          </div> </div>
 
                 <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+          <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
     ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
@@ -669,7 +669,6 @@ Case Page
 
         {/* Audio Form */}
         <div className = "timeline-form-sec">
-        <h4 className="evidence-form-h4">Enter Audio Details</h4>
         <div className="audio-form">
           <div className="form-row-audio">
             <label className="evidence-head">Date Audio Recorded*</label>
@@ -785,7 +784,7 @@ Case Page
          </div>
          {/* Uploaded Audio Preview */}
         <div className="uploaded-audio">
-          <h4 className="evidence-head">Uploaded Audio</h4>
+          {/* <h4 className="evidence-head">Uploaded Audio</h4> */}
           <div className="audio-gallery">
             {audioFiles.map((audio, index) => (
               <div key={index} className="audio-card">
