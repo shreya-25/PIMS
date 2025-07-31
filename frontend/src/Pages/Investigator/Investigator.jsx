@@ -1041,14 +1041,14 @@ const sortedAllLeads = useMemo(() => {
         // onChange={e => setSummary(e.target.value)}
           readOnly
       />
-      <div style={{ marginTop: 8, fontSize: 20, minHeight: '1em' }}>
+      {/* <div style={{ marginTop: 8, fontSize: 20, minHeight: '1em' }}>
         {isSaving
           ? <span style={{ color: '#888' }}>Saving…</span>
           : error
             ? <span style={{ color: 'red' }}>{error}</span>
             : <span>&nbsp;</span>
         }
-      </div>
+      </div> */}
     </div>
 
             <div className="case-team">
