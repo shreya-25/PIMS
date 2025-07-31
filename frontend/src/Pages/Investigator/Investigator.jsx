@@ -1022,7 +1022,7 @@ const sortedAllLeads = useMemo(() => {
                
                 <div className="left-content">
 
-          <h5 className = "side-titleLeft">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+          <h5 className = "side-titleLeft">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
 
                    {/* Display Case Number and Name */}
                 <div className="case-header">
@@ -1077,7 +1077,7 @@ const sortedAllLeads = useMemo(() => {
         </table>
       </div>
                 {/* Content Area */}
-                <div className="content">
+                {/* <div className="content"> */}
               
                     <div className="stats-bar">
                        <span
@@ -1180,7 +1180,7 @@ const sortedAllLeads = useMemo(() => {
                   className="view-btn1"
                   onClick={() => handleLeadClick(lead)}
                 >
-                  View
+                  Manage
                 </button>
                 <button
                   className="accept-btn"
@@ -1292,7 +1292,7 @@ const sortedAllLeads = useMemo(() => {
                   className="view-btn1"
                   onClick={() => handleLeadClick(lead)}
                 >
-                  View
+                  Manage
                 </button>
               </td>
             </tr>
@@ -1486,7 +1486,7 @@ const sortedAllLeads = useMemo(() => {
                   className="view-btn1"
                   onClick={() => handleLeadClick(lead)}
                 >
-                  View
+                  Manage
                 </button>
               </td>
             </tr>
@@ -1515,7 +1515,7 @@ const sortedAllLeads = useMemo(() => {
 />
 
                     </div>
-                </div>
+                {/* </div> */}
                 </div>
             </div>
         </div>

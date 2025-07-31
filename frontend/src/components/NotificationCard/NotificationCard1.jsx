@@ -272,10 +272,10 @@ const NotificationCard1 = ({ signedInOfficer }) => {
               style={{
                 position: "relative",
                 width: "100%",
-                height: "40px",
                 background: "transparent",
                 border: "none",
-                cursor: "pointer"
+                cursor: "pointer",
+                padding: "0px",
               }}
             >
               <img

@@ -1013,7 +1013,7 @@ Case Page
           </span>
          </div> </div>
                 <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+          <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
     ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
@@ -1058,7 +1058,8 @@ Case Page
 
         <div className="return-action-sec">
 
-          <h4> Do you wish to perform any of the following actions on the lead return? </h4>
+          <h4> Click to perform the following action/s on the lead return
+             </h4>
      {(selectedLead?.leadStatus === "Completed" ||  selectedLead?.leadStatus === "Closed") && isCaseManager && (
   <div className="form-buttons-finish">
     <button
@@ -1082,7 +1083,7 @@ Case Page
     </div>
   ) : (
     <div className="form-buttons-finish">
-         <h4> Click here to submit the lead return</h4>
+         {/* <h4> Click here to submit the lead return</h4> */}
       <button
         disabled={selectedLead?.leadStatus === "In Review"}
         className="save-btn1"

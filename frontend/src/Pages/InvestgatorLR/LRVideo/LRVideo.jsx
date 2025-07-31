@@ -606,7 +606,7 @@ Case Page
           </span>
          </div> </div>
                 <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+          <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
     ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
@@ -625,7 +625,7 @@ Case Page
 
         {/* Video Form */}
         <div className = "timeline-form-sec">
-        <h4 className="evidence-form-h4">Enter Video Details</h4>
+        {/* <h4 className="evidence-form-h4">Enter Video Details</h4> */}
         <div className="video-form">
           <div className="form-row-video">
             <label className="evidence-head">Date Video Recorded*</label>
@@ -771,7 +771,7 @@ Case Page
 
         {/* Uploaded Video Preview */}
         <div className="uploaded-video">
-          <h4 className="evidence-head">Uploaded Videos</h4>
+          {/* <h4 className="evidence-head">Uploaded Videos</h4> */}
           <div className="video-gallery">
             {videos.map((video, index) => (
               <div key={index} className="video-card">

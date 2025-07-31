@@ -26,13 +26,6 @@
     text-align: left;
   }
   
-  .enclosure-form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-bottom: 20px;
-  }
-  
   .form-row-enc {
     display: flex;
     flex-direction: column;
