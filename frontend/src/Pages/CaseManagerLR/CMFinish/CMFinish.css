@@ -45,13 +45,21 @@
   width: 75%;
 }
 
-.report-table th,
-.report-table td {
+.report-table th {
   border: 1px solid #ccc; /* cell borders */
   padding: 15px;
   vertical-align: top;
   text-align: left;
 }
+
+.report-table td
+{
+  padding: 4px 8px;
+    border: 1px solid #ccc; /* cell borders */
+  vertical-align: center;
+  text-align: left
+}
+
 
 .report-table th {
   font-size: 20px;
