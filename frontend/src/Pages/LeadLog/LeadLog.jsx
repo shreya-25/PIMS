@@ -478,7 +478,7 @@ const formatDate = (dateString) => {
 
         <div className="left-content">
         <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"}| {selectedCase.role || ""}</h5>
+          <h5 className = "side-title">  Case:{selectedCase.caseName || "Unknown Case"}| {selectedCase.role || ""}</h5>
 
           {/* <h5 className = "side-title"> 
           {selectedLead?.leadNo ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName}` : "LEAD DETAILS"}

@@ -277,14 +277,16 @@ export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   a
   className="sidebar-item"
   onClick={() => setCaseDropdownOpen(o => !o)}
 >
-  <img src={folderIcon} className="sidebar-icon" alt="" /> My Ongoing Cases {caseDropdownOpen ? '▲' : '▼'}
+  <img src={folderIcon} className="sidebar-icon" alt="" /> Other Ongoing  Cases {caseDropdownOpen ? '▲' : '▼'}
 </li>
 
 {/* 2) Dropdown list as a sibling, not inside the <li> */}
 {/* 2) Dropdown list as a sibling */}
 {caseDropdownOpen && (
   <ul className="dropdown-list1">
-    {caseList.map(c => {
+    {caseList
+     .filter(c => c.id !== selectedCase.caseNo)
+    .map(c => {
       // const myLeads = leadsByCase[c.id] || [];
       // const count   = myLeads.length;
       const count = notificationsByCase[c.id]?.length || 0;

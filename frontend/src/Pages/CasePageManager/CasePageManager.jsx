@@ -464,39 +464,196 @@ const handleConfirmOfficers = () => {
 
  
 
-const saveInvestigators = async () => {
+// const saveInvestigators = async (overrideInvestigators) => {
+//   try {
+//     setLoading(true);
+//     setError("");
+
+//     const token = localStorage.getItem("token");
+//      // 1) Figure out who’s being removed
+//     const prevSupervisor    = team.detectiveSupervisor;
+//     const prevManagers      = team.caseManagers    || [];
+//     const prevInvestigators = team.investigators   || [];
+
+//     const investigatorsToSave = overrideInvestigators || selectedInvestigators;
+//      const cmToSave = overrideInvestigators || selectedInvestigators;
+
+
+//     const removed = [
+//       // Supervisor
+//       ...(prevSupervisor && prevSupervisor !== selectedDetectiveSupervisor
+//         ? [{ username: prevSupervisor, role: "Detective Supervisor" }]
+//         : []),
+//       // Case Managers
+//       ...prevManagers
+//         .filter(u => !selectedCaseManagers.includes(u))
+//         .map(u => ({ username: u, role: "Case Manager" })),
+//       // Investigators
+//       ...prevInvestigators
+//         .filter(u => !selectedInvestigators.includes(u))
+//         .map(u => ({ username: u, role: "Investigator" })),
+//     ];
+
+//     // 2) Gather all incomplete leads (assigned or accepted)
+//     const incompleteLeads = [
+//       ...leads.assignedLeads,
+//       ...leads.pendingLeads
+//     ];
+
+//     // 3) Block any removal-candidate who still appears on an incomplete lead
+//     const blocked = removed.filter(o =>
+//       incompleteLeads.some(lead =>
+//         (lead.assignedOfficers || []).includes(o.username)
+//       )
+//     );
+
+//     if (blocked.length) {
+//       setAlertMessage(
+//         "Cannot remove " +
+//         blocked.map(b => `${b.role} ${b.username}`).join(", ") +
+//         " because they have open leads."
+//       );
+//       setAlertOpen(true);
+//       return;
+//     }
+
+//     // 1) Build the full officers array for the CASE
+//     const officers = [
+//       { name: selectedDetectiveSupervisor, role: "Detective Supervisor", status: "accepted" },
+//        ...selectedCaseManagers.map(username=>({
+//         name: username,
+//         role: "Case Manager",
+//         status: "accepted"
+//       })),
+//       ...investigatorsToSave
+//       .map(username => ({
+//         name: username,
+//         role: "Investigator",
+//         status: "pending"
+//       }))
+//     ];
+
+//     // 2) Determine who’s brand-new
+
+//     const newlyAddedSupervisor   = (selectedDetectiveSupervisor && selectedDetectiveSupervisor !== prevSupervisor)
+//       ? [selectedDetectiveSupervisor]
+//       : [];
+
+//     const newlyAddedManagers = selectedCaseManagers
+//       .filter(u => !prevManagers.includes(u));
+
+//     const newlyAddedInvestigators = selectedInvestigators
+//       .filter(u => !prevInvestigators.includes(u));
+
+//     const newlyAdded = [
+//       // Supervisor
+//       ...(selectedDetectiveSupervisor && selectedDetectiveSupervisor !== team.detectiveSupervisor
+//         ? [{ username: selectedDetectiveSupervisor, role: "Detective Supervisor" }]
+//         : []),
+
+//       // Case Managers
+//       ...selectedCaseManagers
+//         .filter(u => !team.caseManagers.includes(u))
+//         .map(u => ({ username: u, role: "Case Manager" })),
+
+//       // Investigators
+//       ...selectedInvestigators
+//         .filter(u => !team.investigators.includes(u))
+//         .map(u => ({ username: u, role: "Investigator" }))
+//     ];
+
+//     // 3) PUT to the case‐officers endpoint
+//     await api.put(
+//       `/api/cases/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/officers`,
+//       { officers },
+//       { headers: { Authorization: `Bearer ${token}` } }
+//     );
+
+//     // 4) Update local UI state
+//       setTeam(t => ({
+//        ...t,
+//       detectiveSupervisor: selectedDetectiveSupervisor,
+//       caseManagers:    [...selectedCaseManagers],
+//       investigators:   [...investigatorsToSave]
+//      }));
+
+//     // 5) Notify only the newly added
+//     if (newlyAdded.length) {
+//       const payload = {
+//         notificationId: Date.now().toString(),
+//         assignedBy:     signedInOfficer,
+//         assignedTo:     newlyAdded.map(person => ({
+//           username: person.username,
+//           role:     person.role,
+//           status:   "pending",
+//           unread:   true
+//         })),
+//         action1:        "assigned you to a new case",
+//         post1:          `${selectedCase.caseNo}: ${selectedCase.caseName}`,
+//         caseNo:         selectedCase.caseNo,
+//         caseName:       selectedCase.caseName,
+//         caseStatus:     selectedCase.caseStatus || "Open",
+//         type:           "Case"
+//       };
+
+//       try {
+//         await api.post(
+//           "/api/notifications",
+//           payload,
+//           {
+//             headers: {
+//               "Content-Type":  "application/json",
+//               Authorization:   `Bearer ${token}`
+//             }
+//           }
+//         );
+//         console.log("✅ Notified:", newlyAdded);
+//       } catch (notifErr) {
+//         console.error("❌ Notification error:", notifErr.response?.data || notifErr);
+//       }
+//     }
+
+//     // alert("Officers updated on this case successfully!");
+//     setAlertMessage("Officers updated on this case successfully!");
+//     setAlertOpen(true);
+//   } catch (err) {
+//     console.error("Save failed:", err);
+//     setError("Failed to save changes.");
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+const saveInvestigators = async (
+  overrideInvestigators = selectedInvestigators,
+  overrideManagers = selectedCaseManagers,
+  overrideSupervisor = selectedDetectiveSupervisor
+) => {
   try {
     setLoading(true);
     setError("");
 
     const token = localStorage.getItem("token");
-     // 1) Figure out who’s being removed
-    const prevSupervisor    = team.detectiveSupervisor;
-    const prevManagers      = team.caseManagers    || [];
-    const prevInvestigators = team.investigators   || [];
 
+    // 1) Previous team data
+    const prevSupervisor = team.detectiveSupervisor;
+    const prevManagers = team.caseManagers || [];
+    const prevInvestigators = team.investigators || [];
+
+    // 2) Removal check (only remove if no open leads)
     const removed = [
-      // Supervisor
-      ...(prevSupervisor && prevSupervisor !== selectedDetectiveSupervisor
+      ...(prevSupervisor && prevSupervisor !== overrideSupervisor
         ? [{ username: prevSupervisor, role: "Detective Supervisor" }]
         : []),
-      // Case Managers
       ...prevManagers
-        .filter(u => !selectedCaseManagers.includes(u))
+        .filter(u => !overrideManagers.includes(u))
         .map(u => ({ username: u, role: "Case Manager" })),
-      // Investigators
       ...prevInvestigators
-        .filter(u => !selectedInvestigators.includes(u))
+        .filter(u => !overrideInvestigators.includes(u))
         .map(u => ({ username: u, role: "Investigator" })),
     ];
 
-    // 2) Gather all incomplete leads (assigned or accepted)
-    const incompleteLeads = [
-      ...leads.assignedLeads,
-      ...leads.pendingLeads
-    ];
-
-    // 3) Block any removal-candidate who still appears on an incomplete lead
+    const incompleteLeads = [...leads.assignedLeads, ...leads.pendingLeads];
     const blocked = removed.filter(o =>
       incompleteLeads.some(lead =>
         (lead.assignedOfficers || []).includes(o.username)
@@ -513,104 +670,75 @@ const saveInvestigators = async () => {
       return;
     }
 
-    // 1) Build the full officers array for the CASE
+    // 3) Build full officers list
     const officers = [
-      { name: selectedDetectiveSupervisor, role: "Detective Supervisor", status: "accepted" },
-       ...selectedCaseManagers.map(username=>({
+      { name: overrideSupervisor, role: "Detective Supervisor", status: "accepted" },
+      ...overrideManagers.map(username => ({
         name: username,
         role: "Case Manager",
         status: "accepted"
       })),
-      ...selectedInvestigators.map(username => ({
+      ...overrideInvestigators.map(username => ({
         name: username,
         role: "Investigator",
         status: "pending"
-      }))
+      })),
     ];
 
-    // 2) Determine who’s brand-new
-
-    const newlyAddedSupervisor   = (selectedDetectiveSupervisor && selectedDetectiveSupervisor !== prevSupervisor)
-      ? [selectedDetectiveSupervisor]
-      : [];
-
-    const newlyAddedManagers = selectedCaseManagers
-      .filter(u => !prevManagers.includes(u));
-
-    const newlyAddedInvestigators = selectedInvestigators
-      .filter(u => !prevInvestigators.includes(u));
-
+    // 4) Identify newly added
     const newlyAdded = [
-      // Supervisor
-      ...(selectedDetectiveSupervisor && selectedDetectiveSupervisor !== team.detectiveSupervisor
-        ? [{ username: selectedDetectiveSupervisor, role: "Detective Supervisor" }]
+      ...(overrideSupervisor && overrideSupervisor !== prevSupervisor
+        ? [{ username: overrideSupervisor, role: "Detective Supervisor" }]
         : []),
-
-      // Case Managers
-      ...selectedCaseManagers
-        .filter(u => !team.caseManagers.includes(u))
+      ...overrideManagers
+        .filter(u => !prevManagers.includes(u))
         .map(u => ({ username: u, role: "Case Manager" })),
-
-      // Investigators
-      ...selectedInvestigators
-        .filter(u => !team.investigators.includes(u))
-        .map(u => ({ username: u, role: "Investigator" }))
+      ...overrideInvestigators
+        .filter(u => !prevInvestigators.includes(u))
+        .map(u => ({ username: u, role: "Investigator" })),
     ];
 
-    // 3) PUT to the case‐officers endpoint
+    // 5) API update
     await api.put(
       `/api/cases/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/officers`,
       { officers },
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    // 4) Update local UI state
-      setTeam(t => ({
-       ...t,
-      detectiveSupervisor: selectedDetectiveSupervisor,
-      caseManagers:    [...selectedCaseManagers],
-      investigators:   [...selectedInvestigators]
-     }));
+    // 6) Update local UI state instantly
+    setTeam({
+      detectiveSupervisor: overrideSupervisor,
+      caseManagers: [...overrideManagers],
+      investigators: [...overrideInvestigators],
+    });
 
-    // 5) Notify only the newly added
+    // 7) Send notifications for new adds
     if (newlyAdded.length) {
-      const payload = {
-        notificationId: Date.now().toString(),
-        assignedBy:     signedInOfficer,
-        assignedTo:     newlyAdded.map(person => ({
-          username: person.username,
-          role:     person.role,
-          status:   "pending",
-          unread:   true
-        })),
-        action1:        "assigned you to a new case",
-        post1:          `${selectedCase.caseNo}: ${selectedCase.caseName}`,
-        caseNo:         selectedCase.caseNo,
-        caseName:       selectedCase.caseName,
-        caseStatus:     selectedCase.caseStatus || "Open",
-        type:           "Case"
-      };
-
-      try {
-        await api.post(
-          "/api/notifications",
-          payload,
-          {
-            headers: {
-              "Content-Type":  "application/json",
-              Authorization:   `Bearer ${token}`
-            }
-          }
-        );
-        console.log("✅ Notified:", newlyAdded);
-      } catch (notifErr) {
-        console.error("❌ Notification error:", notifErr.response?.data || notifErr);
-      }
+      await api.post(
+        "/api/notifications",
+        {
+          notificationId: Date.now().toString(),
+          assignedBy: signedInOfficer,
+          assignedTo: newlyAdded.map(p => ({
+            username: p.username,
+            role: p.role,
+            status: "pending",
+            unread: true,
+          })),
+          action1: "assigned you to a new case",
+          post1: `${selectedCase.caseNo}: ${selectedCase.caseName}`,
+          caseNo: selectedCase.caseNo,
+          caseName: selectedCase.caseName,
+          caseStatus: selectedCase.caseStatus || "Open",
+          type: "Case",
+        },
+        { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
+      );
     }
 
-    // alert("Officers updated on this case successfully!");
     setAlertMessage("Officers updated on this case successfully!");
     setAlertOpen(true);
+
   } catch (err) {
     console.error("Save failed:", err);
     setError("Failed to save changes.");
@@ -618,6 +746,7 @@ const saveInvestigators = async () => {
     setLoading(false);
   }
 };
+
 
 const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
@@ -1351,8 +1480,7 @@ const handleSortAll = columnKey => {
               <div className="left-content">
 
                 <div className = "side-titleLeft">
-                  <h5>  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} |  
-                     Your Role: {selectedCase.role || ""}
+                  <h5> Your Role: {selectedCase.role || ""}
                  </h5>
                 </div>
                 {/* Display Case Number and Name */}
@@ -1373,14 +1501,14 @@ const handleSortAll = columnKey => {
         value={summary}
         onChange={e => setSummary(e.target.value)}
       />
-      <div style={{ marginTop: 8, fontSize: 20, minHeight: '1em' }}>
+      {/* <div style={{ marginTop: 8, fontSize: 20, minHeight: '1em' }}>
         {isSaving
           ? <span style={{ color: '#888' }}>Saving…</span>
           : error
             ? <span style={{ color: 'red' }}>{error}</span>
             : <span>&nbsp;</span>
         }
-      </div>
+      </div> */}
                 </div>
 
                 <div className="case-team">
@@ -1403,7 +1531,7 @@ const handleSortAll = columnKey => {
                           {selectedDetectiveSupervisor
                             ? (() => {
                                 const usr = allUsers.find(x => x.username === selectedDetectiveSupervisor);
-                                return usr ? `${usr.firstName} ${usr.lastName} (${usr.username})` : selectedDetectiveSupervisor;
+                                return usr ? `${usr.username}` : selectedDetectiveSupervisor;
                               })()
                             : "Select Detective Supervisor"}
                           <span className="dropdown-icon">
@@ -1420,7 +1548,18 @@ const handleSortAll = columnKey => {
                                   id={`ds-${user.username}`}
                                   value={user.username}
                                   checked={selectedDetectiveSupervisor === user.username}
-                                  onChange={() => setSelectedDetectiveSupervisor(user.username)}
+                                  // onChange={() => 
+                                  // {
+                                  //   setSelectedDetectiveSupervisor(user.username);
+                                  //   setTimeout(() => saveInvestigators(), 0);
+                                  // }
+
+                                  // }
+                                  onChange={() => {
+                                    const selected = user.username;
+                                    setSelectedDetectiveSupervisor(selected);
+                                    saveInvestigators(selectedInvestigators, selectedCaseManagers, selected);
+                                  }}
                                 />
                                 <label htmlFor={`ds-${user.username}`}>
                                   {user.firstName} {user.lastName} ({user.username})
@@ -1448,7 +1587,7 @@ const handleSortAll = columnKey => {
                                 .map(u=>{
                                   const usr=allUsers.find(x=>x.username===u);
                                   return usr
-                                    ? `${usr.firstName} ${usr.lastName} (${usr.username})`
+                                    ? `${usr.username}`
                                     : u;
                                 })
                                 .join(", ")
@@ -1468,12 +1607,24 @@ const handleSortAll = columnKey => {
                                     id={`cm-${user.username}`}
                                     value={user.username}
                                     checked={selectedCaseManagers.includes(user.username)}
-                                  onChange={e=>{
-                                      const next = e.target.checked
-                                        ? [...selectedCaseManagers, user.username]
-                                        : selectedCaseManagers.filter(u=>u!==user.username);
-                                      setSelectedCaseManagers(next);
-                                    }}
+                                  // onChange={(e) => {
+                                  //     const next = e.target.checked
+                                  //       ? [...selectedCaseManagers, user.username]
+                                  //       : selectedCaseManagers.filter(u => u !== user.username);
+
+                                  //     setSelectedCaseManagers(next);
+                                  //     // setTimeout(() => saveInvestigators(), 0);
+                                  //     saveInvestigators(next);
+                                  //   }}
+                                  onChange={(e) => {
+  const next = e.target.checked
+    ? [...selectedCaseManagers, user.username]
+    : selectedCaseManagers.filter(u => u !== user.username);
+
+  setSelectedCaseManagers(next);
+  saveInvestigators(selectedInvestigators, next, selectedDetectiveSupervisor);
+}}
+
                                   />
                                   <label htmlFor={`cm-${user.username}`}>
                                     {user.firstName} {user.lastName} ({user.username})
@@ -1512,7 +1663,7 @@ const handleSortAll = columnKey => {
                                           (x) => x.username === username
                                         );
                                         return u
-                                          ? `${u.firstName} ${u.lastName} (${u.username})`
+                                          ? `${u.username}`
                                           : username;
                                       })
                                       .join(", ")
@@ -1533,15 +1684,33 @@ const handleSortAll = columnKey => {
                                         id={`inv-${user.username}`}
                                         value={user.username}
                                         checked={selectedInvestigators.includes(user.username)}
-                                        onChange={(e) => {
-                                          const next = e.target.checked
-                                            ? [...selectedInvestigators, user.username]
-                                            : selectedInvestigators.filter(
-                                                (u) => u !== user.username
-                                              );
-                                          setSelectedInvestigators(next);
-                                        }}
+                                      //  onChange={(e) => {
+                                      //     const next = e.target.checked
+                                      //       ? [...selectedInvestigators, user.username]
+                                      //       : selectedInvestigators.filter(u => u !== user.username);
+
+                                      //     setSelectedInvestigators(next);
+                                      //     setTimeout(() => saveInvestigators(), 0); // Auto-save
+                                      //   }}
+                                  //  onChange={(e) => {
+                                  //         const next = e.target.checked
+                                  //           ? [...selectedInvestigators, user.username]
+                                  //           : selectedInvestigators.filter(u => u !== user.username);
+
+                                  //         setSelectedInvestigators(next);
+                                  //         saveInvestigators(next); // Pass updated investigators directly
+                                  //       }}
+                                  onChange={(e) => {
+  const next = e.target.checked
+    ? [...selectedInvestigators, user.username]
+    : selectedInvestigators.filter(u => u !== user.username);
+
+  setSelectedInvestigators(next);
+  saveInvestigators(next, selectedCaseManagers, selectedDetectiveSupervisor);
+}}
+
                                       />
+                                    
                                       <label htmlFor={`inv-${user.username}`}>
                                         {user.firstName} {user.lastName} ({user.username})
                                       </label>
@@ -1563,19 +1732,19 @@ const handleSortAll = columnKey => {
                 </tbody>
                 </table>
                 </div>
-                <div className="update-lead-btn">
+                {/* <div className="update-lead-btn">
                   <button className="save-btn1" onClick={openConfirmOfficers}>
                     Save
                   </button>
                   {error && <div className="error">{error}</div>}
-                </div>
+                </div> */}
 
                 <div  className="add-lead-section">
-                <div className="add-lead-section-content"><h2>Click here to add a new lead</h2></div>
+                {/* <div className="add-lead-section-content"><h2>Click here to add a new lead</h2></div> */}
                 <div className = "add-lead-btn1">
                 <button className="save-btn1"  onClick={() => navigate('/createlead', { state: { caseDetails: selectedCase } })}
                 style={{ cursor: 'pointer' }} >
-                Add Lead
+                   <i className="fa-solid fa-plus"></i> Add Lead
                 </button>
                 </div>
                 </div>
@@ -1714,7 +1883,7 @@ const handleSortAll = columnKey => {
                   onClick={()=>handleLeadClick(lead)}
                   // onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.summary} } )}
                 >
-                  View
+                  Manage
                 </button>
                 {lead.assignedOfficers?.includes(signedInOfficer) && (
   <button
@@ -1855,7 +2024,7 @@ const handleSortAll = columnKey => {
                   className="view-btn1"
                   onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.summary} } )}
                 >
-                  View
+                  Manage
                 </button>
               </td>
             </tr>
@@ -2042,7 +2211,7 @@ const handleSortAll = columnKey => {
               </td>
               <td>
                 <button className="view-btn1" onClick={()=>handleLeadClick(lead)}>
-                  View
+                  Manage
                 </button>
                 
               </td>

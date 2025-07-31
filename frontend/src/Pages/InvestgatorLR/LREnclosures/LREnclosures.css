@@ -26,12 +26,40 @@
     text-align: left;
   }
   
-  .enclosure-form {
+  /* .enclosure-form {
     display: flex;
     flex-direction: column;
     gap: 15px;
     margin: 20px 130px;
+  } */
+
+   .enclosure-form {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width:  95%;
+    height: 100%;
+    font-size: 20px;
+    padding: 8px;
   }
+
+  .timeline-form-sec-enc
+  {
+    width: 97.4%;
+    font-size: 20px;
+    background-color:#f9f9f9;
+    padding: 8px;
+   margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #5f5c5c1f;
+  /* padding: 20px; */
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+
+}
   
   .form-row-enc {
     display: flex;

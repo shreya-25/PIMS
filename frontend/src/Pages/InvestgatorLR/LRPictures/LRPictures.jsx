@@ -577,7 +577,7 @@ Case Page
           </span>
          </div> </div>
                 <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+          <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
     ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
@@ -598,7 +598,6 @@ Case Page
 
         {/* Picture Form */}
         <div className = "timeline-form-sec">
-        <h4 className="evidence-form-h4">Enter Picture Details</h4>
         <div className="picture-form">
           <div className="form-row-pic">
             <label  className="evidence-head">Date Picture Taken*</label>
@@ -717,7 +716,7 @@ Case Page
         </div>
         {/* Uploaded Pictures Preview */}
         <div className="uploaded-pictures">
-          <h4 className="evidence-head">Uploaded Pictures</h4>
+          {/* <h4 className="evidence-head">Uploaded Pictures</h4> */}
           <div className="pictures-gallery">
             {pictures.map((picture, index) => (
               <div key={index} className="picture-card">
