@@ -60,16 +60,26 @@ export const CasePageManager = () => {
     const [selectedDetectiveSupervisor, setSelectedDetectiveSupervisor] = useState("");
 
      const dsRef = useRef(null);
+const cmRef = useRef(null);
+const invRef = useRef(null);
+
 
   useEffect(() => {
-    function handleClickOutside(e) {
-      if (dsRef.current && !dsRef.current.contains(e.target)) {
-        setDetectiveSupervisorDropdownOpen(false);
-      }
+  function handleClickOutside(e) {
+    if (dsRef.current && !dsRef.current.contains(e.target)) {
+      setDetectiveSupervisorDropdownOpen(false);
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [dsRef]);
+    if (cmRef.current && !cmRef.current.contains(e.target)) {
+      setCaseManagersDropdownOpen(false);
+    }
+    if (invRef.current && !invRef.current.contains(e.target)) {
+      setInvestigatorsDropdownOpen(false);
+    }
+  }
+
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
 
 
 
@@ -1523,7 +1533,8 @@ const handleSortAll = columnKey => {
                   <td>Detective Supervisor</td>
                   <td>
                     {(selectedCase.role === "Detective Supervisor") ? (
-                      <div className="custom-dropdown">
+                      <div  ref={dsRef}
+                      className="custom-dropdown">
                         <div
                           className="dropdown-header1"
                           onClick={() => setDetectiveSupervisorDropdownOpen(prev => !prev)}
@@ -1578,7 +1589,8 @@ const handleSortAll = columnKey => {
                   <td>Case Manager{team.caseManagers.length>1 ? "s" : ""}</td>
                   <td>
                     {(selectedCase.role==="Case Manager" || selectedCase.role==="Detective Supervisor") ? (
-                      <div className="custom-dropdown">
+                      <div ref={cmRef}
+                      className="custom-dropdown">
                         <div
                           className="dropdown-header1"
                           onClick={() => setCaseManagersDropdownOpen(prev => !prev)}
@@ -1648,7 +1660,8 @@ const handleSortAll = columnKey => {
                         
                           {(selectedCase.role === "Case Manager" ||
                             selectedCase.role === "Detective Supervisor") ? (
-                            <div className="custom-dropdown">
+                            <div ref={invRef}
+                            className="custom-dropdown">
                               <div
                                 className="dropdown-header1"
                                 onClick={() =>

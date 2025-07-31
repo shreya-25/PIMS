@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect, useRef} from 'react';
 
 import Navbar from '../../components/Navbar/Navbar';
 import Searchbar from '../../components/Searchbar/Searchbar';
@@ -33,6 +33,22 @@ export const LeadReview = () => {
   const signedInOfficer = localStorage.getItem("loggedInUser");
   const [alertOpen, setAlertOpen] = useState(false);
     const [alertMessage, setAlertMessage] = useState("");
+
+    const assOff= useRef(null);
+    
+    
+      useEffect(() => {
+      function handleClickOutside(e) {
+        if (assOff.current && !assOff
+          .current.contains(e.target)) {
+          setDropdownOpen(false);
+        }
+       
+      }
+    
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -811,7 +827,8 @@ const isEditableByCaseManager = field => {
         {assignedOfficers.join(", ")}
       </div>
     ) : (
-      <div className="custom-dropdown">
+      <div ref = {assOff}
+      className="custom-dropdown">
         <div
           className="dropdown-header"
           onClick={() => setDropdownOpen(!dropdownOpen)}
