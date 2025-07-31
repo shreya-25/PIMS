@@ -56,9 +56,9 @@
     height: 80px;
   }
   
-  .uploaded-audio {
+  /* .uploaded-audio {
     margin: 20px 130px;
-  }
+  } */
   
   .audio-gallery {
     display: flex;

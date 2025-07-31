@@ -714,8 +714,7 @@ Case Page
 )}
 
         </div>
-        </div>
-        <div className="form-buttons">
+  
         <div className="form-buttons">
   <button
     disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
@@ -754,6 +753,7 @@ Case Page
 </div>
 
         </div>  
+  
 
             {/* Evidence Table */}
             <table className="leads-table">

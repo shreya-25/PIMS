@@ -907,8 +907,8 @@ Case Page
 
 
         </div>
-        </div>
-          {/* Action Buttons */}
+
+           {/* Action Buttons */}
           <div className="form-buttons">
               <button
                 disabled={selectedLead?.leadStatus==="In Review" || selectedLead?.leadStatus==="Completed"}
@@ -932,6 +932,7 @@ Case Page
               )}
             </div>
     
+        </div>
 
               {/* Enclosures Table */}
               <table className="leads-table">
