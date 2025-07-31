@@ -56,10 +56,7 @@
     height: 80px;
   }
   
-  .uploaded-video {
-    margin-top: 20px;
-  }
-  
+
   .video-gallery {
     display: flex;
     flex-wrap: wrap;
