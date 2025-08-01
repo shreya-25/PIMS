@@ -31,6 +31,7 @@ console.log(caseDetails, leadDetails, leadOrigin);
   const [caseTeam, setCaseTeam] = useState({detectiveSupervisor: "", caseManagers: [], investigators: [] });
 const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
+const [leadCreated, setLeadCreated] = useState(false);
 const formatDate = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
@@ -202,6 +203,28 @@ useEffect(() => {
   // };
 
   const handleInputChange = (field, value) => {
+
+    if (field === 'leadOrigin') {
+    // Allow only digits, commas, and spaces
+    const regex = /^[0-9,\s]*$/;
+    if (!regex.test(value)) {
+      setAlertMessage("Lead Origin should only contain numbers and commas.");
+      setLeadCreated(false);
+      setAlertOpen(true);
+      return;
+    }
+    const numbers = value
+    .split(',')
+    .map((num) => parseInt(num.trim(), 10))
+    .filter((num) => !isNaN(num)); // filter out empty/invalid entries
+
+  if (numbers.some((num) => num > parseInt(leadData.leadNumber || "0", 10))) {
+    setAlertMessage(`Lead Origin numbers cannot be greater than Lead Number (${leadData.leadNumber}).`);
+    setLeadCreated(false);
+    setAlertOpen(true);
+    return;
+  }
+  }
     // Ensure only numeric values (or empty)
     if (field === 'leadNumber' && !/^\d*$/.test(value)) {
       // alert("Lead Number must be a numeric value.");
@@ -358,6 +381,7 @@ const handleGenerateLead = async () => {
     setAlertMessage(`Lead #${realLeadNo} created successfully!`);
   }
 
+   setLeadCreated(true);
   setAlertOpen(true);
   sessionStorage.removeItem(FORM_KEY);
     
@@ -712,26 +736,35 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
     setPendingRoute(null);
   };
 
-  useEffect(() => {
-    const fetchAssociatedSubNumbers = async () => {
-      try {
-        if (caseDetails && caseDetails.id && caseDetails.title) {
-          const token = localStorage.getItem("token");
-          const response = await api.get(
-            `/api/lead/associatedSubNumbers/${caseDetails.id}/${encodeURIComponent(caseDetails.title)}`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
-          setAvailableSubNumbers(response.data.associatedSubNumbers);
-        }
-      } catch (error) {
-        console.error("Error fetching associated subnumbers:", error);
-      }
-    };
-  
-    fetchAssociatedSubNumbers();
-  }, [caseDetails]);
+useEffect(() => {
+  const fetchAssociatedSubNumbers = async () => {
+    try {
+      // Ensure we have valid case identifiers
+      const caseNo = selectedCase?.caseNo || caseDetails?.caseNo;
+      const caseName = selectedCase?.caseName || caseDetails?.caseName || caseDetails?.title;
+      const caseId = selectedCase?.id || caseDetails?.id;
+
+      if (!caseNo || !caseName) return;
+
+      const token = localStorage.getItem("token");
+      const response = await api.get(
+        `/api/lead/associatedSubNumbers/${caseNo }/${encodeURIComponent(caseName)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      console.log("Fetched Associated Subnumbers:", response.data);
+
+      // Adjust if API returns differently
+      const subs = response.data.associatedSubNumbers || response.data.subNumbers || [];
+      setAvailableSubNumbers(subs);
+    } catch (error) {
+      console.error("Error fetching associated subnumbers:", error);
+    }
+  };
+
+  fetchAssociatedSubNumbers();
+}, [selectedCase, caseDetails]);
+
   
     useEffect(() => {
       function handleClickOutside(e) {
@@ -760,7 +793,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
   message={alertMessage}
   onConfirm={() => {
     setAlertOpen(false);
-    navigate(-1);
+    if (leadCreated) navigate(-1);
   }}
   onClose={() => setAlertOpen(false)}
 />
@@ -875,7 +908,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
 
 
       {/* Bottom Content */}
-      <div className="bottom-content-LRI">
+      <div className="bottom-content-cl">
         <table className="details-table">
           <tbody>
             <tr>
@@ -972,7 +1005,8 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
       </div>
       {subDropdownOpen && (
         <div className="dropdown-options">
-          {availableSubNumbers.map((subNum) => (
+          {availableSubNumbers.length > 0 ? (
+          availableSubNumbers.map((subNum) => (
             <div key={subNum} className="dropdown-item">
               <input
                 type="checkbox"
@@ -993,7 +1027,9 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
               />
               <label htmlFor={subNum}>{subNum}</label>
             </div>
-          ))}
+          )) ) : (
+  <div className="dropdown-itemno-option">No subnumber added</div>
+)}
         </div>
       )}
     </div>
@@ -1056,93 +1092,9 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
             </tr> */}
 
             <tr>
-  {/* <td>Assign Officers:</td>
-  <td>
-    <div className="custom-dropdown-cl">
-      <div
-        className="dropdown-header-cl"
-        onClick={() => setDropdownOpen(!dropdownOpen)}
-      >
-        {leadData.assignedOfficer.length > 0
-          ? leadData.assignedOfficer.join(', ')
-          : 'Select Officers'}
-        <span className="dropdown-icon">{dropdownOpen ? '▲' : '▼'}</span>
-      </div>
-      {dropdownOpen && (
-        <div className="dropdown-options">
-          {['Officer 1 [5] [4]', 'Officer 2 [3] [3]', 'Officer 3 [2] [1]'].map((officer) => (
-            <div key={officer} className="dropdown-item">
-              <input
-                type="checkbox"
-                id={officer}
-                value={officer}
-                checked={leadData.assignedOfficer.includes(officer)}
-                onChange={(e) => {
-                  const newAssignedOfficers = e.target.checked
-                    ? [...leadData.assignedOfficer, e.target.value]
-                    : leadData.assignedOfficer.filter((o) => o !== e.target.value);
-                  handleInputChange('assignedOfficer', newAssignedOfficers);
-                }}
-              />
-              <label htmlFor={officer}>{officer}</label>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  </td> */}
+
   <td>Assign Officers </td>
 <td>
-  {/* <div className="custom-dropdown-cl">
-    <div
-      className="dropdown-header-cl"
-      onClick={() => setDropdownOpen(!dropdownOpen)}
-    >
-      {leadData.assignedOfficer.length > 0
-        ? leadData.assignedOfficer.join(', ')
-        : 'Select Officers'}
-      <span className="dropdown-icon">{dropdownOpen ? '▲' : '▼'}</span>
-    </div>
-    {dropdownOpen && (
-      <div className="dropdown-options">
-        {[
-            { name: "Officer 1", assignedLeads: 2, totalAssignedLeads: 1, assignedDays: 5, unavailableDays: 4 },
-            { name: "Officer 2", assignedLeads: 3, totalAssignedLeads: 3, assignedDays: 3, unavailableDays: 3 },
-            { name: "Officer 3", assignedLeads: 3, totalAssignedLeads: 3, assignedDays: 2, unavailableDays: 1 },
-          ].map((officer) => {
-            const isAvailable =
-              officer.unavailableDays === 0
-                ? "Available"
-                : `Unavailable for ${officer.unavailableDays} days`;
-        // {['Officer 1 [2] [1]', 'Officer 2 [3] [3]', 'Officer 3 [5] [4]'].map((officer) => {
-          // const officerName = officer.split(' [')[0]; // Extract only the name
-
-          return (
-            <div key={officer} className="dropdown-item">
-              <input
-                type="checkbox"
-                id={officer.name}
-                value={officer.name} // Store only the officer's name
-                checked={leadData.assignedOfficer.includes(officer.name)}
-                onChange={(e) => {
-                  const newAssignedOfficers = e.target.checked
-                    ? [...leadData.assignedOfficer, e.target.value]
-                    : leadData.assignedOfficer.filter((o) => o !== e.target.value);
-                  handleInputChange('assignedOfficer', newAssignedOfficers);
-                }}
-              />
-              <label htmlFor={officer.name}>
-                  {officer.name}{" "}[{officer.assignedLeads}] {" "} [{officer.totalAssignedLeads}] {"   "}
-                  <em style={{ fontSize: "20px", color: "gray" }}>
-                    ({isAvailable})
-                  </em>
-                </label>
-            </div>
-          );
-        })}
-      </div>
-    )}
-  </div> */}
 
 <div className="custom-dropdown-cl" ref={dropdownRef}>
   {/* Header */}
@@ -1220,8 +1172,8 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
         <button className="next-btncl" onClick={handleGenerateLead}>
           Create Lead
         </button>
-        <button className="next-btncl">Download</button>
-        <button className="next-btncl">Print</button>
+        {/* <button className="next-btncl">Download</button>
+        <button className="next-btncl">Print</button> */}
       </div>
     </div>
     </div>
