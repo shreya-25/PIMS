@@ -100,12 +100,11 @@ body{
   
   /* Bottom Content */
   .bottom-content-cl {
-    width: 95%;
+    width: 100%;
     display: flex;
     flex-direction: column; 
     justify-content: center; 
     align-items: center;
-    margin: 10px 30px;
 
   }
   
@@ -191,6 +190,14 @@ body{
     border: 1px solid #ccc;
     border-radius: 4px;
   }
+
+ 
+ .dropdown-itemno-option
+  {
+      font-size: 18px;
+      font-weight: 300;
+      padding: 8px;
+  }
   
   .signature-button {
     margin-top: 20px;
@@ -205,20 +212,18 @@ body{
   /* Action Buttons */
   .btn-sec-cl {
     display: flex;
-    justify-content: flex-end;
-    margin-top: 20px;
-    margin-right: 30px;
-    align-items: last baseline;
+    justify-content: center;
+    width: 100%;
   }
   
   .btn-sec-cl button {
-    margin-left: 10px;
-    padding: 10px 15px;
+    padding: 16px;
     border: none;
     border-radius: 5px;
     color: white;
     cursor: pointer;
-    background-color: #0c1d9a;
+    background-color:rgba(25, 58, 73, 0.795);
+    font-size: 20px;
   }
   
   /* Input Fields - Regular Placeholder */
