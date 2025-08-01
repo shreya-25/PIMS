@@ -4,43 +4,33 @@ body{
 }
 .timeline-container {
   font-family: 'Arial', sans-serif;
-  background-color: #f9f9f9; /* Light gray background */
+  background-color: #f9f9f9;
   margin: 0;
   padding: 0;
-  width: 100vw; /* Full width of the viewport */
-  height: 100vh; /* Full height of the viewport */
+  width: 100vw;
+  height: 100vh; 
   display: flex;
-  flex-direction: column; /* Ensures vertical layout */
-  box-sizing: border-box; /* Include padding and border in width/height */
-  overflow-y: auto; /* Allows scrolling for overflowing content */
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
 
 .timeline-section {
-  display: block; /* Use block layout */
-  gap: 20px; /* Not applicable for block, can use margin instead */
-  width: 40%; /* Restrict the width to 40% of the container */
-  box-sizing: border-box; /* Include padding and borders in the width */
-  max-height: 6200px; /* Restrict the maximum width */
-  max-width: 6200px; /* Restrict the maximum width */
-
+  display: block;
+  gap: 20px; 
+  width: 40%;
+  box-sizing: border-box;
+  max-height: 6200px;
+  max-width: 6200px; 
 }
-
-/* .timeline-table {
- width: 90%;
- margin-left: 5%;
- background-color: #f9f9f9;
- margin-top: 10px;
-} */
 
 .timeline-form-sec{
     width: 97.4%;
-    /* margin-left: 20%; */
     margin-top: 1%;
     font-size: 20px;
     background-color:#f9f9f9;
-    /* display: flex;
-    justify-content: center; */
+
 }
 
 .timeline-table .title {
@@ -48,37 +38,6 @@ body{
   font-size: 20px;
   color: #343a40;
 }
-
-/* .timeline-table table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.timeline-table th, .timeline-table td {
-  border: 1px solid #dee2e6;
-  padding: 15px;
-  text-align: left;
-  font-size: 20px;
-}
-
-.timeline-table th {
-  background-color: #343a40;
-  color: #ffffff;
-  text-transform: uppercase;
-}
-
-.timeline-table tr:nth-child(even) {
-  background-color: #f8f9fa;
-}
-
-.timeline-table tr:hover {
-  background-color: #e9ecef;
-} */
 
 .timeline-table
 {
@@ -118,24 +77,6 @@ body{
   transition: background-color 0.3s ease;
   margin-right: 10px;
 }
-
-/* .timeline-table .btn-edit {
-  background-color: #ffc107;
-  color: #343a40;
-}
-
-.timeline-table .btn-edit:hover {
-  background-color: #e0a800;
-}
-
-.timeline-table .btn-delete {
-  background-color: #dc3545;
-  color: #ffffff;
-}
-
-.timeline-table .btn-delete:hover {
-  background-color: #c82333;
-} */
 
 .no-timeline {
   text-align: center;
