@@ -101,16 +101,18 @@ export function Login() {
               required
             />
             {errorMessage && <p className="error-message">{errorMessage}</p>}
+            <button type="submit" className="register">Login</button>
             <div className="forgot-pass">
               <a href="#">Forgot password?</a>
             </div>
             <div className="divider">
               <span>or</span>
             </div>
-            <button className="google-signup">
+            <button 
+            type="button"
+            className="google-signup">
                 Login with Email
               </button>
-            <button type="submit" className="register">Login</button>
             {/* <p>
               Don't have an account? <Link to="/register">Sign up</Link>
             </p> */}
