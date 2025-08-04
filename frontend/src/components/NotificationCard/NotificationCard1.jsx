@@ -251,10 +251,16 @@ const NotificationCard1 = ({ signedInOfficer }) => {
   return (
     <div className="notification-bar">
       <div className="headerNC">
-        <h3 className="clickable-header" onClick={() => setShowAll(false)}>
+        <h3 
+        // className="clickable-header" 
+        className={`clickable-header ${!showAll ? "active" : ""}`}
+        onClick={() => setShowAll(false)}>
           New Notifications <span className="count">{newNotifs.length}</span>
         </h3>
-        <h3 className="clickable-header" onClick={() => setShowAll(true)}>
+        <h3 
+        // className="clickable-header" 
+         className={`clickable-header ${showAll ? "active" : ""}`}
+        onClick={() => setShowAll(true)}>
           View All Notifications
         </h3>
       </div>

@@ -534,7 +534,7 @@ function generateReport(req, res) {
 
   if (leadReturn?.length > 0) {
     leadReturn.forEach((entry, idx) => {
-      doc.font("Helvetica-Bold").fontSize(11).text(`Lead Return ID: ${entry.leadReturnId}`, 50, currentY);
+      doc.font("Helvetica-Bold").fontSize(11).text(`Narrative ID: ${entry.leadReturnId}`, 50, currentY);
       currentY += 20;
 
       const dateEntered = formatDate(entry.enteredDate);
@@ -550,7 +550,7 @@ function generateReport(req, res) {
         [180, 332]
       ) + 10;
 
-      currentY = drawTextBox(doc, 50, currentY, 512, "Return Summary", leadText);
+      currentY = drawTextBox(doc, 50, currentY, 512, "Narrative", leadText);
 
       if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
         doc.addPage();
