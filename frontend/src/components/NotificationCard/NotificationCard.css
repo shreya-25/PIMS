@@ -57,7 +57,16 @@
     color: rgb(41, 41, 139);
     font-size: 16px;
     margin-bottom: 20px;
+    padding: 0.5rem;
+    transition: background-color 0.2s;
 }
+
+.clickable-header.active {
+  background-color: #f0f4f8;   /* or whatever highlight */
+  color: rgb(41, 41, 139);;              /* highlight text */
+  border-bottom: 2px solid rgb(41, 41, 139);;
+}
+
 
 .clickable-header:hover {
     text-decoration: underline;
