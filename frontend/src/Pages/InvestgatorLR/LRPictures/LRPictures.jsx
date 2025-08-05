@@ -34,6 +34,8 @@ const [editingIndex, setEditingIndex] = useState(null);
  const fileInputRef = useRef();
  const [alertOpen, setAlertOpen] = useState(false);
      const [alertMessage, setAlertMessage] = useState("");
+     const [deleteIndex, setDeleteIndex] = useState(null);
+const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   
     const formatDate = (dateString) => {
@@ -114,22 +116,39 @@ useEffect(() => {
     setFile(null);
   };
 
-// delete a picture
-const handleDeletePicture = async idx => {
-  if (!window.confirm("Delete this picture?")) return;
-  const pic = pictures[idx];
-  const token = localStorage.getItem("token");
-  await api.delete(
-    `/api/lrpicture/${selectedLead.leadNo}/` +
-    `${encodeURIComponent(selectedLead.leadName)}/` +
-    `${selectedCase.caseNo}/` +
-    `${encodeURIComponent(selectedCase.caseName)}/` +
-    `${pic.returnId}/` +
-    `${encodeURIComponent(pic.description)}`,
-    { headers:{ Authorization:`Bearer ${token}` } }
-  );
-  setPictures(ps => ps.filter((_, i) => i !== idx));
+  
+const handleDeletePicture = (idx) => {
+  setDeleteIndex(idx);
+  setAlertMessage("Are you sure you want to delete this picture?");
+  setConfirmDeleteOpen(true);
 };
+
+// delete a picture
+const confirmDeletePicture = async () => {
+  if (deleteIndex === null) return;
+  const pic = pictures[deleteIndex];
+  const token = localStorage.getItem("token");
+  try {
+    await api.delete(
+      `/api/lrpicture/${selectedLead.leadNo}/` +
+      `${encodeURIComponent(selectedLead.leadName)}/` +
+      `${selectedCase.caseNo}/` +
+      `${encodeURIComponent(selectedCase.caseName)}/` +
+      `${pic.returnId}/` +
+      `${encodeURIComponent(pic.description)}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    setPictures((ps) => ps.filter((_, i) => i !== deleteIndex));
+  } catch (error) {
+    console.error("Error deleting picture:", error);
+    setAlertMessage("Failed to delete the picture. Please try again.");
+    setAlertOpen(true);
+  } finally {
+    setConfirmDeleteOpen(false);
+    setDeleteIndex(null);
+  }
+};
+
 const handleAddPicture = async () => {
   // 1️⃣ Validation: require date, description, and either a file or a link
   if (
@@ -341,11 +360,11 @@ const handleUpdatePicture = async () => {
         datePictureTaken: formatDate(pic.datePictureTaken),
         rawDatePictureTaken: pic.datePictureTaken,
         filename: pic.filename,
-  originalName: pic.originalName,
+        originalName: pic.originalName,
         description: pic.pictureDescription,
-          image: `${BASE_URL}/uploads/${pic.filename}`,
-          filename: pic.filename,
-          link: pic.link || ""
+        image: pic.signedUrl || pic.link,
+        link: pic.isLink ? pic.link : "",
+        filename: pic.filename,
       }));
       const withAccess = mappedPictures.map(r => ({
         ...r,
@@ -380,6 +399,15 @@ const handleAccessChange = (idx, newAccess) => {
                 onConfirm={() => setAlertOpen(false)}
                 onClose={()   => setAlertOpen(false)}
               />
+
+              <AlertModal
+  isOpen={confirmDeleteOpen}
+  title="Confirm Deletion"
+  message={alertMessage}
+  onConfirm={confirmDeletePicture}
+  onClose={() => setConfirmDeleteOpen(false)}
+/>
+
 
       {/* Top Menu */}
       {/* <div className="top-menu">
@@ -764,7 +792,7 @@ Case Page
   ) : (
     // otherwise it’s a file on your server
     <a
-      href={`${BASE_URL}/uploads/${picture.filename}`}
+      href={picture.link ? picture.link : picture.image}
       target="_blank"
       rel="noopener noreferrer"
       className="link-button"
