@@ -1,58 +1,75 @@
 const LRPicture = require("../models/LRPicture");
+const fs = require("fs");
+const { uploadToS3, deleteFromS3 } = require("../s3");
 
-// **Create a new LREnclosure entry with file upload support**
 const createLRPicture = async (req, res) => {
-    try {
-      const isLink = req.body.isLink === "true"; // Handle string from formData
-      const accessLevel = req.body.accessLevel || "Everyone";
+  try {
+    const isLink = req.body.isLink === "true"; // Handle string from formData
+    const accessLevel = req.body.accessLevel || "Everyone";
 
-      let filePath = null;
-      let originalName = null;
-      let filename = null;
-  
-      if (!isLink) {
-        if (!req.file) {
-          return res.status(400).json({ error: 'No file received for non-link upload' });
-        }
-  
-        // File fields (for disk storage)
-        filePath = req.file.path;
-        originalName = req.file.originalname;
-        filename = req.file.filename;
+    let filePath = null;
+    let originalName = null;
+    let filename = null;
+    let s3Key = null;
+
+    // ✅ If it's not a link, handle file upload
+    if (!isLink) {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file received for non-link upload" });
       }
-        // Create a new LREnclosure document with the file reference
-        const newLRPicture = new LRPicture({
-            leadNo: req.body.leadNo,
-            description: req.body.description,
-            assignedTo: req.body.assignedTo ? JSON.parse(req.body.assignedTo) : {},
-            assignedBy: req.body.assignedBy ? JSON.parse(req.body.assignedBy) : {},
-            enteredBy: req.body.enteredBy,
-            caseName: req.body.caseName,
-            caseNo: req.body.caseNo,
-            leadReturnId: req.body.leadReturnId,
-            enteredDate: req.body.enteredDate,
-            datePictureTaken: req.body.datePictureTaken,
-            pictureDescription:req.body.pictureDescription,
-            filePath: isLink ? "link-only" : filePath,
-            originalName: originalName,
-            filename: filename,
-            accessLevel,
-            isLink,
-            link: isLink ? req.body.link : null,
-        });
 
-        // Save the document in MongoDB
-        await newLRPicture.save();
+      // Multer (diskStorage) provides these
+      filePath = req.file.path;
+      originalName = req.file.originalname;
+      filename = req.file.filename;
 
-        // Send one final response after successful save
-        res.status(201).json({
-            message: "Picture created successfully",
-            picture: newLRPicture
-        });
-    } catch (err) {
-        console.error("Error creating LRPicture:", err.message);
-        res.status(500).json({ message: "Something went wrong" });
+      // ✅ Upload file to S3
+      const { error, key } = await uploadToS3({
+        filePath, // use filePath for disk storage
+        userId: req.user?.id || "anonymous", // ensure req.user is populated if using auth
+        mimetype: req.file.mimetype,
+      });
+
+      if (error) {
+        return res.status(500).json({ message: "S3 upload failed", error: error.message });
+      }
+      s3Key = key;
     }
+
+    // ✅ Create new LRPicture document
+    const newLRPicture = new LRPicture({
+      leadNo: req.body.leadNo,
+      description: req.body.description,
+      assignedTo: req.body.assignedTo ? JSON.parse(req.body.assignedTo) : {},
+      assignedBy: req.body.assignedBy ? JSON.parse(req.body.assignedBy) : {},
+      enteredBy: req.body.enteredBy,
+      caseName: req.body.caseName,
+      caseNo: req.body.caseNo,
+      leadReturnId: req.body.leadReturnId,
+      enteredDate: req.body.enteredDate,
+      datePictureTaken: req.body.datePictureTaken,
+      pictureDescription: req.body.pictureDescription,
+      filePath: isLink ? "link-only" : filePath,
+      originalName,
+      filename,
+      s3Key, // store S3 key in DB
+      accessLevel,
+      isLink,
+      link: isLink ? req.body.link : null,
+    });
+
+    // ✅ Save document to MongoDB
+    await newLRPicture.save();
+
+    // ✅ Return single final response
+    return res.status(201).json({
+      message: "Picture uploaded and saved successfully",
+      picture: newLRPicture,
+    });
+  } catch (err) {
+    console.error("Error creating LRPicture:", err.message);
+    res.status(500).json({ message: "Something went wrong", error: err.message });
+  }
 };
 
 
