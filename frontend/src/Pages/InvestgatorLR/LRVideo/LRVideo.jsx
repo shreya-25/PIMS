@@ -32,6 +32,7 @@ export const LRVideo = () => {
       const [leadData, setLeadData] = useState({});
        const [alertOpen, setAlertOpen] = useState(false);
           const [alertMessage, setAlertMessage] = useState("");
+          const [confirmAction, setConfirmAction] = useState(null);
 
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
@@ -261,7 +262,8 @@ useEffect(() => {
         description: video.videoDescription,
         filename: video.filename,       // needed to construct a download URL
         originalName: video.originalName || "",
-        videoSrc: `${BASE_URL}/uploads/${video.filename}`,
+        videoSrc: video.isLink ? video.link : video.signedUrl,
+        signedUrl: video.signedUrl || "",
         link: video.link || "",
         isLink: video.isLink,
         accessLevel: video.accessLevel || "Everyone"
@@ -383,9 +385,10 @@ useEffect(() => {
   };
                   
                   //  C) on “🗑” icon
-                   const handleDeleteVideo = async (idx) => {
-    if (!window.confirm("Delete this video?")) return;
-    const v = videos[idx];
+const handleDeleteVideo = (idx) => {
+  const v = videos[idx];
+  setAlertMessage("Are you sure you want to delete this video?");
+  setConfirmAction(() => async () => {
     try {
       await api.delete(`/api/lrvideo/${v.id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
@@ -393,10 +396,15 @@ useEffect(() => {
       setVideos((prev) => prev.filter((_, i) => i !== idx));
     } catch (err) {
       console.error("Error deleting video:", err);
-       setAlertMessage("Failed to delete video.");
-       setAlertOpen(true);
+      setAlertMessage("Failed to delete video.");
+    } finally {
+      setConfirmAction(null); // reset after action
     }
-  };
+  });
+  setAlertOpen(true);
+};
+
+
 
                   
   return (
@@ -410,6 +418,20 @@ useEffect(() => {
                 onConfirm={() => setAlertOpen(false)}
                 onClose={()   => setAlertOpen(false)}
               />
+              <AlertModal
+  isOpen={alertOpen}
+  title="Notification"
+  message={alertMessage}
+  onConfirm={() => {
+    if (confirmAction) confirmAction(); // If it's a delete confirm
+    setAlertOpen(false);
+  }}
+  onClose={() => {
+    setAlertOpen(false);
+    setConfirmAction(null); // Reset confirm action if cancelled
+  }}
+/>
+
 
       {/* Top Menu */}
       {/* <div className="top-menu">
@@ -811,26 +833,26 @@ Case Page
                 <td>{video.returnId} </td>
                 {/* <td>{video.dateVideoRecorded}</td> */}
                  <td>
-                          {video.isLink ? (
-                            <a
-                              href={video.link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="link-button"
-                            >
-                              {video.link}
-                            </a>
-                          ) : (
-                            <a
-                              href={`${BASE_URL}/uploads/${video.filename}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="link-button"
-                            >
-                              {video.originalName || "Download"}
-                            </a>
-                          )}
-                        </td>
+  {video.isLink ? (
+    <a
+      href={video.link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="link-button"
+    >
+      {video.link}
+    </a>
+  ) : (
+    <a
+      href={video.signedUrl}  // ✅ S3 Signed URL
+      target="_blank"
+      rel="noopener noreferrer"
+      className="link-button"
+    >
+      {video.originalName || "Download"}
+    </a>
+  )}
+</td>
                 <td>{video.description}</td>
                 <td>
                   <div classname = "lr-table-btn">

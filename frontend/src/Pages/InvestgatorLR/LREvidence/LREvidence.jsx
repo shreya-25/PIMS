@@ -100,59 +100,6 @@ useEffect(() => {
                   navigate(route, { state: { caseDetails } });
               };
 
-   // Save Enclosure: Build FormData and post to backend including token from localStorage.
-  // const handleSaveEvidence = async () => {
-  //   const formData = new FormData();
-  //   if (file) {
-  //     formData.append("file", file);
-  //     console.log("file", file);
-  //   }
-
-  //   // Append other required fields
-  //   formData.append("leadNo", selectedLead.leadNo); // Example value; update as needed
-  //   formData.append("description", selectedLead.leadName);
-  //   formData.append("enteredBy", localStorage.getItem("loggedInUser"));
-  //   formData.append("caseName", selectedLead.caseName);
-  //   formData.append("caseNo", selectedLead.caseNo);
-  //   formData.append("leadReturnId", evidenceData.leadReturnId); // Example value; update as needed
-  //   formData.append("enteredDate", new Date().toISOString());
-  //   formData.append("type", evidenceData.type);
-  //   formData.append("envidenceDescription", evidenceData.evidence);
-  //   formData.append("collectionDate", evidenceData.collectionDate);
-  //   formData.append("disposedDate", evidenceData.disposedDate);
-  //   formData.append("disposition", evidenceData.disposition);
-
-  //   // Retrieve token from localStorage
-  //   const token = localStorage.getItem("token");
-  //   console.log(token);
-  //   for (const [key, value] of formData.entries()) {
-  //     console.log(`FormData - ${key}:`, value);
-  //   }
-    
-  //   try {
-  //     const response = await api.post(
-  //       "/api/lrevidence/upload",
-  //       formData,
-  //       { 
-  //         headers: { 
-  //           "Content-Type": undefined,  
-  //           // "Content-Type": "multipart/form-data",
-  //           "Authorization": `Bearer ${token}`  // Add token here
-  //         } 
-  //       }
-  //     );
-  //     console.log("Evidence saved:", response.data);
-  //     // Optionally update local state with the new enclosure
-  //     setEvidences([...evidences, response.data.evidences]);
-
-  //     // Clear form fields if needed
-  //     setEvidenceData({ type: "", evidences: "" });
-  //     setFile(null);
-  //   } catch (error) {
-  //     console.error("Error saving evidence:", error);
-  //   }
-  // };
-
   const handleSaveEvidence = async () => {
     // require a file or a link on new entries
     if (editIndex === null && !file && !evidenceData.isLink) {
@@ -283,7 +230,8 @@ useEffect(() => {
         disposition: enc.disposition,
         originalName:        enc.originalName,
         filename:            enc.filename,
-         link:                enc.link || ""   
+         link:                enc.link || "",
+         signedUrl: enc.signedUrl || "",  
       }));
 
       const withAccess = mappedEvidences.map(r => ({
@@ -778,31 +726,21 @@ Case Page
                 <td>{item.dateEntered}</td>
                 <td> {item.returnId} </td>
                 <td>{item.type}</td>
-                {/* <td>{item.collectionDate}</td> */}
-                {/* <td>{item.disposedDate}</td> */}
+                
                 <td>
-  {item.link ? (
-    // if it's a link‐type upload
-    <a
-      href={item.link}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="link-button"
-    >
-      {item.link}
-    </a>
-  ) : (
-    // otherwise it's a file
-    <a
-      href={`${BASE_URL}/uploads/${item.filename}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="link-button"
-    >
-      {item.originalName}
-    </a>
-  )}
-</td>
+                  {item.link ? (
+                    <a href={item.link} target="_blank" rel="noopener noreferrer" className="link-button">
+                      {item.link}
+                    </a>
+                  ) : item.signedUrl ? (
+                    <a href={item.signedUrl} target="_blank" rel="noopener noreferrer" className="link-button">
+                      {item.originalName}
+                    </a>
+                  ) : (
+                    <span style={{ color: "gray" }}>No File Available</span>
+                  )}
+                </td>
+
 
                 <td>{item.evidenceDescription}</td>
                 <td>

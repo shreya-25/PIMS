@@ -31,6 +31,8 @@ export const LRAudio = () => {
   const fileInputRef = useRef(null);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+const [audioToDelete, setAudioToDelete] = useState(null);
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -158,7 +160,7 @@ useEffect(() => {
   formData.append("enteredDate", new Date().toISOString());
   formData.append("dateAudioRecorded", audioData.dateAudioRecorded);
   formData.append("audioDescription", audioData.description);
-   formData.append("accessLevel", audioData.accessLevel);
+  formData.append("accessLevel", audioData.accessLevel || "Everyone");
 
   // 3️⃣ Link fields
   formData.append("isLink", audioData.isLink);
@@ -210,7 +212,8 @@ useEffect(() => {
                     navigate(route, { state: { caseDetails } });
                 };
 
-                const fetchAudioFiles = async () => {
+ 
+const fetchAudioFiles = async () => {
   const token = localStorage.getItem("token");
   const leadNo = selectedLead.leadNo;
   const leadName = encodeURIComponent(selectedLead.leadName);
@@ -236,7 +239,8 @@ useEffect(() => {
       // If server returns a 'link' field, use that. Otherwise build file URL:
       isLink: a.isLink,
       link: a.link || "",
-      audioSrc: a.isLink ? a.link : `${BASE_URL}/uploads/${a.filename}`
+      signedUrl: a.signedUrl || "", // ✅ Use signed URL from S3
+      audioSrc: a.isLink ? a.link : a.signedUrl || "" // ✅ For playback
     }));
 
     // Default access:
@@ -273,32 +277,34 @@ useEffect(() => {
   });
 };
 
+const handleDeleteAudio = (idx) => {
+  setAudioToDelete(idx); 
+  setAlertMessage("Are you sure you want to delete this audio?");
+  setConfirmDeleteOpen(true);
+};
 
+// Confirm deletion logic
+const confirmDelete = async () => {
+  if (audioToDelete === null) return;
+  const a = audioFiles[audioToDelete];
 
-                const handleDeleteAudio = async idx => {
-                   if (!window.confirm("Delete this audio?")) return;
-                     const a = audioFiles[idx];
-                    const leadNo   = selectedLead.leadNo;
-                     const leadName = encodeURIComponent(selectedLead.leadName);
-                      const caseNo   = selectedCase.caseNo;
-                      const caseName = encodeURIComponent(selectedCase.caseName);
-                      await api.delete(
-                        `/api/lraudio/${a.id}`,
-                        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-                      );
-             
-                  setAudioFiles(prev => prev.filter((_, i) => i !== idx));
-                  };
+  try {
+    await api.delete(`/api/lraudio/${a.id}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+    });
 
-
-  // const handleEditInput = (field, value) => {
-  //   setEditData(prev => ({ ...prev, [field]: value }));
-  // };
-
-  // const handleEditFileChange = (e) => {
-  //   const f = e.target.files[0];
-  //   if (f) setEditData(prev => ({ ...prev, file: f }));
-  // };
+    setAudioFiles((prev) => prev.filter((_, i) => i !== audioToDelete));
+    setAlertMessage("Audio deleted successfully.");
+    setAlertOpen(true); // Show success notification
+  } catch (error) {
+    console.error("Error deleting audio:", error);
+    setAlertMessage("Failed to delete audio.");
+    setAlertOpen(true);
+  } finally {
+    setConfirmDeleteOpen(false);
+    setAudioToDelete(null);
+  }
+};
 
 // Populate form from an existing row
 const handleEditAudio = idx => {
@@ -451,25 +457,16 @@ sessionStorage.removeItem(FORM_KEY);
           onClose={()   => setAlertOpen(false)}
         />
 
-      {/* Top Menu */}
-      {/* <div className="top-menu">
-        <div className="menu-items">
-          <span className="menu-item" onClick={() => handleNavigation("/LRInstruction")}>Instructions</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRReturn")}>Returns</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRPerson")}>Person</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRVehicle")}>Vehicles</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LREnclosures")}>Enclosures</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LREvidence")}>Evidence</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRPictures")}>Pictures</span>
-          <span className="menu-item active" onClick={() => handleNavigation("/LRAudio")}>Audio</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRVideo")}>Videos</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRScratchpad")}>Scratchpad</span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRFinish")}>Finish</span>
-        </div>
-      </div> */}
+        <AlertModal
+  isOpen={confirmDeleteOpen}
+  title="Confirm Deletion"
+  message={alertMessage}
+  onConfirm={confirmDelete}
+  onClose={() => setConfirmDeleteOpen(false)}
+  confirmText="Yes"
+  cancelText="No"
+/>
+
         <div className="top-menu"   style={{ paddingLeft: '20%' }}>
       <div className="menu-items" >
         <span className="menu-item " onClick={() => {
@@ -789,9 +786,9 @@ Case Page
             {audioFiles.map((audio, index) => (
               <div key={index} className="audio-card">
                 <audio controls>
-                  <source src={audio.audioSrc} type="audio/mp3" />
-                  Your browser does not support the audio element.
-                </audio>
+  <source src={audio.audioSrc} type="audio/mpeg" />
+  Your browser does not support the audio element.
+</audio>
                 <p>{audio.description}</p>
               </div>
             ))}
@@ -820,16 +817,18 @@ Case Page
                 <td>{audio.dateEntered}</td>
                 <td>{audio.returnId}</td>
                 {/* <td>{audio.dateAudioRecorded}</td> */}
-                 <td>
-  <a
-    href={audio.audioSrc}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="link-button"
-  >
-    {audio.originalName || (audio.isLink ? audio.link : "Download")}
-  </a>
+                <td>
+  {audio.isLink ? (
+    <a href={audio.link} target="_blank" rel="noopener noreferrer" className="link-button">
+      {audio.link}
+    </a>
+  ) : (
+    <a href={audio.signedUrl} target="_blank" rel="noopener noreferrer" className="link-button">
+      {audio.originalName || "Download"}
+    </a>
+  )}
 </td>
+
 
                 <td>{audio.description}</td>
                 <td>

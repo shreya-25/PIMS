@@ -1,5 +1,7 @@
 const LREvidence = require("../models/LREvidence");
 const fs = require("fs");
+const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
+
 
 // **Create a new LREnclosure entry with file upload support**
 const createLREvidence = async (req, res) => {
@@ -10,6 +12,7 @@ const createLREvidence = async (req, res) => {
       let filePath = null;
       let originalName = null;
       let filename = null;
+      let s3Key = null;
   
       if (!isLink) {
         if (!req.file) {
@@ -21,6 +24,19 @@ const createLREvidence = async (req, res) => {
         originalName = req.file.originalname;
         filename = req.file.filename;
       }
+
+      const { error, key } = await uploadToS3({
+        filePath: req.file.path,
+        userId: req.body.caseNo,
+        mimetype: req.file.mimetype,
+      });
+
+      if (error) {
+        return res.status(500).json({ message: "S3 upload failed", error: error.message });
+      }
+
+      s3Key = key;
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
   
         // Create a new LREnclosure document with the file reference
@@ -41,6 +57,7 @@ const createLREvidence = async (req, res) => {
             filePath: isLink ? "link-only" : filePath,
             originalName: originalName,
             filename: filename,
+            s3Key, 
             accessLevel,
             isLink,
             link: isLink ? req.body.link : null,
@@ -80,7 +97,14 @@ const getLREvidenceByDetails = async (req, res) => {
             return res.status(404).json({ message: "No evidences found." });
         }
 
-        res.status(200).json(lrEvidences);
+         const evidencesWithUrls = await Promise.all(
+      lrEvidences.map(async (ev) => {
+        const signedUrl = ev.s3Key ? await getFileFromS3(ev.s3Key) : null;
+        return { ...ev.toObject(), signedUrl };
+      })
+    );
+
+        res.status(200).json(evidencesWithUrls);
     } catch (err) {
         console.error("Error fetching LREvidence records:", err.message);
         res.status(500).json({ message: "Something went wrong" });
@@ -110,36 +134,41 @@ const updateLREvidence = async (req, res) => {
       if (!ev) {
         return res.status(404).json({ message: "Evidence not found" });
       }
-  
-      // If a new file arrived, delete the old one
-      if (req.file && ev.filePath) {
-        try {
-          if (fs.existsSync(ev.filePath)) fs.unlinkSync(ev.filePath);
-        } catch (fsErr) {
-          console.warn("Could not delete old file:", fsErr);
-        }
-        ev.filePath     = req.file.path;
-        ev.originalName = req.file.originalname;
-        ev.filename     = req.file.filename;
+
+       if (req.file) {
+      if (ev.s3Key) {
+        await deleteFromS3(ev.s3Key);
       }
-  
-      // Update metadata
-      ev.leadReturnId       = req.body.leadReturnId;
-      ev.enteredDate        = req.body.enteredDate;
-      ev.collectionDate     = req.body.collectionDate;
-      ev.disposedDate       = req.body.disposedDate;
-      ev.disposition        = req.body.disposition;
-      ev.type               = req.body.type;
-      ev.evidenceDescription = req.body.evidenceDescription;
-      ev.enteredBy          = req.body.enteredBy;
-  
-      await ev.save();
-      return res.json(ev);
-    } catch (err) {
-      console.error("Error updating LREvidence:", err);
-      return res.status(500).json({ message: "Something went wrong" });
+
+      const { key } = await uploadToS3({
+        filePath: req.file.path,
+        userId: caseNo,
+        mimetype: req.file.mimetype,
+      });
+
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+
+      ev.s3Key = key;
+      ev.originalName = req.file.originalname;
+      ev.filename = req.file.filename;
     }
-  };
+
+    ev.leadReturnId = req.body.leadReturnId;
+    ev.enteredDate = req.body.enteredDate;
+    ev.collectionDate = req.body.collectionDate;
+    ev.disposedDate = req.body.disposedDate;
+    ev.disposition = req.body.disposition;
+    ev.type = req.body.type;
+    ev.evidenceDescription = req.body.evidenceDescription;
+    ev.enteredBy = req.body.enteredBy;
+
+    await ev.save();
+    return res.json(ev);
+  } catch (err) {
+    console.error("Error updating LREvidence:", err);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
   
   // Delete an evidence by composite key + description
   const deleteLREvidence = async (req, res) => {
@@ -162,26 +191,25 @@ const updateLREvidence = async (req, res) => {
         evidenceDescription
       });
       if (!ev) {
-        return res.status(404).json({ message: "Evidence not found" });
-      }
-  
-      // Remove the file on disk
-      if (ev.filePath) {
-        try {
-          if (fs.existsSync(ev.filePath)) fs.unlinkSync(ev.filePath);
-        } catch (fsErr) {
-          console.warn("Could not delete file on disk:", fsErr);
-        }
-      }
-  
-      return res.json({ message: "Evidence deleted" });
-    } catch (err) {
-      console.error("Error deleting LREvidence:", err);
-      if (!res.headersSent) {
-        return res.status(500).json({ message: "Something went wrong" });
+      return res.status(404).json({ message: "Evidence not found" });
+    }
+
+    if (ev.s3Key) {
+      try {
+        await deleteFromS3(ev.s3Key);
+      } catch (fsErr) {
+        console.warn("Could not delete file from S3:", fsErr);
       }
     }
-  };
+
+    return res.json({ message: "Evidence deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting LREvidence:", err);
+    if (!res.headersSent) {
+      return res.status(500).json({ message: "Something went wrong" });
+    }
+  }
+};
   
 
 module.exports = { createLREvidence, getLREvidenceByDetails, updateLREvidence, deleteLREvidence };

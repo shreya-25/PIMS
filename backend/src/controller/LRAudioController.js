@@ -1,6 +1,8 @@
 const LRAudio = require("../models/LRAudio");
 const fs      = require("fs");
 const path    = require("path");
+const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
+
 
 // **Create a new LREnclosure entry with file upload support**
 const createLRAudio = async (req, res) => {
@@ -10,12 +12,23 @@ const createLRAudio = async (req, res) => {
       let filePath = null;
       let originalName = null;
       let filename = null;
+       let s3Key = null;
   
       if (!isLink) {
         if (!req.file) return res.status(400).json({ error: 'No file received' });
         filePath = req.file.path;
         originalName = req.file.originalname;
         filename = req.file.filename;
+
+        const { error, key } = await uploadToS3({
+        filePath,
+        userId: req.body.caseNo,
+        mimetype: req.file.mimetype,
+      });
+
+      if (error) return res.status(500).json({ message: "S3 upload failed", error: error.message });
+      s3Key = key;
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
       }
 
         // Create a new LREnclosure document with the file reference
@@ -31,13 +44,14 @@ const createLRAudio = async (req, res) => {
             enteredDate: req.body.enteredDate,
             dateAudioRecorded: req.body.dateAudioRecorded,
             audioDescription:req.body.audioDescription,
-            accessLevel: req.body.accessLevel, 
+            accessLevel: req.body.accessLevel || "Everyone",
             // fileId, // Store the GridFS file reference here
             isLink,
             link: isLink ? req.body.link : null,
             filePath,
             originalName,
-            filename
+            filename,
+            s3Key,
         });
 
         // Save the document in MongoDB
@@ -74,7 +88,14 @@ const getLRAudioByDetails = async (req, res) => {
             return res.status(404).json({ message: "No Audios found." });
         }
 
-        res.status(200).json(lrAudios);
+        const withUrls = await Promise.all(
+      lrAudios.map(async (a) => {
+        const signedUrl = a.s3Key ? await getFileFromS3(a.s3Key) : null;
+        return { ...a.toObject(), signedUrl };
+      })
+    );
+
+    res.status(200).json(withUrls);
     } catch (err) {
         console.error("Error fetching lrAudios records:", err.message);
         res.status(500).json({ message: "Something went wrong" });
@@ -83,57 +104,44 @@ const getLRAudioByDetails = async (req, res) => {
 
 // **UPDATE** an existing audio entry (and optional file replacement)
 const updateLRAudio = async (req, res) => {
-    try {
-      const { id } = req.params;
-      const updates = {
-        leadReturnId: req.body.leadReturnId,
-        audioDescription: req.body.audioDescription,
-        dateAudioRecorded: req.body.dateAudioRecorded,
-      };
-  
-      // if a new file was uploaded, delete the old one and store the new path
-      if (req.file) {
-        const existing = await LRAudio.findById(id);
-        if (existing && existing.filePath) {
-          fs.unlinkSync(path.resolve(existing.filePath));
-        }
-        updates.filePath     = req.file.path;
-        updates.originalName = req.file.originalname;
-        updates.filename     = req.file.filename;
-      }
-  
-      const updated = await LRAudio.findByIdAndUpdate(id, updates, { new: true });
-      if (!updated) return res.status(404).json({ message: "Audio not found" });
-      res.json({ message: "Audio updated", audio: updated });
-    } catch (err) {
-      console.error("Error updating LRAudio:", err);
-      res.status(500).json({ message: "Something went wrong" });
+  try {
+    const { id } = req.params;
+    const audio = await LRAudio.findById(id);
+    if (!audio) return res.status(404).json({ message: "Audio not found" });
+
+    if (req.file) {
+      if (audio.s3Key) await deleteFromS3(audio.s3Key);
+      const { key } = await uploadToS3({ filePath: req.file.path, userId: audio.caseNo, mimetype: req.file.mimetype });
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      audio.s3Key = key;
+      audio.originalName = req.file.originalname;
+      audio.filename = req.file.filename;
     }
-  };
+
+    audio.audioDescription = req.body.audioDescription;
+    audio.dateAudioRecorded = req.body.dateAudioRecorded;
+    audio.leadReturnId = req.body.leadReturnId;
+    await audio.save();
+
+    res.json({ message: "Audio updated", audio });
+  } catch (err) {
+    console.error("Error updating LRAudio:", err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
   
   // **DELETE** an audio entry
   const deleteLRAudio = async (req, res) => {
-    try {
-        const { id } = req.params;
-        console.log("DELETE /api/lraudio/", id);
-    
-        const toDel = await LRAudio.findByIdAndDelete(id);
-        if (!toDel) {
-          console.log("→ not found");
-          return res.status(404).json({ message: "Audio not found" });
-        }
-    
-        // remove the file itself
-        if (toDel.filePath) {
-          fs.unlinkSync(path.resolve(toDel.filePath));
-        }
-    
-        console.log("→ deleted");
-        return res.status(200).json({ message: "Audio deleted" });
-      } catch (err) {
-        console.error("Error deleting LRAudio:", err);
-        return res.status(500).json({ message: "Something went wrong" });
-      }
-  };
+  try {
+    const { id } = req.params;
+    const audio = await LRAudio.findByIdAndDelete(id);
+    if (!audio) return res.status(404).json({ message: "Audio not found" });
+    if (audio.s3Key) await deleteFromS3(audio.s3Key);
+    res.status(200).json({ message: "Audio deleted" });
+  } catch (err) {
+    console.error("Error deleting LRAudio:", err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
 
 module.exports = { createLRAudio, getLRAudioByDetails, updateLRAudio, deleteLRAudio };

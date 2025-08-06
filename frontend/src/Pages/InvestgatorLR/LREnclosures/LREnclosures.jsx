@@ -531,6 +531,7 @@ useEffect(() => {
         originalName: enc.originalName,
         link: enc.link || "",
         filename: enc.filename, 
+        signedUrl: enc.signedUrl || "",
       }));
 
       const withAccess = mappedEnclosures.map(r => ({
@@ -964,7 +965,7 @@ Case Page
     </a>
   ) : (
     <a
-      href={`${BASE_URL}/uploads/${enclosure.filename}`}
+      href={enclosure.signedUrl}
       target="_blank"
       rel="noopener noreferrer"
       className="link-button"

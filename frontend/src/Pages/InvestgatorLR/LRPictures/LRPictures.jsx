@@ -393,20 +393,20 @@ const handleAccessChange = (idx, newAccess) => {
       {/* Navbar */}
       <Navbar />
       <AlertModal
-                isOpen={alertOpen}
-                title="Notification"
-                message={alertMessage}
-                onConfirm={() => setAlertOpen(false)}
-                onClose={()   => setAlertOpen(false)}
-              />
+        isOpen={alertOpen}
+        title="Notification"
+        message={alertMessage}
+        onConfirm={() => setAlertOpen(false)}
+        onClose={()   => setAlertOpen(false)}
+      />
 
-              <AlertModal
-  isOpen={confirmDeleteOpen}
-  title="Confirm Deletion"
-  message={alertMessage}
-  onConfirm={confirmDeletePicture}
-  onClose={() => setConfirmDeleteOpen(false)}
-/>
+      <AlertModal
+        isOpen={confirmDeleteOpen}
+        title="Confirm Deletion"
+        message={alertMessage}
+        onConfirm={confirmDeletePicture}
+        onClose={() => setConfirmDeleteOpen(false)}
+      />
 
 
       {/* Top Menu */}
