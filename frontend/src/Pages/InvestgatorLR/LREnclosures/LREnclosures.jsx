@@ -11,8 +11,6 @@ import Attachment from "../../../components/Attachment/Attachment";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../../components/AlertModal/AlertModal";
 
-
-
 export const LREnclosures = () => {
     // useEffect(() => {
     //     // Apply style when component mounts
