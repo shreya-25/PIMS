@@ -704,10 +704,10 @@ const addCase = (newCase) => {
 
 
   const columnWidths = {
-  "Case No.":   "7%",
+  "Case No.":   "3%",
   "Case Name":  "20%",         // you can tweak widths…
-  "Created At": "6%",         // ← new
-  "Role":       "7%",
+  "Created At": "3.5%",         // ← new
+  "Role":       "5%",
 };
 
 // Columns + mapping to your data fields
@@ -827,7 +827,7 @@ const sortedCases = useMemo(() => {
     "Assigned Officers":"assignedOfficers"
   };
   const assignedColWidths = {
-    "Lead No.":           "10%",
+    "Lead No.":           "6%",
     "Lead Name":         "28%",
     "Case Name":          "15%",
     "Assigned Officers": "15%"
@@ -1111,12 +1111,18 @@ const sortedPendingReturns = useMemo(() => {
       <div className="main-page-abovepart">
         <NotificationCard  acceptLead={acceptLead} signedInOfficer={signedInOfficer} 
         />
-        <div className= "add-case-section">
+          <div className= "add-case-section">
             <SlideBar
                   onAddCase={(newCase) => addCase(newCase)}
                   buttonClass="custom-add-case-btn1"
             />
         </div>
+        {/* <div className="case-overview-sec">
+        <div className="cp-head">
+          <h2> Cases Overview</h2>
+        </div>
+    
+        </div> */}
       </div>
       <div className="main-page-belowpart">
       <div className="stats-bar">
@@ -1190,7 +1196,7 @@ const sortedPendingReturns = useMemo(() => {
                       </th>
                     );
                   })}
-                  <th style={{ width: "7%", textAlign: "center" }} ></th>{/* extra column for “View” button */}
+                  <th style={{ width: "5%", textAlign: "center" }} >Actions</th>{/* extra column for “View” button */}
                 </tr>
               </thead>
               <tbody>
@@ -1227,7 +1233,7 @@ const sortedPendingReturns = useMemo(() => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: "center" }}>
+                    <td colSpan={5} style={{ textAlign: "center" , padding: "8px" }}>
                       No cases found.
                     </td>
                   </tr>
@@ -1287,7 +1293,7 @@ const sortedPendingReturns = useMemo(() => {
   );
 })}
                      
-                  <th style={{ width: "10%" }}></th>
+                  <th style={{ width: "5%", textAlign: "center" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1298,7 +1304,7 @@ const sortedPendingReturns = useMemo(() => {
                       <td>{lead.description}</td>
                       <td>{lead.caseName}</td>
                       <td>{lead.assignedOfficers.join(", ")}</td>
-                      <td>
+                      <td style={{ textAlign: "center" }}>
                         <button
                           className="view-btn1"
                           onClick={() =>  handleViewAssignedLead(lead)}
@@ -1310,7 +1316,7 @@ const sortedPendingReturns = useMemo(() => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={assignedColumns.length + 1} style={{ textAlign: "center" }}>
+                    <td colSpan={assignedColumns.length + 1} style={{ textAlign: "center" , padding: "8px" }}>
                       No Assigned Leads Available
                     </td>
                   </tr>
@@ -1348,7 +1354,7 @@ const sortedPendingReturns = useMemo(() => {
           <th>Assigned Officers</th>
           <th>Case Name</th>
           <th style={{ width: "10%" }}>Due Date</th>
-          <th style={{ width: "10%" }}></th>
+          <th style={{ width: "10%" }}>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -1376,7 +1382,7 @@ const sortedPendingReturns = useMemo(() => {
           ))
         ) : (
           <tr>
-            <td colSpan="6" style={{ textAlign: 'center' }}>
+            <td colSpan="6" style={{ textAlign: 'center', padding: "8px" }}>
               No Pending Leads Available
             </td>
           </tr>
@@ -1447,7 +1453,7 @@ const sortedPendingReturns = useMemo(() => {
         </th>
       );
     })}
-                  <th style={{ width: "10%" }}></th>
+                  <th style={{ width: "10%" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1471,7 +1477,7 @@ const sortedPendingReturns = useMemo(() => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" style={{ textAlign: 'center' }}>
+                    <td colSpan="4" style={{ textAlign: 'center' , padding: "8px" }}>
                       No Pending Lead Returns Available
                     </td>
                   </tr>

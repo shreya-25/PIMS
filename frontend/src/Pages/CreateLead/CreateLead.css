@@ -116,18 +116,17 @@ body{
   /* Table headers and first column (labels) */
 .details-table td {
   border: 1px solid #cbc8c8; /* Soft border */
-  padding: 6px 6px; /* Increased padding for spacing */
+  padding: 8px; /* Increased padding for spacing */
   text-align: left;
   font-size: 20px;
   vertical-align: middle;
 }
 
   .details-table td:first-child {
-    width: 18%;
+    /* width: 15%; */
     background: #f8f9fa; /* Light gray background */
     text-align: left; /* Align labels to the right */
-    padding-right: 20px;
-    padding-left: 20px;
+    padding: 0px 8px;
   }
 
 /* Alternate row colors */
@@ -145,7 +144,8 @@ body{
   /* font-weight: bold; */
   color: #333;
   text-align: left;
-  padding-right: 20px;
+  /* padding-right: 20px; */
+  /* width: 50px; */
 }
 
 .details-table tr:nth-child(odd) td:first-child {
@@ -153,7 +153,9 @@ body{
   /* font-weight: bold; */
   color: #333;
   text-align: left;
-  padding-right: 20px;
+  /* padding-right: 20px; */
+    /* width: 50px; */
+
 }
 
 /* Styling input fields inside the table */
@@ -161,8 +163,8 @@ body{
 .details-table td select,
 .details-table td textarea,
 .custom-dropdown-cl {
-  width: 100%;
-  padding: 10px;
+  /* width: 100%; */
+  padding: 8px;
   border: 1px solid #aaa;
   border-radius: 6px;
   font-size: 20px;
@@ -201,7 +203,7 @@ body{
   
   .signature-button {
     margin-top: 20px;
-    padding: 10px 20px;
+    padding: 8px;
     background-color: #555;
     color: white;
     border: none;

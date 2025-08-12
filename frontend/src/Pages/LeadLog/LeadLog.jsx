@@ -244,7 +244,19 @@ export const LeadLog = () => {
     setDateRange({ startDate: "", endDate: "" });
   };
 
-
+ const caseTeamStyles = {
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+  },
+  th: {
+    padding: "8px"
+  },
+  td: {
+    padding: "8px",
+    verticalAlign: "center",
+  },
+};
 
 
   // State to maintain a list of lead entries
@@ -477,18 +489,17 @@ const formatDate = (dateString) => {
      
 
         <div className="left-content">
-        <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case:{selectedCase.caseName || "Unknown Case"}| {selectedCase.role || ""}</h5>
 
-          {/* <h5 className = "side-title"> 
-          {selectedLead?.leadNo ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName}` : "LEAD DETAILS"}
-
-          </h5> */}
-          </div>
+          <div className = "side-titleLeft">
+                  <p> PIMS &gt; Cases \ {selectedCase.caseNo || ""} &gt; Lead Log
+                 </p>
+                </div>
 
 
-        <div className="case-header">
-          <h2 className="">LEAD LOG</h2>
+         <div className="case-header-cp">
+            <div className="cp-head">
+          <h1 className="">LEAD LOG</h1>
+        </div>
         </div>
 
       {/* <div className="filter-sort-icons">
@@ -578,23 +589,23 @@ const formatDate = (dateString) => {
                     </button>
     </div>
   </div>
-        <table className="leads-table">
+        <table className="leads-table" style={caseTeamStyles.table}>
           <thead>
             <tr>
-              <th style={{ width: "10%" }}>Lead #</th>
+              <th style={{ ...caseTeamStyles.th, width: "10%" }}>Lead #</th>
               <th>Lead Log Summary</th>
-              <th style={{ width: "11%" }}>Date Created</th>
-              <th style={{ width: "10%" }}>Status</th>
-              <th style={{ width: "11%" }}>Assigned To</th>
-              <th style={{ width: "13%" }}>Date Submitted</th>
-              <th style={{ width: "12%" }}>Date Approved</th>
+              <th style={{ ...caseTeamStyles.th,  width: "11%" }}>Date Created</th>
+              <th style={{...caseTeamStyles.th,  width: "10%" }}>Status</th>
+              <th style={{...caseTeamStyles.th,  width: "11%" }}>Assigned To</th>
+              <th style={{ ...caseTeamStyles.th, width: "13%" }}>Date Submitted</th>
+              <th style={{ ...caseTeamStyles.th, width: "12%" }}>Date Approved</th>
             </tr>
           </thead>
           <tbody>
           {leadLogData.length > 0 ? (
               leadLogData.map((entry, index) => (
                 <tr key={index} >
-                  <td>{entry.leadNo}</td>
+                  <td style={caseTeamStyles.td}>{entry.leadNo}</td>
                   {/* <td 
           className="clickable-description" 
           onClick={() => handleLeadClick(entry)}
@@ -602,7 +613,7 @@ const formatDate = (dateString) => {
         >
           {entry.description}
         </td> */}
-         <td>
+         <td style={caseTeamStyles.td}>
                 {isInvestigator
                   ? entry.description
                   : (
@@ -616,17 +627,17 @@ const formatDate = (dateString) => {
                   )
                 }
               </td>
-                  <td>{formatDate(entry.assignedDate)}</td>
-                  <td>{entry.leadStatus }</td>
+                  <td style={caseTeamStyles.td}>{formatDate(entry.assignedDate)}</td>
+                  <td style={caseTeamStyles.td}>{entry.leadStatus }</td>
                   {/* <td>{entry.assignedTo?.join(", ")}</td> */}
-                  <td style={{ whiteSpace: "pre-line" }}>
+                  <td style={{ ...caseTeamStyles.td, whiteSpace: "pre-line" }}>
           {/* {entry.assignedTo?.map((officer, i) => (
             <span key={i} style={{ display: "block", padding: "2px 0" }}>{officer}</span>
           ))} */}
            {entry.assignedTo?.map(o => o.username).join(", ") || "None"}
         </td>
-                  <td>{formatDate(entry.submittedDate)}</td> 
-                  <td>{formatDate(entry.approvedDate)}</td> 
+                  <td style={caseTeamStyles.td}>{formatDate(entry.submittedDate)}</td> 
+                  <td style={caseTeamStyles.td}>{formatDate(entry.approvedDate)}</td> 
                 </tr>
               ))
             ) : (

@@ -65,6 +65,8 @@ import { LeadsDeskTest } from './Pages/LeadsDeskTest/LeadsDeskTest';
 import { LeadsDeskContent } from './Pages/LeadsDeskContent/LeadsDeskContent';
 import { ChainOfCustody } from './Pages/ChainOfCustody/ChainOfCustody';
 import { Chatbot } from './Pages/Admin/Chatbot';
+import { GlobalErrorProvider } from './GlobalErrorProvider';
+
 // import { Report} from './Pages/Report/Report'
 // import {ReportWrapper} from './Pages/Report/ReportWrapper'
 import { LeadsDeskTestExecSummary} from './Pages/LeadsDeskTest/LeadsDeskTestExecSummary';
@@ -95,6 +97,7 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
 
   useTokenExpiryRedirect(); 
   return (
+    <GlobalErrorProvider>
     <ErrorBoundary>
       <Routes>
         {/* Define the route for Login */}
@@ -170,6 +173,7 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
       />
       
       </ErrorBoundary>
+      </GlobalErrorProvider>
 
       
   );

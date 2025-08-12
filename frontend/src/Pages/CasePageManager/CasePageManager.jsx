@@ -58,6 +58,8 @@ export const CasePageManager = () => {
     const [selectedInvestigators, setSelectedInvestigators] = useState([]);
     const [selectedCaseManagers,    setSelectedCaseManagers]    = useState([]);
     const [selectedDetectiveSupervisor, setSelectedDetectiveSupervisor] = useState("");
+    const [caseStatus, setCaseStatus] = useState("");
+const [caseUpdatedAt, setCaseUpdatedAt] = useState(null);
 
      const dsRef = useRef(null);
 const cmRef = useRef(null);
@@ -854,6 +856,21 @@ useEffect(() => {
       }),
     }));
   };
+
+  const caseTeamStyles = {
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+  },
+  th: {
+    padding: "8px"
+  },
+  td: {
+    padding: "8px",
+    verticalAlign: "center",
+  },
+};
+
   
     // Continue a pending lead return
     const continueLead = (leadId) => {
@@ -1156,6 +1173,13 @@ const handlePendingCheckboxToggle = (dataKey, v) =>
     };
   });
 
+  const handleSortPending = (columnKey) =>
+  setPendingSortConfig(prev => ({
+    key: columnKey,
+    direction: prev.key === columnKey && prev.direction === "asc" ? "desc" : "asc",
+  }));
+
+
 const applyPendingFilter = dataKey =>
   setPendingFilterConfig(fc => ({
     ...fc,
@@ -1323,9 +1347,9 @@ const allColKey    = {
   "Assigned Officers":  "assignedOfficers"
 };
 const allColWidths = {
-  "Lead No.":           "13%",
-  "Lead Log Summary":   "40%",
-  "Lead Status":        "17%",
+  "Lead No.":           "9%",
+  "Lead Log Summary":   "35%",
+  "Lead Status":        "11%",
   "Assigned Officers":  "22%"
 };
 
@@ -1490,48 +1514,78 @@ const handleSortAll = columnKey => {
               <div className="left-content">
 
                 <div className = "side-titleLeft">
-                  <h5> Your Role: {selectedCase.role || ""}
-                 </h5>
+                  <p> PIMS &gt; Cases
+                 </p>
                 </div>
                 {/* Display Case Number and Name */}
-                <div className="case-header">
+                <div className="case-header-cp">
+                  <div className="cp-head">
                 {
                     <h1>
-                      CASE:{selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
+                      CASE: {selectedCase.caseName.toUpperCase() || "Unknown Case"}
                     </h1>
                 }
                 </div>
+                   <div  className="add-lead-section">
+                {/* <div className="add-lead-section-content"><h2>Click here to add a new lead</h2></div> */}
+                <div className = "add-lead-btn1">
+                <button className="cp-add-lead-btn"  onClick={() => navigate('/createlead', { state: { caseDetails: selectedCase } })}
+                style={{ cursor: 'pointer', width: '100%' }} >
+                   <i className="fa-solid fa-plus"></i> Add Lead
+                </button>
+                </div>
+                </div>
+                </div>
 
-                <div className="case-summary">
-      <label className="input-label">Case Summary</label>
+                {/* <div className="cp-case-status">
+                 
+      <div className="pill">{selectedCase.role || ""}</div>
+      <div className="pill">Ongoing</div>
+      <div className="muted">Last updated 2h ago</div>
+                </div> */}
+
+<div className="summary-box">
+      <div className="case-summary">
+        <div className="cp-summ-head">
+  <label className="cp-label" htmlFor="case-summary">Case Summary</label>
+
+  {(selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor") && (
+    <button
+      type="button"
+      className="icon-button"
+      onClick={handleEditClick}
+      aria-label="Edit case summary"
+      title="Edit"
+    >
+      <img
+        src={`${process.env.PUBLIC_URL || ""}/Materials/edit.png`}  // or just "/Materials/edit.png"
+        className="icon-image"
+        alt=""
+      />
+    </button>
+  )}
+</div>
       <textarea
-        id="case-summary"
+        className='cp-textarea'
         rows={6}
-        style={{ width: '100%', fontSize: 20, padding: 8 }}
+        style={{ width: '100%', fontSize: 20 }}
         value={summary}
         onChange={e => setSummary(e.target.value)}
       />
-      {/* <div style={{ marginTop: 8, fontSize: 20, minHeight: '1em' }}>
-        {isSaving
-          ? <span style={{ color: '#888' }}>Saving…</span>
-          : error
-            ? <span style={{ color: 'red' }}>{error}</span>
-            : <span>&nbsp;</span>
-        }
-      </div> */}
+                </div>
                 </div>
 
                 <div className="case-team">
-                <table className="leads-table">
+                <table className="leads-table" style={caseTeamStyles.table}>
                 <thead>
                 <tr>
-                <th style={{ width: "20%" }}>Role</th>
-                <th>Name(s)</th></tr>
+                <th style={{...caseTeamStyles.th, width: "20%" }}>Role</th>
+                <th style={caseTeamStyles.th}>Name(s)</th></tr>
                 </thead>
                 <tbody>
                   <tr>
-                  <td>Detective Supervisor</td>
-                  <td>
+                  <td style={caseTeamStyles.td}>Detective Supervisor</td>
+                  <td style={caseTeamStyles.td}>
                     {(selectedCase.role === "Detective Supervisor") ? (
                       <div  ref={dsRef}
                       className="custom-dropdown">
@@ -1586,8 +1640,8 @@ const handleSortAll = columnKey => {
                   </td>
                 </tr>
                 <tr>
-                  <td>Case Manager{team.caseManagers.length>1 ? "s" : ""}</td>
-                  <td>
+                  <td style={caseTeamStyles.td}>Case Manager{team.caseManagers.length>1 ? "s" : ""}</td>
+                  <td style={caseTeamStyles.td}>
                     {(selectedCase.role==="Case Manager" || selectedCase.role==="Detective Supervisor") ? (
                       <div ref={cmRef}
                       className="custom-dropdown">
@@ -1653,10 +1707,10 @@ const handleSortAll = columnKey => {
                 </tr>
 
                 <tr>
-                        <td>
+                        <td style={caseTeamStyles.td}>
                           Investigator{team.investigators.length > 1 ? "s" : ""}
                         </td>
-                        <td>
+                        <td style={caseTeamStyles.td}>
                         
                           {(selectedCase.role === "Case Manager" ||
                             selectedCase.role === "Detective Supervisor") ? (
@@ -1752,16 +1806,6 @@ const handleSortAll = columnKey => {
                   {error && <div className="error">{error}</div>}
                 </div> */}
 
-                <div  className="add-lead-section">
-                {/* <div className="add-lead-section-content"><h2>Click here to add a new lead</h2></div> */}
-                <div className = "add-lead-btn1">
-                <button className="save-btn1"  onClick={() => navigate('/createlead', { state: { caseDetails: selectedCase } })}
-                style={{ cursor: 'pointer' }} >
-                   <i className="fa-solid fa-plus"></i> Add Lead
-                </button>
-                </div>
-                </div>
-
              
                 <div className="stats-bar">
                           <span
@@ -1845,12 +1889,12 @@ const handleSortAll = columnKey => {
                       );
                     })}
                     {/* extra column for “View” button */}
-                    <th style={{ width: "10%" }}></th>
+                    <th style={{ width: "10%", textAlign:"center" }}> Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-      {leads.assignedLeads.length > 0 ? (
-        leads.assignedLeads
+      {sortedAssignedLeads.length > 0 ? (
+        sortedAssignedLeads
           .filter(
             (lead) =>
               lead.description
@@ -1882,15 +1926,21 @@ const handleSortAll = columnKey => {
               <td>{calculateRemainingDays(lead.dueDate) }</td>
             
 
-                <td style={{ wordBreak:"break-word" }}>
+                {/* <td style={{ wordBreak:"break-word" }}>
                 {lead.assignedOfficers && lead.assignedOfficers.length > 0
     ? lead.assignedOfficers.map((officer, idx) => (
         <div key={idx}>{officer}</div>
       ))
     : <em>None</em>
   }
-              </td>
-              <td>
+              </td> */}
+              <td style={{ wordBreak: "break-word" }}>
+  {lead.assignedOfficers && lead.assignedOfficers.length > 0
+    ? lead.assignedOfficers.join(", ")
+    : "None"}
+</td>
+
+              <td style={{ width: "9%", textAlign: "center" }}>
                 <button
                   className="view-btn1"
                   onClick={()=>handleLeadClick(lead)}
@@ -1918,7 +1968,7 @@ const handleSortAll = columnKey => {
            ))
           ) : (
             <tr>
-              <td colSpan="7" style={{ textAlign: 'center' }}>
+              <td colSpan="7" style={{ textAlign: 'center', padding: '8px' }}>
                 No Assigned Leads Available
               </td>
             </tr>
@@ -1969,12 +2019,10 @@ const handleSortAll = columnKey => {
                              allChecked={pendingAllChecked}
                              onToggleAll={togglePendingSelectAll}
                              onToggleOne={handlePendingCheckboxToggle}
-                             onApply={() => {
-                               applyPendingFilter(dataKey);
-                               setOpenPendingFilter(null);
-                             }}
+                             onApply={() => { applyPendingFilter(dataKey); setOpenPendingFilter(null); }}
                              onCancel={() => setOpenPendingFilter(null)}
-                           />
+                             onSort={() => handleSortPending(dataKey)} 
+                                                      />
                           
                          </span>
                        </div>
@@ -1982,12 +2030,12 @@ const handleSortAll = columnKey => {
                    );
                  })}
                  {/* extra column for “View” */}
-                 <th style={{ width: "11%" }}></th>
+                 <th style={{ width: "11%", textAlign: "center" }}> Actions</th>
                </tr>
              </thead>
              <tbody>
-      {leads.pendingLeads.length > 0 ? (
-        leads.pendingLeads
+      {sortedPendingLeads.length > 0 ? (
+        sortedPendingLeads
           .filter(
             (lead) =>
               lead.description
@@ -2024,15 +2072,21 @@ const handleSortAll = columnKey => {
                   <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
                 ))}
                 </td> */}
-                <td style={{ wordBreak:"break-word" }}>
+                {/* <td style={{ wordBreak:"break-word" }}>
                  {lead.assignedOfficers && lead.assignedOfficers.length > 0
     ? lead.assignedOfficers.map((officer, idx) => (
         <div key={idx}>{officer}</div>
       ))
     : <em>None</em>
   }
-              </td>
-              <td>
+              </td> */}
+              <td style={{ wordBreak: "break-word" }}>
+  {lead.assignedOfficers && lead.assignedOfficers.length > 0
+    ? lead.assignedOfficers.join(", ")
+    : "None"}
+</td>
+
+              <td style={{ width: "9%", textAlign: "center" }}>
                 <button
                   className="view-btn1"
                   onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.summary} } )}
@@ -2044,7 +2098,7 @@ const handleSortAll = columnKey => {
              ))
             ) : (
               <tr>
-                <td colSpan="7" style={{ textAlign: 'center' }}>
+                <td colSpan="7" style={{ textAlign: 'center', padding: "8px" }}>
                   No Accepted Leads Available
                 </td>
               </tr>
@@ -2115,7 +2169,7 @@ const handleSortAll = columnKey => {
                       <td>{lead.id}</td>
                       <td>{lead.description}</td>
                        <td>{lead.caseName}</td>
-                      <td>
+                      <td style={{ width: "9%", textAlign: "center" }}>
                         <button
                               className="continue-btn"
                               onClick={() => {
@@ -2129,7 +2183,7 @@ const handleSortAll = columnKey => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="4" style={{ textAlign: 'center' }}>
+                        <td colSpan="4" style={{ textAlign: 'center', padding: '8px' }}>
                           No Pending Lead Returns Available
                         </td>
                       </tr>
@@ -2192,7 +2246,7 @@ const handleSortAll = columnKey => {
                    );
                  })}
                  {/* extra column for “View” */}
-                 <th style={{ width: '11%' }}></th>
+                 <th style={{ width: "9%", textAlign: "center" }}>Actions</th>
                </tr>
              </thead>
              <tbody>
@@ -2200,7 +2254,7 @@ const handleSortAll = columnKey => {
             <tr key={lead.id}>
               <td>{lead.id}</td>
               <td>{lead.description}</td>
-              <td style={{
+              <td style={{ textAlign: "center",
   color:
     ["Assigned", "Accepted", "Approved", "Returned", "Completed"].includes(lead.leadStatus)
       ? "green"
@@ -2213,16 +2267,21 @@ const handleSortAll = columnKey => {
 
 
              
-              <td style={{ wordBreak:"break-word" }}>
+              {/* <td style={{ wordBreak:"break-word" }}>
                  {lead.assignedOfficers && lead.assignedOfficers.length > 0
     ? lead.assignedOfficers.map((officer, idx) => (
         <div key={idx}>{officer}</div>
       ))
     : <em>None</em>
   }
-  
-              </td>
-              <td>
+              </td> */}
+              <td style={{ wordBreak: "break-word" }}>
+  {lead.assignedOfficers && lead.assignedOfficers.length > 0
+    ? lead.assignedOfficers.join(", ")
+    : "None"}
+</td>
+
+              <td style={{ width: "9%", textAlign: "center" }}>
                 <button className="view-btn1" onClick={()=>handleLeadClick(lead)}>
                   Manage
                 </button>
@@ -2231,7 +2290,7 @@ const handleSortAll = columnKey => {
             </tr>
           )) : (
             <tr>
-              <td colSpan={5} style={{ textAlign:"center" }}>
+              <td colSpan={5} style={{ textAlign:"center", padding:"8px" }}>
                 No Leads Available
               </td>
             </tr>

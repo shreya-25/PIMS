@@ -140,8 +140,8 @@
 } */
 
 .custom-add-case-btn1 {
-  /* background-color: #a05252;  */
-  background-color: rgba(25, 58, 73, 0.795);
+  background-color: rgb(41, 41, 139); 
+  /* background-color: rgba(25, 58, 73, 0.795); */
   color: white; 
   border: none;
   font-size: 20px;
@@ -170,6 +170,12 @@
   margin-bottom: 10px;
 }
 
+.case-overview-sec
+{
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
 .content-area {
   width: 80%;
   padding: 20px;
@@ -450,7 +456,7 @@
 
 .leads-table th,
 .leads-table td {
-  padding: 2px;
+  padding: 2px 4px;
   text-align: left;
   border: 1px solid #ddd;
   font-size: 20px;
@@ -941,7 +947,7 @@
 .leads-table th,
 .leads-table td {
   border: 1px solid #bbb;
-  padding: 10px;
+  padding: 2px 4px;
   text-align: left;
   font-size: 20px;
 }
@@ -1065,7 +1071,7 @@
 .leads-table th,
 .leads-table td {
   border: 1px solid #ddd;
-  padding: 5px;
+  padding: 2px 4px;
   text-align: left;
 }
 
@@ -1307,13 +1313,14 @@
 }
 
 .view-btn1 {
-  /* background-color: #007bffde; */
-  background-color: #404142de;
+  background-color: rgb(41, 41, 139);
+  /* background-color: #404142de; */
   color: #fff;
 }
 
 .view-btn1:hover {
-  background-color: #787a7c;
+  /* background-color: #787a7c; */
+  background-color: rgb(96, 96, 179);
 }
 
 .case-close-btn {
@@ -1595,7 +1602,7 @@
 /* ✅ Ensure wrapping inside columns */
 .leads-table th,
 .leads-table td {
-  padding: 8px;
+  padding: 2px 4px;
   border: 1px solid #ddd;
   text-align: left;
   font-size: 20px;
