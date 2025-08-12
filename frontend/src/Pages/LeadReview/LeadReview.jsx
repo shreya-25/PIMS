@@ -628,6 +628,8 @@ const isEditableByCaseManager = field => {
         <div className="lead-main-content">
           {/* Page Header */}
 
+          
+
            {(leadData.leadStatus !== "Assigned" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
                    <div className="top-menu">
         <div className="menu-items">
@@ -672,34 +674,73 @@ const isEditableByCaseManager = field => {
                   )}
 
 
-          <div className="caseandleadinfo">
+          {/* <div className="caseandleadinfo">
           <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} |  Your Role: {selectedCase.role || ""}</h5>
 
-          {/* <h5 className="side-titleRight">
+          <h5 className="side-titleRight">
   {selectedLead?.leadNo
     ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${leadData.leadStatus || leadStatus || "Unknown Status"}`
     : `LEAD DETAILS | ${leadData?.leadStatus || leadStatus || "Unknown Status"}`}
-</h5> */}
+</h5>
 
-          </div>
+          </div> */}
 
-          <div className="case-header">
-            <h1> {selectedLead?.leadNo ? `LEAD: ${selectedLead.leadNo} | ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"} </h1>
-          </div>
+          <div className="main-leadreview-cont">
 
+           <div className = "side-titleLeft-lr">
+                  <p> PIMS &gt; Cases &gt; Lead \ {selectedLead.leadNo} 
+                 </p>
+                </div>
+        <div className="case-header-leadReview">
+                  <div className="cp-head-leadReview">
+                {
+                  <h1> {selectedLead?.leadNo ? `LEAD: ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"} </h1>
+
+                }
+                </div>
+
+                  {(leadData.leadStatus !== "Assigned" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
+                   <div  className="add-lead-section">
+                <div className = "add-lead-btn1">
+                <button className="cp-add-lead-btn"  
+                onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/LRInstruction", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } else {
+                    // alert("Please select a case and lead first.");
+                     setAlertMessage("Please select a case and lead first.");
+                     setAlertOpen(true);
+                  }
+                }}
+                style={{ cursor: 'pointer', width: '100%' }} >
+                    Add/View Lead Return
+                </button>
+                </div>
+                </div>
+                  )}
+                </div>
                
  {leadData.leadStatus === "Assigned" && selectedCase.role !== "Case Manager" &&  selectedCase.role !== "Detective Supervisor" && (
   <div
     className="accept-reject-section"
     style={{
-      marginTop: "30px",
-      padding: "20px",
+      marginTop: "8px",
+      marginBottom: "8px",
+      padding: "8px",
       border: "1px solid #ccc",
       borderRadius: "8px",
       backgroundColor: "#f9f9f9",
     }}
   >
-    <h3 style={{ marginBottom: "15px" }}>
+    <h3>
       Do you want to Accept / Reject this lead?
     </h3>
     <div style={{ display: "flex", gap: "20px" }}>
@@ -711,8 +752,8 @@ const isEditableByCaseManager = field => {
       </button>
 
       <button
-        className="decline-btnNC"
-        // style={{ backgroundColor: "#ffdddd", color: "#a00" }}
+        
+        style={{ backgroundColor: "#e74c3c", color: "#fff", fontSize: "20px" }}
         onClick={() => declineLead(leadData.leadNo, leadData.description)}
           
       >
@@ -770,7 +811,7 @@ const isEditableByCaseManager = field => {
                 </tr>
 
                 <tr>
-                  <td className="info-label">Lead Log Summary</td>
+                  <td className="info-label" style={{ width: "500px" }}>Lead Log Summary</td>
                   <td>
                     <textarea
                       className="input-field"
@@ -828,7 +869,7 @@ const isEditableByCaseManager = field => {
       </div>
     ) : (
       <div ref = {assOff}
-      className="custom-dropdown">
+      className="custom-dropdown1">
         <div
           className="dropdown-header"
           onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -1050,6 +1091,7 @@ const isEditableByCaseManager = field => {
             )}
                 </div>
 
+</div>
         </div>
       </div>
     </div>
