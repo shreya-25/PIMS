@@ -9,6 +9,9 @@ import { CaseContext } from "../../CaseContext";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../../components/AlertModal/AlertModal";
+import { pickHigherStatus } from '../../../utils/status'
+import { useLeadStatus } from '../../../hooks/useLeadStatus';
+
 
 
 
@@ -39,9 +42,21 @@ export const LRReturn = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus, setLeadReturns  } = useContext(CaseContext);
-    const isDisabled = leadStatus === "In Review" || leadStatus === "Completed";
+    const isDisabled = leadStatus === "In Review" || leadStatus === "Completed"|| leadStatus === "Closed";
 
     const caseNo = selectedCase?.caseNo ?? caseDetails.caseNo;
+
+     const { status, isReadOnly } = useLeadStatus({
+    caseNo: selectedCase.caseNo,
+    caseName: selectedCase.caseName,
+    leadNo: selectedLead.leadNo,
+    leadName: selectedLead.leadName,
+  });
+
+console.log("status from hook", status);
+setLeadStatus(status);
+
+
 
     useEffect(() => {
     const storedOfficer = localStorage.getItem("loggedInUser");
@@ -52,7 +67,7 @@ export const LRReturn = () => {
       }
     }, []);
 
-    console.log(selectedCase, selectedLead);
+    // console.log(selectedCase, selectedLead);
 
 
     useEffect(() => {
@@ -83,7 +98,11 @@ export const LRReturn = () => {
     fetchLeadData();
   }, [selectedLead, selectedCase]);
 
-  setLeadStatus(leadData.leadStatus);
+  useEffect(() => {
+  if (!leadData?.leadStatus) return;
+  setLeadStatus(prev => prev ? pickHigherStatus(prev, leadData.leadStatus) : leadData.leadStatus);
+}, [leadData?.leadStatus, setLeadStatus]);
+
 
    useEffect(() => {
       const fetchLeadStatus = async () => {
@@ -184,52 +203,6 @@ const numberToAlphabet = (num) => {
       sessionStorage.setItem(LIST_KEY, JSON.stringify(returns));
     }, [returns]);
 
-
-
-// Fetch return entries for this lead and determine the max return id (alphabetic)
-// useEffect(() => {
-//   const fetchReturnData = async () => {
-//     try {
-//       if (
-//         selectedLead?.leadNo &&
-//         selectedLead?.leadName &&
-//         selectedLead?.caseNo &&
-//         selectedLead?.caseName
-//       ) {
-//         const token = localStorage.getItem("token");
-//         const response = await api.get(
-//           `/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
-//             selectedLead.leadName
-//           )}/${selectedLead.caseNo}/${encodeURIComponent(selectedLead.caseName)}`,
-//           { headers: { Authorization: `Bearer ${token}` } }
-//         );
-//         const data = response.data;
-//         // setReturns(data);
-//         const withAccess = data.map(r => ({
-//           ...r,
-//           access: r.access ?? "Everyone"
-//         }));
-//         setReturns(withAccess);
-//         setLeadReturns(withAccess);
-//         // Determine the highest existing return id (if any) using alphabetToNumber conversion
-//         const maxNumericId = withAccess.reduce((max, item) => {
-//           // If leadReturnId is not defined, treat it as 0.
-//           const numVal = item.leadReturnId ? alphabetToNumber(item.leadReturnId) : 0;
-//           return Math.max(max, numVal);
-//         }, 0);
-//         setMaxReturnId(maxNumericId);
-//       }
-//     } catch (err) {
-//       console.error("Error fetching return data:", err);
-//       setError("Failed to fetch return data.");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   fetchReturnData();
-// }, [leadDetails, caseDetails, selectedLead]);
-
 // Fetch return entries for this lead, normalize access, compute max ID, and filter by role
 useEffect(() => {
   const fetchReturnData = async () => {
@@ -297,7 +270,7 @@ const handleAccessChange = async (idx, newAccess) => {
   const token = localStorage.getItem("token");
 
   try {
-    console.log("AnyCase", selectedCase);
+    // console.log("AnyCase", selectedCase);
     const response = await api.patch(
       `/api/leadReturnResult/update/${ret.leadNo}/${caseNo}/${ret.leadReturnId}`,
       { accessLevel: newAccess },
@@ -389,10 +362,6 @@ const handleAddOrUpdateReturn = async () => {
       Math.max(n, alphabetToNumber(newDoc.leadReturnId))
     );
 
-      // 5) bump maxReturnId so nextReturnId preview advances
-      // const numeric = alphabetToNumber(newDoc.leadReturnId);
-      // setMaxReturnId(prev => Math.max(prev, numeric));
-
       // 6) reset the form
       setReturnData(rd => ({
         ...rd,
@@ -469,8 +438,7 @@ const handleAddOrUpdateReturn = async () => {
       navigate(route, { state: { caseDetails } });
   };
     
-  const isCaseManager = 
-    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
+  const isCaseManager = selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
   
       if (!selectedCase && !caseDetails) {
     return <div>Loading case/lead…</div>;
@@ -487,23 +455,6 @@ const handleAddOrUpdateReturn = async () => {
               onClose={()   => setAlertOpen(false)}
             />
       
-
-      {/* <div className="top-menu">
-        <div className="menu-items">
-          <span className="menu-item" onClick={() => handleNavigation("/LRInstruction")}>Instructions</span>
-          <span className="menu-item active" onClick={() => handleNavigation("/LRReturn")}>Returns</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRPerson")}>Person</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRVehicle")}>Vehicles</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LREnclosures")}>Enclosures</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LREvidence")}>Evidence</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRPictures")}>Pictures</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRAudio")}>Audio</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRVideos")}>Videos</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRScratchpad")}>Scratchpad</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRTimeline")}>Timeline</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRFinish")}>Finish</span>
-        </div>
-      </div> */}
            <div className="top-menu"   style={{ paddingLeft: '20%' }}>
       <div className="menu-items" >
         <span className="menu-item " onClick={() => {
@@ -538,45 +489,6 @@ const handleAddOrUpdateReturn = async () => {
                 }}>Lead Chain of Custody</span>
           
                   </div>
-        {/* <div className="menu-items">
-      
-        <span className="menu-item active" onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRReturn')}>
-            Returns
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRScratchpad')}>
-            Scratchpad
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span>
-         </div> */}
        </div>
 
       <div className="LRI_Content">
@@ -625,25 +537,31 @@ const handleAddOrUpdateReturn = async () => {
           </span>
          </div> </div>
 
-      <div className="caseandleadinfo">
+      {/* <div className="caseandleadinfo">
           <h5 className = "side-title">  Case:{selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
-    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${ leadStatus}`
-    : `LEAD DETAILS | ${leadStatus}`}
+    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${ status}`
+    : `LEAD DETAILS | ${status}`}
+</h5>
+
+</div> */}
+
+  <div className="caseandleadinfo">
+          <h5 className = "side-title"> 
+             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
+               <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo} &gt; Lead Narrative
+                 </p>
+             </h5>
+          <h5 className="side-title">
+  {selectedLead?.leadNo
+        ? `Your Role: ${selectedCase.role || ""} | Lead Status:  ${leadStatus}`
+
+    : ` ${leadStatus}`}
 </h5>
 
           </div>
         
-        {/* Left Section */}
-        {/* <div className="left-section">
-          <img
-            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
-            alt="Police Department Logo"
-            className="police-logo-lr"
-          />
-        </div> */}
-
 
         {/* Center Section */}
         <div className="case-header">
@@ -702,7 +620,7 @@ const handleAddOrUpdateReturn = async () => {
       </div>
 
       <div className="form-buttons-return">
-      <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+      <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || selectedLead?.leadStatus === "Closed" || isReadOnly}
 
         className="save-btn1" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Save Narrative"}</button>
         {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
@@ -778,10 +696,11 @@ const handleAddOrUpdateReturn = async () => {
   {returns.length > 0 ? returns.map((ret, idx) => {
     const canModify = ret.enteredBy.trim() === officerName.trim();
 
-    console.log("Can Modify?", canModify, "| enteredBy:", ret.enteredBy, "| officerName:", officerName);
+    // console.log("Can Modify?", canModify, "| enteredBy:", ret.enteredBy, "| officerName:", officerName);
     const disableActions =
       selectedLead?.leadStatus === "In Review" ||
       selectedLead?.leadStatus === "Completed" ||
+      isReadOnly||
       !canModify;
 
     return (

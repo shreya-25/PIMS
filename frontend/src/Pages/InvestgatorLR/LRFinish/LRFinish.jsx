@@ -13,6 +13,7 @@ import pdfRef from "../../refStore";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../../components/AlertModal/AlertModal";
+import { useLeadStatus } from '../../../hooks/useLeadStatus';
 
 
 export const LRFinish = () => {
@@ -48,8 +49,18 @@ export const LRFinish = () => {
     message: ''
   });
 
-  const [notifyOpen, setNotifyOpen] = useState(false);
+const [notifyOpen, setNotifyOpen] = useState(false);
 const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
+// const status = selectedLead?.leadStatus || leadStatus || "";
+
+const { status, isReadOnly, setLocalStatus } = useLeadStatus({
+  caseNo: selectedCase.caseNo,
+  caseName: selectedCase.caseName,
+  leadNo: selectedLead.leadNo,
+  leadName: selectedLead.leadName,
+});
+
+console.log("status from hook before submission", status);
 
   const handleConfirmClose = async () => {
     if (!closeReason.trim()) {
@@ -569,11 +580,10 @@ const actuallyDoSubmitReport = async () => {
 
         if (statusResponse.status === 200) {
           setLeadStatus("In Review");
+          setSelectedLead(prev => ({...prev,leadStatus: "In Review"}));
+          setLocalStatus("In Review");
+          console.log("status from hook", status);
 
-            setSelectedLead(prev => ({
-            ...prev,
-            leadStatus: "In Review"
-          }));
           
           // alert("Lead Return submitted");
            setAlertMessage("Lead Return submitted!");
@@ -646,7 +656,7 @@ const actuallyDoSubmitReport = async () => {
         setAlertOpen(true);
 
       const human =
-        // newStatus === "complete" ? "approved the lead" :
+        newStatus === "complete" ? "approved the lead" :
         newStatus === "Accepted" ? "returned the lead" : "reopened the lead";
 
 
@@ -698,6 +708,22 @@ const actuallyDoSubmitReport = async () => {
         setAlertOpen(true);
     }
   };
+
+  const isSubmittedInReview = status === "In Review";
+const isClosedOrCompleted = status === "Closed" || status === "Completed";
+const isCaseManager = selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
+
+// const canShowSubmit = !isCaseManager && !isClosedOrCompleted && !isSubmittedInReview;
+
+// const status = (selectedLead?.leadStatus || leadStatus || "").trim();
+
+const isInReview         = status === "In Review";
+const isInvestigator     = !isCaseManager;
+
+const canShowCMButtons   = isCaseManager && !isClosedOrCompleted;
+const canShowSubmit      = isInvestigator && !isClosedOrCompleted && !isInReview;
+
+
       
 
   const handleNavigation = (route) => {
@@ -709,9 +735,6 @@ const actuallyDoSubmitReport = async () => {
                     const onShowCaseSelector = (route) => {
                       navigate(route, { state: { caseDetails } });
                   };
-
-    const isCaseManager = 
-    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
 
   return (
     <div className="lrfinish-container">
@@ -1012,7 +1035,7 @@ Case Page
             Finish
           </span>
          </div> </div>
-                <div className="caseandleadinfo">
+                {/* <div className="caseandleadinfo">
           <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
@@ -1020,6 +1043,19 @@ Case Page
     : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
 </h5>
 
+
+          </div> */}
+               <div className="caseandleadinfo">
+          <h5 className = "side-title"> 
+             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
+               <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo} &gt; Lead Finish
+                 </p>
+             </h5>
+          <h5 className="side-title">
+  {selectedLead?.leadNo
+        ? `Your Role: ${selectedCase.role || ""} | Lead Status:  ${status}`
+    : ` ${leadStatus}`}
+</h5>
 
           </div>
 
@@ -1056,7 +1092,7 @@ Case Page
 
       <div className = "content-subsection">
 
-        <div className="return-action-sec">
+        {/* <div className="return-action-sec">
 
           <h4> Click to perform the following action/s on the lead return
              </h4>
@@ -1070,7 +1106,7 @@ Case Page
     </button>
   </div>
 )}
-        {selectedLead?.leadStatus !== "Completed" && selectedLead?.leadStatus !== "Closed" &&(
+  {selectedLead?.leadStatus !== "Completed" && selectedLead?.leadStatus !== "Closed" &&(
   isCaseManager ? (
     <div className="form-buttons-finish">
       <button className="save-btn1" onClick={handleApprove}>Approve</button>
@@ -1083,7 +1119,6 @@ Case Page
     </div>
   ) : (
     <div className="form-buttons-finish">
-         {/* <h4> Click here to submit the lead return</h4> */}
       <button
         disabled={selectedLead?.leadStatus === "In Review"}
         className="save-btn1"
@@ -1094,7 +1129,37 @@ Case Page
     </div>
   )
 )}
+</div> */}
+
+<div className="return-action-sec">
+
+  {/* Case Manager: Reopen if done/closed (optional, keep if you want) */}
+  {isCaseManager && isClosedOrCompleted && (
+    <div className="form-buttons-finish">
+       <h4>Click to perform the following action/s on the lead return</h4>
+      <button className="save-btn1" onClick={handleReopen}>Reopen</button>
+    </div>
+  )}
+
+  {/* Case Manager: Approve/Return/Close while active */}
+  {canShowCMButtons && (
+    <div className="form-buttons-finish">
+       <h4>Click to perform the following action/s on the lead return</h4>
+      <button className="save-btn1" onClick={handleApprove}>Approve</button>
+      <button className="save-btn1" onClick={handleReturn}>Return</button>
+      <button className="save-btn1 close-lead-btn" onClick={() => setShowCloseModal(true)}>Close</button>
+    </div>
+  )}
+
+  {/* Investigator: show Submit only when not Closed/Completed and not In Review */}
+  {canShowSubmit && (
+    <div className="form-buttons-finish">
+       <h4>Click to perform the following action/s on the lead return</h4>
+      <button className="save-btn1" onClick={handleSubmitReport}>Submit</button>
+    </div>
+  )}
 </div>
+
 
         {/* Logged Information */}
         <div className="timeline-form-sec">

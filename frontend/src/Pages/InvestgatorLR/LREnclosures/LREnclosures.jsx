@@ -10,6 +10,7 @@ import api, { BASE_URL } from "../../../api";
 import Attachment from "../../../components/Attachment/Attachment";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../../components/AlertModal/AlertModal";
+import { useLeadStatus } from '../../../hooks/useLeadStatus';
 
 
 
@@ -557,7 +558,12 @@ useEffect(() => {
       return copy;
     });
   };
-
+  const { status, isReadOnly } = useLeadStatus({
+    caseNo: selectedCase.caseNo,
+    caseName: selectedCase.caseName,
+    leadNo: selectedLead.leadNo,
+    leadName: selectedLead.leadName,
+  });
 
   return (
     <div className="lrenclosures-container">
@@ -766,12 +772,25 @@ Case Page
             Finish
           </span>
          </div> </div>
-                <div className="caseandleadinfo">
+                {/* <div className="caseandleadinfo">
           <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
     ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
     : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
+</h5>
+
+          </div> */}
+               <div className="caseandleadinfo">
+          <h5 className = "side-title"> 
+             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
+               <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo} &gt; Lead Enclosures
+                 </p>
+             </h5>
+          <h5 className="side-title">
+  {selectedLead?.leadNo
+        ? `Your Role: ${selectedCase.role || ""} | Lead Status:  ${status}`
+    : ` ${leadStatus}`}
 </h5>
 
           </div>
@@ -911,7 +930,7 @@ Case Page
            {/* Action Buttons */}
           <div className="form-buttons">
               <button
-                disabled={selectedLead?.leadStatus==="In Review" || selectedLead?.leadStatus==="Completed"}
+                disabled={selectedLead?.leadStatus==="In Review" || selectedLead?.leadStatus==="Completed" || isReadOnly}
                 onClick={handleSave}
                 className='save-btn1'
               >
@@ -919,7 +938,7 @@ Case Page
               </button>
               {editIndex !== null && (
                 <button 
-                disabled={selectedLead?.leadStatus==="In Review" || selectedLead?.leadStatus==="Completed"}
+                disabled={selectedLead?.leadStatus==="In Review" || selectedLead?.leadStatus==="Completed" || isReadOnly}
                 className='save-btn1'
                 onClick={() => {
                   setEditIndex(null);
@@ -976,7 +995,7 @@ Case Page
 
                 <td>
                   <div classname = "lr-table-btn">
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
 
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
@@ -985,7 +1004,7 @@ Case Page
                   onClick={()=>handleEdit(index)}
                 />
                   </button>
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
 
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}

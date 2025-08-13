@@ -25,15 +25,26 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 20px;
 }
 .cp-head-leadReview
 {
   align-items: center;
+  width: 70%;
 }
 
-.cp-head-leadReview h1{
+.add-lead-section-lr
+{
+  width: 20%;
+}
+
+.cp-head-leadReview h2{
   margin: 0px;
 }
+.cp-add-lead-btn
+{
+ width: 80%;
+} 
 /* Sidebar */
 .sideitem {
   min-height: 100vh; /* forces the sidebar to stretch the full viewport height */

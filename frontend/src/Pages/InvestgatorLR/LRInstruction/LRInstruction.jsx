@@ -2,6 +2,9 @@ import FootBar from '../../../components/FootBar/FootBar';
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ReactToPrint from 'react-to-print';
+import { pickHigherStatus } from '../../../utils/status'
+import { useLeadStatus } from '../../../hooks/useLeadStatus';
+
 
 import Navbar from '../../../components/Navbar/Navbar';
 import './LRInstruction.css';
@@ -41,25 +44,11 @@ export const LRInstruction = () => {
       return `${month}/${day}/${year}`;
     };
 
-    // const handleLRClick = () => {
-    //   navigate("/LRReturn", { state: {caseDetails, leadDetails } });
-    // };
-
     const getCasePageRoute = () => {
       if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
       return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
   };
   const [leadData, setLeadData] = useState({
-    // leadNumber: '16',
-    // leadOrigin: '7',
-    // incidentNumber: 'C000006',
-    // subNumber: 'C0000045',
-    // associatedSubNumbers: [],
-    // assignedDate: '09/29/24',
-    // leadSummary: 'Interview Sarah',
-    // assignedBy: 'Officer 5',
-    // leadDescription: 'Interview Sarah to find out where she was on Saturday 09/25',
-    // assignedOfficer: ['Officer 1','Officer 2'], leadNumber: '',
     leadNumber: '',
     parentLeadNo: '',
     incidentNo: '',
@@ -74,19 +63,14 @@ export const LRInstruction = () => {
     assignedOfficer: []
   });
   const [dropdownOpen, setDropdownOpen] = useState(false);
-   const [availableSubNumbers, setAvailableSubNumbers] = useState([
-        "SUB-000001", "SUB-000002", "SUB-000003", "SUB-000004", "SUB-000005"
-      ]); // Static List of Subnumbers
-      
-      const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]); // Selected Subnumbers
-      const [subDropdownOpen, setSubDropdownOpen] = useState(false);
-
+  const [availableSubNumbers, setAvailableSubNumbers] = useState([]);
+  const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]); // Selected Subnumbers
+  const [subDropdownOpen, setSubDropdownOpen] = useState(false);
   const handleInputChange = (field, value) => {
     setLeadData({ ...leadData, [field]: value });
   };
-
   const handleGenerateLead = () => {
-    const { leadNumber, leadSummary, assignedDate, assignedOfficer, assignedBy } = leadData;
+  const { leadNumber, leadSummary, assignedDate, assignedOfficer, assignedBy } = leadData;
   
     // Check if mandatory fields are filled
     if (!leadNumber || !leadSummary || !assignedDate || !assignedOfficer || !assignedBy) {
@@ -117,7 +101,7 @@ export const LRInstruction = () => {
     });
   };
 
-      const [assignedOfficers, setAssignedOfficers] = useState([]);
+  const [assignedOfficers, setAssignedOfficers] = useState([]);
   
 
   const handleNextPage = () => {
@@ -149,7 +133,7 @@ export const LRInstruction = () => {
             );
     
   
-            console.log("Fetched Lead Data1:", response.data);
+            // console.log("Fetched Lead Data1:", response.data);
   
             if (response.data.length > 0) {
               setLeadData({
@@ -171,7 +155,24 @@ export const LRInstruction = () => {
       fetchLeadData();
     }, [selectedLead, setLeadInstructions]);
 
-    setLeadStatus(leadData.leadStatus);
+    // setLeadStatus(leadData.leadStatus);
+
+    useEffect(() => {
+  if (!leadData?.leadStatus) return;
+  setLeadStatus(prev => prev ? pickHigherStatus(prev, leadData.leadStatus) : leadData.leadStatus);
+}, [leadData?.leadStatus, setLeadStatus]);
+
+ const { status, isReadOnly } = useLeadStatus({
+    caseNo: selectedCase.caseNo,
+    caseName: selectedCase.caseName,
+    leadNo: selectedLead.leadNo,
+    leadName: selectedLead.leadName,
+  });
+
+// console.log("leadData.status", leadData.leadStatus);
+// console.log("leadstatus", leadStatus);
+console.log("status from hook", status);
+console.log("isReadOnly", isReadOnly);
   
     const onShowCaseSelector = (route) => {
       navigate(route, { state: { caseDetails } });
@@ -407,11 +408,16 @@ Case Page
           </span>
          </div> </div>
        <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+          <h5 className = "side-title"> 
+             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
+               <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo} &gt; Lead Instruction
+                 </p>
+             </h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
-    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${leadStatus}`
-    : `LEAD DETAILS | ${leadStatus}`}
+        ? `Your Role: ${selectedCase.role || ""} | Lead Status:  ${leadStatus}`
+
+    : ` ${leadStatus}`}
 </h5>
 
           </div>

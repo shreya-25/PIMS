@@ -82,3 +82,8 @@
   background-color: rgba(12, 31, 32, 0.096);
   /* margin: 15px; */
 }
+
+.side-title p
+{
+  margin: 0;
+}
