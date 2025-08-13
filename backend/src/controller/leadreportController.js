@@ -80,74 +80,138 @@ function formatTime(dateString) {
 //   return currentY;
 // }
 
+// function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
+//   const minRowHeight = 20;
+//   const headerHeight = 20;
+//   let currentY = startY;
+
+//   // 1) Draw header row
+//   doc.font("Helvetica-Bold").fontSize(10).fillColor("black");
+//   let currentX = startX;
+//   headers.forEach((header, i) => {
+//     const w = colWidths[i];
+//     doc.strokeColor("#999999")
+//        .rect(currentX, currentY, w, headerHeight)
+//        .stroke();
+//     doc.text(header, currentX + padding, currentY + padding, {
+//       width:  w - 2*padding,
+//       align:  "left"
+//     });
+//     currentX += w;
+//   });
+//   currentY += headerHeight;
+
+//   // 2) Draw body rows
+//   doc.font("Helvetica").fontSize(10).fillColor("black");
+//   rows.forEach(row => {
+//     // 2a) Measure the max height needed by any cell in this row
+//     let maxHeight = minRowHeight;
+//     headers.forEach((h, i) => {
+//       const text = row[h] || "";
+//       const textHeight = doc.heightOfString(text, {
+//         width: colWidths[i] - 2*padding,
+//         align: "left"
+//       });
+//       maxHeight = Math.max(maxHeight, textHeight + 2*padding);
+//     });
+
+//     // 2b) Page-break if it won't fit
+//     if (currentY + maxHeight > doc.page.height - doc.page.margins.bottom) {
+//       doc.addPage();
+//       currentY = doc.page.margins.top;
+//     }
+
+//     // 2c) Draw each cell
+//     currentX = startX;
+//     headers.forEach((h, i) => {
+//       const w = colWidths[i];
+//       const text = row[h] || "";
+
+//       // border
+//       doc.strokeColor("#999999")
+//          .rect(currentX, currentY, w, maxHeight)
+//          .stroke();
+
+//       // text (full; row is tall enough)
+//       doc.text(text, currentX + padding, currentY + padding, {
+//         width:  w - 2*padding,
+//         align:  "left"
+//       });
+
+//       currentX += w;
+//     });
+
+//     // advance to next row
+//     currentY += maxHeight;
+//   });
+
+//   return currentY;
+// }
+
 function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
-  const minRowHeight = 20;
   const headerHeight = 20;
-  let currentY = startY;
+  const minRowHeight = 20;
+  const bleed = 2; // tiny cushion to avoid border clipping
 
-  // 1) Draw header row
-  doc.font("Helvetica-Bold").fontSize(10).fillColor("black");
-  let currentX = startX;
-  headers.forEach((header, i) => {
-    const w = colWidths[i];
-    doc.strokeColor("#999999")
-       .rect(currentX, currentY, w, headerHeight)
-       .stroke();
-    doc.text(header, currentX + padding, currentY + padding, {
-      width:  w - 2*padding,
-      align:  "left"
+  const pageBottom = () => doc.page.height - doc.page.margins.bottom;
+  const pageTop    = () => doc.page.margins.top;
+
+  let y = startY;
+
+  const drawHeader = () => {
+    let x = startX;
+    doc.font("Helvetica-Bold").fontSize(10).fillColor("black");
+    headers.forEach((h, i) => {
+      const w = colWidths[i];
+      doc.strokeColor("#999999").rect(x, y, w, headerHeight).stroke();
+      // vertically center header text a bit
+      const dy = Math.max(0, (headerHeight - doc.currentLineHeight()) / 2 - 1);
+      doc.text(h, x + padding, y + dy, { width: w - 2 * padding, align: "left" });
+      x += w;
     });
-    currentX += w;
-  });
-  currentY += headerHeight;
+    y += headerHeight;
+    doc.font("Helvetica").fontSize(10);
+  };
 
-  // 2) Draw body rows
-  doc.font("Helvetica").fontSize(10).fillColor("black");
-  rows.forEach(row => {
-    // 2a) Measure the max height needed by any cell in this row
-    let maxHeight = minRowHeight;
+  // Ensure header + at least one row fits; otherwise start on a new page
+  if (y + headerHeight + minRowHeight > pageBottom()) {
+    doc.addPage();
+    y = pageTop();
+  }
+  drawHeader();
+
+  rows.forEach((row) => {
+    // measure row height
+    let rowH = minRowHeight;
     headers.forEach((h, i) => {
       const text = row[h] || "";
-      const textHeight = doc.heightOfString(text, {
-        width: colWidths[i] - 2*padding,
-        align: "left"
-      });
-      maxHeight = Math.max(maxHeight, textHeight + 2*padding);
+      const hgt = doc.heightOfString(text, { width: colWidths[i] - 2 * padding, align: "left" });
+      rowH = Math.max(rowH, hgt + 2 * padding);
     });
+    rowH += bleed;
 
-    // 2b) Page-break if it won't fit
-    if (currentY + maxHeight > doc.page.height - doc.page.margins.bottom) {
+    // page break: new page + repeat header
+    if (y + rowH > pageBottom()) {
       doc.addPage();
-      currentY = doc.page.margins.top;
+      y = pageTop();
+      drawHeader();
     }
 
-    // 2c) Draw each cell
-    currentX = startX;
+    // draw the row
+    let x = startX;
     headers.forEach((h, i) => {
       const w = colWidths[i];
       const text = row[h] || "";
-
-      // border
-      doc.strokeColor("#999999")
-         .rect(currentX, currentY, w, maxHeight)
-         .stroke();
-
-      // text (full; row is tall enough)
-      doc.text(text, currentX + padding, currentY + padding, {
-        width:  w - 2*padding,
-        align:  "left"
-      });
-
-      currentX += w;
+      doc.strokeColor("#999999").rect(x, y, w, rowH).stroke();
+      doc.text(text, x + padding, y + padding, { width: w - 2 * padding, align: "left" });
+      x += w;
     });
 
-    // advance to next row
-    currentY += maxHeight;
+    y += rowH;
   });
 
-  return currentY;
+  return y;
 }
-
 
 
 function drawHardcodedContent(doc, currentY) {
@@ -265,125 +329,121 @@ function drawStructuredLeadDetails(doc, x, y, lead) {
   return y + rowHeight + 20;
 }
 
-// function drawTextBox(doc, x, y, width, title, content) {
-//   const padding = 5;
-//   const titleHeight = title ? 15 : 0;
-//   doc.strokeColor("#999999");
-//   doc.font("Helvetica").fontSize(10);
-//   const contentHeight = doc.heightOfString(content, {
-//     width: width - 2 * padding,
-//     align: "justify"
-//   });
-
-//   const boxHeight = titleHeight + contentHeight + 2 * padding;
-//   doc.strokeColor("#999999");
-
-//   doc.save().lineWidth(1).strokeColor("#999999").rect(x, y, width, boxHeight).stroke().restore();
-
-//   if (title) {
-//     doc.font("Helvetica-Bold").fontSize(10).text(title, x + padding, y + padding);
-//   }
-
-//   doc.strokeColor("#999999");
-//   doc.font("Helvetica").fontSize(10).text(content, x + padding, y + padding + titleHeight, {
-//     width: width - 2 * padding,
-//     align: "justify"
-//   });
-
-//   return y + boxHeight + 20;
-// }
-
 function drawTextBox(doc, x, y, width, title, content) {
-  const padding   = 5;
-  const fontSize  = 10;
-  const bodyFont  = "Helvetica";
-  const titleFont = "Helvetica-Bold";
-  const topMargin = doc.page.margins.top;
-  const bottomY   = doc.page.height - doc.page.margins.bottom;
+  const pad = 6, fs = 10, bleed = 2;      // <- small extra to avoid clipping
+  const bodyFont = "Helvetica", titleFont = "Helvetica-Bold";
+  const innerW = width - 2 * pad;
 
-  // prepare your wrapped lines
-  doc.font(bodyFont).fontSize(fontSize);
-  const words = content.split(/\s+/);
+  const topY    = doc.page.margins.top;
+  const bottomY = doc.page.height - doc.page.margins.bottom;
+
+  const text = ((content ?? "") + "").replace(/\s+/g, " ").trim();
+
+  // Pre-wrap to lines so we can page-split cleanly
+  doc.font(bodyFont).fontSize(fs);
+  const lineH = doc.currentLineHeight();
+  const words = text ? text.split(" ") : [];
   const lines = [];
   let line = "";
-  for (let w of words) {
-    const test = line ? line + " " + w : w;
-    if (doc.widthOfString(test) > width - 2 * padding) {
-      lines.push(line);
-      line = w;
-    } else {
-      line = test;
-    }
+  for (const w of words) {
+    const cand = line ? line + " " + w : w;
+    if (doc.widthOfString(cand) <= innerW) line = cand;
+    else { if (line) lines.push(line); line = w; }
   }
   if (line) lines.push(line);
 
-  // iterate chunks that fit each page
-  let idx = 0, currY = y, first = true;
-  while (idx < lines.length) {
-    // 1) decide how many lines fit
-    let fit = 0;
-    // walk forward until we exceed the bottom margin
-    while (idx + fit < lines.length) {
-      // measure title on first chunk
-      const titleH   = first && title
-                       ? doc.heightOfString(title, { width: width - 2*padding })
-                       : 0;
-      // measure these lines as a single block
-      const block    = lines.slice(idx, idx + fit + 1).join("\n");
-      const textH    = doc.heightOfString(block, { width: width - 2*padding });
-      const boxH     = titleH + textH + 2 * padding;
-      if (currY + boxH > bottomY) break;
-      fit++;
-    }
-    // if none fit, force at least one to avoid infinite loop
-    if (fit === 0) fit = 1;
+  // Title height (measured once)
+  const titleH = title
+    ? (doc.font(titleFont).fontSize(fs), doc.heightOfString(title, { width: innerW }))
+    : 0;
+  doc.font(bodyFont).fontSize(fs);
 
-    // 2) compute exact heights
-    const chunkLines = lines.slice(idx, idx + fit);
-    const titleH     = first && title
-                       ? doc.heightOfString(title, { width: width - 2*padding })
-                       : 0;
-    const textBlock  = chunkLines.join("\n");
-    const textH      = doc.heightOfString(textBlock, { width: width - 2*padding });
-    const boxH       = titleH + textH + 2 * padding;
+  let i = 0, currY = y, first = true;
 
-    // 3) draw the box
-    doc.save()
-       .lineWidth(1)
-       .strokeColor("#999999")
-       .rect(x, currY, width, boxH)
-       .stroke()
-       .restore();
+  while (i < lines.length || (first && title && !lines.length)) {
+    const minBoxH = (first ? titleH : 0) + lineH + 2 * pad;
+    if (currY + minBoxH > bottomY) { doc.addPage(); currY = topY; }
 
-    // 4) draw the title + text
-    let textY = currY + padding;
+    const available = bottomY - currY - 2 * pad - (first ? titleH : 0);
+    const canLines  = Math.max(1, Math.floor(available / lineH));
+    const end       = Math.min(lines.length, i + canLines);
+
+    // --- draw text first ---
+    const boxTop = currY;
+    let textY = currY + pad;
+
     if (first && title) {
-      doc.font(titleFont)
-         .fontSize(fontSize)
-         .text(title, x + padding, textY, { width: width - 2*padding });
-      textY += titleH;
+      doc.font(titleFont).fontSize(fs).text(title, x + pad, textY, { width: innerW });
+      textY = doc.y;                 // after title
+      doc.font(bodyFont).fontSize(fs);
     }
-    doc.font(bodyFont)
-       .fontSize(fontSize)
-       .text(textBlock, x + padding, textY, {
-         width: width - 2 * padding,
-         align: "justify"
-       });
 
-    // advance
-    idx   += fit;
-    first  = false;
-    currY += boxH;
+    const block = lines.slice(i, end).join("\n");
+    doc.text(block, x + pad, textY, { width: innerW, align: "justify" });
 
-    // if there’s more, new page
-    if (idx < lines.length) {
-      doc.addPage();
-      currY = topMargin;
-    }
+    // measure exact used height and then stroke the box
+    const usedTextH = doc.y - textY;
+    const boxH = (first ? titleH : 0) + usedTextH + 2 * pad + bleed;
+
+    doc.save().lineWidth(1).strokeColor("#999999")
+       .rect(x, boxTop, width, boxH).stroke().restore();
+
+    currY = boxTop + boxH;
+    i = end;
+    first = false;
   }
 
-  return currY + padding;
+  return currY + 10;
 }
+
+
+function drawHeader(doc, leadInstruction) {
+  const pageW = doc.page.width;
+  const padX = 16;
+  const padY = 10;
+
+  // Logo box
+  const logoW = 70, logoH = 70;
+  const logoX = padX;
+
+  const logoPath = path.join(__dirname, "../../../frontend/public/Materials/newpolicelogo.png");
+
+  // Text box (everything to the right of the logo)
+  const textX = logoX + logoW + 16;                // start AFTER logo
+  const textW = pageW - textX - padX;              // right padding
+
+  const caseLine = `Case: ${leadInstruction?.caseNo || 'N/A'} | ${leadInstruction?.caseName || 'N/A'}`;
+  const leadLine = `Lead: ${leadInstruction?.leadNo || 'N/A'} | ${leadInstruction?.description || 'N/A'}`;
+
+  // Measure to compute needed header height
+  doc.font("Helvetica-Bold").fontSize(14);
+  const caseH = doc.heightOfString(caseLine, { width: textW });
+  doc.fontSize(12);
+  const leadH = doc.heightOfString(leadLine, { width: textW });
+  const textBlockH = caseH + 5 + leadH;
+
+  const headerH = Math.max(logoH, textBlockH) + 2 * padY;
+
+  // Background
+  doc.rect(0, 0, pageW, headerH).fill("#003366");
+
+  // Logo
+  if (fs.existsSync(logoPath)) {
+    doc.image(logoPath, logoX, padY, { width: logoW, height: logoH });
+  }
+
+  // Titles (never overlap the logo because they live in [textX, textX + textW])
+  let y = padY + (headerH - 2 * padY - textBlockH) / 2; // vertical centering within header
+  doc.fillColor("white").font("Helvetica-Bold").fontSize(14)
+     .text(caseLine, textX, y, { width: textW, align: "center" }); // or "center" to center within the box
+  y = doc.y + 5;
+  doc.fontSize(12)
+     .text(leadLine, textX, y, { width: textW, align: "center" });
+
+  doc.fillColor("black");
+  return headerH;
+}
+
 
 
 
@@ -475,22 +535,10 @@ function generateReport(req, res) {
 //   }
 // });
 
-    const headerHeight = 80;
-    doc.rect(0, 0, doc.page.width, headerHeight).fill("#003366");
+    const headerHeight = drawHeader(doc, leadInstruction);
 
-    const logoHeight = 70;
-    const verticalCenterY = (headerHeight - logoHeight) / 2;
-    const logoPath = path.join(__dirname, "../../../frontend/public/Materials/newpolicelogo.png");
-    if (fs.existsSync(logoPath)) doc.image(logoPath, 10, verticalCenterY, { width: 70, height: 70, align: "left" });
-
-    let currentY = headerHeight - 50;
-    doc.fillColor("white").font("Helvetica-Bold").fontSize(14).text(`Case: ${leadInstruction?.caseNo || 'N/A'} | ${leadInstruction?.caseName || 'N/A'}`, 0, currentY, { align: "center" });
-    currentY = doc.y + 5;
-    doc.fillColor("white").font("Helvetica-Bold").fontSize(12).text(`Lead: ${leadInstruction?.leadNo || 'N/A'} | ${leadInstruction?.description || 'N/A'}`, 0, currentY, { align: "center" });
-    currentY = doc.y + 20;
-    doc.fillColor("black");
-
-    currentY = headerHeight + 20;
+// start content after header
+let currentY = headerHeight + 20;
 
     if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
       doc.addPage();
@@ -503,18 +551,18 @@ function generateReport(req, res) {
     currentY = drawStructuredLeadDetails(doc, 50, currentY, leadInstruction);
 
     if (includeAll || leadInstruction) {
-      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage();
-        currentY = doc.page.margins.top;
-      }
+      // if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+      //   doc.addPage();
+      //   currentY = doc.page.margins.top;
+      // }
       doc.font("Helvetica-Bold").fontSize(12).text("Lead Log Summary", 50, currentY);
       currentY += 20;
       currentY = drawTextBox(doc, 50, currentY, 512, "", leadInstruction?.description || 'N/A');
 
-      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage();
-        currentY = doc.page.margins.top;
-      }
+      // if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+      //   doc.addPage();
+      //   currentY = doc.page.margins.top;
+      // }
       doc.font("Helvetica-Bold").fontSize(12).text("Lead Instruction", 50, currentY);
       currentY += 20;
       currentY = drawTextBox(doc, 50, currentY, 512, "", leadInstruction?.summary || 'N/A');
@@ -522,10 +570,10 @@ function generateReport(req, res) {
     }
 
     if (includeAll || leadReturn) {
-      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage();
-        currentY = doc.page.margins.top;
-      }
+      // if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+      //   doc.addPage();
+      //   currentY = doc.page.margins.top;
+      // }
       // doc.font("Helvetica-Bold").fontSize(12).text("Lead Return ID: 1", 50, currentY);
       // currentY += 20;
       // currentY = drawTextBox(doc, 50, currentY, 512, "", "Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos. Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.");
@@ -552,10 +600,10 @@ function generateReport(req, res) {
 
       currentY = drawTextBox(doc, 50, currentY, 512, "Narrative", leadText);
 
-      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage();
-        currentY = doc.page.margins.top;
-      }
+      // if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+      //   doc.addPage();
+      //   currentY = doc.page.margins.top;
+      // }
     });
   } else {
     doc.font("Helvetica").fontSize(11).text("No lead return data available.", 50, currentY);

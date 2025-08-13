@@ -1009,11 +1009,11 @@ const assignedColKey    = {
   "Assigned Officers": "assignedOfficers",
 };
 const assignedColWidths = {
-  "Lead No.":           "12%",
-  "Lead Name":          "20%",
-  "Due Date":           "13%",
+  "Lead No.":           "9%",
+  "Lead Name":          "22%",
+  "Due Date":           "10%",
   "Priority":           "10%",
-  "Days Left":          "13%",
+  "Days Left":          "10%",
   "Assigned Officers":  "20%",
 };
 
@@ -1129,12 +1129,12 @@ const pendingColKey    = {
   "Assigned Officers": "assignedOfficers",
 };
 const pendingColWidths = {
-  "Lead No.":           "12%",
-  "Lead Name":          "20%",
-  "Due Date":           "13%",
+  "Lead No.":           "9%",
+  "Lead Name":          "22%",
+  "Due Date":           "10%",
   "Priority":           "10%",
-  "Days Left":          "13%",
-  "Assigned Officers":  "21%",
+  "Days Left":          "10%",
+  "Assigned Officers":  "20%",
 };
 
 // Refs + state
@@ -2112,6 +2112,13 @@ const handleSortAll = columnKey => {
 {activeTab === "pendingLeadReturns" && (
 <div className="table-scroll-container">
 <table className="leads-table" style={{ minWidth: "1000px" }}>
+
+    <colgroup>
+      <col style={{ width: "6%" }} />     {/* Lead No. */}
+      <col style={{ width: "45%" }} />   {/* Lead Name */}
+      <col style={{ width: "30%" }} />   {/* Case Name */}
+      <col style={{ width: "9%" }} />     {/* Actions */}
+    </colgroup>
                <thead>
                       <tr>
                         {pendingLRColumns.map(col => {
@@ -2159,7 +2166,7 @@ const handleSortAll = columnKey => {
                           );
                         })}
                         {/* extra column for “Continue” */}
-                        <th style={{ width: '11%' }}></th>
+                        <th style={{ width: '11%', textAlign: "center" }}> Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2252,9 +2259,9 @@ const handleSortAll = columnKey => {
              <tbody>
           {sortedAllLeads.length>0 ? sortedAllLeads.map(lead=>(
             <tr key={lead.id}>
-              <td>{lead.id}</td>
+              <td style={{ }}>{lead.id}</td>
               <td>{lead.description}</td>
-              <td style={{ textAlign: "center",
+              <td style={{ 
   color:
     ["Assigned", "Accepted", "Approved", "Returned", "Completed"].includes(lead.leadStatus)
       ? "green"

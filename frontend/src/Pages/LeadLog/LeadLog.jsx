@@ -490,13 +490,27 @@ const formatDate = (dateString) => {
 
         <div className="left-content">
 
-          <div className = "side-titleLeft">
+          {/* <div className = "side-titleLeft">
                   <p> PIMS &gt; Cases \ {selectedCase.caseNo || ""} &gt; Lead Log
                  </p>
-                </div>
+                </div> */}
+
+               <div className="caseandleadinfo">
+          <h5 className = "side-title"> 
+             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
+               <p> PIMS &gt; Cases &gt; Lead Log
+                 </p>
+             </h5>
+          <h5 className="side-title">
+  {selectedCase?.role
+        ? `Your Role: ${selectedCase.role || ""}`
+    : ``}
+</h5>
+
+          </div>
 
 
-         <div className="case-header-cp">
+         <div className="case-header">
             <div className="cp-head">
           <h1 className="">LEAD LOG</h1>
         </div>

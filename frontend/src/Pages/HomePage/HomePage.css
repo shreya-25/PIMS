@@ -456,7 +456,7 @@
 
 .leads-table th,
 .leads-table td {
-  padding: 2px 4px;
+  padding: 4px;
   text-align: left;
   border: 1px solid #ddd;
   font-size: 20px;
@@ -533,7 +533,7 @@
 .btn-sec-HP
 {
   display: flex;
-  /* justify-content: center; */
+  justify-content: center;
 }
 
 
@@ -947,7 +947,7 @@
 .leads-table th,
 .leads-table td {
   border: 1px solid #bbb;
-  padding: 2px 4px;
+  padding: 4px;
   text-align: left;
   font-size: 20px;
 }
@@ -1071,7 +1071,7 @@
 .leads-table th,
 .leads-table td {
   border: 1px solid #ddd;
-  padding: 2px 4px;
+  padding: 4px;
   text-align: left;
 }
 
@@ -1602,7 +1602,7 @@
 /* ✅ Ensure wrapping inside columns */
 .leads-table th,
 .leads-table td {
-  padding: 2px 4px;
+  padding: 4px;
   border: 1px solid #ddd;
   text-align: left;
   font-size: 20px;

@@ -9,6 +9,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../../components/AlertModal/AlertModal";
+import { useLeadStatus } from '../../../hooks/useLeadStatus';
 
 
 
@@ -369,6 +370,15 @@ const handleAccessChange = (idx, newAccess) => {
   });
 };
 
+    const { status, isReadOnly } = useLeadStatus({
+    caseNo: selectedCase.caseNo,
+    caseName: selectedCase.caseName,
+    leadNo: selectedLead.leadNo,
+    leadName: selectedLead.leadName,
+  });
+
+
+
   return (
     <div className="lrpictures-container">
       {/* Navbar */}
@@ -576,12 +586,25 @@ Case Page
             Finish
           </span>
          </div> </div>
-                <div className="caseandleadinfo">
+                {/* <div className="caseandleadinfo">
           <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
     ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
     : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
+</h5>
+
+          </div> */}
+               <div className="caseandleadinfo">
+          <h5 className = "side-title"> 
+             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
+               <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo} &gt; Lead Pictures
+                 </p>
+             </h5>
+          <h5 className="side-title">
+  {selectedLead?.leadNo
+        ? `Your Role: ${selectedCase.role || ""} | Lead Status:  ${status}`
+    : ` ${leadStatus}`}
 </h5>
 
           </div>
@@ -680,7 +703,7 @@ Case Page
         <div className="form-buttons">
         <div className="form-buttons">
   <button
-    disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+    disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
     className="save-btn1"
     onClick={isEditing ? handleUpdatePicture : handleAddPicture}
   >
@@ -689,7 +712,7 @@ Case Page
 
   {isEditing && (
     <button
-      disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+      disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
       className="save-btn1"
       onClick={() => {
         // Cancel editing & reset form
@@ -777,14 +800,14 @@ Case Page
                 <td>{picture.description}</td>
                 <td>
         <button
-          disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+          disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
           onClick={() => handleEditPicture(index)}
         >
           <img src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                alt="Edit" className="edit-icon" />
         </button>
         <button
-          disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+          disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
           onClick={() => handleDeletePicture(index)}
         >
           <img src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
