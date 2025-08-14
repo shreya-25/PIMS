@@ -206,55 +206,96 @@ console.log(localStorage);
 //   });
 // };
 
- const handleLRClick = async (lead) => {
-   let role = "";
-   try {
-     const token = localStorage.getItem("token");
-     if (!token) throw new Error("No token");
-     // fetch the case’s team info
-     const caseRes = await api.get(
-       `/api/cases/${lead.caseNo}/team`,
-       { headers: { Authorization: `Bearer ${token}` } }
-     );
-     if (caseRes.data.detectiveSupervisor === signedInOfficer) {
-       role = "Detective Supervisor";
-     } 
-      else if (
-       Array.isArray(caseRes.data.investigators) &&
-       caseRes.data.caseManagers.includes(signedInOfficer)
-     ) {
-       role = "Case Manager";
-     }else if (
-       Array.isArray(caseRes.data.investigators) &&
-       caseRes.data.investigators.includes(signedInOfficer)
-     ) {
-       role = "Investigator";
-     }
-     console.log("role", role);
-   } 
+//  const handleLRClick = async (lead) => {
+//    let role = "";
+//    try {
+//      const token = localStorage.getItem("token");
+//      if (!token) throw new Error("No token");
+//      // fetch the case’s team info
+//      const caseRes = await api.get(
+//        `/api/cases/${lead.caseNo}/team`,
+//        { headers: { Authorization: `Bearer ${token}` } }
+//      );
+//      if (caseRes.data.detectiveSupervisor === signedInOfficer) {
+//        role = "Detective Supervisor";
+//      } 
+//       else if (
+//        Array.isArray(caseRes.data.investigators) &&
+//        caseRes.data.caseManagers.includes(signedInOfficer)
+//      ) {
+//        role = "Case Manager";
+//      }else if (
+//        Array.isArray(caseRes.data.investigators) &&
+//        caseRes.data.investigators.includes(signedInOfficer)
+//      ) {
+//        role = "Investigator";
+//      }
+//      console.log("role", role);
+//    } 
    
-   catch (err) {
-     console.error("❌ Failed to fetch case role:", err);
-   }
+//    catch (err) {
+//      console.error("❌ Failed to fetch case role:", err);
+//    }
 
-   const caseDetails = {
-     caseNo:   lead.caseNo,
-     caseName: lead.caseName,
-     role
-   };
-   const leadDetails = {
-     leadNo:   lead.id,
-     leadName: lead.description
-   };
+//    const caseDetails = {
+//      caseNo:   lead.caseNo,
+//      caseName: lead.caseName,
+//      role
+//    };
+//    const leadDetails = {
+//      leadNo:   lead.id,
+//      leadName: lead.description
+//    };
+
+//   setSelectedCase(caseDetails);
+//    setSelectedLead(leadDetails);
+//    localStorage.setItem("role", role);
+
+//    navigate("/LRInstruction", {
+//      state: { caseDetails, leadDetails }
+//    });
+//  };
+
+const handleLRClick = async (lead) => {
+  let role = localStorage.getItem("role") || ""; // fallback if API call fails
+
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No token");
+
+    const { data } = await api.get(`/api/cases/${lead.caseNo}/team`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const isSupervisor =
+      data.detectiveSupervisor === signedInOfficer ||
+      data.detectiveSupervisor?.username === signedInOfficer;
+
+    const isCM = Array.isArray(data.caseManagers) &&
+      (data.caseManagers.includes?.(signedInOfficer) ||
+       data.caseManagers.some?.(u => u?.username === signedInOfficer));
+
+    const isInv = Array.isArray(data.investigators) &&
+      (data.investigators.includes?.(signedInOfficer) ||
+       data.investigators.some?.(u => u?.username === signedInOfficer));
+
+    if (isSupervisor)      role = "Detective Supervisor";
+    else if (isCM)         role = "Case Manager";
+    else if (isInv)        role = "Investigator";
+  } catch (err) {
+    console.error("❌ Failed to fetch case role:", err);
+  }
+
+  const caseDetails = { caseNo: lead.caseNo, caseName: lead.caseName, role };
+  const leadDetails = { leadNo: lead.id, leadName: lead.description }; // assuming lead.id === leadNo
 
   setSelectedCase(caseDetails);
-   setSelectedLead(leadDetails);
-   localStorage.setItem("role", role);
+  setSelectedLead(leadDetails);
+  localStorage.setItem("role", role);
+  localStorage.setItem("selectedCase", JSON.stringify(caseDetails)); // optional but handy on refresh
 
-   navigate("/LRInstruction", {
-     state: { caseDetails, leadDetails }
-   });
- };
+  navigate("/LRInstruction", { state: { caseDetails, leadDetails } });
+};
 
 
 const handleAssignInvestigator = (caseId) => {
@@ -704,10 +745,10 @@ const addCase = (newCase) => {
 
 
   const columnWidths = {
-  "Case No.":   "7%",
+  "Case No.":   "3%",
   "Case Name":  "20%",         // you can tweak widths…
-  "Created At": "6%",         // ← new
-  "Role":       "7%",
+  "Created At": "3.5%",         // ← new
+  "Role":       "5%",
 };
 
 // Columns + mapping to your data fields
@@ -827,9 +868,9 @@ const sortedCases = useMemo(() => {
     "Assigned Officers":"assignedOfficers"
   };
   const assignedColWidths = {
-    "Lead No.":           "10%",
-    "Lead Name":         "28%",
-    "Case Name":          "15%",
+    "Lead No.":           "5%",
+    "Lead Name":         "25%",
+    "Case Name":          "18%",
     "Assigned Officers": "15%"
   };
 
@@ -1111,12 +1152,18 @@ const sortedPendingReturns = useMemo(() => {
       <div className="main-page-abovepart">
         <NotificationCard  acceptLead={acceptLead} signedInOfficer={signedInOfficer} 
         />
-        <div className= "add-case-section">
+          <div className= "add-case-section">
             <SlideBar
                   onAddCase={(newCase) => addCase(newCase)}
                   buttonClass="custom-add-case-btn1"
             />
         </div>
+        {/* <div className="case-overview-sec">
+        <div className="cp-head">
+          <h2> Cases Overview</h2>
+        </div>
+    
+        </div> */}
       </div>
       <div className="main-page-belowpart">
       <div className="stats-bar">
@@ -1190,7 +1237,7 @@ const sortedPendingReturns = useMemo(() => {
                       </th>
                     );
                   })}
-                  <th style={{ width: "7%", textAlign: "center" }} ></th>{/* extra column for “View” button */}
+                  <th style={{ width: "5%", textAlign: "center" }} >Actions</th>{/* extra column for “View” button */}
                 </tr>
               </thead>
               <tbody>
@@ -1201,7 +1248,7 @@ const sortedPendingReturns = useMemo(() => {
                       <td>{c.title}</td>
                       <td>{formatDate(c.createdAt)}</td> 
                       <td>{c.role}</td>
-                      <td>
+                      <td style={{ width: "5%", textAlign: "center" }} >
                         <div className="btn-sec-HP">
                         <button
                           className="view-btn1"
@@ -1227,7 +1274,7 @@ const sortedPendingReturns = useMemo(() => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: "center" }}>
+                    <td colSpan={5} style={{ textAlign: "center" , padding: "8px" }}>
                       No cases found.
                     </td>
                   </tr>
@@ -1287,7 +1334,7 @@ const sortedPendingReturns = useMemo(() => {
   );
 })}
                      
-                  <th style={{ width: "10%" }}></th>
+                  <th style={{ width: "5%", textAlign: "center" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1298,7 +1345,7 @@ const sortedPendingReturns = useMemo(() => {
                       <td>{lead.description}</td>
                       <td>{lead.caseName}</td>
                       <td>{lead.assignedOfficers.join(", ")}</td>
-                      <td>
+                      <td style={{ textAlign: "center" }}>
                         <button
                           className="view-btn1"
                           onClick={() =>  handleViewAssignedLead(lead)}
@@ -1310,7 +1357,7 @@ const sortedPendingReturns = useMemo(() => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={assignedColumns.length + 1} style={{ textAlign: "center" }}>
+                    <td colSpan={assignedColumns.length + 1} style={{ textAlign: "center" , padding: "8px" }}>
                       No Assigned Leads Available
                     </td>
                   </tr>
@@ -1348,7 +1395,7 @@ const sortedPendingReturns = useMemo(() => {
           <th>Assigned Officers</th>
           <th>Case Name</th>
           <th style={{ width: "10%" }}>Due Date</th>
-          <th style={{ width: "10%" }}></th>
+          <th style={{ width: "10%" , textAlign: "center" }}>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -1365,7 +1412,8 @@ const sortedPendingReturns = useMemo(() => {
                 </td>
               <td>{lead.caseName }</td>
               <td>{lead.dueDate}</td>
-              <td>
+              <td style={{ width: "5%", textAlign: "center" }}
+>
                 <button
                   className="view-btn1"
                 >
@@ -1376,7 +1424,7 @@ const sortedPendingReturns = useMemo(() => {
           ))
         ) : (
           <tr>
-            <td colSpan="6" style={{ textAlign: 'center' }}>
+            <td colSpan="6" style={{ textAlign: 'center', padding: "8px" }}>
               No Pending Leads Available
             </td>
           </tr>
@@ -1392,6 +1440,13 @@ const sortedPendingReturns = useMemo(() => {
   <div className="pending-lead-returns">
 <div className="table-scroll-container">
 <table className="leads-table" style={{ minWidth: "1000px" }}>
+
+  <colgroup>
+      <col style={{ width: "6%" }} />     {/* Lead No. */}
+      <col style={{ width: "35%" }} />   {/* Lead Name */}
+      <col style={{ width: "30%" }} />   {/* Case Name */}
+      <col style={{ width: "6%" }} />     {/* Actions */}
+    </colgroup>
               <thead>
                 <tr>
     {["Lead No.","Lead Name","Case Name"].map(col => {
@@ -1447,7 +1502,7 @@ const sortedPendingReturns = useMemo(() => {
         </th>
       );
     })}
-                  <th style={{ width: "10%" }}></th>
+                  <th style={{ width: "10%", textAlign:"center" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1457,7 +1512,7 @@ const sortedPendingReturns = useMemo(() => {
                       <td>{lead.id}</td>
                       <td>{lead.description}</td>
                       <td>{lead.caseName}</td>
-                      <td>
+                      <td style={{  textAlign: "center" }}>
                         <button
                               className="continue-btn"
                               onClick={() => {
@@ -1471,7 +1526,7 @@ const sortedPendingReturns = useMemo(() => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" style={{ textAlign: 'center' }}>
+                    <td colSpan="4" style={{ textAlign: 'center' , padding: "8px" }}>
                       No Pending Lead Returns Available
                     </td>
                   </tr>

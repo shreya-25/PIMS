@@ -9,6 +9,7 @@ import { CaseContext } from "../../CaseContext";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../../components/AlertModal/AlertModal";
+import { useLeadStatus } from '../../../hooks/useLeadStatus';
 
 
 export const LRVideo = () => {
@@ -398,6 +399,14 @@ useEffect(() => {
     }
   };
 
+     const { status, isReadOnly } = useLeadStatus({
+    caseNo: selectedCase.caseNo,
+    caseName: selectedCase.caseName,
+    leadNo: selectedLead.leadNo,
+    leadName: selectedLead.leadName,
+  });
+
+
                   
   return (
     <div className="lrvideos-container">
@@ -605,7 +614,7 @@ Case Page
             Finish
           </span>
          </div> </div>
-                <div className="caseandleadinfo">
+                {/* <div className="caseandleadinfo">
           <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
@@ -613,6 +622,19 @@ Case Page
     : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
 </h5>
 
+
+          </div> */}
+               <div className="caseandleadinfo">
+          <h5 className = "side-title"> 
+             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
+               <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo} &gt; Lead Videos
+                 </p>
+             </h5>
+          <h5 className="side-title">
+  {selectedLead?.leadNo
+        ? `Your Role: ${selectedCase.role || ""} | Lead Status:  ${status}`
+    : ` ${leadStatus}`}
+</h5>
 
           </div>
         <div className="case-header">
@@ -731,7 +753,7 @@ Case Page
                   <button
                     disabled={
                       selectedLead?.leadStatus === "In Review" ||
-                      selectedLead?.leadStatus === "Completed"
+                      selectedLead?.leadStatus === "Completed" || isReadOnly
                     }
                     className="save-btn1"
                     onClick={
@@ -834,7 +856,7 @@ Case Page
                 <td>{video.description}</td>
                 <td>
                   <div classname = "lr-table-btn">
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
 
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
@@ -843,7 +865,7 @@ Case Page
                   onClick={() => handleEditVideo(index)}
                 />
                   </button>
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
 
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}

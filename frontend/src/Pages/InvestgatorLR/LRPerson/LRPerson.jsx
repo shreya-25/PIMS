@@ -11,6 +11,7 @@ import './LRPerson.css';
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../../components/AlertModal/AlertModal";
+import { useLeadStatus } from '../../../hooks/useLeadStatus';
 
 
 export const LRPerson = () => {
@@ -162,6 +163,14 @@ export const LRPerson = () => {
 
     fetchLeadData();
   }, [selectedLead, selectedCase]);
+
+     const { status, isReadOnly } = useLeadStatus({
+    caseNo: selectedCase.caseNo,
+    caseName: selectedCase.caseName,
+    leadNo: selectedLead.leadNo,
+    leadName: selectedLead.leadName,
+  });
+
   
 
   const fetchPersons = async () => {
@@ -529,12 +538,26 @@ Case Page
             Finish
           </span>
          </div> </div>
-                <div className="caseandleadinfo">
+                {/* <div className="caseandleadinfo">
           <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
     ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
     : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
+</h5>
+
+          </div> */}
+
+            <div className="caseandleadinfo">
+          <h5 className = "side-title"> 
+             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
+               <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo} &gt; Lead Persons
+                 </p>
+             </h5>
+          <h5 className="side-title">
+  {selectedLead?.leadNo
+    ? `Your Role: ${selectedCase.role || ""} | Lead Status:  ${status}`
+    : ` ${status}`}
 </h5>
 
           </div>
@@ -636,7 +659,7 @@ Case Page
 
       {/* Bottom Buttons */}
       <div className="bottom-buttons">
-      <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+      <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || selectedLead?.leadStatus === "Closed" || isReadOnly}
 
       onClick={() => handleNavigation('/LRPerson1')} className="save-btn1">Add Person</button>
       </div>

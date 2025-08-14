@@ -20,6 +20,31 @@ html, body {
   overflow-x: auto;
 }
 
+.case-header-leadReview
+{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+.cp-head-leadReview
+{
+  align-items: center;
+  width: 70%;
+}
+
+.add-lead-section-lr
+{
+  width: 20%;
+}
+
+.cp-head-leadReview h2{
+  margin: 0px;
+}
+.cp-add-lead-btn
+{
+ width: 80%;
+} 
 /* Sidebar */
 .sideitem {
   min-height: 100vh; /* forces the sidebar to stretch the full viewport height */
@@ -41,6 +66,18 @@ html, body {
     justify-content: space-between;
     width: 100%;
     height: auto;
+  }
+
+  .main-leadreview-cont
+  {
+    padding: 16px;
+  }
+
+  .side-titleLeft-lr p
+  {
+    margin: 0px;
+    padding: 0px;
+    font-size: 20px;
   }
   .side-titleRight
   {
@@ -65,9 +102,8 @@ html, body {
 {
   display: flex;
   width: 100%;
-  padding-left: 16px;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
 }
 
 /* Form Section container (groups fields) */
@@ -114,8 +150,8 @@ html, body {
 /* Table cells */
 .info-table td,
 .details-table td {
-  width: 50%;
-  padding: 8px 10px;
+  /* width: 50%; */
+  padding: 8px;
   vertical-align: middle;
   border-bottom: 1px solid #eee;
 }
@@ -124,9 +160,9 @@ html, body {
   width: 30%;
 }
 .info-label {
-  width: 500px;
-  font-weight: 600;
-  color: #555;
+  width: 1000px;
+  /* font-weight: 600;
+  color: #555; */
 }
 
 .info-item input
@@ -164,7 +200,16 @@ html, body {
   position: relative;
   display: inline-block;
   width: 100%;
-  margin-bottom: 5px;
+  /* margin-bottom: 5px; */
+  border:#555;
+}
+
+.custom-dropdown1
+{
+   position: relative;
+  display: inline-block;
+  width: 100%;
+  /* margin-bottom: 5px; */
   border:#555;
 }
 
@@ -177,6 +222,26 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.dropdown-header-lr {
+  background-color: #f9fafb; /* light gray background */
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.dropdown-header-lr:hover {
+  background-color: #f1f5f9; /* hover shade */
+  border-color: #bbb;
 }
 
 .dropdown-icon {
@@ -250,8 +315,6 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 50%;
-  padding: 20px;
   /* margin-top: -50px; */
 }
 
@@ -340,8 +403,12 @@ html, body {
 
 .accept-reject-section
 {
-  width: 92%;
-  margin-left: 20px;
+  width: 94%;
+}
+
+.accept-reject-section h3{
+
+margin: 0px 0px 8px 0px;
 }
 
 
