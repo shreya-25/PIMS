@@ -41,6 +41,10 @@ export const Investigator = () => {
          const [error, setError] = useState('');
          const saveTimer = useRef(null);
          const isFirstLoad = useRef(true);
+         const toTitleCase = (s = "") =>
+  s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+
+
 
          const isNavDisabled = lead => lead.leadStatus === 'Assigned';
 const disabledStyle = { opacity: 0.5, cursor: 'not-allowed' };
@@ -1036,17 +1040,24 @@ const sortedAllLeads = useMemo(() => {
                
                 <div className="left-content">
 
-<div className = "side-titleLeft">
-                  <p> PIMS &gt; Cases
-                 </p>
-                </div>
+   <div className="caseandleadinfo-cl">
+          <h5 className = "side-title-cl"> 
+             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
+               <p> PIMS &gt; Cases </p>
+             </h5>
+          <h5 className="side-title-cl">
+  {selectedLead?.leadNo
+        ? `Your Role: ${selectedCase.role || ""}`
+    : ` ${leadStatus}`}
+</h5>
+
+          </div>
                    {/* Display Case Number and Name */}
                 <div className="case-header-cp">
                   <div className="cp-head">
                 {
-                    <h1>
-                      CASE: {selectedCase.caseName.toUpperCase() || "Unknown Case"}
-                    </h1>
+                 <h2>Case: {selectedCase?.caseName ? toTitleCase(selectedCase.caseName) : "Unknown Case"}</h2>
+
                 }
                 </div>
                   

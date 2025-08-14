@@ -2148,15 +2148,21 @@ const handleShowLeadsInRange = () => {
          <SideBar activePage="LeadsDesk" />
 
         <div className="right-sec">
-        <div className="caseandleadinfo">
-        <h5 className = "side-title">  Case:{selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+            <div className="caseandleadinfo">
+          <h5 className = "side-title"> 
+             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
+               <p> PIMS &gt; Cases &gt; Lead Desk
+                 </p>
+             </h5>
+          <h5 className="side-title">
+  {selectedCase?.role
+        ? `Your Role: ${selectedCase.role || ""}`
+    : ``}
+</h5>
 
-
-          {/* <h5 className = "side-title"> 
-          {selectedLead?.leadNo ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName}` : "LEAD DETAILS"}
-
-          </h5> */}
           </div>
+       
+      
 
           {/* <div className="header-ld-exec"> */}
         {/* <div className="case-header-ldExecSummary">
