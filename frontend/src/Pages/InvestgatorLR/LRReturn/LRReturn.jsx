@@ -636,7 +636,7 @@ const handleAddOrUpdateReturn = async () => {
             <th style={{ width: "13%" }}>Date Entered</th>
             <th style={{ width: "11%" }}>Entered By</th>
             <th className="results-col">Narrative</th>
-            <th style={{ width: "12%" }}></th>
+            <th style={{ width: "12%" }}>Actions</th>
             {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
             )}

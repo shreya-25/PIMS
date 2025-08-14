@@ -1347,9 +1347,6 @@ Case Page
     </tbody>
   </table>
   <div className="run-sec">
-  <button className="save-btn1" onClick={handleRunReport}
-  // disabled={isDisabled}
-  >Run Report</button>
   
   {isCaseManager && isClosedOrCompleted && (
     <div className="form-buttons-finish">
@@ -1368,7 +1365,14 @@ Case Page
 
     {canShowSubmit && (
       <button className="save-btn1" onClick={handleSubmitReport}>Submit</button>
-  )} </div>
+  )}
+<div className="">
+  <button className="save-btn1" onClick={handleRunReport}
+  // disabled={isDisabled}
+  >Run Report</button>
+  </div>
+  
+   </div>
 </div>
 
 

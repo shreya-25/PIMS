@@ -577,7 +577,7 @@ Case Page
               <th style={{ width: "12%" }}>Phone No</th>
               {/* <th>Address</th> */}
               <th style={{ width: "14%" }}>More</th>
-              <th style={{ width: "14%" }}></th>
+              <th style={{ width: "14%" }}>Actions</th>
               {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
             )}

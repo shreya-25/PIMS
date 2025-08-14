@@ -1046,7 +1046,7 @@ const sortedAllLeads = useMemo(() => {
                <p> PIMS &gt; Cases </p>
              </h5>
           <h5 className="side-title-cl">
-  {selectedLead?.leadNo
+  {selectedCase?.role
         ? `Your Role: ${selectedCase.role || ""}`
     : ` ${leadStatus}`}
 </h5>

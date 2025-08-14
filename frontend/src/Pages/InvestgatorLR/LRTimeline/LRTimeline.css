@@ -103,8 +103,14 @@ body{
 .timeline-form-sec label {
   font-size: 20px;
   color: #495057;
-  margin-top: 10px;
+  /* margin-top: 10px; */
 }
+
+.timeline-form-sec input {
+
+  margin: 10px 0px;
+}
+
 
 .timeline-form-sec input, .timeline-form-sec textarea, .timeline-form-sec select {
   width: 100%;

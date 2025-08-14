@@ -829,7 +829,7 @@ Case Page
               {/* <th>Date Audio Recorded</th> */}
               <th>File Name</th>
               <th>Description</th>
-              <th style={{ width: "13%" }}></th>
+              <th style={{ width: "13%" }}>Actions</th>
               {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
             )}

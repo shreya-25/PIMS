@@ -77,7 +77,7 @@
 .checkbox-col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 2px;
 }
 
 /* Larger checkboxes & radio buttons */

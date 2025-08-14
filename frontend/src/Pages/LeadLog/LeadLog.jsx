@@ -512,7 +512,7 @@ const formatDate = (dateString) => {
 
          <div className="case-header">
             <div className="cp-head">
-          <h1 className="">LEAD LOG</h1>
+          <h2 className="">LEAD LOG</h2>
         </div>
         </div>
 
