@@ -11,6 +11,7 @@ import Comment from "../../../components/Comment/Comment";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../../components/AlertModal/AlertModal";
+import { useLeadStatus } from '../../../hooks/useLeadStatus';
 
 
 
@@ -59,6 +60,8 @@ export const LRVehicle = () => {
     information: '',
      };
   });
+
+  
 
 
   useEffect(() => {
@@ -145,6 +148,13 @@ const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus }
 
     fetchLeadData();
   }, [selectedLead, selectedCase]);
+
+    const { status, isReadOnly } = useLeadStatus({
+    caseNo: selectedCase.caseNo,
+    caseName: selectedCase.caseName,
+    leadNo: selectedLead.leadNo,
+    leadName: selectedLead.leadName,
+  });
 
         
  const openVehicleModal = (leadNo, leadName, caseNo, caseName, leadReturnId, leadsDeskCode) => {
@@ -694,12 +704,25 @@ Case Page
           </span>
          </div> </div>
 
-                <div className="caseandleadinfo">
+                {/* <div className="caseandleadinfo">
           <h5 className = "side-title">  Case:{selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
     ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
     : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
+</h5>
+
+          </div> */}
+            <div className="caseandleadinfo">
+          <h5 className = "side-title"> 
+             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
+               <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo} &gt; Lead Vehicle
+                 </p>
+             </h5>
+          <h5 className="side-title">
+  {selectedLead?.leadNo
+        ? `Your Role: ${selectedCase.role || ""} | Lead Status:  ${status}`
+    : ` ${leadStatus}`}
 </h5>
 
           </div>
@@ -832,7 +855,7 @@ Case Page
             Add Vehicle
           </button> */}
           <button
-  disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
+  disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly || selectedLead?.leadStatus === "Closed" || isReadOnly }
   className="save-btn1"
   onClick={handleSaveVehicle}
 >
@@ -922,7 +945,7 @@ Case Page
   />
   <td>
                   <div classname = "lr-table-btn">
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
 
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
@@ -932,7 +955,7 @@ Case Page
 
                 />
                   </button>
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
+                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
 
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}

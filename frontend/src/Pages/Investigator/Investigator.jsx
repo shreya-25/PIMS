@@ -483,7 +483,7 @@ const assignedColWidths = {
   "Lead Name":          "20%",
   "Due Date":           "13%",
   "Priority":           "10%",
-  "Days Left":          "13%",
+  "Days Left":          "11%",
   "Assigned Officers":  "21%",
 };
 
@@ -603,7 +603,7 @@ const pendingColWidths = {
   "Lead Name":          "20%",
   "Due Date":           "13%",
   "Priority":           "10%",
-  "Days Left":          "13%",
+  "Days Left":          "11%",
   "Assigned Officers":  "21%",
 };
 
@@ -860,6 +860,20 @@ const toggleAllSelectAll = key => {
   }));
 };
 
+const caseTeamStyles = {
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+  },
+  th: {
+    padding: "8px"
+  },
+  td: {
+    padding: "8px",
+    verticalAlign: "center",
+  },
+};
+
 const handleAllCheckboxToggle = (key, v) =>
   setTempAllSelections(ts => {
     const sel = ts[key] || [];
@@ -1022,52 +1036,77 @@ const sortedAllLeads = useMemo(() => {
                
                 <div className="left-content">
 
-          <h5 className = "side-titleLeft">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
-
+<div className = "side-titleLeft">
+                  <p> PIMS &gt; Cases
+                 </p>
+                </div>
                    {/* Display Case Number and Name */}
-                <div className="case-header">
-                        <h1>
-                            CASE: {selectedCase.caseNo} |  {selectedCase.caseName.toUpperCase()}
-                        </h1>
+                <div className="case-header-cp">
+                  <div className="cp-head">
+                {
+                    <h1>
+                      CASE: {selectedCase.caseName.toUpperCase() || "Unknown Case"}
+                    </h1>
+                }
+                </div>
+                  
                 </div>
 
-             <div className="case-summary">
-      <label className="input-label">Case Summary</label>
+                   {/* <div className="cp-case-status">
+                 
+      <div className="pill">{selectedCase.role || ""}</div>
+      <div className="pill">Ongoing</div>
+      <div className="muted">Last updated 2h ago</div>
+                </div> */}
+
+      {/* <div className="summary-box">
+        <div className="case-summary">
+      <div className="cp-summ-head">
+  <label className="cp-label" htmlFor="case-summary">Case Summary</label>
+</div>
       <textarea
-        id="case-summary"
+        className='cp-textarea'
         rows={6}
-        style={{ width: '100%', fontSize: 20, padding: 8 }}
+        style={{ width: '100%', fontSize: 20 }}
         value={summary}
-        // onChange={e => setSummary(e.target.value)}
           readOnly
       />
-      {/* <div style={{ marginTop: 8, fontSize: 20, minHeight: '1em' }}>
-        {isSaving
-          ? <span style={{ color: '#888' }}>Saving…</span>
-          : error
-            ? <span style={{ color: 'red' }}>{error}</span>
-            : <span>&nbsp;</span>
-        }
-      </div> */}
     </div>
+    </div> */}
+      <div className="summary-box">
+  <div
+    className="case-summary"
+    style={{
+      maxHeight: "150px",       // make it scrollable if content is long
+      overflowY: "auto",
+      padding: "8px",
+      border: "1px solid #ccc",
+      borderRadius: "4px",
+      fontSize: "20px",
+    }}
+  >
+     <strong>Case Summary:</strong> {summary || "No summary available"}
+  </div>
+</div>
 
             <div className="case-team">
-        <table className="leads-table">
+        <table className="leads-table" style={caseTeamStyles.table}>
           <thead>
-            <tr><th style={{ width: "20%" }}>Role</th><th>Name(s)</th></tr>
+            <tr><th style={{...caseTeamStyles.th, width: "20%" }}>Role</th>
+            <th style={caseTeamStyles.th}>Name(s)</th></tr>
           </thead>
           <tbody>
             <tr>
-              <td>Detective Supervisor</td>
-              <td>{team.detectiveSupervisor || "—"}</td>
+              <td style={caseTeamStyles.td}>Detective Supervisor</td>
+              <td style={caseTeamStyles.td}>{team.detectiveSupervisor || "—"}</td>
               </tr>
             <tr>
-              <td>Case Manager</td>
-              <td>{(team.caseManagers||[]).join(", ") || "—"}</td>
+              <td style={caseTeamStyles.td}>Case Manager</td>
+              <td style={caseTeamStyles.td}>{(team.caseManagers||[]).join(", ") || "—"}</td>
             </tr>
             <tr>
-              <td>Investigator{team.investigators.length > 1 ? "s" : ""}</td>
-              <td>
+              <td style={caseTeamStyles.td}>Investigator{team.investigators.length > 1 ? "s" : ""}</td>
+              <td style={caseTeamStyles.td}>
                 {team.investigators.length
                   ? team.investigators.join(", ")
                   : "None assigned"}
@@ -1162,7 +1201,7 @@ const sortedAllLeads = useMemo(() => {
             );
           })}
           {/* extra column for “View” button */}
-          <th style={{ width: "11%" }}></th>
+          <th style={{ width: "11%", textAlign:"center" }}>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -1175,7 +1214,7 @@ const sortedAllLeads = useMemo(() => {
               <td>{lead.priority}</td>
               <td>{calculateRemainingDays(lead.dueDate)}</td>
               <td>{(lead.assignedOfficers || []).join(", ")}</td>
-              <td>
+              <td style={{ width: "9%", textAlign: "center" }}>
                 <button
                   className="view-btn1"
                   onClick={() => handleLeadClick(lead)}
@@ -1195,7 +1234,7 @@ const sortedAllLeads = useMemo(() => {
           <tr>
             <td
               colSpan={assignedColumns.length + 2}
-              style={{ textAlign: "center" }}
+              style={{ textAlign: "center", padding: "8px" }}
             >
               No assigned leads available
             </td>
@@ -1274,7 +1313,7 @@ const sortedAllLeads = useMemo(() => {
             );
           })}
           {/* extra column for “View” */}
-          <th style={{ width: "10%" }}></th>
+          <th style={{ width: "10%", textAlign:"center" }}>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -1287,7 +1326,7 @@ const sortedAllLeads = useMemo(() => {
               <td>{lead.priority}</td>
               <td>{calculateRemainingDays(lead.dueDate)}</td>
               <td>{(lead.assignedOfficers || []).join(", ")}</td>
-              <td>
+              <td style={{ width: "9%", textAlign: "center" }}>
                 <button
                   className="view-btn1"
                   onClick={() => handleLeadClick(lead)}
@@ -1301,7 +1340,7 @@ const sortedAllLeads = useMemo(() => {
           <tr>
             <td
               colSpan={pendingColumns.length + 1}
-              style={{ textAlign: "center" }}
+              style={{ textAlign: "center", padding: "8px" }}
             >
               No accepted leads available
             </td>
@@ -1362,7 +1401,7 @@ const sortedAllLeads = useMemo(() => {
             );
           })}
           {/* extra column for “Continue” */}
-          <th style={{ width: '10%' }}></th>
+          <th style={{ width: '10%', textAlign: "center" }}>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -1372,7 +1411,7 @@ const sortedAllLeads = useMemo(() => {
               <td>{lead.id}</td>
               <td>{lead.description}</td>
               <td>{lead.caseName}</td>
-              <td>
+              <td style={{ width: "9%", textAlign: "center" }}>
                 <button
                   className="continue-btn"
                   onClick={() => handleLRClick(lead)}
@@ -1386,7 +1425,7 @@ const sortedAllLeads = useMemo(() => {
           <tr>
             <td
               colSpan={pendingLRColumns.length + 1}
-              style={{ textAlign: 'center' }}
+              style={{ textAlign: 'center', padding: "8px" }}
             >
               No Pending Lead Returns Available
             </td>
@@ -1454,7 +1493,7 @@ const sortedAllLeads = useMemo(() => {
             );
           })}
           {/* extra column for “View” */}
-          <th style={{ width: '11%' }}></th>
+          <th style={{ width: '11%', textAlign:"center" }}> Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -1481,7 +1520,7 @@ const sortedAllLeads = useMemo(() => {
                   : lead.leadStatus}
               </td>
               <td>{(lead.assignedOfficers || []).join(', ') || <em>None</em>}</td>
-              <td>
+              <td style={{ width: "9%", textAlign: "center" }}>
                 <button
                   className="view-btn1"
                   onClick={() => handleLeadClick(lead)}
@@ -1495,7 +1534,7 @@ const sortedAllLeads = useMemo(() => {
           <tr>
             <td
               colSpan={allColumns.length + 1}
-              style={{ textAlign: 'center' }}
+              style={{ textAlign: 'center', padding: "8px" }}
             >
               No Leads Available
             </td>

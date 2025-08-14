@@ -873,8 +873,21 @@ useEffect(() => {
                 <SideBar activePage = "CasePageManager" />
 
                 <div className="left-content">
-                <h5 className = "side-titleLeft">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
+                {/* <h5 className = "side-titleLeft">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5> */}
 
+     <div className="caseandleadinfo">
+          <h5 className = "side-title"> 
+             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
+               <p> PIMS &gt; Cases &gt; Create Lead
+                 </p>
+             </h5>
+          <h5 className="side-title">
+  {selectedLead?.leadNo
+        ? `Your Role: ${selectedCase.role || ""}`
+    : ``}
+</h5>
+
+          </div>
 
 
         {/* Center Section */}

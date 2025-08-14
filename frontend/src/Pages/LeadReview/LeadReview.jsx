@@ -32,7 +32,9 @@ export const LeadReview = () => {
   const [originalAssigned, setOriginalAssigned] = useState([]);
   const signedInOfficer = localStorage.getItem("loggedInUser");
   const [alertOpen, setAlertOpen] = useState(false);
-    const [alertMessage, setAlertMessage] = useState("");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]);
+  const [caseSubNumbers, setCaseSubNumbers] = useState([]); 
 
     const assOff= useRef(null);
     
@@ -480,14 +482,55 @@ console.log("SL, SC", selectedLead, selectedCase);
 
     // fall back to 0 (“Lead Created”) if you get an unexpected value
 const currentStatusIndex = statusToIndex[leadData.leadStatus] ?? 0;
+const [assignedOfficers, setAssignedOfficers] = useState([]);
+
+const [subnumsLoading, setSubnumsLoading] = useState(false);
+
+useEffect(() => {
+  const fetchCaseSubNumbers = async () => {
+    if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+    try {
+      setSubnumsLoading(true);
+      const token = localStorage.getItem("token");
+      // use the route your backend exposes; adjust if different
+      const { data } = await api.get(
+        `/api/cases/${selectedCase.caseNo}/subNumbers`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      // normalize + dedupe
+      const subs = Array.from(new Set(data?.subNumbers || []));
+      setCaseSubNumbers(subs);
+    } catch (e) {
+      console.error("Failed to fetch case subnumbers:", e);
+      setCaseSubNumbers([]); // show "No subnumbers" in UI
+    } finally {
+      setSubnumsLoading(false);
+    }
+  };
+  fetchCaseSubNumbers();
+}, [selectedCase?.caseNo, selectedCase?.caseName]);
+
+// keep UI selection in sync when lead loads
+useEffect(() => {
+  if (Array.isArray(leadData?.associatedSubNumbers)) {
+    setAssociatedSubNumbers(leadData.associatedSubNumbers);
+  }
+}, [leadData?.associatedSubNumbers]);
+
+// tiny helper to autosave field
+const saveField = async (partial) => {
+  const next = { ...leadData, ...partial };
+  setLeadData(next);
+  try {
+    await handleSave(assignedOfficers, next);
+  } catch (err) {
+    console.error("Auto-save failed", err);
+    setAlertMessage("Failed to save your changes. Please try again.");
+    setAlertOpen(true);
+  }
+};
 
 
-  // For subnumbers
-  const [availableSubNumbers] = useState([
-    "SUB-000001", "SUB-000002", "SUB-000003", "SUB-000004", "SUB-000005"
-  ]);
-  const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]);
-      const [assignedOfficers, setAssignedOfficers] = useState([]);
   
       const handleSelectLead = (lead) => {
         setSelectedLead({
@@ -628,6 +671,8 @@ const isEditableByCaseManager = field => {
         <div className="lead-main-content">
           {/* Page Header */}
 
+          
+
            {(leadData.leadStatus !== "Assigned" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
                    <div className="top-menu">
         <div className="menu-items">
@@ -672,34 +717,85 @@ const isEditableByCaseManager = field => {
                   )}
 
 
-          <div className="caseandleadinfo">
+          {/* <div className="caseandleadinfo">
           <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} |  Your Role: {selectedCase.role || ""}</h5>
 
-          {/* <h5 className="side-titleRight">
+          <h5 className="side-titleRight">
   {selectedLead?.leadNo
     ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${leadData.leadStatus || leadStatus || "Unknown Status"}`
     : `LEAD DETAILS | ${leadData?.leadStatus || leadStatus || "Unknown Status"}`}
-</h5> */}
+</h5>
+
+          </div> */}
+
+               <div className="caseandleadinfo">
+          <h5 className = "side-title"> 
+             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
+               <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo}
+                 </p>
+             </h5>
+          <h5 className="side-title">
+  {selectedLead?.leadNo
+        ? `Your Role: ${selectedCase.role || ""}`
+    : ` ${leadStatus}`}
+</h5>
 
           </div>
 
-          <div className="case-header">
-            <h1> {selectedLead?.leadNo ? `LEAD: ${selectedLead.leadNo} | ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"} </h1>
-          </div>
+          <div className="main-leadreview-cont">
 
+           {/* <div className = "side-titleLeft-lr">
+                  <p> PIMS &gt; Cases &gt; Lead \ {selectedLead.leadNo} 
+                 </p>
+                </div> */}
+        <div className="case-header-leadReview">
+                  <div className="cp-head-leadReview">
+                {
+                  <h2> {selectedLead?.leadNo ? `LEAD: ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"} </h2>
+
+                }
+                </div>
+
+                  {(leadData.leadStatus !== "Assigned" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
+                   <div  className="add-lead-section-lr">
+                <button className="cp-add-lead-btn"  
+                onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/LRInstruction", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } else {
+                    // alert("Please select a case and lead first.");
+                     setAlertMessage("Please select a case and lead first.");
+                     setAlertOpen(true);
+                  }
+                }}
+                style={{ cursor: 'pointer', width: '100%' }} >
+                    Add/View Lead Return
+                </button>
+                </div>
+                  )}
+                </div>
                
  {leadData.leadStatus === "Assigned" && selectedCase.role !== "Case Manager" &&  selectedCase.role !== "Detective Supervisor" && (
   <div
     className="accept-reject-section"
     style={{
-      marginTop: "30px",
-      padding: "20px",
+      marginTop: "8px",
+      marginBottom: "8px",
+      padding: "8px",
       border: "1px solid #ccc",
       borderRadius: "8px",
       backgroundColor: "#f9f9f9",
     }}
   >
-    <h3 style={{ marginBottom: "15px" }}>
+    <h3>
       Do you want to Accept / Reject this lead?
     </h3>
     <div style={{ display: "flex", gap: "20px" }}>
@@ -711,8 +807,8 @@ const isEditableByCaseManager = field => {
       </button>
 
       <button
-        className="decline-btnNC"
-        // style={{ backgroundColor: "#ffdddd", color: "#a00" }}
+        
+        style={{ backgroundColor: "#e74c3c", color: "#fff", fontSize: "20px" }}
         onClick={() => declineLead(leadData.leadNo, leadData.description)}
           
       >
@@ -770,7 +866,7 @@ const isEditableByCaseManager = field => {
                 </tr>
 
                 <tr>
-                  <td className="info-label">Lead Log Summary</td>
+                  <td className="info-label" style={{ width: "500px" }}>Lead Log Summary</td>
                   <td>
                     <textarea
                       className="input-field"
@@ -828,7 +924,7 @@ const isEditableByCaseManager = field => {
       </div>
     ) : (
       <div ref = {assOff}
-      className="custom-dropdown">
+      className="custom-dropdown1">
         <div
           className="dropdown-header"
           onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -952,7 +1048,7 @@ const isEditableByCaseManager = field => {
                 </tr>
 
                 <tr>
-  <td className="info-label" style={{ width: "25%" }}>Associated Subnumbers</td>
+  {/* <td className="info-label" style={{ width: "25%" }}>Associated Subnumbers</td>
   <td>
     {!isEditableByCaseManager("associatedSubNumbers") ? (
       <div className="dropdown-header"   style={{
@@ -1005,7 +1101,61 @@ const isEditableByCaseManager = field => {
         )}
       </div>
     )}
-  </td>
+  </td> */}
+  <td className="info-label" style={{ width: "25%" }}>Associated Subnumbers</td>
+<td>
+  {!isEditableByCaseManager("associatedSubNumbers") ? (
+    <div
+      className="dropdown-header"
+      style={{ padding: "8px 10px", minHeight: "25px", border: "1px solid #ccc", borderRadius: "4px" }}
+    >
+      {associatedSubNumbers.length > 0 ? associatedSubNumbers.join(", ") : ""}
+    </div>
+  ) : (
+    <div className="custom-dropdown">
+      <div className="dropdown-header" onClick={() => setSubDropdownOpen(!subDropdownOpen)}>
+        {associatedSubNumbers.length > 0 ? associatedSubNumbers.join(", ") : "Select Subnumbers"}
+        <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
+      </div>
+
+      {subDropdownOpen && (
+        <div className="dropdown-options">
+          {subnumsLoading && <div className="dropdown-item">Loading…</div>}
+
+          {!subnumsLoading && caseSubNumbers.length === 0 && (
+            <div className="dropdown-item">No subnumbers for this case</div>
+          )}
+
+          {!subnumsLoading &&
+            caseSubNumbers.length > 0 &&
+            caseSubNumbers.map((subNum) => (
+              <div key={subNum} className="dropdown-item">
+                <input
+                  type="checkbox"
+                  id={`assoc-${subNum}`}
+                  value={subNum}
+                  checked={associatedSubNumbers.includes(subNum)}
+                  onChange={(e) => {
+                    const updated =
+                      e.target.checked
+                        ? [...associatedSubNumbers, subNum]
+                        : associatedSubNumbers.filter((n) => n !== subNum);
+
+                    // update UI immediately
+                    setAssociatedSubNumbers(updated);
+                    // persist to lead + autosave
+                    saveField({ associatedSubNumbers: updated });
+                  }}
+                />
+                <label htmlFor={`assoc-${subNum}`}>{subNum}</label>
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
+  )}
+</td>
+
 </tr>
 
               </tbody>
@@ -1050,6 +1200,7 @@ const isEditableByCaseManager = field => {
             )}
                 </div>
 
+</div>
         </div>
       </div>
     </div>
