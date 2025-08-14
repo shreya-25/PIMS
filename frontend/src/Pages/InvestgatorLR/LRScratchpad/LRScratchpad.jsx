@@ -575,7 +575,7 @@ Case Page
               <th>Narrative Id </th>
               <th>Entered By</th>
               <th>Text</th>
-              <th></th>
+              <th>Actions</th>
               {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
             )}

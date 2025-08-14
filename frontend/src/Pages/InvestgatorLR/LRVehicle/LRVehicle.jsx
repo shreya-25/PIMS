@@ -897,7 +897,7 @@ Case Page
               <th style={{ width: "10%" }}>Color</th>
               {/* <th>State</th> */}
               <th style={{ width: "15%" }}>More</th>
-              <th style={{ width: "14%" }}></th>
+              <th style={{ width: "14%" }}>Actions</th>
               {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
             )}

@@ -786,7 +786,7 @@ Case Page
               {/* <th>Disposed Date</th> */}
               <th>File Name</th>
               <th>Description</th>
-              <th></th>
+              <th>Actions</th>
               {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
             )}

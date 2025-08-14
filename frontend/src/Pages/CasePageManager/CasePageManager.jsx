@@ -1525,9 +1525,7 @@ const toTitleCase = (s = "") =>
                <p> PIMS &gt; Cases </p>
              </h5>
           <h5 className="side-title-cl">
-  {selectedLead?.leadNo
-        ? `Your Role: ${selectedCase.role || ""}`
-    : ` ${leadStatus}`}
+  {selectedCase?.role ?`Your Role: ${selectedCase.role || ""}` : ` ${leadStatus}`}
 </h5>
 
           </div>
@@ -1557,7 +1555,7 @@ const toTitleCase = (s = "") =>
       <div className="muted">Last updated 2h ago</div>
                 </div> */}
 
-<div className="summary-box">
+{/* <div className="summary-box">
       <div className="case-summary">
         <div className="cp-summ-head">
   <label className="cp-label" htmlFor="case-summary">Case Summary</label>
@@ -1586,7 +1584,37 @@ const toTitleCase = (s = "") =>
         onChange={e => setSummary(e.target.value)}
       />
                 </div>
-                </div>
+                </div> */}
+
+                
+{/* <div className="summary-box">
+  <div className="case-summary" style={{ fontSize: 20, whiteSpace: "pre-wrap" }}>
+    Case Summary: 
+     <textarea
+    value={summary}
+        onChange={e => setSummary(e.target.value)}
+    />
+  </div>
+</div> */}
+
+<div className="summary-box">
+  <div className="" style={{ fontSize: 20 }}>
+    <textarea
+      value={`Case Summary: ${summary ?? ""}`}
+      onChange={e => {
+        const raw = e.target.value;
+        // strip the fixed label so your state only keeps the actual summary text
+        const next = raw.replace(/^Case Summary:\s?/, "");
+        setSummary(next);
+      }}
+      rows={6}
+      style={{ width: "100%", font: "inherit", whiteSpace: "pre-wrap" }}
+    />
+  </div>
+</div>
+
+
+                
 
                 <div className="case-team">
                 <table className="leads-table" style={caseTeamStyles.table}>

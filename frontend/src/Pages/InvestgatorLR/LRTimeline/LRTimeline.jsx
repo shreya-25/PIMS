@@ -723,7 +723,7 @@ Case Page
                 <th style={{ width: "17%" }}>Event Time Range</th>
                 <th style={{ width: "15%" }}>Event Location</th>
                 <th style={{ width: "11%" }}>Description</th>
-                <th style={{ width: "11%" }}></th>
+                <th style={{ width: "11%" }}>Actions</th>
                 {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
             )}
