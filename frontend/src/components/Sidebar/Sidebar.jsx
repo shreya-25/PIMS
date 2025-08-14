@@ -32,6 +32,20 @@ export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   a
   const folderIcon1    = `${process.env.PUBLIC_URL}/Materials/case.png`;
   const homeIcon    = `${process.env.PUBLIC_URL}/Materials/home.png`;
   const logIcon    = `${process.env.PUBLIC_URL}/Materials/log2.png`;
+  const addIcon = `${process.env.PUBLIC_URL}/Materials/addicon.svg`;
+
+const handleCreateLead = () => {
+  navigate('/createlead', {
+    state: {
+      caseDetails: selectedCase,
+      // mirrors your LR Instruction button behavior
+      leadOrigin: selectedLead?.leadNo || selectedLead?.id || null,
+      // leadOrigin: selectedLead?.leadNo || leadData.leadNumber
+
+    },
+  });
+};
+
 
   const isCasePage = activePage === 'CasePageManager' || activePage === 'Investigator';
  const goToCasePage = () => {
@@ -257,6 +271,16 @@ export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   a
           <img src={folderIcon} className="sidebar-icon" alt="" />
           Case: {selectedCase.caseNo}
         </li>
+    {['Case Manager', 'Detective Supervisor'].includes(selectedCase?.role) && (
+  <li
+    style={{ paddingLeft: '30px' }}
+     className={`sidebar-item ${activePage === 'CreateLead' ? 'active' : ''}`}
+    onClick={handleCreateLead}
+  >
+    <img src={addIcon} className="sidebar-icon" alt="" />
+    Add Lead
+  </li>
+)}
 
 
     <li  style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadLog' ? 'active' : ''}`} onClick={() =>navigate("/LeadLog", { state: { caseDetails } } )}>

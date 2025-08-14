@@ -446,7 +446,7 @@ Case Page
     {/* <div className="add-lead-section-content">
       <h4>Click here to add a new lead</h4>
     </div> */}
-    <div className="add-lead-btn1">
+    {/* <div className="add-lead-btn1">
       <button
         className="save-btn1"
         style={{ cursor: 'pointer' }}
@@ -462,7 +462,7 @@ Case Page
       >
        <i className="fa-solid fa-plus"></i> Add Lead
       </button>
-    </div>
+    </div> */}
   </div>
 )}
 

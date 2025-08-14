@@ -870,7 +870,7 @@ useEffect(() => {
       />
     )}
                 </div> */}
-                <SideBar activePage = "CasePageManager" />
+                <SideBar activePage = "CreateLead" />
 
                 <div className="left-content">
                 {/* <h5 className = "side-titleLeft">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5> */}
