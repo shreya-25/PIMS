@@ -5,7 +5,7 @@
     background: white;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    padding: 8px;
+    padding: 4px;
     font-family: Arial, sans-serif;
     overflow: hidden;
     /* margin: 8px 8px 0px 8px ; */
@@ -23,7 +23,7 @@
 
 .headerNC h3
 {
-  margin: 8px;
+  margin: 4px;
 }
 
 .searchbar-container {
@@ -55,10 +55,13 @@
 .clickable-header {
     cursor: pointer;
     color: rgb(41, 41, 139);
-    font-size: 16px;
-    margin-bottom: 20px;
-    padding: 0.5rem;
+    /* margin-bottom: 20px; */
+    padding: 4px;
     transition: background-color 0.2s;
+}
+
+.clickable-header h3{
+  margin: 4px;
 }
 
 .clickable-header.active {
@@ -67,10 +70,6 @@
   border-bottom: 2px solid rgb(41, 41, 139);;
 }
 
-
-.clickable-header:hover {
-    text-decoration: underline;
-}
   
   .count {
     /* background: blue; */
@@ -78,7 +77,7 @@
     color: white;
     border-radius: 50%;
     padding: 4px 8px;
-    font-size: 16px;
+    font-size: 20px;
     margin-left: 5px;
   }
   
@@ -87,7 +86,7 @@
     border: none;
     color: gray;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 20px;
   }
   
   /* .notifications-list {
@@ -100,7 +99,7 @@
     flex: 1;     /* grow/shrink to fill remaining space */
     overflow-y: auto;   /* scroll when content is too tall */
     /* margin: 5px 0px; */
-    padding:  8px;
+    padding:  4px;
     
   }
   
@@ -109,7 +108,7 @@
   .notification-card {
     display: flex;
     align-items: center;
-    padding: 10px;
+    padding: 8px;
     margin-bottom: 5px;
     background: #f7f7f7;
     transition: 0.3s;
@@ -131,7 +130,7 @@
     height: 100%;
   }
   .notification-content p {
-    font-size: 16px;
+    font-size: 18px;
     margin: 0;
   }
   
@@ -140,7 +139,7 @@
   }
   
   .time {
-    font-size: 16px;
+    font-size: 18px;
     color: gray;
     display: block;
     margin-top: 2px;
@@ -184,7 +183,7 @@
 .view-btnNC,.accept-btnNC  {
     color: #fff;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 20px;
     width: 100px;
     height: 45px; 
     padding: 5px;
@@ -258,12 +257,12 @@
   justify-content: center;
   color: white;
   font-weight: bold;
-  font-size: 16px;
+  font-size: 20px;
   margin-right: 10px;
 }
 
 .notification-letter {
-  font-size: 16px;
+  font-size: 20px;
 }
 
 /* Mobile phones */
@@ -316,18 +315,18 @@
   }
 
   .clickable-header {
-    font-size: 16px;
+    font-size: 20px;
   }
 
   .message-box {
-    font-size: 16px;
+    font-size: 20px;
     width: 100%;
     margin-right: 0;
   }
 
   .notification-content p,
   .time {
-    font-size: 16px;
+    font-size: 18px;
   }
 }
 
@@ -344,7 +343,7 @@
   .view-btnNC,
   .accept-btnNC {
     width: 100%;           
-    font-size: 16px;
+    font-size: 20px;
     height: 42px;
     padding: 10px;
     

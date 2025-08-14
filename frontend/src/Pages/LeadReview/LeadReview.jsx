@@ -35,6 +35,8 @@ export const LeadReview = () => {
   const [alertMessage, setAlertMessage] = useState("");
   const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]);
   const [caseSubNumbers, setCaseSubNumbers] = useState([]); 
+  const toTitleCase = (s = "") =>
+  s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
 
     const assOff= useRef(null);
     
@@ -751,7 +753,9 @@ const isEditableByCaseManager = field => {
         <div className="case-header-leadReview">
                   <div className="cp-head-leadReview">
                 {
-                  <h2> {selectedLead?.leadNo ? `LEAD: ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"} </h2>
+                  // <h2> {selectedLead?.leadNo ? `Lead: ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"} </h2>
+                  <h2>Lead: {selectedLead.leadName? toTitleCase(selectedLead.leadName) : "Unknown Case"}</h2>
+
 
                 }
                 </div>

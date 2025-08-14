@@ -1133,31 +1133,26 @@ Case Page
 
 <div className="return-action-sec">
 
-  {/* Case Manager: Reopen if done/closed (optional, keep if you want) */}
-  {isCaseManager && isClosedOrCompleted && (
+  {/* {isCaseManager && isClosedOrCompleted && (
     <div className="form-buttons-finish">
-       <h4>Click to perform the following action/s on the lead return</h4>
       <button className="save-btn1" onClick={handleReopen}>Reopen</button>
     </div>
-  )}
+  )} */}
 
   {/* Case Manager: Approve/Return/Close while active */}
-  {canShowCMButtons && (
+  {/* {canShowCMButtons && (
     <div className="form-buttons-finish">
-       <h4>Click to perform the following action/s on the lead return</h4>
       <button className="save-btn1" onClick={handleApprove}>Approve</button>
       <button className="save-btn1" onClick={handleReturn}>Return</button>
       <button className="save-btn1 close-lead-btn" onClick={() => setShowCloseModal(true)}>Close</button>
     </div>
-  )}
+  )} */}
 
-  {/* Investigator: show Submit only when not Closed/Completed and not In Review */}
-  {canShowSubmit && (
+  {/* {canShowSubmit && (
     <div className="form-buttons-finish">
-       <h4>Click to perform the following action/s on the lead return</h4>
       <button className="save-btn1" onClick={handleSubmitReport}>Submit</button>
     </div>
-  )}
+  )} */}
 </div>
 
 
@@ -1354,7 +1349,26 @@ Case Page
   <div className="run-sec">
   <button className="save-btn1" onClick={handleRunReport}
   // disabled={isDisabled}
-  >Run Report</button> </div>
+  >Run Report</button>
+  
+  {isCaseManager && isClosedOrCompleted && (
+    <div className="form-buttons-finish">
+      <button className="save-btn1" onClick={handleReopen}>Reopen</button>
+    </div>
+  )}
+
+  {/* Case Manager: Approve/Return/Close while active */}
+  {canShowCMButtons && (
+    <span className="lead-action">
+      <button className="save-btn1" onClick={handleApprove}>Approve</button>
+      <button className="save-btn1" onClick={handleReturn}>Return</button>
+      <button className="save-btn1 close-lead-btn" onClick={() => setShowCloseModal(true)}>Close</button>
+    </span>
+  )}
+
+    {canShowSubmit && (
+      <button className="save-btn1" onClick={handleSubmitReport}>Submit</button>
+  )} </div>
 </div>
 
 

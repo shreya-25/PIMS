@@ -40,6 +40,7 @@ export const CasePageManager = () => {
      const [alertOpen, setAlertOpen] = useState(false);
       const [alertMessage, setAlertMessage] = useState("");
       const [confirmOfficersOpen, setConfirmOfficersOpen] = useState(false);
+      const RIGHT_ALIGN_COL = "Lead No.";
 
     const [showFilter, setShowFilter] = useState(false);
     const [showSort, setShowSort] = useState(false);
@@ -1471,7 +1472,8 @@ const handleSortAll = columnKey => {
   }));
 };
 
-
+const toTitleCase = (s = "") =>
+  s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
 
 
     return (
@@ -1513,17 +1515,28 @@ const handleSortAll = columnKey => {
 
               <div className="left-content">
 
-                <div className = "side-titleLeft">
+                {/* <div className = "side-titleLeft">
                   <p> PIMS &gt; Cases
                  </p>
-                </div>
+                </div> */}
+                 <div className="caseandleadinfo-cl">
+          <h5 className = "side-title-cl"> 
+             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
+               <p> PIMS &gt; Cases </p>
+             </h5>
+          <h5 className="side-title-cl">
+  {selectedLead?.leadNo
+        ? `Your Role: ${selectedCase.role || ""}`
+    : ` ${leadStatus}`}
+</h5>
+
+          </div>
                 {/* Display Case Number and Name */}
                 <div className="case-header-cp">
                   <div className="cp-head">
                 {
-                    <h1>
-                      CASE: {selectedCase.caseName.toUpperCase() || "Unknown Case"}
-                    </h1>
+                    <h2>Case: {selectedCase?.caseName ? toTitleCase(selectedCase.caseName) : "Unknown Case"}</h2>
+
                 }
                 </div>
                    <div  className="add-lead-section">
@@ -2211,9 +2224,11 @@ const handleSortAll = columnKey => {
                      <th
                        key={col}
                        className="column-header1"
-                       style={{ width: allColWidths[col], position: 'relative'  }}
+                       style={{ width: allColWidths[col], position: 'relative' , textAlign: col === RIGHT_ALIGN_COL ? "right" : undefined }}
                      >
-                       <div className="header-title">
+                       <div className="header-title"
+                          //  style={col === "Lead No." ? { justifyContent: "flex-end" } : undefined}
+>
                          {col}
                          <span ref={el => (popupAllRefs.current[dataKey] = el)}>
                            {/* FILTER button */}
