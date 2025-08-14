@@ -11,6 +11,13 @@
     display: flex;
   }
 
+   .caseandleadinfo-cl
+  {
+    display: flex;
+    justify-content: space-between;
+    width: 90%;
+    height: auto;
+  }
   .left-content {
     display: flex;
     flex-direction: column;
@@ -30,9 +37,26 @@
     display:flex;
     justify-content: flex-start;
     /* width: 100%; */
-    padding-left: 16px;
+    padding: 0px 16px;
     margin: 8px 0px;
-    
+  }
+
+     .side-title-cl
+  {
+    /* margin-left: 20px; */
+    text-align: center;
+    display:flex;
+    justify-content: flex-start;
+    /* width: 100%; */
+    margin: 8px 0px;
+  }
+
+  .side-title p, h5{
+    font-size: 20px;
+  }
+   .side-title-cl p, h5{
+    font-size: 20px;
+    margin: 0px;
   }
 
     .side-titleLeft
@@ -48,6 +72,7 @@
   .side-titleLeft p{
     margin:4px;
     color: #393D42;
+    font-size: 18px;
   }
    .case-header {
     display: flex;
@@ -73,8 +98,8 @@
     color: #333333;
     font-size: 20px;
   }
-    .case-header-cp h1{
-    margin: 0px;
+    .case-header-cp h2{
+    margin: 4px;
     padding: 0px;
   }
 
@@ -155,6 +180,7 @@ align-items: center;
 {
   width: 90%;
   border: 1px solid rgba(0, 0, 0, 0.11);
+  margin: 8px;
 }
 
   .case-summary
