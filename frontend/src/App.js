@@ -49,6 +49,7 @@ import { CMFinish } from './Pages/CaseManagerLR/CMFinish/CMFinish';
 import { FlaggedLead } from './Pages/FlaggedLead/FlaggedLead';
 import { SearchLead } from './Pages/SearchLead/SearchLead';
 import { ViewTimeline } from './Pages/ViewTimeline/ViewTimeline';
+import { ViewLR } from './Pages/ViewLR/ViewLR';
 import { AdminCM } from './Pages/Admin/AdminCM';
 import { AdminCM1 } from './Pages/Admin/AdminCM1';
 import { AdminUR } from './Pages/Admin/AdminUR';
@@ -152,6 +153,7 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/CMFinish" element={<ProtectedLayout> <CMFinish /> </ProtectedLayout>} />
         <Route path="/CMScratchpad" element={<ProtectedLayout> <CMScratchpad /> </ProtectedLayout>} />
         <Route path="/CMTimeline" element={<ProtectedLayout> <CMTimeline /> </ProtectedLayout>} />
+        <Route path="/ViewLR" element={<ProtectedLayout> <ViewLR /> </ProtectedLayout>} />
         <Route path="/AdminDashboard" element={<ProtectedLayout> <AdminDashboard /> </ProtectedLayout>} />
         <Route path="/CaseInformation" element={<ProtectedLayout>  <CaseInformation /> </ProtectedLayout> } />
         <Route path="/LeadReview" element = {<ProtectedLayout> <LeadReview /> </ProtectedLayout> } />
