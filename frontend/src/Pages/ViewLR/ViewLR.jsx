@@ -85,7 +85,10 @@ export const ViewLR = () => {
   const [notes, setNotes] = useState([]);
   const [timeline, setTimeline] = useState([]);
   const [loading, setLoading] = useState(true);
-    const [openPerson, setOpenPerson] = useState(null);
+  const [openPerson, setOpenPerson] = useState(null);
+  const [showComments, setShowComments] = useState(true);
+const toggleComments = useCallback(() => setShowComments(s => !s), []);
+const closeComments  = useCallback(() => setShowComments(false), []);
 
   const caseNo   = selectedCase?.caseNo   || location.state?.caseDetails?.caseNo;
   const caseName = selectedCase?.caseName || location.state?.caseDetails?.caseName;
@@ -202,7 +205,7 @@ const closePersonSheet = () => setOpenPerson(null);
         {/* Main content */}
         {/* <div className={styles.lrcontent}> */}
           {/* Top menu (same pattern as LRFinish) */}
-          <div className="top-menu" style={{ marginTop: 2, background: "#3333330e" }}>
+          {/* <div className="top-menu" style={{ marginTop: 2, background: "#3333330e" }}>
             <div className="menu-items" style={{ fontSize: 19 }}>
               <span className="menu-item" onClick={() => go("/LRInstruction")}>Instructions</span>
               <span className="menu-item" onClick={() => go("/LRReturn")}>Narrative</span>
@@ -217,7 +220,47 @@ const closePersonSheet = () => setOpenPerson(null);
               <span className="menu-item" onClick={() => go("/LRTimeline")}>Timeline</span>
               <span className="menu-item active" onClick={() => go("/ViewLR")}>View All</span>
             </div>
-          </div>
+          </div> */}
+          <div className="top-menu">
+        <div className="menu-items">
+        <span className="menu-item " > Lead Information</span>
+          <span className="menu-item active" onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/LRInstruction", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } else {
+                    // alert("Please select a case and lead first.");
+                    //  setAlertMessage("Please select a case and lead first.");
+                    //  setAlertOpen(true);
+                  }
+                }}>View Lead Return</span>
+          <span className="menu-item" onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/ChainOfCustody", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } else {
+                    // alert("Please select a case and lead first.");
+                    //  setAlertMessage("Please select a case and lead first.");
+                    //  setAlertOpen(true);
+                  }
+                }}>Lead Chain of Custody</span>
+          
+        </div>
+      </div>
 
             <div className="LRI_Content">
                     <SideBar  activePage="CasePageManager" />
@@ -238,7 +281,8 @@ const closePersonSheet = () => setOpenPerson(null);
           </div>
 
        <div className={styles.cont}>
-                <div className={styles.lrsec}>
+                  <div className={`${styles.lrsec} ${styles.singleCol} ${!showComments ? styles.lrsecFull : ""}`}>
+
                   {/* Instructions */}
                   <section className={styles.block}>
                         <div className={styles.lrRow}>
@@ -263,7 +307,18 @@ const closePersonSheet = () => setOpenPerson(null);
 
                   {/* Lead Returns */}
                   <section className={styles.block}>
-                    <h3>Lead Returns</h3>
+                    <div className={styles.returnHead}>
+                      <h3>Lead Returns</h3>
+                      <button
+                        className={styles.cmntBtn}
+                        onClick={toggleComments}
+                        title={showComments ? "Hide comments" : "Show comments"}
+                      >
+                        {showComments ? "Hide Comments" : "Show Comments"}
+                      </button>
+
+                    </div>
+                    
                     {returns.length === 0 && <div className={styles.empty}>No lead returns recorded.</div>}
 
                     {returns.map((ret) => {
@@ -659,9 +714,37 @@ const closePersonSheet = () => setOpenPerson(null);
                 </div>
 
                 {/* Right rail: comments stays active even when the sheet is open */}
-                <div className={styles.commentSec}>
+                {/* <div className={styles.commentSec}>
                   <CommentBar tag="ViewLR" threadKey={threadKey} autoFocus={false} />
-                </div>
+                </div> */}
+
+               {showComments && (
+  <aside className={styles.commentSec}>
+    <div
+      className={styles.commentHeader}
+      onClick={closeComments}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && closeComments()}
+    >
+      <span>Comments</span>
+      <button className={styles.commentCloseBtn} aria-label="Hide comments">×</button>
+    </div>
+
+    {/* If CommentBar supports these callbacks, include them; otherwise omit. */}
+    <CommentBar
+      tag="ViewLR"
+      threadKey={threadKey}
+      autoFocus={false}
+      onClose={closeComments}
+      onSubmitted={closeComments}
+    />
+  </aside>
+)}
+
+
+
+                
               </div>
 
               {/* Non-blocking person detail sheet */}
