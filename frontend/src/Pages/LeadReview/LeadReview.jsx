@@ -695,7 +695,7 @@ const isEditableByCaseManager = field => {
                      setAlertMessage("Please select a case and lead first.");
                      setAlertOpen(true);
                   }
-                }}>Add/View Lead Return</span>
+                }}>Add Lead Return</span>
           <span className="menu-item" onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
@@ -768,7 +768,7 @@ const isEditableByCaseManager = field => {
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
                   if (lead && kase) {
-                    navigate("/LRInstruction", {
+                    navigate("/viewLR", {
                       state: {
                         caseDetails: kase,
                         leadDetails: lead
@@ -781,7 +781,7 @@ const isEditableByCaseManager = field => {
                   }
                 }}
                 style={{ cursor: 'pointer', width: '100%' }} >
-                    Add/View Lead Return
+                    View Lead Return
                 </button>
                 </div>
                   )}
