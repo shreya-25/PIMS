@@ -155,7 +155,7 @@ const CommentBar = forwardRef(
               >
                 Save
               </button>
-              <button className="cbar__btn" onClick={cancelDraft}>
+              <button className="cbar__btn" disabled={!draft.trim() || !ready} onClick={cancelDraft}>
                 Cancel
               </button>
             </div>

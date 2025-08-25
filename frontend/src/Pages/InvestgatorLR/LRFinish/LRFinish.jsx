@@ -37,6 +37,7 @@ export const LRFinish = () => {
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [closeReason, setCloseReason]       = useState("");
   const [closing, setClosing]               = useState(false);
+  const currentUser = localStorage.getItem("loggedInUser");
    const [confirmConfig, setConfirmConfig] = useState({
     open: false,
     title: '',
@@ -709,7 +710,7 @@ const actuallyDoSubmitReport = async () => {
     }
   };
 
-  const isSubmittedInReview = status === "In Review";
+const isSubmittedInReview = status === "In Review";
 const isClosedOrCompleted = status === "Closed" || status === "Completed";
 const isCaseManager = selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
 
@@ -721,10 +722,16 @@ const isInReview         = status === "In Review";
 const isInvestigator     = !isCaseManager;
 
 const canShowCMButtons   = isCaseManager && !isClosedOrCompleted;
-const canShowSubmit      = isInvestigator && !isClosedOrCompleted && !isInReview;
 
 
-      
+const primaryUsername =
+   leadData?.primaryInvestigator ||
+   leadData?.primaryOfficer || "";   // fallback if you stored it under primaryOfficer
+
+ const isPrimaryInvestigator = !!currentUser && currentUser === primaryUsername;
+
+const canShowSubmit      = isInvestigator && isPrimaryInvestigator && !isClosedOrCompleted && !isInReview;
+
 
   const handleNavigation = (route) => {
     navigate(route); // Navigate to respective page

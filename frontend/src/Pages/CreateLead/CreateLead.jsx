@@ -74,6 +74,7 @@ useEffect(() => {
     leadSummary: '',
     assignedBy: '',
     leadDescription: '',
+    primaryOfficer: '',
     assignedOfficer: [],
     accessLevel: 'Everyone',
       };
@@ -316,78 +317,277 @@ useEffect(() => {
 }, [selectedCase.caseNo]);
 
 
+// const handleGenerateLead = async () => {
+//   // parse comma-lists
+//   const originNumbers = leadData.leadOrigin
+//     .split(',')
+//     .map((v) => parseInt(v.trim(), 10))
+//     .filter((n) => !isNaN(n));
+
+//   const subNumbersArray = leadData.subNumber
+//     .split(',')
+//     .map((v) => v.trim())
+//     .filter((s) => s);
+
+//   try {
+//     // 1) Create the lead
+//     const response = await api.post(
+//       "/api/lead/create",
+//       {
+//         caseName:            selectedCase.caseName,
+//         caseNo:              selectedCase.caseNo,
+//         parentLeadNo:        originNumbers,
+//         incidentNo:          leadData.incidentNumber,
+//         subNumber:           subNumbersArray,
+//         associatedSubNumbers: leadData.associatedSubNumbers,
+//         dueDate:             leadData.dueDate,
+//         assignedDate:        leadData.assignedDate,
+//         assignedTo:          leadData.assignedOfficer,
+//         assignedBy:          username,
+//         summary:             leadData.leadSummary,
+//         description:         leadData.leadDescription,
+//         accessLevel:         leadData.accessLevel,
+//       },
+//       {
+//         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+//       }
+//     );
+
+//     // treat any 2xx as success
+//     if (!leadData.leadDescription?.trim() || !leadData.leadSummary?.trim()) {
+//     setAlertMessage("Mandatory fields missing");
+//     setAlertOpen(true);
+//     return;
+//   }
+
+//     if (response.status >= 200 && response.status < 300) {
+//       const payload = response.data;
+
+//   // If the server returns an array, pick [0]; else if it wraps it in .data, use that; otherwise assume top‑level.
+//   let createdLead;
+//   if (Array.isArray(payload)) {
+//     createdLead = payload[0];
+//   } else if (payload.data && typeof payload.data === "object") {
+//     createdLead = payload.data;
+//   } else {
+//     createdLead = payload;
+//   }
+
+//   // 3) Safely read leadNo:
+//   const realLeadNo = createdLead?.leadNo;
+//   if (!realLeadNo) {
+//     console.error("⚠️ Couldn’t find leadNo in response", payload);
+//     setAlertMessage("Lead created, but could not read its number.");
+//   } else {
+//     setAlertMessage(`Lead #${realLeadNo} created successfully!`);
+//   }
+
+//    setLeadCreated(true);
+//   setAlertOpen(true);
+//   sessionStorage.removeItem(FORM_KEY);
+    
+//       const token = localStorage.getItem("token");
+
+//       // 2) Determine which officers are truly new
+//       const already = [
+//         ...caseTeam.investigators,
+//         ...caseTeam.caseManagers,
+//         caseTeam.detectiveSupervisor,
+//       ].filter(Boolean);
+
+//       const newlyAdded = leadData.assignedOfficer.filter((u) => !already.includes(u));
+
+//       // 3) If any new, push updated officers list
+//       if (newlyAdded.length) {
+//         const updatedInvestigators = [
+//           ...caseTeam.investigators,
+//           ...newlyAdded,
+//         ];
+
+//         const officers = [
+//           ...(caseTeam.detectiveSupervisor
+//             ? [{ name: caseTeam.detectiveSupervisor, role: "Detective Supervisor", status: "accepted" }]
+//             : []),
+//           ...((caseTeam.caseManagers || []).map((name) => ({
+//             name,
+//             role:   "Case Manager",
+//             status: "accepted",
+//           }))),
+//           ...updatedInvestigators.map((name) => ({
+//             name,
+//             role:   "Investigator",
+//             status: "pending",
+//           })),
+//         ];
+
+//         await api.put(
+//           `/api/cases/${encodeURIComponent(selectedCase.caseNo)}/${encodeURIComponent(selectedCase.caseName)}/officers`,
+//           { officers },
+//           { headers: { Authorization: `Bearer ${token}` } }
+//         );
+//       }
+
+//       // 4) Build & send a single notification payload
+//       if (leadData.assignedOfficer.length) {
+//         const assignedToEntries = leadData.assignedOfficer.map((u) => ({
+//           username: u,
+//           role: (caseTeam.caseManagers || []).includes(u)
+//             ? "Case Manager"
+//             : u === caseTeam.detectiveSupervisor
+//             ? "Detective Supervisor"
+//             : "Investigator",
+//           status: "pending",
+//           unread: true,
+//         }));
+
+//         const notificationPayload = {
+//           notificationId: Date.now().toString(),
+//           assignedBy:     username,
+//           assignedTo:     assignedToEntries,
+//           action1:        "assigned you to a new lead",
+//           post1:          `${realLeadNo}: ${leadData.leadDescription}`,
+//           action2:        "related to the case",
+//           post2:          `${selectedCase.caseNo}: ${selectedCase.caseName}`,
+//           leadNo:         realLeadNo,
+//           leadName:       leadData.leadDescription,
+//           caseNo:         selectedCase.caseNo,
+//           caseName:       selectedCase.caseName,
+//           caseStatus:     "Open",
+//           unread:         true,
+//           type:           "Lead",
+//           time:           new Date().toISOString(),
+//         };
+
+//         await api.post(
+//           "/api/notifications",
+//           notificationPayload,
+//           {
+//             headers: {
+//               "Content-Type":  "application/json",
+//               Authorization:   `Bearer ${token}`,
+//             },
+//           }
+//         );
+//       }
+
+//       // 5) Finally navigate back and stop
+//       // navigate(-1);
+//       return;
+//     }
+
+//     // if we get here it wasn’t a 2xx
+//     const text = await response.text();
+//     throw new Error(`Unexpected status ${response.status}: ${text}`);
+//   } catch (err) {
+//     console.error("handleGenerateLead failed:", err);
+//     const msg =
+//       err.response?.data?.message ||
+//       err.response?.data ||
+//       err.message ||
+//       "Unknown error";
+//     // alert(`Error: ${typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg}`);
+//     setAlertMessage(`Error: ${typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg}`);
+//        setAlertOpen(true);
+//   }
+// };
+
 const handleGenerateLead = async () => {
-  // parse comma-lists
-  const originNumbers = leadData.leadOrigin
-    .split(',')
-    .map((v) => parseInt(v.trim(), 10))
+  // 1) Parse comma-lists
+  const originNumbers = (leadData.leadOrigin || "")
+    .split(",")
+    .map((v) => parseInt(String(v).trim(), 10))
     .filter((n) => !isNaN(n));
 
-  const subNumbersArray = leadData.subNumber
-    .split(',')
-    .map((v) => v.trim())
+  const subNumbersArray = (leadData.subNumber || "")
+    .split(",")
+    .map((v) => String(v).trim())
     .filter((s) => s);
 
-  try {
-    // 1) Create the lead
-    const response = await api.post(
-      "/api/lead/create",
-      {
-        caseName:            selectedCase.caseName,
-        caseNo:              selectedCase.caseNo,
-        parentLeadNo:        originNumbers,
-        incidentNo:          leadData.incidentNumber,
-        subNumber:           subNumbersArray,
-        associatedSubNumbers: leadData.associatedSubNumbers,
-        dueDate:             leadData.dueDate,
-        assignedDate:        leadData.assignedDate,
-        assignedTo:          leadData.assignedOfficer,
-        assignedBy:          username,
-        summary:             leadData.leadSummary,
-        description:         leadData.leadDescription,
-        accessLevel:         leadData.accessLevel,
-      },
-      {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      }
-    );
-
-    // treat any 2xx as success
-    if (!leadData.leadDescription?.trim() || !leadData.leadSummary?.trim()) {
+  // 2) Basic validation before any network calls
+  if (!leadData.leadDescription?.trim() || !leadData.leadSummary?.trim()) {
     setAlertMessage("Mandatory fields missing");
+    setLeadCreated(false);
     setAlertOpen(true);
     return;
   }
 
+ const hasAssignees = assignedOfficerUsernames.length > 0;
+const computedLeadStatus = hasAssignees ? "Assigned" : "Created";
+
+if (hasAssignees && !leadData.primaryOfficer) {
+  setAlertMessage("Please select a Primary Investigator.");
+  setLeadCreated(false);
+  setAlertOpen(true);
+  return;
+}
+if (leadData.primaryOfficer && !assignedOfficerUsernames.includes(leadData.primaryOfficer)) {
+  setAlertMessage("Primary Investigator must be one of the assigned officers.");
+  setLeadCreated(false);
+  setAlertOpen(true);
+  return;
+}
+
+const orderedAssignees = hasAssignees
+  ? [leadData.primaryOfficer, ...assignedOfficerUsernames.filter(u => u !== leadData.primaryOfficer)]
+  : [];
+
+  // If your backend expects objects { username, status }, map here instead:
+  // const assignedToPayload = orderedAssignees.map(u => ({ username: u, status: "pending" }));
+  const assignedToPayload = orderedAssignees; // ← usernames array (primary first)
+
+  try {
+    // 4) Create the lead
+    const response = await api.post(
+      "/api/lead/create",
+      {
+        caseName:             selectedCase.caseName,
+        caseNo:               selectedCase.caseNo,
+        parentLeadNo:         originNumbers,
+        incidentNo:           leadData.incidentNumber,
+        subNumber:            subNumbersArray,
+        associatedSubNumbers: leadData.associatedSubNumbers,
+        dueDate:              leadData.dueDate,
+        assignedDate:         leadData.assignedDate,
+
+        assignedTo:           assignedToPayload,        // ✅ primary first
+        primaryInvestigator:  leadData.primaryOfficer || null,
+        assignedBy:           username,
+        summary:              leadData.leadSummary,
+        description:          leadData.leadDescription,
+        accessLevel:          leadData.accessLevel,
+        leadStatus:           computedLeadStatus,       // ✅ Assigned vs Created
+      },
+      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+    );
+
     if (response.status >= 200 && response.status < 300) {
       const payload = response.data;
 
-  // If the server returns an array, pick [0]; else if it wraps it in .data, use that; otherwise assume top‑level.
-  let createdLead;
-  if (Array.isArray(payload)) {
-    createdLead = payload[0];
-  } else if (payload.data && typeof payload.data === "object") {
-    createdLead = payload.data;
-  } else {
-    createdLead = payload;
-  }
+      // 5) Safely read created lead
+      let createdLead;
+      if (Array.isArray(payload)) {
+        createdLead = payload[0];
+      } else if (payload?.data && typeof payload.data === "object") {
+        createdLead = payload.data;
+      } else {
+        createdLead = payload;
+      }
 
-  // 3) Safely read leadNo:
-  const realLeadNo = createdLead?.leadNo;
-  if (!realLeadNo) {
-    console.error("⚠️ Couldn’t find leadNo in response", payload);
-    setAlertMessage("Lead created, but could not read its number.");
-  } else {
-    setAlertMessage(`Lead #${realLeadNo} created successfully!`);
-  }
+      const realLeadNo = createdLead?.leadNo;
+      if (!realLeadNo) {
+        console.error("⚠️ Couldn’t find leadNo in response", payload);
+        setAlertMessage("Lead created, but could not read its number.");
+      } else {
+        setAlertMessage(`Lead #${realLeadNo} created successfully!`);
+      }
 
-   setLeadCreated(true);
-  setAlertOpen(true);
-  sessionStorage.removeItem(FORM_KEY);
-    
+      setLeadCreated(true);
+      setAlertOpen(true);
+      sessionStorage.removeItem(FORM_KEY);
+
       const token = localStorage.getItem("token");
 
-      // 2) Determine which officers are truly new
+      // 6) Update case team with any *new* investigators (compares to existing)
       const already = [
         ...caseTeam.investigators,
         ...caseTeam.caseManagers,
@@ -395,13 +595,8 @@ const handleGenerateLead = async () => {
       ].filter(Boolean);
 
       const newlyAdded = leadData.assignedOfficer.filter((u) => !already.includes(u));
-
-      // 3) If any new, push updated officers list
       if (newlyAdded.length) {
-        const updatedInvestigators = [
-          ...caseTeam.investigators,
-          ...newlyAdded,
-        ];
+        const updatedInvestigators = [...caseTeam.investigators, ...newlyAdded];
 
         const officers = [
           ...(caseTeam.detectiveSupervisor
@@ -409,12 +604,14 @@ const handleGenerateLead = async () => {
             : []),
           ...((caseTeam.caseManagers || []).map((name) => ({
             name,
-            role:   "Case Manager",
+            role: "Case Manager",
             status: "accepted",
           }))),
+
+          // all investigators default pending (you can special-case primary as accepted here if you want)
           ...updatedInvestigators.map((name) => ({
             name,
-            role:   "Investigator",
+            role: "Investigator",
             status: "pending",
           })),
         ];
@@ -426,9 +623,9 @@ const handleGenerateLead = async () => {
         );
       }
 
-      // 4) Build & send a single notification payload
-      if (leadData.assignedOfficer.length) {
-        const assignedToEntries = leadData.assignedOfficer.map((u) => ({
+      // 7) Notifications — keep primary first for display consistency
+      if (orderedAssignees.length) {
+        const assignedToEntries = orderedAssignees.map((u) => ({
           username: u,
           role: (caseTeam.caseManagers || []).includes(u)
             ? "Case Manager"
@@ -444,10 +641,10 @@ const handleGenerateLead = async () => {
           assignedBy:     username,
           assignedTo:     assignedToEntries,
           action1:        "assigned you to a new lead",
-          post1:          `${realLeadNo}: ${leadData.leadDescription}`,
+          post1:          `${realLeadNo ?? ""}: ${leadData.leadDescription}`,
           action2:        "related to the case",
           post2:          `${selectedCase.caseNo}: ${selectedCase.caseName}`,
-          leadNo:         realLeadNo,
+          leadNo:         realLeadNo ?? undefined,
           leadName:       leadData.leadDescription,
           caseNo:         selectedCase.caseNo,
           caseName:       selectedCase.caseName,
@@ -462,20 +659,19 @@ const handleGenerateLead = async () => {
           notificationPayload,
           {
             headers: {
-              "Content-Type":  "application/json",
-              Authorization:   `Bearer ${token}`,
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
             },
           }
         );
       }
 
-      // 5) Finally navigate back and stop
-      // navigate(-1);
+      // navigate(-1); // if you want to go back automatically
       return;
     }
 
-    // if we get here it wasn’t a 2xx
-    const text = await response.text();
+    // If we get here it wasn’t a 2xx
+    const text = await response.text?.();
     throw new Error(`Unexpected status ${response.status}: ${text}`);
   } catch (err) {
     console.error("handleGenerateLead failed:", err);
@@ -484,167 +680,39 @@ const handleGenerateLead = async () => {
       err.response?.data ||
       err.message ||
       "Unknown error";
-    // alert(`Error: ${typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg}`);
     setAlertMessage(`Error: ${typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg}`);
-       setAlertOpen(true);
+    setAlertOpen(true);
   }
 };
 
+useEffect(() => {
+  // Normalize any legacy saved value like [{ username: "alice" }] -> ["alice"]
+  setLeadData(prev => {
+    const arr = Array.isArray(prev.assignedOfficer) ? prev.assignedOfficer : [];
+    const normalized = arr.map(x => (typeof x === "string" ? x : x?.username)).filter(Boolean);
 
+    // also fix primary if it doesn't exist in the normalized list
+    const primary = normalized.includes(prev.primaryOfficer) ? prev.primaryOfficer : "";
 
+    // only update if something changed (avoid loops)
+    if (
+      normalized.length !== arr.length ||
+      primary !== prev.primaryOfficer
+    ) {
+      return { ...prev, assignedOfficer: normalized, primaryOfficer: primary };
+    }
+    return prev;
+  });
+}, []); // run once after mount
 
-// const handleGenerateLead = async () => {
+const assignedOfficerUsernames = React.useMemo(
+  () =>
+    (leadData.assignedOfficer || [])
+      .map(x => (typeof x === "string" ? x : x?.username))
+      .filter(Boolean),
+  [leadData.assignedOfficer]
+);
 
-//   const originNumbers = leadData.leadOrigin
-//   .split(',')
-//   .map((val) => parseInt(val.trim()))
-//   .filter((num) => !isNaN(num));
-
-//   const subNumbersArray = leadData.subNumber
-//   .split(',')
-//   .map((val) => val.trim())
-//   .filter((val) => val !== '');
-
-//   try {
-//     const response = await api.post(
-//       "/api/lead/create", // Replace with your backend endpoint
-//       {
-//         caseName: selectedCase.caseName,
-//         caseNo:   selectedCase.caseNo,
-//         leadNo:   leadData.leadNumber,
-//         parentLeadNo:       originNumbers,
-//         incidentNo:         leadData.incidentNumber,
-//         subNumber:          subNumbersArray,
-//         associatedSubNumbers: leadData.associatedSubNumbers,
-//         dueDate:      leadData.dueDate,
-//         assignedDate: leadData.assignedDate,
-//         assignedTo:   leadData.assignedOfficer,
-//         assignedBy:   username,
-//         summary:      leadData.leadSummary,
-//         description:  leadData.leadDescription,
-//         accessLevel:  leadData.accessLevel,
-//       },
-//       {
-//         headers: {
-//           Authorization: `Bearer ${localStorage.getItem("token")}`,
-//         },
-//       }
-//     );
-
-
-//     if (response.status === 201) {
-//       alert("Lead successfully added!");
-      
-
-//       const token = localStorage.getItem("token");
-//       const cNo    = encodeURIComponent(selectedCase.caseNo);
-//       const cName  = encodeURIComponent(selectedCase.caseName);
-
-//       const allAlreadyOnCase = [
-//         ...caseTeam.investigators,
-//         ...caseTeam.caseManagers,
-//         caseTeam.detectiveSupervisor
-//       ].filter(Boolean);
-
-//       const newlyAdded = leadData.assignedOfficer.filter(
-//         u => !allAlreadyOnCase.includes(u)
-//       );
-
-//       if (newlyAdded.length) {
-
-//         const officers = [
-//                     // only add Supervisor if we actually fetched one
-//                     ...(caseTeam.detectiveSupervisor
-//                       ? [{ name: caseTeam.detectiveSupervisor,
-//                             role: "Detective Supervisor",
-//                             status: "accepted" }]
-//                       : []),
-
-//                     // only add CM if present
-//                     ...((caseTeam.caseManagers || []).map(n => ({
-//                           name: n,
-//                           role:   "Case Manager",
-//                           status: "accepted"
-//                     }))),
-
-//                     // then all investigators (old + new)
-//                     ...updatedInvestigators.map(n => ({
-//                       name: n,
-//                       role:   "Investigator",
-//                       status: "pending"
-//                     }))
-//                   ];
-
-
-//         // 3) push them in one PUT to your /officers route
-//         await api.put(
-//           `/api/cases/${encodeURIComponent(selectedCase.caseNo)}/${encodeURIComponent(selectedCase.caseName)}/officers`,
-//           { officers },
-//           { headers: { Authorization: `Bearer ${token}` } }
-//         );
-
-//         const assignedToEntries = leadData.assignedOfficer.map((u) => ({
-//           username: u,
-//           role: (caseTeam.caseManagers || []).includes(u)
-//             ? "Case Manager"
-//             : u === caseTeam.detectiveSupervisor
-//             ? "Detective Supervisor"
-//             : "Investigator",
-//           status: "pending",
-//           unread: true,
-//         }));
-
-//       const notificationPayload = {
-//         notificationId: Date.now().toString(), // Use timestamp as a unique ID; customize if needed
-//         assignedBy: username, // the logged-in user creates the lead
-//         assignedTo: assignedToEntries, // send notification to the selected officers
-//         action1: "assigned you to a new lead ", // action text; change as needed
-//         post1: `${leadNumber}: ${leadDescription}`, // you might want to use the case title or lead summary here
-//         action2:"related to the case",
-//         post2: `${selectedCase.caseNo}: ${selectedCase.caseName}`,
-//         leadNo: leadNumber,         // include lead details if desired
-//         leadName: leadDescription,      // or leave empty as per your requirements
-//         caseNo: selectedCase.caseNo,     // using the case ID
-//         caseName: selectedCase.caseName,
-//         caseStatus: "Open",
-//         unread: true,
-//         type: "Lead",
-//         time: new Date().toISOString(),
-//       };
-
-//       // Send notification using axios
-//         const notifResponse = await api.post(
-//           "/api/notifications",
-//           notificationPayload,
-//           {
-//             headers: {
-//               "Content-Type": "application/json",
-//               Authorization: `Bearer ${token}`,
-//             },
-//           }
-//         );
-//         console.log("Notification sent successfully:", notifResponse.data);
-      
-//       navigate(-1); // Navigate to Lead Log page
-//       return;
-//     }
-
-//     throw new Error(`Unexpected status code ${createResp.status}`);
-//      } catch (err) {
-//     console.error("handleGenerateLead failed:", err);
-
-//     // peel off the most helpful message you can
-//     const msg =
-//       err.response?.data?.message ||
-//       err.response?.data ||
-//       err.message ||
-//       "Unknown error";
-
-//     alert(`Error: ${typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg}`);
-//   }
-// };
-
-// console.log("Submitting leadData:", leadData);
 
 
 const defaultCaseSummary = "";
@@ -1140,13 +1208,24 @@ useEffect(() => {
               id={user.username}
               value={user.username}
               checked={leadData.assignedOfficer.includes(user.username)}
+              // onChange={(e) => {
+              //   const { checked, value } = e.target;
+              //   const newList = checked
+              //     ? [...leadData.assignedOfficer, value]
+              //     : leadData.assignedOfficer.filter((o) => o !== value);
+              //   handleInputChange("assignedOfficer", newList);
+              // }}
               onChange={(e) => {
                 const { checked, value } = e.target;
                 const newList = checked
-                  ? [...leadData.assignedOfficer, value]
-                  : leadData.assignedOfficer.filter((o) => o !== value);
-                handleInputChange("assignedOfficer", newList);
+                  ? [...assignedOfficerUsernames, value]
+                  : assignedOfficerUsernames.filter((o) => o !== value);
+
+                const newPrimary = newList.includes(leadData.primaryOfficer) ? leadData.primaryOfficer : "";
+                setLeadData(prev => ({ ...prev, assignedOfficer: newList, primaryOfficer: newPrimary }));
               }}
+
+
             />
             <label htmlFor={user.username}>
               {user.firstName} {user.lastName} ({user.username})
@@ -1162,6 +1241,31 @@ useEffect(() => {
 
 </td>
 </tr>
+<tr>
+  <td>Primary Investigator *</td>
+  <td>
+    <select
+      className="input-field"
+      value={leadData.primaryOfficer}
+      onChange={(e) => handleInputChange('primaryOfficer', e.target.value)}
+      disabled={assignedOfficerUsernames.length === 0}
+    >
+      <option value="" disabled>
+        {assignedOfficerUsernames.length ? 'Select Primary' : 'Select officers first'}
+      </option>
+
+      {assignedOfficerUsernames.map((uName) => {
+        const user = usernames.find((u) => u.username === uName);
+        const label = user ? `${user.firstName} ${user.lastName} (${user.username})` : uName;
+        return (
+          <option key={uName} value={uName}>{label}</option>
+        );
+      })}
+    </select>
+  </td>
+</tr>
+
+
 <tr>
   <td>Access</td>
   <td>
