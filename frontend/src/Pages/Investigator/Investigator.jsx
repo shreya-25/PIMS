@@ -248,22 +248,46 @@ setLeadStatus(lead.leadStatus);
 );
 
 
-      const mapLead = lead => ({
-        id: lead.leadNo,
-        description: lead.description,
-        dueDate: lead.dueDate
-          ? new Date(lead.dueDate).toISOString().slice(0,10)
-          : "N/A",
-        priority: lead.priority || "Medium",
-        flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [],
-         assignedOfficers: Array.isArray(lead.assignedTo)
-    ? lead.assignedTo.map(a => a.username)
-    : [],
+    //   const mapLead = lead => ({
+    //     id: lead.leadNo,
+    //     description: lead.description,
+    //     dueDate: lead.dueDate
+    //       ? new Date(lead.dueDate).toISOString().slice(0,10)
+    //       : "N/A",
+    //     priority: lead.priority || "Medium",
+    //     flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [],
+    //      assignedOfficers: Array.isArray(lead.assignedTo)
+    // ? lead.assignedTo.map(a => a.username)
+    // : [],
 
-        leadStatus: lead.leadStatus,
-        caseName: lead.caseName,
-        caseNo: String(lead.caseNo),
-      });
+    //     leadStatus: lead.leadStatus,
+    //     caseName: lead.caseName,
+    //     caseNo: String(lead.caseNo),
+    //   });
+
+    const mapLead = (lead) => {
+  const activeAssignees = Array.isArray(lead.assignedTo)
+    ? lead.assignedTo
+        .filter(a => a && a.status !== "declined")
+        .map(a => a.username)
+    : [];
+
+  return {
+    id: Number(lead.leadNo),
+    description: lead.description,
+    summary: lead.summary,
+    dueDate: lead.dueDate
+      ? new Date(lead.dueDate).toISOString().split("T")[0]
+      : "N/A",
+    priority: lead.priority || "Medium",
+    flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [],
+    assignedOfficers: activeAssignees,
+    leadStatus: lead.leadStatus,
+    caseName: lead.caseName,
+    caseNo: String(lead.caseNo),
+  };
+};
+
 
       const allLeads = filtered.map(mapLead).sort((a, b) => Number(b.id) - Number(a.id));;
       console.log("🔍 mapped leads:", allLeads);

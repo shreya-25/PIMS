@@ -24,6 +24,7 @@ const createLead = async (req, res) => {
       submittedDate,
       approvedDate,
       returnedDate,
+      primaryInvestigator,
     } = req.body;
 
      const missing = [];
@@ -77,6 +78,7 @@ const createLead = async (req, res) => {
           submittedDate,
           approvedDate,
           returnedDate,
+          primaryInvestigator,
         }).save();
 
         // on success, break out

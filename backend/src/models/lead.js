@@ -24,10 +24,21 @@ const leadSchema = new mongoose.Schema(
       default: "pending"
     }
   }],
+   primaryInvestigator: {
+      type: String, // store username
+      default: null,
+      validate: {
+        validator: function (v) {
+          if (!v) return true; // allow null/unset
+          return this.assignedTo?.some(a => a.username === v);
+        },
+        message: "Primary investigator must be one of the assigned investigators."
+      }
+    },
         assignedBy: { type: String, required: true },
         summary: { type: String, required: true },
         description: { type: String, required: true },
-        leadStatus: { type: String, required: true, enum: ["Assigned", "Accepted","To Reassign","Rejected", "In Review", "Approved","Returned", "Completed", "Closed"], default: "Assigned"},
+        leadStatus: { type: String, required: true, enum: ["Created", "Assigned", "Accepted","To Reassign","Rejected", "In Review", "Approved","Returned", "Completed", "Closed"], default: "Assigned"},
         dueDate: { type: Date },
         priority:  { type: String },
         caseName: { type: String, required: true},

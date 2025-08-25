@@ -86,7 +86,7 @@ export const ViewLR = () => {
   const [timeline, setTimeline] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openPerson, setOpenPerson] = useState(null);
-  const [showComments, setShowComments] = useState(true);
+  const [showComments, setShowComments] = useState(false);
 const toggleComments = useCallback(() => setShowComments(s => !s), []);
 const closeComments  = useCallback(() => setShowComments(false), []);
 
@@ -727,8 +727,8 @@ const closePersonSheet = () => setOpenPerson(null);
       tabIndex={0}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && closeComments()}
     >
-      <span>Comments</span>
-      <button className={styles.commentCloseBtn} aria-label="Hide comments">×</button>
+      {/* <span>Comments</span> */}
+      {/* <button className={styles.commentCloseBtn} aria-label="Hide comments">×</button> */}
     </div>
 
     {/* If CommentBar supports these callbacks, include them; otherwise omit. */}

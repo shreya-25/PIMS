@@ -386,32 +386,59 @@ const handleConfirmOfficers = () => {
   lead => lead.assignedTo?.some(o => o.username === signedInOfficer)
 );
 
-        const mapLead = (lead) => ({
-           id: Number(lead.leadNo), 
-          description: lead.description,
-          summary: lead.summary,
-          dueDate: lead.dueDate
-            ? new Date(lead.dueDate).toISOString().split("T")[0]
-            : "N/A",
-          priority: lead.priority || "Medium",
-          flags: Array.isArray(lead.associatedFlags)
-            ? lead.associatedFlags
-            : [],
-          assignedOfficers: Array.isArray(lead.assignedTo)
-    ? lead.assignedTo.map(a => a.username)
-    : [],
-          leadStatus: lead.leadStatus,
-          caseName: lead.caseName,
-          caseNo: String(lead.caseNo),
-        });
+    //     const mapLead = (lead) => ({
+    //        id: Number(lead.leadNo), 
+    //       description: lead.description,
+    //       summary: lead.summary,
+    //       dueDate: lead.dueDate
+    //         ? new Date(lead.dueDate).toISOString().split("T")[0]
+    //         : "N/A",
+    //       priority: lead.priority || "Medium",
+    //       flags: Array.isArray(lead.associatedFlags)
+    //         ? lead.associatedFlags
+    //         : [],
+    //       assignedOfficers: Array.isArray(lead.assignedTo)
+    // ? lead.assignedTo.map(a => a.username)
+    // : [],
+    //       leadStatus: lead.leadStatus,
+    //       caseName: lead.caseName,
+    //       caseNo: String(lead.caseNo),
+    //     });
+
+    const mapLead = (lead) => {
+  const activeAssignees = Array.isArray(lead.assignedTo)
+    ? lead.assignedTo
+        .filter(a => a && a.status !== "declined")
+        .map(a => a.username)
+    : [];
+
+  return {
+    id: Number(lead.leadNo),
+    description: lead.description,
+    summary: lead.summary,
+    dueDate: lead.dueDate
+      ? new Date(lead.dueDate).toISOString().split("T")[0]
+      : "N/A",
+    priority: lead.priority || "Medium",
+    flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [],
+    assignedOfficers: activeAssignees,
+    leadStatus: lead.leadStatus,
+    caseName: lead.caseName,
+    caseNo: String(lead.caseNo),
+  };
+};
+
   
         const assignedLeads = filteredLeadsArray
           .filter((lead) => lead.leadStatus === "Assigned")
           .map(mapLead);
   
+        // const pendingLeads = filteredLeadsArray
+        //   .filter((lead) => lead.leadStatus === "Accepted")
+        //   .map(mapLead);
         const pendingLeads = filteredLeadsArray
-          .filter((lead) => lead.leadStatus === "Accepted")
-          .map(mapLead);
+  .filter((lead) => lead.leadStatus === "To Reassign" || lead.leadStatus === "Rejected")
+  .map(mapLead);
   
         const LRInReview = filteredLeadsArray
           .filter((lead) => lead.leadStatus === "In Review")
@@ -1130,8 +1157,8 @@ const pendingColKey    = {
   "Assigned Officers": "assignedOfficers",
 };
 const pendingColWidths = {
-  "Lead No.":           "9%",
-  "Lead Name":          "22%",
+  "Lead No.":           "10%",
+  "Lead Name":          "21%",
   "Due Date":           "10%",
   "Priority":           "10%",
   "Days Left":          "10%",
@@ -1855,7 +1882,7 @@ const toTitleCase = (s = "") =>
                         >
                             All Leads: {leads.allLeads.length}
                         </span>
-                        <span
+                        {/* <span
                             className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
                             onClick={() => handleTabClick("assignedLeads")}
                         >
@@ -1866,6 +1893,12 @@ const toTitleCase = (s = "") =>
                             onClick={() => handleTabClick("pendingLeads")}
                           >
                             Accepted Leads: {leads.pendingLeads.length}
+                          </span> */}
+                           <span
+                            className={`hoverable ${activeTab === "pendingLeads" ? "active" : ""}`}
+                            onClick={() => handleTabClick("pendingLeads")}
+                          >
+                            Leads To Reassign: {leads.pendingLeads.length}
                           </span>
                         <span
                             className={`hoverable ${activeTab === "pendingLeadReturns" ? "active" : ""}`}
