@@ -35,30 +35,10 @@ export const LeadReview = () => {
   const [alertMessage, setAlertMessage] = useState("");
   const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]);
   const [caseSubNumbers, setCaseSubNumbers] = useState([]); 
-  const toTitleCase = (s = "") =>
-  s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+  const [aoOpen, setAoOpen] = useState(false);
+  const [aoQuery, setAoQuery] = useState("");
 
-    const assOff= useRef(null);
-    
-    
-      useEffect(() => {
-      function handleClickOutside(e) {
-        if (assOff.current && !assOff
-          .current.contains(e.target)) {
-          setDropdownOpen(false);
-        }
-       
-      }
-    
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
-  
-  const [showSelectModal, setShowSelectModal] = useState(false);
+   const [showSelectModal, setShowSelectModal] = useState(false);
   const [leads, setLeads] = useState({
             assignedLeads: [],
             pendingLeads: [],
@@ -88,6 +68,39 @@ export const LeadReview = () => {
     Completed:              6,  // "Lead Completed"
   };
 
+  const isInvestigator = selectedCase?.role === "Investigator";
+const [allUsers, setAllUsers] = useState([]);
+  const toTitleCase = (s = "") =>
+  s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+
+  const assOff= useRef(null);
+    
+    
+   useEffect(() => {
+      function handleClickOutside(e) {
+        if (assOff.current && !assOff
+          .current.contains(e.target)) {
+          setDropdownOpen(false);
+        }
+       
+      }
+    
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // display helper
+const displayUserAO = (uname) => {
+  const u = allUsers.find((x) => x.username === uname);
+  return u ? `${u.firstName} ${u.lastName} (${u.username})` : uname;
+};
+
+
+  
   useEffect(() => {
     if (!selectedCase?.caseNo) return;
     const token = localStorage.getItem("token");
@@ -776,8 +789,7 @@ const dueDateISO = leadData?.dueDate
 ? new Date(leadData.dueDate).toISOString().split("T")[0]
 : "";
 
-const isInvestigator = selectedCase?.role === "Investigator";
-const [allUsers, setAllUsers] = useState([]);
+
 
 const myAssignment = normalizeAssignedTo(leadData.assignedTo).find(a => a.username === signedInOfficer);
 const showDecisionBlock =
@@ -823,6 +835,34 @@ const declinedSet = new Set(
     .map(a => a.username)
 );
 
+// filtered users (exclude declined)
+const filteredUsersAO = React.useMemo(() => {
+  const q = aoQuery.trim().toLowerCase();
+  const pool = (allUsers || []).filter(u => !declinedSet.has(u.username));
+  if (!q) return pool;
+  return pool.filter(u => {
+    const a = (u.username || "").toLowerCase();
+    const b = (u.firstName || "").toLowerCase();
+    const c = (u.lastName || "").toLowerCase();
+    return a.includes(q) || b.includes(q) || c.includes(q) || `${b} ${c}`.includes(q);
+  });
+}, [allUsers, aoQuery, declinedSet]);
+
+// close on outside click / Esc
+useEffect(() => {
+  const onDoc = (e) => {
+    const el = document.getElementById("assigned-officers-wrap");
+    if (el && !el.contains(e.target)) setAoOpen(false);
+  };
+  const onEsc = (e) => e.key === "Escape" && setAoOpen(false);
+  document.addEventListener("mousedown", onDoc);
+  document.addEventListener("keydown", onEsc);
+  return () => {
+    document.removeEventListener("mousedown", onDoc);
+    document.removeEventListener("keydown", onEsc);
+  };
+}, []);
+
 
 
   return (
@@ -848,7 +888,7 @@ const declinedSet = new Set(
 
           
 
-           {(leadData.leadStatus !== "Accepted" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
+           {(leadData.leadStatus !== "Assigned" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
                    <div className="top-menu">
         <div className="menu-items">
         <span className="menu-item active" > Lead Information</span>
@@ -869,6 +909,26 @@ const declinedSet = new Set(
                      setAlertOpen(true);
                   }
                 }}>Add Lead Return</span>
+
+           {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
+           <span className="menu-item" onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/ViewLR", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } else {
+                    // alert("Please select a case and lead first.");
+                     setAlertMessage("Please select a case and lead first.");
+                     setAlertOpen(true);
+                  }
+                }}>Manage Lead Return</span>
+              )}
           <span className="menu-item" onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
@@ -890,7 +950,8 @@ const declinedSet = new Set(
         </div>
       </div>
                   )}
-
+              
+              
 
           {/* <div className="caseandleadinfo">
           <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} |  Your Role: {selectedCase.role || ""}</h5>
@@ -927,13 +988,13 @@ const declinedSet = new Set(
                   <div className="cp-head-leadReview">
                 {
                   // <h2> {selectedLead?.leadNo ? `Lead: ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"} </h2>
-                  <h2>Lead: {selectedLead.leadName? toTitleCase(selectedLead.leadName) : "Unknown Case"}</h2>
+                  <h2>{selectedLead.leadName? toTitleCase(selectedLead.leadName) : "Unknown Case"}</h2>
 
 
                 }
                 </div>
 
-                  {(leadData.leadStatus !== "Accepted" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
+                  {/* {(leadData.leadStatus !== "Accepted" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
                    <div  className="add-lead-section-lr">
                 <button className="cp-add-lead-btn"  
                 onClick={() => {
@@ -957,7 +1018,7 @@ const declinedSet = new Set(
                     View Lead Return
                 </button>
                 </div>
-                  )}
+                  )} */}
                 </div>
                
 {showDecisionBlock && (
@@ -1092,7 +1153,7 @@ const declinedSet = new Set(
                   </td>
                 </tr>
 
-<tr>
+{/* <tr>
   <td className="info-label">Assigned Officers</td>
   <td>
     {isInvestigator ? (
@@ -1134,16 +1195,7 @@ const declinedSet = new Set(
                   checked={assignedOfficers.includes(user.username)}
                   disabled={!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")}
 
-                  // onChange={e => {
-                  //   const next = e.target.checked
-                  //     ? [...assignedOfficers, user.username]
-                  //     : assignedOfficers.filter(u => u !== user.username);
-                  //   setAssignedOfficers(next);
-                  //   setLeadData(prev => ({
-                  //     ...prev,
-                  //     assignedTo: next
-                  //   }));
-                  // }}
+             
                   onChange={async e => {
                     if (!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")) return;
 
@@ -1151,7 +1203,6 @@ const declinedSet = new Set(
                       ? [...assignedOfficers, user.username]
                       : assignedOfficers.filter(u => u !== user.username);
 
-                    // const nextPrimary = next.includes(leadData.primaryOfficer) ? leadData.primaryOfficer : "";
                     const nextPrimary = next.includes(leadData.primaryOfficer) ? leadData.primaryOfficer : (next[0] || "");
 
                     setAssignedOfficers(next);
@@ -1163,7 +1214,6 @@ const declinedSet = new Set(
                     }));
 
                     try {
-                      // await handleSave(next, { ...leadData, primaryOfficer: nextPrimary });
                       await handleSave(
                         next,
                         { ...leadData, primaryOfficer: nextPrimary, ...(next.length > 0 ? { leadStatus: "Assigned" } : {}) }
@@ -1185,7 +1235,115 @@ const declinedSet = new Set(
       </div>
     )}
   </td>
+</tr> */}
+
+<tr>
+  <td className="info-label">Assigned Officers</td>
+  <td>
+    {isInvestigator ? (
+      <div className="dropdown-header">
+        {assignedOfficers.map(displayUserAO).join(", ")}
+      </div>
+    ) : (
+      <div id="assigned-officers-wrap" className="inv-dropdown">
+        {/* Trigger shows selected names (truncated) */}
+        <button
+          type="button"
+          className="inv-input"
+          onClick={() => setAoOpen(o => !o)}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setAoOpen(o => !o)}
+          aria-haspopup="listbox"
+          aria-expanded={aoOpen}
+          disabled={!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")}
+          title={
+            assignedOfficers.length
+              ? assignedOfficers.map(displayUserAO).join(", ")
+              : "Select Officers"
+          }
+        >
+          <span className="inv-input-label">
+            {assignedOfficers.length
+              ? assignedOfficers.map(displayUserAO).join(", ")
+              : "Select Officers"}
+          </span>
+          <span className="inv-caret" aria-hidden />
+        </button>
+
+        {aoOpen && (
+          <div className="inv-options" role="listbox" onMouseDown={(e) => e.stopPropagation()}>
+            {/* sticky search */}
+            <div className="inv-search-wrap">
+              <input
+                type="text"
+                className="inv-search"
+                placeholder="Type to filter officers…"
+                value={aoQuery}
+                onChange={(e) => setAoQuery(e.target.value)}
+                onKeyDown={(e) => e.stopPropagation()}
+              />
+            </div>
+
+            {/* list */}
+            <div className="inv-list">
+              {filteredUsersAO.length ? (
+                filteredUsersAO.map((user) => {
+                  const checked = assignedOfficers.includes(user.username);
+                  return (
+                    <label key={user.username} className="inv-item">
+                      <input
+                        type="checkbox"
+                        value={user.username}
+                        checked={checked}
+                        disabled={!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")}
+                        onChange={async (e) => {
+                          if (!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")) return;
+
+                          const { checked, value } = e.target;
+                          const next = checked
+                            ? [...assignedOfficers, value]
+                            : assignedOfficers.filter(u => u !== value);
+
+                          const nextPrimary = next.includes(leadData.primaryOfficer)
+                            ? leadData.primaryOfficer
+                            : (next[0] || "");
+
+                          setAssignedOfficers(next);
+                          setLeadData(prev => ({
+                            ...prev,
+                            assignedTo: next,              // your code expects usernames here; handleSave normalizes
+                            primaryOfficer: nextPrimary,
+                            leadStatus: next.length > 0 ? "Assigned" : prev.leadStatus
+                          }));
+
+                          try {
+                            await handleSave(
+                              next,
+                              { ...leadData, primaryOfficer: nextPrimary, ...(next.length > 0 ? { leadStatus: "Assigned" } : {}) }
+                            );
+                          } catch (err) {
+                            console.error("Error during auto-save:", err);
+                            setAlertMessage("An error occurred while updating assigned officers. Please try again.");
+                            setAlertOpen(true);
+                          }
+                        }}
+                      />
+                      <span className="inv-text">
+                        {user.firstName} {user.lastName} ({user.username})
+                      </span>
+                    </label>
+                  );
+                })
+              ) : (
+                <div className="inv-empty">No matches</div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    )}
+  </td>
 </tr>
+
 
 <tr>
   <td className="info-label">Primary Investigator *</td>
@@ -1396,7 +1554,7 @@ const declinedSet = new Set(
           </div>
 
 
-            {(leadData.leadStatus !== "Accepted" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
+            {(leadData.leadStatus !== "Assigned" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
             <div className="lead-tracker-container">
               {statuses.map((status, idx) => (
                 <div
