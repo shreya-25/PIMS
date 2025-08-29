@@ -223,8 +223,20 @@ const closePersonSheet = () => setOpenPerson(null);
           </div> */}
           <div className="top-menu">
         <div className="menu-items">
-        <span className="menu-item " > Lead Information</span>
-          <span className="menu-item active" onClick={() => {
+                <span className="menu-item " onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/LeadReview", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } }} > Lead Information</span>
+
+           <span className="menu-item" onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
@@ -240,7 +252,8 @@ const closePersonSheet = () => setOpenPerson(null);
                     //  setAlertMessage("Please select a case and lead first.");
                     //  setAlertOpen(true);
                   }
-                }}>View Lead Return</span>
+                }}>Add Lead Return</span>
+          <span className="menu-item active">Manage Lead Return</span>
           <span className="menu-item" onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;

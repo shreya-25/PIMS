@@ -44,7 +44,8 @@
   .run-sec
   {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
+    gap: 20px;
   }
   
   .reports-destination {

@@ -43,6 +43,10 @@ const formatDate = (dateString) => {
 };
 
 const [username, setUsername] = useState("");
+const [officersOpen, setOfficersOpen] = useState(false);
+const [officersQuery, setOfficersQuery] = useState("");
+   const [usernames, setUsernames] = useState([]); // State to hold fetched usernames
+
 
 useEffect(() => {
     if (routerOrigin == null) {
@@ -87,6 +91,17 @@ useEffect(() => {
   };
 });
 
+const filteredOfficers = React.useMemo(() => {
+  const q = officersQuery.trim().toLowerCase();
+  if (!q) return usernames;
+  return (usernames || []).filter((u) => {
+    const a = (u.username || "").toLowerCase();
+    const b = (u.firstName || "").toLowerCase();
+    const c = (u.lastName || "").toLowerCase();
+    return a.includes(q) || b.includes(q) || c.includes(q) || `${b} ${c}`.includes(q);
+  });
+}, [usernames, officersQuery]);
+
   useEffect(() => {
     sessionStorage.setItem(FORM_KEY, JSON.stringify(leadData));
   }, [leadData]);
@@ -109,6 +124,21 @@ useEffect(() => {
     const year = today.getFullYear().toString().slice(-2);
     return `${month}/${day}/${year}`;
   };
+
+  useEffect(() => {
+  const onDocClick = (e) => {
+    const el = document.getElementById("assign-officers-wrap");
+    if (el && !el.contains(e.target)) setOfficersOpen(false);
+  };
+  const onEsc = (e) => e.key === "Escape" && setOfficersOpen(false);
+
+  document.addEventListener("mousedown", onDocClick);
+  document.addEventListener("keydown", onEsc);
+  return () => {
+    document.removeEventListener("mousedown", onDocClick);
+    document.removeEventListener("keydown", onEsc);
+  };
+}, []);
 
 useEffect(() => {
   const fetchMaxLeadNumber = async () => {
@@ -244,7 +274,6 @@ useEffect(() => {
  const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
  const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
  const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
-   const [usernames, setUsernames] = useState([]); // State to hold fetched usernames
 
 
         
@@ -315,6 +344,8 @@ useEffect(() => {
   };
   fetchCaseTeam().catch(console.error);
 }, [selectedCase.caseNo]);
+
+
 
 
 // const handleGenerateLead = async () => {
@@ -715,6 +746,7 @@ const assignedOfficerUsernames = React.useMemo(
 
 
 
+
 const defaultCaseSummary = "";
 const [availableCaseSubNumbers, setAvailableCaseSubNumbers] = useState([]); // To store subnumbers fetched for the case
 
@@ -849,6 +881,11 @@ useEffect(() => {
         document.removeEventListener("mousedown", handleClickOutside);
       };
     }, [dropdownOpen]);
+
+    const displayUser = (uname) => {
+  const user = usernames.find((u) => u.username === uname);
+  return user ? `${user.firstName} ${user.lastName} (${user.username})` : uname;
+};
 
 
   return (
@@ -1175,16 +1212,15 @@ useEffect(() => {
             <tr>
 
   <td>Assign Officers </td>
-<td>
+{/* <td>
 
 <div className="custom-dropdown-cl" ref={dropdownRef}>
-  {/* Header */}
   <div
     className="dropdown-header-cl"
     onClick={() => setDropdownOpen(!dropdownOpen)}
   >
     {leadData.assignedOfficer.length > 0
-      ? // map each assigned username back to its user object
+      ? 
         leadData.assignedOfficer
           .map((uName) => {
             const user = usernames.find((u) => u.username === uName);
@@ -1197,7 +1233,6 @@ useEffect(() => {
     <span className="dropdown-icon">{dropdownOpen ? "▲" : "▼"}</span>
   </div>
 
-  {/* Options */}
   {dropdownOpen && (
     <div className="dropdown-options">
       {usernames.length > 0 ? (
@@ -1208,13 +1243,7 @@ useEffect(() => {
               id={user.username}
               value={user.username}
               checked={leadData.assignedOfficer.includes(user.username)}
-              // onChange={(e) => {
-              //   const { checked, value } = e.target;
-              //   const newList = checked
-              //     ? [...leadData.assignedOfficer, value]
-              //     : leadData.assignedOfficer.filter((o) => o !== value);
-              //   handleInputChange("assignedOfficer", newList);
-              // }}
+           
               onChange={(e) => {
                 const { checked, value } = e.target;
                 const newList = checked
@@ -1238,8 +1267,89 @@ useEffect(() => {
     </div>
   )}
 </div>
+</td> */}
+<td>
+  <div id="assign-officers-wrap" className="inv-dropdown">
+    {/* Trigger shows selected officer names (or placeholder) */}
+    <button
+      type="button"
+      className="inv-input"
+      onClick={() => setOfficersOpen((o) => !o)}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setOfficersOpen((o) => !o)}
+      aria-haspopup="listbox"
+      aria-expanded={officersOpen}
+      title={
+        assignedOfficerUsernames.length
+          ? assignedOfficerUsernames.map(displayUser).join(", ")
+          : "Select Officers"
+      }
+    >
+      <span className="inv-input-label">
+        {assignedOfficerUsernames.length
+          ? assignedOfficerUsernames.map(displayUser).join(", ")
+          : "Select Officers"}
+      </span>
+      <span className="inv-caret" aria-hidden />
+    </button>
 
+    {officersOpen && (
+      <div className="inv-options" role="listbox" onMouseDown={(e) => e.stopPropagation()}>
+        {/* Sticky search */}
+        <div className="inv-search-wrap">
+          <input
+            type="text"
+            className="inv-search"
+            placeholder="Type to filter officers…"
+            value={officersQuery}
+            onChange={(e) => setOfficersQuery(e.target.value)}
+            onKeyDown={(e) => e.stopPropagation()}
+          />
+        </div>
+
+        {/* List */}
+        <div className="inv-list">
+          {filteredOfficers.length ? (
+            filteredOfficers.map((user) => {
+              const checked = assignedOfficerUsernames.includes(user.username);
+              return (
+                <label key={user.username} className="inv-item">
+                  <input
+                    type="checkbox"
+                    value={user.username}
+                    checked={checked}
+                    onChange={(e) => {
+                      const { checked, value } = e.target;
+                      const newList = checked
+                        ? [...assignedOfficerUsernames, value]
+                        : assignedOfficerUsernames.filter((o) => o !== value);
+
+                      // keep primary valid: clear if it’s no longer in the list
+                      const newPrimary = newList.includes(leadData.primaryOfficer)
+                        ? leadData.primaryOfficer
+                        : "";
+
+                      setLeadData((prev) => ({
+                        ...prev,
+                        assignedOfficer: newList,
+                        primaryOfficer: newPrimary,
+                      }));
+                    }}
+                  />
+                  <span className="inv-text">
+                    {user.firstName} {user.lastName} ({user.username})
+                  </span>
+                </label>
+              );
+            })
+          ) : (
+            <div className="inv-empty">No matches</div>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
 </td>
+
 </tr>
 <tr>
   <td>Primary Investigator *</td>
