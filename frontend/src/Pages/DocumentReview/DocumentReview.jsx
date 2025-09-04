@@ -217,7 +217,6 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
       </section>
 
         <aside className="dr-right" aria-label="Comments">
-    <div className="dr-commentsHeader">Comments</div>
     <div className="dr-commentsBody">
       <CommentBar tag="DocumentReview" threadKey="test1" />
     </div>

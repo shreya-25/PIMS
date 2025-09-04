@@ -523,22 +523,47 @@ const setLeadStatusToPending = async (req, res) => {
 // const updateLead = async (req, res) => {
 //   try {
 //     const { leadNo, description, caseNo, caseName } = req.params;
-//     // All other fields come in req.body
-//     const update = req.body;
+//     const incoming = req.body;
+
+//     const prev = await Lead.findOne({ leadNo: Number(leadNo), description, caseNo, caseName });
+//     if (!prev) return res.status(404).json({ message: "Lead not found" });
+
+
+//     const prevSet = new Set((prev.assignedTo || []).map(a => a.username));
+//     const nextSet = new Set((incoming.assignedTo || []).map(a => a.username));
+//     const added = [...nextSet].filter(u => !prevSet.has(u));
+//     const removed = [...prevSet].filter(u => !nextSet.has(u));
+
+//     const actor = req.user?.name || incoming.assignedBy || prev.assignedBy;
+//     const eventsToPush = [];
+
+//     added.forEach(u => eventsToPush.push({
+//       type: "reassigned-added",
+//       by: actor,
+//       to: [u],
+//       primaryInvestigator: (incoming.primaryInvestigator ?? prev.primaryInvestigator) || null,
+//       statusAfter: incoming.leadStatus || prev.leadStatus || "Assigned",
+//       at: new Date()
+//     }));
+//     removed.forEach(u => eventsToPush.push({
+//       type: "reassigned-removed",
+//       by: actor,
+//       to: [u],
+//       primaryInvestigator: (incoming.primaryInvestigator ?? prev.primaryInvestigator) || null,
+//       statusAfter: incoming.leadStatus || prev.leadStatus || "Assigned",
+//       at: new Date()
+//     }));
 
 //     const lead = await Lead.findOneAndUpdate(
+//       { leadNo: Number(leadNo), description, caseNo, caseName },
 //       {
-//         leadNo: Number(leadNo),
-//         description,
-//         caseNo,
-//         caseName
+//         $set: incoming,
+//         ...(eventsToPush.length ? { $push: { events: { $each: eventsToPush } } } : {})
 //       },
-//       update,
 //       { new: true }
 //     );
-//     if (!lead) return res.status(404).json({ message: "Lead not found" });
 
-//     res.status(200).json(lead);
+//     return res.status(200).json(lead);
 //   } catch (err) {
 //     console.error("Error updating lead:", err);
 //     res.status(500).json({ message: "Server error" });
@@ -553,40 +578,79 @@ const updateLead = async (req, res) => {
     const prev = await Lead.findOne({ leadNo: Number(leadNo), description, caseNo, caseName });
     if (!prev) return res.status(404).json({ message: "Lead not found" });
 
-    // Diff assignedTo for add/remove (work with usernames only)
+    // ✅ Do NOT allow client to overwrite events directly
+    const { events: _ignoreEvents, ...incomingNoEvents } = incoming;
+
+    // normalize assignedTo
+    const normalizeAssignedTo = (arr) =>
+      (Array.isArray(arr) ? arr : []).map(x =>
+        typeof x === "string"
+          ? { username: x, status: "pending" }
+          : { username: x?.username, status: x?.status || "pending" }
+      ).filter(a => a.username);
+
+    const nextAssignedTo = normalizeAssignedTo(incomingNoEvents.assignedTo ?? prev.assignedTo);
+
+    // diff for event log
     const prevSet = new Set((prev.assignedTo || []).map(a => a.username));
-    const nextSet = new Set((incoming.assignedTo || []).map(a => a.username));
-    const added = [...nextSet].filter(u => !prevSet.has(u));
+    const nextSet = new Set(nextAssignedTo.map(a => a.username));
+    const added   = [...nextSet].filter(u => !prevSet.has(u));
     const removed = [...prevSet].filter(u => !nextSet.has(u));
 
-    const actor = req.user?.name || incoming.assignedBy || prev.assignedBy;
-    const eventsToPush = [];
+    const actor = req.user?.name || incomingNoEvents.assignedBy || prev.assignedBy;
 
-    added.forEach(u => eventsToPush.push({
-      type: "reassigned-added",
-      by: actor,
-      to: [u],
-      primaryInvestigator: (incoming.primaryInvestigator ?? prev.primaryInvestigator) || null,
-      statusAfter: incoming.leadStatus || prev.leadStatus || "Assigned",
-      at: new Date()
-    }));
-    removed.forEach(u => eventsToPush.push({
-      type: "reassigned-removed",
-      by: actor,
-      to: [u],
-      primaryInvestigator: (incoming.primaryInvestigator ?? prev.primaryInvestigator) || null,
-      statusAfter: incoming.leadStatus || prev.leadStatus || "Assigned",
-      at: new Date()
-    }));
+    const computeAggregateStatus = (assignedTo = []) => {
+      const list = (assignedTo || []).map(a => a?.status || "pending");
+      if (!list.length) return "Assigned";
+      const allAccepted = list.every(s => s === "accepted");
+      const allDeclined = list.every(s => s === "declined");
+      if (allAccepted) return "Accepted";
+      if (allDeclined) return "Rejected";
+      if (list.includes("declined")) return "To Reassign";
+      return "Assigned";
+    };
+    const statusAfter = computeAggregateStatus(nextAssignedTo);
 
-    // Apply update + push events
+    const eventsToPush = [
+      ...added.map(u => ({
+        type: "reassigned-added",
+        by: actor,
+        to: [u],
+        primaryInvestigator: incomingNoEvents.primaryInvestigator ?? prev.primaryInvestigator ?? null,
+        statusAfter,
+        at: new Date()
+      })),
+      ...removed.map(u => ({
+        type: "reassigned-removed",
+        by: actor,
+        to: [u],
+        primaryInvestigator: incomingNoEvents.primaryInvestigator ?? prev.primaryInvestigator ?? null,
+        statusAfter,
+        at: new Date()
+      }))
+    ];
+
+    // ensure PI is either in list or null
+    const candidatePI = incomingNoEvents.primaryInvestigator ?? prev.primaryInvestigator ?? null;
+    const nextPI = candidatePI && nextSet.has(candidatePI) ? candidatePI : null;
+
+    // ✅ Build update doc WITHOUT touching `events` in $set
+    const updateDoc = {
+      $set: {
+        ...incomingNoEvents,
+        assignedTo: nextAssignedTo,
+        leadStatus: incomingNoEvents.leadStatus || statusAfter,
+        primaryInvestigator: nextPI
+      }
+    };
+    if (eventsToPush.length) {
+      updateDoc.$push = { events: { $each: eventsToPush } };
+    }
+
     const lead = await Lead.findOneAndUpdate(
       { leadNo: Number(leadNo), description, caseNo, caseName },
-      {
-        $set: incoming,
-        ...(eventsToPush.length ? { $push: { events: { $each: eventsToPush } } } : {})
-      },
-      { new: true }
+      updateDoc,
+      { new: true, runValidators: true }
     );
 
     return res.status(200).json(lead);
@@ -595,6 +659,7 @@ const updateLead = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 /**
