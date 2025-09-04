@@ -45,6 +45,8 @@ export const LeadReview = () => {
             pendingLeadReturns: [],
             allLeads: [],
        } );
+  const toUsername = (x) => (typeof x === "string" ? x : (x?.username ?? x?.name ?? ""));
+
 
   const { selectedCase, setSelectedLead , selectedLead, leadStatus, setLeadStatus} = useContext(CaseContext);
   const statuses = [
@@ -73,21 +75,19 @@ const [allUsers, setAllUsers] = useState([]);
   const toTitleCase = (s = "") =>
   s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
 
-  const assOff= useRef(null);
-    
-    
-   useEffect(() => {
-      function handleClickOutside(e) {
-        if (assOff.current && !assOff
-          .current.contains(e.target)) {
-          setDropdownOpen(false);
-        }
+  // const assOff= useRef(null);
+  //  useEffect(() => {
+  //     function handleClickOutside(e) {
+  //       if (assOff.current && !assOff
+  //         .current.contains(e.target)) {
+  //         setDropdownOpen(false);
+  //       }
        
-      }
+  //     }
     
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
+  //     document.addEventListener("mousedown", handleClickOutside);
+  //     return () => document.removeEventListener("mousedown", handleClickOutside);
+  //   }, []);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -139,161 +139,154 @@ const computeLeadStatus = (assigned) => {
 };
 
 
-const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = leadData) => {
+// const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = leadData) => {
 
-  if (!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")) {
-       setAlertMessage("Unauthorized: Only Case Managers or Detective Supervisors can make changes.");
-       setAlertOpen(true);
-    return;
-  }
+//   if (!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")) {
+//        setAlertMessage("Unauthorized: Only Case Managers or Detective Supervisors can make changes.");
+//        setAlertOpen(true);
+//     return;
+//   }
 
-  try {
-    const token = localStorage.getItem("token");
-    setLoading(true);
+//   try {
+//     const token = localStorage.getItem("token");
+//     setLoading(true);
 
-    // 1) Normalize parentLeadNo exactly as before
-    const normalizedParent = typeof updatedLeadData.parentLeadNo === "string"
-      ? updatedLeadData.parentLeadNo
-          .split(",")
-          .map((item) => Number(item.trim()))
-          .filter((num) => !isNaN(num))
-      : updatedLeadData.parentLeadNo;
+//     const normalizedParent = typeof updatedLeadData.parentLeadNo === "string"
+//       ? updatedLeadData.parentLeadNo
+//           .split(",")
+//           .map((item) => Number(item.trim()))
+//           .filter((num) => !isNaN(num))
+//       : updatedLeadData.parentLeadNo;
 
-    const previousUsernames = originalAssigned;
+//     const previousUsernames = originalAssigned;
 
-    console.log("leadData.assignedTo (raw):", leadData.assignedTo);
-    console.log("previousUsernames:", originalAssigned);
-    console.log("assignedOfficers:", assignedOfficers);
+//     console.log("leadData.assignedTo (raw):", leadData.assignedTo);
+//     console.log("previousUsernames:", originalAssigned);
+//     console.log("assignedOfficers:", assignedOfficers);
 
-    // 2) Build `assignedTo` from your array of usernames (`assignedOfficers`)
-    const processedAssignedTo = updatedOfficers.map(username => {
-    const existing = Array.isArray(updatedLeadData
-      .assignedTo)
-      ? updatedLeadData
-      .assignedTo.find(item => {
-          const name = typeof item === 'string' ? item : item.username;
-          return name === username;
-        })
-      : null;
+//     const processedAssignedTo = updatedOfficers.map(username => {
+//     const existing = Array.isArray(updatedLeadData
+//       .assignedTo)
+//       ? updatedLeadData
+//       .assignedTo.find(item => {
+//           const name = typeof item === 'string' ? item : item.username;
+//           return name === username;
+//         })
+//       : null;
 
-      console.log("existing", existing);
-      return {
-        username,
-        status: existing?.status || "pending"
-      };
-    });
+//       console.log("existing", existing);
+//       return {
+//         username,
+//         status: existing?.status || "pending"
+//       };
+//     });
 
-    const effectivePrimary = updatedLeadData.primaryOfficer || (updatedOfficers.length > 0 ? updatedOfficers[0] : "");
+//     const effectivePrimary = updatedLeadData.primaryOfficer || (updatedOfficers.length > 0 ? updatedOfficers[0] : "");
 
-    // const newlyAdded = assignedOfficers.filter((u) => !previousUsernames.includes(u));
-    const newlyAdded = updatedOfficers
-    .filter(u => !originalAssigned.includes(u));
+//     const newlyAdded = updatedOfficers
+//     .filter(u => !originalAssigned.includes(u));
 
-     if (newlyAdded.length) {
-       // build full investigators list (old caseTeam + new)
-       const updatedInvestigators = Array.from(new Set([
-        ...caseTeam.investigators,
-        ...newlyAdded
-      ]));
+//      if (newlyAdded.length) {
+//        const updatedInvestigators = Array.from(new Set([
+//         ...caseTeam.investigators,
+//         ...newlyAdded
+//       ]));
 
-       // assemble your officers array exactly as in CreateLead
-       const officers = [
-         ...(caseTeam.detectiveSupervisor
-            ? [{ name: caseTeam.detectiveSupervisor,
-                 role: "Detective Supervisor",
-                 status: "accepted" }]
-            : []),
-          ...caseTeam.caseManagers.map(name => ({
-          name,
-          role:   "Case Manager",
-          status: "accepted"
-         })),
-         ...updatedInvestigators.map(name => ({
-           name,
-           role:   "Investigator",
-           status: "pending"
-         }))
-       ];
-       // push them into the case in one PUT
-       await api.put(
-         `/api/cases/${encodeURIComponent(selectedCase.caseNo)}/${encodeURIComponent(selectedCase.caseName)}/officers`,
-         { officers },
-         { headers: { Authorization: `Bearer ${token}` } }
-       );
-       // refresh your local caseTeam so the sidebar stays up-to-date
-       const teamResp = await api.get(
-         `/api/cases/${selectedCase.caseNo}/team`,
-         { headers: { Authorization: `Bearer ${token}` } }
-       );
-       setCaseTeam({
-         detectiveSupervisor: teamResp.data.detectiveSupervisor,
-         caseManagers:         teamResp.data.caseManagers,
-         investigators:       teamResp.data.investigators
-       });
-     }
+//        const officers = [
+//          ...(caseTeam.detectiveSupervisor
+//             ? [{ name: caseTeam.detectiveSupervisor,
+//                  role: "Detective Supervisor",
+//                  status: "accepted" }]
+//             : []),
+//           ...caseTeam.caseManagers.map(name => ({
+//           name,
+//           role:   "Case Manager",
+//           status: "accepted"
+//          })),
+//          ...updatedInvestigators.map(name => ({
+//            name,
+//            role:   "Investigator",
+//            status: "pending"
+//          }))
+//        ];
+//        await api.put(
+//          `/api/cases/${encodeURIComponent(selectedCase.caseNo)}/${encodeURIComponent(selectedCase.caseName)}/officers`,
+//          { officers },
+//          { headers: { Authorization: `Bearer ${token}` } }
+//        );
+//        // refresh your local caseTeam so the sidebar stays up-to-date
+//        const teamResp = await api.get(
+//          `/api/cases/${selectedCase.caseNo}/team`,
+//          { headers: { Authorization: `Bearer ${token}` } }
+//        );
+//        setCaseTeam({
+//          detectiveSupervisor: teamResp.data.detectiveSupervisor,
+//          caseManagers:         teamResp.data.caseManagers,
+//          investigators:       teamResp.data.investigators
+//        });
+//      }
 
-    // 5) For each newly added officer, send a notification
-    for (let username of newlyAdded) {
-      await api.post(
-        "/api/notifications",
-        {
-          notificationId: Date.now().toString(),
-          assignedBy: signedInOfficer,         // the current user assigning the lead
-          assignedTo: [{
-            username,
-            role:     "Investigator",           
-            status:   "pending",
-            unread:   true
-          }],
-          action1: "assigned you to a new lead",
-          post1:   `${leadData.leadNo}: ${leadData.description}`,
-          action2:  "related to the case",
-          post2:   `${selectedCase.caseNo}: ${selectedCase.caseName}`,
-          caseNo:   leadData.caseNo,
-          caseName: leadData.caseName,
-          leadNo: leadData.leadNo,
-          leadName: leadData.description,
-          caseStatus: selectedCase.caseStatus || "Open",
-          type: "Lead"
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-    }
+//     for (let username of newlyAdded) {
+//       await api.post(
+//         "/api/notifications",
+//         {
+//           notificationId: Date.now().toString(),
+//           assignedBy: signedInOfficer,        
+//           assignedTo: [{
+//             username,
+//             role:     "Investigator",           
+//             status:   "pending",
+//             unread:   true
+//           }],
+//           action1: "assigned you to a new lead",
+//           post1:   `${leadData.leadNo}: ${leadData.description}`,
+//           action2:  "related to the case",
+//           post2:   `${selectedCase.caseNo}: ${selectedCase.caseName}`,
+//           caseNo:   leadData.caseNo,
+//           caseName: leadData.caseName,
+//           leadNo: leadData.leadNo,
+//           leadName: leadData.description,
+//           caseStatus: selectedCase.caseStatus || "Open",
+//           type: "Lead"
+//         },
+//         { headers: { Authorization: `Bearer ${token}` } }
+//       );
+//     }
 
-    // 3) Merge everything into one payload
-    const processedLeadData = {
-      ...updatedLeadData,
-      parentLeadNo: normalizedParent,
-      assignedTo: processedAssignedTo,
-      // primaryInvestigator: updatedLeadData.primaryOfficer || null,
-      primaryOfficer: effectivePrimary || null,
-      primaryInvestigator: effectivePrimary || null,
-      ...(updatedOfficers.length > 0 ? { leadStatus: "Assigned" } : {})
-    };
+ 
+//     const processedLeadData = {
+//       ...updatedLeadData,
+//       parentLeadNo: normalizedParent,
+//       assignedTo: processedAssignedTo,
+//       assignedOfficer: processedAssignedTo.map(a => a.username),
+//       primaryOfficer: effectivePrimary || null,
+//       primaryInvestigator: effectivePrimary || null,
+//       ...(updatedOfficers.length > 0 ? { leadStatus: "Assigned" } : {})
+//     };
 
-    // 4) Fire the PUT exactly as before, but with `assignedTo` added
-    await api.put(
-      `/api/lead/update/${leadData.leadNo}/${encodeURIComponent(leadData.description)}/${leadData.caseNo}/${encodeURIComponent(leadData.caseName)}`,
-      processedLeadData,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+//     await api.put(
+//       `/api/lead/update/${leadData.leadNo}/${encodeURIComponent(leadData.description)}/${leadData.caseNo}/${encodeURIComponent(leadData.caseName)}`,
+//       processedLeadData,
+//       { headers: { Authorization: `Bearer ${token}` } }
+//     );
 
-    setLeadData(prev => ({
-     ...prev,
-     primaryOfficer: effectivePrimary || "",
-     leadStatus: updatedOfficers.length > 0 ? "Assigned" : prev.leadStatus
-    }));
+//     setLeadData(prev => ({
+//     ...prev,
+//     ...processedLeadData,
+//     assignedTo: processedAssignedTo,        // <— important
+//     primaryOfficer: effectivePrimary || "",
+//     }));
+//     setOriginalAssigned(processedAssignedTo.map(x => x.username));
 
-    // alert("Lead updated successfully!");
-    setAlertMessage("Lead updated successfully!");
-       setAlertOpen(true);
-      } catch (err) {
-        console.error("Save failed:", err);
-        setError("Failed to save changes.");
-      } finally {
-        setLoading(false);
-      }
-};
+//     setAlertMessage("Lead updated successfully!");
+//        setAlertOpen(true);
+//       } catch (err) {
+//         console.error("Save failed:", err);
+//         setError("Failed to save changes.");
+//       } finally {
+//         setLoading(false);
+//       }
+// };
 
 
 // const acceptLead = async (leadNo, description) => {
@@ -357,145 +350,251 @@ const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = 
 //   }
 // };
 
-const acceptLead = async (leadNo, description) => {
+const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = leadData) => {
+  if (!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")) {
+    setAlertMessage("Unauthorized: Only Case Managers or Detective Supervisors can make changes.");
+    setAlertOpen(true);
+    return;
+  }
+
   try {
-    const token   = localStorage.getItem("token");
-    const headers = { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } };
+    const token = localStorage.getItem("token");
+    setLoading(true);
 
-    // backend endpoint you already have (optional but kept)
-    await api.put(
-      `/api/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
-      {},
-      headers
-    );
+    // 🔧 ALWAYS work with usernames (strings)
+    const updatedUsernames = (Array.isArray(updatedOfficers) ? updatedOfficers : [])
+  .map(toUsername)
+  .filter(Boolean);
 
-    // mark this officer accepted locally
-    const updatedAssignedTo = normalizeAssignedTo(leadData.assignedTo).map(it =>
-      it.username === signedInOfficer ? { ...it, status: "accepted" } : it
-    );
+    // 1) Normalize parentLeadNo
+    const normalizedParent = typeof updatedLeadData.parentLeadNo === "string"
+      ? updatedLeadData.parentLeadNo.split(",").map(s => Number(s.trim())).filter(n => !isNaN(n))
+      : updatedLeadData.parentLeadNo;
 
-    // aggregate lead status (Accepted only if everyone accepted)
-    const newStatus = computeLeadStatus(updatedAssignedTo);
+    console.log("leadData.assignedTo (raw):", leadData.assignedTo);
+    console.log("previousUsernames:", originalAssigned);
+    console.log("updatedUsernames:", updatedUsernames);
 
-    // persist per-officer statuses + lead status
+    // 2) Build assignedTo for the LEAD: [{username, status}]
+    const processedAssignedTo = updatedUsernames.map((username) => {
+      const existing = Array.isArray(updatedLeadData.assignedTo)
+        ? normalizeAssignedTo(updatedLeadData.assignedTo).find((it) => it.username === username)
+        : null;
+      return { username, status: existing?.status || "pending" };
+    });
+
+    const effectivePrimary =
+      updatedLeadData.primaryOfficer || (updatedUsernames.length ? updatedUsernames[0] : "");
+
+    // who is newly added (vs original load)
+    const newlyAdded = updatedUsernames.filter((u) => !originalAssigned.includes(u));
+
+    // --- CASE officers payload: { name, role, status } ----------------------
+    if (newlyAdded.length) {
+      const updatedInvestigators = Array.from(
+        new Set([...(caseTeam.investigators || []).map(toUsername), ...newlyAdded])
+      );
+
+      const officers = [
+        ...(caseTeam.detectiveSupervisor
+          ? [{ name: toUsername(caseTeam.detectiveSupervisor), role: "Detective Supervisor", status: "accepted" }]
+          : []),
+        ...(caseTeam.caseManagers || []).map((n) => ({
+          name: toUsername(n),
+          role: "Case Manager",
+          status: "accepted",
+        })),
+        ...updatedInvestigators.map((n) => ({
+          name: toUsername(n),
+          role: "Investigator",
+          status: newlyAdded.includes(n) ? "pending" : "accepted",
+        })),
+      ];
+
+      await api.put(
+        `/api/cases/${encodeURIComponent(selectedCase.caseNo)}/${encodeURIComponent(selectedCase.caseName)}/officers`,
+        { officers },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const teamResp = await api.get(
+        `/api/cases/${selectedCase.caseNo}/team`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setCaseTeam({
+        detectiveSupervisor: teamResp.data.detectiveSupervisor,
+        caseManagers: teamResp.data.caseManagers,
+        investigators: teamResp.data.investigators,
+      });
+    }
+
+    // 3) Merge + persist LEAD
+    const processedLeadData = {
+      ...updatedLeadData,
+      parentLeadNo: normalizedParent,
+      assignedTo: processedAssignedTo,
+      assignedOfficer: processedAssignedTo.map((a) => a.username),
+      primaryOfficer: effectivePrimary || null,
+      primaryInvestigator: effectivePrimary || null,
+      ...(updatedUsernames.length > 0 ? { leadStatus: "Assigned" } : {}),
+    };
+
     await api.put(
       `/api/lead/update/${leadData.leadNo}/${encodeURIComponent(leadData.description)}/${leadData.caseNo}/${encodeURIComponent(leadData.caseName)}`,
-      { ...leadData, assignedTo: updatedAssignedTo, leadStatus: newStatus },
-      headers
+      processedLeadData,
+      { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    setLeadData(prev => ({ ...prev, assignedTo: updatedAssignedTo, leadStatus: newStatus }));
-    setLeadStatus?.(newStatus);
+    setLeadData((prev) => ({
+      ...prev,
+      ...processedLeadData,
+      assignedTo: processedAssignedTo,
+      primaryOfficer: effectivePrimary || "",
+    }));
 
-    setAlertMessage(newStatus === "Accepted"
-      ? "All officers accepted. Lead status is 'Accepted'."
-      : "You accepted. Waiting on others — status stays 'Assigned'."
+    setOriginalAssigned(processedAssignedTo.map((x) => x.username));
+
+    setAlertMessage("Lead updated successfully!");
+    setAlertOpen(true);
+  } catch (err) {
+    console.error("Save failed:", err);
+    setError("Failed to save changes.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+// const acceptLead = async (leadNo, description) => {
+//   try {
+//     const token   = localStorage.getItem("token");
+//     const headers = { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } };
+
+//     await api.put(
+//       `/api/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+//       {},
+//       headers
+//     );
+
+//     const updatedAssignedTo = normalizeAssignedTo(leadData.assignedTo).map(it =>
+//       it.username === signedInOfficer ? { ...it, status: "accepted" } : it
+//     );
+
+//     const newStatus = computeLeadStatus(updatedAssignedTo);
+
+//     await api.put(
+//       `/api/lead/update/${leadData.leadNo}/${encodeURIComponent(leadData.description)}/${leadData.caseNo}/${encodeURIComponent(leadData.caseName)}`,
+//       { ...leadData, assignedTo: updatedAssignedTo, leadStatus: newStatus },
+//       headers
+//     );
+
+//     setLeadData(prev => ({ ...prev, assignedTo: updatedAssignedTo, leadStatus: newStatus }));
+//     setLeadStatus?.(newStatus);
+
+//     setAlertMessage(newStatus === "Accepted"
+//       ? "All officers accepted. Lead status is 'Accepted'."
+//       : "You accepted. Waiting on others — status stays 'Assigned'."
+//     );
+//     setAlertOpen(true);
+//   } catch (error) {
+//     console.error("Error updating lead status:", error.response?.data || error);
+//     setAlertMessage("Failed to accept lead.");
+//     setAlertOpen(true);
+//   }
+// };
+
+// const declineLead = async (leadNo, description) => {
+//   const token   = localStorage.getItem("token");
+//   const headers = { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } };
+
+//   try {
+//     const updatedAssignedTo = normalizeAssignedTo(leadData.assignedTo).map(it =>
+//       it.username === signedInOfficer ? { ...it, status: "declined" } : it
+//     );
+
+//     const newStatus = computeLeadStatus(updatedAssignedTo);
+
+//     await api.put(
+//       `/api/lead/update/${leadData.leadNo}/${encodeURIComponent(leadData.description)}/${leadData.caseNo}/${encodeURIComponent(leadData.caseName)}`,
+//       {
+//         ...leadData,
+//         assignedTo: updatedAssignedTo,
+//         leadStatus: newStatus,
+//       },
+//       headers
+//     );
+
+//     setLeadData(prev => ({ ...prev, assignedTo: updatedAssignedTo, leadStatus: newStatus }));
+//     setLeadStatus?.(newStatus);
+
+//     setAlertMessage(
+//       newStatus === "Rejected"
+//         ? "All officers declined. Lead status set to 'Rejected'."
+//         : "You declined. Lead status set to 'To Reassign'."
+//     );
+//     setAlertOpen(true);
+//   } catch (err) {
+//     console.error("Error declining lead:", err);
+//     setAlertMessage("Failed to decline lead. Please try again.");
+//     setAlertOpen(true);
+//   }
+// };
+
+
+const acceptLead = async (leadNo, description) => {
+  try {
+    const token = localStorage.getItem("token");
+    const { data } = await api.put(
+      `/api/lead/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/assignedTo`,
+      { officerUsername: signedInOfficer, status: "accepted" },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // Server returns the updated lead (with events + recomputed leadStatus)
+    const lead = data.lead;
+    setLeadData(lead);
+    setLeadStatus?.(lead.leadStatus);
+
+    setAlertMessage(
+      lead.leadStatus === "Accepted"
+        ? "All officers accepted. Lead is 'Accepted'."
+        : "You accepted. Waiting on others."
     );
     setAlertOpen(true);
   } catch (error) {
-    console.error("Error updating lead status:", error.response?.data || error);
+    console.error("Accept failed:", error.response?.data || error);
     setAlertMessage("Failed to accept lead.");
     setAlertOpen(true);
   }
 };
 
-
-
-//  const declineLead = async (leadNo, description) => {
-//   const token = localStorage.getItem("token");
-//   try {
-
-//     // 2) Remove *this* officer from the assignedTo array
-//     await api.put(
-//       `/api/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/removeAssigned/${signedInOfficer}`,
-
-//       {},
-//       { headers: { Authorization: `Bearer ${token}` } }
-//     );
-
-//     // 3) Optimistically update local UI
-//     setLeadData(prev => ({
-//       ...prev,
-//       assignedTo: prev.assignedTo.filter(u => u.username !== signedInOfficer)
-//     }));
-
-//     // 4) Notify the Case Manager
-//     // await api.post(
-//     //   "/api/notifications",
-//     //   {
-//     //     notificationId: Date.now().toString(),
-//     //     assignedBy: signedInOfficer,          // you
-//     //     assignedTo: [{
-//     //         username: leadData.assignedBy,
-//     //         role:     "Case Manager",           
-//     //         status:   "pending",
-//     //         unread:   true
-//     //       }],
-//     //     action1: "declined the lead",
-//     //     post1:   `${leadNo}: ${description}`,
-//     //     caseNo:   selectedCase.caseNo,
-//     //     caseName: selectedCase.caseName,
-//     //      leadNo: leadNo,
-//     //     leadName: description,
-//     //     caseStatus: selectedCase.caseStatus || "Open",
-//     //     type: "Lead"
-//     //   },
-//     //   { headers: { Authorization: `Bearer ${token}` } }
-//     // );
-
-//     // alert("❌ You’ve declined the lead, been removed from assigned list, and the Case Manager has been notified.");
-//     setAlertMessage("Lead is successfully declined");
-//        setAlertOpen(true);
-//     navigate('/Investigator', { replace: true });
-//   } catch (err) {
-//     console.error("Error declining lead:", err);
-//     // alert("❌ Failed to decline lead.");
-//     setAlertMessage("Failed to decline lead.");
-//        setAlertOpen(true);
-//   }
-// };
-
-
-const declineLead = async (leadNo, description) => {
-  const token   = localStorage.getItem("token");
-  const headers = { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } };
-
+const declineLead = async (leadNo, description, reason = "") => {
   try {
-    // mark this officer declined locally
-    const updatedAssignedTo = normalizeAssignedTo(leadData.assignedTo).map(it =>
-      it.username === signedInOfficer ? { ...it, status: "declined" } : it
+    const token = localStorage.getItem("token");
+    const { data } = await api.put(
+      `/api/lead/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/assignedTo`,
+      { officerUsername: signedInOfficer, status: "declined", reason },
+      { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    // compute new lead status (To Reassign / Rejected / Assigned)
-    const newStatus = computeLeadStatus(updatedAssignedTo);
-
-    // persist
-    await api.put(
-      `/api/lead/update/${leadData.leadNo}/${encodeURIComponent(leadData.description)}/${leadData.caseNo}/${encodeURIComponent(leadData.caseName)}`,
-      {
-        ...leadData,
-        assignedTo: updatedAssignedTo,
-        leadStatus: newStatus,
-        // keep primaryInvestigator as-is; CM can change it later if needed
-      },
-      headers
-    );
-
-    setLeadData(prev => ({ ...prev, assignedTo: updatedAssignedTo, leadStatus: newStatus }));
-    setLeadStatus?.(newStatus);
+    const lead = data.lead;
+    setLeadData(lead);
+    setLeadStatus?.(lead.leadStatus);
 
     setAlertMessage(
-      newStatus === "Rejected"
-        ? "All officers declined. Lead status set to 'Rejected'."
-        : "You declined. Lead status set to 'To Reassign'."
+      lead.leadStatus === "Rejected"
+        ? "All officers declined. Lead is 'Rejected'."
+        : "You declined. Status set to 'To Reassign'."
     );
     setAlertOpen(true);
-  } catch (err) {
-    console.error("Error declining lead:", err);
-    setAlertMessage("Failed to decline lead. Please try again.");
+  } catch (error) {
+    console.error("Decline failed:", error.response?.data || error);
+    setAlertMessage("Failed to decline lead.");
     setAlertOpen(true);
   }
 };
+
+
   const formatDate = (dateString) => {
     if (!dateString) return ""; // Handle empty dates
     const date = new Date(dateString);
@@ -683,17 +782,17 @@ useEffect(() => {
 
 // tiny helper to autosave field
 const saveField = async (partial) => {
-  const next = { ...leadData, ...partial };
+ const next = { ...leadData, ...partial };
   setLeadData(next);
   try {
+   // Keep the current officer selection; only the changed fields are in `next`
     await handleSave(assignedOfficers, next);
   } catch (err) {
     console.error("Auto-save failed", err);
-    setAlertMessage("Failed to save your changes. Please try again.");
-    setAlertOpen(true);
+   setAlertMessage("Failed to save your changes. Please try again.");
+   setAlertOpen(true);
   }
 };
-
 
   
       const handleSelectLead = (lead) => {
@@ -862,6 +961,220 @@ useEffect(() => {
     document.removeEventListener("keydown", onEsc);
   };
 }, []);
+
+// show/hide the events modal
+const [eventsModalOpen, setEventsModalOpen] = useState(false);
+
+// sort once for stable timeline
+const eventsSorted = React.useMemo(
+  () => [...(leadData?.events || [])].sort((a,b) => new Date(a.at) - new Date(b.at)),
+  [leadData?.events]
+);
+
+const fmtDT = (d) => {
+  const dt = new Date(d);
+  if (Number.isNaN(dt.getTime())) return "";
+  return dt.toLocaleString(); // or customize
+};
+
+const describeEvent = (ev) => {
+  const to = (ev.to || []).join(", ");
+  const pi = ev.primaryInvestigator ? ` (Primary: ${ev.primaryInvestigator})` : "";
+  switch (ev.type) {
+    case "assigned":            return `Assigned ${to}${pi}`;
+    case "accepted":            return `${to} accepted`;
+    case "declined":            return `${to} declined${ev.reason ? ` — Reason: ${ev.reason}` : ""}`;
+    case "reassigned-added":    return `Added ${to}${pi}`;
+    case "reassigned-removed":  return `Removed ${to}${pi}`;
+    default:                    return ev.type;
+  }
+};
+// === helpers (keep your fmtDT) ==============================================
+const nameOf = (uname) => {
+  const u = allUsers.find((x) => x.username === uname);
+  return u ? `${u.firstName} ${u.lastName} (${u.username})` : uname || "—";
+};
+
+const plural = (arr, s, p) => (arr && arr.length === 1 ? s : p);
+
+// Build quick lookups for first accept/decline timestamps and reasons
+const buildDecisionMaps = (events = []) => {
+  const acceptedAt = new Map();
+  const declinedAt = new Map();
+  const declinedReason = new Map();
+
+  events.forEach(ev => {
+    if (!Array.isArray(ev.to)) return;
+    if (ev.type === "accepted") {
+      ev.to.forEach(u => {
+        if (!acceptedAt.has(u)) acceptedAt.set(u, ev.at);
+      });
+    } else if (ev.type === "declined") {
+      ev.to.forEach(u => {
+        if (!declinedAt.has(u)) declinedAt.set(u, ev.at);
+        if (ev.reason) declinedReason.set(u, ev.reason);
+      });
+    }
+  });
+  return { acceptedAt, declinedAt, declinedReason };
+};
+
+const sectionTitle = (text) => (
+  <div style={{ fontWeight: 700, marginTop: 12, marginBottom: 6 }}>{text}</div>
+);
+
+// === replacement modal ======================================================
+// Compact, professional assignment log
+const LeadEventsModal = ({ open, onClose, events }) => {
+  if (!open) return null;
+
+  const evs = Array.isArray(events) ? events : [];
+  const assigned   = evs.filter(e => e.type === "assigned");
+  const accepted   = evs.filter(e => e.type === "accepted");
+  const declined   = evs.filter(e => e.type === "declined");
+  const added      = evs.filter(e => e.type === "reassigned-added");
+  const removed    = evs.filter(e => e.type === "reassigned-removed");
+
+  const firstAssigned = assigned[0] || null;
+  const lastStatus = evs.length ? evs[evs.length - 1].statusAfter : undefined;
+
+  // who accepted/declined (first timestamp per officer)
+  const { acceptedAt, declinedAt, declinedReason } = buildDecisionMaps(evs);
+
+  // compute the current assigned set (initial + adds − removes)
+  const assignedSet = (() => {
+    const s = new Set(firstAssigned?.to || []);
+    // process chronologically
+    [...added, ...removed]
+      .sort((a, b) => new Date(a.at) - new Date(b.at))
+      .forEach(ev => {
+        (ev.to || []).forEach(u => {
+          if (ev.type === "reassigned-added") s.add(u);
+          if (ev.type === "reassigned-removed") s.delete(u);
+        });
+      });
+    return s;
+  })();
+
+  const pending = [...assignedSet].filter(
+    u => !acceptedAt.has(u) && !declinedAt.has(u)
+  );
+
+  // message per event (short & professional)
+  const msg = (ev) => {
+    const people = (ev.to || []).map(nameOf).join(", ") || "—";
+    switch (ev.type) {
+      case "assigned":
+        return `Assigned to ${people}` +
+          (ev.primaryInvestigator ? ` • Primary: ${nameOf(ev.primaryInvestigator)}` : "");
+      case "accepted":
+        return `${people} accepted`;
+      case "declined":
+        return `${people} declined` + (ev.reason ? ` • ${ev.reason}` : "");
+      case "reassigned-added":
+        return `Added ${people}` +
+          (ev.primaryInvestigator ? ` • Primary: ${nameOf(ev.primaryInvestigator)}` : "");
+      case "reassigned-removed":
+        return `Removed ${people}`;
+      default:
+        return ev.type || "—";
+    }
+  };
+
+  // icon + tone per event
+  const iconFor = (t) =>
+    t === "accepted" ? "✓" :
+    t === "declined" ? "✕" :
+    t === "reassigned-added" ? "+" :
+    t === "reassigned-removed" ? "−" : "●";
+
+  const toneFor = (t) =>
+    t === "accepted" ? "ok" :
+    t === "declined" ? "bad" :
+    t === "reassigned-added" ? "info" :
+    t === "reassigned-removed" ? "muted" : "base";
+
+  // sorted stream for the timeline
+  const stream = [...evs].sort((a,b) => new Date(a.at) - new Date(b.at));
+
+  return (
+    <div className="elog-backdrop" onClick={onClose}>
+      <div className="elog-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="elog-header">
+          <h3>Assignment Log</h3>
+          <div className="elog-chip">{lastStatus || "—"}</div>
+          <button className="elog-close" onClick={onClose} aria-label="Close">✕</button>
+        </div>
+
+        {/* SUMMARY */}
+        <section className="elog-block">
+
+          <div className="elog-counters">
+            <span className="elog-counter ok">Accepted {acceptedAt.size}</span>
+            <span className="elog-counter bad">Declined {declinedAt.size}</span>
+            <span className="elog-counter base">Pending {pending.length}</span>
+          </div>
+        </section>
+
+        {/* TIMELINE */}
+        <section className="elog-block">
+          <div className="elog-title"></div>
+          {stream.length === 0 ? (
+            <div className="elog-muted">No activity yet.</div>
+          ) : (
+            <ul className="elog-list">
+              {stream.map((ev, i) => (
+                <li key={i} className={`elog-item ${toneFor(ev.type)}`}>
+                  <div className="elog-pin">{iconFor(ev.type)}</div>
+                  <div className="elog-body">
+                    <div className="elog-line">{msg(ev)}</div>
+                    <div className="elog-meta">
+                      by <b>{nameOf(ev.by)}</b> • {fmtDT(ev.at)}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </div>
+  );
+};
+
+
+
+// centralizes how we change assigned officers
+const updateAssignedOfficers = async (nextUsernames) => {
+  // keep current primary if still present, otherwise first selected
+  const nextPrimary = nextUsernames.includes(leadData.primaryOfficer)
+    ? leadData.primaryOfficer
+    : (nextUsernames[0] || "");
+
+  // update local UI immediately
+  setAssignedOfficers(nextUsernames);
+  setLeadData(prev => ({
+    ...prev,
+    // temporarily store usernames (handleSave will normalize to {username,status})
+    assignedTo: nextUsernames,
+    primaryOfficer: nextPrimary,
+    leadStatus: nextUsernames.length > 0 ? "Assigned" : prev.leadStatus
+  }));
+
+  // persist
+  try {
+    await handleSave(
+      nextUsernames,
+      { ...leadData, primaryOfficer: nextPrimary, ...(nextUsernames.length ? { leadStatus: "Assigned" } : {}) }
+    );
+  } catch (err) {
+    console.error("Error during auto-save:", err);
+    setAlertMessage("An error occurred while updating assigned officers. Please try again.");
+    setAlertOpen(true);
+  }
+};
+
+
 
 
 
@@ -1246,7 +1559,6 @@ useEffect(() => {
       </div>
     ) : (
       <div id="assigned-officers-wrap" className="inv-dropdown">
-        {/* Trigger shows selected names (truncated) */}
         <button
           type="button"
           className="inv-input"
@@ -1271,7 +1583,6 @@ useEffect(() => {
 
         {aoOpen && (
           <div className="inv-options" role="listbox" onMouseDown={(e) => e.stopPropagation()}>
-            {/* sticky search */}
             <div className="inv-search-wrap">
               <input
                 type="text"
@@ -1283,7 +1594,6 @@ useEffect(() => {
               />
             </div>
 
-            {/* list */}
             <div className="inv-list">
               {filteredUsersAO.length ? (
                 filteredUsersAO.map((user) => {
@@ -1295,37 +1605,50 @@ useEffect(() => {
                         value={user.username}
                         checked={checked}
                         disabled={!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")}
-                        onChange={async (e) => {
-                          if (!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")) return;
+                       onChange={async (e) => {
+  if (!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")) return;
 
-                          const { checked, value } = e.target;
-                          const next = checked
-                            ? [...assignedOfficers, value]
-                            : assignedOfficers.filter(u => u !== value);
+  const { checked, value } = e.target;
 
-                          const nextPrimary = next.includes(leadData.primaryOfficer)
-                            ? leadData.primaryOfficer
-                            : (next[0] || "");
+  // next usernames
+  const nextUsernames = checked
+    ? [...assignedOfficers, value]
+    : assignedOfficers.filter((u) => u !== value);
 
-                          setAssignedOfficers(next);
-                          setLeadData(prev => ({
-                            ...prev,
-                            assignedTo: next,              // your code expects usernames here; handleSave normalizes
-                            primaryOfficer: nextPrimary,
-                            leadStatus: next.length > 0 ? "Assigned" : prev.leadStatus
-                          }));
+  // keep existing status if officer was already there
+  const prevAssigned = normalizeAssignedTo(leadData.assignedTo);
+  const nextAssignedTo = nextUsernames.map((u) => {
+    const prev = prevAssigned.find((p) => p.username === u);
+    return { username: u, status: prev?.status || "pending" };
+  });
 
-                          try {
-                            await handleSave(
-                              next,
-                              { ...leadData, primaryOfficer: nextPrimary, ...(next.length > 0 ? { leadStatus: "Assigned" } : {}) }
-                            );
-                          } catch (err) {
-                            console.error("Error during auto-save:", err);
-                            setAlertMessage("An error occurred while updating assigned officers. Please try again.");
-                            setAlertOpen(true);
-                          }
-                        }}
+  // pick/repair primary
+  const nextPrimary =
+    nextUsernames.includes(leadData.primaryInvestigator || leadData.primaryOfficer)
+      ? (leadData.primaryInvestigator || leadData.primaryOfficer)
+      : (nextUsernames[0] || "");
+
+  // update UI immediately
+  setAssignedOfficers(nextUsernames);
+  setLeadData((prev) => ({
+    ...prev,
+    assignedTo: nextAssignedTo,
+    primaryOfficer: nextPrimary,
+    primaryInvestigator: nextPrimary,
+    leadStatus: nextUsernames.length ? "Assigned" : prev.leadStatus,
+  }));
+
+  // persist
+  await handleSave(nextUsernames, {
+    ...leadData,
+    assignedTo: nextAssignedTo,
+    primaryOfficer: nextPrimary,
+    primaryInvestigator: nextPrimary,
+    ...(nextUsernames.length ? { leadStatus: "Assigned" } : {}),
+  });
+}}
+
+                      
                       />
                       <span className="inv-text">
                         {user.firstName} {user.lastName} ({user.username})
@@ -1562,6 +1885,7 @@ useEffect(() => {
                   className="lead-tracker-row"
                   onClick={() => {
                     if (status === "Lead Return Submitted") handleNavigation("/LRInstruction");
+                    if (status === "Lead Created") setEventsModalOpen(true);
                   }}
                   style={{ cursor: status === "Lead Return Submitted" ? "pointer" : "default" }}
                 >
@@ -1580,7 +1904,15 @@ useEffect(() => {
                 </div>
               ))}
             </div>
+            
             )}
+
+            <LeadEventsModal
+  open={eventsModalOpen}
+  onClose={() => setEventsModalOpen(false)}
+  events={eventsSorted}
+/>
+
                 </div>
 
 </div>

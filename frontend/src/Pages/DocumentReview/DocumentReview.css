@@ -1,5 +1,5 @@
 .dr-shell {
-  height: 100%;
+  height: 100vh;
   display: flex;
   width: 100%;
   /* grid-template-columns: minmax(520px, 1fr) 360px; */
@@ -10,8 +10,8 @@
 .dr-left {
   display: flex;
   flex-direction: column;
-  /* min-width: 0; */
-  width: 70%;
+  flex: 1 1 auto;         /* grow to fill */
+  min-width: 0;           /* allows children to shrink without overflow */
   border-right: 1px solid #e5e7eb;
 }
 

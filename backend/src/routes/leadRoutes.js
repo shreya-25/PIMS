@@ -35,6 +35,13 @@ router.get(
 
 router.put("/lead/status/close", setLeadStatusToClosed);
 
+router.put(
+  "/update/:leadNo/:description/:caseNo/:caseName",
+  verifyToken,
+  // roleMiddleware("CaseManager"),
+  updateLead
+);
+
 router.put('/:leadNo/:leadName/:caseNo/:caseName', verifyToken, updateLeadStatus);
 
 
@@ -47,13 +54,6 @@ router.put("/status/in-review", verifyToken, setLeadStatusToInReview);
 router.put("/status/complete", verifyToken, setLeadStatusToComplete);
 
 router.put("/status/pending", verifyToken, setLeadStatusToPending);
-
-router.put(
-  "/update/:leadNo/:description/:caseNo/:caseName",
-  verifyToken,
-  // roleMiddleware("CaseManager"),
-  updateLead
-);
 
 router.put(
   "/:leadNo/:description/:caseNo/:caseName/removeAssigned/:username",
