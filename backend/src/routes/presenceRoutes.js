@@ -1,18 +1,18 @@
 // routes/presenceRoutes.js
 const express = require("express");
 const Case = require("../models/case");
-const Presence = require("../models/presence");
 const verifyToken = require("../middleware/authMiddleware");
+const Presence = require("../models/presence"); // if you're using the Mongo presence model I gave earlier
 
 const router = express.Router();
 router.use(verifyToken);
 
-// How long we consider someone "present" (UI filter)
 const TTL_MS = 30_000;
-
 const normalize = (s) => String(s ?? "").trim();
-const roomKeyFor = ({ caseNo, caseName, page = "CasePageManager" }) =>
-  `caseNo=${String(caseNo)}|caseName=${normalize(caseName)}|page=${String(page)}`;
+
+// 👇 CHANGE: room is just (caseNo, caseName) — no page dimension
+const roomKeyFor = ({ caseNo, caseName }) =>
+  `caseNo=${String(caseNo)}|caseName=${normalize(caseName)}`;
 
 async function getUserRoleForCase({ caseNo, caseName, username }) {
   const doc = await Case.findOne(
@@ -23,105 +23,72 @@ async function getUserRoleForCase({ caseNo, caseName, username }) {
   return doc.assignedOfficers[0].role || "User";
 }
 
-// Optional: quick health check
-router.get("/health", async (req, res) => {
-  try {
-    // ensure we can talk to Mongo
-    await Presence.estimatedDocumentCount();
-    res.json({ ok: true });
-  } catch (e) {
-    res.status(500).json({ ok: false, error: e.message });
-  }
-});
-
-/**
- * POST /api/presence/heartbeat
- * body: { caseNo, caseName, page? }
- */
+// POST /api/presence/heartbeat
 router.post("/heartbeat", async (req, res) => {
   try {
     const username = req.user?.username || req.user?.name;
-    const { caseNo, caseName, page = "CasePageManager" } = req.body || {};
-
+    const { caseNo, caseName } = req.body || {};
     if (!username || !caseNo || !caseName) {
       return res.status(400).json({ error: "username (token), caseNo, caseName required" });
     }
 
     const cName = normalize(caseName);
     const role = await getUserRoleForCase({ caseNo, caseName: cName, username });
-    if (!role) {
-      console.warn("[presence] user not in case:", { username, caseNo, caseName: cName });
-      return res.status(403).json({ error: "Not a member of this case" });
-    }
+    if (!role) return res.status(403).json({ error: "Not a member of this case" });
 
-    const roomKey = roomKeyFor({ caseNo, caseName: cName, page });
+    const roomKey = roomKeyFor({ caseNo, caseName: cName });
 
-    // Upsert presence row + bump lastSeen
+    // upsert + bump lastSeen (Mongo presence model)
     await Presence.findOneAndUpdate(
       { roomKey, username },
-      {
-        $set: { role, roomKey, username },
-        $currentDate: { lastSeen: true }
-      },
-      { upsert: true, new: false }
+      { $set: { role, roomKey, username }, $currentDate: { lastSeen: true } },
+      { upsert: true }
     );
 
-    // Return users seen within our TTL window (don’t wait for TTL monitor)
     const cutoff = new Date(Date.now() - TTL_MS);
     const users = await Presence.find(
       { roomKey, lastSeen: { $gte: cutoff } },
       { _id: 0, username: 1, role: 1 }
     ).lean();
 
-    const others = users.filter((u) => u.username !== username);
-    res.json({ others });
+    res.json({ others: users.filter(u => u.username !== username) });
   } catch (e) {
     console.error("[presence] heartbeat error:", e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
-/**
- * GET /api/presence/:caseNo/:caseName/:page
- */
-router.get("/:caseNo/:caseName/:page", async (req, res) => {
+// GET /api/presence/:caseNo/:caseName
+router.get("/:caseNo/:caseName/:_ignored?", async (req, res) => {
   try {
-    const { caseNo, caseName, page } = req.params;
-    const roomKey = roomKeyFor({ caseNo, caseName: normalize(caseName), page });
+    const { caseNo, caseName } = req.params;
+    const roomKey = roomKeyFor({ caseNo, caseName: normalize(caseName) });
     const cutoff = new Date(Date.now() - TTL_MS);
-
     const users = await Presence.find(
       { roomKey, lastSeen: { $gte: cutoff } },
       { _id: 0, username: 1, role: 1 }
     ).lean();
-
     res.json({ users });
   } catch (e) {
     console.error("[presence] list error:", e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
-/**
- * POST /api/presence/leave
- * body: { caseNo, caseName, page? }
- */
+// POST /api/presence/leave
 router.post("/leave", async (req, res) => {
   try {
     const username = req.user?.username || req.user?.name;
-    const { caseNo, caseName, page = "CasePageManager" } = req.body || {};
-
+    const { caseNo, caseName } = req.body || {};
     if (!username || !caseNo || !caseName) {
       return res.status(400).json({ error: "username (token), caseNo, caseName required" });
     }
-
-    const roomKey = roomKeyFor({ caseNo, caseName: normalize(caseName), page });
-    await Presence.deleteOne({ roomKey, username }).lean();
-
+    const roomKey = roomKeyFor({ caseNo, caseName: normalize(caseName) });
+    await Presence.deleteOne({ roomKey, username });
     res.json({ ok: true });
   } catch (e) {
     console.error("[presence] leave error:", e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
