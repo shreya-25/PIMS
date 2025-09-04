@@ -1,26 +1,15 @@
+// routes/presenceRoutes.js
 const express = require("express");
 const Case = require("../models/case");
 const verifyToken = require("../middleware/authMiddleware");
+const { heartbeat: hb, list, leave } = require("../utils/presenceStore");
 
 const router = express.Router();
-router.use(verifyToken);  // keep protection here
+router.use(verifyToken);
 
-// Map<roomKey, Map<username, { role, ts }>>
-const ROOMS = new Map();
 const TTL_MS = 30_000;
-
 const roomKeyFor = ({ caseNo, caseName, page = "CasePageManager" }) =>
   `caseNo=${String(caseNo)}|caseName=${String(caseName)}|page=${String(page)}`;
-
-function prune(roomKey) {
-  const room = ROOMS.get(roomKey);
-  if (!room) return;
-  const now = Date.now();
-  for (const [user, meta] of room.entries()) {
-    if (!meta || now - meta.ts > TTL_MS) room.delete(user);
-  }
-  if (!room.size) ROOMS.delete(roomKey);
-}
 
 async function getUserRoleForCase({ caseNo, caseName, username }) {
   const doc = await Case.findOne(
@@ -43,18 +32,9 @@ router.post("/heartbeat", async (req, res) => {
     if (!role) return res.status(403).json({ error: "Not a member of this case" });
 
     const roomKey = roomKeyFor({ caseNo, caseName, page });
-    const room = ROOMS.get(roomKey) || new Map();
-    room.set(username, { role, ts: Date.now() });
-    ROOMS.set(roomKey, room);
 
-    prune(roomKey);
-
-    console.log("[presence] heartbeat", { user: username, caseNo, caseName, page });
-
-    const others = [...room.entries()]
-      .filter(([u]) => u !== username)
-      .map(([u, v]) => ({ username: u, role: v.role }));
-
+    const users = await hb({ roomKey, username, role });
+    const others = users.filter(u => u.username !== username);
     res.json({ others });
   } catch (e) {
     console.error("presence heartbeat error:", e);
@@ -66,9 +46,7 @@ router.get("/:caseNo/:caseName/:page", async (req, res) => {
   try {
     const { caseNo, caseName, page } = req.params;
     const roomKey = roomKeyFor({ caseNo, caseName, page });
-    prune(roomKey);
-    const room = ROOMS.get(roomKey) || new Map();
-    const users = [...room.entries()].map(([u, v]) => ({ username: u, role: v.role }));
+    const users = await list(roomKey);
     res.json({ users });
   } catch (e) {
     console.error("presence list error:", e);
@@ -84,11 +62,7 @@ router.post("/leave", async (req, res) => {
       return res.status(400).json({ error: "username (token), caseNo, caseName required" });
     }
     const roomKey = roomKeyFor({ caseNo, caseName, page });
-    const room = ROOMS.get(roomKey);
-    if (room) {
-      room.delete(username);
-      if (!room.size) ROOMS.delete(roomKey);
-    }
+    await leave({ roomKey, username });
     res.json({ ok: true });
   } catch (e) {
     console.error("presence leave error:", e);
