@@ -100,6 +100,7 @@ const verifyToken = require("./middleware/authMiddleware");
 
 
 
+
 const reportRoutes = require("./routes/reportRoutes.js"); // For report generation
 
 
@@ -171,7 +172,7 @@ app.use("/api/lrvideo", LRViRoutes);
 app.use("/api/timeline", LRTimelineRoutes);
 app.use("/api/scratchpad", LRScratchpadRoutes);
 app.use("/api/comment", CommentRoutes);
-app.use("/api/presence", presenceRoutes);
+app.use("/api/presence", verifyToken, presenceRoutes);
 // app.use("/api/logs", LogRoutes);
 
 app.use('/uploads', express.static(path.join(__dirname, 'temp_uploads')));
