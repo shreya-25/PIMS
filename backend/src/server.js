@@ -147,6 +147,11 @@ app.use(cors({
 dbConnect().then((conn) => {
     console.log("✅ Database connected, starting server...");
 
+app.use((req, res, next) => {
+  res.setHeader('X-Server-ID', `${process.pid}`);
+  next();
+});
+
 
 // Routes
 app.use("/api/auth", authRoutes);
