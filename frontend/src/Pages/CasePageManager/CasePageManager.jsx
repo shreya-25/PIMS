@@ -14,6 +14,8 @@ import Pagination from "../../components/Pagination/Pagination";
 import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
 import api, { BASE_URL } from "../../api";
+import usePresence from "../../hooks/usePresence";
+
 
 
 
@@ -228,6 +230,52 @@ const handleConfirmOfficers = () => {
       // Navigate to Lead Review Page
       navigate("/LRInstruction", { state: { leadDetails: lead, caseDetails: selectedCase } });
     };
+
+    const PRESENCE_BASE = "/api/presence";
+
+
+  const [presenceOthers, setPresenceOthers] = useState([]);
+const beatTimerRef = useRef(null);
+
+// prove it’s mounted & which baseURL we use
+useEffect(() => {
+  console.log("[presence] mounted; baseURL=", api?.defaults?.baseURL, "PRESENCE_BASE=", PRESENCE_BASE);
+}, []);
+
+useEffect(() => {
+  const caseNo   = selectedCase?.caseNo ?? caseDetails?.caseNo;
+  const caseName = selectedCase?.caseName ?? caseDetails?.caseName;
+  if (!caseNo || !caseName) {
+    console.log("[presence] skipped – missing caseNo/caseName", { caseNo, caseName });
+    return;
+  }
+
+  const payload = { caseNo: String(caseNo), caseName, page: "CasePageManager" };
+  let cancelled = false;
+
+  const beat = async () => {
+    try {
+      const { data } = await api.post(`${PRESENCE_BASE}/heartbeat`, payload);
+      if (!cancelled) setPresenceOthers(Array.isArray(data?.others) ? data.others : []);
+      console.log("[presence] heartbeat ok:", data);
+    } catch (e) {
+      console.warn("[presence] heartbeat failed:", e?.response?.status, e?.response?.data);
+      setPresenceOthers([]);
+    }
+  };
+
+  beat();                          // immediate
+  beatTimerRef.current = setInterval(beat, 10000);
+
+  return () => {
+    cancelled = true;
+    clearInterval(beatTimerRef.current);
+    api.post(`${PRESENCE_BASE}/leave`, payload).catch(() => {});
+  };
+}, [
+  selectedCase?.caseNo, selectedCase?.caseName,
+  caseDetails?.caseNo,  caseDetails?.caseName
+]);
 
     
     // Handler to accept the assigned lead
@@ -1503,6 +1551,9 @@ const toTitleCase = (s = "") =>
   s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
 
 
+
+
+
     return (
         <div className="case-page-manager">
             {/* Navbar */}
@@ -1529,6 +1580,21 @@ const toTitleCase = (s = "") =>
                     onConfirm={() => setAlertOpen(false)}
                     onClose={()   => setAlertOpen(false)}
                   />
+
+            {presenceOthers.length > 0 && (
+  <div style={{
+    background: "#FFF7E6",
+    border: "1px solid #FFC069",
+    color: "#874d00",
+    padding: "8px 12px",
+    borderRadius: 8,
+    margin: "8px 16px"
+  }}>
+    <strong>Heads up:</strong> {presenceOthers.map(o => o.username).join(", ")}{" "}
+    {presenceOthers.length === 1 ? "is" : "are"} also viewing this case page now.
+  </div>
+)}
+
 
             {/* Main Container */}
             <div className="main-container">

@@ -34,6 +34,12 @@ export const LRInstruction = () => {
           const [error, setError] = useState("");
     const { caseDetails, leadDetails } = routerLocation.state || {};
 
+      const params = new URLSearchParams(location.search);
+  const qpCaseNo   = params.get("caseNo")   || undefined;
+  const qpCaseName = params.get("caseName") || undefined;
+  const qpLeadNo   = params.get("leadNo")   ? Number(params.get("leadNo")) : undefined;
+  const qpLeadName = params.get("leadName") || undefined;
+
     const formatDate = (dateString) => {
       if (!dateString) return "";
       const date = new Date(dateString);
@@ -48,6 +54,36 @@ export const LRInstruction = () => {
       if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
       return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
   };
+
+    const { selectedCase, selectedLead, setSelectedCase, setSelectedLead, leadInstructions, leadStatus, setLeadStatus, setLeadInstructions } = useContext(CaseContext);
+
+    const routerState = (useLocation().state || {});
+  const stateCase   = routerState.caseDetails;
+  const stateLead   = routerState.leadDetails;
+
+  const resolvedCaseNo   = selectedCase?.caseNo ?? stateCase?.caseNo ?? qpCaseNo;
+  const resolvedCaseName = selectedCase?.caseName ?? stateCase?.caseName ?? qpCaseName;
+  const resolvedLeadNo   = selectedLead?.leadNo ?? stateLead?.leadNo ?? qpLeadNo;
+  const resolvedLeadName = selectedLead?.leadName ?? stateLead?.leadName ?? qpLeadName;
+
+  // 3) (Optional but nice) hydrate Context from query on first load
+  useEffect(() => {
+    if (resolvedCaseNo && resolvedCaseName && !selectedCase?.caseNo && typeof setSelectedCase === "function") {
+      setSelectedCase(prev => ({ ...(prev || {}), caseNo: resolvedCaseNo, caseName: resolvedCaseName }));
+    }
+    if (resolvedLeadNo && resolvedLeadName && !selectedLead?.leadNo) {
+      setSelectedLead?.({
+        leadNo: resolvedLeadNo,
+        leadName: resolvedLeadName,
+        caseNo: resolvedCaseNo,
+        caseName: resolvedCaseName
+      });
+    }
+  }, [
+    resolvedCaseNo, resolvedCaseName, resolvedLeadNo, resolvedLeadName,
+    selectedCase?.caseNo, selectedLead?.leadNo, setSelectedCase, setSelectedLead
+  ]);
+
   const [leadData, setLeadData] = useState({
     leadNumber: '',
     parentLeadNo: '',
@@ -107,8 +143,6 @@ export const LRInstruction = () => {
   const handleNextPage = () => {
     navigate('/LRReturn'); // Replace '/nextpage' with the actual next page route
   };
-
-  const { selectedCase, selectedLead, setSelectedLead, leadInstructions, leadStatus, setLeadStatus, setLeadInstructions } = useContext(CaseContext);
 
   
     const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
