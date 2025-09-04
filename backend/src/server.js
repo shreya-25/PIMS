@@ -93,6 +93,10 @@ const LRScratchpadRoutes = require("./routes/LRScratchpadRoutes");
 const CommentRoutes = require("./routes/CommentRoutes.js");
 const { dbConnect } = require("./config/dbConnect"); // Import dbConnect properly
 const path = require('path');
+const presenceRoutes = require("./routes/presenceRoutes");
+const verifyToken = require("./middleware/authMiddleware"); 
+
+
 
 
 
@@ -162,6 +166,7 @@ app.use("/api/lrvideo", LRViRoutes);
 app.use("/api/timeline", LRTimelineRoutes);
 app.use("/api/scratchpad", LRScratchpadRoutes);
 app.use("/api/comment", CommentRoutes);
+app.use("/api/presence", presenceRoutes);
 // app.use("/api/logs", LogRoutes);
 
 app.use('/uploads', express.static(path.join(__dirname, 'temp_uploads')));
