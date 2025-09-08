@@ -540,6 +540,66 @@ const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = 
 //   }
 // };
 
+// who’s still "active" = not declined (pending or accepted)
+const nonDeclinedUsernames = (assigned) =>
+  normalizeAssignedTo(assigned)
+    .filter(a => a.status !== "declined")
+    .map(a => a.username);
+
+// persist primary safely (bypass handleSave's role guard)
+const persistPrimary = async (leadObj, nextPrimary) => {
+  const token = localStorage.getItem("token");
+  const headers = { headers: { Authorization: `Bearer ${token}` } };
+
+  const payload = {
+    ...leadObj,
+    primaryInvestigator: nextPrimary || null,
+    primaryOfficer:      nextPrimary || null,
+  };
+
+  // Persist to your existing update endpoint
+  await api.put(
+    `/api/lead/update/${leadObj.leadNo}/${encodeURIComponent(leadObj.description)}/${leadObj.caseNo}/${encodeURIComponent(leadObj.caseName)}`,
+    payload,
+    headers
+  );
+
+  // Keep UI in sync immediately
+  setLeadData(prev => ({
+    ...prev,
+    primaryInvestigator: nextPrimary || "",
+    primaryOfficer:      nextPrimary || "",
+  }));
+};
+
+// if exactly one active officer remains, make them primary
+const autoPromotePrimaryIfSingleActive = async (leadObj) => {
+  const active = nonDeclinedUsernames(leadObj.assignedTo);
+  const current = leadObj.primaryInvestigator || leadObj.primaryOfficer || "";
+
+  // If exactly one active remains and it's not already primary → promote it.
+  if (active.length === 1 && active[0] !== current) {
+    try {
+      await persistPrimary(leadObj, active[0]);
+      setAlertMessage(`Primary Investigator set to ${active[0]} automatically.`);
+      setAlertOpen(true);
+    } catch (e) {
+      // Don’t block the flow if the server denies — just log it.
+      console.error("Auto-promote primary failed:", e);
+    }
+  }
+
+  // Optional: if none left active, clear primary
+  if (active.length === 0 && current) {
+    try {
+      await persistPrimary(leadObj, "");
+    } catch (e) {
+      console.error("Auto-clear primary failed:", e);
+    }
+  }
+};
+
+
 
 const acceptLead = async (leadNo, description) => {
   try {
@@ -554,6 +614,8 @@ const acceptLead = async (leadNo, description) => {
     const lead = data.lead;
     setLeadData(lead);
     setLeadStatus?.(lead.leadStatus);
+
+     await autoPromotePrimaryIfSingleActive(lead);
 
     setAlertMessage(
       lead.leadStatus === "Accepted"
@@ -580,6 +642,9 @@ const declineLead = async (leadNo, description, reason = "") => {
     const lead = data.lead;
     setLeadData(lead);
     setLeadStatus?.(lead.leadStatus);
+
+        await autoPromotePrimaryIfSingleActive(lead);
+
 
     setAlertMessage(
       lead.leadStatus === "Rejected"
@@ -892,12 +957,13 @@ const dueDateISO = leadData?.dueDate
 
 const myAssignment = normalizeAssignedTo(leadData.assignedTo).find(a => a.username === signedInOfficer);
 const showDecisionBlock =
-  myAssignment?.status === "pending" &&
-  (selectedCase.role !== "Case Manager" && selectedCase.role !== "Detective Supervisor");
+  myAssignment?.status === "pending" 
+  // &&(selectedCase.role !== "Case Manager" && selectedCase.role !== "Detective Supervisor");
+const isManager = ["Case Manager", "Detective Supervisor"].includes(selectedCase?.role);
+const isAssigned = !!myAssignment;
 
-const canWorkOnReturn =
-  ["Case Manager", "Detective Supervisor"].includes(selectedCase?.role) ||
-  myAssignment?.status === "accepted";
+const canWorkOnReturn = isAssigned ? (myAssignment.status === "accepted") : isManager;
+
 
 useEffect(() => {
   const fetchUsers = async () => {
@@ -1391,8 +1457,9 @@ const handleViewLeadReturn = async () => {
               Manage Lead Return
             </span>
               )}
-              {(["Investigator"].includes(selectedCase?.role)) && (
-                 <span
+              {/* {(["Investigator"].includes(selectedCase?.role)) && (
+            
+            <span
               className="menu-item"
               onClick={handleViewLeadReturn}
               title={isGenerating ? "Preparing report…" : "View Lead Return"}
@@ -1400,7 +1467,36 @@ const handleViewLeadReturn = async () => {
             >
               View Lead Return
             </span>
+              )} */}
+
+               {(["Investigator"].includes(selectedCase?.role)) && (
+            
+             <span
+              className="menu-item"
+              onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/viewLR", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } else {
+                    // alert("Please select a case and lead first.");
+                     setAlertMessage("Please select a case and lead first.");
+                     setAlertOpen(true);
+                  }
+                }}
+            >
+              View Lead Return
+            </span>
               )}
+
+
+             
           <span className="menu-item" onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
@@ -2036,7 +2132,7 @@ const handleViewLeadReturn = async () => {
           </div>
 
 
-            {(leadData.leadStatus !== "Assigned" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
+            {canWorkOnReturn && (
             <div className="lead-tracker-container">
               {statuses.map((status, idx) => (
                 <div

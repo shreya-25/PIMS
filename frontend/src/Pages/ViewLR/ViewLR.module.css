@@ -5,6 +5,10 @@
   min-height: 100vh;
   background: #fafafa;
 }
+.left-content9
+{
+  width: 100%;
+}
 
 /* Shell: Sidebar (left) + Main (center) + CommentBar (right) */
 .viewlr-shell {
@@ -178,7 +182,7 @@
 }
 
 /* when you still want the 80% look WHILE comments are visible, keep it via a helper */
-.lrsecNarrow { width: 80%; }            /* optional: only if you still need it */
+.lrsecNarrow { width: 100%; }            /* optional: only if you still need it */
 
 /* when comments are hidden, force full width */
 .lrsecFull { width: 100%; }

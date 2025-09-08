@@ -1324,9 +1324,12 @@ useEffect(() => {
                         : assignedOfficerUsernames.filter((o) => o !== value);
 
                       // keep primary valid: clear if it’s no longer in the list
-                      const newPrimary = newList.includes(leadData.primaryOfficer)
+                      // const newPrimary = newList.includes(leadData.primaryOfficer)
+                      //   ? leadData.primaryOfficer
+                      //   : "";
+                       const newPrimary = newList.includes(leadData.primaryOfficer)
                         ? leadData.primaryOfficer
-                        : "";
+                        : (newList.length === 1 ? newList[0] : "");
 
                       setLeadData((prev) => ({
                         ...prev,
