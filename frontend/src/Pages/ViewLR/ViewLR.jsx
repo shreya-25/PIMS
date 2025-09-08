@@ -86,7 +86,7 @@ export const ViewLR = () => {
   const [timeline, setTimeline] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openPerson, setOpenPerson] = useState(null);
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(true);
 const toggleComments = useCallback(() => setShowComments(s => !s), []);
 const closeComments  = useCallback(() => setShowComments(false), []);
 
@@ -253,7 +253,7 @@ const closePersonSheet = () => setOpenPerson(null);
                     //  setAlertOpen(true);
                   }
                 }}>Add Lead Return</span>
-          <span className="menu-item active">Manage Lead Return</span>
+          <span className="menu-item active">View Lead Return</span>
           <span className="menu-item" onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
@@ -275,10 +275,10 @@ const closePersonSheet = () => setOpenPerson(null);
         </div>
       </div>
 
-            <div className="LRI_Content">
-                    <SideBar  activePage="CasePageManager" />
+            <div className="LRI_Content9">
+                    {/* <SideBar  activePage="CasePageManager" /> */}
 
-          <div className="left-content">
+          <div className="left-content9">
             {loading ? (
               <div className="loading">Loading…</div>
             ) : (

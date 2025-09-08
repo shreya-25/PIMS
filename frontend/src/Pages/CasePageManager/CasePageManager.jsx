@@ -217,7 +217,7 @@ const handleConfirmOfficers = () => {
           leadNo: lead.id,
           incidentNo: lead.incidentNo,
           leadName: lead.description,
-          dueDate: lead.dueDate || "N/A",
+          dueDate: lead.dueDate || "",
           priority: lead.priority || "Medium",
           flags: lead.flags || [],
           assignedOfficers: lead.assignedOfficers || [],
@@ -376,7 +376,7 @@ useEffect(() => {
       leadNo: lead.leadNo != null ? lead.leadNo : lead.id,
       incidentNo: lead.incidentNo,
       leadName: lead.description,
-      dueDate: lead.dueDate || "N/A",
+      dueDate: lead.dueDate || "",
       priority: lead.priority || "Medium",
       flags: lead.flags || [],
       assignedOfficers: lead.assignedOfficers || [],
@@ -466,7 +466,7 @@ useEffect(() => {
     summary: lead.summary,
     dueDate: lead.dueDate
       ? new Date(lead.dueDate).toISOString().split("T")[0]
-      : "N/A",
+      : "",
     priority: lead.priority || "Medium",
     flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [],
     assignedOfficers: activeAssignees,
@@ -484,9 +484,20 @@ useEffect(() => {
         // const pendingLeads = filteredLeadsArray
         //   .filter((lead) => lead.leadStatus === "Accepted")
         //   .map(mapLead);
-        const pendingLeads = filteredLeadsArray
+        const pendingLeadsRaw = filteredLeadsArray
   .filter((lead) => lead.leadStatus === "To Reassign" || lead.leadStatus === "Rejected")
   .map(mapLead);
+
+  //       const pendingLeads = filteredLeadsArray
+  // .filter((lead) => lead.leadStatus === "To Reassign" || lead.leadStatus === "Rejected")
+  // .map(mapLead);
+  const pendingLeads = pendingLeadsRaw.sort((a, b) => {
+  const aNone = (a.assignedOfficers?.length ?? 0) === 0 ? 0 : 1;
+  const bNone = (b.assignedOfficers?.length ?? 0) === 0 ? 0 : 1;
+  if (aNone !== bNone) return aNone - bNone;      // “None” on top
+  return Number(b.id) - Number(a.id);             // then newest first
+});
+
   
         const LRInReview = filteredLeadsArray
           .filter((lead) => lead.leadStatus === "In Review")
@@ -902,6 +913,7 @@ useEffect(() => {
 
   // Calculate remaining days from the due date
   const calculateRemainingDays = (dueDate) => {
+     if (!dueDate) return "";
     const currentDate = new Date();
     const targetDate = new Date(dueDate);
     const timeDifference = targetDate - currentDate;
@@ -1087,9 +1099,9 @@ const assignedColKey    = {
 const assignedColWidths = {
   "Lead No.":           "9%",
   "Lead Name":          "22%",
-  "Due Date":           "10%",
+  // "Due Date":           "10%",
   "Priority":           "10%",
-  "Days Left":          "10%",
+  // "Days Left":          "10%",
   "Assigned Officers":  "20%",
 };
 
@@ -1191,9 +1203,9 @@ const sortedAssignedLeads = useMemo(() => {
 const pendingColumns   = [
   "Lead No.",
   "Lead Name",
-  "Due Date",
+  // "Due Date",
   "Priority",
-  "Days Left",
+  // "Days Left",
   "Assigned Officers"
 ];
 const pendingColKey    = {
@@ -1205,12 +1217,12 @@ const pendingColKey    = {
   "Assigned Officers": "assignedOfficers",
 };
 const pendingColWidths = {
-  "Lead No.":           "10%",
-  "Lead Name":          "21%",
-  "Due Date":           "10%",
-  "Priority":           "10%",
-  "Days Left":          "10%",
-  "Assigned Officers":  "20%",
+  "Lead No.":           "8%",
+  "Lead Name":          "32%",
+  // "Due Date":           "10%",
+  "Priority":           "8%",
+  // "Days Left":          "10%",
+  "Assigned Officers":  "18%",
 };
 
 // Refs + state
@@ -2061,8 +2073,8 @@ const toTitleCase = (s = "") =>
             <tr key={lead.id}>
               <td>{lead.id}</td>
               <td>{lead.description}</td>
-              <td>{lead.dueDate || "N/A"}</td>
-              <td>{lead.priority || "N/A"}</td>
+              <td>{lead.dueDate || ""}</td>
+              <td>{lead.priority || ""}</td>
               <td>{calculateRemainingDays(lead.dueDate) }</td>
             
 
@@ -2202,9 +2214,9 @@ const toTitleCase = (s = "") =>
             <tr key={lead.id}>
               <td>{lead.id}</td>
               <td>{lead.description}</td>
-              <td>{lead.dueDate}</td>
+              {/* <td>{lead.dueDate}</td> */}
               <td>{lead.priority}</td>
-              <td>{calculateRemainingDays(lead.dueDate)}</td>
+              {/* <td>{calculateRemainingDays(lead.dueDate)}</td> */}
               {/* <td>{lead.assignedOfficers.join(", ")}</td> */}
               {/* <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
             
@@ -2238,7 +2250,7 @@ const toTitleCase = (s = "") =>
              ))
             ) : (
               <tr>
-                <td colSpan="7" style={{ textAlign: 'center', padding: "8px" }}>
+                <td colSpan="5" style={{ textAlign: 'center', padding: "8px" }}>
                   No Accepted Leads Available
                 </td>
               </tr>
