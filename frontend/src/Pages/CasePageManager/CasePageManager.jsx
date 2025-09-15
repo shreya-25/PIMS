@@ -1,4 +1,4 @@
-import React, { useContext, useState, useRef, useEffect, useMemo} from 'react';
+import React, { useContext, useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import Searchbar from '../../components/Searchbar/Searchbar';
 import Filter from "../../components/Filter/Filter";
@@ -67,6 +67,8 @@ const [caseUpdatedAt, setCaseUpdatedAt] = useState(null);
      const dsRef = useRef(null);
 const cmRef = useRef(null);
 const invRef = useRef(null);
+const [isCaseSummaryOpen, setIsCaseSummaryOpen] = useState(true);
+const [isCaseTeamOpen, setIsCaseTeamOpen] = useState(false);
 
 
   useEffect(() => {
@@ -846,6 +848,22 @@ const saveInvestigators = async (
   }
 };
 
+// put this near your other helpers
+const fullNameFor = useCallback(
+  (uname) => {
+    const u = allUsers.find(x => x.username === uname);
+    return u ? `${u.firstName} ${u.lastName}` : uname; // fallback to username
+  },
+  [allUsers]
+);
+
+// (optional) precompute once per render
+const presenceNames = useMemo(
+  () => presenceOthers.map(o =>
+    o.fullName || o.name || fullNameFor(o.username)
+  ),
+  [presenceOthers, fullNameFor]
+);
 
 const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
@@ -920,6 +938,20 @@ useEffect(() => {
     return Math.max(0, Math.ceil(timeDifference / (1000 * 60 * 60 * 24))); // Return 0 if negative
   };
   
+  const getUserByUsername = useCallback(
+  (uname) => allUsers.find(u => u.username === uname),
+  [allUsers]
+);
+
+// display "First Last (username)" if we have the user, else just the raw value
+const displayName = (uname) => {
+  const u = getUserByUsername(uname);
+  return u ? `${u.firstName} ${u.lastName} (${u.username})` : (uname || "—");
+};
+
+// join multiple usernames as full names
+const displayNames = (usernames = []) =>
+  usernames.map(displayName).join(", ");
 
   // Sort leads
   const handleSort = (field, order) => {
@@ -1602,8 +1634,10 @@ const toTitleCase = (s = "") =>
     borderRadius: 8,
     margin: "8px 16px"
   }}>
-    <strong>Heads up:</strong> {presenceOthers.map(o => o.username).join(", ")}{" "}
-    {presenceOthers.length === 1 ? "is" : "are"} also viewing this case page now.
+   {/* {presenceOthers.map(o => o.username).join(", ")}{" "}
+    {presenceOthers.length === 1 ? "is" : "are"} also viewing this case page now. */}
+      {presenceNames.join(", ")}{" "}
+    {presenceNames.length === 1 ? "is" : "are"} also viewing this case page now.
   </div>
 )}
 
@@ -1624,16 +1658,15 @@ const toTitleCase = (s = "") =>
                   <p> PIMS &gt; Cases
                  </p>
                 </div> */}
-                 <div className="caseandleadinfo-cl">
+                 {/* <div className="caseandleadinfo-cl">
           <h5 className = "side-title-cl"> 
-             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
                <p> PIMS &gt; Cases </p>
              </h5>
           <h5 className="side-title-cl">
   {selectedCase?.role ?`Your Role: ${selectedCase.role || ""}` : ` ${leadStatus}`}
 </h5>
 
-          </div>
+          </div> */}
                 {/* Display Case Number and Name */}
                 <div className="case-header-cp">
                   <div className="cp-head">
@@ -1702,13 +1735,12 @@ const toTitleCase = (s = "") =>
   </div>
 </div> */}
 
-<div className="summary-box">
+{/* <div className="summary-box">
   <div className="" style={{ fontSize: 20 }}>
     <textarea
       value={`Case Summary: ${summary ?? ""}`}
       onChange={e => {
         const raw = e.target.value;
-        // strip the fixed label so your state only keeps the actual summary text
         const next = raw.replace(/^Case Summary:\s?/, "");
         setSummary(next);
       }}
@@ -1716,10 +1748,64 @@ const toTitleCase = (s = "") =>
       style={{ width: "100%", font: "inherit", whiteSpace: "pre-wrap" }}
     />
   </div>
-</div>
+</div> */}
 
+<section className="collapsible-section">
+  <button
+    type="button"
+    className="collapse-header"
+    onClick={() => setIsCaseSummaryOpen(o => !o)}
+    aria-expanded={isCaseSummaryOpen}
+  >
+    <span className="collapse-title">Case Summary</span>
+    <span className=""> 
+      <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
+      className="icon-image"
+       /></span>
+  </button>
 
+  {isCaseSummaryOpen && (
+      <div style={{ fontSize: 20 }}>
+        <textarea
+  value={summary ?? ""}
+  onChange={e => {
+    const raw = e.target.value;
+    const next = raw.replace(/^Case Summary:\s?/, "");
+    setSummary(next);
+  }}
+  rows={6}
+  style={{
+    width: "100%",
+    font: "inherit",
+    whiteSpace: "pre-wrap",
+    border: "none",
+    outline: "none",
+    resize: "none",
+    textAlign: "left",   // ensure alignment to the left
+    paddingLeft: "20px"          // remove default left padding
+  }}
+/>
+     
+    </div>
+  )}
+</section>
+
+<section className="collapsible-section">
+  <button
+    type="button"
+    className="collapse-header"
+    onClick={() => setIsCaseTeamOpen(o => !o)}
+    aria-expanded={isCaseTeamOpen}
+  >
+    <span className="collapse-title">Case Team</span>
+    <span className="">
+      <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
+      className="icon-image"
+       />
+    </span>
+  </button>
                 
+                {isCaseTeamOpen && (
 
                 <div className="case-team">
                 <table className="leads-table" style={caseTeamStyles.table}>
@@ -1731,7 +1817,7 @@ const toTitleCase = (s = "") =>
                 <tbody>
                   <tr>
                   <td style={caseTeamStyles.td}>Detective Supervisor</td>
-                  <td style={caseTeamStyles.td}>
+                  <td className="name-cell" style={caseTeamStyles.td}>
                     {(selectedCase.role === "Detective Supervisor") ? (
                       <div  ref={dsRef}
                       className="custom-dropdown">
@@ -1739,12 +1825,15 @@ const toTitleCase = (s = "") =>
                           className="dropdown-header1"
                           onClick={() => setDetectiveSupervisorDropdownOpen(prev => !prev)}
                         >
-                          {selectedDetectiveSupervisor
+                          {/* {selectedDetectiveSupervisor
                             ? (() => {
                                 const usr = allUsers.find(x => x.username === selectedDetectiveSupervisor);
                                 return usr ? `${usr.username}` : selectedDetectiveSupervisor;
                               })()
-                            : "Select Detective Supervisor"}
+                            : "Select Detective Supervisor"} */}
+                            {selectedDetectiveSupervisor
+  ? displayName(selectedDetectiveSupervisor)
+  : "Select Detective Supervisor"}
                           <span className="dropdown-icon">
                             {detectiveSupervisorDropdownOpen ? "▲" : "▼"}
                           </span>
@@ -1787,14 +1876,15 @@ const toTitleCase = (s = "") =>
                 </tr>
                 <tr>
                   <td style={caseTeamStyles.td}>Case Manager{team.caseManagers.length>1 ? "s" : ""}</td>
-                  <td style={caseTeamStyles.td}>
+                  <td className="name-cell" style={caseTeamStyles.td}>
                     {(selectedCase.role==="Case Manager" || selectedCase.role==="Detective Supervisor") ? (
                       <div ref={cmRef}
                       className="custom-dropdown">
                         <div
                           className="dropdown-header1"
                           onClick={() => setCaseManagersDropdownOpen(prev => !prev)}
-                        >          {selectedCaseManagers.length>0
+                        >          
+                        {/* {selectedCaseManagers.length>0
                             ? selectedCaseManagers
                                 .map(u=>{
                                   const usr=allUsers.find(x=>x.username===u);
@@ -1803,7 +1893,10 @@ const toTitleCase = (s = "") =>
                                     : u;
                                 })
                                 .join(", ")
-                            : "Select Case Manager(s)"}
+                            : "Select Case Manager(s)"} */}
+                            {selectedCaseManagers.length > 0
+  ? displayNames(selectedCaseManagers)
+  : "Select Case Manager(s)"}
                           <span className="dropdown-icon">
                             {caseManagersDropdownOpen ? "▲" : "▼"}
                           </span>
@@ -1853,7 +1946,7 @@ const toTitleCase = (s = "") =>
                 </tr>
 
                 <tr>
-                        <td style={caseTeamStyles.td}>
+                        <td className="name-cell" style={caseTeamStyles.td}>
                           Investigator{team.investigators.length > 1 ? "s" : ""}
                         </td>
                         <td style={caseTeamStyles.td}>
@@ -1868,10 +1961,9 @@ const toTitleCase = (s = "") =>
                                   setInvestigatorsDropdownOpen(!investigatorsDropdownOpen)
                                 }
                               >
-                                {selectedInvestigators.length > 0
+                                {/* {selectedInvestigators.length > 0
                                   ? selectedInvestigators
                                       .map((username) => {
-                                        // Find full name from allUsers
                                         const u = allUsers.find(
                                           (x) => x.username === username
                                         );
@@ -1880,7 +1972,10 @@ const toTitleCase = (s = "") =>
                                           : username;
                                       })
                                       .join(", ")
-                                  : "Select Investigators"}
+                                  : "Select Investigators"} */}
+                                  {selectedInvestigators.length > 0
+  ? displayNames(selectedInvestigators)
+  : "Select Investigators"}
 
                                 <span className="dropdown-icon">
                                   {investigatorsDropdownOpen ? "▲" : "▼"}
@@ -1945,6 +2040,11 @@ const toTitleCase = (s = "") =>
                 </tbody>
                 </table>
                 </div>
+                 )}
+</section>
+
+
+
                 {/* <div className="update-lead-btn">
                   <button className="save-btn1" onClick={openConfirmOfficers}>
                     Save

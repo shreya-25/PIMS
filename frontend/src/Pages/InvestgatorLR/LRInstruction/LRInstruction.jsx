@@ -292,6 +292,32 @@ const attachFiles = async (items, idFieldName, filesEndpoint) => {
       }
     });
   };
+ const signedInOfficer = localStorage.getItem("loggedInUser");
+ // who is primary for this lead?
+const primaryUsername =
+  leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
+
+// am I the primary investigator on this lead?
+const isPrimaryInvestigator =
+  selectedCase?.role === "Investigator" &&
+  !!signedInOfficer &&
+  signedInOfficer === primaryUsername;
+
+// primary goes to the interactive ViewLR page
+const goToViewLR = () => {
+  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+  if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
+    setAlertMessage("Please select a case and lead first.");
+    setAlertOpen(true);
+    return;
+  }
+
+  navigate("/viewLR", {
+    state: { caseDetails: kase, leadDetails: lead }
+  });
+};
 
   const [assignedOfficers, setAssignedOfficers] = useState([]);
   
@@ -438,7 +464,7 @@ console.log("isReadOnly", isReadOnly);
                     });
                   } }} > Lead Information</span>
                    <span className="menu-item active" >Add Lead Return</span>
-                    {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
+                 {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
            <span
               className="menu-item"
               onClick={handleViewLeadReturn}
@@ -448,16 +474,13 @@ console.log("isReadOnly", isReadOnly);
               Manage Lead Return
             </span>
               )}
-              {(["Investigator"].includes(selectedCase?.role)) && (
-                 <span
-              className="menu-item"
-              onClick={handleViewLeadReturn}
-              title={isGenerating ? "Preparing report…" : "View Lead Return"}
-              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-            >
-              View Lead Return
-            </span>
-              )}
+
+            {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
+  <span className="menu-item" onClick={goToViewLR}>
+    Submit Lead Return
+  </span>
+)}
+
                    <span className="menu-item" onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
@@ -613,9 +636,29 @@ Case Page
           <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
             Timeline
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
+          {/* <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
             Finish
-          </span>
+          </span> */}
+          {/* {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
+            <span
+              className="menu-item"
+              onClick={handleViewLeadReturn}   
+              title={isGenerating ? "Preparing report…" : "Manage Lead Return"}
+              style={{ fontWeight: '400', opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
+            >
+              Review
+            </span>
+          )}
+          {selectedCase?.role === "Investigator" && (
+            <span
+              className="menu-item"
+              onClick={goToViewLR}
+              style={{fontWeight: '400' }}
+              title="View Lead Return"
+            >
+              Submit
+            </span>
+          )} */}
          </div> </div>
        <div className="caseandleadinfo">
           <h5 className = "side-title"> 

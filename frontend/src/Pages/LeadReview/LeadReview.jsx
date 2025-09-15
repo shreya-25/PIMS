@@ -1399,6 +1399,32 @@ const handleViewLeadReturn = async () => {
   }
 };
 
+// who is primary for this lead?
+const primaryUsername =
+  leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
+
+// am I the primary investigator on this lead?
+const isPrimaryInvestigator =
+  selectedCase?.role === "Investigator" &&
+  !!signedInOfficer &&
+  signedInOfficer === primaryUsername;
+
+// primary goes to the interactive ViewLR page
+const goToViewLR = () => {
+  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+  if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
+    setAlertMessage("Please select a case and lead first.");
+    setAlertOpen(true);
+    return;
+  }
+
+  navigate("/viewLR", {
+    state: { caseDetails: kase, leadDetails: lead }
+  });
+};
+
 
 
 
@@ -1457,43 +1483,14 @@ const handleViewLeadReturn = async () => {
               Manage Lead Return
             </span>
               )}
-              {/* {(["Investigator"].includes(selectedCase?.role)) && (
-            
-            <span
-              className="menu-item"
-              onClick={handleViewLeadReturn}
-              title={isGenerating ? "Preparing report…" : "View Lead Return"}
-              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-            >
-              View Lead Return
-            </span>
-              )} */}
 
-               {(["Investigator"].includes(selectedCase?.role)) && (
-            
-             <span
-              className="menu-item"
-              onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+            {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
+  <span className="menu-item" onClick={goToViewLR}>
+    Submit Lead Return
+  </span>
+)}
 
-                  if (lead && kase) {
-                    navigate("/viewLR", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } else {
-                    // alert("Please select a case and lead first.");
-                     setAlertMessage("Please select a case and lead first.");
-                     setAlertOpen(true);
-                  }
-                }}
-            >
-              View Lead Return
-            </span>
-              )}
+          
 
 
              

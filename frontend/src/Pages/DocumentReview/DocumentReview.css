@@ -150,3 +150,32 @@
   margin-right: 8px; /* spaces it from the zoom buttons */
   color: black;
 }
+
+.approve-btn-lr, .return-btn-lr, .close-btn-lr
+{
+  font-size: 20px;
+  width: 105px;
+  height: 40px;
+  color: black;
+  border-radius: 0.5;
+  border: 2px solid black;
+  display: flex;
+  text-align: center;
+  justify-content: center;
+  padding:5px 0px;
+  margin: 0px;
+}
+.approve-btn-lr{
+  color: green;
+    border: 2px solid green;
+}
+.return-btn-lr{
+  color: rgba(122, 12, 12, 0.874);
+    border: 2px solid rgba(122, 12, 12, 0.874);
+}
+.btn-sec-dr
+{
+  width: 26%;
+  display:flex;
+  justify-content: space-between;
+}

@@ -1,11 +1,13 @@
 import React, { useContext, useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
 import { SideBar } from "../../components/Sidebar/Sidebar";
 import CommentBar from "../../components/CommentBar/CommentBar";
 import { CaseContext } from "../CaseContext";
 import api from "../../api";
 import styles from "./ViewLR.module.css"; 
+import { AlertModal } from "../../components/AlertModal/AlertModal";
+import { useLeadStatus } from '../../hooks/useLeadStatus';
 
 /* ---------- person details sheet (non-blocking) ---------- */
 function PersonSheet({ person, onClose }) {
@@ -70,8 +72,6 @@ const toText = (v) => {
 export const ViewLR = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { selectedCase, selectedLead } = useContext(CaseContext);
-
   // -------- data --------
   const [instructions, setInstructions] = useState({});
   const [returns, setReturns] = useState([]); // [{_id, narrativeId?, narrative, ...}]
@@ -87,6 +87,27 @@ export const ViewLR = () => {
   const [loading, setLoading] = useState(true);
   const [openPerson, setOpenPerson] = useState(null);
   const [showComments, setShowComments] = useState(true);
+  const currentUser = localStorage.getItem("loggedInUser");
+  const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus} = useContext(CaseContext);
+   const [alertOpen, setAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState("");
+    const [leadData, setLeadData] = useState({});
+     const [confirmConfig, setConfirmConfig] = useState({
+      open: false,
+      title: '',
+      message: '',
+      onConfirm: () => {}
+    });
+      const getCasePageRoute = () => {
+    if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
+    return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
+};
+ const [notifyConfig, setNotifyConfig] = useState({
+    open: false,
+    title: 'Notification',
+    message: ''
+  });
+
 const toggleComments = useCallback(() => setShowComments(s => !s), []);
 const closeComments  = useCallback(() => setShowComments(false), []);
 
@@ -95,7 +116,36 @@ const closeComments  = useCallback(() => setShowComments(false), []);
   const leadNo   = selectedLead?.leadNo   || location.state?.leadDetails?.leadNo;
   const leadName = selectedLead?.leadName || location.state?.leadDetails?.leadName;
 
+  const { status, isReadOnly, setLocalStatus } = useLeadStatus({
+    caseNo: selectedCase.caseNo,
+    caseName: selectedCase.caseName,
+    leadNo: selectedLead.leadNo,
+    leadName: selectedLead.leadName,
+  });
 
+  const isSubmittedInReview = status === "In Review";
+const isClosedOrCompleted = status === "Closed" || status === "Completed";
+const isCaseManager = selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
+
+const isInReview         = status === "In Review";
+const isInvestigator     = !isCaseManager;
+
+const canShowCMButtons   = isCaseManager && !isClosedOrCompleted;
+
+
+
+const primaryUsername =
+   leadData?.primaryInvestigator ||
+   leadData?.primaryOfficer || "";   // fallback if you stored it under primaryOfficer
+
+ const isPrimaryInvestigator = !!currentUser && currentUser === primaryUsername;
+
+const canShowSubmit      = isInvestigator && isPrimaryInvestigator && !isClosedOrCompleted && !isInReview;
+
+
+  const handleNavigation = (route) => {
+    navigate(route); // Navigate to respective page
+  };
 
 
   // -------- fetch all sections (same endpoints you already use) --------
@@ -135,7 +185,8 @@ const closeComments  = useCallback(() => setShowComments(false), []);
           api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
         ]);
 
-        setInstructions(instrRes.data?.[0] || {});
+        const leadDoc = instrRes.data?.[0] || {}; setInstructions(leadDoc);
+ setLeadData(leadDoc);
         setReturns(returnsRes.data || []);
         setPersons(personsRes.data || []);
         setVehicles(vehiclesRes.data || []);
@@ -196,10 +247,155 @@ const closeComments  = useCallback(() => setShowComments(false), []);
   const openPersonSheet = (p) => setOpenPerson(p);
 const closePersonSheet = () => setOpenPerson(null);
 
+ const normalizeAssignees = (arr) => {
+   if (!Array.isArray(arr)) return [];
+   return arr
+     .map(a => {
+        if (typeof a === "string") return a.trim();
+      if (a?.username) return a.username;
+      if (a?.assignee) return a.assignee;   // some places you store this field name
+      if (a?.name) return a.name;
+       return String(a || "").trim();
+     })
+     .filter(Boolean);
+ };
+const actuallyDoSubmitReport = async () => {
+  const now = new Date().toISOString();
+  try {
+    const token = localStorage.getItem("token");
+
+    const me = localStorage.getItem("loggedInUser") || localStorage.getItem("officerName") || "Unknown Officer";
+   const assignees = normalizeAssignees(leadData.assignedTo);
+   const managerUser =
+     typeof leadData.assignedBy === "string"
+       ? leadData.assignedBy
+       : (leadData.assignedBy?.username || leadData.assignedBy?.assignee || "");
+
+      const body = {
+        leadNo: selectedLead.leadNo,
+        description: selectedLead.leadName,
+        caseNo: selectedCase.caseNo,
+        caseName: selectedCase.caseName,
+        submittedDate: new Date(),
+        assignedTo: { assignees: assignees.length ? assignees : [me], lRStatus: "Submitted" },
+     assignedBy: { assignee: managerUser || me, lRStatus: "Pending" }
+      };
+
+      const response = await api.post("/api/leadReturn/create", body, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (response.status === 201) {
+        const statusResponse = await api.put(
+          "/api/lead/status/in-review",
+          {
+            leadNo: selectedLead.leadNo,
+            description: selectedLead.leadName,
+            caseNo: selectedCase.caseNo,
+            caseName: selectedCase.caseName,
+            submittedDate: now
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+
+        if (statusResponse.status === 200) {
+          setLeadStatus("In Review");
+          setSelectedLead(prev => ({...prev,leadStatus: "In Review"}));
+          setLocalStatus("In Review");
+          console.log("status from hook", status);
+
+          
+          // alert("Lead Return submitted");
+           setAlertMessage("Lead Return submitted!");
+      setAlertOpen(true);
+        const manager    = leadData.assignedBy;                  // string username
+        const investigators = normalizeAssignees(leadData.assignedTo);
+        if (manager) {
+          const payload = {
+            notificationId: Date.now().toString(),
+            assignedBy:     localStorage.getItem("loggedInUser"),
+            assignedTo: [{
+              username: manager,
+              role:     "Case Manager",           
+              status:   "pending",
+              unread:   true
+            }],
+            action1:        "submitted a lead return for review",
+            post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
+            caseNo:         selectedCase.caseNo,
+            caseName:       selectedCase.caseName,
+            leadNo:         selectedLead.leadNo,
+            leadName:       selectedLead.leadName,
+            type:           "Lead"
+          };
+          await api.post("/api/notifications", payload, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        }
+
+       
+         setAlertMessage("Lead Return submitted!");
+      setAlertOpen(true);
+        } else {
+           setAlertMessage("Lead Return submitted but status update failed.");
+      setAlertOpen(true);
+        }
+        navigate(getCasePageRoute());
+      } else {
+        setAlertMessage("Failed to submit Lead Return");
+        setAlertOpen(true);
+      }
+    } catch (error) {
+      console.error("Error during Lead Return submission or status update:", error);
+      setAlertMessage("Something went wrong while submitting the report.");
+        setAlertOpen(true);
+    }
+  };
+  
+
+  const handleSubmitReport = () => {
+  setConfirmConfig({
+    open: true,
+    title: 'Confirm Submission',
+    message:
+      `Once you submit, no assigned investigator can edit this anymore.\n\n`
+      + `Are you absolutely sure you want to submit the lead return for Case Manager approval?`,
+    onConfirm: actuallyDoSubmitReport
+  });
+};
+
 
   return (
     <div className="lrfinish-container">
       <Navbar />
+      <AlertModal
+        isOpen={confirmConfig.open}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        onConfirm={() => {
+          setConfirmConfig(c => ({ ...c, open: false }));
+          confirmConfig.onConfirm();
+        }}
+        onClose={() => setConfirmConfig(c => ({ ...c, open: false }))}
+      />
+      
+      {/* notification modal (info only) */}
+      <AlertModal
+        isOpen={notifyConfig.open}
+        title={notifyConfig.title}
+        message={notifyConfig.message}
+        onConfirm={() => setNotifyConfig(n => ({ ...n, open: false }))}
+        onClose={() => setNotifyConfig(n => ({ ...n, open: false }))}
+      />
+      
       {/* <div className="styles.lrcontent"> */}
 
         {/* Main content */}
@@ -253,7 +449,7 @@ const closePersonSheet = () => setOpenPerson(null);
                     //  setAlertOpen(true);
                   }
                 }}>Add Lead Return</span>
-          <span className="menu-item active">View Lead Return</span>
+          <span className="menu-item active">Submit Lead Return</span>
           <span className="menu-item" onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
@@ -284,20 +480,27 @@ const closePersonSheet = () => setOpenPerson(null);
             ) : (
               <>
               
-          <div className="caseandleadinfo">
+          {/* <div className="caseandleadinfo">
             <h5 className="side-title">
               PIMS &gt; Cases &gt; Lead #{leadNo} &gt; View All
             </h5>
             <h5 className="side-title">
               Case: {caseName} &nbsp;|&nbsp; Lead: {leadName}
             </h5>
-          </div>
+          </div> */}
 
        <div className={styles.cont}>
                   <div className={`${styles.lrsec} ${styles.singleCol} ${!showComments ? styles.lrsecFull : ""}`}>
 
                   {/* Instructions */}
                   <section className={styles.block}>
+                          <header className="dr-toolbar">
+          <div className="dr-title">Lead Return Review</div>
+          <div className="">
+      <button className="approve-btn-lr" onClick={handleSubmitReport}>Submit</button>
+
+      </div>
+        </header>
                         <div className={styles.lrRow}>
                             <div className={styles.rowLabel}>Lead Log Summary</div>
                             <div className={styles.rowContent}>
@@ -308,7 +511,15 @@ const closePersonSheet = () => setOpenPerson(null);
                         </div>
 
                         <div className={styles.lrRow}>
-                            <div className={styles.rowLabel}>Lead Instructions</div>
+                            {/* <div className={styles.rowLabel}><a href ="." >Lead Instructions </a></div> */}
+                            <Link
+  className={styles.rowLabel}
+  to="/LRInstruction"
+  // optional: pass along context for that page
+  state={{ caseDetails: selectedCase, leadDetails: selectedLead }}
+>
+  Lead Instructions
+</Link>
                             <div className={styles.rowContent}>
                                 <div className={styles.textBox}>
                                    {leadInstructionText ? toText(leadInstructionText) : "—"}
