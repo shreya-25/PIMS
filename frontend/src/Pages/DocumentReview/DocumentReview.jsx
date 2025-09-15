@@ -1,129 +1,17 @@
-// import { useMemo, useState, useEffect } from "react";
-// import { useLocation } from "react-router-dom";
-// import { Document, Page, pdfjs } from "react-pdf";
-// import CommentBar from "../../components/CommentBar/CommentBar";
-
-// import "./DocumentReview.css";
 
 
-// pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-//   "pdfjs-dist/build/pdf.worker.min.mjs",
-//   import.meta.url
-// ).toString();
 
-
-// export function DocumentReview({
-//   pdfUrl = "/test1.pdf", // put your PDF in /public/testPDF2.pdf
-// }) {
-
-// const location = useLocation();
-// const passedUrl = location.state?.pdfUrl || null;      // object URL from LRFinish
-// const passedName = location.state?.filename || null;    // suggested filename
-// const effectiveUrl = passedUrl || pdfUrl;
-//   const [numPages, setNumPages] = useState(null);
-//   const [scale, setScale] = useState(1.05);
-//   const [comments, setComments] = useState([]);
-//   const [draft, setDraft] = useState("");
-
-// useEffect(() => {
-//    return () => {
-//     if (passedUrl?.startsWith("blob:")) {
-//       URL.revokeObjectURL(passedUrl);
-//     }    };
-//  }, [passedUrl]);
-
-//   // Add below your useState hooks
-// const handleDownload = async () => {
-//   try {
-//     // If the file is served from your app (e.g., /public/test1.pdf), a simple <a download> works.
-//   const a = document.createElement("a");
-//    a.href = effectiveUrl;
-//        const inferred = passedName
-//       || effectiveUrl.split("/").filter(Boolean).pop()
-//      || "document.pdf";
-//     a.download = inferred.endsWith(".pdf") ? inferred : "document.pdf";
-//     document.body.appendChild(a);
-//     a.click();
-//     a.remove();
-//   } catch (err) {
-//     console.error("Download failed:", err);
-//   }
-// };
-
-
-//   const styles = useMemo(
-//     () => ({
-//       zoomLabel: { minWidth: 56, textAlign: "center" },
-//     }),
-//     []
-//   );
-
-//   const addComment = () => {
-//     const text = draft.trim();
-//     if (!text) return;
-//     setComments((prev) => [
-//       ...prev,
-//       { id: prev.length ? prev[prev.length - 1].id + 1 : 1, text, ts: new Date().toISOString() },
-//     ]);
-//     setDraft("");
-//   };
-
-//   return (
-//     <div className="dr-shell">
-//       {/* Left: PDF */}
-//       <section className="dr-left">
-//         <header className="dr-toolbar">
-//   <div className="dr-title">Document Review</div>
-//   <div className="dr-zoom">
-//     {/* Download button */}
-//     <button className="dr-download" onClick={handleDownload}>
-//       Download PDF
-//     </button>
-
-//     <button onClick={() => setScale((s) => Math.max(0.6, +(s - 0.1).toFixed(2)))}>−</button>
-//     <div aria-live="polite" style={styles.zoomLabel}>{(scale * 100).toFixed(0)}%</div>
-//     <button onClick={() => setScale((s) => Math.min(2, +(s + 0.1).toFixed(2)))}>+</button>
-//   </div>
-// </header>
-
-
-//         <div className="dr-pdfArea">
-//          <Document file={effectiveUrl} onLoadSuccess={({ numPages }) => setNumPages(numPages)}>
-
-//             {Array.from({ length: numPages || 0 }, (_, i) => (
-//               <Page
-//                 key={i}
-//                 pageNumber={i + 1}
-//                 scale={scale}
-//                 renderTextLayer
-//                 renderAnnotationLayer
-//                 className="dr-page"
-//               />
-//             ))}
-//           </Document>
-//         </div>
-//       </section>
-
-//       {/* Right: Comments (replace with your CommentBar if you prefer) */}
-//        <div classname = "comment-box" >
-//      <aside className="dr-right" aria-label="Comments">
- 
-//     <CommentBar tag="DocumentReview" threadKey="test1" />
-// </aside>
-//   </div>
-
-//     </div>
-//   );
-// }
-
-// export default DocumentReview;
-
-
-import { useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useMemo, useContext, useState, useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Document, Page, pdfjs } from "react-pdf";
 import CommentBar from "../../components/CommentBar/CommentBar";
+import { CaseContext } from "../CaseContext";
+
 import "./DocumentReview.css";
+import { AlertModal } from "../../components/AlertModal/AlertModal";
+import api, { BASE_URL } from "../../api";
+import { useLeadStatus } from '../../hooks/useLeadStatus';
+
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs?ver=5.3.93',
@@ -139,12 +27,111 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
   const filename = typeof state?.filename === "string" ? state.filename : null;
 
   const effectiveFile = pdfBlob || urlFromState || pdfUrl;
-
+ const navigate = useNavigate();
   const [numPages, setNumPages] = useState(null);
   const [scale, setScale] = useState(1.8);
   const [errorMsg, setErrorMsg] = useState("");
+   const [confirmConfig, setConfirmConfig] = useState({
+      open: false,
+      title: '',
+      message: '',
+      onConfirm: () => {}
+    });
+     const [showCloseModal, setShowCloseModal] = useState(false);
+      const [closeReason, setCloseReason]       = useState("");
+      const [closing, setClosing]               = useState(false);
+      const currentUser = localStorage.getItem("loggedInUser");
+        const [leadData, setLeadData] = useState({});
+         const [alertOpen, setAlertOpen] = useState(false);
+          const [alertMessage, setAlertMessage] = useState("");
+          const [notifyOpen, setNotifyOpen] = useState(false);
+            const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus} = useContext(CaseContext);
+          const getCasePageRoute = () => {
+    if (!selectedCase || !selectedCase.role) return "/HomePage"; // Default route if no case is selected
+    return selectedCase.role === "Investigator" ? "/Investigator" : "/CasePageManager";
+};  
+          
+      const { status, isReadOnly, setLocalStatus } = useLeadStatus({
+        caseNo: selectedCase.caseNo,
+        caseName: selectedCase.caseName,
+        leadNo: selectedLead.leadNo,
+        leadName: selectedLead.leadName,
+      });
 
   const styles = useMemo(() => ({ zoomLabel: { minWidth: 56, textAlign: "center" } }), []);
+
+  const handleApprove = () => {
+  setConfirmConfig({
+    open: true,
+    title: 'Confirm Approve',
+    message: 'Are you sure you want to APPROVE this lead return?',
+    onConfirm: () => submitReturnAndUpdate('complete')
+  });
+};
+const handleReturn = () => {
+  setConfirmConfig({
+    open: true,
+    title: 'Confirm Return',
+    message: 'Are you sure you want to RETURN this lead for changes?',
+    onConfirm: () => submitReturnAndUpdate('pending')
+  });
+};
+const handleReopen = () => {
+  setConfirmConfig({
+    open: true,
+    title: 'Confirm Reopen',
+    message: 'Are you sure you want to REOPEN this lead?',
+    onConfirm: () => submitReturnAndUpdate('pending')
+  });
+};
+
+  const handleConfirmClose = async () => {
+    if (!closeReason.trim()) {
+      setAlertMessage("Please provide a reason before closing the lead.");
+      setNotifyOpen(true);
+      return;
+    }
+
+    setClosing(true);
+    try {
+      const token = localStorage.getItem("token");
+      await api.put(
+        `/api/lead/lead/status/close`,
+        {
+          leadNo:      selectedLead.leadNo,
+          description: selectedLead.leadName,
+          caseNo:      selectedCase.caseNo,
+          caseName:    selectedCase.caseName,
+          reason:      closeReason
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // update local state
+      setLeadStatus("Closed");
+      setSelectedLead(prev => ({ ...prev, leadStatus: "Closed" }));
+      setShowCloseModal(false);
+      setCloseReason("");
+      setAlertMessage("Lead closed successfully.");
+      setNotifyOpen(true);
+
+    } catch (err) {
+      console.error("Error closing lead:", err);
+      setAlertMessage("Error closing lead. See console for details.");
+      setNotifyOpen(true);
+    } finally {
+      setClosing(false);
+    }
+  };
+
+const handleClose = () => {
+  setConfirmConfig({
+    open: true,
+    title: 'Confirm Close',
+    message: 'Are you sure you want to close this lead?',
+    onConfirm: handleConfirmClose
+  });
+};
 
   const handleDownload = () => {
     try {
@@ -171,6 +158,82 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
     }
   };
 
+   const submitReturnAndUpdate = async (newStatus) => {
+    try {
+      const token = localStorage.getItem("token");
+  
+      // --- 2) Update the leadStatus to either Complete or Pending ---
+      const statusRes = await api.put(
+        `/api/lead/status/${newStatus}`,           // "/status/complete" or "/status/pending"
+        {
+          leadNo:     selectedLead.leadNo,
+          description: selectedLead.leadName,
+          caseNo:     selectedCase.caseNo,
+          caseName:   selectedCase.caseName,
+           ...(newStatus === "complete" && { approvedDate: new Date().toISOString() })
+        },
+        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }}
+      );
+  
+      if (statusRes.status === 200) {
+         setAlertMessage("Lead Return submitted");
+        setAlertOpen(true);
+
+      const human =
+        newStatus === "complete" ? "approved the lead" :
+        newStatus === "Accepted" ? "returned the lead" : "reopened the lead";
+
+
+        setSelectedLead((prev) => ({
+          ...prev,
+          leadStatus: newStatus === "complete" ? "Completed" : "Accepted",
+        }));
+
+        setLeadStatus(newStatus === "complete" ? "Completed" : "Accepted");
+        const investigators = (leadData.assignedTo || []).map(a => a.username);
+        const managerName    = leadData.assignedBy;
+      if (investigators.length) {
+        const payload = {
+          notificationId: Date.now().toString(),
+          assignedBy:     localStorage.getItem("loggedInUser"),
+          assignedTo:     investigators.map(u => ({
+           username: u,
+           role:     "Investigator",
+           status:   "pending",
+           unread:   true
+         })),
+          action1:        human,
+          post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
+          action2:        "related to the case",
+          post2:          `${selectedCase.caseNo}: ${selectedCase.caseName}`,
+          caseNo:         selectedCase.caseNo,
+          caseName:       selectedCase.caseName,
+          leadNo:         selectedLead.leadNo,
+          leadName:       selectedLead.leadName,
+          type:           "Lead"
+        };
+        await api.post("/api/notifications", payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+
+      // alert(`${assignedBy} ${human} and all investigators notified.`);
+      navigate(getCasePageRoute());
+
+      } else {
+          setAlertMessage("Lead Return submitted but status update failed");
+        setAlertOpen(true);
+      }
+  
+    } catch (err) {
+      console.error(err);
+      // alert("Something went wrong");
+      setAlertMessage("Something went wrong");
+        setAlertOpen(true);
+    }
+  };
+
+
   return (
     <div className="dr-shell">
       <section className="dr-left">
@@ -182,6 +245,18 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
             <div aria-live="polite" style={styles.zoomLabel}>{(scale * 100).toFixed(0)}%</div>
             <button onClick={() => setScale((s) => Math.min(2, +(s + 0.1).toFixed(2)))}>+</button>
           </div>
+  {status === "Completed" ? (
+    <button className="approve-btn-lr" onClick={handleReopen}>Reopen</button>
+  ) : (
+    <>
+     <div className="btn-sec-dr">
+      <button className="approve-btn-lr" onClick={handleApprove}>Approve</button>
+      <button className="return-btn-lr" onClick={handleReturn}>Return</button>
+      <button className="close-btn-lr" onClick={() => setShowCloseModal(true)}>Close</button>
+      </div>
+    </>
+  )}
+
         </header>
 
         <div className="dr-pdfArea">
@@ -221,6 +296,16 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
       <CommentBar tag="DocumentReview" threadKey="test1" />
     </div>
   </aside>
+  <AlertModal
+    isOpen={confirmConfig.open}
+    title={confirmConfig.title}
+    message={confirmConfig.message}
+    onConfirm={() => {
+      setConfirmConfig(c => ({ ...c, open: false }));
+      confirmConfig.onConfirm();
+    }}
+    onClose={() => setConfirmConfig(c => ({ ...c, open: false }))}
+  />
     </div>
   );
 }

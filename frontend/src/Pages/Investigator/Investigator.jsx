@@ -48,7 +48,8 @@ export const Investigator = () => {
 
          const isNavDisabled = lead => lead.leadStatus === 'Assigned';
 const disabledStyle = { opacity: 0.5, cursor: 'not-allowed' };
-
+const [isCaseSummaryOpen, setIsCaseSummaryOpen] = useState(true);
+const [isCaseTeamOpen, setIsCaseTeamOpen] = useState(false);
 
   console.log("case context", selectedCase);
   const handleSaveClick = () => {
@@ -1064,9 +1065,8 @@ const sortedAllLeads = useMemo(() => {
                
                 <div className="left-content">
 
-   <div className="caseandleadinfo-cl">
+   {/* <div className="caseandleadinfo-cl">
           <h5 className = "side-title-cl"> 
-             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
                <p> PIMS &gt; Cases </p>
              </h5>
           <h5 className="side-title-cl">
@@ -1075,7 +1075,7 @@ const sortedAllLeads = useMemo(() => {
     : ` ${leadStatus}`}
 </h5>
 
-          </div>
+          </div> */}
                    {/* Display Case Number and Name */}
                 <div className="case-header-cp">
                   <div className="cp-head">
@@ -1108,21 +1108,59 @@ const sortedAllLeads = useMemo(() => {
       />
     </div>
     </div> */}
-      <div className="summary-box">
-  <div
-    className="case-summary"
-    style={{
-      maxHeight: "150px",       // make it scrollable if content is long
-      overflowY: "auto",
-      padding: "8px",
-      border: "1px solid #ccc",
-      borderRadius: "4px",
-      fontSize: "20px",
-    }}
+
+<section className="collapsible-section">
+  <button
+    type="button"
+    className="collapse-header"
+    onClick={() => setIsCaseSummaryOpen(o => !o)}
+    aria-expanded={isCaseSummaryOpen}
   >
-     <strong>Case Summary:</strong> {summary || "No summary available"}
-  </div>
-</div>
+    <span className="collapse-title">Case Summary</span>
+    <span>
+      <img
+        src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
+        className="icon-image"
+        alt="" /* decorative */
+      />
+    </span>
+  </button>
+
+  {isCaseSummaryOpen && (
+      <div
+        className="case-summary"
+        style={{
+          maxHeight: "150px",
+          overflowY: "auto",
+          paddingLeft: "20px",
+          border: "1px solid #ccc",
+          borderRadius: "4px",
+          fontSize: "20px",
+          whiteSpace: "pre-wrap",       // keep line breaks/formatting
+        }}
+      >
+        {summary && summary.trim() ? summary : "No summary available"}
+      </div>
+
+  )}
+</section>
+
+<section className="collapsible-section">
+  <button
+    type="button"
+    className="collapse-header"
+    onClick={() => setIsCaseTeamOpen(o => !o)}
+    aria-expanded={isCaseTeamOpen}
+  >
+    <span className="collapse-title">Case Team</span>
+    <span className="">
+      <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
+      className="icon-image"
+       />
+    </span>
+  </button>
+                
+                {isCaseTeamOpen && (
 
             <div className="case-team">
         <table className="leads-table" style={caseTeamStyles.table}>
@@ -1150,6 +1188,8 @@ const sortedAllLeads = useMemo(() => {
           </tbody>
         </table>
       </div>
+        )}
+</section>
                 {/* Content Area */}
                 {/* <div className="content"> */}
               
