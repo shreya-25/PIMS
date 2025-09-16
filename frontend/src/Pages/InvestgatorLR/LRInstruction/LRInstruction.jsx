@@ -668,7 +668,7 @@ Case Page
              </h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
-        ? `Your Role: ${selectedCase.role || ""} | Lead Status:  ${leadStatus}`
+        ? ` Lead Status:  ${leadStatus}`
 
     : ` ${leadStatus}`}
 </h5>

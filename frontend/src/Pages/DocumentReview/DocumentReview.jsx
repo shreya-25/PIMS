@@ -1,6 +1,4 @@
 
-
-
 import { useMemo, useContext, useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Document, Page, pdfjs } from "react-pdf";
@@ -112,6 +110,7 @@ const handleReopen = () => {
       setSelectedLead(prev => ({ ...prev, leadStatus: "Closed" }));
       setShowCloseModal(false);
       setCloseReason("");
+      await promotePrivateComments();
       setAlertMessage("Lead closed successfully.");
       setNotifyOpen(true);
 
@@ -176,6 +175,7 @@ const handleClose = () => {
       );
   
       if (statusRes.status === 200) {
+        await promotePrivateComments();
          setAlertMessage("Lead Return submitted");
         setAlertOpen(true);
 
@@ -230,6 +230,49 @@ const handleClose = () => {
       // alert("Something went wrong");
       setAlertMessage("Something went wrong");
         setAlertOpen(true);
+    }
+  };
+
+  const caseNo   = selectedCase?.caseNo;
+  const caseName = selectedCase?.caseName;
+  const leadNo   = selectedLead?.leadNo;
+  const leadName = selectedLead?.leadName;
+
+  // Thread keys
+  const publicThreadKey  = `${caseNo}:${caseName}::${leadNo}:${leadName}`;
+  const privateThreadKey = `${publicThreadKey}::${currentUser}`;
+
+  // When these statuses hit, comments become public
+  const PUBLIC_PHASE_STATUSES = new Set(["Returned", "Completed", "Closed"]);
+  // Your app uses "pending" internally on Return; also map that to Returned for safety
+  const isPublicPhase =
+    PUBLIC_PHASE_STATUSES.has(status) || String(status).toLowerCase() === "pending";
+
+  // Pick where the comment goes / is read from
+  const activeTag       = isPublicPhase ? "ViewLR" : "DocumentReview";
+  const activeThreadKey = isPublicPhase ? publicThreadKey : privateThreadKey;
+
+  // ---- promote private → public when decision happens ----
+  const promotePrivateComments = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      // Minimal backend you can add:
+      // POST /api/comments/promote { fromTag, fromKey, toTag, toKey, author }
+      // If you already have a different endpoint, swap this call.
+      await api.post(
+        "/api/comments/promote",
+        {
+          fromTag: "DocumentReview",
+          fromKey: privateThreadKey,
+          toTag: "ViewLR",
+          toKey: publicThreadKey,
+          author: currentUser, // guardrail on server
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (e) {
+      // Non-blocking: UI shouldn’t fail if promotion isn't wired yet
+      console.warn("Comment promotion skipped/failed (non-blocking):", e);
     }
   };
 
@@ -293,7 +336,13 @@ const handleClose = () => {
 
         <aside className="dr-right" aria-label="Comments">
     <div className="dr-commentsBody">
-      <CommentBar tag="DocumentReview" threadKey="test1" />
+      <CommentBar
+        tag={activeTag}
+        threadKey={activeThreadKey}
+        // Optional extra metadata (safe to ignore if CommentBar doesn’t read them)
+        visibility={isPublicPhase ? "public" : "private"}
+        owner={currentUser}
+      />
     </div>
   </aside>
   <AlertModal

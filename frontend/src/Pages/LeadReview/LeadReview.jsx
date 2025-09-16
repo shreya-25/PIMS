@@ -1529,9 +1529,8 @@ const goToViewLR = () => {
 
           </div> */}
 
-               <div className="caseandleadinfo">
+               {/* <div className="caseandleadinfo">
           <h5 className = "side-title"> 
-             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
                <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo}
                  </p>
              </h5>
@@ -1541,7 +1540,7 @@ const goToViewLR = () => {
     : ` ${leadStatus}`}
 </h5>
 
-          </div>
+          </div> */}
 
           <div className="main-leadreview-cont">
 
