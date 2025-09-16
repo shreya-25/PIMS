@@ -51,6 +51,8 @@ function PersonSheet({ person, onClose }) {
   );
 }
 
+
+
   const formatAddress = (addr) => {
   if (!addr || typeof addr !== "object") return addr ?? "—";
   const line1 = [addr.street1, addr.street2].filter(Boolean).join(" ");
@@ -132,6 +134,13 @@ const isInvestigator     = !isCaseManager;
 
 const canShowCMButtons   = isCaseManager && !isClosedOrCompleted;
 
+ 
+
+const publicThreadKey = `${caseNo}:${caseName}::${leadNo}:${leadName}`;
+const investigatorUsernames = (Array.isArray(leadData?.assignedTo)
+  ? leadData.assignedTo
+  : []
+).map(a => (typeof a === "string" ? a : (a?.username || a?.assignee || ""))).filter(Boolean);
 
 
 const primaryUsername =
@@ -573,7 +582,17 @@ const actuallyDoSubmitReport = async () => {
 
                           {/* Narrative */}
                           <div className={styles.lrRow}>
-                            <div className={styles.rowLabel}>Narrative</div>
+                            {/* <div className={styles.rowLabel}>Narrative</div> */}
+                             <Link
+        className={styles.rowLabel}
+        to="/LRReturn" 
+        state={{
+          caseDetails: selectedCase,
+          leadDetails: selectedLead,
+        }}
+      >
+        Narrative
+      </Link>
                             <div className={styles.rowContent}>
                               {ret.narrative || ret.comment || ret.leadReturnResult ? (
                                 <div className={styles.textBox}>
@@ -593,7 +612,16 @@ const actuallyDoSubmitReport = async () => {
                         if (grouped.persons.length) {
                             detailSections.push(
                             <div key="persons" className={styles.tableBlock}>
-                                <div className={styles.tableHeader}>Person Details</div>
+                                <Link
+    className={styles.tableHeader}
+    to="/LRPerson"                         // adjust if your route differs
+    state={{
+      caseDetails: selectedCase,
+      leadDetails: selectedLead,
+    }}
+  >
+    Person Details
+  </Link>
                                 <table className={styles.simpleTable}>
                                 <thead>
                                     <tr>
@@ -630,7 +658,17 @@ const actuallyDoSubmitReport = async () => {
                         if (grouped.vehicles.length) {
                             detailSections.push(
                             <div key="vehicles" className={styles.tableBlock}>
-                                <div className={styles.tableHeader}>Vehicles</div>
+                                {/* <div className={styles.tableHeader}>Vehicles</div> */}
+                                <Link
+    className={styles.tableHeader}
+    to="/LRVehicle"                         // adjust if your route differs
+    state={{
+      caseDetails: selectedCase,
+      leadDetails: selectedLead,
+    }}
+  >
+    Vehicle Details
+  </Link>
                                 <table className={styles.simpleTable}>
                                 <thead>
                                     <tr>
@@ -665,7 +703,17 @@ const actuallyDoSubmitReport = async () => {
                         if (grouped.enclosures.length) {
                         detailSections.push(
                             <div key="enclosures" className={styles.tableBlock}>
-                            <div className={styles.tableHeader}>Enclosures</div>
+                            {/* <div className={styles.tableHeader}>Enclosures</div> */}
+                            <Link
+    className={styles.tableHeader}
+    to="/LREnclosures"                         // adjust if your route differs
+    state={{
+      caseDetails: selectedCase,
+      leadDetails: selectedLead,
+    }}
+  >
+    Enclosure Details
+  </Link>
                             <table className={styles.simpleTable}>
                                 <thead>
                                 <tr>
@@ -699,7 +747,17 @@ const actuallyDoSubmitReport = async () => {
                         if (timeline.length) {
                         detailSections.push(
                             <div key="timeline" className={styles.tableBlock}>
-                            <div className={styles.tableHeader}>Timeline Entries</div>
+                            {/* <div className={styles.tableHeader}>Timeline Entries</div> */}
+                             <Link
+    className={styles.tableHeader}
+    to="/LRTimeline"                         // adjust if your route differs
+    state={{
+      caseDetails: selectedCase,
+      leadDetails: selectedLead,
+    }}
+  >
+    Timeline Details
+  </Link>
                             <table className={styles.simpleTable}>
                                 <thead>
                                 <tr>
@@ -749,7 +807,17 @@ const actuallyDoSubmitReport = async () => {
                         if (grouped.evidence.length) {
                         detailSections.push(
                             <div key="evidence" className={styles.tableBlock}>
-                            <div className={styles.tableHeader}>Evidence</div>
+                            {/* <div className={styles.tableHeader}>Evidence</div> */}
+                             <Link
+    className={styles.tableHeader}
+    to="/LREvidences"                         // adjust if your route differs
+    state={{
+      caseDetails: selectedCase,
+      leadDetails: selectedLead,
+    }}
+  >
+    Evidence Details
+  </Link>
                             <table className={styles.simpleTable}>
                                 <thead>
                                 <tr>
@@ -789,7 +857,17 @@ const actuallyDoSubmitReport = async () => {
                         if (grouped.pictures.length) {
                         detailSections.push(
                             <div key="pictures" className={styles.tableBlock}>
-                            <div className={styles.tableHeader}>Pictures</div>
+                            {/* <div className={styles.tableHeader}>Pictures</div> */}
+                             <Link
+    className={styles.tableHeader}
+    to="/LRPictures"                         // adjust if your route differs
+    state={{
+      caseDetails: selectedCase,
+      leadDetails: selectedLead,
+    }}
+  >
+    Picture Details
+  </Link>
                             <table className={styles.simpleTable}>
                                 <thead>
                                 <tr>
@@ -825,7 +903,17 @@ const actuallyDoSubmitReport = async () => {
                         if (grouped.audio.length) {
                         detailSections.push(
                             <div key="audio" className={styles.tableBlock}>
-                            <div className={styles.tableHeader}>Audio</div>
+                            {/* <div className={styles.tableHeader}>Audio</div> */}
+                             <Link
+    className={styles.tableHeader}
+    to="/LRAudio"                         // adjust if your route differs
+    state={{
+      caseDetails: selectedCase,
+      leadDetails: selectedLead,
+    }}
+  >
+    Audio Details
+  </Link>
                             <table className={styles.simpleTable}>
                                 <thead>
                                 <tr>
@@ -956,13 +1044,18 @@ const actuallyDoSubmitReport = async () => {
     </div>
 
     {/* If CommentBar supports these callbacks, include them; otherwise omit. */}
-    <CommentBar
-      tag="ViewLR"
-      threadKey={threadKey}
-      autoFocus={false}
-      onClose={closeComments}
-      onSubmitted={closeComments}
-    />
+ 
+
+    <CommentBar tag="DocumentReview" threadKey={publicThreadKey} />
+    {String(status).toLowerCase() === "returned" && investigatorUsernames.map(u => (
+  <CommentBar
+    key={u}
+    tag="DocumentReview"
+    threadKey={`${publicThreadKey}::${u}`}
+    readOnly
+    label={`Private notes by ${u}`}
+  />
+))}
   </aside>
 )}
 

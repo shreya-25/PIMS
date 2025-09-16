@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { CaseContext } from "../CaseContext";
 import api from "../../api"; // adjust if your api path differs
 import { AlertModal } from "../../components/AlertModal/AlertModal";
+import './ChainOfCustody.css';
 
 
 export const ChainOfCustody = () => {
@@ -110,101 +111,98 @@ const attachFiles = async (items, idFieldName, filesEndpoint) => {
   );
 
   // --- inner component: full-page Assignment Log
-  const AssignmentLog = ({ events, status }) => {
-    const evs = Array.isArray(events) ? events : [];
+  // --- inner component: full-page Assignment Log (modernized) ---
+const AssignmentLog = ({ events, status }) => {
+  const evs = Array.isArray(events) ? events : [];
 
-    const assigned = evs.filter((e) => e.type === "assigned");
-    const accepted = evs.filter((e) => e.type === "accepted");
-    const declined = evs.filter((e) => e.type === "declined");
-    const added = evs.filter((e) => e.type === "reassigned-added");
-    const removed = evs.filter((e) => e.type === "reassigned-removed");
+  const firstAssigned = evs.find(e => e.type === "assigned") || null;
+  const adds    = evs.filter(e => e.type === "reassigned-added");
+  const removes = evs.filter(e => e.type === "reassigned-removed");
 
-    const firstAssigned = assigned[0] || null;
-    const { acceptedAt, declinedAt } = buildDecisionMaps(evs);
+  const { acceptedAt, declinedAt, declinedReason } = buildDecisionMaps(evs);
 
-    // current assigned set (initial + adds − removes)
-    const assignedSet = (() => {
-      const s = new Set(firstAssigned?.to || []);
-      [...added, ...removed]
-        .sort((a, b) => new Date(a.at) - new Date(b.at))
-        .forEach((ev) => {
-          (ev.to || []).forEach((u) => {
-            if (ev.type === "reassigned-added") s.add(u);
-            if (ev.type === "reassigned-removed") s.delete(u);
-          });
-        });
-      return s;
-    })();
+  // current assigned set (initial + adds − removes)
+  const assignedSet = (() => {
+    const s = new Set(firstAssigned?.to || []);
+    [...adds, ...removes]
+      .sort((a, b) => new Date(a.at) - new Date(b.at))
+      .forEach((ev) => (ev.to || []).forEach((u) => {
+        if (ev.type === "reassigned-added") s.add(u);
+        if (ev.type === "reassigned-removed") s.delete(u);
+      }));
+    return s;
+  })();
 
-    const pending = [...assignedSet].filter((u) => !acceptedAt.has(u) && !declinedAt.has(u));
+  const pending = [...assignedSet].filter(u => !acceptedAt.has(u) && !declinedAt.has(u));
+  const stream  = [...evs].sort((a, b) => new Date(a.at) - new Date(b.at));
 
-    const msg = (ev) => {
-      const people = (ev.to || []).map(nameOf).join(", ") || "—";
-      switch (ev.type) {
-        case "assigned":
-          return `Assigned to ${people}${
-            ev.primaryInvestigator ? ` • Primary: ${nameOf(ev.primaryInvestigator)}` : ""
-          }`;
-        case "accepted":
-          return `${people} accepted`;
-        case "declined":
-          return `${people} declined${ev.reason ? ` • ${ev.reason}` : ""}`;
-        case "reassigned-added":
-          return `Added ${people}${
-            ev.primaryInvestigator ? ` • Primary: ${nameOf(ev.primaryInvestigator)}` : ""
-          }`;
-        case "reassigned-removed":
-          return `Removed ${people}`;
-        default:
-          return ev.type || "—";
-      }
-    };
-
-    const iconFor = (t) =>
-      t === "accepted" ? "✓" : t === "declined" ? "✕" : t === "reassigned-added" ? "+" : t === "reassigned-removed" ? "−" : "●";
-
-    const toneFor = (t) =>
-      t === "accepted" ? "ok" : t === "declined" ? "bad" : t === "reassigned-added" ? "info" : t === "reassigned-removed" ? "muted" : "base";
-
-    const stream = [...evs].sort((a, b) => new Date(a.at) - new Date(b.at));
-
-    return (
-      <div className="elog-page">
-        <div className="elog-header">
-          <h3>Assignment Log</h3>
-          <div className="elog-chip">{status || "—"}</div>
-        </div>
-
-        <section className="elog-block">
-          <div className="elog-counters">
-            <span className="elog-counter ok">Accepted {acceptedAt.size}</span>
-            <span className="elog-counter bad">Declined {declinedAt.size}</span>
-            <span className="elog-counter base">Pending {pending.length}</span>
-          </div>
-        </section>
-
-        <section className="elog-block">
-          {stream.length === 0 ? (
-            <div className="elog-muted">No activity yet.</div>
-          ) : (
-            <ul className="elog-list">
-              {stream.map((ev, i) => (
-                <li key={i} className={`elog-item ${toneFor(ev.type)}`}>
-                  <div className="elog-pin">{iconFor(ev.type)}</div>
-                  <div className="elog-body">
-                    <div className="elog-line">{msg(ev)}</div>
-                    <div className="elog-meta">
-                      by <b>{nameOf(ev.by)}</b> • {fmtDT(ev.at)}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
-    );
+  const msg = (ev) => {
+    const people = (ev.to || []).map(nameOf).join(", ") || "—";
+    switch (ev.type) {
+      case "assigned":
+        return `Assigned to ${people}${ev.primaryInvestigator ? ` • Primary: ${nameOf(ev.primaryInvestigator)}` : ""}`;
+      case "accepted":
+        return `${people} accepted`;
+      case "declined":
+        return `${people} declined${ev.reason ? ` • ${ev.reason}` : ""}`;
+      case "reassigned-added":
+        return `Added ${people}${ev.primaryInvestigator ? ` • Primary: ${nameOf(ev.primaryInvestigator)}` : ""}`;
+      case "reassigned-removed":
+        return `Removed ${people}`;
+      default:
+        return ev.type || "—";
+    }
   };
+
+  const icon = (t) =>
+    t === "accepted" ? "✓"
+    : t === "declined" ? "✕"
+    : t === "reassigned-added" ? "+"
+    : t === "reassigned-removed" ? "−"
+    : "●";
+
+  const tone = (t) =>
+    t === "accepted" ? "ok"
+    : t === "declined" ? "bad"
+    : t === "reassigned-added" ? "info"
+    : t === "reassigned-removed" ? "muted"
+    : "base";
+
+  const statusClass = String(status || "").toLowerCase().replace(/\s+/g, "-");
+
+  return (
+    <div className="elog card">
+      <div className="elog-header">
+        <h3>Case Log</h3>
+        <div className={`chip chip-status ${statusClass}`}>{status || "—"}</div>
+      </div>
+
+      <div className="elog-counters">
+        <span className="counter ok">Accepted {acceptedAt.size}</span>
+        <span className="counter bad">Declined {declinedAt.size}</span>
+        <span className="counter base">Pending {pending.length}</span>
+      </div>
+
+      {stream.length === 0 ? (
+        <div className="muted">No activity yet.</div>
+      ) : (
+        <ul className="elog-list">
+          {stream.map((ev, i) => (
+            <li key={i} className={`elog-item ${tone(ev.type)}`}>
+              <div className="pin">{icon(ev.type)}</div>
+              <div className="body">
+                <div className="line">{msg(ev)}</div>
+                <div className="meta">
+                  by <b>{nameOf(ev.by)}</b> • {fmtDT(ev.at)}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
 
   const handleViewLeadReturn = async () => {
   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
@@ -413,9 +411,8 @@ const attachFiles = async (items, idFieldName, filesEndpoint) => {
             </div>
           </div>
 
-            <div className="caseandleadinfo">
+            {/* <div className="caseandleadinfo">
           <h5 className = "side-title"> 
-             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
                <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo} &gt; Chain of Custody
                  </p>
              </h5>
@@ -425,7 +422,7 @@ const attachFiles = async (items, idFieldName, filesEndpoint) => {
     : ``}
 </h5>
 
-          </div>
+          </div> */}
 
 
           {/* <div className="case-header">
