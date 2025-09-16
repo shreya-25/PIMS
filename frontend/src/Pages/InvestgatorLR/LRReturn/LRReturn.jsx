@@ -12,51 +12,53 @@ import { AlertModal } from "../../../components/AlertModal/AlertModal";
 import { pickHigherStatus } from '../../../utils/status'
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
 
-
-
-
 export const LRReturn = () => {
-    // useEffect(() => {
-    //     // Apply style when component mounts
-    //     document.body.style.overflow = "hidden";
-    
-    //     return () => {
-    //       // Reset to default when component unmounts
-    //       document.body.style.overflow = "auto";
-    //     };
-    //   }, []);
-    const FORM_KEY    = "LRReturn:form";
-    const LIST_KEY    = "LRReturn:list";
+
     const navigate = useNavigate();
     const location = useLocation();
+    const { leadDetails, caseDetails } = location.state || {};
+    const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus, setLeadReturns  } = useContext(CaseContext);
+    const effectiveCase = selectedCase?.caseNo ? selectedCase : caseDetails;
+    const effectiveLead = selectedLead?.leadNo ? selectedLead : leadDetails;
+
+    const storagePrefix = React.useMemo(() => {
+    const cn = effectiveCase?.caseNo ?? "";
+    const cName = effectiveCase?.caseName ?? "";
+    const ln = effectiveLead?.leadNo ?? "";
+    const lName = effectiveLead?.leadName ?? "";
+    return `LRReturn:${cn}:${encodeURIComponent(cName)}:${ln}:${encodeURIComponent(lName)}`;
+  }, [
+    effectiveCase?.caseNo,
+    effectiveCase?.caseName,
+    effectiveLead?.leadNo,
+    effectiveLead?.leadName
+  ]);
+
+    const FORM_KEY = `${storagePrefix}:form`;
+    const LIST_KEY = `${storagePrefix}:list`;
     const [username, setUsername] = useState("");
     const [leadData, setLeadData] = useState({});
     const [officerName, setOfficerName] = useState("");
     const todayDate = new Date().toLocaleDateString();
     const [alertOpen, setAlertOpen] = useState(false);
     const [alertMessage, setAlertMessage] = useState("");
-    
-    const { leadDetails, caseDetails } = location.state || {};
     const [maxReturnId, setMaxReturnId] = useState(0);
-
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus, setLeadReturns  } = useContext(CaseContext);
     const isDisabled = leadStatus === "In Review" || leadStatus === "Completed"|| leadStatus === "Closed";
-
     const caseNo = selectedCase?.caseNo ?? caseDetails.caseNo;
+    const { status, isReadOnly } = useLeadStatus({
+      caseNo:   effectiveCase?.caseNo,
+      caseName: effectiveCase?.caseName,
+      leadNo:   effectiveLead?.leadNo,
+      leadName: effectiveLead?.leadName,
+    });
 
-     const { status, isReadOnly } = useLeadStatus({
-    caseNo: selectedCase.caseNo,
-    caseName: selectedCase.caseName,
-    leadNo: selectedLead.leadNo,
-    leadName: selectedLead.leadName,
-  });
+     const isCaseManager = selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
 
-console.log("status from hook", status);
-setLeadStatus(status);
-
-
+    useEffect(() => {
+  if (status) setLeadStatus(prev => prev ? pickHigherStatus(prev, status) : status);
+}, [status, setLeadStatus]);
 
     useEffect(() => {
     const storedOfficer = localStorage.getItem("loggedInUser");
@@ -67,98 +69,123 @@ setLeadStatus(status);
       }
     }, []);
 
-    // console.log(selectedCase, selectedLead);
+    useEffect(() => {
+  if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !effectiveCase?.caseNo || !effectiveCase?.caseName) {
+    return;
+  }
 
+  const ac = new AbortController();
+
+  (async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const resp = await api.get(
+        `/api/lead/lead/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${effectiveCase.caseNo}/${encodeURIComponent(effectiveCase.caseName)}`,
+        { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Extra guard: ensure we’re still on the same lead/case when the response arrives
+      if (ac.signal.aborted) return;
+      if (!resp?.data?.length) return;
+
+      setLeadData({
+        ...resp.data[0],
+        assignedTo: resp.data[0].assignedTo || [],
+        leadStatus: resp.data[0].leadStatus || "",
+      });
+    } catch (e) {
+      if (!ac.signal.aborted) {
+        console.error("Failed to fetch lead data:", e);
+      }
+    }
+  })();
+
+  return () => ac.abort();
+}, [
+  effectiveLead?.leadNo,
+  effectiveLead?.leadName,
+  effectiveCase?.caseNo,
+  effectiveCase?.caseName
+]);
 
     useEffect(() => {
-    const fetchLeadData = async () => {
-      if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
-      const token = localStorage.getItem("token");
-
-      try {
-        const response = await api.get(
-          `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
-
-        if (response.data.length > 0) {
-          setLeadData({
-            ...response.data[0],
-            assignedTo: response.data[0].assignedTo || [],
-            leadStatus: response.data[0].leadStatus || ''
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch lead data:", error);
-      }
-    };
-
-    fetchLeadData();
-  }, [selectedLead, selectedCase]);
-
-  useEffect(() => {
-  if (!leadData?.leadStatus) return;
-  setLeadStatus(prev => prev ? pickHigherStatus(prev, leadData.leadStatus) : leadData.leadStatus);
-}, [leadData?.leadStatus, setLeadStatus]);
+      if (!leadData?.leadStatus) return;
+      setLeadStatus(prev => prev ? pickHigherStatus(prev, leadData.leadStatus) : leadData.leadStatus);
+    }, [leadData?.leadStatus, setLeadStatus]);
 
 
    useEffect(() => {
-      const fetchLeadStatus = async () => {
-        try {
-          const token = localStorage.getItem("token");
-          const { leadNo, leadName } = selectedLead;
-          const { caseNo, caseName } = selectedCase;
-    
-         const resp = await api.get(
-          `/api/lead/status/${leadNo}/${encodeURIComponent(leadName)}/${caseNo}/${encodeURIComponent(caseName)}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+  if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !effectiveCase?.caseNo || !effectiveCase?.caseName) {
+    return;
+  }
 
-        const leadStatus = resp.data.leadStatus;
+  const ac = new AbortController();
 
-        if (Array.isArray(resp.data) && resp.data.length > 0) {
-          setLeadStatus(resp.data.leadStatus);
-        } else {
-          console.warn("No lead returned when fetching status");
-                    setLeadStatus("Unknown");
-        }
-      } catch (err) {
+  (async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const resp = await api.get(
+        `/api/lead/status/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${effectiveCase.caseNo}/${encodeURIComponent(effectiveCase.caseName)}`,
+        { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (ac.signal.aborted) return;
+
+      // API can return { leadStatus: "..." } or an array—handle both safely
+      const incoming =
+        (resp?.data && typeof resp.data === "object" && "leadStatus" in resp.data && resp.data.leadStatus) ||
+        (Array.isArray(resp?.data) && resp.data[0]?.leadStatus) ||
+        null;
+
+      if (incoming) {
+        setLeadStatus(prev => (prev ? pickHigherStatus(prev, incoming) : incoming));
+      } else {
+        console.warn("No lead returned when fetching status");
+        setLeadStatus("Unknown");
+      }
+    } catch (err) {
+      if (!ac.signal.aborted) {
         console.error("Failed to fetch lead status", err);
         setError("Could not load lead status");
-      } finally {
-        setLoading(false);
       }
-    };
-    
-     if (selectedLead?.leadNo && selectedLead?.leadName && selectedCase?.caseNo && selectedCase?.caseName) {
-      fetchLeadStatus();
+    } finally {
+      if (!ac.signal.aborted) setLoading(false);
     }
-   }, [selectedLead, selectedCase, setLeadStatus]); 
+  })();
 
-   const attachFiles = async (items, idFieldName, filesEndpoint) => {
-  return Promise.all(
-    (items || []).map(async (item) => {
-      const realId = item[idFieldName];
-      if (!realId) return { ...item, files: [] };
-      try {
-        const { data: filesArray } = await api.get(
-          `${filesEndpoint}/${realId}`,
-          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-        );
-        return { ...item, files: filesArray };
-      } catch (err) {
-        console.error(`Error fetching files for ${filesEndpoint}/${realId}:`, err);
-        return { ...item, files: [] };
-      }
-    })
-  );
-};
+  return () => ac.abort();
+}, [
+  effectiveLead?.leadNo,
+  effectiveLead?.leadName,
+  effectiveCase?.caseNo,
+  effectiveCase?.caseName,
+  setLeadStatus
+]);
 
 
-    const [isGenerating, setIsGenerating] = useState(false);
-    const handleViewLeadReturn = async () => {
+  const attachFiles = async (items, idFieldName, filesEndpoint) => {
+    return Promise.all(
+      (items || []).map(async (item) => {
+        const realId = item[idFieldName];
+        if (!realId) return { ...item, files: [] };
+        try {
+          const { data: filesArray } = await api.get(
+            `${filesEndpoint}/${realId}`,
+            { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+          );
+          return { ...item, files: filesArray };
+        } catch (err) {
+          console.error(`Error fetching files for ${filesEndpoint}/${realId}:`, err);
+          return { ...item, files: [] };
+        }
+      })
+    );
+  };
+
+
+  const [isGenerating, setIsGenerating] = useState(false);
+  const handleViewLeadReturn = async () => {
   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
@@ -275,25 +302,24 @@ setLeadStatus(status);
         filename: `Lead_${leadNo || "report"}.pdf`,
       },
     });
-  } catch (err) {
-    if (err?.response?.data instanceof Blob) {
-      const text = await err.response.data.text();
-      console.error("Report error:", text);
-      setAlertMessage("Error generating PDF:\n" + text);
-    } else {
-      console.error("Report error:", err);
-      setAlertMessage("Error generating PDF:\n" + (err.message || "Unknown error"));
+    } catch (err) {
+      if (err?.response?.data instanceof Blob) {
+        const text = await err.response.data.text();
+        console.error("Report error:", text);
+        setAlertMessage("Error generating PDF:\n" + text);
+      } else {
+        console.error("Report error:", err);
+        setAlertMessage("Error generating PDF:\n" + (err.message || "Unknown error"));
+      }
+      setAlertOpen(true);
+    } finally {
+      setIsGenerating(false);
     }
-    setAlertOpen(true);
-  } finally {
-    setIsGenerating(false);
-  }
-};
+  };
 
   const signedInOfficer = localStorage.getItem("loggedInUser");
  // who is primary for this lead?
-const primaryUsername =
-  leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
+  const primaryUsername = leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
 
 // am I the primary investigator on this lead?
 const isPrimaryInvestigator =
@@ -364,83 +390,132 @@ const numberToAlphabet = (num) => {
   return result;
 };
 
-// 1) On mount: restore saved draft & list
-    useEffect(() => {
-      const savedForm = sessionStorage.getItem(FORM_KEY);
-      const savedList = sessionStorage.getItem(LIST_KEY);
-      if (savedForm) setReturnData(JSON.parse(savedForm));
-      if (savedList) setReturns(JSON.parse(savedList));
-    }, []);
+const defaultForm = (officer) => ({
+  results: "",
+  leadReturnId: "",
+  enteredDate: new Date().toLocaleDateString(),
+  enteredBy: officer?.trim() || "",
+  accessLevel: "Everyone",
+});
 
-    // 2) Persist the form draft whenever it changes
-    useEffect(() => {
-      sessionStorage.setItem(FORM_KEY, JSON.stringify(returnData));
-    }, [returnData]);
+// A flag to skip the first save after we *load* from sessionStorage
+const justLoadedFormRef = React.useRef(false);
+const justLoadedListRef = React.useRef(false);
 
-    // 3) Persist the returns list whenever it changes
-    useEffect(() => {
-      sessionStorage.setItem(LIST_KEY, JSON.stringify(returns));
-    }, [returns]);
+/**
+ * 1) LOAD when the key (case/lead) changes
+ *    - Reads the correct key and hydrates state
+ */
+useEffect(() => {
+  // FORM
+  try {
+    const savedForm = sessionStorage.getItem(FORM_KEY);
+    setReturnData(savedForm ? JSON.parse(savedForm) : defaultForm(officerName));
+  } catch {
+    setReturnData(defaultForm(officerName));
+  } finally {
+    justLoadedFormRef.current = true;
+  }
+
+  // LIST
+  try {
+    const savedList = sessionStorage.getItem(LIST_KEY);
+    setReturns(savedList ? JSON.parse(savedList) : []);
+  } catch {
+    setReturns([]);
+  } finally {
+    justLoadedListRef.current = true;
+  }
+}, [FORM_KEY, LIST_KEY, officerName]); // key changes when case/lead changes
+
+/**
+ * 2) SAVE the form whenever it changes (skip the first run after a load)
+ */
+useEffect(() => {
+  if (justLoadedFormRef.current) {
+    justLoadedFormRef.current = false;
+    return;
+  }
+  try {
+    sessionStorage.setItem(FORM_KEY, JSON.stringify(returnData));
+  } catch (e) {
+    console.error("Failed to persist form draft", e);
+  }
+}, [FORM_KEY, returnData]);
+
+/**
+ * 3) SAVE the list whenever it changes (skip first run after a load)
+ */
+useEffect(() => {
+  if (justLoadedListRef.current) {
+    justLoadedListRef.current = false;
+    return;
+  }
+  try {
+    sessionStorage.setItem(LIST_KEY, JSON.stringify(returns));
+  } catch (e) {
+    console.error("Failed to persist returns list", e);
+  }
+}, [LIST_KEY, returns]);
 
 // Fetch return entries for this lead, normalize access, compute max ID, and filter by role
 useEffect(() => {
-  const fetchReturnData = async () => {
+  if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !effectiveCase?.caseNo || !effectiveCase?.caseName) {
+    return;
+  }
+
+  const ac = new AbortController();
+
+  (async () => {
     setLoading(true);
     try {
-      if (
-        selectedLead?.leadNo &&
-        selectedLead?.leadName &&
-        selectedCase?.caseNo &&
-        selectedCase?.caseName
-      ) {
-        const token = localStorage.getItem("token");
-        const response = await api.get(
-          `/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(
-            selectedLead.leadName
-          )}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const raw = response.data;
+      const token = localStorage.getItem("token");
+      const resp = await api.get(
+        `/api/leadReturnResult/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${effectiveCase.caseNo}/${encodeURIComponent(effectiveCase.caseName)}`,
+        { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
+      );
 
-        // 1. Ensure every return has an 'access' field
-        const withAccess = raw.map(r => ({
-          ...r,
-          accessLevel: r.accessLevel || "Everyone"
-        }));
+      if (ac.signal.aborted) return;
 
-        // 2. Compute the max numeric ID (for nextReturnId)
-        const maxNumericId = withAccess.reduce((max, item) => {
-          const numVal = item.leadReturnId
-            ? alphabetToNumber(item.leadReturnId)
-            : 0;
-          return Math.max(max, numVal);
-        }, 0);
-        setMaxReturnId(maxNumericId);
+      const raw = Array.isArray(resp?.data) ? resp.data : [];
+      const withAccess = raw.map(r => ({
+        ...r,
+        accessLevel: r.accessLevel || "Everyone",
+      }));
 
-        // 3. Filter based on role
-        const visible = isCaseManager
-          ? withAccess
-          : withAccess.filter(r => r.accessLevel === "Everyone");
+      // compute max numeric id for nextReturnId
+      const maxNumericId = withAccess.reduce((max, item) => {
+        const numVal = item.leadReturnId ? alphabetToNumber(item.leadReturnId) : 0;
+        return Math.max(max, numVal);
+      }, 0);
+      setMaxReturnId(maxNumericId);
 
-        // 4. Update state
-        setReturns(visible);
-        setLeadReturns(visible);
-      }
+      // role-based filtering
+      const visible = isCaseManager ? withAccess : withAccess.filter(r => r.accessLevel === "Everyone");
+
+      // set both local + context
+      setReturns(visible);
+      setLeadReturns(visible);
     } catch (err) {
-      console.error("Error fetching return data:", err);
-      setError("Failed to fetch return data.");
+      if (!ac.signal.aborted) {
+        console.error("Error fetching return data:", err);
+        setError("Failed to fetch return data.");
+      }
     } finally {
-      setLoading(false);
+      if (!ac.signal.aborted) setLoading(false);
     }
-  };
+  })();
 
-  fetchReturnData();
+  return () => ac.abort();
 }, [
-  selectedLead,
-  selectedCase,    // re-run if role or case details change
-  leadDetails,
-  caseDetails
+  effectiveLead?.leadNo,
+  effectiveLead?.leadName,
+  effectiveCase?.caseNo,
+  effectiveCase?.caseName,
+  isCaseManager,     // so list re-filters immediately if role changes
+  setLeadReturns
 ]);
+
 
 
 // handler to change access per row
@@ -591,7 +666,8 @@ const handleAddOrUpdateReturn = async () => {
     const token = localStorage.getItem("token");
   
     try {
-      await api.delete(`/api/leadReturnResult/delete/${selectedLead.leadNo}/${selectedLead.caseNo}/${leadReturnId}`, {
+      await api.delete(`/api/leadReturnResult/delete/${effectiveLead.leadNo}/${effectiveCase.caseNo}/${leadReturnId}`,
+        {
         headers: { Authorization: `Bearer ${token}` }
       });
   
@@ -617,16 +693,18 @@ const handleAddOrUpdateReturn = async () => {
       navigate(route, { state: { caseDetails } });
   };
     
-  const isCaseManager = selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
+ 
   
-      if (!selectedCase && !caseDetails) {
+  if (!selectedCase && !caseDetails) {
     return <div>Loading case/lead…</div>;
   }
 
   
+  
 
   return (
-    <div className="lrenclosures-container">
+    <div key={`${effectiveCase?.caseNo}-${effectiveLead?.leadNo}`} className="lrenclosures-container">
+
       <Navbar />
       <AlertModal
               isOpen={alertOpen}
@@ -735,15 +813,6 @@ const handleAddOrUpdateReturn = async () => {
           </span> */}
          </div> </div>
 
-      {/* <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case:{selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
-          <h5 className="side-title">
-  {selectedLead?.leadNo
-    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${ status}`
-    : `LEAD DETAILS | ${status}`}
-</h5>
-
-</div> */}
 
   <div className="caseandleadinfo">
           <h5 className = "side-title"> 
@@ -775,13 +844,12 @@ const handleAddOrUpdateReturn = async () => {
 
       <div className="form-row4">
             <label>Narrative Id*</label>
-            {/* <input type="text" value={returnData.leadReturnId || nextReturnId} readOnly /> */}
             <input
   readOnly
   value={ editMode
-    ? returnData.leadReturnId    // when editing, show the saved one
-    : (returnData.leadReturnId    // after a create, you've written it into returnData
-       || nextReturnId)           // otherwise show the preview
+    ? returnData.leadReturnId    
+    : (returnData.leadReturnId   
+       || nextReturnId)           
   }
 />
 
@@ -799,12 +867,6 @@ const handleAddOrUpdateReturn = async () => {
           </div>
         </div>
         
-           {/* <h4>Return Id</h4>
-           <label className='input-field'></label>
-           <h4 >Date Entered</h4>
-           <label className='input-field'></label>
-           <h4>Entered By</h4>
-           <label className='input-field'></label> */}
      
     <h4 className="return-form-h4">{editMode ? "Edit Return" : "Save Narrative"}</h4>
       <div className="return-form">
@@ -820,9 +882,7 @@ const handleAddOrUpdateReturn = async () => {
       <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || selectedLead?.leadStatus === "Closed" || isReadOnly}
 
         className="save-btn1" onClick={handleAddOrUpdateReturn}>{editMode ? "Update" : "Save Narrative"}</button>
-        {/* <button className="back-btn" onClick={() => handleNavigation("/LRPerson")}>Back</button>
-        <button className="next-btn" onClick={() => handleNavigation("/LRScratchpad")}>Next</button>
-        <button className="cancel-btn" onClick={() => setReturnData({ results: "" })}>Cancel</button> */}
+
       </div>
       </div>
       </div>
@@ -840,54 +900,6 @@ const handleAddOrUpdateReturn = async () => {
             )}
           </tr>
         </thead>
-        {/* <tbody>
-            {returns.length > 0 ? returns.map((ret, idx) => (  
-              <tr key={ret.id || idx}>
-                 <td>{ret.leadReturnId}</td>
-              <td>{formatDate(ret.enteredDate)}</td>
-              <td>{ret.enteredBy}</td>
-              <td>{ret.leadReturnResult}</td>
-                <td>
-                  <div classname = "lr-table-btn">
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
-                  alt="Edit Icon"
-                  className="edit-icon"
-                  onClick={() => handleEditReturn(ret)}
-                />
-                  </button>
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}>
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
-                  alt="Delete Icon"
-                  className="edit-icon"
-                  onClick={() => handleDeleteReturn(ret.leadReturnId)}
-                />
-                  </button>
-                  </div>
-                </td>
-
-                {isCaseManager && (
-          <td>
-            <select
-              value={ret.access}
-              onChange={e => handleAccessChange(idx, e.target.value)}
-            >
-              <option value="Everyone">Everyone</option>
-              <option value="Case Manager">Case Manager Only</option>
-            </select>
-          </td>
-        )}
-      </tr>
-       )) : (
-        <tr>
-          <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign:'center' }}>
-            No Returns Available
-          </td>
-        </tr>
-      )}
-          </tbody> */}
 
 <tbody>
   {returns.length > 0 ? returns.map((ret, idx) => {
@@ -958,20 +970,6 @@ const handleAddOrUpdateReturn = async () => {
 </tbody>
 
         </table>
-
-        
-       {/* {selectedLead?.leadStatus !== "Completed" && !isCaseManager && (
-  <div className="form-buttons-finish">
-    <h4> Click here to submit the lead</h4>
-    <button
-      disabled={selectedLead?.leadStatus === "In Review"}
-      className="save-btn1"
-      onClick={handleSubmitReport}
-    >
-      Submit 
-    </button>
-  </div>
-)} */}
 
         <Comment tag= "Return"/>
 
