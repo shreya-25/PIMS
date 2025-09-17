@@ -137,8 +137,17 @@ const Navbar = () => {
     <i className="fa-solid fa-user" aria-hidden="true"></i>
     <span className="username">{username || "Guest"}</span>
   </div>
-  {showRole && <div className="user-role">Role: {role}</div>}
+    {showRole && <span className="user-sep" aria-hidden="true"></span>}
+     {showRole && <div className="user-role">Role: {role}</div>}
 </div>
+
+        {/* <div className="user-profile">
+  <div className="user-row">
+    {showRole && <div className="user-role">Role: {role}</div>}
+  </div>
+</div> */}
+
+
         <ul>
           {/* Home */}
           <li>

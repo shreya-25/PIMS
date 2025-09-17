@@ -43,6 +43,7 @@ export const LRReturn = () => {
     const [alertOpen, setAlertOpen] = useState(false);
     const [alertMessage, setAlertMessage] = useState("");
     const [maxReturnId, setMaxReturnId] = useState(0);
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const isDisabled = leadStatus === "In Review" || leadStatus === "Completed"|| leadStatus === "Closed";
@@ -362,6 +363,7 @@ const [returnData, setReturnData]   = useState(() => {
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
 
+
   const handleInputChange = (field, value) => {
     setReturnData({ ...returnData, [field]: value });
   };
@@ -411,6 +413,7 @@ useEffect(() => {
   try {
     const savedForm = sessionStorage.getItem(FORM_KEY);
     setReturnData(savedForm ? JSON.parse(savedForm) : defaultForm(officerName));
+    try { sessionStorage.removeItem(FORM_KEY); } catch {}
   } catch {
     setReturnData(defaultForm(officerName));
   } finally {
@@ -552,6 +555,8 @@ const handleAccessChange = async (idx, newAccess) => {
 // Calculate the next Return No (max return id plus one, converted back to alphabet)
 const nextReturnId = numberToAlphabet(maxReturnId + 1);
 
+ const displayReturnId = editMode ? returnData.leadReturnId : nextReturnId;
+
 const handleAddOrUpdateReturn = async () => {
   // 1) validation
   if (!returnData.results.trim()) {
@@ -605,22 +610,10 @@ const handleAddOrUpdateReturn = async () => {
       const newDoc = createResp.data;
       setReturns(rs => [...rs, newDoc]);
       setLeadReturns(rs => [...rs, newDoc]);
+      setMaxReturnId(n => Math.max(n, alphabetToNumber(newDoc.leadReturnId)));
 
-      setReturnData(rd => ({
-      ...rd,
-      leadReturnId: newDoc.leadReturnId,
-      results:      ""    // clear out the textarea
-    }));
-
-    setMaxReturnId(n =>
-      Math.max(n, alphabetToNumber(newDoc.leadReturnId))
-    );
-
-      // 6) reset the form
-      setReturnData(rd => ({
-        ...rd,
-        results: "",
-      }));
+      setReturnData(defaultForm(officerName));        // <- clear form (no leadReturnId)
+      try { sessionStorage.removeItem(FORM_KEY); } catch {}
     }
   } catch (err) {
     console.error("Error saving return:", err);
@@ -651,13 +644,16 @@ const handleAddOrUpdateReturn = async () => {
   };
   
   const handleEditReturn = (ret) => {
-    setReturnData({ results: ret.leadReturnResult,
-      leadReturnId: ret.leadReturnId,
-      enteredDate: formatDate(ret.enteredDate),
-      enteredBy: ret.enteredBy });
-    setEditMode(true);
-    setEditId(ret.leadReturnId);
-  };
+  setReturnData({
+    results: ret.leadReturnResult,
+    leadReturnId: ret.leadReturnId,              // only used while editMode = true
+    enteredDate: formatDate(ret.enteredDate),
+    enteredBy: ret.enteredBy
+  });
+  setEditMode(true);
+  setEditId(ret.leadReturnId);
+};
+
   
 
   const handleDeleteReturn = async (leadReturnId) => {
@@ -844,14 +840,7 @@ const handleAddOrUpdateReturn = async () => {
 
       <div className="form-row4">
             <label>Narrative Id*</label>
-            <input
-  readOnly
-  value={ editMode
-    ? returnData.leadReturnId    
-    : (returnData.leadReturnId   
-       || nextReturnId)           
-  }
-/>
+            <input readOnly value={displayReturnId} />
 
           </div>
           <div className="form-row4">

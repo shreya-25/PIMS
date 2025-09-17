@@ -63,21 +63,102 @@ export const LRAudio = () => {
    return saved ? JSON.parse(saved) : [];
  });
 
+ // Narrative Ids from API
+const [narrativeIds, setNarrativeIds] = useState([]);
+
+const DEFAULT_AUDIO = {
+  dateAudioRecorded: "",
+  description: "",
+  audioSrc: "",
+  leadReturnId: "",
+  isLink: false,
+  link: "",
+  filename: "",
+  accessLevel: "Everyone",   // ✅ default that matches your schema enum
+};
+
+const savedDraft = sessionStorage.getItem(FORM_KEY);
+const [audioData, setAudioData] = useState(() => {
+  try {
+    return { ...DEFAULT_AUDIO, ...(savedDraft ? JSON.parse(savedDraft) : {}) };
+  } catch {
+    return DEFAULT_AUDIO;
+  }
+});
+
+const normalizeId = (id) => String(id ?? "").trim().toUpperCase();
+const alphabetToNumber = (str = "") => {
+  str = normalizeId(str);
+  let n = 0;
+  for (let i = 0; i < str.length; i++) n = n * 26 + (str.charCodeAt(i) - 64);
+  return n;
+};
+
+useEffect(() => {
+  if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+
+  const ac = new AbortController();
+
+  (async () => {
+    try {
+      const token   = localStorage.getItem("token");
+      const leadNo  = selectedLead.leadNo;
+      const caseNo  = selectedCase.caseNo;
+      const encLead = encodeURIComponent(selectedLead.leadName);
+      const encCase = encodeURIComponent(selectedCase.caseName);
+
+      // Get all narrative rows for this lead/case
+      const resp = await api.get(
+        `/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`,
+        { headers: { Authorization: `Bearer ${token}` }, signal: ac.signal }
+      );
+
+      // Unique, cleaned ids (skip blanks)
+      const ids = [...new Set((resp?.data || [])
+        .map(r => normalizeId(r?.leadReturnId))
+        .filter(Boolean))];
+
+      // Sort in a predictable way (A..Z..AA..AB..)
+      ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
+
+      setNarrativeIds(ids);
+
+      // If ADDING a new audio (not editing) and no id chosen yet → preselect latest
+      setAudioData(prev =>
+        (!isEditing && !prev.leadReturnId)
+          ? { ...prev, leadReturnId: ids.at(-1) || "" }
+          : prev
+      );
+    } catch (err) {
+      if (!ac.signal.aborted) console.error("Failed to fetch Narrative Ids:", err);
+    }
+  })();
+
+  return () => ac.abort();
+}, [
+  selectedLead?.leadNo,
+  selectedLead?.leadName,
+  selectedCase?.caseNo,
+  selectedCase?.caseName,
+  isEditing
+]);
+
+
   // State to manage form data
- const [audioData, setAudioData] = useState(() => {
-   const saved = sessionStorage.getItem(FORM_KEY);
-   return saved
-     ? JSON.parse(saved)
-     : {
-         dateAudioRecorded: "",
-         description: "",
-         audioSrc: "",
-         leadReturnId: "",
-         isLink: false,
-         link: "",
-         accessLevel: "Everyone"
-       };
- });
+//  const [audioData, setAudioData] = useState(() => {
+//    const saved = sessionStorage.getItem(FORM_KEY);
+//    return saved
+//      ? JSON.parse(saved)
+//      : {
+//          dateAudioRecorded: "",
+//          description: "",
+//          audioSrc: "",
+//          leadReturnId: "",
+//          isLink: false,
+//          link: "",
+//          accessLevel: "Everyone"
+//        };
+//  });
 
   const handleInputChange = (field, value) => {
     setAudioData({ ...audioData, [field]: value });
@@ -159,7 +240,7 @@ useEffect(() => {
   formData.append("enteredDate", new Date().toISOString());
   formData.append("dateAudioRecorded", audioData.dateAudioRecorded);
   formData.append("audioDescription", audioData.description);
-   formData.append("accessLevel", audioData.accessLevel);
+  formData.append("accessLevel", audioData.accessLevel || "Everyone");
 
   // 3️⃣ Link fields
   formData.append("isLink", audioData.isLink);
@@ -190,6 +271,7 @@ useEffect(() => {
       filename: ""
     });
     setFile(null);
+    
     // after resetting audioData and file...
     sessionStorage.removeItem(FORM_KEY);
 
@@ -378,7 +460,7 @@ const handleUpdateAudio = async () => {
   fd.append("leadReturnId", audioData.leadReturnId);
   fd.append("dateAudioRecorded", audioData.dateAudioRecorded);
   fd.append("audioDescription", audioData.description);
-  fd.append("accessLevel", audioData.accessLevel);
+  fd.append("accessLevel", audioData.accessLevel || "Everyone");
 
   // 2️⃣ Indicate link‐mode or file‐mode
   fd.append("isLink", audioData.isLink);
@@ -413,16 +495,10 @@ const handleUpdateAudio = async () => {
 
     // 4️⃣ Clear editing state
     setEditingId(null);
-    setAudioData({
-      dateAudioRecorded: "",
-      leadReturnId: "",
-      description: "",
-      isLink: false,
-      link: "",
-      audioSrc: "",
-      filename: ""
-    });
+    setAudioData(DEFAULT_AUDIO);
     setFile(null);
+
+    if (fileInputRef.current) fileInputRef.current.value = ""; // clear filename display
 
     // 5️⃣ Clear the file <input>
     if (fileInputRef.current) {
@@ -674,7 +750,7 @@ Case Page
              </h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
-        ? `Your Role: ${selectedCase.role || ""} | Lead Status:  ${status}`
+        ? ` Lead Status:  ${status}`
     : ` ${leadStatus}`}
 </h5>
 
@@ -702,12 +778,27 @@ Case Page
           </div>
           <div className="form-row-audio">
             <label className="evidence-head">Narrative Id*</label>
-            <input
-              type="text"
+            <select
               value={audioData.leadReturnId}
               className="evidence-head"
               onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
-            />
+            >
+              <option value="">Select Narrative Id</option>
+
+              {/* keep current value visible even if it's not in the latest API list (e.g., old record) */}
+              {audioData.leadReturnId &&
+                !narrativeIds.includes(normalizeId(audioData.leadReturnId)) && (
+                  <option value={audioData.leadReturnId}>
+                    {audioData.leadReturnId}
+                  </option>
+                )
+              }
+
+              {narrativeIds.map(id => (
+                <option key={id} value={id}>{id}</option>
+              ))}
+            </select>
+
           </div>
           <div className="form-row-audio">
             <label className="evidence-head">Description</label>
@@ -768,7 +859,7 @@ Case Page
 <div className="form-row-audio">
   <label>Access Level</label>
   <select
-    value={audioData.accessLevel}
+    value={audioData.accessLevel || "Everyone"}
     onChange={e =>
       setAudioData(prev => ({ ...prev, accessLevel: e.target.value }))
     }
@@ -796,9 +887,10 @@ Case Page
     <button
      className="save-btn1"
      onClick={() => {
-       setEditingId(null);
-        setAudioData({ dateAudioRecorded:"", leadReturnId:"", description:"", audioSrc:"", filename:"" });
-       setFile(null);
+        setEditingId(null);
+ setAudioData(DEFAULT_AUDIO);
+  setFile(null);
+ if (fileInputRef.current) fileInputRef.current.value = "";
     }}
    >Cancel</button>
   )}

@@ -39,6 +39,69 @@ const { selectedCase, selectedLead, leadInstructions, leadReturns } = useContext
 const onShowCaseSelector = (route) => {
   navigate(route, { state: { caseDetails } });
 };
+const [narrativeIds, setNarrativeIds] = useState([]);
+
+useEffect(() => {
+  if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+
+  // If context already has IDs you can skip the fetch:
+  if (Array.isArray(leadReturns) && leadReturns.length) {
+    const ids = [...new Set(leadReturns.map(r => r?.leadReturnId).filter(Boolean))];
+    // optional alphabet sort A,B,C...
+    ids.sort((a,b) => a.localeCompare(b));
+    setNarrativeIds(ids);
+    return;
+  }
+
+  const ac = new AbortController();
+  (async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const resp = await api.get(
+        `/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+        { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
+      );
+      const ids = [...new Set((resp?.data ?? []).map(r => r?.leadReturnId).filter(Boolean))];
+      ids.sort((a,b) => a.localeCompare(b));
+      setNarrativeIds(ids);
+    } catch (e) {
+      if (!ac.signal.aborted) console.error("Failed to load narrative ids", e);
+    }
+  })();
+
+  return () => ac.abort();
+}, [
+  selectedLead?.leadNo,
+  selectedLead?.leadName,
+  selectedCase?.caseNo,
+  selectedCase?.caseName,
+  leadReturns
+]);
+
+
+
+const todayISO = React.useMemo(
+  () => new Date().toISOString().slice(0, 10),
+  []
+);
+
+const alphabetToNumber = (str) => {
+  if (!str) return 0;
+  let result = 0;
+  for (let i = 0; i < str.length; i++) {
+    result = result * 26 + (str.charCodeAt(i) - 64); // 'A' = 65
+  }
+  return result;
+};
+
+const narrativeIdOptions = React.useMemo(() => {
+  const ids = Array.isArray(leadReturns)
+    ? [...new Set(leadReturns.map(r => r?.leadReturnId).filter(Boolean))]
+    : [];
+  // sort alphabetically by A, B, C... (or remove this to keep API order)
+  return ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
+}, [leadReturns]);
+
 
 useEffect(() => {
    const loggedInUser = localStorage.getItem("loggedInUser");
@@ -84,16 +147,86 @@ useEffect(() => {
   };
 
   const [formData, setFormData] = useState(() => {
-    const saved = sessionStorage.getItem(FORM_KEY);
-    return saved
-      ? JSON.parse(saved)
-      : { 
-          dateEntered: person?.enteredDate?.slice(0,10) || "",
-          leadReturnId: person?.leadReturnId || "",
-          lastName: person?.lastName || "",
-          /* …everything else… */
-        };
-  });
+  const saved = sessionStorage.getItem(FORM_KEY);
+  if (saved) return JSON.parse(saved);
+
+  // If editing, use the existing person values
+  if (person) {
+    return {
+      dateEntered: person?.enteredDate?.slice(0, 10) || "",
+      leadReturnId: person?.leadReturnId || "",
+      lastName: person?.lastName || "",
+      firstName: person?.firstName || "",
+      mi: person?.middleInitial || "",
+      suffix: person?.suffix || "",
+      cellNumber: person?.cellNumber || "",
+      alias: person?.alias || "",
+      businessName: person?.businessName || "",
+      street1: person?.address?.street1 || "",
+      street2: person?.address?.street2 || "",
+      building: person?.address?.building || "",
+      apartment: person?.address?.apartment || "",
+      city: person?.address?.city || "",
+      state: person?.address?.state || "",
+      zipCode: person?.address?.zipCode || "",
+      age: person?.age || "",
+      ssn: person?.ssn || "",
+      occupation: person?.occupation || "",
+      email: person?.email || "",
+      personType: person?.personType || "",
+      condition: person?.condition || "",
+      cautionType: person?.cautionType || "",
+      sex: person?.sex || "",
+      race: person?.race || "",
+      ethnicity: person?.ethnicity || "",
+      skinTone: person?.skinTone || "",
+      eyeColor: person?.eyeColor || "",
+      glasses: person?.glasses || "",
+      hairColor: person?.hairColor || "",
+      tattoo: person?.tattoo || "",
+      scar: person?.scar || "",
+      mark: person?.mark || "",
+    };
+  }
+
+  // Creating new: Date defaults to today; Narrative defaults to last available (optional)
+  return {
+    dateEntered: todayISO,
+    leadReturnId: "", // or narrativeIdOptions.at(-1) || "" to preselect the most recent
+    lastName: "",
+    firstName: "",
+    mi: "",
+    suffix: "",
+    cellNumber: "",
+    alias: "",
+    businessName: "",
+    street1: "",
+    street2: "",
+    building: "",
+    apartment: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    age: "",
+    ssn: "",
+    occupation: "",
+    email: "",
+    personType: "",
+    condition: "",
+    cautionType: "",
+    sex: "",
+    race: "",
+    ethnicity: "",
+    skinTone: "",
+    eyeColor: "",
+    glasses: "",
+    hairColor: "",
+    tattoo: "",
+    scar: "",
+    mark: "",
+  };
+});
+
 
   const [miscDetails, setMiscDetails] = useState(() => {
     const saved = sessionStorage.getItem(MISC_KEY);
@@ -112,6 +245,15 @@ useEffect(() => {
     sessionStorage.setItem(MISC_KEY, JSON.stringify(miscDetails));
   }, [miscDetails]);
 
+useEffect(() => {
+  if (!person && !formData.leadReturnId && narrativeIdOptions.length) {
+    setFormData(fd => ({ ...fd, leadReturnId: narrativeIdOptions.at(-1) }));
+  }
+  if (!person && !formData.dateEntered) {
+    setFormData(fd => ({ ...fd, dateEntered: todayISO }));
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [person, narrativeIdOptions, todayISO]);
 
   
   const addNewRow = () => {
@@ -515,12 +657,29 @@ Case Page
               </td>
               <td>Narrative Id *</td>
               <td>
-                <input
-                  type="leadReturn"
-                  value={formData.leadReturnId}
+                 {/* <select
                   className="input-large"
+                  value={formData.leadReturnId}
                   onChange={(e) => handleChange("leadReturnId", e.target.value)}
-                />
+                >
+                  <option value="">Select Narrative Id</option>
+                  {narrativeIdOptions.map(id => (
+                    <option key={id} value={id}>{id}</option>
+                  ))}
+                </select> */}
+
+    <select
+      className="input-large"
+      value={formData.leadReturnId}
+      onChange={(e) => handleChange("leadReturnId", e.target.value)}
+    >
+      <option value="">Select Narrative Id</option>
+      {narrativeIds.map(id => (
+        <option key={id} value={id}>{id}</option>
+      ))}
+    </select>
+
+
               </td>
             </tr>
             <tr>
