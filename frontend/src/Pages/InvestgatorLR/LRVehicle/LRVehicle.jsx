@@ -16,16 +16,7 @@ import { useLeadStatus } from '../../../hooks/useLeadStatus';
 
 
 export const LRVehicle = () => {
-    // useEffect(() => {
-    //     // Apply style when component mounts
-    //     document.body.style.overflow = "hidden";
-    
-    //     return () => {
-    //       // Reset to default when component unmounts
-    //       document.body.style.overflow = "auto";
-    //     };
-    //   }, []);
-
+ 
   const navigate = useNavigate(); // Initialize useNavigate hook
   const FORM_KEY = "LRVehicle:form";
   const LIST_KEY = "LRVehicle:list";
@@ -39,6 +30,8 @@ export const LRVehicle = () => {
     const saved = sessionStorage.getItem(LIST_KEY);
     return saved ? JSON.parse(saved) : [];
   });
+  const [narrativeIds, setNarrativeIds] = useState([]);
+
 
     const [vehicleData, setVehicleData] = useState(() => {
    const saved = sessionStorage.getItem(FORM_KEY);
@@ -90,7 +83,7 @@ useEffect(() => {
         if (isNaN(date)) return "";
         const month = (date.getMonth() + 1).toString().padStart(2, "0");
         const day = date.getDate().toString().padStart(2, "0");
-        const year = date.getFullYear().toString().slice(-2);
+        const year = date.getFullYear().toString().slice(-4);
         return `${month}/${day}/${year}`;
       };
 
@@ -100,15 +93,18 @@ useEffect(() => {
                 const onShowCaseSelector = (route) => {
                   navigate(route, { state: { caseDetails } });
               };
-      
+  const todayISO = React.useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+const alphabetToNumber = (str) => {
+  if (!str) return 0;
+  let n = 0;
+  for (let i = 0; i < str.length; i++) n = n * 26 + (str.charCodeAt(i) - 64); // 'A' = 65
+  return n;
+};
 
     
 
   const [vehicles, setVehicles] = useState([
-    // {  returnId: 1,dateEntered: "01/01/2024", year: "2023", make: "Honda", model: "Accord",color: "Blue", vin: "123456", plate: "XYZ-1234", state: "NY" },
-    // {  returnId: 1,dateEntered: "01/05/2024", year: "2022", make: "Toyota", model: "Camry", color: "Black",vin: "654321", plate: "ABC-5678", state: "CA" },
-    // { returnId: 2, dateEntered: "01/10/2024", year: "2021", make: "Ford", model: "F-150", color: "White",vin: "789012", plate: "DEF-9101", state: "TX" },
-    // {  returnId: 2,dateEntered: "01/15/2024", year: "2024", make: "Tesla", model: "Model 3", color: "Red",vin: "345678", plate: "TES-2024", state: "FL" },
   ]);
    const [vehicleModalData, setVehicleModalData] = useState({
         leadNo: "",
@@ -120,6 +116,52 @@ useEffect(() => {
       });
       
 const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
+
+useEffect(() => {
+  if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+
+  const ac = new AbortController();
+
+  (async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const encLead = encodeURIComponent(selectedLead.leadName);
+      const encCase = encodeURIComponent(selectedCase.caseName);
+
+      // Same endpoint you use elsewhere to list Lead Returns
+      const resp = await api.get(
+        `/api/leadReturnResult/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
+        { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const ids = [...new Set((resp?.data || []).map(r => r?.leadReturnId).filter(Boolean))];
+      ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
+      setNarrativeIds(ids);
+
+      // If creating a new vehicle (not editing) and no selection yet, default to the latest ID
+      setVehicleData(v =>
+        (editIndex === null && !v.leadReturnId)
+          ? { ...v, leadReturnId: ids.at(-1) || "" , enteredDate: v.enteredDate || todayISO}
+          : v
+      );
+    } catch (e) {
+      if (!ac.signal.aborted) {
+        console.error("Failed to fetch Narrative IDs:", e);
+        // optional: show a toast/modal if you like
+      }
+    }
+  })();
+
+  return () => ac.abort();
+}, [
+  selectedLead?.leadNo,
+  selectedLead?.leadName,
+  selectedCase?.caseNo,
+  selectedCase?.caseName,
+  editIndex,
+  todayISO
+]);
+
 
   useEffect(() => {
     const fetchLeadData = async () => {
@@ -403,96 +445,6 @@ const goToViewLR = () => {
 };
   
 
-  // const handleAddVehicle = () => {
-  //   const newVehicle = {
-  //     dateEntered: new Date().toLocaleDateString(),
-  //     year: vehicleData.year,
-  //     make: vehicleData.make,
-  //     model: vehicleData.model,
-  //     color: vehicleData.color,
-  //     vn: vehicleData.vin,
-  //     plate: vehicleData.plate,
-  //     state: vehicleData.state,
-  //   };
-
-  //   // Add the new vehicle to the list
-  //   setVehicles([...vehicles, newVehicle]);
-
-  //   // Clear the form fields
-  //   setVehicleData({
-  //     year: '',
-  //     make: '',
-  //     model: '',
-  //     plate: '',
-  //     category: '',
-  //     type: '',
-  //     color:'',
-  //     vin: '',
-  //     primaryColor: '',
-  //     secondaryColor: '',
-  //     state: '',
-  //     information: '',
-  //   });
-  // };
-
-  // const handleAddVehicle = async () => {
-  //   const token = localStorage.getItem("token");
-  
-  //   const payload = {
-  //     leadNo: selectedLead?.leadNo,
-  //     description: selectedLead?.leadName,
-  //     caseNo: selectedCase?.caseNo,
-  //     caseName: selectedCase?.caseName,
-  //     enteredBy: username, // Replace with real user
-  //     enteredDate: new Date().toISOString(),
-  //     leadReturnId: vehicleData.leadReturnId, // You may fetch/set this dynamically
-  //     year: vehicleData.year,
-  //     make: vehicleData.make,
-  //     model: vehicleData.model,
-  //     plate: vehicleData.plate,
-  //     vin: vehicleData.vin,
-  //     state: vehicleData.state,
-  //     category: vehicleData.category,
-  //     type: vehicleData.type,
-  //     primaryColor: vehicleData.primaryColor,
-  //     secondaryColor: vehicleData.secondaryColor,
-  //     information: vehicleData.information,
-  //     additionalData: {} // Add any extra info if needed
-  //   };
-
-  //   console.log(payload);
-  
-  //   try {
-  //     // 1) axios.post(url, data, config)
-  //     const res = await api.post(
-  //       "/api/lrvehicle/lrvehicle",
-  //       payload,
-  //       {
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           "Authorization": `Bearer ${token}`
-  //         }
-  //       }
-  //     );
-  
-  //     console.log("Server response:", res.data);
-  //     alert("Vehicle added successfully");
-  //     fetchVehicles();
-  //   } catch (err) {
-  //     // 2) Inspect err.response for server rejection
-  //     if (err.response) {
-  //       console.error("Server error:", err.response);
-  //       const msg =
-  //         err.response.data?.message ||
-  //         JSON.stringify(err.response.data) ||
-  //         err.response.statusText;
-  //       alert(`Failed to add vehicle (${err.response.status}): ${msg}`);
-  //     } else {
-  //       console.error("Network or code error:", err);
-  //       alert(`Error adding vehicle: ${err.message}`);
-  //     }
-  //   }
-  // };
 
   const handleSaveVehicle = async () => {
     const token = localStorage.getItem("token");
@@ -661,47 +613,6 @@ const goToViewLR = () => {
                     onClose={()   => setAlertOpen(false)}
                   />
 
-      {/* Top Menu */}
-      {/* <div className="top-menu">
-        <div className="menu-items">
-        <span className="menu-item " onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRReturn')}>
-            Returns
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRPerson')}>
-            Person
-          </span>
-          <span className="menu-item active" onClick={() => handleNavigation('/LRVehicle')}>
-            Vehicles
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRScratchpad')}>
-            Scratchpad
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span>
-         </div>
-       </div> */}
          <div className="top-menu"   style={{ paddingLeft: '20%' }}>
       <div className="menu-items" >
         <span className="menu-item " onClick={() => {
@@ -752,111 +663,11 @@ const goToViewLR = () => {
                 }}>Lead Chain of Custody</span>
           
                   </div>
-        {/* <div className="menu-items">
       
-        <span className="menu-item active" onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRReturn')}>
-            Returns
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRScratchpad')}>
-            Scratchpad
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span>
-         </div> */}
        </div>
 
        <div className="LRI_Content">
-       {/* <div className="sideitem">
-       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-       <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
-        </li>
-        {caseDropdownOpen && (
-      <ul >
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>  
-          
-          
-
-                  <li
-  className="sidebar-item"
-  onClick={() =>
-    selectedCase.role === "Investigator"
-      ? navigate("/Investigator")
-      : navigate("/CasePageManager")
-  }
->
-Case Page
-</li>
-
-
-            {selectedCase.role !== "Investigator" && (
-<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-          
-          
-              {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
-            </li>)}
-          
-          
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-
-            </ul>
-        )}
-          <li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
-          </li>
-        {leadDropdownOpen && (
-          <ul>
-              <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-              View Lead Chain of Custody
-            </li>
-             )}
-          </ul>
-
-            )}
-
-                </div> */}
-
+       
 <SideBar  activePage="CasePageManager" />
 
                 <div className="left-content">
@@ -938,11 +749,15 @@ Case Page
         <div className="vehicle-form">
           <div className="form-row4">
           <label>Narrative Id*</label>
-            <input
-              type="text"
-              value={vehicleData.leadReturnId}
-              onChange={(e) => handleChange('leadReturnId', e.target.value)}
-            />
+             <select
+   value={vehicleData.leadReturnId}
+   onChange={(e) => handleChange('leadReturnId', e.target.value)}
+ >
+   <option value="">Select Narrative Id</option>
+   {narrativeIds.map(id => (
+     <option key={id} value={id}>{id}</option>
+   ))}
+ </select>
             <label>Entered Date*</label>
             <input
               type="text"

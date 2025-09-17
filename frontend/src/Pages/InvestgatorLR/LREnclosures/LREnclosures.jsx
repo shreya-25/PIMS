@@ -15,15 +15,7 @@ import { useLeadStatus } from '../../../hooks/useLeadStatus';
 
 
 export const LREnclosures = () => {
-    // useEffect(() => {
-    //     // Apply style when component mounts
-    //     document.body.style.overflow = "hidden";
-    
-    //     return () => {
-    //       // Reset to default when component unmounts
-    //       document.body.style.overflow = "auto";
-    //     };
-    //   }, []);
+
   const navigate = useNavigate(); 
   const FORM_KEY = "LREnclosures:form";
   const LIST_KEY = "LREnclosures:list";
@@ -33,7 +25,7 @@ export const LREnclosures = () => {
   const [leadData, setLeadData] = useState({});
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
-  
+  const [narrativeIds, setNarrativeIds] = useState([]);
 
   const { leadDetails, caseDetails } = location.state || {};
 
@@ -46,6 +38,13 @@ export const LREnclosures = () => {
       const day = date.getDate().toString().padStart(2, "0");
       const year = date.getFullYear().toString().slice(-2);
       return `${month}/${day}/${year}`;
+    };
+
+    const alphabetToNumber = (str) => {
+      if (!str) return 0;
+      let n = 0;
+      for (let i = 0; i < str.length; i++) n = n * 26 + (str.charCodeAt(i) - 64); // 'A' = 65
+      return n;
     };
 
     const [loading, setLoading] = useState(true);
@@ -163,178 +162,6 @@ useEffect(() => {
       setLoading(false);
     }
   };
-
-
-  // Save Enclosure: Build FormData and post to backend including token from localStorage.
-  // const handleSaveEnclosure = async () => {
-  //   const formData = new FormData();
-  //   if (file) {
-  //     formData.append("file", file);
-  //     console.log("file", file);
-  //   }
-
-  //   // Append other required fields
-  //   formData.append("leadNo", selectedLead.leadNo); // Example value; update as needed
-  //   formData.append("description", selectedLead.leadName);
-  //   formData.append("enteredBy", localStorage.getItem("loggedInUser"));
-  //   formData.append("caseName", selectedLead.caseName);
-  //   formData.append("caseNo", selectedLead.caseNo);
-  //   formData.append("leadReturnId", enclosureData.returnId); // Example value; update as needed
-  //   formData.append("enteredDate", new Date().toISOString());
-  //   formData.append("type", enclosureData.type);
-  //   formData.append("enclosureDescription", enclosureData.enclosure);
-
-  //   // Retrieve token from localStorage
-  //   const token = localStorage.getItem("token");
-  //   console.log(token);
-  //   for (const [key, value] of formData.entries()) {
-  //     console.log(`FormData - ${key}:`, value);
-  //   }
-    
-  //   try {
-  //     const response = await api.post(
-  //       "/api/lrenclosure/upload",
-  //       formData,
-  //       { 
-  //         headers: { 
-  //           "Content-Type": undefined,   
-  //           // "Content-Type": "multipart/form-data",
-  //           "Authorization": `Bearer ${token}`  // Add token here
-  //         } 
-  //       }
-  //     );
-  //     console.log("Enclosure saved:", response.data);
-  //     // Optionally update local state with the new enclosure
-  //     setEnclosures([...enclosures, response.data.enclosure]);
-
-  //     // Clear form fields if needed
-  //     setEnclosureData({ type: "", enclosure: "" });
-  //     setFile(null);
-  //   } catch (error) {
-  //     console.error("Error saving enclosure:", error);
-  //     if (error.response) {
-  //       console.error("Upload failed with status", error.response.status);
-  //       console.error("Response body:", error.response.data);
-  //     } else {
-  //       console.error("Network or client error:", error);
-  //     }
-  //   }
-  // };
-
-  // const handleSaveEnclosure = async () => {
-  //   if (!file) {
-  //     console.warn("No file selected");
-  //     return;
-  //   }
-
-  //   // build the FormData payload
-  //   const formData = new FormData();
-  //   formData.append("file", file);
-  //   formData.append("leadNo", selectedLead.leadNo);
-  //   formData.append("description", selectedLead.leadName);
-  //   formData.append("enteredBy", localStorage.getItem("loggedInUser"));
-  //   formData.append("caseName", selectedCase.caseName);
-  //   formData.append("caseNo", selectedCase.caseNo);
-  //   formData.append("leadReturnId", enclosureData.returnId);
-  //   formData.append("enteredDate", new Date().toISOString());
-  //   formData.append("type", enclosureData.type);
-  //   formData.append("enclosureDescription", enclosureData.enclosure);
-
-  //   const token = localStorage.getItem("token");
-
-  //   try {
-  //     await api.post(
-  //       "/api/lrenclosure/upload",
-  //       formData,
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`, // no Content-Type here
-  //         },
-  //         transformRequest: [(data, headers) => {
-  //           // remove JSON header so axios auto-sets multipart/form-data boundary
-  //           delete headers["Content-Type"];
-  //           return data;
-  //         }],
-  //       }
-  //     );
-
-  //     // **re-fetch** the entire list so the new one appears immediately
-  //     await fetchEnclosuresForLead();
-
-  //     // clear form & file
-  //     setEnclosureData({ returnId: "", type: "", enclosure: "" });
-  //     setFile(null);
-
-  //     if (fileInputRef.current) fileInputRef.current.value = "";
-
-  //   } catch (err) {
-  //     console.error("Upload error:", err.response || err);
-  //   }
-  // };
-
-  // const handleSave = async () => {
-  //   // must always supply a file when creating; on update it's optional
-  //   if (editIndex === null && !file) {
-  //     alert("Please select a file to upload.");
-  //     return;
-  //   }
-
-  //   const fd = new FormData();
-  //   if (file) fd.append("file", file);
-  //   fd.append("leadNo",   selectedLead.leadNo);
-  //   fd.append("description", selectedLead.leadName);
-  //   fd.append("enteredBy",   localStorage.getItem("loggedInUser"));
-  //   fd.append("caseName",    selectedCase.caseName);
-  //   fd.append("caseNo",      selectedCase.caseNo);
-  //   fd.append("leadReturnId",enclosureData.returnId);
-  //   fd.append("enteredDate", new Date().toISOString());
-  //   fd.append("type",        enclosureData.type);
-  //   fd.append("enclosureDescription", enclosureData.enclosure);
-
-  //   const token = localStorage.getItem("token");
-
-  //   try {
-  //     if (editIndex === null) {
-  //       // CREATE
-  //       await api.post("/api/lrenclosure/upload", fd, {
-  //         headers: { Authorization: `Bearer ${token}` },
-  //         transformRequest: [(data, headers) => {
-  //           delete headers["Content-Type"];
-  //           return data;
-  //         }]
-  //       });
-  //       alert("Enclosure added");
-  //     } else {
-  //       // UPDATE: must send to PUT /api/lrenclosure/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId/:oldDesc
-  //       const { leadReturnId } = enclosureData;
-  //       const url = `/api/lrenclosure/${selectedLead.leadNo}/` +
-  //                   `${encodeURIComponent(selectedLead.leadName)}/` +
-  //                   `${selectedCase.caseNo}/` +
-  //                   `${encodeURIComponent(selectedCase.caseName)}/` +
-  //                   `${leadReturnId}/` +
-  //                   `${encodeURIComponent(originalDesc)}`;
-  //       await api.put(url, fd, {
-  //         headers: { Authorization: `Bearer ${token}` },
-  //         transformRequest: [(data, headers) => {
-  //           delete headers["Content-Type"];
-  //           return data;
-  //         }]
-  //       });
-  //       alert("Enclosure updated");
-  //     }
-  //     // refresh & reset form
-  //     await fetchEnclosures();
-  //     setEnclosureData({ returnId:"", type:"", enclosure:"" });
-  //     setFile(null);
-  //     if (fileInputRef.current) fileInputRef.current.value = "";
-  //     setEditIndex(null);
-  //     setOriginalDesc("");
-  //   } catch (err) {
-  //     console.error("Save error:", err.response || err);
-  //     alert("Save failed: " + (err.response?.data?.message || err.message));
-  //   }
-  // };
-
     useEffect(() => {
     const fetchLeadData = async () => {
       if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
@@ -362,6 +189,50 @@ useEffect(() => {
 
     fetchLeadData();
   }, [selectedLead, selectedCase]);
+
+  useEffect(() => {
+  if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+
+  const ac = new AbortController();
+
+  (async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const encLead = encodeURIComponent(selectedLead.leadName);
+      const encCase = encodeURIComponent(selectedCase.caseName);
+
+      // same endpoint used elsewhere to list lead returns
+      const resp = await api.get(
+        `/api/leadReturnResult/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
+        { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const ids = [...new Set((resp?.data || []).map(r => r?.leadReturnId).filter(Boolean))];
+      ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
+      setNarrativeIds(ids);
+
+      // default Narrative Id for NEW enclosure forms (not editing)
+      setEnclosureData(prev =>
+        (editIndex === null && !prev.returnId)
+          ? { ...prev, returnId: ids.at(-1) || "" }
+          : prev
+      );
+    } catch (e) {
+      if (!ac.signal.aborted) {
+        console.error("Failed to fetch Narrative IDs:", e);
+      }
+    }
+  })();
+
+  return () => ac.abort();
+}, [
+  selectedLead?.leadNo,
+  selectedLead?.leadName,
+  selectedCase?.caseNo,
+  selectedCase?.caseName,
+  editIndex
+]);
+
 
   const handleSave = async () => {
     // Validation: must supply a file or link when creating
@@ -577,25 +448,7 @@ useEffect(() => {
                           onClose={()   => setAlertOpen(false)}
                         />
 
-      {/* Top Menu */}
-      {/* <div className="top-menu">
-        <div className="menu-items">
-          <span className="menu-item" onClick={() => handleNavigation("/LRInstruction")}>Instructions</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRReturn")}>Returns</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRPerson")}>Person</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRVehicle")}>Vehicles</span>
-          <span className="menu-item active" onClick={() => handleNavigation("/LREnclosures")}>Enclosures</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LREvidence")}>Evidence</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRPictures")}>Pictures</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRAudio")}>Audio</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRVideo")}>Videos</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRScratchpad")}>Scratchpad</span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRFinish")}>Finish</span>
-        </div>
-      </div> */}
+ 
         <div className="top-menu"   style={{ paddingLeft: '20%' }}>
       <div className="menu-items" >
         <span className="menu-item " onClick={() => {
@@ -629,107 +482,11 @@ useEffect(() => {
                 }}>Lead Chain of Custody</span>
           
                   </div>
-        {/* <div className="menu-items">
       
-        <span className="menu-item active" onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRReturn')}>
-            Returns
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRScratchpad')}>
-            Scratchpad
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span>
-         </div> */}
        </div>
 
       <div className="LRI_Content">
-      {/* <div className="sideitem">
-       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-       <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
-        </li>
-        {caseDropdownOpen && (
-      <ul >
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>  
-       
-
-
-                  <li
-  className="sidebar-item"
-  onClick={() =>
-    selectedCase.role === "Investigator"
-      ? navigate("/Investigator")
-      : navigate("/CasePageManager")
-  }
->
-Case Page
-</li>
-
-
-            {selectedCase.role !== "Investigator" && (
-<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-         
-              {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
-            </li>)}
-         
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-
-            </ul>
-        )}
-          <li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
-          </li>
-        {leadDropdownOpen && (
-          <ul>
-              <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-              View Lead Chain of Custody
-            </li>
-             )}
-          </ul>
-
-            )}
-
-                </div> */}
+    
                  <SideBar  activePage="CasePageManager" />
                 <div className="left-content">
                 <div className="top-menu1" style={{ marginTop: '2px', backgroundColor: '#3333330e' }}>
@@ -772,15 +529,7 @@ Case Page
             Finish
           </span> */}
          </div> </div>
-                {/* <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
-          <h5 className="side-title">
-  {selectedLead?.leadNo
-    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
-    : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
-</h5>
-
-          </div> */}
+              
                <div className="caseandleadinfo">
           <h5 className = "side-title"> 
              {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
@@ -789,20 +538,11 @@ Case Page
              </h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
-        ? `Your Role: ${selectedCase.role || ""} | Lead Status:  ${status}`
+        ? ` Lead Status:  ${status}`
     : ` ${leadStatus}`}
 </h5>
 
           </div>
-     
-        {/* Left Section */}
-        {/* <div className="left-section">
-          <img
-            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
-            alt="Police Department Logo"
-            className="police-logo-lr"
-          />
-        </div> */}
 
         {/* Center Section */}
         <div className="case-header">
@@ -819,11 +559,15 @@ Case Page
         <div className="enclosure-form">
         <div className="form-row-evidence">
             <label>Narrative Id *</label>
-            <input
-              type="returnId"
+            <select
               value={enclosureData.returnId}
               onChange={(e) => handleInputChange("returnId", e.target.value)}
-            />
+            >
+              <option value="">Select Narrative Id</option>
+              {narrativeIds.map(id => (
+                <option key={id} value={id}>{id}</option>
+              ))}
+            </select>
           </div>
           <div className="form-row-evidence">
             <label>Enclosure Type</label>

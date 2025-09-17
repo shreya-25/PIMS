@@ -1627,9 +1627,9 @@ const toTitleCase = (s = "") =>
 
             {presenceOthers.length > 0 && (
   <div style={{
-    background: "#FFF7E6",
-    border: "1px solid #FFC069",
-    color: "#874d00",
+    background: "#a038181e",
+    border: "1px solid #a03818ff",
+    color: "#a03818ff",
     padding: "8px 12px",
     borderRadius: 8,
     margin: "8px 16px"

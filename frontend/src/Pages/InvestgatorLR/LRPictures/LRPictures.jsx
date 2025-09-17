@@ -35,6 +35,17 @@ const [editingIndex, setEditingIndex] = useState(null);
  const fileInputRef = useRef();
  const [alertOpen, setAlertOpen] = useState(false);
      const [alertMessage, setAlertMessage] = useState("");
+     // Narrative Ids fetched from the server
+const [narrativeIds, setNarrativeIds] = useState([]);
+
+const normalizeId = (id) => String(id ?? "").trim().toUpperCase();
+const alphabetToNumber = (str = "") => {
+  str = normalizeId(str);
+  let n = 0;
+  for (let i = 0; i < str.length; i++) n = n * 26 + (str.charCodeAt(i) - 64);
+  return n;
+};
+
 
   
     const formatDate = (dateString) => {
@@ -294,6 +305,52 @@ const goToViewLR = () => {
     setEditingIndex(idx);
     setFile(null);
   };
+
+  useEffect(() => {
+  if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+
+  const ac = new AbortController();
+
+  (async () => {
+    try {
+      const token   = localStorage.getItem("token");
+      const leadNo  = selectedLead.leadNo;
+      const caseNo  = selectedCase.caseNo;
+      const encLead = encodeURIComponent(selectedLead.leadName);
+      const encCase = encodeURIComponent(selectedCase.caseName);
+
+      const resp = await api.get(
+        `/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`,
+        { headers: { Authorization: `Bearer ${token}` }, signal: ac.signal }
+      );
+
+      const ids = [...new Set((resp?.data || [])
+        .map(r => normalizeId(r?.leadReturnId))
+        .filter(Boolean))];
+
+      ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
+      setNarrativeIds(ids);
+
+      // If adding a NEW picture and no Id chosen yet, preselect the newest
+      setPictureData(prev =>
+        (!isEditing && !prev.leadReturnId)
+          ? { ...prev, leadReturnId: ids.at(-1) || "" }
+          : prev
+      );
+    } catch (e) {
+      if (!ac.signal.aborted) console.error("Failed to fetch Narrative Ids:", e);
+    }
+  })();
+
+  return () => ac.abort();
+}, [
+  selectedLead?.leadNo,
+  selectedLead?.leadName,
+  selectedCase?.caseNo,
+  selectedCase?.caseName,
+  isEditing
+]);
+
 
 // delete a picture
 const handleDeletePicture = async idx => {
@@ -800,7 +857,7 @@ Case Page
              </h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
-        ? `Your Role: ${selectedCase.role || ""} | Lead Status:  ${status}`
+        ? ` Lead Status:  ${status}`
     : ` ${leadStatus}`}
 </h5>
 
@@ -829,13 +886,18 @@ Case Page
             />
           </div>
           <div className="form-row-pic">
-            <label  className="evidence-head">Narrative Id*</label>
-            <input
-              type="leadReturnId"
+            <label className="evidence-head">Narrative Id*</label>
+            <select
               value={pictureData.leadReturnId}
-               className="evidence-head"
+              className="evidence-head"
               onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
-            />
+            >
+              <option value="">Select Narrative Id</option>
+              {narrativeIds.map(id => (
+                <option key={id} value={id}>{id}</option>
+              ))}
+            </select>
+
           </div>
           <div className="form-row-pic">
             <label  className="evidence-head">Description</label>
