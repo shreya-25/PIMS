@@ -103,6 +103,9 @@ const verifyToken = require("./middleware/authMiddleware");
 
 const reportRoutes = require("./routes/reportRoutes.js"); // For report generation
 
+if (process.env.NODE_ENV !== "production") require("dotenv").config();
+
+
 
 const app = express();
 
