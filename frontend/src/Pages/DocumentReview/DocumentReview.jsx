@@ -105,14 +105,16 @@ const handleReopen = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // update local state
       setLeadStatus("Closed");
       setSelectedLead(prev => ({ ...prev, leadStatus: "Closed" }));
       setShowCloseModal(false);
+      setLocalStatus("Closed"); 
       setCloseReason("");
       await promotePrivateComments();
       setAlertMessage("Lead closed successfully.");
       setNotifyOpen(true);
+
+      navigate(getCasePageRoute(), { replace: true });
 
     } catch (err) {
       console.error("Error closing lead:", err);
@@ -190,6 +192,7 @@ const handleClose = () => {
         }));
 
         setLeadStatus(newStatus === "complete" ? "Completed" : "Accepted");
+        setLocalStatus(newStatus === "complete" ? "Completed" : "Accepted"); 
         const investigators = (leadData.assignedTo || []).map(a => a.username);
         const managerName    = leadData.assignedBy;
       if (investigators.length) {
@@ -288,7 +291,7 @@ const handleClose = () => {
             <div aria-live="polite" style={styles.zoomLabel}>{(scale * 100).toFixed(0)}%</div>
             <button onClick={() => setScale((s) => Math.min(2, +(s + 0.1).toFixed(2)))}>+</button>
           </div>
-  {status === "Completed" ? (
+   {(status === "Completed" || status === "Closed") ? (
     <button className="approve-btn-lr" onClick={handleReopen}>Reopen</button>
   ) : (
     <>
@@ -355,6 +358,44 @@ const handleClose = () => {
     }}
     onClose={() => setConfirmConfig(c => ({ ...c, open: false }))}
   />
+
+  <AlertModal
+  isOpen={notifyOpen}
+  title="Notification"
+  message={alertMessage}
+  onConfirm={() => setNotifyOpen(false)}
+  onClose={() => setNotifyOpen(false)}
+/>
+
+  {showCloseModal && (
+  <div className="close-modal-backdrop">
+    <div className="close-modal">
+      <h3>Reason for Closing Lead</h3>
+      <textarea
+        rows={4}
+        value={closeReason}
+        onChange={(e) => setCloseReason(e.target.value)}
+      />
+      <div className="modal-buttons">
+        <button
+          className="save-btn1"
+          onClick={handleConfirmClose}
+          disabled={closing}
+        >
+          {closing ? "Closing…" : "Confirm"}
+        </button>
+        <button
+          className="save-btn1"
+          onClick={() => setShowCloseModal(false)}
+          disabled={closing}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }

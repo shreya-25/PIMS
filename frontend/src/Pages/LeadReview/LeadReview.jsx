@@ -38,6 +38,12 @@ export const LeadReview = () => {
   const [aoOpen, setAoOpen] = useState(false);
   const [aoQuery, setAoQuery] = useState("");
 
+  const [confirmOpen, setConfirmOpen] = useState(false);
+const [confirmTitle, setConfirmTitle] = useState("Confirm");
+const [confirmMessage, setConfirmMessage] = useState("");
+const confirmResolveRef = useRef(null);
+
+
    const [showSelectModal, setShowSelectModal] = useState(false);
   const [leads, setLeads] = useState({
             assignedLeads: [],
@@ -648,8 +654,8 @@ const declineLead = async (leadNo, description, reason = "") => {
 
     setAlertMessage(
       lead.leadStatus === "Rejected"
-        ? "All officers declined. Lead is 'Rejected'."
-        : "You declined. Status set to 'To Reassign'."
+         ? "This lead has been declined by all assigned officers."
+    : "You have declined this lead."
     );
     setAlertOpen(true);
   } catch (error) {
@@ -1425,6 +1431,57 @@ const goToViewLR = () => {
   });
 };
 
+const confirmWithModal = (message, title = "Confirm") =>
+  new Promise((resolve) => {
+    confirmResolveRef.current = resolve;
+    setConfirmTitle(title);
+    setConfirmMessage(message);
+    setConfirmOpen(true);
+  });
+
+const handleDeleteLead = async () => {
+  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+  if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+    setAlertMessage("Please select a case and lead first.");
+    setAlertOpen(true);
+    return;
+  }
+
+  // Confirm
+  const ok = await confirmWithModal(
+    `This will permanently delete Lead #${lead.leadNo} — “${lead.leadName || lead.description}”.\n\nAre you sure?`,
+    "Delete Lead"
+  );
+  if (!ok) return;
+
+  try {
+    setLoading(true);
+    const token = localStorage.getItem("token");
+    const encLeadName = encodeURIComponent(lead.leadName || lead.description);
+    const encCaseName = encodeURIComponent(kase.caseName);
+
+    await api.delete(
+      `/api/lead/${lead.leadNo}/${encLeadName}/${kase.caseNo}/${encCaseName}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    setAlertMessage("Lead deleted successfully.");
+    setAlertOpen(true);
+
+    // Navigate back to the case page
+    const route = selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager";
+    navigate(route, { state: { caseDetails: kase } });
+  } catch (err) {
+    console.error("Delete lead failed:", err?.response?.data || err);
+    setAlertMessage("Failed to delete lead. Please try again.");
+    setAlertOpen(true);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 
 
@@ -1439,6 +1496,21 @@ const goToViewLR = () => {
               onConfirm={() => setAlertOpen(false)}
               onClose={()   => setAlertOpen(false)}
             />
+            <AlertModal
+  isOpen={confirmOpen}
+  title={confirmTitle}
+  message={confirmMessage}
+  // treat Confirm as YES
+  onConfirm={() => {
+    setConfirmOpen(false);
+    confirmResolveRef.current?.(true);
+  }}
+  // treat Close/X as NO / Cancel
+  onClose={() => {
+    setConfirmOpen(false);
+    confirmResolveRef.current?.(false);
+  }}
+/>
 
       {/* Main Container */}
       <div className="lead-review-container1">
@@ -1557,6 +1629,22 @@ const goToViewLR = () => {
 
                 }
                 </div>
+
+                 <div className="add-lead-section">
+  <div className="add-lead-btn1">
+    {(selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor") && (
+      <button
+        className="cp-add-lead-btn"
+        onClick={handleDeleteLead}
+        style={{ cursor: 'pointer', width: '100%' }}
+        title="Delete this lead"
+      >
+        Delete Lead
+      </button>
+    )}
+  </div>
+</div>
+
 
                   {/* {(leadData.leadStatus !== "Accepted" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
                    <div  className="add-lead-section-lr">

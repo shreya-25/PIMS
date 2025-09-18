@@ -134,6 +134,7 @@ const isInvestigator     = !isCaseManager;
 
 const canShowCMButtons   = isCaseManager && !isClosedOrCompleted;
 
+
  
 
 const publicThreadKey = `${caseNo}:${caseName}::${leadNo}:${leadName}`;
@@ -506,8 +507,11 @@ const actuallyDoSubmitReport = async () => {
                           <header className="dr-toolbar">
           <div className="dr-title">Lead Return Review</div>
           <div className="">
-      <button className="approve-btn-lr" onClick={handleSubmitReport}>Submit</button>
-
+              {canShowSubmit && (
+                    <button className="approve-btn-lr" onClick={handleSubmitReport}>
+                      Submit
+                    </button>
+                  )}
       </div>
         </header>
                         <div className={styles.lrRow}>

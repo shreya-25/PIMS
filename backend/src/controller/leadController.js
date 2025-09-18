@@ -1,4 +1,6 @@
 const Lead = require("../models/lead");
+const mongoose = require("mongoose");
+
 
 // lead.controller.js (or wherever your createLead function is defined)
 
@@ -421,6 +423,45 @@ const searchLeadsByKeyword = async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 };
+
+// controller/leadController.js
+const deleteLead = async (req, res) => {
+  const { leadNo, leadName, caseNo, caseName } = req.params;
+
+  try {
+    // Guard: only Case Manager or Detective Supervisor
+    const role = req.user?.role || "";
+    const allowed = /^(case\s*manager|detective\s*supervisor)$/i.test(role);
+    if (!allowed) {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized: Only Case Managers or Detective Supervisors can delete a lead." });
+    }
+
+    // Build filter (adjust 'description' if your schema field differs)
+    const filter = {
+      leadNo: Number(leadNo),
+      description: leadName,
+      caseNo,
+      caseName,
+    };
+
+    // Ensure it exists (optional but gives nicer 404)
+    const existing = await Lead.findOne(filter);
+    if (!existing) {
+      return res.status(404).json({ message: "Lead not found." });
+    }
+
+    // Delete the lead (Lead-only)
+    await Lead.deleteOne({ _id: existing._id });
+
+    return res.status(200).json({ message: "Lead deleted successfully." });
+  } catch (err) {
+    console.error("Error deleting lead:", err);
+    return res.status(500).json({ message: "Server error while deleting lead." });
+  }
+};
+
 
 const setLeadStatusToInReview = async (req, res) => {
   try {
@@ -883,7 +924,7 @@ const setLeadStatusToClosed = async (req, res) => {
 
 
 module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword , setLeadStatusToInReview, 
-  setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM, getLeadStatus, setLeadStatusToClosed
+  setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM, getLeadStatus, setLeadStatusToClosed,  deleteLead,
 };
 
 

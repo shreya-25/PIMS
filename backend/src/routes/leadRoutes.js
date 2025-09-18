@@ -1,6 +1,6 @@
 const express = require("express");
 const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, searchLeadsByKeyword, setLeadStatusToInReview,
-  updateLead, removeAssignedOfficer, getAssignedLeadsForOfficer,
+  updateLead, removeAssignedOfficer, getAssignedLeadsForOfficer, deleteLead,
   setLeadStatusToComplete, setLeadStatusToPending, updateAssignedToStatus, getLRForCM, getLeadStatus,setLeadStatusToClosed
  } = require("../controller/leadController");
 const verifyToken = require("../middleware/authMiddleware");
@@ -59,6 +59,13 @@ router.put(
   "/:leadNo/:description/:caseNo/:caseName/removeAssigned/:username",
   verifyToken,       // if you protect routes
   removeAssignedOfficer
+);
+
+router.delete(
+  "/:leadNo/:leadName/:caseNo/:caseName",
+  verifyToken,
+  // roleMiddleware(["CaseManager", "Detective Supervisor"]),
+  deleteLead
 );
 
 
