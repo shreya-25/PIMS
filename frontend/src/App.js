@@ -49,6 +49,7 @@ import { CMFinish } from './Pages/CaseManagerLR/CMFinish/CMFinish';
 import { FlaggedLead } from './Pages/FlaggedLead/FlaggedLead';
 import { SearchLead } from './Pages/SearchLead/SearchLead';
 import { ViewTimeline } from './Pages/ViewTimeline/ViewTimeline';
+import { ViewLR } from './Pages/ViewLR/ViewLR';
 import { AdminCM } from './Pages/Admin/AdminCM';
 import { AdminCM1 } from './Pages/Admin/AdminCM1';
 import { AdminUR } from './Pages/Admin/AdminUR';
@@ -66,6 +67,7 @@ import { LeadsDeskContent } from './Pages/LeadsDeskContent/LeadsDeskContent';
 import { ChainOfCustody } from './Pages/ChainOfCustody/ChainOfCustody';
 import { Chatbot } from './Pages/Admin/Chatbot';
 import { GlobalErrorProvider } from './GlobalErrorProvider';
+import { DocumentReview } from './Pages/DocumentReview/DocumentReview';
 
 // import { Report} from './Pages/Report/Report'
 // import {ReportWrapper} from './Pages/Report/ReportWrapper'
@@ -152,6 +154,7 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/CMFinish" element={<ProtectedLayout> <CMFinish /> </ProtectedLayout>} />
         <Route path="/CMScratchpad" element={<ProtectedLayout> <CMScratchpad /> </ProtectedLayout>} />
         <Route path="/CMTimeline" element={<ProtectedLayout> <CMTimeline /> </ProtectedLayout>} />
+        <Route path="/ViewLR" element={<ProtectedLayout> <ViewLR /> </ProtectedLayout>} />
         <Route path="/AdminDashboard" element={<ProtectedLayout> <AdminDashboard /> </ProtectedLayout>} />
         <Route path="/CaseInformation" element={<ProtectedLayout>  <CaseInformation /> </ProtectedLayout> } />
         <Route path="/LeadReview" element = {<ProtectedLayout> <LeadReview /> </ProtectedLayout> } />
@@ -161,6 +164,8 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/LeadsDeskContent" element= {<ProtectedLayout>  <LeadsDeskContent /> </ProtectedLayout> } />
         <Route path="/ChainOfCustody" element= {<ProtectedLayout>  <ChainOfCustody /> </ProtectedLayout> } />
         <Route path="/Chatbot" element= {<ProtectedLayout>  <Chatbot /> </ProtectedLayout> } />
+        <Route path="/DocumentReview" element={<ProtectedLayout><DocumentReview /></ProtectedLayout>} />
+
         {/* <Route path ="/Report" element= {<Report />} /> */}
       </Routes>
 

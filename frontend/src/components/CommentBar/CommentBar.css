@@ -1,0 +1,141 @@
+.cbar {
+  width: 420px;
+  background: #fff;
+  border-left: 1px solid #e7e7ec;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+/* Header */
+.cbar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid #efeff2;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
+.cbar__title { font-weight: 600; }
+
+/* Composer */
+.cbar__composer { padding: 12px 14px 8px; border-bottom: 1px solid #efeff2; }
+.cbar__row { display: flex; align-items: flex-start; gap: 10px; }
+
+.cbar__textarea {
+  flex: 1 1 auto;
+  min-height: 400px;                /* bigger textbox */
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #d8d8df;
+  outline: none;
+  resize: vertical;
+  font-size: 18px;
+  line-height: 1.4;
+  background: #fff;
+}
+.cbar__textarea:focus {
+  border-color: #5b6cff;
+  box-shadow: 0 0 0 3px rgba(91,108,255,0.15);
+}
+
+/* Actions to the RIGHT of the textbox */
+.cbar__actions {
+  display: flex;
+  gap: 8px;
+  min-width: 120px;
+}
+.cbar__btn, .cbar__btn--primary {
+  height: 40px;
+  border-radius: 5px;
+  border: 1px solid #d0d0d5;
+  /* background: #f7f7fb; */
+  cursor: pointer;
+  font-size: 18px;
+  align-items: center;
+  color:black;
+}
+.cbar__btn:hover { background: #f0f0f6;  border-color: #2563eb; }
+.cbar__btn:disabled { opacity: .6; cursor: not-allowed; }
+.cbar__btn--primary {
+  background: #f0f0f6;
+  border-color: #2563eb;
+   /* border: 1px solid #d0d0d5; */
+  color: black;
+}
+
+/* Disabled state */
+.cbar__btn:disabled,
+.cbar__btn--primary:disabled {
+  background: #f9f9fb;          /* light gray background */
+  border: 1px solid #d0d0d5;      /* softer border */
+  color: #a0a0a8;               /* muted text */
+  cursor: not-allowed;          /* no pointer */
+  opacity: 1;                   /* don’t just fade, look intentional */
+  box-shadow: none;
+}
+.cbar__btn--primary:hover { filter: brightness(1.05); }
+
+.cbar__hint { margin-top: 6px; font-size: 16px; color: #6b6b75; }
+
+.cbar__loading, .cbar__error { padding: 10px 14px; }
+.cbar__error { color: #b3261e; }
+
+/* List */
+.cbar__list { list-style: none; padding: 8px 10px 16px; margin: 0; overflow: auto; }
+.cbar__item { display: flex; gap: 10px; padding: 10px 6px; }
+
+/* .cbar__avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: #7c3aed; color: #fff; display: grid; place-items: center;
+  font-weight: 600; font-size: 20px; flex: 0 0 auto;
+} */
+
+.cbar__avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #7c3aed;
+  color: #fff;
+
+  /* Center the glyph precisely */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-weight: 600;
+  font-size: 18px;
+  /* line-height: 1;         */
+  flex: 0 0 auto;
+  /* Optional: if it still looks a tad high on your machine,
+     uncomment the tiny nudge below (0.5–1px is usually enough) */
+  /* transform: translateY(0.5px); */
+}
+.cbar__bubble {
+  flex: 1 1 auto; background: #fafafe; border: 1px solid #eeeef5;
+  border-radius: 12px; 
+  padding: 8px; 
+  align-items:center;
+}
+.cbar__meta {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 15px; color: #6b6b75; margin-bottom: 6px; 
+  height: 30px;
+}
+.cbar__dot { opacity: .6; }
+.cbar__edit {
+  margin-left: auto; border: none; background: transparent; color: #2563eb;
+  cursor: pointer; font-size: 18px;
+}
+.cbar__text { white-space: pre-wrap; color: #1f2937; font-size: 18px; }
+.cbar__empty { color: #6b6b75; padding: 12px 6px; text-align: center; }
+
+/* Mobile */
+@media (max-width: 520px) {
+  .cbar { width: 100%; }
+  .cbar__actions { flex-direction: row; min-width: 0; }
+}

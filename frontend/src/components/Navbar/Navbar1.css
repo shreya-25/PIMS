@@ -140,6 +140,12 @@ h1 {
   padding: 15px;
 }
 
+.user-row
+{
+  display: flex;
+  gap: 8px;
+}
+
 .user-profile i {
   font-size: 35px;
   color: #ffffff;
@@ -152,6 +158,9 @@ h1 {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: center;
+  display: flex;
+  align-items: center;
 }
 
 .notifications-dropdown {
@@ -184,4 +193,27 @@ h1 {
 .dropdown-item.empty {
   text-align: center;
   color: #999;
+}
+
+/* Container: stack items vertically inside the white box */
+.user-profile {
+  display: flex;
+  /* flex-direction: column;   */
+  align-items:center ;
+  gap: 4px;                 /* small space between blocks (optional) */
+}
+
+
+
+
+.user-sep {
+  width: 0;                  /* no width; only the border shows */
+  height:50px;         /* roughly text height */
+  border-left: 1px solid rgba(255,255,255,0.85); /* white on purple */
+  margin: 0 8px;             /* breathing room around the line */
+}
+
+/* keep text on one line if you prefer */
+.user-role, .username {
+  white-space: nowrap;
 }

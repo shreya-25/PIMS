@@ -1,6 +1,6 @@
 const express = require("express");
 const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, searchLeadsByKeyword, setLeadStatusToInReview,
-  updateLead, removeAssignedOfficer, getAssignedLeadsForOfficer,
+  updateLead, removeAssignedOfficer, getAssignedLeadsForOfficer, deleteLead,
   setLeadStatusToComplete, setLeadStatusToPending, updateAssignedToStatus, getLRForCM, getLeadStatus,setLeadStatusToClosed
  } = require("../controller/leadController");
 const verifyToken = require("../middleware/authMiddleware");
@@ -35,6 +35,13 @@ router.get(
 
 router.put("/lead/status/close", setLeadStatusToClosed);
 
+router.put(
+  "/update/:leadNo/:description/:caseNo/:caseName",
+  verifyToken,
+  // roleMiddleware("CaseManager"),
+  updateLead
+);
+
 router.put('/:leadNo/:leadName/:caseNo/:caseName', verifyToken, updateLeadStatus);
 
 
@@ -49,16 +56,16 @@ router.put("/status/complete", verifyToken, setLeadStatusToComplete);
 router.put("/status/pending", verifyToken, setLeadStatusToPending);
 
 router.put(
-  "/update/:leadNo/:description/:caseNo/:caseName",
-  verifyToken,
-  // roleMiddleware("CaseManager"),
-  updateLead
-);
-
-router.put(
   "/:leadNo/:description/:caseNo/:caseName/removeAssigned/:username",
   verifyToken,       // if you protect routes
   removeAssignedOfficer
+);
+
+router.delete(
+  "/:leadNo/:leadName/:caseNo/:caseName",
+  verifyToken,
+  // roleMiddleware(["CaseManager", "Detective Supervisor"]),
+  deleteLead
 );
 
 

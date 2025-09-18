@@ -479,9 +479,9 @@ Case Page
           <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
             Timeline
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
+          {/* <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
             Finish
-          </span>
+          </span> */}
          </div> </div>
      
                 {/* <div className="caseandleadinfo">
@@ -502,7 +502,7 @@ Case Page
              </h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
-        ? `Your Role: ${selectedCase.role || ""} | Lead Status:  ${status}`
+        ? ` Lead Status:  ${status}`
     : ` ${leadStatus}`}
 </h5>
 
