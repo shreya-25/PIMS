@@ -584,6 +584,7 @@ const goToViewLR = () => {
         originalName: enc.originalName,
         link: enc.link || "",
         filename: enc.filename, 
+        signedUrl: enc.signedUrl || "",
       }));
 
       const withAccess = mappedEnclosures.map(r => ({
@@ -934,7 +935,7 @@ const goToViewLR = () => {
     </a>
   ) : (
     <a
-      href={`${BASE_URL}/uploads/${enclosure.filename}`}
+      href={enclosure.signedUrl}
       target="_blank"
       rel="noopener noreferrer"
       className="link-button"

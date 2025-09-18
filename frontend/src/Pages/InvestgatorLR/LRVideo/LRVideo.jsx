@@ -502,7 +502,8 @@ useEffect(() => {
         description: video.videoDescription,
         filename: video.filename,       // needed to construct a download URL
         originalName: video.originalName || "",
-        videoSrc: `${BASE_URL}/uploads/${video.filename}`,
+          videoSrc: video.isLink ? video.link : video.signedUrl,
+        signedUrl: video.signedUrl || "",
         link: video.link || "",
         isLink: video.isLink,
         accessLevel: video.accessLevel || "Everyone"
@@ -1108,27 +1109,27 @@ Case Page
                 <td>{video.dateEntered}</td>
                 <td>{video.returnId} </td>
                 {/* <td>{video.dateVideoRecorded}</td> */}
-                 <td>
-                          {video.isLink ? (
-                            <a
-                              href={video.link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="link-button"
-                            >
-                              {video.link}
-                            </a>
-                          ) : (
-                            <a
-                              href={`${BASE_URL}/uploads/${video.filename}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="link-button"
-                            >
-                              {video.originalName || "Download"}
-                            </a>
-                          )}
-                        </td>
+                  <td>
+  {video.isLink ? (
+    <a
+      href={video.link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="link-button"
+    >
+      {video.link}
+    </a>
+  ) : (
+    <a
+      href={video.signedUrl}  // ✅ S3 Signed URL
+      target="_blank"
+      rel="noopener noreferrer"
+      className="link-button"
+    >
+      {video.originalName || "Download"}
+    </a>
+  )}
+</td>
                 <td>{video.description}</td>
                 <td>
                   <div classname = "lr-table-btn">

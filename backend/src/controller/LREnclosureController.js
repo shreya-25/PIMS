@@ -1,5 +1,7 @@
 const LREnclosure = require("../models/LREnclosure");
 const fs = require("fs");
+const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
+
 
 // **Create a new LREnclosure entry with file upload support**
 const createLREnclosure = async (req, res) => {
@@ -10,6 +12,7 @@ const createLREnclosure = async (req, res) => {
       let filePath = null;
       let originalName = null;
       let filename = null;
+      let s3Key = null;
   
       if (!isLink) {
         if (!req.file) {
@@ -20,7 +23,20 @@ const createLREnclosure = async (req, res) => {
         filePath = req.file.path;
         originalName = req.file.originalname;
         filename = req.file.filename;
-      }
+      
+      const { error, key } = await uploadToS3({
+                filePath,
+                userId: req.body.caseNo,
+                mimetype: req.file.mimetype,
+            });
+
+            if (error) {
+                return res.status(500).json({ message: "S3 upload failed", error: error.message });
+            }
+
+            s3Key = key;
+             if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        }
 
         // Create a new LREnclosure document with the file reference
         const newLREnclosure = new LREnclosure({
@@ -39,6 +55,7 @@ const createLREnclosure = async (req, res) => {
             filePath: isLink ? "link-only" : filePath,
             originalName: originalName,
             filename: filename,
+            s3Key,
             accessLevel,
             isLink,
             link: isLink ? req.body.link : null,
@@ -48,7 +65,7 @@ const createLREnclosure = async (req, res) => {
         await newLREnclosure.save();
 
         // Send one final response after successful save
-        res.status(201).json({
+        return res.status(201).json({
             message: "Enclosure created successfully",
             enclosure: newLREnclosure
         });
@@ -78,7 +95,15 @@ const getLREnclosureByDetails = async (req, res) => {
             return res.status(404).json({ message: "No enclosures found." });
         }
 
-        res.status(200).json(lrEnclosures);
+        const enclosuresWithUrls = await Promise.all(
+      lrEnclosures.map(async (enc) => {
+        const signedUrl = enc.s3Key ? await getFileFromS3(enc.s3Key) : null;
+        return { ...enc.toObject(), signedUrl };
+      })
+    );
+
+
+        res.status(200).json(enclosuresWithUrls);
     } catch (err) {
         console.error("Error fetching LREnclosure records:", err.message);
         res.status(500).json({ message: "Something went wrong" });
@@ -102,30 +127,44 @@ const updateLREnclosure = async (req, res) => {
       });
       if (!enc) return res.status(404).json({ message: "Enclosure not found" });
   
-      // 2) If a new file arrived, delete the old file
-      if (req.file) {
-        if (enc.filePath && fs.existsSync(enc.filePath)) {
-          fs.unlinkSync(enc.filePath);
-        }
-        enc.filePath     = req.file.path;
-        enc.originalName = req.file.originalname;
-        enc.filename     = req.file.filename;
+     if (req.file) {
+      // Delete old file from S3 if it exists
+      if (enc.s3Key) {
+        await deleteFromS3(enc.s3Key);
       }
-  
-      // 3) Update any changed fields
-      enc.leadReturnId         = req.body.leadReturnId;
-      enc.enteredDate          = req.body.enteredDate;
-      enc.type                 = req.body.type;
-      enc.enclosureDescription = req.body.enclosureDescription;
-      enc.enteredBy            = req.body.enteredBy;
-      await enc.save();
-  
-      res.json(enc);
-    } catch (err) {
-      console.error("Error updating LREnclosure:", err);
-      res.status(500).json({ message: "Something went wrong" });
+
+      // Upload new file to S3
+      const { key } = await uploadToS3({
+        filePath: req.file.path,
+        userId: caseNo, // Use caseNo or any identifier
+        mimetype: req.file.mimetype,
+      });
+
+      // Remove local temp file (uploaded by multer)
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+
+      // Update DB fields with new S3 file info
+      enc.s3Key = key;
+      enc.originalName = req.file.originalname;
+      enc.filename = req.file.filename;
     }
-  };
+
+    // 3️⃣ Update other fields
+    enc.leadReturnId = req.body.leadReturnId;
+    enc.enteredDate = req.body.enteredDate;
+    enc.type = req.body.type;
+    enc.enclosureDescription = req.body.enclosureDescription;
+    enc.enteredBy = req.body.enteredBy;
+
+    // 4️⃣ Save updated record
+    await enc.save();
+
+    res.json(enc);
+  } catch (err) {
+    console.error("Error updating LREnclosure:", err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+};
   
   // Delete an enclosure by composite key + description
 const deleteLREnclosure = async (req, res) => {
@@ -152,18 +191,17 @@ const deleteLREnclosure = async (req, res) => {
     }
 
     // Remove the file on disk (if present)
-    if (enc.filePath) {
+    if (enc.s3Key) {
       try {
-        if (fs.existsSync(enc.filePath)) fs.unlinkSync(enc.filePath);
-      } catch (fsErr) {
-        console.warn("Could not delete file on disk:", fsErr);
+        await deleteFromS3(enc.s3Key);
+      } catch (s3Err) {
+        console.warn(`Could not delete file from S3: ${s3Err.message}`);
       }
     }
 
-    return res.json({ message: "Enclosure deleted" });
+    return res.json({ message: "Enclosure deleted successfully" });
   } catch (err) {
     console.error("Error deleting LREnclosure:", err);
-    // Only send if headers aren’t already sent
     if (!res.headersSent) {
       return res.status(500).json({ message: "Something went wrong" });
     }

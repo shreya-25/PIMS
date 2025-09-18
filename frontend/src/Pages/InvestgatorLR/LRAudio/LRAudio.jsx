@@ -500,7 +500,9 @@ const goToViewLR = () => {
       // If server returns a 'link' field, use that. Otherwise build file URL:
       isLink: a.isLink,
       link: a.link || "",
-      audioSrc: a.isLink ? a.link : `${BASE_URL}/uploads/${a.filename}`
+      audioSrc: a.isLink ? a.link : `${BASE_URL}/uploads/${a.filename}`,
+        signedUrl: a.signedUrl || "", // ✅ Use signed URL from S3
+      audioSrc: a.isLink ? a.link : a.signedUrl || "" // ✅ For playback
     }));
 
     // Default access:
@@ -1139,14 +1141,15 @@ Case Page
                 <td>{audio.returnId}</td>
                 {/* <td>{audio.dateAudioRecorded}</td> */}
                  <td>
-  <a
-    href={audio.audioSrc}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="link-button"
-  >
-    {audio.originalName || (audio.isLink ? audio.link : "Download")}
-  </a>
+  {audio.isLink ? (
+    <a href={audio.link} target="_blank" rel="noopener noreferrer" className="link-button">
+      {audio.link}
+    </a>
+  ) : (
+    <a href={audio.signedUrl} target="_blank" rel="noopener noreferrer" className="link-button">
+      {audio.originalName || "Download"}
+    </a>
+  )}
 </td>
 
                 <td>{audio.description}</td>

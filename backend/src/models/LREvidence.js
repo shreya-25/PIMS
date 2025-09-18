@@ -31,7 +31,8 @@ const lrEvidenceSchema = new mongoose.Schema(
         type: { type: String },
         evidenceDescription: { type: String, required: true  }, 
         // fileId: { type: mongoose.Schema.Types.ObjectId, ref: "uploads" },
-        filePath: { type: String, required: function () { return !this.isLink; } },
+         filePath: { type: String, required: false },  // ✅ No longer required
+        s3Key: { type: String, required: function () { return !this.isLink; } },
         originalName: { type: String },
         filename: { type: String },
         accessLevel: {

@@ -464,7 +464,8 @@ const goToViewLR = () => {
         disposition: enc.disposition,
         originalName:        enc.originalName,
         filename:            enc.filename,
-         link:                enc.link || ""   
+         link:                enc.link || "" ,
+               signedUrl: enc.signedUrl || "",  
       }));
 
       const withAccess = mappedEvidences.map(r => ({
@@ -897,18 +898,14 @@ const goToViewLR = () => {
     >
       {item.link}
     </a>
-  ) : (
-    // otherwise it's a file
-    <a
-      href={`${BASE_URL}/uploads/${item.filename}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="link-button"
-    >
-      {item.originalName}
-    </a>
-  )}
-</td>
+  )  : item.signedUrl ? (
+                    <a href={item.signedUrl} target="_blank" rel="noopener noreferrer" className="link-button">
+                      {item.originalName}
+                    </a>
+                  ) : (
+                    <span style={{ color: "gray" }}>No File Available</span>
+                  )}
+                </td>
 
                 <td>{item.evidenceDescription}</td>
                 <td>

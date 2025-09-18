@@ -581,7 +581,7 @@ const handleUpdatePicture = async () => {
         filename: pic.filename,
   originalName: pic.originalName,
         description: pic.pictureDescription,
-          image: `${BASE_URL}/uploads/${pic.filename}`,
+         image: pic.signedUrl || pic.link,
           filename: pic.filename,
           link: pic.link || ""
       }));
@@ -1039,7 +1039,8 @@ Case Page
                 <td>{picture.dateEntered}</td>
                 <td>{picture.returnId}</td>
                 {/* <td>{picture.datePictureTaken}</td> */}
-                <td>
+                
+                 <td>
   {picture.link ? (
     // if it was saved as a URL
     <a
@@ -1053,7 +1054,7 @@ Case Page
   ) : (
     // otherwise it’s a file on your server
     <a
-      href={`${BASE_URL}/uploads/${picture.filename}`}
+      href={picture.link ? picture.link : picture.image}
       target="_blank"
       rel="noopener noreferrer"
       className="link-button"
