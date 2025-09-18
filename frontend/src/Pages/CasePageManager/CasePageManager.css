@@ -272,10 +272,7 @@ align-items: center;
 
    .case-team
   {
-    width: 90%;
-    margin: 0px;
-    padding:0px;
-    margin-bottom: 8px;
+    margin: 4px;
   }
   .update-lead-btn
   {
@@ -504,3 +501,165 @@ align-items: center;
   flex-shrink: 0;   /* don’t let the icon get squeezed */
   margin-left: 8px; /* a little breathing room */
 }
+
+.presence-banner {
+  display:flex; align-items:center; gap:.5rem;
+  padding:.5rem .75rem; margin:.5rem 0;
+  border:1px solid #e6e6e6; border-radius:10px;
+  background:#fafafa; font-weight:500;
+}
+.presence-dot {
+  width:8px; height:8px; border-radius:50%;
+  background:#28a745; display:inline-block;
+  box-shadow:0 0 0 2px rgba(40,167,69,.15);
+}
+
+
+.collapsible-section {
+  margin: 4px 0;
+  border: 1px solid rgba(0, 0, 0, 0.164); /* light gray */
+  border-radius: 10px;
+  background: #fff;
+  width: 90%;
+  color: black;
+}
+
+.collapse-header {
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  background: #f8fafc;       /* very light */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  border-radius: 10px 10px 0 0;
+  font-weight: 600;
+  color:black;
+  font-size: 20px;
+  background-color: #25262710;
+}
+
+.collapse-title {
+  font-size: 20px;
+}
+
+.case-team .dropdown-header1 {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  word-break: break-word;        /* wrap long tokens like (username) */
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+
+.team-section {
+  margin: 12px 0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.team-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f7f7f7;
+  border: none;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.team-title {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.team-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.team-body {
+  padding: 10px;
+}
+
+.team-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+}
+
+.team-th {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.team-td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #eee;
+  vertical-align: top;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.team-dropdown {
+  position: relative;
+}
+
+.team-dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #ccc;
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  flex-wrap: wrap;
+}
+
+.team-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.team-caret {
+  flex: 0 0 auto;
+  margin-left: 8px;
+}
+
+.team-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-top: 2px;
+  max-height: 220px;
+  overflow-y: auto;
+  width: 100%;
+}
+
+.team-option {
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+.team-option:hover {
+  background: #f0f0f0;
+}
+
+
+

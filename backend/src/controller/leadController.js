@@ -1,6 +1,21 @@
 const Lead = require("../models/lead");
+const mongoose = require("mongoose");
+
 
 // lead.controller.js (or wherever your createLead function is defined)
+
+// Put near the top of the file
+const computeAggregateStatus = (assignedTo = []) => {
+  const list = (assignedTo || []).map(a => a?.status || "pending");
+  if (!list.length) return "Assigned";
+  const allAccepted = list.every(s => s === "accepted");
+  const allDeclined = list.every(s => s === "declined");
+  if (allAccepted) return "Accepted";
+  if (allDeclined) return "Rejected";
+  if (list.includes("declined")) return "To Reassign";
+  return "Assigned";
+};
+
 
 const createLead = async (req, res) => {
   try {
@@ -24,6 +39,7 @@ const createLead = async (req, res) => {
       submittedDate,
       approvedDate,
       returnedDate,
+      primaryInvestigator,
     } = req.body;
 
      const missing = [];
@@ -38,24 +54,29 @@ const createLead = async (req, res) => {
       });
     }
 
+    const actor = req.user?.name || assignedBy;
+
     const assignedTo = assignedToInput.map(item =>
       typeof item === 'string'
         ? { username: item, status: 'pending' }
         : { username: item.username, status: item.status || 'pending' }
     );
 
-    let savedLead = null;
+   let savedLead = null;
     while (!savedLead) {
-      // 1) compute next candidate
-      const last = await Lead
-        .findOne({ caseNo, caseName })
-        .sort({ leadNo: -1 })
-        .limit(1);
-
+      const last = await Lead.findOne({ caseNo, caseName }).sort({ leadNo: -1 }).limit(1);
       const nextLeadNo = last ? last.leadNo + 1 : 1;
 
-      // 2) try to insert
       try {
+        const initialEvent = {
+          type: "assigned",
+          by: actor,
+          to: assignedTo.map(x => x.username),
+          primaryInvestigator: primaryInvestigator || null,
+          statusAfter: "Assigned",
+          at: assignedDate ? new Date(assignedDate) : new Date()
+        };
+
         savedLead = await new Lead({
           leadNo: nextLeadNo,
           parentLeadNo,
@@ -68,7 +89,7 @@ const createLead = async (req, res) => {
           assignedBy,
           summary,
           description,
-          leadStatus,
+          leadStatus: leadStatus || "Assigned",
           dueDate,
           priority,
           caseName,
@@ -77,27 +98,21 @@ const createLead = async (req, res) => {
           submittedDate,
           approvedDate,
           returnedDate,
+          primaryInvestigator,
+          events: [initialEvent]   // 👈 add the first event
         }).save();
 
-        // on success, break out
         return res.status(201).json(savedLead);
-
       } catch (err) {
-        // if it's a duplicate‐key on (caseNo, leadNo), just retry
-        if (err.code === 11000) {
-          continue;
-        }
-        // otherwise propagate
+        if (err.code === 11000) continue;
         throw err;
       }
     }
-
   } catch (err) {
     console.error("Error creating lead:", err);
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
-
   
 
 const getLeadsByOfficer = async (req, res) => {
@@ -409,6 +424,45 @@ const searchLeadsByKeyword = async (req, res) => {
   }
 };
 
+// controller/leadController.js
+const deleteLead = async (req, res) => {
+  const { leadNo, leadName, caseNo, caseName } = req.params;
+
+  try {
+    // Guard: only Case Manager or Detective Supervisor
+    const role = req.user?.role || "";
+    const allowed = /^(case\s*manager|detective\s*supervisor)$/i.test(role);
+    if (!allowed) {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized: Only Case Managers or Detective Supervisors can delete a lead." });
+    }
+
+    // Build filter (adjust 'description' if your schema field differs)
+    const filter = {
+      leadNo: Number(leadNo),
+      description: leadName,
+      caseNo,
+      caseName,
+    };
+
+    // Ensure it exists (optional but gives nicer 404)
+    const existing = await Lead.findOne(filter);
+    if (!existing) {
+      return res.status(404).json({ message: "Lead not found." });
+    }
+
+    // Delete the lead (Lead-only)
+    await Lead.deleteOne({ _id: existing._id });
+
+    return res.status(200).json({ message: "Lead deleted successfully." });
+  } catch (err) {
+    console.error("Error deleting lead:", err);
+    return res.status(500).json({ message: "Server error while deleting lead." });
+  }
+};
+
+
 const setLeadStatusToInReview = async (req, res) => {
   try {
     const { leadNo, description, caseName, caseNo, submittedDate } = req.body;
@@ -507,45 +561,198 @@ const setLeadStatusToPending = async (req, res) => {
   }
 };
 
+// const updateLead = async (req, res) => {
+//   try {
+//     const { leadNo, description, caseNo, caseName } = req.params;
+//     const incoming = req.body;
+
+//     const prev = await Lead.findOne({ leadNo: Number(leadNo), description, caseNo, caseName });
+//     if (!prev) return res.status(404).json({ message: "Lead not found" });
+
+
+//     const prevSet = new Set((prev.assignedTo || []).map(a => a.username));
+//     const nextSet = new Set((incoming.assignedTo || []).map(a => a.username));
+//     const added = [...nextSet].filter(u => !prevSet.has(u));
+//     const removed = [...prevSet].filter(u => !nextSet.has(u));
+
+//     const actor = req.user?.name || incoming.assignedBy || prev.assignedBy;
+//     const eventsToPush = [];
+
+//     added.forEach(u => eventsToPush.push({
+//       type: "reassigned-added",
+//       by: actor,
+//       to: [u],
+//       primaryInvestigator: (incoming.primaryInvestigator ?? prev.primaryInvestigator) || null,
+//       statusAfter: incoming.leadStatus || prev.leadStatus || "Assigned",
+//       at: new Date()
+//     }));
+//     removed.forEach(u => eventsToPush.push({
+//       type: "reassigned-removed",
+//       by: actor,
+//       to: [u],
+//       primaryInvestigator: (incoming.primaryInvestigator ?? prev.primaryInvestigator) || null,
+//       statusAfter: incoming.leadStatus || prev.leadStatus || "Assigned",
+//       at: new Date()
+//     }));
+
+//     const lead = await Lead.findOneAndUpdate(
+//       { leadNo: Number(leadNo), description, caseNo, caseName },
+//       {
+//         $set: incoming,
+//         ...(eventsToPush.length ? { $push: { events: { $each: eventsToPush } } } : {})
+//       },
+//       { new: true }
+//     );
+
+//     return res.status(200).json(lead);
+//   } catch (err) {
+//     console.error("Error updating lead:", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
 const updateLead = async (req, res) => {
   try {
     const { leadNo, description, caseNo, caseName } = req.params;
-    // All other fields come in req.body
-    const update = req.body;
+    const incoming = req.body;
+
+    const prev = await Lead.findOne({ leadNo: Number(leadNo), description, caseNo, caseName });
+    if (!prev) return res.status(404).json({ message: "Lead not found" });
+
+    // ✅ Do NOT allow client to overwrite events directly
+    const { events: _ignoreEvents, ...incomingNoEvents } = incoming;
+
+    // normalize assignedTo
+    const normalizeAssignedTo = (arr) =>
+      (Array.isArray(arr) ? arr : []).map(x =>
+        typeof x === "string"
+          ? { username: x, status: "pending" }
+          : { username: x?.username, status: x?.status || "pending" }
+      ).filter(a => a.username);
+
+    const nextAssignedTo = normalizeAssignedTo(incomingNoEvents.assignedTo ?? prev.assignedTo);
+
+    // diff for event log
+    const prevSet = new Set((prev.assignedTo || []).map(a => a.username));
+    const nextSet = new Set(nextAssignedTo.map(a => a.username));
+    const added   = [...nextSet].filter(u => !prevSet.has(u));
+    const removed = [...prevSet].filter(u => !nextSet.has(u));
+
+    const actor = req.user?.name || incomingNoEvents.assignedBy || prev.assignedBy;
+
+    const computeAggregateStatus = (assignedTo = []) => {
+      const list = (assignedTo || []).map(a => a?.status || "pending");
+      if (!list.length) return "Assigned";
+      const allAccepted = list.every(s => s === "accepted");
+      const allDeclined = list.every(s => s === "declined");
+      if (allAccepted) return "Accepted";
+      if (allDeclined) return "Rejected";
+      if (list.includes("declined")) return "To Reassign";
+      return "Assigned";
+    };
+    const statusAfter = computeAggregateStatus(nextAssignedTo);
+
+    const eventsToPush = [
+      ...added.map(u => ({
+        type: "reassigned-added",
+        by: actor,
+        to: [u],
+        primaryInvestigator: incomingNoEvents.primaryInvestigator ?? prev.primaryInvestigator ?? null,
+        statusAfter,
+        at: new Date()
+      })),
+      ...removed.map(u => ({
+        type: "reassigned-removed",
+        by: actor,
+        to: [u],
+        primaryInvestigator: incomingNoEvents.primaryInvestigator ?? prev.primaryInvestigator ?? null,
+        statusAfter,
+        at: new Date()
+      }))
+    ];
+
+    // ensure PI is either in list or null
+    const candidatePI = incomingNoEvents.primaryInvestigator ?? prev.primaryInvestigator ?? null;
+    const nextPI = candidatePI && nextSet.has(candidatePI) ? candidatePI : null;
+
+    // ✅ Build update doc WITHOUT touching `events` in $set
+    const updateDoc = {
+      $set: {
+        ...incomingNoEvents,
+        assignedTo: nextAssignedTo,
+        leadStatus: incomingNoEvents.leadStatus || statusAfter,
+        primaryInvestigator: nextPI
+      }
+    };
+    if (eventsToPush.length) {
+      updateDoc.$push = { events: { $each: eventsToPush } };
+    }
 
     const lead = await Lead.findOneAndUpdate(
-      {
-        leadNo: Number(leadNo),
-        description,
-        caseNo,
-        caseName
-      },
-      update,
-      { new: true }
+      { leadNo: Number(leadNo), description, caseNo, caseName },
+      updateDoc,
+      { new: true, runValidators: true }
     );
-    if (!lead) return res.status(404).json({ message: "Lead not found" });
 
-    res.status(200).json(lead);
+    return res.status(200).json(lead);
   } catch (err) {
     console.error("Error updating lead:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
 
+
+
 /**
  * PUT /api/lead/:leadNo/:description/:caseNo/:caseName/assignedTo
  * body: { officerUsername, status }
  */
+// const updateAssignedToStatus = async (req, res) => {
+//   try {
+//     const { leadNo, description, caseNo, caseName } = req.params;
+//     const { officerUsername, status } = req.body;
+
+//     if (!officerUsername || !status) {
+//       return res.status(400).json({ message: "Need officerUsername and status" });
+//     }
+
+//     // positional operator to update only the matching array element
+//     const lead = await Lead.findOneAndUpdate(
+//       {
+//         leadNo: Number(leadNo),
+//         description,
+//         caseNo,
+//         caseName,
+//         'assignedTo.username': officerUsername
+//       },
+//       {
+//         $set: { 'assignedTo.$.status': status }
+//       },
+//       { new: true }
+//     );
+
+//     if (!lead) {
+//       return res.status(404).json({ message: "Lead or officer not found" });
+//     }
+
+//     res.status(200).json({ message: "Officer status updated", lead });
+//   } catch (err) {
+//     console.error("Error updating officer status:", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
+// body: { officerUsername, status, reason? }
 const updateAssignedToStatus = async (req, res) => {
   try {
     const { leadNo, description, caseNo, caseName } = req.params;
-    const { officerUsername, status } = req.body;
+    const { officerUsername, status, reason } = req.body;
 
     if (!officerUsername || !status) {
       return res.status(400).json({ message: "Need officerUsername and status" });
     }
 
-    // positional operator to update only the matching array element
+    // Update the one array element
     const lead = await Lead.findOneAndUpdate(
       {
         leadNo: Number(leadNo),
@@ -554,44 +761,91 @@ const updateAssignedToStatus = async (req, res) => {
         caseName,
         'assignedTo.username': officerUsername
       },
-      {
-        $set: { 'assignedTo.$.status': status }
-      },
+      { $set: { 'assignedTo.$.status': status } },
       { new: true }
     );
+    if (!lead) return res.status(404).json({ message: "Lead or officer not found" });
 
-    if (!lead) {
-      return res.status(404).json({ message: "Lead or officer not found" });
-    }
+    // Recompute aggregate status
+    const statusAfter = computeAggregateStatus(lead.assignedTo);
 
-    res.status(200).json({ message: "Officer status updated", lead });
+    // Append event + update leadStatus
+    lead.events.push({
+      type: status === "accepted" ? "accepted" : "declined",
+      by: req.user?.name || officerUsername,
+      to: [officerUsername],
+      reason: status === "declined" ? (reason || "") : undefined,
+      primaryInvestigator: lead.primaryInvestigator || null,
+      statusAfter,
+      at: new Date()
+    });
+    lead.leadStatus = statusAfter;
+    await lead.save();
+
+    return res.status(200).json({ message: "Officer status updated", lead });
   } catch (err) {
     console.error("Error updating officer status:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
 
+
+// const removeAssignedOfficer = async (req, res) => {
+//   try {
+//     const { leadNo, description, caseNo, caseName, username } = req.params;
+
+//     // Find & pull the matching username out of assignedTo
+//     const lead = await Lead.findOneAndUpdate(
+//       {
+//         leadNo: Number(leadNo),
+//         description,
+//         caseNo,
+//         caseName
+//       },
+//       {
+//         $pull: { assignedTo: { username } }
+//       },
+//       { new: true }  // return the updated document
+//     );
+
+//     if (!lead) {
+//       return res.status(404).json({ message: "Lead not found" });
+//     }
+
+//     res.status(200).json({
+//       message: `Officer '${username}' removed from assignedTo`,
+//       lead
+//     });
+//   } catch (err) {
+//     console.error("Error removing assigned officer:", err);
+//     res.status(500).json({ message: "Server error" });
+//   }
+// };
+
 const removeAssignedOfficer = async (req, res) => {
   try {
     const { leadNo, description, caseNo, caseName, username } = req.params;
 
-    // Find & pull the matching username out of assignedTo
     const lead = await Lead.findOneAndUpdate(
-      {
-        leadNo: Number(leadNo),
-        description,
-        caseNo,
-        caseName
-      },
-      {
-        $pull: { assignedTo: { username } }
-      },
-      { new: true }  // return the updated document
+      { leadNo: Number(leadNo), description, caseNo, caseName },
+      { $pull: { assignedTo: { username } } },
+      { new: true }
     );
+    if (!lead) return res.status(404).json({ message: "Lead not found" });
 
-    if (!lead) {
-      return res.status(404).json({ message: "Lead not found" });
-    }
+    // Recompute aggregate status after removal
+    const statusAfter = computeAggregateStatus(lead.assignedTo);
+
+    lead.events.push({
+      type: "reassigned-removed",
+      by: req.user?.name || lead.assignedBy,
+      to: [username],
+      primaryInvestigator: lead.primaryInvestigator || null,
+      statusAfter,
+      at: new Date()
+    });
+    lead.leadStatus = statusAfter;
+    await lead.save();
 
     res.status(200).json({
       message: `Officer '${username}' removed from assignedTo`,
@@ -602,6 +856,7 @@ const removeAssignedOfficer = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 /**
  * GET /api/lead/status/:leadNo/:leadName/:caseNo/:caseName
@@ -669,7 +924,7 @@ const setLeadStatusToClosed = async (req, res) => {
 
 
 module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword , setLeadStatusToInReview, 
-  setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM, getLeadStatus, setLeadStatusToClosed
+  setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM, getLeadStatus, setLeadStatusToClosed,  deleteLead,
 };
 
 

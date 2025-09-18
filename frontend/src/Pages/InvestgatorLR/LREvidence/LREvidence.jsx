@@ -55,6 +55,58 @@ const LIST_KEY = "LREvidence:list";
       return saved ? JSON.parse(saved) : [];
     });
 
+    // add near other useState hooks
+const [narrativeIds, setNarrativeIds] = useState([]);
+
+const alphabetToNumber = (str = "") => {
+  let n = 0;
+  for (let i = 0; i < str.length; i++) n = n * 26 + (str.charCodeAt(i) - 64);
+  return n;
+};
+
+useEffect(() => {
+  if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+
+  const ac = new AbortController();
+
+  (async () => {
+    try {
+      const token   = localStorage.getItem("token");
+      const leadNo  = selectedLead.leadNo;
+      const caseNo  = selectedCase.caseNo;
+      const encLead = encodeURIComponent(selectedLead.leadName);
+      const encCase = encodeURIComponent(selectedCase.caseName);
+
+      const resp = await api.get(
+        `/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`,
+        { headers: { Authorization: `Bearer ${token}` }, signal: ac.signal }
+      );
+
+      const ids = [...new Set((resp?.data || []).map(r => r?.leadReturnId).filter(Boolean))];
+      ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
+      setNarrativeIds(ids);
+
+      // for NEW entries (not editing), preselect the newest Narrative Id if none chosen yet
+      setEvidenceData(prev =>
+        (editIndex === null && !prev.leadReturnId)
+          ? { ...prev, leadReturnId: ids.at(-1) || "" }
+          : prev
+      );
+    } catch (e) {
+      if (!ac.signal.aborted) console.error("Failed to fetch Narrative Ids:", e);
+    }
+  })();
+
+  return () => ac.abort();
+}, [
+  selectedLead?.leadNo,
+  selectedLead?.leadName,
+  selectedCase?.caseNo,
+  selectedCase?.caseName,
+  editIndex
+]);
+
+
 
   // State to manage form data
    const [evidenceData, setEvidenceData] = useState(() => {
@@ -100,59 +152,6 @@ useEffect(() => {
                 const onShowCaseSelector = (route) => {
                   navigate(route, { state: { caseDetails } });
               };
-
-   // Save Enclosure: Build FormData and post to backend including token from localStorage.
-  // const handleSaveEvidence = async () => {
-  //   const formData = new FormData();
-  //   if (file) {
-  //     formData.append("file", file);
-  //     console.log("file", file);
-  //   }
-
-  //   // Append other required fields
-  //   formData.append("leadNo", selectedLead.leadNo); // Example value; update as needed
-  //   formData.append("description", selectedLead.leadName);
-  //   formData.append("enteredBy", localStorage.getItem("loggedInUser"));
-  //   formData.append("caseName", selectedLead.caseName);
-  //   formData.append("caseNo", selectedLead.caseNo);
-  //   formData.append("leadReturnId", evidenceData.leadReturnId); // Example value; update as needed
-  //   formData.append("enteredDate", new Date().toISOString());
-  //   formData.append("type", evidenceData.type);
-  //   formData.append("envidenceDescription", evidenceData.evidence);
-  //   formData.append("collectionDate", evidenceData.collectionDate);
-  //   formData.append("disposedDate", evidenceData.disposedDate);
-  //   formData.append("disposition", evidenceData.disposition);
-
-  //   // Retrieve token from localStorage
-  //   const token = localStorage.getItem("token");
-  //   console.log(token);
-  //   for (const [key, value] of formData.entries()) {
-  //     console.log(`FormData - ${key}:`, value);
-  //   }
-    
-  //   try {
-  //     const response = await api.post(
-  //       "/api/lrevidence/upload",
-  //       formData,
-  //       { 
-  //         headers: { 
-  //           "Content-Type": undefined,  
-  //           // "Content-Type": "multipart/form-data",
-  //           "Authorization": `Bearer ${token}`  // Add token here
-  //         } 
-  //       }
-  //     );
-  //     console.log("Evidence saved:", response.data);
-  //     // Optionally update local state with the new enclosure
-  //     setEvidences([...evidences, response.data.evidences]);
-
-  //     // Clear form fields if needed
-  //     setEvidenceData({ type: "", evidences: "" });
-  //     setFile(null);
-  //   } catch (error) {
-  //     console.error("Error saving evidence:", error);
-  //   }
-  // };
 
   const handleSaveEvidence = async () => {
     // require a file or a link on new entries
@@ -405,25 +404,6 @@ useEffect(() => {
           onClose={()   => setAlertOpen(false)}
         />
 
-      {/* Top Menu */}
-      {/* <div className="top-menu">
-        <div className="menu-items">
-          <span className="menu-item" onClick={() => handleNavigation("/LRInstruction")}>Instructions</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRReturn")}>Returns</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRPerson")}>Person</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRVehicle")}>Vehicles</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LREnclosures")}>Enclosures</span>
-          <span className="menu-item active" onClick={() => handleNavigation("/LREvidence")}>Evidence</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRPictures")}>Pictures</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRAudio")}>Audio</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRVideo")}>Videos</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRScratchpad")}>Scratchpad</span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRFinish")}>Finish</span>
-        </div>
-      </div> */}
         <div className="top-menu"   style={{ paddingLeft: '20%' }}>
       <div className="menu-items" >
         <span className="menu-item " onClick={() => {
@@ -457,107 +437,11 @@ useEffect(() => {
                 }}>Lead Chain of Custody</span>
           
                   </div>
-        {/* <div className="menu-items">
-      
-        <span className="menu-item active" onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRReturn')}>
-            Returns
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRScratchpad')}>
-            Scratchpad
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span>
-         </div> */}
+       
        </div>
 
       <div className="LRI_Content">
-      {/* <div className="sideitem">
-       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-       <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
-        </li>
-        {caseDropdownOpen && (
-      <ul >
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>  
-          
-
-
-                  <li
-  className="sidebar-item"
-  onClick={() =>
-    selectedCase.role === "Investigator"
-      ? navigate("/Investigator")
-      : navigate("/CasePageManager")
-  }
->
-Case Page
-</li>
-
-
-            {selectedCase.role !== "Investigator" && (
-<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-          
-              {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
-            </li>)}
-           
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-
-            </ul>
-        )}
-          <li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
-          </li>
-        {leadDropdownOpen && (
-          <ul>
-              <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-              View Lead Chain of Custody
-            </li>
-             )}
-          </ul>
-
-            )}
-
-                </div> */}
+    
                   <SideBar  activePage="CasePageManager" />
                 <div className="left-content">
                 <div className="top-menu1" style={{ marginTop: '2px', backgroundColor: '#3333330e' }}>
@@ -596,9 +480,9 @@ Case Page
           <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
             Timeline
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
+          {/* <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
             Finish
-          </span>
+          </span> */}
          </div> </div>
                 {/* <div className="caseandleadinfo">
           <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
@@ -618,19 +502,12 @@ Case Page
              </h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
-        ? `Your Role: ${selectedCase.role || ""} | Lead Status:  ${status}`
+        ? ` Lead Status:  ${status}`
     : ` ${leadStatus}`}
 </h5>
 
           </div>
-     
-        {/* <div className="left-section">
-          <img
-            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
-            alt="Police Department Logo"
-            className="police-logo-lr"
-          />
-        </div> */}
+    
         <div className="case-header">
           <h2 className="">EVIDENCE INFORMATION</h2>
         </div>
@@ -658,12 +535,16 @@ Case Page
               onChange={(e) => handleInputChange("disposedDate", e.target.value)}
             />
             <label className="evidence-head">Narrative Id*</label>
-            <input
-              type="leadReturnId"
+            <select
               value={evidenceData.leadReturnId}
-            
               onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
-            />
+            >
+              <option value="">Select Narrative Id</option>
+              {narrativeIds.map(id => (
+                <option key={id} value={id}>{id}</option>
+              ))}
+            </select>
+
           </div>
           <div className="form-row-evidence">
             <label className="evidence-head">Type</label>

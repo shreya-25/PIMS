@@ -14,6 +14,7 @@
 
 .user-profile {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 10px;
 }
@@ -111,12 +112,6 @@
   gap: 15px;
   flex-grow: 1;
   margin-bottom: 5px;
-}
-
-.user-profile {
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
 .user-profile a {

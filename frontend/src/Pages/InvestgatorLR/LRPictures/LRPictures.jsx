@@ -35,6 +35,17 @@ const [editingIndex, setEditingIndex] = useState(null);
  const fileInputRef = useRef();
  const [alertOpen, setAlertOpen] = useState(false);
      const [alertMessage, setAlertMessage] = useState("");
+     // Narrative Ids fetched from the server
+const [narrativeIds, setNarrativeIds] = useState([]);
+
+const normalizeId = (id) => String(id ?? "").trim().toUpperCase();
+const alphabetToNumber = (str = "") => {
+  str = normalizeId(str);
+  let n = 0;
+  for (let i = 0; i < str.length; i++) n = n * 26 + (str.charCodeAt(i) - 64);
+  return n;
+};
+
 
   
     const formatDate = (dateString) => {
@@ -97,6 +108,186 @@ useEffect(() => {
   sessionStorage.setItem(LIST_KEY, JSON.stringify(pictures));
 }, [pictures]);
 
+const attachFiles = async (items, idFieldName, filesEndpoint) => {
+  return Promise.all(
+    (items || []).map(async (item) => {
+      const realId = item[idFieldName];
+      if (!realId) return { ...item, files: [] };
+      try {
+        const { data: filesArray } = await api.get(
+          `${filesEndpoint}/${realId}`,
+          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        );
+        return { ...item, files: filesArray };
+      } catch (err) {
+        console.error(`Error fetching files for ${filesEndpoint}/${realId}:`, err);
+        return { ...item, files: [] };
+      }
+    })
+  );
+};
+
+
+    const [isGenerating, setIsGenerating] = useState(false);
+    const handleViewLeadReturn = async () => {
+  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+  if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+    setAlertMessage("Please select a case and lead first.");
+    setAlertOpen(true);
+    return;
+  }
+
+  if (isGenerating) return;
+
+  try {
+    setIsGenerating(true);
+
+    const token = localStorage.getItem("token");
+    const headers = { headers: { Authorization: `Bearer ${token}` } };
+
+    const { leadNo } = lead;
+    const leadName = lead.leadName || lead.description;
+    const { caseNo, caseName } = kase;
+    const encLead = encodeURIComponent(leadName);
+    const encCase = encodeURIComponent(caseName);
+
+    // fetch everything we need for the report (same endpoints you use on LRFinish)
+    const [
+      instrRes,
+      returnsRes,
+      personsRes,
+      vehiclesRes,
+      enclosuresRes,
+      evidenceRes,
+      picturesRes,
+      audioRes,
+      videosRes,
+      scratchpadRes,
+      timelineRes,
+    ] = await Promise.all([
+      api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+    ]);
+
+    // add files where applicable (note the plural file endpoints)
+    const enclosuresWithFiles = await attachFiles(enclosuresRes.data, "_id", "/api/lrenclosures/files");
+    const evidenceWithFiles   = await attachFiles(evidenceRes.data,   "_id", "/api/lrevidences/files");
+    const picturesWithFiles   = await attachFiles(picturesRes.data,   "pictureId", "/api/lrpictures/files");
+    const audioWithFiles      = await attachFiles(audioRes.data,      "audioId",   "/api/lraudio/files");
+    const videosWithFiles     = await attachFiles(videosRes.data,     "videoId",   "/api/lrvideo/files");
+
+    const leadInstructions = instrRes.data?.[0] || {};
+    const leadReturns      = returnsRes.data || [];
+    const leadPersons      = personsRes.data || [];
+    const leadVehicles     = vehiclesRes.data || [];
+    const leadScratchpad   = scratchpadRes.data || [];
+    const leadTimeline     = timelineRes.data || [];
+
+    // make all sections true (Full Report)
+    const selectedReports = {
+      FullReport: true,
+      leadInstruction: true,
+      leadReturn: true,
+      leadPersons: true,
+      leadVehicles: true,
+      leadEnclosures: true,
+      leadEvidence: true,
+      leadPictures: true,
+      leadAudio: true,
+      leadVideos: true,
+      leadScratchpad: true,
+      leadTimeline: true,
+    };
+
+    const body = {
+      user: localStorage.getItem("loggedInUser") || "",
+      reportTimestamp: new Date().toISOString(),
+
+      // sections (values are the fetched arrays/objects)
+      leadInstruction: leadInstructions,
+      leadReturn:      leadReturns,
+      leadPersons,
+      leadVehicles,
+      leadEnclosures:  enclosuresWithFiles,
+      leadEvidence:    evidenceWithFiles,
+      leadPictures:    picturesWithFiles,
+      leadAudio:       audioWithFiles,
+      leadVideos:      videosWithFiles,
+      leadScratchpad,
+      leadTimeline,
+
+      // also send these two, since your backend expects them
+      selectedReports,
+      leadInstructions,
+      leadReturns,
+    };
+
+    const resp = await api.post("/api/report/generate", body, {
+      responseType: "blob",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const file = new Blob([resp.data], { type: "application/pdf" });
+
+    navigate("/DocumentReview", {
+      state: {
+        pdfBlob: file,
+        filename: `Lead_${leadNo || "report"}.pdf`,
+      },
+    });
+  } catch (err) {
+    if (err?.response?.data instanceof Blob) {
+      const text = await err.response.data.text();
+      console.error("Report error:", text);
+      setAlertMessage("Error generating PDF:\n" + text);
+    } else {
+      console.error("Report error:", err);
+      setAlertMessage("Error generating PDF:\n" + (err.message || "Unknown error"));
+    }
+    setAlertOpen(true);
+  } finally {
+    setIsGenerating(false);
+  }
+};
+
+  const signedInOfficer = localStorage.getItem("loggedInUser");
+ // who is primary for this lead?
+const primaryUsername =
+  leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
+
+// am I the primary investigator on this lead?
+const isPrimaryInvestigator =
+  selectedCase?.role === "Investigator" &&
+  !!signedInOfficer &&
+  signedInOfficer === primaryUsername;
+
+// primary goes to the interactive ViewLR page
+const goToViewLR = () => {
+  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+  if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
+    setAlertMessage("Please select a case and lead first.");
+    setAlertOpen(true);
+    return;
+  }
+
+  navigate("/viewLR", {
+    state: { caseDetails: kase, leadDetails: lead }
+  });
+};
+
 
   // populate the form to edit a picture
   const handleEditPicture = idx => {
@@ -114,6 +305,52 @@ useEffect(() => {
     setEditingIndex(idx);
     setFile(null);
   };
+
+  useEffect(() => {
+  if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+
+  const ac = new AbortController();
+
+  (async () => {
+    try {
+      const token   = localStorage.getItem("token");
+      const leadNo  = selectedLead.leadNo;
+      const caseNo  = selectedCase.caseNo;
+      const encLead = encodeURIComponent(selectedLead.leadName);
+      const encCase = encodeURIComponent(selectedCase.caseName);
+
+      const resp = await api.get(
+        `/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`,
+        { headers: { Authorization: `Bearer ${token}` }, signal: ac.signal }
+      );
+
+      const ids = [...new Set((resp?.data || [])
+        .map(r => normalizeId(r?.leadReturnId))
+        .filter(Boolean))];
+
+      ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
+      setNarrativeIds(ids);
+
+      // If adding a NEW picture and no Id chosen yet, preselect the newest
+      setPictureData(prev =>
+        (!isEditing && !prev.leadReturnId)
+          ? { ...prev, leadReturnId: ids.at(-1) || "" }
+          : prev
+      );
+    } catch (e) {
+      if (!ac.signal.aborted) console.error("Failed to fetch Narrative Ids:", e);
+    }
+  })();
+
+  return () => ac.abort();
+}, [
+  selectedLead?.leadNo,
+  selectedLead?.leadName,
+  selectedCase?.caseNo,
+  selectedCase?.caseName,
+  isEditing
+]);
+
 
 // delete a picture
 const handleDeletePicture = async idx => {
@@ -424,7 +661,24 @@ const handleAccessChange = (idx, newAccess) => {
                       }
                     });
                   } }} > Lead Information</span>
-                   <span className="menu-item active" >Add/View Lead Return</span>
+                   <span className="menu-item active" >Add Lead Return</span>
+                    {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
+           <span
+              className="menu-item"
+              onClick={handleViewLeadReturn}
+              title={isGenerating ? "Preparing report…" : "View Lead Return"}
+              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
+            >
+              Manage Lead Return
+            </span>
+              )}
+
+            {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
+  <span className="menu-item" onClick={goToViewLR}>
+    Submit Lead Return
+  </span>
+)}
+
                    <span className="menu-item" onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
@@ -582,9 +836,9 @@ Case Page
           <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
             Timeline
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
+          {/* <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
             Finish
-          </span>
+          </span> */}
          </div> </div>
                 {/* <div className="caseandleadinfo">
           <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
@@ -603,7 +857,7 @@ Case Page
              </h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
-        ? `Your Role: ${selectedCase.role || ""} | Lead Status:  ${status}`
+        ? ` Lead Status:  ${status}`
     : ` ${leadStatus}`}
 </h5>
 
@@ -632,13 +886,18 @@ Case Page
             />
           </div>
           <div className="form-row-pic">
-            <label  className="evidence-head">Narrative Id*</label>
-            <input
-              type="leadReturnId"
+            <label className="evidence-head">Narrative Id*</label>
+            <select
               value={pictureData.leadReturnId}
-               className="evidence-head"
+              className="evidence-head"
               onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
-            />
+            >
+              <option value="">Select Narrative Id</option>
+              {narrativeIds.map(id => (
+                <option key={id} value={id}>{id}</option>
+              ))}
+            </select>
+
           </div>
           <div className="form-row-pic">
             <label  className="evidence-head">Description</label>

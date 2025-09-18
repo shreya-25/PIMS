@@ -30,6 +30,23 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   const [investigatorsOpen, setInvestigatorsOpen] = useState(false);
   const signedInOfficer = localStorage.getItem("loggedInUser");
 
+  const [managersQuery, setManagersQuery] = useState("");
+const [investigatorsQuery, setInvestigatorsQuery] = useState("");
+const managersSearchRef = useRef(null);
+const investigatorsSearchRef = useRef(null);
+
+const toDisplay = (u) =>
+  `${u.firstName || ""} ${u.lastName || ""} (${u.username})`
+    .replace(/\s+/g, " ")
+    .trim();
+
+const matches = (u, q) =>
+  !q ? true : toDisplay(u).toLowerCase().includes(q.toLowerCase());
+
+const filteredManagers = allUsers.filter((u) => matches(u, managersQuery));
+
+const filteredInvestigators = allUsers.filter((u) => matches(u, investigatorsQuery));
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setCaseDetails({ ...caseDetails, [name]: value });
@@ -97,6 +114,37 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+  if (managersOpen) {
+    setManagersQuery("");
+    setTimeout(() => managersSearchRef.current?.focus(), 0);
+  }
+}, [managersOpen]);
+
+useEffect(() => {
+  if (investigatorsOpen) {
+    setInvestigatorsQuery("");
+    setTimeout(() => investigatorsSearchRef.current?.focus(), 0);
+  }
+}, [investigatorsOpen]);
+
+
+useEffect(() => {
+  function handleClickOutside(e) {
+    if (managersOpen && managersRef.current && !managersRef.current.contains(e.target)) {
+      setManagersOpen(false);
+      setManagersQuery(""); // optional
+    }
+    if (investigatorsOpen && investigatorsRef.current && !investigatorsRef.current.contains(e.target)) {
+      setInvestigatorsOpen(false);
+      setInvestigatorsQuery(""); // optional
+    }
+  }
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, [managersOpen, investigatorsOpen]);
+
   
 
   const handleCheckboxChange = (e) => {
@@ -343,7 +391,7 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
           </div>
           )}
           
-        <div className="form-group" ref={managersRef}>
+        {/* <div className="form-group" ref={managersRef}>
   <label>Case Managers:</label>
   <div className="custom-dropdown">
     <div
@@ -386,11 +434,90 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
       </div>
     )}
   </div>
+</div> */}
+
+<div className="inv-select-group" ref={managersRef}>
+  <label htmlFor="cm-trigger">Case Managers:</label>
+
+  <div className="inv-dropdown">
+    {/* Trigger shows selected usernames (or placeholder) */}
+    <button
+      id="cm-trigger"
+      type="button"
+      className="inv-input"
+      onClick={() => setManagersOpen((o) => !o)}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setManagersOpen((o) => !o)}
+      aria-haspopup="listbox"
+      aria-expanded={managersOpen}
+      title={
+        caseDetails.managers.length
+          ? caseDetails.managers.join(", ")
+          : "Select Case Managers"
+      }
+    >
+      <span className="inv-input-label">
+        {caseDetails.managers.length
+          ? caseDetails.managers.join(", ") // or map to display names, see note below
+          : "Select Case Managers"}
+      </span>
+      <span className="inv-caret" aria-hidden />
+    </button>
+
+    {managersOpen && (
+      <div className="inv-options" role="listbox" onMouseDown={(e) => e.stopPropagation()}>
+        {/* Sticky search */}
+        <div className="inv-search-wrap">
+          <input
+            ref={managersSearchRef}
+            type="text"
+            className="inv-search"
+            placeholder="Type to filter officers…"
+            value={managersQuery}
+            onChange={(e) => setManagersQuery(e.target.value)}
+            onKeyDown={(e) => e.stopPropagation()}
+          />
+        </div>
+
+        {/* List */}
+        <div className="inv-list">
+          {filteredManagers.length ? (
+            filteredManagers.map((u) => {
+              const checked = caseDetails.managers.includes(u.username);
+              return (
+                <label key={u.username} className="inv-item">
+                  <input
+                    type="checkbox"
+                    value={u.username}
+                    checked={checked}
+                    onChange={(e) => {
+                      const { value, checked } = e.target;
+                      setCaseDetails((cd) => ({
+                        ...cd,
+                        managers: checked
+                          ? [...cd.managers, value]
+                          : cd.managers.filter((x) => x !== value),
+                      }));
+                    }}
+                  />
+                  <span className="inv-text">{toDisplay(u)}</span>
+                </label>
+              );
+            })
+          ) : (
+            <div className="inv-empty">No matches</div>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
 </div>
 
 
+
+
+
           {/* ——— INVESTIGATORS ——— */}
-          <div className="form-group" ref={investigatorsRef}>
+          {/* <div className="form-group" ref={investigatorsRef}>
             <label>Investigators Assigned:</label>
             <div className="custom-dropdown">
               <div className="input-field" onClick={toggleInvestigators}>
@@ -426,8 +553,91 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
                 </div>
               )}
             </div>
-          </div>
+          </div> */}
+<div className="inv-select-group" ref={investigatorsRef}>
+  <label htmlFor="inv-trigger">Investigators Assigned:</label>
 
+  <div className="inv-dropdown" aria-live="polite">
+    <button
+      id="inv-trigger"
+      type="button"
+      className="inv-input"
+      onClick={toggleInvestigators}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && toggleInvestigators()}
+      aria-haspopup="listbox"
+      aria-expanded={investigatorsOpen}
+      title={
+        caseDetails.investigators.length
+          ? caseDetails.investigators.join(", ")
+          : "Select Officers"
+      }
+    >
+        {caseDetails.investigators.length
+      ? caseDetails.investigators.join(", ")
+      : <span className="inv-selected-none">None selected</span>}
+
+      {/* <span className="inv-input-label">
+        {caseDetails.investigators.length
+          ? caseDetails.investigators.join(", ") 
+          : "Select Officers"}
+      </span>
+      <span className="inv-caret" aria-hidden /> */}
+    </button>
+
+    {investigatorsOpen && (
+      <div className="inv-options" role="listbox" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="inv-search-wrap">
+          <input
+            ref={investigatorsSearchRef}
+            type="text"
+            className="inv-search"
+            placeholder="Type to filter officers…"
+            value={investigatorsQuery}
+            onChange={(e) => setInvestigatorsQuery(e.target.value)}
+            onKeyDown={(e) => e.stopPropagation()}
+          />
+        </div>
+
+        <div className="inv-list">
+          {filteredInvestigators.length ? (
+            filteredInvestigators.map((u) => {
+              const checked = caseDetails.investigators.includes(u.username);
+              return (
+                <label key={u.username} className="inv-item">
+                  <input
+                    type="checkbox"
+                    value={u.username}
+                    checked={checked}
+                    onChange={(e) => {
+                      const { value, checked } = e.target;
+                      setCaseDetails((cd) => ({
+                        ...cd,
+                        investigators: checked
+                          ? [...cd.investigators, value]
+                          : cd.investigators.filter((x) => x !== value),
+                      }));
+                    }}
+                  />
+                  <span className="inv-text">{toDisplay(u)}</span>
+                </label>
+              );
+            })
+          ) : (
+            <div className="inv-empty">No matches</div>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
+</div>
+
+
+
+
+
+         
+         
+         
           <div className="form-group">
             <label>Summary:</label>
             <textarea

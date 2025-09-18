@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext  } from "react";
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { AlertModal } from "../AlertModal/AlertModal";
 import api from "../../api";
 import "./Navbar1.css";
+import { CaseContext } from "../../Pages/CaseContext";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const Navbar = () => {
    const [alertOpen,    setAlertOpen]    = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const { selectedCase } = useContext(CaseContext) || {};
 
   const [newNotifs, setNewNotifs]         = useState([]);
 
@@ -24,6 +26,12 @@ const Navbar = () => {
   const [notificationList, setNotificationList] = useState([]);
   const [chatList, setChatList] = useState([]);
   const [emailList, setEmailList] = useState([]);
+
+  const roleFromCase = selectedCase?.role?.trim();
+  const roleFromStorage = localStorage.getItem("userRole") || ""; // optional fallback
+  const role = roleFromCase || roleFromStorage;
+  const onHome = location.pathname === "/HomePage" || location.pathname === "/";
+  const showRole = !!role && !onHome;
 
   const handleNavigation = (route) => {
     navigate(route); // Navigate to respective page
@@ -114,10 +122,32 @@ const Navbar = () => {
       <div className="profile">
 
            {/* User Profile Info */}
-           <div className="user-profile">
+           {/* <div className="user-profile">
+           <div className="userImg">
+
           <i className="fa-solid fa-user"></i>
-          <span className="username">{username || "Guest"}</span>
-        </div>
+            <div className="user-ident">
+          <div className="username">{username || "Guest"}</div>
+      </div>
+      </div>
+      {showRole && <div className="user-role">Role: {role}</div>}
+        </div> */}
+        <div className="user-profile">
+  <div className="user-row">
+    <i className="fa-solid fa-user" aria-hidden="true"></i>
+    <span className="username">{username || "Guest"}</span>
+  </div>
+    {showRole && <span className="user-sep" aria-hidden="true"></span>}
+     {showRole && <div className="user-role">Role: {role}</div>}
+</div>
+
+        {/* <div className="user-profile">
+  <div className="user-row">
+    {showRole && <div className="user-role">Role: {role}</div>}
+  </div>
+</div> */}
+
+
         <ul>
           {/* Home */}
           <li>

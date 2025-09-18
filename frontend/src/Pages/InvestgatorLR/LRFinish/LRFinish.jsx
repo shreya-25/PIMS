@@ -37,6 +37,7 @@ export const LRFinish = () => {
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [closeReason, setCloseReason]       = useState("");
   const [closing, setClosing]               = useState(false);
+  const currentUser = localStorage.getItem("loggedInUser");
    const [confirmConfig, setConfirmConfig] = useState({
     open: false,
     title: '',
@@ -510,9 +511,19 @@ useEffect(() => {
               },
             });
             // Create a blob and open in a new browser tab OR force download
+      // const file = new Blob([response.data], { type: "application/pdf" });
+      // const fileURL = URL.createObjectURL(file);
+      // window.open(fileURL); 
+
       const file = new Blob([response.data], { type: "application/pdf" });
-      const fileURL = URL.createObjectURL(file);
-      window.open(fileURL); 
+      const objectUrl = URL.createObjectURL(file);
+ // navigate to DocumentReview and pass the object URL + a nice filename
+  navigate("/DocumentReview", {
+    state: {
+      pdfBlob: file,
+      filename: `Lead_${selectedLead.leadNo || "report"}.pdf`,
+    },
+  });
 
     }  catch (err) {
       // 4) If it's a blob error, read it as text so you can see the server message
@@ -709,7 +720,7 @@ const actuallyDoSubmitReport = async () => {
     }
   };
 
-  const isSubmittedInReview = status === "In Review";
+const isSubmittedInReview = status === "In Review";
 const isClosedOrCompleted = status === "Closed" || status === "Completed";
 const isCaseManager = selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
 
@@ -721,10 +732,16 @@ const isInReview         = status === "In Review";
 const isInvestigator     = !isCaseManager;
 
 const canShowCMButtons   = isCaseManager && !isClosedOrCompleted;
-const canShowSubmit      = isInvestigator && !isClosedOrCompleted && !isInReview;
 
 
-      
+const primaryUsername =
+   leadData?.primaryInvestigator ||
+   leadData?.primaryOfficer || "";   // fallback if you stored it under primaryOfficer
+
+ const isPrimaryInvestigator = !!currentUser && currentUser === primaryUsername;
+
+const canShowSubmit      = isInvestigator && isPrimaryInvestigator && !isClosedOrCompleted && !isInReview;
+
 
   const handleNavigation = (route) => {
     navigate(route); // Navigate to respective page
