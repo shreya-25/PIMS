@@ -60,8 +60,10 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
       });
 
   const styles = useMemo(() => ({ zoomLabel: { minWidth: 56, textAlign: "center" } }), []);
+  const confirmActionRef = useRef(null);
 
   const handleApprove = () => {
+     confirmActionRef.current = () => submitReturnAndUpdate('complete');
   setConfirmConfig({
     open: true,
     title: 'Confirm Approve',
@@ -70,19 +72,21 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
   });
 };
 const handleReturn = () => {
+  confirmActionRef.current = () => submitReturnAndUpdate('returned');
   setConfirmConfig({
     open: true,
     title: 'Confirm Return',
     message: 'Are you sure you want to RETURN this lead for changes?',
-    onConfirm: () => submitReturnAndUpdate('pending')
+    onConfirm: () => submitReturnAndUpdate('returned')
   });
 };
 const handleReopen = () => {
+   confirmActionRef.current = () => submitReturnAndUpdate('reopened');
   setConfirmConfig({
     open: true,
     title: 'Confirm Reopen',
     message: 'Are you sure you want to REOPEN this lead?',
-    onConfirm: () => submitReturnAndUpdate('pending')
+   onConfirm: () => submitReturnAndUpdate('reopened')
   });
 };
 
@@ -165,10 +169,19 @@ const handleClose = () => {
    const submitReturnAndUpdate = async (newStatus) => {
     try {
       const token = localStorage.getItem("token");
+       const apiStatus =
+       newStatus === "complete"  ? "Completed" :
+       newStatus === "returned"  ? "Returned"  :
+       newStatus === "reopened"  ? "Reopened"  :
+       newStatus === "close"     ? "Closed"    :
+       "Accepted"; // fallback
+
+        const uiStatus = apiStatus;
   
       // --- 2) Update the leadStatus to either Complete or Pending ---
+      
       const statusRes = await api.put(
-        `/api/lead/status/${newStatus}`,           // "/status/complete" or "/status/pending"
+        `/api/lead/status/${newStatus}`,
         {
           leadNo:     selectedLead.leadNo,
           description: selectedLead.leadName,
@@ -180,22 +193,28 @@ const handleClose = () => {
       );
   
       if (statusRes.status === 200) {
+        if (uiStatus === "Completed" || uiStatus === "Closed" || uiStatus === "Returned") {
         await promotePrivateComments();
+        }
          setAlertMessage("Lead Return submitted");
         setAlertOpen(true);
 
-      const human =
-        newStatus === "complete" ? "approved the lead" :
-        newStatus === "Accepted" ? "returned the lead" : "reopened the lead";
+    const human =
+        uiStatus === "Completed" ? "approved the lead"  :
+       uiStatus === "Returned"  ? "returned the lead"  :
+        uiStatus === "Reopened"  ? "reopened the lead"  :   "updated the lead";
 
 
         setSelectedLead((prev) => ({
           ...prev,
-          leadStatus: newStatus === "complete" ? "Completed" : "Accepted",
+          // leadStatus: newStatus === "complete" ? "Completed" : "Accepted",
+          leadStatus: uiStatus,
         }));
 
-        setLeadStatus(newStatus === "complete" ? "Completed" : "Accepted");
-        setLocalStatus(newStatus === "complete" ? "Completed" : "Accepted"); 
+        // setLeadStatus(newStatus === "complete" ? "Completed" : "Accepted");
+        // setLocalStatus(newStatus === "complete" ? "Completed" : "Accepted"); 
+       setLeadStatus(uiStatus);
+       setLocalStatus(uiStatus);
         const investigators = (leadData.assignedTo || []).map(a => a.username);
         const managerName    = leadData.assignedBy;
       if (investigators.length) {
@@ -249,8 +268,8 @@ const handleClose = () => {
   const privateThreadKey = `${publicThreadKey}::${currentUser}`;
 
   // When these statuses hit, comments become public
-  const PUBLIC_PHASE_STATUSES = new Set(["Returned", "Completed", "Closed"]);
-  // Your app uses "pending" internally on Return; also map that to Returned for safety
+ const PUBLIC_PHASE_STATUSES = new Set(["Returned", "Reopened", "Completed", "Closed"]);
+
   const isPublicPhase =
     PUBLIC_PHASE_STATUSES.has(status) || String(status).toLowerCase() === "pending";
 
@@ -294,17 +313,16 @@ const handleClose = () => {
             <div aria-live="polite" style={styles.zoomLabel}>{(scale * 100).toFixed(0)}%</div>
             <button onClick={() => setScale((s) => Math.min(2, +(s + 0.1).toFixed(2)))}>+</button>
           </div>
-   {(status === "Completed" || status === "Closed") ? (
-    <button className="approve-btn-lr" onClick={handleReopen}>Reopen</button>
-  ) : (
-    <>
-     <div className="btn-sec-dr">
-      <button className="approve-btn-lr" onClick={handleApprove}>Approve</button>
-      <button className="return-btn-lr" onClick={handleReturn}>Return</button>
-      <button className="close-btn-lr" onClick={() => setShowCloseModal(true)}>Close</button>
-      </div>
-    </>
-  )}
+          
+           {(["Completed","Closed"].includes(status)) ? (
+   <button className="approve-btn-lr" onClick={handleReopen}>Reopen</button>
+ ) : (
+   <div className="btn-sec-dr">
+     <button className="approve-btn-lr" onClick={handleApprove}>Approve</button>
+     <button className="return-btn-lr"  onClick={handleReturn}>Return</button>
+     <button className="close-btn-lr"   onClick={() => setShowCloseModal(true)}>Close</button>
+   </div>
+ )}
 
         </header>
 
