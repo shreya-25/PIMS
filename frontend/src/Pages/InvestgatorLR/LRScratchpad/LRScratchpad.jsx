@@ -28,6 +28,19 @@ export const LRScratchpad = () => {
   const navigate = useNavigate();
   const FORM_KEY = "LRScratchpad:form";
 const LIST_KEY = "LRScratchpad:list";
+// Narrative Ids from API
+const [narrativeIds, setNarrativeIds] = useState([]);
+
+const normalizeId = (id) => String(id ?? "").trim().toUpperCase();
+const alphabetToNumber = (str = "") => {
+  str = normalizeId(str);
+  let n = 0;
+  for (let i = 0; i < str.length; i++) n = n * 26 + (str.charCodeAt(i) - 64);
+  return n;
+};
+
+
+
 
    const location = useLocation();
        const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);  
@@ -55,6 +68,55 @@ const LIST_KEY = "LRScratchpad:list";
                             };
         
 const [editingIndex, setEditingIndex] = useState(null);
+const isEditing = editingIndex !== null;
+
+useEffect(() => {
+  if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+
+  const ac = new AbortController();
+
+  (async () => {
+    try {
+      const token   = localStorage.getItem("token");
+      const { leadNo } = selectedLead;
+      const { caseNo } = selectedCase;
+      const encLead = encodeURIComponent(selectedLead.leadName);
+      const encCase = encodeURIComponent(selectedCase.caseName);
+
+      const resp = await api.get(
+        `/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`,
+        { headers: { Authorization: `Bearer ${token}` }, signal: ac.signal }
+      );
+
+      // unique, cleaned, non-empty IDs
+      const ids = [...new Set((resp?.data || [])
+        .map(r => normalizeId(r?.leadReturnId))
+        .filter(Boolean))];
+
+      // sort A…Z…AA…AB…
+      ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
+      setNarrativeIds(ids);
+
+      // if ADDING (not editing) and nothing selected yet, preselect latest
+      setNoteData(prev =>
+        (!isEditing && !prev.returnId)
+          ? { ...prev, returnId: ids.at(-1) || "" }
+          : prev
+      );
+    } catch (err) {
+      if (!ac.signal.aborted) console.error("Failed to fetch Narrative Ids:", err);
+    }
+  })();
+
+  return () => ac.abort();
+}, [
+  selectedLead?.leadNo,
+  selectedLead?.leadName,
+  selectedCase?.caseNo,
+  selectedCase?.caseName,
+  isEditing
+]);
+
 
    useEffect(() => {
     const fetchLeadData = async () => {
@@ -520,11 +582,23 @@ Case Page
         <div className = "timeline-form-sec">
         <div className="scratchpad-form">
             <label>Narrative Id*</label>
-            <input
-              type="returnId"
-              value={noteData.returnId}
-              onChange={(e) => handleInputChange("returnId", e.target.value)}
-            />
+             <select
+    value={noteData.returnId}
+    onChange={(e) => handleInputChange("returnId", e.target.value)}
+  >
+    <option value="">Select Narrative Id</option>
+
+    {/* Keep current value visible even if it’s not in latest API list (editing/legacy) */}
+    {noteData.returnId &&
+      !narrativeIds.includes(normalizeId(noteData.returnId)) && (
+        <option value={noteData.returnId}>{noteData.returnId}</option>
+      )
+    }
+
+    {narrativeIds.map(id => (
+      <option key={id} value={id}>{id}</option>
+    ))}
+  </select>
           </div>
         <h4 className="evidence-form-h4">Add New Note*</h4>
         <div className="scratchpad-form">

@@ -33,6 +33,17 @@ export const LRVideo = () => {
       const [leadData, setLeadData] = useState({});
        const [alertOpen, setAlertOpen] = useState(false);
           const [alertMessage, setAlertMessage] = useState("");
+  const [narrativeIds, setNarrativeIds] = useState([]);
+
+  const normalizeId = (id) => String(id ?? "").trim().toUpperCase();
+const alphabetToNumber = (str = "") => {
+  str = normalizeId(str);
+  let n = 0;
+  for (let i = 0; i < str.length; i++) n = n * 26 + (str.charCodeAt(i) - 64);
+  return n;
+};
+
+const isEditing = editingIndex !== null;
 
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
@@ -312,6 +323,55 @@ const goToViewLR = () => {
     state: { caseDetails: kase, leadDetails: lead }
   });
 };
+
+useEffect(() => {
+  if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+
+  const ac = new AbortController();
+
+  (async () => {
+    try {
+      const token   = localStorage.getItem("token");
+      const leadNo  = selectedLead.leadNo;
+      const caseNo  = selectedCase.caseNo;
+      const encLead = encodeURIComponent(selectedLead.leadName);
+      const encCase = encodeURIComponent(selectedCase.caseName);
+
+      const resp = await api.get(
+        `/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`,
+        { headers: { Authorization: `Bearer ${token}` }, signal: ac.signal }
+      );
+
+      // unique, cleaned, non-empty IDs
+      const ids = [...new Set((resp?.data || [])
+        .map(r => normalizeId(r?.leadReturnId))
+        .filter(Boolean))];
+
+      // sort A…Z…AA…AB…
+      ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
+
+      setNarrativeIds(ids);
+
+      // If ADDING (not editing) and no id chosen yet → preselect latest
+      setVideoData(prev =>
+        (!isEditing && !prev.leadReturnId)
+          ? { ...prev, leadReturnId: ids.at(-1) || "" }
+          : prev
+      );
+    } catch (err) {
+      if (!ac.signal.aborted) console.error("Failed to fetch Narrative Ids:", err);
+    }
+  })();
+
+  return () => ac.abort();
+}, [
+  selectedLead?.leadNo,
+  selectedLead?.leadName,
+  selectedCase?.caseNo,
+  selectedCase?.caseName,
+  isEditing
+]);
+
 
    const handleAddVideo = async () => {
     // Validation:
@@ -856,12 +916,26 @@ Case Page
           </div>
           <div className="form-row-video">
             <label className="evidence-head">Narrative Id*</label>
-            <input
-              type="text"
-              value={videoData.leadReturnId}
-              className="evidence-head"
-              onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
-            />
+             <select
+    value={videoData.leadReturnId}
+    className="evidence-head"
+    onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
+  >
+    <option value="">Select Narrative Id</option>
+
+    {/* keep current value visible even if it's not in the latest API list (e.g., older record) */}
+    {videoData.leadReturnId &&
+      !narrativeIds.includes(normalizeId(videoData.leadReturnId)) && (
+        <option value={videoData.leadReturnId}>
+          {videoData.leadReturnId}
+        </option>
+      )
+    }
+
+    {narrativeIds.map(id => (
+      <option key={id} value={id}>{id}</option>
+    ))}
+  </select>
           </div>
           <div className="form-row-video">
             <label className="evidence-head">Description*</label>
