@@ -63,6 +63,8 @@ const confirmResolveRef = useRef(null);
     "Lead Approved",
     "Lead Returned",
     "Lead Completed",
+    "Lead Reopened",
+    "Lead Closed"
   ];
 
   const statusToIndex = {
@@ -73,7 +75,9 @@ const confirmResolveRef = useRef(null);
     Submitted:              3,  // or map your own submission status here
     Approved:               4,  // "Lead Approved"
     Returned:               5,  // "Lead Returned"
+    Reopened: 7,
     Completed:              6,  // "Lead Completed"
+    Closed: 8,
   };
 
   const isInvestigator = selectedCase?.role === "Investigator";
@@ -1561,6 +1565,13 @@ const handleDeleteLead = async () => {
     Submit Lead Return
   </span>
 )}
+
+  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
+  <span className="menu-item" onClick={goToViewLR}>
+   Review Lead Return
+  </span>
+)}
+
 
           
 

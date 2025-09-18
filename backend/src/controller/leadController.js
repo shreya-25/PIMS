@@ -561,6 +561,57 @@ const setLeadStatusToPending = async (req, res) => {
   }
 };
 
+const setLeadStatusToReturned = async (req, res) => {
+  try {
+    const { leadNo, description, caseName, caseNo } = req.body;
+
+    if (!leadNo || !description || !caseName || !caseNo) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    const lead = await Lead.findOne({
+      leadNo,
+      description,
+      caseName,
+      caseNo,
+    });
+
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found." });
+    }
+
+    lead.leadStatus = "Returned";
+    await lead.save();
+
+    console.log(`✅ [DEBUG] Lead ${leadNo} status set to 'Returned" for case ${caseName} (${caseNo})`);
+
+
+    return res.status(200).json({ message: "Lead status set to 'Returned'.", lead });
+  } catch (err) {
+    console.error("Error updating lead status to 'Completed':", err.message);
+    return res.status(500).json({ message: "Something went wrong while updating status." });
+  }
+};
+
+const setLeadStatusToReopened = async (req, res) => {
+ try {
+    const { leadNo, description, caseName, caseNo } = req.body;
+    if (!leadNo || !description || !caseName || !caseNo) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+    const lead = await Lead.findOne({ leadNo, description, caseName, caseNo });
+    if (!lead) return res.status(404).json({ message: "Lead not found." });
+
+    lead.leadStatus = "Reopened";
+    await lead.save();
+    console.log(`✅ [DEBUG] Lead ${leadNo} status set to 'Reopened' for case ${caseName} (${caseNo})`);
+    return res.status(200).json({ message: "Lead status set to 'Reopened'.", lead });
+  } catch (err) {
+    console.error("Error updating lead status to 'Reopened':", err.message);
+        return res.status(500).json({ message: "Something went wrong while updating status." });
+  }
+};
+
 // const updateLead = async (req, res) => {
 //   try {
 //     const { leadNo, description, caseNo, caseName } = req.params;
@@ -924,7 +975,7 @@ const setLeadStatusToClosed = async (req, res) => {
 
 
 module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword , setLeadStatusToInReview, 
-  setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM, getLeadStatus, setLeadStatusToClosed,  deleteLead,
+  setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM, getLeadStatus, setLeadStatusToClosed,  deleteLead, setLeadStatusToReturned, setLeadStatusToReopened
 };
 
 

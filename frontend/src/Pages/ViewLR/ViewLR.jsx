@@ -459,7 +459,13 @@ const actuallyDoSubmitReport = async () => {
                     //  setAlertOpen(true);
                   }
                 }}>Add Lead Return</span>
-          <span className="menu-item active">Submit Lead Return</span>
+          {/* <span className="menu-item active">Submit Lead Return</span> */}
+  <span
+    className="menu-item active"
+    title={isPrimaryInvestigator ? "Submit Lead Return" : "Review Lead Return"}
+  >
+    {isPrimaryInvestigator ? "Submit Lead Return" : "Review Lead Return"}
+  </span>
           <span className="menu-item" onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;

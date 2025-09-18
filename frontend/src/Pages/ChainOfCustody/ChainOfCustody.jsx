@@ -173,7 +173,7 @@ const AssignmentLog = ({ events, status }) => {
   return (
     <div className="elog card">
       <div className="elog-header">
-        <h3>Case Log</h3>
+        <h3> Lead  Log</h3>
         <div className={`chip chip-status ${statusClass}`}>{status || "—"}</div>
       </div>
 

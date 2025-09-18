@@ -48,7 +48,7 @@ const leadSchema = new mongoose.Schema(
         assignedBy: { type: String, required: true },
         summary: { type: String, required: true },
         description: { type: String, required: true },
-        leadStatus: { type: String, required: true, enum: ["Created", "Assigned", "Accepted","To Reassign","Rejected", "In Review", "Approved","Returned", "Completed", "Closed"], default: "Assigned"},
+        leadStatus: { type: String, required: true, enum: ["Created", "Assigned", "Accepted","To Reassign","Rejected", "In Review", "Approved","Returned", "Completed", "Closed", "Reopened" ], default: "Assigned"},
         dueDate: { type: Date },
         priority:  { type: String },
         caseName: { type: String, required: true},
