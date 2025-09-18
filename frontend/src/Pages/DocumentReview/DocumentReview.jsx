@@ -11,10 +11,13 @@ import api, { BASE_URL } from "../../api";
 import { useLeadStatus } from '../../hooks/useLeadStatus';
 
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs?ver=5.3.93',
-  import.meta.url
-).toString();
+// pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+//   'pdfjs-dist/build/pdf.worker.min.mjs?ver=5.3.93',
+//   import.meta.url
+// ).toString();
+
+pdfjs.GlobalWorkerOptions.workerSrc =
+  `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
 
 export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
   const { state } = useLocation();
