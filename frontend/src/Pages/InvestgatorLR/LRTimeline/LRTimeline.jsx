@@ -33,6 +33,17 @@ export const LRTimeline = () => {
   const [entries, setEntries] = useState([]);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
+
+  const [narrativeIds, setNarrativeIds] = useState([]);
+
+const normalizeId = (id) => String(id ?? "").trim().toUpperCase();
+const alphabetToNumber = (str = "") => {
+  str = normalizeId(str);
+  let n = 0;
+  for (let i = 0; i < str.length; i++) n = n * 26 + (str.charCodeAt(i) - 64);
+  return n;
+};
+
         
           const formatDate = (dateString) => {
             if (!dateString) return "";
@@ -73,6 +84,7 @@ export const LRTimeline = () => {
 
   const [newFlag, setNewFlag] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
+  const isEditing = editingIndex !== null;
 
   // whenever the draft form changes, save it
 useEffect(() => {
@@ -174,6 +186,54 @@ useEffect(() => {
 
     fetchLeadData();
   }, [selectedLead, selectedCase]);
+
+  useEffect(() => {
+  if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+
+  const ac = new AbortController();
+
+  (async () => {
+    try {
+      const token   = localStorage.getItem("token");
+      const { leadNo } = selectedLead;
+      const { caseNo } = selectedCase;
+      const encLead = encodeURIComponent(selectedLead.leadName);
+      const encCase = encodeURIComponent(selectedCase.caseName);
+
+      const resp = await api.get(
+        `/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`,
+        { headers: { Authorization: `Bearer ${token}` }, signal: ac.signal }
+      );
+
+      // unique, cleaned, non-empty IDs
+      const ids = [...new Set((resp?.data || [])
+        .map(r => normalizeId(r?.leadReturnId))
+        .filter(Boolean))];
+
+      // sort like A, B, …, Z, AA, AB, …
+      ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
+      setNarrativeIds(ids);
+
+      // if ADDING (not editing) and none chosen → preselect latest
+      setNewEntry(prev =>
+        (!isEditing && !prev.leadReturnId)
+          ? { ...prev, leadReturnId: ids.at(-1) || "" }
+          : prev
+      );
+    } catch (err) {
+      if (!ac.signal.aborted) console.error("Failed to fetch Narrative Ids:", err);
+    }
+  })();
+
+  return () => ac.abort();
+}, [
+  selectedLead?.leadNo,
+  selectedLead?.leadName,
+  selectedCase?.caseNo,
+  selectedCase?.caseName,
+  isEditing
+]);
+
 
    const attachFiles = async (items, idFieldName, filesEndpoint) => {
   return Promise.all(
@@ -826,11 +886,23 @@ Case Page
               onChange={(e) => handleInputChange('date', e.target.value)}
             />
             <label>Narrative Id *</label>
-            <input
-              type="text"
-              value={newEntry.leadReturnId}
-              onChange={(e) => handleInputChange('leadReturnId', e.target.value)}
-            />
+           <select
+  value={newEntry.leadReturnId}
+  onChange={(e) => handleInputChange('leadReturnId', e.target.value)}
+>
+  <option value="">Select Narrative Id</option>
+
+  {/* Keep current value visible even if it's not in the latest API list (editing/legacy) */}
+  {newEntry.leadReturnId &&
+    !narrativeIds.includes(normalizeId(newEntry.leadReturnId)) && (
+      <option value={newEntry.leadReturnId}>{newEntry.leadReturnId}</option>
+    )
+  }
+
+  {narrativeIds.map(id => (
+    <option key={id} value={id}>{id}</option>
+  ))}
+</select>
              <label> Event Start Date *</label>
             <input
               type="date"
