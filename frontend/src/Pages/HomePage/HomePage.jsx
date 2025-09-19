@@ -745,10 +745,10 @@ const addCase = (newCase) => {
 
 
   const columnWidths = {
-  "Case No.":   "3%",
-  "Case Name":  "20%",         // you can tweak widths…
-  "Created At": "3.5%",         // ← new
-  "Role":       "5%",
+  "Case No.":   "7%",
+  "Case Name":  "16%",         // you can tweak widths…
+  "Created At": "7%",         // ← new
+  "Role":       "8%",
 };
 
 // Columns + mapping to your data fields
@@ -868,8 +868,8 @@ const sortedCases = useMemo(() => {
     "Assigned Officers":"assignedOfficers"
   };
   const assignedColWidths = {
-    "Lead No.":           "5%",
-    "Lead Name":         "25%",
+    "Lead No.":           "8%",
+    "Lead Name":         "22%",
     "Case Name":          "18%",
     "Assigned Officers": "15%"
   };
@@ -1237,7 +1237,7 @@ const sortedPendingReturns = useMemo(() => {
                       </th>
                     );
                   })}
-                  <th style={{ width: "5%", textAlign: "center" }} >Actions</th>{/* extra column for “View” button */}
+                  <th style={{ width: "8%", textAlign: "center" }} >Actions</th>{/* extra column for “View” button */}
                 </tr>
               </thead>
               <tbody>
@@ -1334,7 +1334,7 @@ const sortedPendingReturns = useMemo(() => {
   );
 })}
                      
-                  <th style={{ width: "5%", textAlign: "center" }}>Actions</th>
+                  <th style={{ width: "8%", textAlign: "center" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1442,7 +1442,7 @@ const sortedPendingReturns = useMemo(() => {
 <table className="leads-table" style={{ minWidth: "1000px" }}>
 
   <colgroup>
-      <col style={{ width: "6%" }} />     {/* Lead No. */}
+      <col style={{ width: "10%" }} />     {/* Lead No. */}
       <col style={{ width: "35%" }} />   {/* Lead Name */}
       <col style={{ width: "30%" }} />   {/* Case Name */}
       <col style={{ width: "6%" }} />     {/* Actions */}
@@ -1502,7 +1502,7 @@ const sortedPendingReturns = useMemo(() => {
         </th>
       );
     })}
-                  <th style={{ width: "10%", textAlign:"center" }}>Actions</th>
+                  <th style={{ width: "8%", textAlign:"center" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>

@@ -1478,8 +1478,8 @@ const allColKey    = {
 };
 const allColWidths = {
   "Lead No.":           "9%",
-  "Lead Log Summary":   "35%",
-  "Lead Status":        "11%",
+g  "Lead Log Summary":   "32%",
+  "Lead Status":        "14%",
   "Assigned Officers":  "22%"
 };
 
@@ -1831,7 +1831,7 @@ const toTitleCase = (s = "") =>
                 <div  ref={dsRef}
                 className="custom-dropdown">
                   <div
-                    className="dropdown-header1"
+                    className="dropdown-head"
                     onClick={() => setDetectiveSupervisorDropdownOpen(prev => !prev)}
                   >
 
