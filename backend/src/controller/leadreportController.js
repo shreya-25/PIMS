@@ -2,21 +2,43 @@ const PDFDocument = require("pdfkit");
 const { PDFDocument: PDFLibDocument } = require("pdf-lib");
 const path = require("path");
 const fs = require("fs");
+const { getObjectBuffer } = require("../s3");
 
 // Helper: merges your PDFKit doc with an external PDF
-async function mergeWithAnotherPDF(pdfKitBuffer, otherPdfPath) {
+// async function mergeWithAnotherPDF(pdfKitBuffer, otherPdfPath) {
+//   const mainDoc = await PDFLibDocument.load(pdfKitBuffer);
+//   const otherBuffer = fs.readFileSync(otherPdfPath);
+//   const otherDoc = await PDFLibDocument.load(otherBuffer);
+
+//   // Copy every page from otherDoc, append to mainDoc
+//   const copiedPages = await mainDoc.copyPages(otherDoc, otherDoc.getPageIndices());
+//   copiedPages.forEach((page) => mainDoc.addPage(page));
+
+//   // Return the final merged PDF as a buffer
+//   const mergedPdfBytes = await mainDoc.save();
+//   return Buffer.from(mergedPdfBytes);
+// }
+
+async function mergeWithAnotherPDF(pdfKitBuffer, otherPdfBuffer) {
   const mainDoc = await PDFLibDocument.load(pdfKitBuffer);
-  const otherBuffer = fs.readFileSync(otherPdfPath);
-  const otherDoc = await PDFLibDocument.load(otherBuffer);
-
-  // Copy every page from otherDoc, append to mainDoc
-  const copiedPages = await mainDoc.copyPages(otherDoc, otherDoc.getPageIndices());
-  copiedPages.forEach((page) => mainDoc.addPage(page));
-
-  // Return the final merged PDF as a buffer
-  const mergedPdfBytes = await mainDoc.save();
-  return Buffer.from(mergedPdfBytes);
+  const otherDoc = await PDFLibDocument.load(otherPdfBuffer);
+  const copied = await mainDoc.copyPages(otherDoc, otherDoc.getPageIndices());
+  copied.forEach(p => mainDoc.addPage(p));
+  const merged = await mainDoc.save();
+  return Buffer.from(merged);
 }
+
+function startSection(doc, title, currentY) {
+  const bottom = doc.page.height - doc.page.margins.bottom;
+  const titleH = 20; // rough height for the section header line
+  if (currentY + titleH > bottom) {
+    doc.addPage();
+    currentY = doc.page.margins.top;
+  }
+  doc.font("Helvetica-Bold").fontSize(12).text(title, 50, currentY);
+  return currentY + 20;
+}
+
 
 // helper to format just the time portion
 function formatTime(dateString) {
@@ -448,7 +470,7 @@ function drawHeader(doc, leadInstruction) {
 
 
 
-function generateReport(req, res) {
+async function generateReport(req, res) {
   const {
     leadInstruction, leadReturn, leadPersons, leadVehicles,
     leadEnclosures, leadEvidence, leadPictures, leadAudio,
@@ -483,30 +505,31 @@ function generateReport(req, res) {
       //       .map(e => path.normalize(e.filePath))
       //   : [];
       
-        const enclosurePdfs = Array.isArray(leadEnclosures)
-          ? leadEnclosures
-              .filter(e => !e.isLink && e.filename.toLowerCase().endsWith(".pdf"))
-              .map(e => path.normalize(e.filePath))
-          : [];
+         const enclosurePdfKeys = Array.isArray(leadEnclosures)
+      ? leadEnclosures.filter(e =>
+          e?.s3Key &&
+          typeof e?.filename === "string" &&
+          e.filename.toLowerCase().endsWith(".pdf")
+        ).map(e => e.s3Key)
+      : [];
 
         // collect evidence PDFs
-        const evidencePdfs = Array.isArray(leadEvidence)
-          ? leadEvidence
-              .filter(ev => !ev.isLink && ev.filename.toLowerCase().endsWith(".pdf"))
-              .map(ev => path.normalize(ev.filePath))
-          : [];
+       const evidencePdfKeys = Array.isArray(leadEvidence)
+      ? leadEvidence.filter(e =>
+          e?.s3Key &&
+          typeof e?.filename === "string" &&
+          e.filename.toLowerCase().endsWith(".pdf")
+        ).map(e => e.s3Key)
+      : [];
 
-        // combine both lists
-        const pdfFiles = [...enclosurePdfs, ...evidencePdfs];
-
-      // merge each one in sequence
-      for (const filePath of pdfFiles) {
-        if (fs.existsSync(filePath)) {
-          pdfBuffer = await mergeWithAnotherPDF(pdfBuffer, filePath);
-        } else {
-          console.warn(`Missing file: ${filePath}`);
-        }
+       for (const key of [...enclosurePdfKeys, ...evidencePdfKeys]) {
+      try {
+        const otherPdf = await getObjectBuffer(key);
+        pdfBuffer = await mergeWithAnotherPDF(pdfBuffer, otherPdf);
+      } catch (e) {
+        console.warn("Skipping merge for key:", key, e.message);
       }
+    }
 
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", "inline; filename=report.pdf");
@@ -702,9 +725,10 @@ let currentY = headerHeight + 20;
         currentY += 20;
       } else {
         // Section header
-        doc.font("Helvetica-Bold").fontSize(12)
-           .text("Person Details", 50, currentY);
-        currentY += 20;
+        // doc.font("Helvetica-Bold").fontSize(12)
+        //    .text("Person Details", 50, currentY);
+        // currentY += 20;
+        currentY = startSection(doc, "Person Details", currentY);
     
         // How we’ll group fields into small tables
         const personTables = [
@@ -826,15 +850,7 @@ let currentY = headerHeight + 20;
 
  if (includeAll || leadVehicles) {
   // Page-break check
-  if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-    doc.addPage();
-    currentY = doc.page.margins.top;
-  }
-
-  // Section header
-  doc.font("Helvetica-Bold").fontSize(12)
-     .text("Vehicle Details", 50, currentY);
-  currentY += 20;
+   currentY = startSection(doc, "Vehicle Details", currentY);
 
   if (!Array.isArray(leadVehicles) || leadVehicles.length === 0) {
     doc.font("Helvetica").fontSize(11)
@@ -957,59 +973,47 @@ let currentY = headerHeight + 20;
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
 
         // Now loop through each enclosure and embed its single filePath
-        for (let i = 0; i < leadEnclosures.length; i++) {
-          const enc = leadEnclosures[i];
-          const fname = (enc.filename || "").toLowerCase();
+        // Now loop through each enclosure and embed any image files from S3
+for (const enc of leadEnclosures) {
+  const fnameLower = (enc.filename || "").toLowerCase();
+  const isImage = /\.(jpe?g|png)$/.test(fnameLower);
+  if (!isImage) continue;
 
-          // Only embed if the top‐level “filename” ends with .jpg/.jpeg/.png
-          if (
-            fname.endsWith(".jpg") ||
-            fname.endsWith(".jpeg") ||
-            fname.endsWith(".png")
-          ) {
-            // Use the top‐level “filePath” directly
-            const imagePath = path.normalize(enc.filePath);
+  if (!enc.s3Key) {
+    doc.font("Helvetica-Oblique").fontSize(10).fillColor("red")
+       .text(`(No S3 key for: ${enc.filename})`, 50, currentY);
+    doc.fillColor("black");
+    currentY += 20;
+    continue;
+  }
 
-            if (fs.existsSync(imagePath)) {
-              // Page‐break check before drawing a 300px‐high image
-              const imageMaxHeight = 300;
-              if (
-                currentY + imageMaxHeight >
-                doc.page.height - doc.page.margins.bottom
-              ) {
-                doc.addPage();
-                currentY = doc.page.margins.top;
-              }
+  try {
+    const imgBuf = await getObjectBuffer(enc.s3Key); // S3 -> Buffer
 
-              // Draw the image (fit into 300×300 box, maintain aspect ratio)
-              doc.image(imagePath, 50, currentY, { fit: [300, 300] });
-              currentY += 310; // 300 for the image + ~10px padding
+    const imageMaxHeight = 300;
+    if (currentY + imageMaxHeight > doc.page.height - doc.page.margins.bottom) {
+      doc.addPage();
+      currentY = doc.page.margins.top;
+    }
 
-              // Caption under the image
-              doc
-                .font("Helvetica")
-                .fontSize(9)
-                .fillColor("#555555")
-                .text(enc.filename, 50, currentY, { width: 300, align: "left" });
-              currentY += 20;
+    doc.image(imgBuf, 50, currentY, { fit: [300, 300] });
+    currentY += 310;
 
-              // Reset fill color for subsequent text
-              doc.fillColor("black");
-            } else {
-              // File wasn’t found on disk—draw a red warning
-              doc
-                .font("Helvetica-Oblique")
-                .fontSize(10)
-                .fillColor("red")
-                .text(`(Missing file on server: ${enc.filename})`, 50, currentY);
-              doc.fillColor("black");
-              currentY += 20;
-            }
-          }
-        }
+    doc.font("Helvetica").fontSize(9).fillColor("#555")
+       .text(enc.filename, 50, currentY, { width: 300, align: "left" });
+    currentY += 20;
+    doc.fillColor("black");
+  } catch (e) {
+    doc.font("Helvetica-Oblique").fontSize(10).fillColor("red")
+       .text(`(S3 fetch failed: ${enc.filename})`, 50, currentY);
+    doc.fillColor("black");
+    currentY += 20;
+  }
+}
 
-        // Space after all enclosure images
-        currentY += 20;
+// Space after all enclosure images
+currentY += 20;
+
       }
     }
     
@@ -1048,56 +1052,44 @@ let currentY = headerHeight + 20;
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
       
          // Now loop through each enclosure and embed its single filePath
-        for (let i = 0; i < leadEvidence.length; i++) {
-          const enc = leadEvidence[i];
-          const fname = (enc.filename || "").toLowerCase();
+        // Embed evidence images from S3
+for (const enc of leadEvidence) {
+  const fnameLower = (enc.filename || "").toLowerCase();
+  const isImage = /\.(jpe?g|png)$/.test(fnameLower);
+  if (!isImage) continue;
 
-          // Only embed if the top‐level “filename” ends with .jpg/.jpeg/.png
-          if (
-            fname.endsWith(".jpg") ||
-            fname.endsWith(".jpeg") ||
-            fname.endsWith(".png")
-          ) {
-            // Use the top‐level “filePath” directly
-            const imagePath = path.normalize(enc.filePath);
+  if (!enc.s3Key) {
+    doc.font("Helvetica-Oblique").fontSize(10).fillColor("red")
+       .text(`(No S3 key for: ${enc.filename})`, 50, currentY);
+    doc.fillColor("black");
+    currentY += 20;
+    continue;
+  }
 
-            if (fs.existsSync(imagePath)) {
-              // Page‐break check before drawing a 300px‐high image
-              const imageMaxHeight = 300;
-              if (
-                currentY + imageMaxHeight >
-                doc.page.height - doc.page.margins.bottom
-              ) {
-                doc.addPage();
-                currentY = doc.page.margins.top;
-              }
+  try {
+    const imgBuf = await getObjectBuffer(enc.s3Key);
 
-              // Draw the image (fit into 300×300 box, maintain aspect ratio)
-              doc.image(imagePath, 50, currentY, { fit: [300, 300] });
-              currentY += 310; // 300 for the image + ~10px padding
+    const imageMaxHeight = 300;
+    if (currentY + imageMaxHeight > doc.page.height - doc.page.margins.bottom) {
+      doc.addPage();
+      currentY = doc.page.margins.top;
+    }
 
-              // Caption under the image
-              doc
-                .font("Helvetica")
-                .fontSize(9)
-                .fillColor("#555555")
-                .text(enc.filename, 50, currentY, { width: 300, align: "left" });
-              currentY += 20;
+    doc.image(imgBuf, 50, currentY, { fit: [300, 300] });
+    currentY += 310;
 
-              // Reset fill color for subsequent text
-              doc.fillColor("black");
-            } else {
-              // File wasn’t found on disk—draw a red warning
-              doc
-                .font("Helvetica-Oblique")
-                .fontSize(10)
-                .fillColor("red")
-                .text(`(Missing file on server: ${enc.filename})`, 50, currentY);
-              doc.fillColor("black");
-              currentY += 20;
-            }
-          }
-        }
+    doc.font("Helvetica").fontSize(9).fillColor("#555")
+       .text(enc.filename, 50, currentY, { width: 300, align: "left" });
+    currentY += 20;
+    doc.fillColor("black");
+  } catch (e) {
+    doc.font("Helvetica-Oblique").fontSize(10).fillColor("red")
+       .text(`(S3 fetch failed: ${enc.filename})`, 50, currentY);
+    doc.fillColor("black");
+    currentY += 20;
+  }
+}
+
 
         // Space after all enclosure images
         currentY += 20;
@@ -1135,56 +1127,44 @@ let currentY = headerHeight + 20;
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
 
           // Now loop through each enclosure and embed its single filePath
-        for (let i = 0; i < leadPictures.length; i++) {
-          const enc = leadPictures[i];
-          const fname = (enc.filename || "").toLowerCase();
+       // Embed picture images from S3
+for (const enc of leadPictures) {
+  const fnameLower = (enc.filename || "").toLowerCase();
+  const isImage = /\.(jpe?g|png)$/.test(fnameLower);
+  if (!isImage) continue;
 
-          // Only embed if the top‐level “filename” ends with .jpg/.jpeg/.png
-          if (
-            fname.endsWith(".jpg") ||
-            fname.endsWith(".jpeg") ||
-            fname.endsWith(".png")
-          ) {
-            // Use the top‐level “filePath” directly
-            const imagePath = path.normalize(enc.filePath);
+  if (!enc.s3Key) {
+    doc.font("Helvetica-Oblique").fontSize(10).fillColor("red")
+       .text(`(No S3 key for: ${enc.filename})`, 50, currentY);
+    doc.fillColor("black");
+    currentY += 20;
+    continue;
+  }
 
-            if (fs.existsSync(imagePath)) {
-              // Page‐break check before drawing a 300px‐high image
-              const imageMaxHeight = 300;
-              if (
-                currentY + imageMaxHeight >
-                doc.page.height - doc.page.margins.bottom
-              ) {
-                doc.addPage();
-                currentY = doc.page.margins.top;
-              }
+  try {
+    const imgBuf = await getObjectBuffer(enc.s3Key);
 
-              // Draw the image (fit into 300×300 box, maintain aspect ratio)
-              doc.image(imagePath, 50, currentY, { fit: [300, 300] });
-              currentY += 310; // 300 for the image + ~10px padding
+    const imageMaxHeight = 300;
+    if (currentY + imageMaxHeight > doc.page.height - doc.page.margins.bottom) {
+      doc.addPage();
+      currentY = doc.page.margins.top;
+    }
 
-              // Caption under the image
-              doc
-                .font("Helvetica")
-                .fontSize(9)
-                .fillColor("#555555")
-                .text(enc.filename, 50, currentY, { width: 300, align: "left" });
-              currentY += 20;
+    doc.image(imgBuf, 50, currentY, { fit: [300, 300] });
+    currentY += 310;
 
-              // Reset fill color for subsequent text
-              doc.fillColor("black");
-            } else {
-              // File wasn’t found on disk—draw a red warning
-              doc
-                .font("Helvetica-Oblique")
-                .fontSize(10)
-                .fillColor("red")
-                .text(`(Missing file on server: ${enc.filename})`, 50, currentY);
-              doc.fillColor("black");
-              currentY += 20;
-            }
-          }
-        }
+    doc.font("Helvetica").fontSize(9).fillColor("#555")
+       .text(enc.filename, 50, currentY, { width: 300, align: "left" });
+    currentY += 20;
+    doc.fillColor("black");
+  } catch (e) {
+    doc.font("Helvetica-Oblique").fontSize(10).fillColor("red")
+       .text(`(S3 fetch failed: ${enc.filename})`, 50, currentY);
+    doc.fillColor("black");
+    currentY += 20;
+  }
+}
+
 
         // Space after all enclosure images
         currentY += 20;
