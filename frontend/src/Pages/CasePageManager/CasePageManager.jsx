@@ -1478,7 +1478,7 @@ const allColKey    = {
 };
 const allColWidths = {
   "Lead No.":           "9%",
-g  "Lead Log Summary":   "32%",
+  "Lead Log Summary":   "32%",
   "Lead Status":        "14%",
   "Assigned Officers":  "22%"
 };
