@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect,useRef } from 'react';
+import React, { useContext, useState, useEffect,useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../../../components/Navbar/Navbar";
 import "./LRVideo.css"; // Custom CSS file for Video styling
@@ -23,8 +23,8 @@ export const LRVideo = () => {
     //     };
     //   }, []);
   const navigate = useNavigate();
-  const FORM_KEY = "LRVideo:form";
-  const LIST_KEY = "LRVideo:list";
+  const [deleteOpen, setDeleteOpen] = useState(false);
+const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
   const location = useLocation();
   const fileInputRef = useRef(null);
   const [file, setFile] = useState(null);
@@ -53,22 +53,64 @@ const isEditing = editingIndex !== null;
     }
   };
 
-  const [videoData, setVideoData] = useState(() => {
-   const saved = sessionStorage.getItem(FORM_KEY);
-   return saved
-     ? JSON.parse(saved)
-     : {
-         dateVideoRecorded: "",
-         leadReturnId: "",
-         description: "",
-         isLink: false,
-         link: "",
-         videoSrc: "",
-         filename: "",
-         accessLevel: "Everyone"
-       };
- });
-  
+const { formKey, listKey } = useMemo(() => {
+const cn   = selectedCase?.caseNo ?? "NA";
+const cNam = encodeURIComponent(selectedCase?.caseName ?? "NA");
+const ln   = selectedLead?.leadNo ?? "NA";
+const lNam = encodeURIComponent(selectedLead?.leadName ?? "NA");
+ return {
+   formKey: `LRVideo:form:${cn}:${cNam}:${ln}:${lNam}`,
+   listKey: `LRVideo:list:${cn}:${cNam}:${ln}:${lNam}`,
+  };
+}, [
+ selectedCase?.caseNo,
+ selectedCase?.caseName,  selectedLead?.leadNo,
+ selectedLead?.leadName,
+]);
+
+const DEFAULT_VIDEO = {
+  dateVideoRecorded: "",
+ leadReturnId: "",
+ description: "",
+ isLink: false,
+  link: "",
+  videoSrc: "",
+ filename: "",
+};
+const [videoData, setVideoData] = useState(DEFAULT_VIDEO);
+
+  // Open the confirm modal for a given row
+const requestDeleteVideo = (idx) => {
+  setPendingDeleteIndex(idx);
+  setDeleteOpen(true);
+};
+
+// Close without deleting
+const cancelDeleteVideo = () => {
+  setDeleteOpen(false);
+  setPendingDeleteIndex(null);
+};
+
+// Confirm delete (no window.confirm)
+const confirmDeleteVideo = async () => {
+  const idx = pendingDeleteIndex;
+  setDeleteOpen(false);
+  setPendingDeleteIndex(null);
+  if (idx == null) return;
+
+  const v = videos[idx];
+  try {
+    await api.delete(`/api/lrvideo/${v.id}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+    });
+    setVideos(prev => prev.filter((_, i) => i !== idx));
+  } catch (err) {
+    console.error("Error deleting video:", err);
+    setAlertMessage("Failed to delete video: " + (err.response?.data?.message || err.message));
+    setAlertOpen(true);
+  }
+};
+const [videos, setVideos] = useState([]);
       
         const formatDate = (dateString) => {
           if (!dateString) return "";
@@ -84,10 +126,6 @@ const isEditing = editingIndex !== null;
       
 
   // Sample video data
-  const [videos, setVideos] = useState(() => {
-   const saved = sessionStorage.getItem(LIST_KEY);
-   return saved ? JSON.parse(saved) : [];
- });
 
     const handleFileChangeWrapper = (event) => {
     const selectedFile = event.target.files[0];
@@ -101,15 +139,26 @@ const isEditing = editingIndex !== null;
     }
   };
 
-  // persist draft form
 useEffect(() => {
-  sessionStorage.setItem(FORM_KEY, JSON.stringify(videoData));
-}, [videoData]);
+  const savedForm = sessionStorage.getItem(formKey);
+  setVideoData(savedForm ? JSON.parse(savedForm) : DEFAULT_VIDEO);
 
-// persist list
+  const savedList = sessionStorage.getItem(listKey);
+  setVideos(savedList ? JSON.parse(savedList) : []);
+
+  setEditingIndex(null);
+  setFile(null);
+  if (fileInputRef.current) fileInputRef.current.value = "";
+}, [formKey, listKey]);
+
 useEffect(() => {
-  sessionStorage.setItem(LIST_KEY, JSON.stringify(videos));
-}, [videos]);
+  sessionStorage.setItem(formKey, JSON.stringify(videoData));
+}, [formKey, videoData]);
+
+
+useEffect(() => {
+  sessionStorage.setItem(listKey, JSON.stringify(videos));
+}, [listKey, videos]);
 
 
      useEffect(() => {
@@ -375,21 +424,18 @@ useEffect(() => {
 
    const handleAddVideo = async () => {
     // Validation:
-    if (
-      videoData.isLink
-        ? !videoData.link.trim() || !videoData.leadReturnId || !videoData.dateVideoRecorded
-        : !file || !videoData.leadReturnId || !videoData.dateVideoRecorded || !videoData.description
-    ) {
-       setAlertMessage("Please fill in all required fields and either select a file or enter a valid link.");
-       setAlertOpen(true);
-      return;
-    }
-
+   if (
+  !videoData.leadReturnId ||
+  !videoData.dateVideoRecorded ||
+  !videoData.description ||
+  (videoData.isLink && !videoData.link.trim())
+) {
+  setAlertMessage("Please fill in Date, Narrative Id, Description, and a link if using Link mode.");
+setAlertOpen(true);
+   return;
+}
     // Build FormData
     const fd = new FormData();
-    if (!videoData.isLink) {
-      fd.append("file", file);
-    }
     fd.append("leadNo", selectedLead.leadNo);
     fd.append("description", selectedLead.leadName);
     fd.append("enteredBy", localStorage.getItem("loggedInUser"));
@@ -399,13 +445,15 @@ useEffect(() => {
     fd.append("enteredDate", new Date().toISOString());
     fd.append("dateVideoRecorded", videoData.dateVideoRecorded);
     fd.append("videoDescription", videoData.description);
-    fd.append("accessLevel", videoData.accessLevel);
 
     // Link fields
     fd.append("isLink", videoData.isLink);
     if (videoData.isLink) {
       fd.append("link", videoData.link.trim());
     }
+    else if (file) {
+  fd.append("file", file);          // ✅ append only if a real file exists
+  }
 
     try {
       const token = localStorage.getItem("token");
@@ -428,26 +476,16 @@ useEffect(() => {
       await fetchVideos();
 
       // Reset form
-      setVideoData({
-        dateVideoRecorded: "",
-        leadReturnId: "",
-        description: "",
-        isLink: false,
-        link: "",
-        videoSrc: "",
-        filename: "",
-        accessLevel: "Everyone"
-      });
+     setVideoData(DEFAULT_VIDEO);
       setFile(null);
-      sessionStorage.removeItem(FORM_KEY);
 
       // Clear native file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
     } catch (err) {
-      console.error("Error uploading video:", err);
-      setAlertMessage("Failed to upload video.");
+      const msg = err?.response?.data?.message || err?.message || "Failed to upload video.";
+      setAlertMessage(msg);
        setAlertOpen(true);
     }
   };
@@ -506,15 +544,8 @@ useEffect(() => {
         signedUrl: video.signedUrl || "",
         link: video.link || "",
         isLink: video.isLink,
-        accessLevel: video.accessLevel || "Everyone"
       }));
-
-                      const withAccess = mappedVideos.map(r => ({
-                        ...r,
-                        accessLevel: r.accessLevel ?? "Everyone"
-                      }));
-                  
-                      setVideos(withAccess);
+      setVideos(mappedVideos);
                     } catch (error) {
                       console.error("Error fetching videos:", error);
                     }
@@ -548,7 +579,6 @@ useEffect(() => {
       link: v.isLink ? v.link : "",
       videoSrc: v.isLink ? "" : v.videoSrc,
       filename: v.isLink ? "" : v.originalName,
-      accessLevel: v.accessLevel || "Everyone"
     });
   };
                   
@@ -569,7 +599,6 @@ useEffect(() => {
     fd.append("leadReturnId", videoData.leadReturnId);
     fd.append("dateVideoRecorded", videoData.dateVideoRecorded);
     fd.append("videoDescription", videoData.description);
-    fd.append("accessLevel", videoData.accessLevel);
     fd.append("isLink", videoData.isLink);
 
     if (videoData.isLink) {
@@ -599,19 +628,9 @@ useEffect(() => {
 
       // Reset form
       setEditingIndex(null);
-      setVideoData({
-        dateVideoRecorded: "",
-        leadReturnId: "",
-        description: "",
-        isLink: false,
-        link: "",
-        videoSrc: "",
-        filename: "",
-        accessLevel: "Everyone"
-      });
+      setVideoData(DEFAULT_VIDEO);
       setFile(null);
-      sessionStorage.removeItem(FORM_KEY);
-
+      
       // Clear native file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -660,6 +679,13 @@ useEffect(() => {
                 onConfirm={() => setAlertOpen(false)}
                 onClose={()   => setAlertOpen(false)}
               />
+        <AlertModal
+  isOpen={deleteOpen}
+  title="Confirm Delete"
+  message="Are you sure you want to delete this video? This action cannot be undone."
+  onConfirm={confirmDeleteVideo}
+  onClose={cancelDeleteVideo}
+/>
 
       {/* Top Menu */}
       {/* <div className="top-menu">
@@ -991,7 +1017,7 @@ Case Page
                       <label>
                         {editingIndex !== null
                           ? "Replace Video (optional)"
-                          : "Upload Video*"}
+                          : "Upload Video"}
                       </label>
                       <input
                         type="file"
@@ -1008,22 +1034,7 @@ Case Page
                     </div>
                   )}
 
-                  {/* Access level dropdown */}
-                  <div className="form-row-video">
-                    <label>Access Level</label>
-                    <select
-                      value={videoData.accessLevel}
-                      onChange={(e) =>
-                        setVideoData((prev) => ({
-                          ...prev,
-                          accessLevel: e.target.value
-                        }))
-                      }
-                    >
-                      <option value="Everyone">Everyone</option>
-                      <option value="Case Manager">Case Manager Only</option>
-                    </select>
-                  </div>
+              
                 </div>
       
      <div className="form-buttons-video">
@@ -1047,16 +1058,7 @@ Case Page
                       className="save-btn1"
                       onClick={() => {
                         setEditingIndex(null);
-                        setVideoData({
-                          dateVideoRecorded: "",
-                          leadReturnId: "",
-                          description: "",
-                          isLink: false,
-                          link: "",
-                          videoSrc: "",
-                          filename: "",
-                          accessLevel: "Everyone"
-                        });
+                       setVideoData(DEFAULT_VIDEO);
                         setFile(null);
                         if (fileInputRef.current) {
                           fileInputRef.current.value = "";
@@ -1126,7 +1128,7 @@ Case Page
       rel="noopener noreferrer"
       className="link-button"
     >
-      {video.originalName || "Download"}
+      {video.originalName || ""}
     </a>
   )}
 </td>
@@ -1148,7 +1150,7 @@ Case Page
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  onClick={() => handleDeleteVideo(index)}
+                  onClick={() => requestDeleteVideo(index)}
                 />
                   </button>
                   </div>

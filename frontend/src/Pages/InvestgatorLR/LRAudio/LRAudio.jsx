@@ -4,7 +4,7 @@ import FootBar from '../../../components/FootBar/FootBar';
 import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
-import React, { useContext, useState, useEffect, useRef } from 'react';
+import React, { useContext, useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
@@ -23,11 +23,25 @@ export const LRAudio = () => {
     //     };
     //   }, []);
   const navigate = useNavigate();
-  const FORM_KEY = "LRAudio:form";
-  const LIST_KEY = "LRAudio:list";
+  
   const location = useLocation();
   const [leadData, setLeadData] = useState({});
   const { selectedCase, selectedLead, setSelectedLead , leadStatus, setLeadStatus} = useContext(CaseContext);
+  const { formKey, listKey } = useMemo(() => {
+  const cn   = selectedCase?.caseNo ?? "NA";
+ const cNam = encodeURIComponent(selectedCase?.caseName ?? "NA");
+  const ln   = selectedLead?.leadNo ?? "NA";
+  const lNam = encodeURIComponent(selectedLead?.leadName ?? "NA");
+  return {
+    formKey: `LRAudio:form:${cn}:${cNam}:${ln}:${lNam}`,
+    listKey: `LRAudio:list:${cn}:${cNam}:${ln}:${lNam}`,
+  };
+}, [
+  selectedCase?.caseNo,
+  selectedCase?.caseName,
+  selectedLead?.leadNo,
+  selectedLead?.leadName,
+]);
   const [file, setFile] = useState(null);
   const fileInputRef = useRef(null);
   const [alertOpen, setAlertOpen] = useState(false);
@@ -41,6 +55,41 @@ export const LRAudio = () => {
     const year = date.getFullYear().toString().slice(-2);
     return `${month}/${day}/${year}`;
   };
+  const [deleteOpen, setDeleteOpen] = useState(false);
+const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
+
+// Open the modal for a given row
+const requestDeleteAudio = (idx) => {
+  setPendingDeleteIndex(idx);
+  setDeleteOpen(true);
+};
+
+// Cancel from modal
+const cancelDeleteAudio = () => {
+  setDeleteOpen(false);
+  setPendingDeleteIndex(null);
+};
+
+// Actually delete (no window.confirm here)
+const confirmDeleteAudio = async () => {
+  const idx = pendingDeleteIndex;
+  setDeleteOpen(false);
+  setPendingDeleteIndex(null);
+  if (idx == null) return;
+
+  try {
+    const a = audioFiles[idx];
+    await api.delete(`/api/lraudio/${a.id}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
+    setAudioFiles(prev => prev.filter((_, i) => i !== idx));
+  } catch (error) {
+    console.error("Error deleting audio:", error);
+    setAlertMessage("Failed to delete audio: " + (error.response?.data?.message || error.message));
+    setAlertOpen(true);
+  }
+};
+
     
   const { leadDetails, caseDetails } = location.state || {};
   const [editingId, setEditingId] = useState(null);
@@ -57,12 +106,6 @@ export const LRAudio = () => {
       //   file: null,
       // });
 
-  // Sample audio data
-  const [audioFiles, setAudioFiles] = useState(() => {
-   const saved = sessionStorage.getItem(LIST_KEY);
-   return saved ? JSON.parse(saved) : [];
- });
-
  // Narrative Ids from API
 const [narrativeIds, setNarrativeIds] = useState([]);
 
@@ -77,14 +120,22 @@ const DEFAULT_AUDIO = {
   accessLevel: "Everyone",   // ✅ default that matches your schema enum
 };
 
-const savedDraft = sessionStorage.getItem(FORM_KEY);
-const [audioData, setAudioData] = useState(() => {
-  try {
-    return { ...DEFAULT_AUDIO, ...(savedDraft ? JSON.parse(savedDraft) : {}) };
-  } catch {
-    return DEFAULT_AUDIO;
-  }
-});
+const [audioData, setAudioData] = useState(DEFAULT_AUDIO);
+const [audioFiles, setAudioFiles] = useState([]);
+
+useEffect(() => {
+  const savedForm = sessionStorage.getItem(formKey);
+  setAudioData(savedForm ? { ...DEFAULT_AUDIO, ...JSON.parse(savedForm) } : DEFAULT_AUDIO);
+
+  const savedList = sessionStorage.getItem(listKey);
+  setAudioFiles(savedList ? JSON.parse(savedList) : []);
+
+  // reset edit/file when switching context
+  setEditingId(null);
+  setFile(null);
+  if (fileInputRef.current) fileInputRef.current.value = "";
+}, [formKey, listKey]);
+
 
 const normalizeId = (id) => String(id ?? "").trim().toUpperCase();
 const alphabetToNumber = (str = "") => {
@@ -166,13 +217,13 @@ useEffect(() => {
 
   // Persist draft form whenever it changes
 useEffect(() => {
-  sessionStorage.setItem(FORM_KEY, JSON.stringify(audioData));
-}, [audioData]);
+    sessionStorage.setItem(formKey, JSON.stringify(audioData));
+}, [formKey, audioData]);
 
 // Persist list whenever it changes
 useEffect(() => {
-  sessionStorage.setItem(LIST_KEY, JSON.stringify(audioFiles));
-}, [audioFiles]);
+ sessionStorage.setItem(listKey, JSON.stringify(audioFiles));
+}, [listKey, audioFiles]);
 
 
   const handleFileChange = (event) => {
@@ -398,10 +449,11 @@ const goToViewLR = () => {
   const handleAddAudio = async () => {
   // 1️⃣ Validation:
   if (
-    audioData.isLink
-      ? !audioData.link.trim() || !audioData.leadReturnId || !audioData.dateAudioRecorded
-      : !file || !audioData.leadReturnId || !audioData.dateAudioRecorded || !audioData.description
-  ) {
+    !audioData.leadReturnId ||
+  !audioData.dateAudioRecorded ||
+    // If link mode, require a link; if file mode, file is optional now
+   (audioData.isLink && !audioData.link.trim())
+ ) {
     setAlertMessage("Please fill in all required fields and either select a file or enter a valid link.");
     setAlertOpen(true);
     return;
@@ -409,8 +461,8 @@ const goToViewLR = () => {
 
   // 2️⃣ Build FormData
   const formData = new FormData();
-  if (!audioData.isLink) {
-    formData.append("file", file);
+    if (!audioData.isLink && file) {
+   formData.append("file", file);
   }
   formData.append("leadNo", selectedLead.leadNo);
   formData.append("description", selectedLead.leadName);
@@ -432,11 +484,12 @@ const goToViewLR = () => {
   try {
     const token = localStorage.getItem("token");
     const response = await api.post("/api/lraudio/upload", formData, {
-      headers: {
-        "Content-Type": undefined,
-        "Authorization": `Bearer ${token}`
-      }
-    });
+  headers: { Authorization: `Bearer ${token}` },
+  transformRequest: [(data, headers) => {
+    delete headers["Content-Type"];
+    return data;
+  }],
+});
 
     // 4️⃣ On success, append to your state and/or re‐fetch
     await fetchAudioFiles();
@@ -454,7 +507,8 @@ const goToViewLR = () => {
     setFile(null);
     
     // after resetting audioData and file...
-    sessionStorage.removeItem(FORM_KEY);
+    sessionStorage.removeItem(formKey);
+
 
   } catch (error) {
     console.error("Error uploading audio:", error);
@@ -500,9 +554,8 @@ const goToViewLR = () => {
       // If server returns a 'link' field, use that. Otherwise build file URL:
       isLink: a.isLink,
       link: a.link || "",
-      audioSrc: a.isLink ? a.link : `${BASE_URL}/uploads/${a.filename}`,
-        signedUrl: a.signedUrl || "", // ✅ Use signed URL from S3
-      audioSrc: a.isLink ? a.link : a.signedUrl || "" // ✅ For playback
+      signedUrl: a.signedUrl || "",
+      audioSrc: a.isLink ? a.link : (a.signedUrl || ""),
     }));
 
     // Default access:
@@ -688,7 +741,7 @@ const handleUpdateAudio = async () => {
       fileInputRef.current.value = "";
     }
     // after resetting audioData and file...
-sessionStorage.removeItem(FORM_KEY);
+sessionStorage.removeItem(formKey);
 
   } catch (error) {
     console.error("Error updating audio:", error);
@@ -717,6 +770,14 @@ sessionStorage.removeItem(FORM_KEY);
           onConfirm={() => setAlertOpen(false)}
           onClose={()   => setAlertOpen(false)}
         />
+        <AlertModal
+  isOpen={deleteOpen}
+  title="Confirm Delete"
+  message="Are you sure you want to delete this audio? This action cannot be undone."
+  onConfirm={confirmDeleteAudio}
+  onClose={cancelDeleteAudio}
+/>
+
 
       {/* Top Menu */}
       {/* <div className="top-menu">
@@ -1170,7 +1231,7 @@ Case Page
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  onClick={() => handleDeleteAudio(index)}
+                  onClick={() => requestDeleteAudio(index)}
                 />
                   </button>
                   </div>

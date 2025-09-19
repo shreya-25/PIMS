@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useRef} from 'react';
+import React, { useContext, useState, useEffect, useRef, useMemo} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from '../../../components/Navbar/Navbar';
 import "./LREnclosures.css"; // Custom CSS file for Enclosures styling
@@ -17,8 +17,6 @@ import { useLeadStatus } from '../../../hooks/useLeadStatus';
 export const LREnclosures = () => {
 
   const navigate = useNavigate(); 
-  const FORM_KEY = "LREnclosures:form";
-  const LIST_KEY = "LREnclosures:list";
   const location = useLocation();
   const [formData, setFormData] = useState({ /* your fields */ });
   const fileInputRef = useRef();
@@ -62,31 +60,6 @@ const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
     };
 
 
-const [enclosureData, setEnclosureData] = useState(() => {
-  const saved = sessionStorage.getItem(FORM_KEY);
-  const base = saved ? JSON.parse(saved) : {
-    returnId: '',
-    type: '',
-    enclosure: '',
-    isLink: false,
-    link: '',
-    originalName: '',
-    filename: '',
-  };
-  // derive an initial uploadMode for backward compatibility
-  if (!base.uploadMode) {
-    base.uploadMode = base.isLink ? 'link' : (base.originalName ? 'file' : 'none');
-  }
-  return base;
-});
-
-
-// Master list
-const [enclosures, setEnclosures] = useState(() => {
-  const saved = sessionStorage.getItem(LIST_KEY);
-  return saved ? JSON.parse(saved) : [];
-});
-
   const handleInputChange = (field, value) => {
     setEnclosureData({ ...enclosureData, [field]: value });
     console.log(`enclosureData.${field} updated to: `, value);
@@ -124,15 +97,7 @@ const [enclosures, setEnclosures] = useState(() => {
     });
   };
 
-  // save draft
-useEffect(() => {
-  sessionStorage.setItem(FORM_KEY, JSON.stringify(enclosureData));
-}, [enclosureData]);
 
-// save list
-useEffect(() => {
-  sessionStorage.setItem(LIST_KEY, JSON.stringify(enclosures));
-}, [enclosures]);
 
 
    // Helper to get the current list for this lead+case
@@ -240,6 +205,65 @@ useEffect(() => {
   selectedCase?.caseName,
   editIndex
 ]);
+
+const { formKey, listKey } = useMemo(() => {
+  const cn   = selectedCase?.caseNo ?? "NA";
+  const cNam = encodeURIComponent(selectedCase?.caseName ?? "NA");
+  const ln   = selectedLead?.leadNo ?? "NA";
+  const lNam = encodeURIComponent(selectedLead?.leadName ?? "NA");
+  return {
+    formKey: `LREnclosures:form:${cn}:${cNam}:${ln}:${lNam}`,
+    listKey: `LREnclosures:list:${cn}:${cNam}:${ln}:${lNam}`,
+  };
+}, [
+  selectedCase?.caseNo,
+  selectedCase?.caseName,
+  selectedLead?.leadNo,
+  selectedLead?.leadName,
+]);
+
+const DEFAULT_FORM = {
+  returnId: '',
+  type: '',
+  enclosure: '',
+  isLink: false,
+  link: '',
+  originalName: '',
+  filename: '',
+};
+
+const [enclosureData, setEnclosureData] = useState(DEFAULT_FORM);
+const [enclosures, setEnclosures] = useState([]);
+
+useEffect(() => {
+  // Load saved draft for this specific case+lead
+  const savedForm = sessionStorage.getItem(formKey);
+  setEnclosureData(savedForm ? { ...DEFAULT_FORM, ...JSON.parse(savedForm) } : DEFAULT_FORM);
+
+  // Load saved list for this specific case+lead
+  const savedList = sessionStorage.getItem(listKey);
+  setEnclosures(savedList ? JSON.parse(savedList) : []);
+
+  // Reset edit/file state on context switch
+  setEditIndex(null);
+  setFile(null);
+  if (fileInputRef.current) fileInputRef.current.value = "";
+}, [formKey, listKey]);
+
+useEffect(() => {
+  sessionStorage.setItem(formKey, JSON.stringify(enclosureData));
+}, [formKey, enclosureData]);
+
+useEffect(() => {
+  sessionStorage.setItem(listKey, JSON.stringify(enclosures));
+}, [listKey, enclosures]);
+
+useEffect(() => {
+  sessionStorage.removeItem("LREnclosures:form");
+  sessionStorage.removeItem("LREnclosures:list");
+}, []);
+
+
 
  const attachFiles = async (items, idFieldName, filesEndpoint) => {
   return Promise.all(
