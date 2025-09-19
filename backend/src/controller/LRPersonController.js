@@ -149,8 +149,7 @@ const updateLRPerson = async (req, res) => {
         leadNo,
         caseNo,
         leadReturnId,
-        firstName,
-        lastName
+        firstName
       } = req.params;
       const updateData = req.body;
   
@@ -159,8 +158,7 @@ const updateLRPerson = async (req, res) => {
           leadNo:       Number(leadNo),
           caseNo,
           leadReturnId,
-          firstName,
-          lastName
+          firstName
         },
         updateData,
         {
@@ -187,17 +185,14 @@ const updateLRPerson = async (req, res) => {
         leadNo,
         caseNo,
         leadReturnId,
-        firstName,
-        lastName
+        firstName
       } = req.params;
   
       const deleted = await LRPerson.findOneAndDelete({
         leadNo:       Number(leadNo),
         caseNo,
         leadReturnId,
-        firstName,
-        lastName
-      });
+        firstName      });
   
       if (!deleted) {
         return res.status(404).json({ message: "Person not found." });

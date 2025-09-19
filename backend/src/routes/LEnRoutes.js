@@ -79,14 +79,14 @@ router.post(
 router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLREnclosureByDetails);
 
 router.put(
-  "/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId/:enclosureDescription",
+  "/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId",
   verifyToken,
   upload.single("file"),
   updateLREnclosure
 );
 
 router.delete(
-  "/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId/:enclosureDescription",
+  "/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId",
   verifyToken,
   deleteLREnclosure
 );

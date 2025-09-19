@@ -4,7 +4,7 @@ import FootBar from '../../../components/FootBar/FootBar';
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import Comment from "../../../components/Comment/Comment";
-import React, { useContext, useState, useEffect, useRef} from 'react';
+import React, { useContext, useState, useEffect, useRef, useMemo} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
@@ -23,9 +23,6 @@ export const LREvidence = () => {
     //     };
     //   }, []);
   const navigate = useNavigate(); // Initialize navigate hook
-  const FORM_KEY = "LREvidence:form";
-const LIST_KEY = "LREvidence:list";
-
   const location = useLocation();
   const [loading, setLoading] = useState(true);
       const [error, setError] = useState("");
@@ -36,7 +33,62 @@ const LIST_KEY = "LREvidence:list";
       const [leadData, setLeadData] = useState({});
  const [alertOpen, setAlertOpen] = useState(false);
     const [alertMessage, setAlertMessage] = useState("");
+    const [deleteOpen, setDeleteOpen] = useState(false);
+const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
+
+// Open the confirm modal
+const requestDelete = (idx) => {
+  setPendingDeleteIndex(idx);
+  setDeleteOpen(true);
+};
+
+// User clicked "Confirm" on the modal
+const confirmDelete = async () => {
+  const idx = pendingDeleteIndex;
+  setDeleteOpen(false);
+  setPendingDeleteIndex(null);
+  if (idx == null) return;
+  await performDelete(idx); // calls the actual delete
+};
+
+// DELETE without any prompt
+const performDelete = async (idx) => {
+  const ev = evidences[idx];
+  const token = localStorage.getItem("token");
+  const url = `/api/lrevidence/${selectedLead.leadNo}/` +
+              `${encodeURIComponent(selectedLead.leadName)}/` +
+              `${selectedCase.caseNo}/` +
+              `${encodeURIComponent(selectedCase.caseName)}/` +
+              `${ev.returnId}/` +
+              `${encodeURIComponent(ev.evidenceDescription)}`;
+
+  try {
+    await api.delete(url, { headers: { Authorization: `Bearer ${token}` } });
+    setEvidences(list => list.filter((_, i) => i !== idx));
+  } catch (err) {
+    console.error(err);
+    setAlertMessage("Failed to delete: " + (err.response?.data?.message || err.message));
+    setAlertOpen(true);
+  }
+};
+
+
   
+    const { formKey, listKey } = useMemo(() => {
+  const cn   = selectedCase?.caseNo ?? "NA";
+  const cNam = encodeURIComponent(selectedCase?.caseName ?? "NA");
+  const ln   = selectedLead?.leadNo ?? "NA";
+  const lNam = encodeURIComponent(selectedLead?.leadName ?? "NA");
+  return {
+    formKey: `LREvidence:form:${cn}:${cNam}:${ln}:${lNam}`,
+    listKey: `LREvidence:list:${cn}:${cNam}:${ln}:${lNam}`,
+  };
+}, [
+  selectedCase?.caseNo,
+  selectedCase?.caseName,
+  selectedLead?.leadNo,
+  selectedLead?.leadName,
+]);
   
      const formatDate = (dateString) => {
       if (!dateString) return "";
@@ -50,10 +102,23 @@ const LIST_KEY = "LREvidence:list";
   
     const { leadDetails, caseDetails } = location.state || {};
 
-    const [evidences, setEvidences] = useState(() => {
-      const saved = sessionStorage.getItem(LIST_KEY);
-      return saved ? JSON.parse(saved) : [];
-    });
+// defaultEvidence()
+const defaultEvidence = () => ({
+  leadReturnId: "",
+  evidenceDescription: "",
+  collectionDate: "",
+  disposedDate: "",
+  type: "",
+  disposition: "",
+  // old fields
+  isLink: false,
+  link: "",
+  originalName: "",
+  filename: "",
+  // NEW
+  uploadMode: "none", // 'none' | 'file' | 'link'
+});
+
 
     // add near other useState hooks
 const [narrativeIds, setNarrativeIds] = useState([]);
@@ -110,33 +175,41 @@ useEffect(() => {
 
   // State to manage form data
    const [evidenceData, setEvidenceData] = useState(() => {
-    const saved = sessionStorage.getItem(FORM_KEY);
-      return saved
-        ? JSON.parse(saved)
-        : {
-        leadReturnId:         "",
-        evidenceDescription:  "",
-        collectionDate:       "",
-        disposedDate:         "",
-        type:                 "",
-        disposition:          "",
-        isLink: false,
-        link: "",
-        originalName: '',   
-        filename: '' 
-        };  
-    });
+  const saved = sessionStorage.getItem(formKey);
+  return saved ? JSON.parse(saved) : defaultEvidence();
+});
+
+const [evidences, setEvidences] = useState(() => {
+  const saved = sessionStorage.getItem(listKey);
+  return saved ? JSON.parse(saved) : [];
+});
+
+useEffect(() => {
+  // reload form & list for the newly selected lead/case
+  const savedForm = sessionStorage.getItem(formKey);
+  setEvidenceData(savedForm ? JSON.parse(savedForm) : defaultEvidence());
+
+  const savedList = sessionStorage.getItem(listKey);
+  setEvidences(savedList ? JSON.parse(savedList) : []);
+
+  // reset edit state and file input
+  setEditIndex(null);
+  setOriginalDesc("");
+  setFile(null);
+  if (fileInputRef.current) fileInputRef.current.value = "";
+}, [formKey, listKey]);
+
 
   const [file, setFile] = useState(null);
 
-  useEffect(() => {
-  sessionStorage.setItem(FORM_KEY, JSON.stringify(evidenceData));
-}, [evidenceData]);
-
-// save the list
 useEffect(() => {
-  sessionStorage.setItem(LIST_KEY, JSON.stringify(evidences));
-}, [evidences]);
+  sessionStorage.setItem(formKey, JSON.stringify(evidenceData));
+}, [formKey, evidenceData]);
+
+useEffect(() => {
+  sessionStorage.setItem(listKey, JSON.stringify(evidences));
+}, [listKey, evidences]);
+
   
   const handleInputChange = (field, value) => {
     setEvidenceData({ ...evidenceData, [field]: value });
@@ -334,94 +407,81 @@ const goToViewLR = () => {
 };
   
 
-  const handleSaveEvidence = async () => {
-    // require a file or a link on new entries
-    if (editIndex === null && !file && !evidenceData.isLink) {
-       setAlertMessage("Please select a file or enter a link.");
-                      setAlertOpen(true);
-      return;
-    }
-  
-    // build payload
-    const fd = new FormData();
-    if (!evidenceData.isLink && file) {
-      fd.append("file", file);
-    }
-    fd.append("leadNo", selectedLead.leadNo);
-    fd.append("description", selectedLead.leadName);
-    fd.append("enteredBy", localStorage.getItem("loggedInUser"));
-    fd.append("caseName", selectedCase.caseName);
-    fd.append("caseNo", selectedCase.caseNo);
-    fd.append("leadReturnId", evidenceData.leadReturnId);
-    fd.append("enteredDate", new Date().toISOString());
-    fd.append("type", evidenceData.type);
-    fd.append("evidenceDescription", evidenceData.evidenceDescription);
-    fd.append("collectionDate", evidenceData.collectionDate);
-    fd.append("disposedDate", evidenceData.disposedDate);
-    fd.append("disposition", evidenceData.disposition);
-    // link-specific
-    fd.append("isLink", evidenceData.isLink);
-    if (evidenceData.isLink) {
-      fd.append("link", evidenceData.link);
-    }
-  
-    try {
-      const token = localStorage.getItem("token");
-      if (editIndex === null) {
-        // CREATE
-        await api.post("/api/lrevidence/upload", fd, {
-          headers: { Authorization: `Bearer ${token}` },
-          transformRequest: [(data, headers) => {
-            delete headers["Content-Type"];
-            return data;
-          }]
-        });
-        
-      } else {
-        // UPDATE
-        const ev = evidences[editIndex];
-        const url =
-          `/api/lrevidence/${selectedLead.leadNo}/` +
-          `${encodeURIComponent(selectedLead.leadName)}/` +
-          `${selectedCase.caseNo}/` +
-          `${encodeURIComponent(selectedCase.caseName)}/` +
-          `${ev.returnId}/` +
-          `${encodeURIComponent(originalDesc)}`;
-        await api.put(url, fd, {
-          headers: { Authorization: `Bearer ${token}` },
-          transformRequest: [(data, headers) => {
-            delete headers["Content-Type"];
-            return data;
-          }]
-        });
-      }
-  
-      // refresh & reset
-      await fetchEvidences();
-      setEvidenceData({
-        leadReturnId:        "",
-        evidenceDescription: "",
-        collectionDate:      "",
-        disposedDate:        "",
-        type:                "",
-        disposition:         "",
-        isLink:              false,
-        link:                "",
-        originalName:        "",
-        filename:            ""
-      });
-      setFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      setEditIndex(null);
-      setOriginalDesc("");
-      sessionStorage.removeItem(FORM_KEY);
+const handleSaveEvidence = async () => {
+  const fd = new FormData();
 
-    } catch (err) {
-      console.error("Save error:", err);
-      setAlertMessage("Failed to save evidence.");
-      setAlertOpen(true);
+  // FILE: only if in file mode AND a file was chosen
+  if (evidenceData.uploadMode === "file" && file) {
+    fd.append("file", file);
+  }
+
+  // Always send these
+  fd.append("leadNo",            selectedLead.leadNo);
+  fd.append("description",       selectedLead.leadName);
+  fd.append("enteredBy",         localStorage.getItem("loggedInUser"));
+  fd.append("caseName",          selectedCase.caseName);
+  fd.append("caseNo",            selectedCase.caseNo);
+  fd.append("leadReturnId",      evidenceData.leadReturnId);
+  fd.append("enteredDate",       new Date().toISOString());
+  fd.append("type",              evidenceData.type);
+  fd.append("evidenceDescription", evidenceData.evidenceDescription);
+  fd.append("collectionDate",    evidenceData.collectionDate);
+  fd.append("disposedDate",      evidenceData.disposedDate);
+  fd.append("disposition",       evidenceData.disposition);
+
+  // LINK flags/values
+  const isLink = evidenceData.uploadMode === "link";
+  fd.append("isLink", String(isLink)); // backend checks 'true'/'false'
+
+  if (isLink && evidenceData.link?.trim()) {
+    fd.append("link", evidenceData.link.trim());
+  }
+
+  try {
+    const token = localStorage.getItem("token");
+    if (editIndex === null) {
+      // CREATE
+      await api.post("/api/lrevidence/upload", fd, {
+        headers: { Authorization: `Bearer ${token}` },
+        transformRequest: [(data, headers) => {
+          delete headers["Content-Type"];
+          return data;
+        }]
+      });
+    } else {
+      // UPDATE
+      const ev = evidences[editIndex];
+      const url =
+        `/api/lrevidence/${selectedLead.leadNo}/` +
+        `${encodeURIComponent(selectedLead.leadName)}/` +
+        `${selectedCase.caseNo}/` +
+        `${encodeURIComponent(selectedCase.caseName)}/` +
+        `${ev.returnId}/` +
+        `${encodeURIComponent(originalDesc)}`;
+
+      await api.put(url, fd, {
+        headers: { Authorization: `Bearer ${token}` },
+        transformRequest: [(data, headers) => {
+          delete headers["Content-Type"];
+          return data;
+        }]
+      });
     }
-  };
+
+    await fetchEvidences();
+    setEvidenceData(defaultEvidence());
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    setEditIndex(null);
+    setOriginalDesc("");
+    sessionStorage.removeItem(formKey);
+  } catch (err) {
+    console.error("Save error:", err);
+    setAlertMessage("Failed to save evidence.");
+    setAlertOpen(true);
+  }
+};
+
   
 
   useEffect(() => {
@@ -498,25 +558,31 @@ const goToViewLR = () => {
   const isCaseManager = 
     selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
 
-  const handleEdit = idx => {
-    const ev = evidences[idx];
-    setEditIndex(idx);
-    setOriginalDesc(ev.evidenceDescription);
-    setEvidenceData({
-      leadReturnId:        ev.returnId,
-      collectionDate:      ev.collectionDate,
-      disposedDate:        ev.disposedDate,
-      type:                ev.type,
-      evidenceDescription: ev.evidenceDescription,
-      disposition:         ev.disposition,
-      isLink:              !!ev.link,
-      link:                ev.link || "",
-      originalName:        ev.originalName,
-      filename:            ev.filename
-    });
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-  
+const handleEdit = idx => {
+  const ev = evidences[idx];
+  setEditIndex(idx);
+  setOriginalDesc(ev.evidenceDescription);
+
+  const hasFile = !!(ev.signedUrl || ev.originalName || ev.filename);
+  const hasLink = !!ev.link;
+
+  setEvidenceData({
+    leadReturnId:        ev.returnId,
+    collectionDate:      ev.collectionDate,
+    disposedDate:        ev.disposedDate,
+    type:                ev.type,
+    evidenceDescription: ev.evidenceDescription,
+    disposition:         ev.disposition,
+    isLink:              hasLink,          // keep for backward compatibility
+    link:                ev.link || "",
+    originalName:        ev.originalName,
+    filename:            ev.filename,
+    uploadMode:          hasLink ? "link" : hasFile ? "file" : "none", // NEW
+  });
+
+  if (fileInputRef.current) fileInputRef.current.value = "";
+};
+
   
   const handleDelete = async idx => {
     if (!window.confirm("Delete this evidence?")) return;
@@ -585,6 +651,15 @@ const goToViewLR = () => {
           onConfirm={() => setAlertOpen(false)}
           onClose={()   => setAlertOpen(false)}
         />
+
+        <AlertModal
+  isOpen={deleteOpen}
+  title="Confirm Delete"
+  message="Are you sure you want to delete this evidence? This action cannot be undone."
+  onConfirm={confirmDelete}
+  onClose={() => { setDeleteOpen(false); setPendingDeleteIndex(null); }}
+/>
+
 
         <div className="top-menu"   style={{ paddingLeft: '20%' }}>
       <div className="menu-items" >
@@ -770,19 +845,51 @@ const goToViewLR = () => {
 <div className="form-row-evidence">
   <label>Upload Type</label>
   <select
-    value={evidenceData.isLink ? "link" : "file"}
-    onChange={e =>
+    value={evidenceData.uploadMode}
+    onChange={e => {
+      const mode = e.target.value; // 'none' | 'file' | 'link'
       setEvidenceData(prev => ({
         ...prev,
-        isLink: e.target.value === "link",
-        link:   ""     // reset link if switching back to file
-      }))
-    }
+        uploadMode: mode,
+        isLink: mode === "link", // keep this in sync for server
+        link: mode === "link" ? prev.link : "", // clear link if not link mode
+      }));
+      // clear the file input if leaving 'file' mode
+      if (mode !== "file") {
+        setFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    }}
   >
+    <option value="none">None</option>
     <option value="file">File</option>
     <option value="link">Link</option>
   </select>
 </div>
+
+{evidenceData.uploadMode === "file" && (
+  <div className="form-row-evidence">
+    <label>{editIndex === null ? "Upload File" : "Replace File (optional)"}</label>
+    <input
+      type="file"
+      ref={fileInputRef}
+      onChange={handleFileChange}
+    />
+  </div>
+)}
+
+{evidenceData.uploadMode === "link" && (
+  <div className="form-row-evidence">
+    <label>Paste Link</label>
+    <input
+      type="text"
+      placeholder="https://..."
+      value={evidenceData.link}
+      onChange={e => setEvidenceData(prev => ({ ...prev, link: e.target.value }))}
+    />
+  </div>
+)}
+
 
 {/* If editing a file‐upload entry, show current filename */}
 {editIndex !== null && !evidenceData.isLink && evidenceData.originalName && (
@@ -798,7 +905,7 @@ const goToViewLR = () => {
 {!evidenceData.isLink ? (
   <div className="form-row-evidence">
     <label>
-      {editIndex === null ? "Upload File*" : "Replace File (optional)*"}
+      {editIndex === null ? "Upload File" : "Replace File (optional)*"}
     </label>
     <input
       type="file"
@@ -850,6 +957,7 @@ const goToViewLR = () => {
           originalName:        "",
           filename:            ""
         });
+        setEvidenceData(defaultEvidence());
         setFile(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
       }}
@@ -925,7 +1033,7 @@ const goToViewLR = () => {
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  onClick={() => handleDelete(index)}
+                  onClick={() => requestDelete(index)}
                 />
                   </button>
                   </div>

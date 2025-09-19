@@ -31,17 +31,29 @@ const lrEvidenceSchema = new mongoose.Schema(
         type: { type: String },
         evidenceDescription: { type: String, required: true  }, 
         // fileId: { type: mongoose.Schema.Types.ObjectId, ref: "uploads" },
-         filePath: { type: String, required: false },  // ✅ No longer required
-        s3Key: { type: String, required: function () { return !this.isLink; } },
-        originalName: { type: String },
-        filename: { type: String },
+        s3Key:        { type: String, trim: true },     // <- no required()
+  originalName: { type: String },
+  filename:     { type: String },
+
+  // (Legacy) local path, keep optional or remove if unused
+  filePath:     { type: String },
+
+  // Link
+  isLink: { type: Boolean, default: false },      // informational flag
+  link: {
+    type: String,
+    trim: true,
+    validate: {
+      validator: v => !v || /^https?:\/\/.+/i.test(v),
+      message: 'link must be a valid URL'
+    }
+  },
+
         accessLevel: {
             type: String,
             enum: ["Only Case Manager", "Everyone"],
             default: "Everyone"
           },
-          isLink: { type: Boolean, default: false },
-          link: { type: String }
        
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields

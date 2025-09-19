@@ -2,201 +2,184 @@ const LREnclosure = require("../models/LREnclosure");
 const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 
+// ---------- helpers ----------
+const one = (v) => Array.isArray(v) ? v[0] : v;
+const asString = (v) => (v == null ? "" : String(v));
+const asBool = (v) => v === true || v === "true" || v === 1 || v === "1";
+const safeParseJSON = (v) => {
+  const val = one(v);
+  if (!val) return undefined;
+  if (typeof val === "string") {
+    try { return JSON.parse(val); } catch { return undefined; }
+  }
+  if (typeof val === "object") return val;
+  return undefined;
+};
+// --------------------------------
 
 // **Create a new LREnclosure entry with file upload support**
 const createLREnclosure = async (req, res) => {
-    try {
-      const isLink = req.body.isLink === "true"; // Handle string from formData
-      const accessLevel = req.body.accessLevel || "Everyone";
+  try {
+    const uploadMode = asString(one(req.body.uploadMode)) || "none";
+    const linkRaw = asString(one(req.body.link)).trim();
 
-      let filePath = null;
-      let originalName = null;
-      let filename = null;
-      let s3Key = null;
-  
-      if (!isLink) {
-        if (!req.file) {
-          return res.status(400).json({ error: 'No file received for non-link upload' });
-        }
-  
-        // File fields (for disk storage)
-        filePath = req.file.path;
-        originalName = req.file.originalname;
-        filename = req.file.filename;
-      
+    // accept either explicit isLink or uploadMode === 'link'
+    const isLinkRequested = asBool(one(req.body.isLink)) || uploadMode === "link";
+    const isLink = isLinkRequested && !!linkRaw;
+
+    const accessLevel = asString(one(req.body.accessLevel)) || "Everyone";
+
+    let originalName = null;
+    let filename = null;
+    let s3Key = null;
+
+    if (req.file) {
       const { error, key } = await uploadToS3({
-                filePath,
-                userId: req.body.caseNo,
-                mimetype: req.file.mimetype,
-            });
-
-            if (error) {
-                return res.status(500).json({ message: "S3 upload failed", error: error.message });
-            }
-
-            s3Key = key;
-             if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-        }
-
-        // Create a new LREnclosure document with the file reference
-        const newLREnclosure = new LREnclosure({
-            leadNo: req.body.leadNo,
-            description: req.body.description,
-            assignedTo: req.body.assignedTo ? JSON.parse(req.body.assignedTo) : {},
-            assignedBy: req.body.assignedBy ? JSON.parse(req.body.assignedBy) : {},
-            enteredBy: req.body.enteredBy,
-            caseName: req.body.caseName,
-            caseNo: req.body.caseNo,
-            leadReturnId: req.body.leadReturnId,
-            enteredDate: req.body.enteredDate,
-            type: req.body.type,
-            enclosureDescription: req.body.enclosureDescription,
-            // fileId, // Store the GridFS file reference here
-            filePath: isLink ? "link-only" : filePath,
-            originalName: originalName,
-            filename: filename,
-            s3Key,
-            accessLevel,
-            isLink,
-            link: isLink ? req.body.link : null,
-        });
-
-        // Save the document in MongoDB
-        await newLREnclosure.save();
-
-        // Send one final response after successful save
-        return res.status(201).json({
-            message: "Enclosure created successfully",
-            enclosure: newLREnclosure
-        });
-    } catch (err) {
-        console.error("Error creating LREnclosure:", err.message);
-        res.status(500).json({ message: "Something went wrong" });
+        filePath: req.file.path,
+        userId: asString(one(req.body.caseNo)),
+        mimetype: req.file.mimetype,
+      });
+      if (error) {
+        return res.status(500).json({ message: "S3 upload failed", error: error.message });
+      }
+      s3Key = key;
+      originalName = req.file.originalname;
+      filename = req.file.filename;
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     }
+
+    const newLREnclosure = new LREnclosure({
+      leadNo: Number(one(req.body.leadNo)),
+      description: asString(one(req.body.description)),
+      assignedTo: safeParseJSON(req.body.assignedTo) || {},
+      assignedBy: safeParseJSON(req.body.assignedBy) || {},
+      enteredBy: asString(one(req.body.enteredBy)),
+      caseName: asString(one(req.body.caseName)),
+      caseNo: asString(one(req.body.caseNo)),
+      leadReturnId: asString(one(req.body.leadReturnId)),
+      enteredDate: asString(one(req.body.enteredDate)),
+      type: asString(one(req.body.type)),
+      enclosureDescription: asString(one(req.body.enclosureDescription)),
+
+      originalName,
+      filename,
+      s3Key,
+      accessLevel,
+
+      isLink,
+      link: isLink ? linkRaw : null,
+    });
+
+    await newLREnclosure.save();
+    return res.status(201).json({ message: "Enclosure created successfully", enclosure: newLREnclosure });
+  } catch (err) {
+    console.error("Error creating LREnclosure:", err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
-
-// **Get LREnclosure records using leadNo, leadName (description), caseNo, caseName, and leadReturnId**
+// **Get LREnclosure records using leadNo, leadName (description), caseNo, caseName**
 const getLREnclosureByDetails = async (req, res) => {
-    try {
-        const { leadNo, leadName, caseNo, caseName } = req.params;
+  try {
+    const { leadNo, leadName, caseNo, caseName } = req.params;
+    const query = {
+      leadNo: Number(leadNo),
+      description: leadName,
+      caseNo: caseNo,
+      caseName: caseName,
+    };
 
-        const query = {
-            leadNo: Number(leadNo),
-            description: leadName,
-            caseNo: caseNo,
-            caseName: caseName,
-        };
+    const lrEnclosures = await LREnclosure.find(query);
+    if (lrEnclosures.length === 0) {
+      return res.status(404).json({ message: "No enclosures found." });
+    }
 
-        // const lrEnclosures = await LREnclosure.find(query).populate("fileId");
-        const lrEnclosures = await LREnclosure.find(query);
-
-        if (lrEnclosures.length === 0) {
-            return res.status(404).json({ message: "No enclosures found." });
-        }
-
-        const enclosuresWithUrls = await Promise.all(
+    const enclosuresWithUrls = await Promise.all(
       lrEnclosures.map(async (enc) => {
         const signedUrl = enc.s3Key ? await getFileFromS3(enc.s3Key) : null;
         return { ...enc.toObject(), signedUrl };
       })
     );
 
-
-        res.status(200).json(enclosuresWithUrls);
-    } catch (err) {
-        console.error("Error fetching LREnclosure records:", err.message);
-        res.status(500).json({ message: "Something went wrong" });
-    }
+    res.status(200).json(enclosuresWithUrls);
+  } catch (err) {
+    console.error("Error fetching LREnclosure records:", err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
 const updateLREnclosure = async (req, res) => {
-    try {
-      const {
-        leadNo, leadName, caseNo, caseName,
-        leadReturnId, enclosureDescription: oldDesc
-      } = req.params;
-  
-      // 1) Find the existing document
-      const enc = await LREnclosure.findOne({
-        leadNo: Number(leadNo),
-        description: leadName,
-        caseNo, caseName,
-        leadReturnId,
-        enclosureDescription: oldDesc
-      });
-      if (!enc) return res.status(404).json({ message: "Enclosure not found" });
-  
-     if (req.file) {
-      // Delete old file from S3 if it exists
-      if (enc.s3Key) {
-        await deleteFromS3(enc.s3Key);
-      }
+  try {
+    const { leadNo, leadName, caseNo, caseName, leadReturnId } = req.params;
 
-      // Upload new file to S3
+    const enc = await LREnclosure.findOne({
+      leadNo: Number(leadNo),
+      description: leadName,
+      caseNo, caseName,
+      leadReturnId
+    });
+    if (!enc) return res.status(404).json({ message: "Enclosure not found" });
+
+    // Replace file if a new one was sent
+    if (req.file) {
+      if (enc.s3Key) {
+        try { await deleteFromS3(enc.s3Key); } catch {}
+      }
       const { key } = await uploadToS3({
         filePath: req.file.path,
-        userId: caseNo, // Use caseNo or any identifier
+        userId: caseNo,
         mimetype: req.file.mimetype,
       });
-
-      // Remove local temp file (uploaded by multer)
       if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-
-      // Update DB fields with new S3 file info
       enc.s3Key = key;
       enc.originalName = req.file.originalname;
       enc.filename = req.file.filename;
     }
 
-    // 3️⃣ Update other fields
-    enc.leadReturnId = req.body.leadReturnId;
-    enc.enteredDate = req.body.enteredDate;
-    enc.type = req.body.type;
-    enc.enclosureDescription = req.body.enclosureDescription;
-    enc.enteredBy = req.body.enteredBy;
+    // Link handling
+    const uploadMode = asString(one(req.body.uploadMode)) || "none";
+    const linkRaw = asString(one(req.body.link)).trim();
 
-    // 4️⃣ Save updated record
+    if (uploadMode === "link") {
+      enc.isLink = !!linkRaw;
+      enc.link = enc.isLink ? linkRaw : null;
+    } else if (uploadMode === "none" || uploadMode === "file") {
+      enc.isLink = false;
+      enc.link = null;
+    }
+
+    // Other fields
+    enc.leadReturnId = asString(one(req.body.leadReturnId)) || enc.leadReturnId;
+    enc.enteredDate = asString(one(req.body.enteredDate)) || enc.enteredDate;
+    enc.type = asString(one(req.body.type)) || enc.type;
+    enc.enclosureDescription = asString(one(req.body.enclosureDescription)) || enc.enclosureDescription;
+    enc.enteredBy = asString(one(req.body.enteredBy)) || enc.enteredBy;
+
     await enc.save();
-
     res.json(enc);
   } catch (err) {
     console.error("Error updating LREnclosure:", err);
     res.status(500).json({ message: "Something went wrong" });
   }
 };
-  
-  // Delete an enclosure by composite key + description
+
+// Delete an enclosure by composite key
 const deleteLREnclosure = async (req, res) => {
   try {
-    const {
-      leadNo,
-      leadName,
-      caseNo,
-      caseName,
-      leadReturnId,
-      enclosureDescription,
-    } = req.params;
+    const { leadNo, leadName, caseNo, caseName, leadReturnId } = req.params;
 
     const enc = await LREnclosure.findOneAndDelete({
       leadNo: Number(leadNo),
       description: leadName,
       caseNo,
       caseName,
-      leadReturnId,
-      enclosureDescription,
+      leadReturnId
     });
-    if (!enc) {
-      return res.status(404).json({ message: "Enclosure not found" });
-    }
+    if (!enc) return res.status(404).json({ message: "Enclosure not found" });
 
-    // Remove the file on disk (if present)
     if (enc.s3Key) {
-      try {
-        await deleteFromS3(enc.s3Key);
-      } catch (s3Err) {
-        console.warn(`Could not delete file from S3: ${s3Err.message}`);
-      }
+      try { await deleteFromS3(enc.s3Key); }
+      catch (s3Err) { console.warn(`Could not delete file from S3: ${s3Err.message}`); }
     }
 
     return res.json({ message: "Enclosure deleted successfully" });
@@ -207,6 +190,5 @@ const deleteLREnclosure = async (req, res) => {
     }
   }
 };
-
 
 module.exports = { createLREnclosure, getLREnclosureByDetails, updateLREnclosure, deleteLREnclosure };

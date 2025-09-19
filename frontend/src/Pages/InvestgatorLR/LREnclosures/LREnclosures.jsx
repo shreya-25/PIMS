@@ -29,6 +29,9 @@ export const LREnclosures = () => {
 
   const { leadDetails, caseDetails } = location.state || {};
 
+  const [confirmOpen, setConfirmOpen] = useState(false);
+const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
+
 
     const formatDate = (dateString) => {
       if (!dateString) return "";
@@ -58,20 +61,25 @@ export const LREnclosures = () => {
         navigate(route, { state: { caseDetails } });
     };
 
-  const [enclosureData, setEnclosureData] = useState(() => {
+
+const [enclosureData, setEnclosureData] = useState(() => {
   const saved = sessionStorage.getItem(FORM_KEY);
-  return saved
-    ? JSON.parse(saved)
-    : {
-        returnId: '',
-        type: '',
-        enclosure: '',
-        isLink: false,
-        link: '',
-        originalName: '',
-        filename: ''
-      };
+  const base = saved ? JSON.parse(saved) : {
+    returnId: '',
+    type: '',
+    enclosure: '',
+    isLink: false,
+    link: '',
+    originalName: '',
+    filename: '',
+  };
+  // derive an initial uploadMode for backward compatibility
+  if (!base.uploadMode) {
+    base.uploadMode = base.isLink ? 'link' : (base.originalName ? 'file' : 'none');
+  }
+  return base;
 });
+
 
 // Master list
 const [enclosures, setEnclosures] = useState(() => {
@@ -416,20 +424,15 @@ const goToViewLR = () => {
 
 
   const handleSave = async () => {
-    // Validation: must supply a file or link when creating
-    if (editIndex === null && !file && !enclosureData.isLink) {
-      // alert("Please select a file to upload or enter a valid link.");
-        setAlertMessage("Please select a file to upload or enter a valid link.");
-                      setAlertOpen(true);
-      return;
-    }
   
     const fd = new FormData();
-  
-    // Add file if not a link upload
     if (!enclosureData.isLink && file) {
       fd.append("file", file);
-    }
+ }
+ fd.append("isLink", String(!!enclosureData.isLink));
+ if (enclosureData.isLink && enclosureData.link?.trim()) {
+   fd.append("link", enclosureData.link.trim());
+ }
   
     // Add common fields
     fd.append("leadNo", selectedLead.leadNo);
@@ -469,8 +472,7 @@ const goToViewLR = () => {
                     `${encodeURIComponent(selectedLead.leadName)}/` +
                     `${selectedCase.caseNo}/` +
                     `${encodeURIComponent(selectedCase.caseName)}/` +
-                    `${enclosureData.returnId}/` +
-                    `${encodeURIComponent(originalDesc)}`;
+                    `${enclosureData.returnId}/`;
   
         await api.put(url, fd, {
           headers: { Authorization: `Bearer ${token}` },
@@ -484,7 +486,8 @@ const goToViewLR = () => {
   
       // Refresh & reset form
       await fetchEnclosures();
-      setEnclosureData({ returnId: "", type: "", enclosure: "", isLink: false, link: "" });
+      setEnclosureData({ returnId: "", type: "", enclosure: "", isLink: false, link: "", originalName: "", filename: "" });
+
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       setEditIndex(null);
@@ -541,6 +544,40 @@ const goToViewLR = () => {
       
     }
   };
+
+  const requestDeleteEnclosure = (idx) => {
+  setPendingDeleteIndex(idx);
+  setConfirmOpen(true);
+};
+
+const performDeleteEnclosure = async () => {
+  const idx = pendingDeleteIndex;
+  if (idx == null) return;
+
+  const enc = enclosures[idx];
+  const token = localStorage.getItem("token");
+
+  try {
+    const url = `/api/lrenclosure/${selectedLead.leadNo}/` +
+                `${encodeURIComponent(selectedLead.leadName)}/` +
+                `${selectedCase.caseNo}/` +
+                `${encodeURIComponent(selectedCase.caseName)}/` +
+                `${enc.returnId}/`;
+
+    await api.delete(url, { headers: { Authorization: `Bearer ${token}` } });
+
+    // Remove from list
+    setEnclosures(list => list.filter((_, i) => i !== idx));
+  } catch (err) {
+    console.error(err);
+    setAlertMessage("Failed to delete");
+    setAlertOpen(true);
+  } finally {
+    setConfirmOpen(false);
+    setPendingDeleteIndex(null);
+  }
+};
+
   
 
   const handleNavigation = (route) => {
@@ -629,6 +666,14 @@ const goToViewLR = () => {
                           onConfirm={() => setAlertOpen(false)}
                           onClose={()   => setAlertOpen(false)}
                         />
+
+        <AlertModal
+  isOpen={confirmOpen}
+  title="Confirm Deletion"
+  message="Are you sure you want to delete this record?"
+  onConfirm={performDeleteEnclosure}
+  onClose={() => { setConfirmOpen(false); setPendingDeleteIndex(null); }}
+/>
 
  
         <div className="top-menu"   style={{ paddingLeft: '20%' }}>
@@ -854,7 +899,7 @@ const goToViewLR = () => {
 
 {!enclosureData.isLink ? (
   <div className="form-row-evidence">
-    <label>{editIndex === null ? 'Upload File*' : 'Replace File (optional):'}</label>
+    <label>{editIndex === null ? 'Upload File' : 'Replace File (optional):'}</label>
     <input
       type="file"
       name="file"
@@ -929,11 +974,16 @@ const goToViewLR = () => {
                 <td>{enclosure.type}</td>
                 <td>{enclosure.enclosure}</td>
                 <td>
-  {enclosure.link ? (
-    <a href={enclosure.link} target="_blank" rel="noopener noreferrer" className="link-button">
+  {enclosure.link?.trim() ? (
+    <a
+      href={enclosure.link.startsWith('http') ? enclosure.link : `https://${enclosure.link}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="link-button"
+    >
       {enclosure.link}
     </a>
-  ) : (
+  ) : enclosure.originalName ? (
     <a
       href={enclosure.signedUrl}
       target="_blank"
@@ -942,8 +992,11 @@ const goToViewLR = () => {
     >
       {enclosure.originalName}
     </a>
+  ) : (
+    <span>—</span>
   )}
 </td>
+
 
                 <td>
                   <div classname = "lr-table-btn">
@@ -962,7 +1015,7 @@ const goToViewLR = () => {
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  onClick={()=>handleDelete(index)}
+                  onClick={()=>requestDeleteEnclosure(index)}
                 />
                   </button>
                   </div>

@@ -102,6 +102,71 @@ const alphabetToNumber = (str) => {
   return n;
 };
 
+// Confirm delete modal (add these)
+const [confirmOpen, setConfirmOpen] = useState(false);
+const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
+
+const requestDeleteVehicle = (idx) => {
+  setPendingDeleteIndex(idx);
+  setConfirmOpen(true);
+};
+
+// Use visible row index → resolve raw record, call DELETE, then rebuild tables
+const performDeleteVehicle = async () => {
+  const visIdx = pendingDeleteIndex;
+  if (visIdx == null) return;
+
+  try {
+    // resolve the visible row
+    const vis = vehicles[visIdx];
+
+    // find the matching raw record (safer than assuming indexes match)
+    const rawIdx = rawVehicles.findIndex(
+      r => r.leadReturnId === vis.returnId && r.vin === vis.vin
+    );
+    if (rawIdx < 0) throw new Error("Could not resolve vehicle in raw list");
+
+    const r = rawVehicles[rawIdx];
+
+    // build encoded URL (avoid 404s when VIN/IDs contain special chars)
+    const url =
+      `/api/lrvehicle/${encodeURIComponent(String(selectedLead.leadNo))}` +
+      `/${encodeURIComponent(String(selectedCase.caseNo))}` +
+      `/${encodeURIComponent(String(r.leadReturnId))}` +
+      `/${encodeURIComponent(String(r.vin))}`;
+
+    const token = localStorage.getItem("token");
+    await api.delete(url, { headers: { Authorization: `Bearer ${token}` } });
+
+    // remove from raw, then rebuild display list
+    const newRaw = rawVehicles.filter((_, i) => i !== rawIdx);
+    setRawVehicles(newRaw);
+
+    const newDisplay = newRaw.map(v => ({
+      returnId:    v.leadReturnId,
+      dateEntered: formatDate(v.enteredDate),
+      year:        v.year,
+      make:        v.make,
+      model:       v.model,
+      color:       v.primaryColor,
+      vin:         v.vin,
+      plate:       v.plate,
+      state:       v.state,
+      access:      v.access ?? "Everyone",
+    }));
+    setVehicles(newDisplay);
+
+  } catch (e) {
+    console.error(e);
+    setAlertMessage("Failed to delete vehicle.");
+    setAlertOpen(true);
+  } finally {
+    setConfirmOpen(false);
+    setPendingDeleteIndex(null);
+  }
+};
+
+
     
 
   const [vehicles, setVehicles] = useState([
@@ -612,6 +677,16 @@ const goToViewLR = () => {
                     onConfirm={() => setAlertOpen(false)}
                     onClose={()   => setAlertOpen(false)}
                   />
+      
+  <AlertModal
+  isOpen={confirmOpen}
+  title="Confirm Deletion"
+  message="Are you sure you want to delete this record?"
+  onConfirm={performDeleteVehicle}
+  onClose={() => { setConfirmOpen(false); setPendingDeleteIndex(null); }}
+/>
+
+
 
          <div className="top-menu"   style={{ paddingLeft: '20%' }}>
       <div className="menu-items" >
@@ -979,7 +1054,7 @@ const goToViewLR = () => {
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  onClick={() => handleDeleteVehicle(index)}
+                  onClick={() => requestDeleteVehicle(index)}
                 />
                   </button>
                   </div>

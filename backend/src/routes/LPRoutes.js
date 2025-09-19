@@ -11,13 +11,13 @@ router.get("/lrperson/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLRPe
 router.get("/lrperson/:leadNo/:leadName/:caseNo/:caseName/:id", verifyToken, getLRPersonByDetailsandid);
 
 router.put(
-    '/:leadNo/:caseNo/:leadReturnId/:firstName/:lastName',
+    '/:leadNo/:caseNo/:leadReturnId/:firstName',
     updateLRPerson
   );
   
   // DELETE  /api/lrperson/:leadNo/:caseNo/:leadReturnId/:firstName/:lastName
   router.delete(
-    '/:leadNo/:caseNo/:leadReturnId/:firstName/:lastName',
+    '/:leadNo/:caseNo/:leadReturnId/:firstName',
     deleteLRPerson
   );
 

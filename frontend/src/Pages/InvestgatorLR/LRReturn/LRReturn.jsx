@@ -164,6 +164,37 @@ export const LRReturn = () => {
   setLeadStatus
 ]);
 
+const [confirmOpen, setConfirmOpen] = useState(false);
+const [pendingDeleteId, setPendingDeleteId] = useState(null);
+
+const requestDeleteReturn = (leadReturnId) => {
+  setPendingDeleteId(leadReturnId);
+  setConfirmOpen(true);
+};
+
+const performDeleteReturn = async () => {
+  if (!pendingDeleteId) return;
+  const token = localStorage.getItem("token");
+
+  try {
+    await api.delete(
+      `/api/leadReturnResult/delete/${effectiveLead.leadNo}/${effectiveCase.caseNo}/${pendingDeleteId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    const filtered = returns.filter(r => r.leadReturnId !== pendingDeleteId);
+    setReturns(filtered);
+    setLeadReturns(filtered);
+  } catch (err) {
+    console.error("Error deleting return:", err);
+    setAlertMessage("Failed to delete narrative.");
+    setAlertOpen(true);
+  } finally {
+    setConfirmOpen(false);
+    setPendingDeleteId(null);
+  }
+};
+
 
   const attachFiles = async (items, idFieldName, filesEndpoint) => {
     return Promise.all(
@@ -710,6 +741,15 @@ const handleAddOrUpdateReturn = async () => {
               onClose={()   => setAlertOpen(false)}
             />
       
+      <AlertModal
+  isOpen={confirmOpen}
+  title="Confirm Deletion"
+  message="Are you sure you want to delete this record?"
+  onConfirm={performDeleteReturn}                  // Delete
+  onClose={() => { setConfirmOpen(false); setPendingDeleteId(null); }} // Cancel
+/>
+
+      
            <div className="top-menu"   style={{ paddingLeft: '20%' }}>
       <div className="menu-items" >
         <span className="menu-item " onClick={() => {
@@ -931,7 +971,7 @@ const handleAddOrUpdateReturn = async () => {
               />
             </button>
             <button
-              onClick={() => handleDeleteReturn(ret.leadReturnId)}
+              onClick={() => requestDeleteReturn(ret.leadReturnId)}
               disabled={disableActions}
             >
               <img

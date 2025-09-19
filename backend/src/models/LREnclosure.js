@@ -30,18 +30,19 @@ const lrEnclosureSchema = new mongoose.Schema(
         enclosureDescription: { type: String }, 
         // fileId: { type: mongoose.Schema.Types.ObjectId, ref: "uploads" },
         // For disk storage, store file details instead of fileId
-         filePath: { type: String, required: false },  // ✅ No longer required
-        s3Key: { type: String, required: function () { return !this.isLink; } },
-        originalName: { type: String },
-        filename: { type: String },
+         filePath: { type: String, required: false },  
+
+        s3Key: { type: String, default: null }, 
+
+  originalName: { type: String, default: null },
+  filename: { type: String, default: null },
         accessLevel: {
             type: String,
             enum: ["Only Case Manager", "Everyone"],
             default: "Everyone"
           },
           isLink: { type: Boolean, default: false },
-          link: { type: String },
-
+  link: { type: String, default: null },   
        
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields

@@ -4,78 +4,76 @@ const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 
 
 // **Create a new LREnclosure entry with file upload support**
+
+const asBool = v => v === true || v === "true" || v === 1 || v === "1";
+
 const createLREvidence = async (req, res) => {
-    try {
-      const isLink = req.body.isLink === "true"; // Handle string from formData
-      const accessLevel = req.body.accessLevel || "Everyone";
+  try {
+    const isLink      = req.body.isLink === "true";   // "true" | "false"
+    const accessLevel = req.body.accessLevel || "Everyone";
 
-      let filePath = null;
-      let originalName = null;
-      let filename = null;
-      let s3Key = null;
-  
-      if (!isLink) {
-        if (!req.file) {
-          return res.status(400).json({ error: 'No file received for non-link upload' });
-        }
-  
-        // File fields (for disk storage)
-        filePath = req.file.path;
-        originalName = req.file.originalname;
-        filename = req.file.filename;
-      }
+    let s3Key = null;
+    let originalName = null;
+    let filename = null;
 
+    // Only upload if a file was actually sent
+    if (req.file) {
       const { error, key } = await uploadToS3({
         filePath: req.file.path,
         userId: req.body.caseNo,
         mimetype: req.file.mimetype,
       });
-
       if (error) {
         return res.status(500).json({ message: "S3 upload failed", error: error.message });
       }
-
       s3Key = key;
+      originalName = req.file.originalname;
+      filename = req.file.filename;
+
       if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-
-  
-        // Create a new LREnclosure document with the file reference
-        const newLREvidence = new LREvidence({
-            leadNo: req.body.leadNo,
-            description: req.body.description,
-            assignedTo: req.body.assignedTo ? JSON.parse(req.body.assignedTo) : {},
-            assignedBy: req.body.assignedBy ? JSON.parse(req.body.assignedBy) : {},
-            enteredBy: req.body.enteredBy,
-            caseName: req.body.caseName,
-            caseNo: req.body.caseNo,
-            leadReturnId: req.body.leadReturnId,
-            enteredDate: req.body.enteredDate,
-            collectionDate:req.body.collectionDate,
-            disposedDate: req.body.disposedDate,
-            type: req.body.type,
-            evidenceDescription:req.body.evidenceDescription,
-            filePath: isLink ? "link-only" : filePath,
-            originalName: originalName,
-            filename: filename,
-            s3Key, 
-            accessLevel,
-            isLink,
-            link: isLink ? req.body.link : null,
-        });
-
-        // Save the document in MongoDB
-        await newLREvidence.save();
-
-        // Send one final response after successful save
-        res.status(201).json({
-            message: "Evidnece created successfully",
-            evidence: newLREvidence
-        });
-    } catch (err) {
-        console.error("Error creating LREvidence:", err.message);
-        res.status(500).json({ message: "Something went wrong" });
     }
+
+    // Link is optional
+    const link = isLink ? (req.body.link || "").trim() || null : null;
+
+    // Build doc (file/link are optional)
+    const newLREvidence = new LREvidence({
+      leadNo: Number(req.body.leadNo),
+      description: req.body.description,
+      assignedTo: req.body.assignedTo ? JSON.parse(req.body.assignedTo) : {},
+      assignedBy: req.body.assignedBy ? JSON.parse(req.body.assignedBy) : {},
+      enteredBy: req.body.enteredBy,
+      caseName: req.body.caseName,
+      caseNo: req.body.caseNo,
+      leadReturnId: req.body.leadReturnId,
+      enteredDate: req.body.enteredDate,
+      collectionDate: req.body.collectionDate,
+      disposedDate: req.body.disposedDate,
+      type: req.body.type,
+      evidenceDescription: req.body.evidenceDescription,
+
+      // file-related (may be null)
+      filePath: req.file ? "uploaded-to-s3" : null,
+      originalName,
+      filename,
+      s3Key,
+
+      // link-related (may be null)
+      isLink,
+      link,
+
+      accessLevel,
+    });
+
+    await newLREvidence.save();
+    res.status(201).json({ message: "Evidence created successfully", evidence: newLREvidence });
+  } catch (err) {
+    console.error("Error creating LREvidence:", err);
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
+
+
 
 
 // **Get LREnclosure records using leadNo, leadName (description), caseNo, caseName, and leadReturnId**
@@ -113,54 +111,61 @@ const getLREvidenceByDetails = async (req, res) => {
 
 // Update an existing LREvidence (and optionally replace its file)
 const updateLREvidence = async (req, res) => {
-    try {
-      const {
-        leadNo,
-        leadName,
-        caseNo,
-        caseName,
-        leadReturnId,
-        evidenceDescription: oldDesc
-      } = req.params;
-  
-      const ev = await LREvidence.findOne({
-        leadNo: Number(leadNo),
-        description: leadName,
-        caseNo,
-        caseName,
-        leadReturnId,
-        evidenceDescription: oldDesc
-      });
-      if (!ev) {
-        return res.status(404).json({ message: "Evidence not found" });
-      }
+  try {
+    const { leadNo, leadName, caseNo, caseName, leadReturnId, evidenceDescription: oldDesc } = req.params;
 
-       if (req.file) {
+    const ev = await LREvidence.findOne({
+      leadNo: Number(leadNo),
+      description: leadName,
+      caseNo,
+      caseName,
+      leadReturnId,
+      evidenceDescription: oldDesc
+    });
+    if (!ev) return res.status(404).json({ message: "Evidence not found" });
+
+    const isLink = asBool(req.body.isLink);
+    const newLink = req.body.link?.trim();
+
+    // If a new file is uploaded, replace S3 file and clear link
+    if (req.file) {
       if (ev.s3Key) {
-        await deleteFromS3(ev.s3Key);
+        try { await deleteFromS3(ev.s3Key); } catch {}
       }
-
       const { key } = await uploadToS3({
         filePath: req.file.path,
         userId: caseNo,
         mimetype: req.file.mimetype,
       });
-
       if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
       ev.s3Key = key;
       ev.originalName = req.file.originalname;
       ev.filename = req.file.filename;
+      ev.isLink = false;
+      ev.link = null;
+    } else if (isLink) {
+      // Switching to link-only (or updating link)
+      if (ev.s3Key) {
+        try { await deleteFromS3(ev.s3Key); } catch {}
+      }
+      ev.s3Key = undefined;
+      ev.originalName = undefined;
+      ev.filename = undefined;
+      ev.isLink = true;
+      ev.link = newLink || null;
     }
+    // else: no file uploaded and not switching to link ⇒ keep existing file/link as-is
 
-    ev.leadReturnId = req.body.leadReturnId;
-    ev.enteredDate = req.body.enteredDate;
-    ev.collectionDate = req.body.collectionDate;
-    ev.disposedDate = req.body.disposedDate;
-    ev.disposition = req.body.disposition;
-    ev.type = req.body.type;
-    ev.evidenceDescription = req.body.evidenceDescription;
-    ev.enteredBy = req.body.enteredBy;
+    // Update common fields
+    ev.leadReturnId = req.body.leadReturnId || ev.leadReturnId;
+    ev.enteredDate = req.body.enteredDate || ev.enteredDate;
+    ev.collectionDate = req.body.collectionDate || ev.collectionDate;
+    ev.disposedDate = req.body.disposedDate || ev.disposedDate;
+    ev.disposition = req.body.disposition || ev.disposition;
+    ev.type = req.body.type || ev.type;
+    ev.evidenceDescription = req.body.evidenceDescription || ev.evidenceDescription;
+    ev.enteredBy = req.body.enteredBy || ev.enteredBy;
 
     await ev.save();
     return res.json(ev);
@@ -169,6 +174,8 @@ const updateLREvidence = async (req, res) => {
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
+
+
   
   // Delete an evidence by composite key + description
   const deleteLREvidence = async (req, res) => {

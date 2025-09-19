@@ -24,10 +24,17 @@ export const LRPictures = () => {
     //     };
     //   }, []);
   const navigate = useNavigate();
-  const FORM_KEY = "LRPictures:form";
-  const LIST_KEY = "LRPictures:list";
+    const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
+
+ const baseKey = React.useMemo(() => {
+  const c = selectedCase?.caseNo ?? "UNKC";
+  const l = selectedLead?.leadNo ?? "UNKL";
+  return `LRPictures:${c}:${l}`;
+}, [selectedCase?.caseNo, selectedLead?.leadNo]);
+
+const FORM_KEY = `${baseKey}:form`;
+const LIST_KEY = `${baseKey}:list`;
     const location = useLocation();
-  const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
   const [file, setFile] = useState(null);
 const [leadData, setLeadData] = useState({});
   const [isEditing, setIsEditing] = useState(false);
@@ -37,6 +44,14 @@ const [editingIndex, setEditingIndex] = useState(null);
      const [alertMessage, setAlertMessage] = useState("");
      // Narrative Ids fetched from the server
 const [narrativeIds, setNarrativeIds] = useState([]);
+
+const [confirmOpen, setConfirmOpen] = useState(false);
+const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
+
+const requestDeletePicture = (idx) => {
+  setPendingDeleteIndex(idx);
+  setConfirmOpen(true);
+};
 
 const normalizeId = (id) => String(id ?? "").trim().toUpperCase();
 const alphabetToNumber = (str = "") => {
@@ -90,23 +105,72 @@ const alphabetToNumber = (str = "") => {
     setPictureData({ ...pictureData, [field]: value });
   };
 
-  const handleFileChange = (event) => {
-    const selectedFile = event.target.files[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setPictureData({ ...pictureData, image: URL.createObjectURL(selectedFile), filename: selectedFile.name }); // for preview
+const handleFileChange = (e) => {
+  const selectedFile = e.target.files?.[0];
+  if (!selectedFile) return;
+  // revoke previous preview
+  if (pictureData.image && pictureData.image.startsWith("blob:")) {
+    try { URL.revokeObjectURL(pictureData.image); } catch {}
+  }
+  const preview = URL.createObjectURL(selectedFile);
+  setFile(selectedFile);
+  setPictureData(prev => ({ ...prev, image: preview, filename: selectedFile.name, isLink: false, link: "" }));
+};
+
+// put this near your other handlers
+const handleUploadTypeChange = (e) => {
+  const nextIsLink = e.target.value === "link";
+
+  setPictureData((prev) => {
+    // revoke old blob preview if any
+    if (prev.image && typeof prev.image === "string" && prev.image.startsWith("blob:")) {
+      try { URL.revokeObjectURL(prev.image); } catch {}
     }
-  };
+    return {
+      ...prev,
+      isLink: nextIsLink,
+      link: "",
+      image: "",     // clear preview
+      filename: ""
+    };
+  });
+
+  setFile(null);
+  if (fileInputRef.current) fileInputRef.current.value = "";
+};
+
 
   // whenever the draft changes, save it
 useEffect(() => {
   sessionStorage.setItem(FORM_KEY, JSON.stringify(pictureData));
-}, [pictureData]);
+}, [pictureData, FORM_KEY]);
 
-// whenever the pictures list changes, save it
 useEffect(() => {
   sessionStorage.setItem(LIST_KEY, JSON.stringify(pictures));
-}, [pictures]);
+}, [pictures, LIST_KEY]);
+
+useEffect(() => {
+  // When the case/lead changes, reset local state to what's in *new* keys
+  const savedForm = sessionStorage.getItem(FORM_KEY);
+  const savedList = sessionStorage.getItem(LIST_KEY);
+
+  setPictureData(savedForm ? JSON.parse(savedForm) : {
+    datePictureTaken: "",
+    description: "",
+    image: "",
+    leadReturnId: "",
+    filename: "",
+    isLink: false,
+    link: ""
+  });
+  setPictures(savedList ? JSON.parse(savedList) : []);
+  // also clear editing state
+  setIsEditing(false);
+  setEditingIndex(null);
+  setFile(null);
+  if (fileInputRef.current) fileInputRef.current.value = "";
+}, [FORM_KEY, LIST_KEY]);
+
 
 const attachFiles = async (items, idFieldName, filesEndpoint) => {
   return Promise.all(
@@ -351,6 +415,33 @@ const goToViewLR = () => {
   isEditing
 ]);
 
+const performDeletePicture = async () => {
+  const idx = pendingDeleteIndex;
+  if (idx == null) return;
+
+  const pic = pictures[idx];
+  const token = localStorage.getItem("token");
+  try {
+    await api.delete(
+      `/api/lrpicture/${selectedLead.leadNo}/` +
+      `${encodeURIComponent(selectedLead.leadName)}/` +
+      `${selectedCase.caseNo}/` +
+      `${encodeURIComponent(selectedCase.caseName)}/` +
+      `${pic.returnId}/` +
+      `${encodeURIComponent(pic.description)}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    setPictures(ps => ps.filter((_, i) => i !== idx));
+  } catch (e) {
+    console.error("Delete picture failed:", e);
+    setAlertMessage("Failed to delete picture.");
+    setAlertOpen(true);
+  } finally {
+    setConfirmOpen(false);
+    setPendingDeleteIndex(null);
+  }
+};
+
 
 // delete a picture
 const handleDeletePicture = async idx => {
@@ -369,21 +460,16 @@ const handleDeletePicture = async idx => {
   setPictures(ps => ps.filter((_, i) => i !== idx));
 };
 const handleAddPicture = async () => {
-  // 1️⃣ Validation: require date, description, and either a file or a link
-  if (
-    !pictureData.datePictureTaken ||
-    !pictureData.description ||
-    (!pictureData.isLink && !file) ||
-    (pictureData.isLink && !pictureData.link.trim())
-  ) {
-    setAlertMessage("Please fill in all required fields and select a file or enter a valid link.");
-                      setAlertOpen(true);
+  // ✅ Only the fields you truly want to require. Remove file/link requirement.
+  if (!pictureData.datePictureTaken || !pictureData.description) {
+    setAlertMessage("Please fill in the required fields.");
+    setAlertOpen(true);
     return;
   }
 
-  // 2️⃣ Build FormData
   const fd = new FormData();
-  if (!pictureData.isLink) {
+  // attach file only if present
+  if (!pictureData.isLink && file) {
     fd.append("file", file);
   }
   fd.append("leadNo", selectedLead.leadNo);
@@ -396,46 +482,39 @@ const handleAddPicture = async () => {
   fd.append("datePictureTaken", pictureData.datePictureTaken);
   fd.append("pictureDescription", pictureData.description);
 
-  // 3️⃣ Link fields
-  fd.append("isLink", pictureData.isLink);
-  if (pictureData.isLink) {
+  // link is optional
+  fd.append("isLink", !!pictureData.isLink);
+  if (pictureData.isLink && pictureData.link?.trim()) {
     fd.append("link", pictureData.link.trim());
   }
 
-  // 4️⃣ Send to server
   try {
     const token = localStorage.getItem("token");
     await api.post("/api/lrpicture/upload", fd, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      },
-      transformRequest: [(data, headers) => {
-        delete headers["Content-Type"];
-        return data;
-      }]
+      headers: { Authorization: `Bearer ${token}` },
+      transformRequest: [(data, headers) => { delete headers["Content-Type"]; return data; }]
     });
 
-    // 5️⃣ Refresh list & reset form
     await fetchPictures();
     setPictureData({
       datePictureTaken: "",
-      leadReturnId:     "",
-      description:      "",
-      isLink:           false,
-      link:             "",
-      originalName:     "",
-      filename:         ""
+      leadReturnId: "",
+      description: "",
+      isLink: false,
+      link: "",
+      originalName: "",
+      filename: ""
     });
     setFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     sessionStorage.removeItem(FORM_KEY);
-
   } catch (err) {
     console.error("Error uploading picture:", err);
     setAlertMessage("Failed to save picture. See console for details.");
-                      setAlertOpen(true);
+    setAlertOpen(true);
   }
 };
+
 
   useEffect(() => {
     const fetchLeadData = async () => {
@@ -627,6 +706,19 @@ const handleAccessChange = (idx, newAccess) => {
                 onConfirm={() => setAlertOpen(false)}
                 onClose={()   => setAlertOpen(false)}
               />
+
+    <AlertModal
+  isOpen={confirmOpen}
+  title="Confirm Deletion"
+  message="Are you sure you want to delete this record?"
+  onConfirm={performDeletePicture}
+  onClose={() => {
+    setConfirmOpen(false);
+    setPendingDeleteIndex(null);
+  }}
+/>
+
+
 
       {/* Top Menu */}
       {/* <div className="top-menu">
@@ -918,18 +1010,12 @@ Case Page
 <div className="form-row-pic">
   <label>Upload Type</label>
   <select
-    value={pictureData.isLink ? "link" : "file"}
-    onChange={e =>
-      setPictureData(prev => ({
-        ...prev,
-        isLink: e.target.value === "link",
-        link:   ""            // reset link when switching back
-      }))
-    }
-  >
-    <option value="file">File</option>
-    <option value="link">Link</option>
-  </select>
+  value={pictureData.isLink ? "link" : "file"}
+  onChange={handleUploadTypeChange}
+>
+  <option value="file">File</option>
+  <option value="link">Link</option>
+</select>
 </div>
 
 {/* If editing a file‐upload entry, show current filename */}
@@ -943,7 +1029,7 @@ Case Page
 {/* File vs Link input */}
 {!pictureData.isLink ? (
   <div className="form-row-pic">
-    <label>{isEditing ? "Replace Image (optional)" : "Upload Image*"}</label>
+    <label>{isEditing ? "Replace Image (optional)" : "Upload Image"}</label>
     <input
       type="file"
       accept="image/*"
@@ -953,7 +1039,7 @@ Case Page
   </div>
 ) : (
   <div className="form-row-pic">
-    <label>Paste Link*:</label>
+    <label>Paste Link:</label>
     <input
       type="text"
       placeholder="https://..."
@@ -1075,7 +1161,7 @@ Case Page
         </button>
         <button
           disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
-          onClick={() => handleDeletePicture(index)}
+          onClick={() => requestDeletePicture(index)}
         >
           <img src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                alt="Delete" className="edit-icon" />

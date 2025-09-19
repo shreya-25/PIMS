@@ -171,6 +171,83 @@ export const LRPerson = () => {
     leadName: selectedLead.leadName,
   });
 
+  // Confirm delete modal
+const [confirmOpen, setConfirmOpen] = useState(false);
+const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
+
+const requestDeletePerson = (idx) => {
+  setPendingDeleteIndex(idx);
+  setConfirmOpen(true);
+};
+
+const performDeletePerson = async () => {
+  const visibleIdx = pendingDeleteIndex;
+  if (visibleIdx == null) return;
+
+  try {
+    // 1) Resolve the raw record that matches the visible row
+    const vis = persons[visibleIdx];
+    // Prefer rawIndex if you added it to your mapped rows
+    let rawIndex = vis?.rawIndex;
+
+    // Fallback: find by composite keys if rawIndex is not present
+    if (rawIndex == null) {
+      rawIndex = rawPersons.findIndex(r =>
+        r.leadReturnId === vis.leadReturnId &&
+        (`${r.firstName} ${r.lastName}`).trim() === (vis.name || "").trim()
+      );
+    }
+
+    if (rawIndex < 0) {
+      throw new Error("Couldn't resolve the selected person in the raw list.");
+    }
+
+    const p = rawPersons[rawIndex];
+
+    // 2) Build an encoded URL (prevents 404 when names have spaces/special chars)
+    const url =
+      `/api/lrperson/${encodeURIComponent(String(selectedLead.leadNo))}` +
+      `/${encodeURIComponent(String(selectedCase.caseNo))}` +
+      `/${encodeURIComponent(String(p.leadReturnId))}` +
+      `/${encodeURIComponent(String(p.firstName))}` ;
+      
+    const token = localStorage.getItem("token");
+    await api.delete(url, { headers: { Authorization: `Bearer ${token}` } });
+
+    // 3) Remove from raw, then remap & refilter visible rows
+    const newRaw = rawPersons.filter((_, i) => i !== rawIndex);
+    setRawPersons(newRaw);
+
+    const remapped = newRaw.map((pp, i) => ({
+      rawIndex:    i, // keep this so future edits/deletes are exact
+      returnId:    pp.leadReturnId,
+      dateEntered: new Date(pp.enteredDate).toLocaleDateString(),
+      name:        `${pp.firstName} ${pp.lastName}`,
+      phoneNo:     pp.cellNumber || "N/A",
+      address:     pp.address?.street1 &&
+                   `${pp.address.street1}, ${pp.address.city || ""}, ${pp.address.state || ""}`,
+      leadReturnId: pp.leadReturnId,
+      accessLevel:  pp.accessLevel || "Everyone",
+      firstName:    pp.firstName,
+      lastName:     pp.lastName,
+    }));
+
+    const newVisible = isCaseManager
+      ? remapped
+      : remapped.filter(r => r.accessLevel === "Everyone");
+
+    setPersons(newVisible);
+  } catch (err) {
+    console.error("Delete failed", err);
+    setAlertMessage("Failed to delete person.");
+    setAlertOpen(true);
+  } finally {
+    setConfirmOpen(false);
+    setPendingDeleteIndex(null);
+  }
+};
+
+
   const attachFiles = async (items, idFieldName, filesEndpoint) => {
   return Promise.all(
     (items || []).map(async (item) => {
@@ -511,6 +588,17 @@ const handleDeletePerson = async (idx) => {
                                 onConfirm={() => setAlertOpen(false)}
                                 onClose={()   => setAlertOpen(false)}
                               />
+      <AlertModal
+  isOpen={confirmOpen}
+  title="Confirm Deletion"
+  message="Are you sure you want to delete this record?"
+  onConfirm={performDeletePerson} // proceed
+  onClose={() => {                // cancel
+    setConfirmOpen(false);
+    setPendingDeleteIndex(null);
+  }}
+/>
+
 
       {/* <div className="top-menu">
         <div className="menu-items">
@@ -831,7 +919,7 @@ Case Page
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  onClick={() => handleDeletePerson(index)}
+                  onClick={() => requestDeletePerson(index)}
                 />
                   </button>
                   </div>

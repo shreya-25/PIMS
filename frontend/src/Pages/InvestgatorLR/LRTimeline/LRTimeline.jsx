@@ -44,6 +44,37 @@ const alphabetToNumber = (str = "") => {
   return n;
 };
 
+const [confirmOpen, setConfirmOpen] = useState(false);
+const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
+
+const requestDelete = (idx) => {
+  setPendingDeleteIndex(idx);
+  setConfirmOpen(true);
+};
+
+const performDelete = async () => {
+  const idx = pendingDeleteIndex;
+  if (idx == null) return;
+
+  const token = localStorage.getItem("token");
+  const e = timelineEntries[idx];
+
+  try {
+    await api.delete(`/api/timeline/${e.id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    setTimelineEntries(list => list.filter((_, i) => i !== idx));
+  } catch (err) {
+    console.error(err);
+    setAlertMessage("Failed to delete entry");
+    setAlertOpen(true);
+  } finally {
+    setConfirmOpen(false);
+    setPendingDeleteIndex(null);
+  }
+};
+
+
         
           const formatDate = (dateString) => {
             if (!dateString) return "";
@@ -627,13 +658,25 @@ const { status, isReadOnly } = useLeadStatus({
   return (
     <div className="timeline-container">
       <Navbar />
-       <AlertModal
-                                isOpen={alertOpen}
-                                title="Notification"
-                                message={alertMessage}
-                                onConfirm={() => setAlertOpen(false)}
-                                onClose={()   => setAlertOpen(false)}
-                              />
+      <AlertModal
+        isOpen={alertOpen}
+        title="Notification"
+        message={alertMessage}
+        onConfirm={() => setAlertOpen(false)}
+        onClose={()   => setAlertOpen(false)}
+      />
+
+      <AlertModal
+  isOpen={confirmOpen}
+  title="Confirm Deletion"
+  message="Are you sure you want to delete this record?"
+  onConfirm={performDelete}               // acts as “Delete”
+  onClose={() => {                        // acts as “Cancel”
+    setConfirmOpen(false);
+    setPendingDeleteIndex(null);
+  }}
+/>
+
 
       {/* <div className="top-menu">
         <div className="menu-items">
@@ -1031,7 +1074,7 @@ Case Page
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  onClick={() => handleDelete(index)}
+                  onClick={() => requestDelete(index)}
                 />
                   </button>
                   </div>

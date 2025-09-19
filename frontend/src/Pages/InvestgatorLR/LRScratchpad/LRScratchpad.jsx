@@ -211,6 +211,37 @@ useEffect(() => {
       setAlertOpen(true);
     }
   };
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
+
+const requestDeleteNote = (idx) => {
+  setPendingDeleteIndex(idx);
+  setConfirmOpen(true);
+};
+
+const performDeleteNote = async () => {
+  const idx = pendingDeleteIndex;
+  if (idx == null) return;
+
+  const note = notes[idx];
+  const token = localStorage.getItem("token");
+
+  try {
+    await api.delete(`/api/scratchpad/${note._id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setNotes(prev => prev.filter((_, i) => i !== idx));
+  } catch (err) {
+    console.error("Delete failed", err);
+    setAlertMessage("Failed to delete note.");
+    setAlertOpen(true);
+  } finally {
+    setConfirmOpen(false);
+    setPendingDeleteIndex(null);
+  }
+};
+
   
 
   useEffect(() => {
@@ -250,7 +281,7 @@ useEffect(() => {
       .map((note) => ({
         ...note,
         dateEntered: formatDate(note.enteredDate),
-        returnId: note.leadReturnId,
+        returnId: note.leadReturnId || "",
       }));
     const withAccess = formatted.map(r => ({
       ...r,
@@ -532,6 +563,17 @@ const { status, isReadOnly } = useLeadStatus({
                           onConfirm={() => setAlertOpen(false)}
                           onClose={()   => setAlertOpen(false)}
                         />
+                        <AlertModal
+  isOpen={confirmOpen}
+  title="Confirm Deletion"
+  message="Are you sure you want to delete this record?"
+  onConfirm={performDeleteNote}
+  onClose={() => {
+    setConfirmOpen(false);
+    setPendingDeleteIndex(null);
+  }}
+/>
+
 
       {/* Top Menu */}
       {/* <div className="top-menu">
@@ -864,7 +906,8 @@ Case Page
             {notes.length > 0 ? notes.map((note, index) => (
               <tr key={index}>
                 <td>{note.dateEntered}</td>
-                <td> {note.returnId} </td>
+              <td>{note.returnId || "(none)"}</td>
+
                 <td>{note.enteredBy}</td>
                 <td>{note.text}</td>
                 <td>
@@ -884,7 +927,7 @@ Case Page
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  onClick={() => handleDeleteNote(index)}
+                  onClick={() => requestDeleteNote(index)}
                 />
                   </button>
                   </div>

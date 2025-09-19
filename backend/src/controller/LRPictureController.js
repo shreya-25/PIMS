@@ -4,38 +4,32 @@ const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 
 const createLRPicture = async (req, res) => {
   try {
-    const isLink = req.body.isLink === "true"; // Handle string from formData
+    const isLink = String(req.body.isLink) === "true";
     const accessLevel = req.body.accessLevel || "Everyone";
 
     let originalName = null;
     let filename = null;
     let s3Key = null;
+    let link = null;
 
-    // ✅ If it's not a link, handle file upload
-    if (!isLink) {
-      if (!req.file) {
-        return res.status(400).json({ error: "No file received for non-link upload" });
-      }
-
-      originalName = req.file.originalname;
-      filename = req.file.filename;
-
-      // ✅ Upload file to S3
+    if (isLink) {
+      // Accept empty link as well (user skipped)
+      link = (req.body.link || "").trim() || null;
+    } else if (req.file) {
+      // File path (optional): upload if present, otherwise allow null
       const { error, key } = await uploadToS3({
         filePath: req.file.path,
         userId: req.user?.id || "anonymous",
         mimetype: req.file.mimetype,
       });
+      if (error) return res.status(500).json({ message: "S3 upload failed", error: error.message });
 
-      if (error) {
-        return res.status(500).json({ message: "S3 upload failed", error: error.message });
-      }
       s3Key = key;
-
+      originalName = req.file.originalname;
+      filename = req.file.filename;
       if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     }
 
-    // ✅ Create new LRPicture document (S3 only)
     const newLRPicture = new LRPicture({
       leadNo: req.body.leadNo,
       description: req.body.description,
@@ -50,18 +44,14 @@ const createLRPicture = async (req, res) => {
       pictureDescription: req.body.pictureDescription,
       originalName,
       filename,
-      s3Key, // ✅ Always store S3 key
+      s3Key,            // may be null
       accessLevel,
-      isLink,
-      link: isLink ? req.body.link : null,
+      isLink,           // may be true or false
+      link,             // may be null
     });
 
     await newLRPicture.save();
-
-    return res.status(201).json({
-      message: "Picture uploaded and saved successfully",
-      picture: newLRPicture,
-    });
+    return res.status(201).json({ message: "Saved successfully", picture: newLRPicture });
   } catch (err) {
     console.error("Error creating LRPicture:", err.message);
     res.status(500).json({ message: "Something went wrong", error: err.message });
@@ -70,40 +60,51 @@ const createLRPicture = async (req, res) => {
 
 
 
+
 const getLRPictureByDetails = async (req, res) => {
-    try {
-        const { leadNo, leadName, caseNo, caseName } = req.params;
+  try {
+    const { leadNo, leadName, caseNo, caseName } = req.params;
 
-        const query = {
-            leadNo: Number(leadNo),
-            description: leadName,
-            caseNo: caseNo,
-            caseName: caseName,
-        };
+    const query = {
+      leadNo: Number(leadNo),
+      description: leadName,
+      caseNo,
+      caseName,
+    };
 
-        const lrPictures = await LRPicture.find(query);
+    const lrPictures = await LRPicture.find(query);
 
-        if (lrPictures.length === 0) {
-            return res.status(404).json({ message: "No Pictures found." });
-        }
-
-        // ✅ Generate signed URLs for each picture stored in S3
-        const picturesWithUrls = await Promise.all(
-            lrPictures.map(async (pic) => {
-                const signedUrl = await getFileFromS3(pic.s3Key); // fileKey should be stored in DB during upload
-                return {
-                    ...pic.toObject(),
-                    signedUrl,
-                };
-            })
-        );
-
-        res.status(200).json(picturesWithUrls);
-    } catch (err) {
-        console.error("Error fetching lrPictures records:", err.message);
-        res.status(500).json({ message: "Something went wrong" });
+    // Prefer returning an empty array instead of 404
+    if (!lrPictures || lrPictures.length === 0) {
+      return res.status(200).json([]); // <-- changed from 404
     }
+
+    const picturesWithUrls = await Promise.all(
+      lrPictures.map(async (pic) => {
+        let signedUrl = null;
+        // Only try to sign when we actually have a key
+        if (pic.s3Key) {
+          try {
+            signedUrl = await getFileFromS3(pic.s3Key);
+          } catch (e) {
+            console.warn(`Failed to sign S3 key ${pic.s3Key}:`, e?.message);
+            signedUrl = null;
+          }
+        }
+        return {
+          ...pic.toObject(),
+          signedUrl,         // may be null for link-only rows
+        };
+      })
+    );
+
+    res.status(200).json(picturesWithUrls);
+  } catch (err) {
+    console.error("Error fetching lrPictures records:", err?.message);
+    res.status(500).json({ message: "Something went wrong" });
+  }
 };
+
 
 
 const updateLRPicture = async (req, res) => {

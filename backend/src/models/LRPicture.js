@@ -4,7 +4,7 @@ const { Schema } = mongoose;
 const lrPictureSchema = new mongoose.Schema(
     {
         leadNo: { type: Number, required: true },
-        description: { type: String, required: true },
+        description: { type: String },
         assignedTo: {
             assignees: [{ type: String }],
             lRStatus: { 
@@ -30,10 +30,17 @@ const lrPictureSchema = new mongoose.Schema(
         pictureDescription: { type: String }, 
         // fileId: { type: mongoose.Schema.Types.ObjectId, ref: "uploads" },
         // For disk storage, store file details instead of fileId
-        filePath: { type: String, required: false },  // ✅ No longer required
-        s3Key: { type: String, required: function () { return !this.isLink; } },
-        originalName: { type: String },
-        filename: { type: String },
+          // File-based (all optional now)
+    s3Key: { type: String, default: null },
+    originalName: { type: String, default: null },
+    filename: { type: String, default: null },
+
+    // Link-based (all optional now)
+    isLink: { type: Boolean, default: false },
+    link: { type: String, default: null },
+
+    // Kept optional
+    filePath: { type: String, default: null },
         accessLevel: {
             type: String,
             enum: ["Only Case Manager", "Everyone"],
