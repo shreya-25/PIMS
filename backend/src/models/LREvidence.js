@@ -29,7 +29,7 @@ const lrEvidenceSchema = new mongoose.Schema(
         collectionDate: { type: Date, required: true },
         disposedDate: { type: Date},
         type: { type: String },
-        evidenceDescription: { type: String, required: true  }, 
+        evidenceDescription: { type: String }, 
         // fileId: { type: mongoose.Schema.Types.ObjectId, ref: "uploads" },
         s3Key:        { type: String, trim: true },     // <- no required()
   originalName: { type: String },

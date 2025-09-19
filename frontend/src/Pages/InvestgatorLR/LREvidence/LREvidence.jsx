@@ -836,7 +836,7 @@ const handleEdit = idx => {
               onChange={(e) => handleInputChange("type", e.target.value)}
             />
           </div>
-          <label className="evidence-head">Description*</label>
+          <label className="evidence-head">Description</label>
 <textarea
   value={evidenceData.evidenceDescription}
   onChange={e => handleInputChange("evidenceDescription", e.target.value)}
