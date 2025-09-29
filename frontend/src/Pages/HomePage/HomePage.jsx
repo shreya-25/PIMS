@@ -1134,6 +1134,7 @@ const sortedPendingReturns = useMemo(() => {
 
 
   return (
+     <div className="page-scale"> 
     <div className = "main-page-bodyhp">
     <Navbar />
     <AlertModal
@@ -1549,6 +1550,7 @@ const sortedPendingReturns = useMemo(() => {
         </div>
       </div>
     </div>
+   </div>
    </div>
   );
 };
