@@ -413,12 +413,11 @@ const handleSearch = async () => {
       />
     )}
                 </div> */}
-                 <SideBar  activePage="LeadsDesk" />
+                 <SideBar  activePage="SearchLead" />
                 <div className="left-content">
 
-                <div className="caseandleadinfo">
+                {/* <div className="caseandleadinfo">
           <h5 className = "side-title"> 
-             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
                <p> PIMS &gt; Cases &gt; Advanced Search
                  </p>
              </h5>
@@ -428,13 +427,13 @@ const handleSearch = async () => {
     : ``}
 </h5>
 
-          </div>
+          </div> */}
 {/* 
 <div className="case-header">
   <h2 className="">SEARCH LEAD</h2>
 </div> */}
 
-   <div className="top-menu1">
+   {/* <div className="top-menu1">
         <div className="menu-items">
            <span className="menu-item " onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}>
             Leads Desk
@@ -442,20 +441,17 @@ const handleSearch = async () => {
         <span className="menu-item " onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}>
             Generate Report
           </span>
-          {/* <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
+          <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
             Add/View Case Notes
-          </span> */}
+          </span>
           <span className="menu-item active" onClick={() => navigate('/SearchLead', { state: { caseDetails } } )} >
             Advanced Search
           </span>
           <span className="menu-item" onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}>
           View Timelines
           </span>
-          {/* <span className="menu-item" onClick={() => navigate("/FlaggedLead", { state: { caseDetails } } )}>
-          View Flagged Leads
-          </span> */}
          </div>
-       </div>
+       </div> */}
 
       <div className="main-content-searchlead">
 

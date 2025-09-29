@@ -1251,7 +1251,7 @@ const sortedPendingReturns = useMemo(() => {
                       <td style={{ width: "5%", textAlign: "center" }} >
                         <div className="btn-sec-HP">
                         <button
-                          className="view-btn1"
+                          className="manage-btn"
                           onClick={() => handleCaseClick(c)}
                         >
                           Manage

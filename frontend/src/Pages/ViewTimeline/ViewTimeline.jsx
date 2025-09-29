@@ -295,12 +295,13 @@ export const ViewTimeline = () => {
 
           </ul>
         </div> */}
-          <SideBar  activePage="LeadsDesk" />
+          <SideBar  activePage="ViewTimeline" />
         {/* Main Content */}
         <div className="left-content">
-            <div className="caseandleadinfo">
+            
+            
+            {/* <div className="caseandleadinfo">
           <h5 className = "side-title"> 
-             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
                <p> PIMS &gt; Cases &gt; Timeline
                  </p>
              </h5>
@@ -310,13 +311,13 @@ export const ViewTimeline = () => {
     : ``}
 </h5>
 
-          </div>
+          </div> */}
 {/* 
           <div className="case-header">
             <h2>CRIME INVESTIGATION TIMELINE</h2>
           </div> */}
 
-             <div className="top-menu1">
+             {/* <div className="top-menu1">
         <div className="menu-items">
            <span className="menu-item " onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}>
             Leads Desk
@@ -324,20 +325,17 @@ export const ViewTimeline = () => {
         <span className="menu-item " onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}>
             Generate Report
           </span>
-          {/* <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
+          <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
             Add/View Case Notes
-          </span> */}
+          </span>
           <span className="menu-item" onClick={() => navigate('/SearchLead', { state: { caseDetails } } )} >
             Advanced Search
           </span>
           <span className="menu-item active" onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}>
           View Timelines
           </span>
-          {/* <span className="menu-item" onClick={() => navigate("/FlaggedLead", { state: { caseDetails } } )}>
-          View Flagged Leads
-          </span> */}
          </div>
-       </div>
+       </div> */}
 
           {/* Timeline Section */}
           <div className="timeline-section">
