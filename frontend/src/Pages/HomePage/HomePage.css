@@ -536,6 +536,20 @@
   /* justify-content: center; */
 }
 
+.manage-btn, .case-close-btn
+{
+     padding: 8px 16px;
+    margin-right: 10px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+}
+
+.manage-btn{
+  background-color: rgb(41, 41, 139);
+}
+
 
 
 /* .leads-table td:last-child {
@@ -1301,8 +1315,7 @@
 
 /* Styling for the buttons */
 .view-btn1,
-.accept-btn,
-.case-close-btn {
+.accept-btn {
   padding: 8px;
   border: none;
   border-radius: 3px;

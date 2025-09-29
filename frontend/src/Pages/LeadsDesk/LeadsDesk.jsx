@@ -2162,7 +2162,7 @@ const handleShowLeadsInRange = () => {
           </div> */}
           {/* </div> */}
 
-             <div className="top-menu">
+             {/* <div className="top-menu">
         <div className="menu-items">
            <span className="menu-item active " onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}>
             Leads Desk
@@ -2170,20 +2170,17 @@ const handleShowLeadsInRange = () => {
         <span className="menu-item " onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}>
             Generate Report
           </span>
-          {/* <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
+          <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
             Add/View Case Notes
-          </span> */}
+          </span>
           <span className="menu-item" onClick={() => navigate('/SearchLead', { state: { caseDetails } } )} >
             Advanced Search
           </span>
           <span className="menu-item" onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}>
           View Timelines
           </span>
-          {/* <span className="menu-item" onClick={() => navigate("/FlaggedLead", { state: { caseDetails } } )}>
-          View Flagged Leads
-          </span> */}
          </div>
-       </div>
+       </div> */}
        <div className="down-content"> 
 
         <div className="left-content-execSummary">

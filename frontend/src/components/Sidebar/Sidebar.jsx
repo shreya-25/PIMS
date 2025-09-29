@@ -33,6 +33,9 @@ export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   a
   const homeIcon    = `${process.env.PUBLIC_URL}/Materials/home.png`;
   const logIcon    = `${process.env.PUBLIC_URL}/Materials/log2.png`;
   const addIcon = `${process.env.PUBLIC_URL}/Materials/addicon.svg`;
+  const printIcon = `${process.env.PUBLIC_URL}/Materials/print.png`;
+  const searchIcon = `${process.env.PUBLIC_URL}/Materials/search.png`;
+  const timelineIcon = `${process.env.PUBLIC_URL}/Materials/timeline.png`;
 
 const handleCreateLead = () => {
   navigate('/createlead', {
@@ -292,6 +295,21 @@ const handleCreateLead = () => {
             onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}
              > <img src={folderIcon1} className="sidebar-icon" alt="" />
               Leads Desk</li>
+    
+     <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadsDeskTestExecSummary' ? 'active' : ''}`}
+            onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}
+             > <img src={printIcon} className="sidebar-icon" alt="" />
+              Generate Report</li>
+
+      <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'SearchLead' ? 'active' : ''}`}
+            onClick={() => navigate("/SearchLead", { state: { caseDetails } } )}
+             > <img src={searchIcon} className="sidebar-icon" alt="" />
+              Advanced Search</li>
+    
+       <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'ViewTimeline' ? 'active' : ''}`}
+            onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}
+             > <img src={timelineIcon} className="sidebar-icon" alt="" />
+              Timeline Records</li>
 
 
   {/* Toggle Cases dropdown */}
