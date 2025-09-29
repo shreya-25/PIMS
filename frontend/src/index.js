@@ -13,6 +13,7 @@ const root = ReactDOM.createRoot(document.getElementById("root"));
 const queryClient = new QueryClient();
 root.render(
   <React.StrictMode>
+    <div className="app-scale">
       <QueryClientProvider client={queryClient}>
       <Router> 
     <CaseProvider>  {/* ✅ Wrap App inside CaseProvider */}
@@ -22,5 +23,6 @@ root.render(
     </CaseProvider>
     </Router>
     </QueryClientProvider>
+    </div>
   </React.StrictMode>
 );

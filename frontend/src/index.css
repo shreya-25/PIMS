@@ -17,3 +17,7 @@ code {
     monospace; */
     font-family: Arial, sans-serif;
 }
+
+.app-scale {
+  zoom: 0.8;             /* Chrome / Edge / Safari */
+}
