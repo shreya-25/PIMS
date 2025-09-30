@@ -89,3 +89,176 @@
   /* margin-bottom: 20px; */
   text-align: center;
 }
+
+.collapsible { 
+  border: 1px solid #e5e7eb; 
+  border-radius: 10px; 
+  margin-bottom: 16px; 
+  background:#fff; 
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.collapsible__header 
+{ 
+  align-items:center; 
+  padding:12px 14px; 
+  cursor:pointer; 
+  user-select:none; 
+  background:#f9fafb; 
+  border-radius:10px; 
+  width: 100%;
+}
+.collapsible__title { font-weight:600; display:flex; gap:8px; align-items:center; }
+.collapsible__body 
+{ padding:14px; 
+  width: 100%;
+}
+.chev { width:16px; display:inline-block; }
+
+.summaryModeRow {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.summaryOption {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Force the text size (beats most overrides) */
+.summaryOptionText {
+  font-size: 20px !important;
+  line-height: 1.4;
+}
+
+/* Optional: make the radio itself look bigger */
+.summaryOption input[type="radio"] {
+  transform: scale(1.2);
+}
+
+.range-filter {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.range-filter__label {
+  font-size: 20px;
+  color: #111827; /* slate-900 */
+  margin: 0px;
+}
+
+.range-filter__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.range-filter__input {
+  width: 160px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db; /* gray-300 */
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.range-filter__input:focus {
+  outline: none;
+  border-color: #2563eb;            /* blue-600 */
+  box-shadow: 0 0 0 3px rgba(37,99,235,.2);
+}
+
+.range-filter__sep {
+  color: #6b7280; /* gray-500 */
+}
+
+.range-filter__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.range-filter__hint {
+  margin: 0;
+  font-size: 16px;
+  color: #6b7280; /* gray-500 */
+}
+
+/* Buttons (feel free to map these to your existing .save-btn1 if you prefer) */
+.btn {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background: #2563eb;  /* blue-600 */
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;  /* blue-700 */
+  border-color: #1d4ed8;
+}
+
+.btn-secondary {
+  background: #fff;
+  color: #374151;       /* gray-700 */
+  border-color: #d1d5db;
+}
+
+.btn-secondary:hover {
+  background: #f9fafb;  /* gray-50 */
+  border-color: #cbd5e1; /* gray-300/400 */
+}
+
+.hierarchy-filter {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.hierarchy-filter__label {
+  font-size: 20px;
+  color: #111827; /* slate-900 */
+}
+
+.hierarchy-filter__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hierarchy-filter__input {
+  width: 220px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db; /* gray-300 */
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.hierarchy-filter__input:focus {
+  outline: none;
+  border-color: #2563eb;             /* blue-600 */
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .2);
+}
+
+.hierarchy-filter__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.hierarchy-filter__hint {
+  margin: 0;
+  font-size: 16px;
+  color: #6b7280; /* gray-500 */
+}

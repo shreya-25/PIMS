@@ -31,6 +31,29 @@ const formatDate = (dateString) => {
   return `${month}/${day}/${year}`;
 };
 
+function CollapsibleSection({ title, defaultOpen = true, rightSlot = null, children }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="collapsible">
+      <header
+        className="collapsible__header"
+        onClick={() => setOpen(o => !o)}
+        role="button"
+        aria-expanded={open}
+        tabIndex={0}
+        onKeyDown={(e) => (e.key === "Enter" || e.key === " " ? setOpen(o => !o) : null)}
+      >
+        <div className="collapsible__title">
+          <span className="chev">{open ? "▾" : "▸"}</span> {title}
+        </div>
+        {rightSlot ? <div onClick={(e) => e.stopPropagation()}>{rightSlot}</div> : null}
+      </header>
+      {open && <div className="collapsible__body">{children}</div>}
+    </section>
+  );
+}
+
+
 
 // ---------- Fetch one lead (with returns, persons, vehicles) ----------
 const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
@@ -132,6 +155,44 @@ export const LeadsDeskTestExecSummary = () => {
   const [typedSummary, setTypedSummary] = useState("");
   const saveTimeout = useRef(null);
     const { leadDetails, caseDetails } = location.state || {};
+
+  const [reportScope, setReportScope] = useState("all"); // 'all' | 'visible' | 'selected'
+const [selectedForReport, setSelectedForReport] = useState(() => new Set());
+
+// Range just for the "selected subset" flow
+const [subsetRange, setSubsetRange] = useState({ start: "", end: "" });
+
+const applySubsetRange = () => {
+  const min = parseInt(subsetRange.start, 10);
+  const max = parseInt(subsetRange.end, 10);
+  if (Number.isNaN(min) || Number.isNaN(max)) {
+    alert("Please enter valid numeric lead numbers.");
+    return;
+  }
+  const filtered = leadsData.filter((lead) => {
+    const n = parseInt(lead.leadNo, 10);
+    return !Number.isNaN(n) && n >= min && n <= max;
+  });
+  setHierarchyLeadsData(filtered);   // show only that range
+  setHierarchyChains([]);            // clear hierarchy view
+};
+
+const clearSubsetRange = () => {
+  setSubsetRange({ start: "", end: "" });
+  setHierarchyLeadsData([]);         // fallback to all leads
+  setHierarchyChains([]);
+};
+
+
+// Toggle a lead in/out of the selected subset
+const toggleLeadForReport = (leadNo) => {
+  setSelectedForReport((prev) => {
+    const next = new Set(prev);
+    if (next.has(leadNo)) next.delete(leadNo);
+    else next.add(leadNo);
+    return next;
+  });
+};
 
    // Save to backend
    const saveExecutiveSummary = async () => {
@@ -573,44 +634,64 @@ const handleShowLeadsInRange = () => {
     }
   };
 
+  const toNum = (v) => {
+  const s = String(v ?? "").replace(/[^\d]/g, "");
+  return s ? Number.parseInt(s, 10) : NaN;
+};
+
+  // Helper: compute which leads to include based on scope
+const computeLeadsForReport = () => {
+  if (reportScope === "all") return leadsData;
+  if (reportScope === "visible")
+    return hierarchyLeadsData.length > 0 ? hierarchyLeadsData : leadsData; // if nothing filtered, fall back to all
+  // 'selected'
+   if (reportScope === "selected") {
+    const min = toNum(subsetRange.start);
+    const max = toNum(subsetRange.end);
+
+    // invalid or inverted range -> nothing selected
+    if (!Number.isFinite(min) || !Number.isFinite(max) || min > max) return [];
+
+    // filter from the full set (choose visible via the "visible" radio instead)
+    return leadsData.filter((l) => {
+      const n = toNum(l.leadNo);
+      return Number.isFinite(n) && n >= min && n <= max;
+    });
+  }
+  if (selectedForReport.size === 0) return []; // empty subset -> let backend handle or warn
+  const selected = new Set([...selectedForReport].map(String));
+  const all = hierarchyLeadsData.length > 0 ? hierarchyLeadsData : leadsData;
+  return all.filter((l) => selected.has(String(l.leadNo)));
+};
+
+const [summaryMode, setSummaryMode] = useState('none'); // 'none' | 'type' | 'file'
+const handleSummaryMode = (mode) => setSummaryMode(mode);
+
+useEffect(() => {
+  if (summaryMode === 'type') {
+    setUseWebpageSummary(true);
+    setUseFileUpload(false);
+  } else if (summaryMode === 'file') {
+    setUseWebpageSummary(false);
+    setUseFileUpload(true);
+  } else {
+    setUseWebpageSummary(false);
+    setUseFileUpload(false);
+  }
+}, [summaryMode]);
+
+
+
+
 
    // New function to run the report and merge it with an uploaded executive summary document
    const handleRunReportWithSummary = async () => {
-    // const token = localStorage.getItem("token");
-    // if (!execSummaryFile) {
-    //   alert("Please upload an executive summary document.");
-    //   return;
-    // }
-
-    // const formData = new FormData();
-    // formData.append("user", "Officer 916");
-    // formData.append("reportTimestamp", new Date().toLocaleString());
-    // formData.append("caseSummary", caseSummary);
-    // formData.append("leadsData", JSON.stringify(leadsData));
-    // formData.append("execSummaryFile", execSummaryFile);
-    // formData.append("selectedReports", JSON.stringify({ FullReport: true }));
-
-    // try {
-    //   const response = await axios.post(
-    //     "http://localhost:5000/api/report/generateCaseExecSummary",
-    //     formData,
-    //     {
-    //       headers: {
-    //         Authorization: `Bearer ${token}`,
-    //         "Content-Type": "multipart/form-data",
-    //       },
-    //       responseType: "blob",
-    //     }
-    //   );
-    //   const file = new Blob([response.data], { type: "application/pdf" });
-    //   const fileURL = URL.createObjectURL(file);
-    //   window.open(fileURL, "_blank");
-    // } catch (error) {
-    //   console.error("Failed to generate report with executive summary", error);
-    //   alert("Error generating PDF with executive summary");
-    // }
-
     const token = localStorage.getItem("token");
+    const leadsForReport = computeLeadsForReport();
+if (reportScope === "selected" && leadsForReport.length === 0) {
+  alert("No leads selected for the subset.");
+  return;
+}
     if (useWebpageSummary) {
       try {
         // Build payload. You may adjust the payload structure as required by your backend.
@@ -618,7 +699,7 @@ const handleShowLeadsInRange = () => {
           user: "Officer 916", // Or get from auth context
           reportTimestamp: new Date().toLocaleString(),
           // For a full report, pass the entire leadsData and caseSummary.
-          leadsData,
+           leadsData: leadsForReport,
           caseSummary: typedSummary,
           // Here, you could also include selectedReports if you want sections toggled.
           selectedReports: { FullReport: true },
@@ -684,6 +765,17 @@ const handleShowLeadsInRange = () => {
   const renderLeads = (leadsArray) => {
     return leadsArray.map((lead, leadIndex) => (
       <div key={leadIndex} className="lead-section">
+         {/* <div className="lead-section-head" style={{ marginBottom: 8 }}>
+        <label style={{ display:"inline-flex", alignItems:"center", gap:8 }}>
+          <input
+            type="checkbox"
+            checked={selectedForReport.has(String(lead.leadNo))}
+            onChange={() => toggleLeadForReport(String(lead.leadNo))}
+          />
+           <span className="summaryOptionText">Include this lead in subset</span>
+          
+        </label>
+      </div> */}
         <div className="leads-container">
           <table className="lead-details-table">
             <colgroup>
@@ -1010,14 +1102,11 @@ const handleShowLeadsInRange = () => {
 
         <div className="right-sec">
 
-        {/* <div className="caseandleadinfo"> */}
-          {/* <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5> */}
+        <div className="caseandleadinfo"> 
+          <h5 className = "side-title">  Case {selectedCase.caseNo || ""}: {selectedCase.caseName || "Unknown Case"} </h5> 
 
-          {/* <h5 className = "side-title"> 
-          {selectedLead?.leadNo ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName}` : "LEAD DETAILS"}
 
-          </h5> */}
-          {/* </div> */}
+          </div>
 
           {/* <div className="header-ld-exec"> */}
         {/* <div className="case-header-ldExecSummary">
@@ -1055,49 +1144,10 @@ const handleShowLeadsInRange = () => {
        </div> */}
 
        <div className="down-content"> 
+          {summaryMode === 'type' && (
         <div className="exec-summary-sec">
           <h3>Executive Summary</h3>
-        {/* <textarea className= "summary-input" placeholder="Type here..."></textarea>
-        <button className="save-btn1">Save</button> */}
-        {/* ======= New Options Row ======= */}
-      <div style={{ marginBottom: 16 }}>
-        <label className="report-option-label">
-          <input
-            type="checkbox"
-            checked={useFileUpload}
-            onChange={() => {
-              setUseFileUpload(u => !u);
-              if (useWebpageSummary) setUseWebpageSummary(false);
-            }}
-          />{" "}
-          Add an executive summary (upload file)
-        </label>
-        {useFileUpload && (
-          <input
-            type="file"
-            accept=".doc,.docx,.pdf"
-            onChange={handleExecSummaryFileChange}
-          />
-        )}
 
-        <span style={{ margin: "0 100px", fontWeight: "bold" }}>OR</span>
-
-        <label  className="report-option-label">
-    <input
-      type="checkbox"
-      checked={useWebpageSummary}
-      onChange={() => {
-        setUseWebpageSummary(w => !w);
-        if (useFileUpload) setUseFileUpload(false);
-      }}
-    />{" "}
-    Type executive summary directly
-  </label>
-</div>
-{/* ===== End New Options ===== */}
-
-{/* <ReactQuill theme="snow" value={value} onChange={setValue} /> */}
-{/* now your main textarea becomes your “webpage” input */}
 <textarea
   className="summary-input"
   placeholder="Type here..."
@@ -1106,26 +1156,9 @@ const handleShowLeadsInRange = () => {
   disabled={!useWebpageSummary}
   style={{ opacity: useWebpageSummary ? 1 : 0.5 }}
 />
-<div className="saveandreportsec">
-<button className="save-btn1"style = {{width: "40%"}}
-onClick={handleSaveClick}
-disabled={!useWebpageSummary} >Save</button>
-<button className="save-btn1" style = {{width: "40%"}} onClick={handleRunReportWithSummary}>
-                Run Report
-              </button>
-              </div>
 
-{/* <div className="last-sec">
-            <div className="btn-sec-ld">
-              <button className="save-btn1" onClick={handleRunReport}>
-                Run Report
-              </button>
-              <button className="save-btn1"  onClick={() => setShowExecFileModal(true)}>
-                Run Report with Summary
-              </button>
-            </div>
-          </div> */}
         </div>
+          )}
 
         <div className="left-content-execSummary">
 
@@ -1139,8 +1172,8 @@ disabled={!useWebpageSummary} >Save</button>
           </div> */}
 
           <div className="bottom-sec-ldExecSummary" id="main-content">
+            <CollapsibleSection title="Case Summary" defaultOpen={false}>
             <div className="case-summary-ld">
-              <label className="input-label">Case Summary</label>
               <textarea
                 className="textarea-field-ld"
                 style={{ fontFamily: "inherit", fontSize: "20px" }}
@@ -1149,8 +1182,204 @@ disabled={!useWebpageSummary} >Save</button>
                 readOnly={!isEditing}
               ></textarea>
             </div>
+            </CollapsibleSection>
 
-            <div className="search-lead-portion">
+
+              {/* <CaseHeaderSection /> */}
+
+<CollapsibleSection title="Select Leads to View (Range)" defaultOpen={false}>
+  <div className="range-filter">
+    <div className="range-filter__label"> Lead range</div>
+
+    <div className="range-filter__row">
+      <input
+        id="lead-range-from"
+        type="number"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        className="range-filter__input"
+        placeholder="From lead #"
+        value={selectStartLead1}
+        onChange={(e) => setSelectStartLead1(e.target.value)}
+        aria-label="From lead number"
+      />
+
+      <span className="range-filter__sep">—</span>
+
+      <input
+        id="lead-range-to"
+        type="number"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        className="range-filter__input"
+        placeholder="To lead #"
+        value={selectEndLead2}
+        onChange={(e) => setSelectEndLead2(e.target.value)}
+        aria-label="To lead number"
+      />
+
+      <div className="range-filter__actions">
+        <button className="btn btn-primary" onClick={handleShowLeadsInRange}>
+          Apply
+        </button>
+        <button className="btn btn-secondary" onClick={handleShowAllLeads}>
+          Clear
+        </button>
+      </div>
+    </div>
+
+    <p className="range-filter__hint">Enter a lead number range (e.g., 1200 — 1250) and click Apply.</p>
+  </div>
+</CollapsibleSection>
+
+
+<CollapsibleSection title="View Lead Hierarchy" defaultOpen={false}>
+  <div className="hierarchy-filter">
+    <div className="hierarchy-filter__label">Lead chain lookup</div>
+
+    <form
+      className="hierarchy-filter__row"
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleShowHierarchy();
+      }}
+    >
+      <input
+        id="hierarchy-lead"
+        type="number"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        className="hierarchy-filter__input"
+        placeholder="Lead # (e.g., 1234)"
+        value={hierarchyLeadInput}
+        onChange={(e) => setHierarchyLeadInput(e.target.value)}
+        aria-label="Lead number"
+      />
+
+      <div className="hierarchy-filter__actions">
+        <button
+          type="submit"
+          className="btn btn-primary"
+          // disabled={!String(hierarchyLeadInput).trim()}
+        >
+          Show Hierarchy
+        </button>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={handleShowAllLeads}
+        >
+          Clear
+        </button>
+      </div>
+    </form>
+
+    <p className="hierarchy-filter__hint">
+      Enter a lead number to view its parent/child chain of custody.
+    </p>
+  </div>
+</CollapsibleSection>
+
+
+<CollapsibleSection title="Generate Report" defaultOpen={false}>
+  {/* Choice: type vs file */}
+  <div className="summaryModeRow">
+  <label className="summaryOption">
+      <input
+        type="radio"
+        name="summary-mode"
+        value="type"
+        checked={summaryMode === 'type'}
+        onChange={() => handleSummaryMode('type')}
+      />
+      <span className="summaryOptionText">Type summary manually</span>
+    </label>
+ <label className="summaryOption">      <input
+        type="radio"
+        name="summary-mode"
+        value="file"
+        checked={summaryMode === 'file'}
+        onChange={() => handleSummaryMode('file')}
+      />
+          <span className="summaryOptionText">Attach executive report</span>
+
+    </label>
+  </div>
+
+  {/* If FILE: show uploader */}
+  {summaryMode === 'file' && (
+    <div style={{ marginBottom: 16 }}>
+      <input
+        type="file"
+        accept=".doc,.docx,.pdf"
+        onChange={handleExecSummaryFileChange}
+      />
+    </div>
+  )}
+
+  {/* --- Report scope controls --- */}
+  <div style={{ marginTop: 8 }}>
+    <h4>Report Scope</h4>
+
+    <label style={{ display: "flex", gap: 8, alignItems: "center", margin: "6px 0" }}>
+      <input
+        type="radio"
+        name="report-scope"
+        value="all"
+        checked={reportScope === "all"}
+        onChange={() => setReportScope("all")}
+      />
+      <span className="summaryOptionText">All leads in the case</span>
+    </label>
+
+    <label style={{ display: "flex", gap: 8, alignItems: "center", margin: "6px 0" }}>
+      <input
+        type="radio"
+        name="report-scope"
+        value="selected"
+        checked={reportScope === "selected"}
+        onChange={() => setReportScope("selected")}
+      />
+      <span className="summaryOptionText">Manually selected subset (via checkboxes next to each lead)</span>
+
+    </label>
+
+ {reportScope === "selected" && (
+  <div style={{ margin: "8px 0 12px" }}>
+    <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+      <span className="summaryOptionText">Limit visible leads by range:</span>
+      <input
+        type="text"
+        placeholder="From #"
+        value={subsetRange.start}
+        onChange={(e) => setSubsetRange((r) => ({ ...r, start: e.target.value }))}
+        style={{ width: 100, padding: "6px 8px" }}
+      />
+      <span>—</span>
+      <input
+        type="text"
+        placeholder="To #"
+        value={subsetRange.end}
+        onChange={(e) => setSubsetRange((r) => ({ ...r, end: e.target.value }))}
+        style={{ width: 100, padding: "6px 8px" }}
+      />
+      <button  type="submit" className="btn btn-primary" onClick={applySubsetRange}>Apply</button>
+      <button  type="submit" className="btn btn-secondary"   onClick={clearSubsetRange}>Clear</button>
+
+      <span className="hierarchy-filter__hint"> Only leads in this range will be displayed below. Tick the checkboxes to include them in the subset.
+    </span>
+    </div>
+  </div>
+)}
+  </div>
+
+  <button type="submit" className="btn btn-primary" onClick={handleRunReportWithSummary}>
+    Run Report
+  </button>
+</CollapsibleSection>
+
+
+              <div className="search-lead-portion">
             <div className="search-lead-head">
             <label className="input-label1">Search Lead</label>
             </div>
@@ -1171,69 +1400,6 @@ disabled={!useWebpageSummary} >Save</button>
               </div>
               </div>
               </div> 
-              {/* <CaseHeaderSection /> */}
-
-              <div className="block1">
-        <label className="input-label">Select Leads to view</label>
-        <div className="top-row">
-        <div className="top-rowhead">
-          <div className="square">
-          <input
-                  type="text"
-                  className="square-input"
-                  placeholder=""
-                  value={selectStartLead1}
-                  onChange={(e) => setSelectStartLead1(e.target.value)}
-                />
-          </div>
-          <div className="dash"></div>
-          <div className="square">
-          <input
-                  type="text"
-                  className="square-input"
-                  placeholder=""
-                  value={selectEndLead2}
-                  onChange={(e) => setSelectEndLead2(e.target.value)}
-                />
-          </div>
-          </div>
-          {/* <div className="select-lead-btn-container"> */}
-          <button className="search-button1" onClick={handleShowLeadsInRange} >
-                  Show Leads
-                </button>
-                {/* <button className="search-button1" onClick={handleShowAllLeads}>
-                  Show All Leads
-                </button> */}
-                </div>
-                <div className="show-all-lead-btn-sec">
-                <button className="show-all-lead-btn" onClick={handleShowAllLeads}>
-                  Show All Leads
-                </button>
-                </div>
-        </div>
-
-
-        <div className="block1">
-        <label className="input-label">View Lead Hierarchy</label>
-        <div className="top-row">
-        <div className="top-rowhead">
-          <div className="square1">
-          <input
-                  type="text"
-                  className="square-input"
-                  placeholder=""
-                  value={hierarchyLeadInput}
-                  onChange={(e) => setHierarchyLeadInput(e.target.value)}
-                />
-          </div>
-          <div className="square4"></div>
-          <div className="square3"></div>
-          </div>
-          <button className="search-button1" onClick={handleShowHierarchy}>
-                  Show Hierarchy
-                </button>
-        </div>
-        </div>
                <div className="p-6">
                   <Pagination
                     currentPage={currentPage}

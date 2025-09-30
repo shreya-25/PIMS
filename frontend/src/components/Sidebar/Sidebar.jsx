@@ -289,12 +289,12 @@ const handleCreateLead = () => {
     <li  style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadLog' ? 'active' : ''}`} onClick={() =>navigate("/LeadLog", { state: { caseDetails } } )}>
     <img src={logIcon} className="sidebar-icon" alt="" />
 
-              Lead Log
+              Case Log
             </li>
-    <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadsDesk' ? 'active' : ''}`}
+    {/* <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadsDesk' ? 'active' : ''}`}
             onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}
              > <img src={folderIcon1} className="sidebar-icon" alt="" />
-              Leads Desk</li>
+              Leads Desk</li> */}
     
      <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadsDeskTestExecSummary' ? 'active' : ''}`}
             onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}
