@@ -512,7 +512,7 @@ const assignedColWidths = {
   "Lead Name":          "20%",
   "Due Date":           "13%",
   "Priority":           "10%",
-  "Days Left":          "11%",
+  "Days Left":          "13%",
   "Assigned Officers":  "21%",
 };
 
