@@ -595,11 +595,11 @@ const formatDate = (dateString) => {
             <tr>
               <th style={{ ...caseTeamStyles.th, width: "10%" }}>Lead #</th>
               <th>Lead Log Summary</th>
-              <th style={{ ...caseTeamStyles.th,  width: "11%" }}>Date Created</th>
+              <th style={{ ...caseTeamStyles.th,  width: "14%" }}>Date Created</th>
               <th style={{...caseTeamStyles.th,  width: "10%" }}>Status</th>
-              <th style={{...caseTeamStyles.th,  width: "11%" }}>Assigned To</th>
-              <th style={{ ...caseTeamStyles.th, width: "13%" }}>Date Submitted</th>
-              <th style={{ ...caseTeamStyles.th, width: "12%" }}>Date Approved</th>
+              <th style={{...caseTeamStyles.th,  width: "13%" }}>Assigned To</th>
+              <th style={{ ...caseTeamStyles.th, width: "15%" }}>Date Submitted</th>
+              <th style={{ ...caseTeamStyles.th, width: "15%" }}>Date Approved</th>
             </tr>
           </thead>
           <tbody>

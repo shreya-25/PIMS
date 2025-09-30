@@ -1139,7 +1139,7 @@ const assignedColKey    = {
   "Assigned Officers": "assignedOfficers",
 };
 const assignedColWidths = {
-  "Lead No.":           "9%",
+  "Lead No.":           "16%",
   "Lead Name":          "22%",
   // "Due Date":           "10%",
   "Priority":           "10%",
@@ -1259,7 +1259,7 @@ const pendingColKey    = {
   "Assigned Officers": "assignedOfficers",
 };
 const pendingColWidths = {
-  "Lead No.":           "8%",
+  "Lead No.":           "12%",
   "Lead Name":          "32%",
   // "Due Date":           "10%",
   "Priority":           "8%",
@@ -1477,7 +1477,7 @@ const allColKey    = {
   "Assigned Officers":  "assignedOfficers"
 };
 const allColWidths = {
-  "Lead No.":           "9%",
+  "Lead No.":           "11%",
   "Lead Log Summary":   "32%",
   "Lead Status":        "14%",
   "Assigned Officers":  "22%"

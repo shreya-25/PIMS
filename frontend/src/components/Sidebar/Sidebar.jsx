@@ -301,7 +301,7 @@ const handleCreateLead = () => {
              > <img src={printIcon} className="sidebar-icon" alt="" />
               Generate Report</li>
 
-      <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'SearchLead' ? 'active' : ''}`}
+      {/* <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'SearchLead' ? 'active' : ''}`}
             onClick={() => navigate("/SearchLead", { state: { caseDetails } } )}
              > <img src={searchIcon} className="sidebar-icon" alt="" />
               Advanced Search</li>
@@ -309,7 +309,7 @@ const handleCreateLead = () => {
        <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'ViewTimeline' ? 'active' : ''}`}
             onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}
              > <img src={timelineIcon} className="sidebar-icon" alt="" />
-              Timeline Records</li>
+              Timeline Records</li> */}
 
 
   {/* Toggle Cases dropdown */}

@@ -1634,8 +1634,8 @@ const handleDeleteLead = async () => {
         <div className="case-header-leadReview">
                   <div className="cp-head-leadReview">
                 {
-                  // <h2> {selectedLead?.leadNo ? `Lead: ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"} </h2>
-                  <h2>{selectedLead.leadName? toTitleCase(selectedLead.leadName) : "Unknown Case"}</h2>
+                  <h2> {selectedLead?.leadNo ? `Lead ${selectedLead.leadNo} : ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"} </h2>
+                  // <h2>{selectedLead.leadName? toTitleCase(selectedLead.leadName) : "Unknown Case"}</h2>
 
 
                 }
