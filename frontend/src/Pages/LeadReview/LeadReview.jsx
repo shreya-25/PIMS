@@ -43,6 +43,18 @@ const [confirmTitle, setConfirmTitle] = useState("Confirm");
 const [confirmMessage, setConfirmMessage] = useState("");
 const confirmResolveRef = useRef(null);
 
+// Decline modal state
+const [declineOpen, setDeclineOpen] = useState(false);
+const [declineReason, setDeclineReason] = useState("");
+const presetReasons = [
+  "Not my expertise / outside scope",
+  "Insufficient information provided",
+  "Unavailable in the given timeframe",
+  "Conflict of interest",
+  "Assigned to another officer / duplicate"
+];
+
+
 
    const [showSelectModal, setShowSelectModal] = useState(false);
   const [leads, setLeads] = useState({
@@ -359,6 +371,68 @@ const computeLeadStatus = (assigned) => {
 //        setAlertOpen(true);
 //   }
 // };
+
+const DeclineReasonModal = ({ open, onCancel, onSubmit }) => {
+  if (!open) return null;
+  return (
+    <div className="elog-backdrop" onClick={onCancel}>
+      <div className="elog-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="elog-header">
+          <h3>Reject Lead</h3>
+          <button className="elog-close" onClick={onCancel} aria-label="Close">✕</button>
+        </div>
+
+        <section className="elog-block">
+          <div className="elog-title">Please provide a reason</div>
+
+          {/* Quick chips */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+            {presetReasons.map(r => (
+              <button
+                key={r}
+                type="button"
+                className="elog-chip"
+                onClick={() => setDeclineReason(prev => prev ? `${prev} ${prev.endsWith('.') ? '' : '.'} ${r}` : r)}
+                title="Use this reason"
+                style={{ backgroundColor: "#ccc", color: "#000" }}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+
+          {/* Textarea */}
+          <textarea
+            className="input-field"
+            placeholder="Type a brief, professional reason (required)…"
+            value={declineReason}
+            onChange={(e) => setDeclineReason(e.target.value)}
+            style={{ minHeight: 120 }}
+          />
+
+          <div className="elog-actions" style={{ display: "flex", gap: 12, marginTop: 12, justifyContent: "flex-end" }}>
+            <button className="save-btn1" onClick={onCancel} style={{ background: "#ccc", color: "#000" }}>
+              Cancel
+            </button>
+            <button
+              className="save-btn1"
+              onClick={() => {
+                const reason = (declineReason || "").trim();
+                if (reason.length < 5) return setAlertMessage("Please provide a few words explaining why you’re declining.");
+                onSubmit(reason);
+              }}
+              style={{ background: "#e74c3c" }}
+              title="Decline with reason"
+            >
+              Submit
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+};
+
 
 const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = leadData) => {
   if (!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")) {
@@ -1516,6 +1590,20 @@ const handleDeleteLead = async () => {
   }}
 />
 
+<DeclineReasonModal
+  open={declineOpen}
+  onCancel={() => { setDeclineOpen(false); setDeclineReason(""); }}
+  onSubmit={async (reason) => {
+    try {
+      await declineLead(leadData.leadNo, leadData.description, reason);
+    } finally {
+      setDeclineOpen(false);
+      setDeclineReason("");
+    }
+  }}
+/>
+
+
       {/* Main Container */}
       <div className="lead-review-container1">
 
@@ -1707,14 +1795,12 @@ const handleDeleteLead = async () => {
         Accept
       </button>
 
-      <button
-        
-        style={{ backgroundColor: "#e74c3c", color: "#fff", fontSize: "20px" }}
-        onClick={() => declineLead(leadData.leadNo, leadData.description)}
-          
-      >
-        Reject
-      </button>
+     <button
+  style={{ backgroundColor: "#e74c3c", color: "#fff", fontSize: "20px" }}
+  onClick={() => setDeclineOpen(true)}
+>
+  Reject
+</button>
     </div>
   </div>
 )}

@@ -144,7 +144,7 @@ const AssignmentLog = ({ events, status }) => {
       case "accepted":
         return `${people} accepted`;
       case "declined":
-        return `${people} declined${ev.reason ? ` • ${ev.reason}` : ""}`;
+        return `${people} declined${ev.reason ? ` • Reason: ${ev.reason}` : ""}`;
       case "reassigned-added":
         return `Added ${people}${ev.primaryInvestigator ? ` • Primary: ${nameOf(ev.primaryInvestigator)}` : ""}`;
       case "reassigned-removed":
