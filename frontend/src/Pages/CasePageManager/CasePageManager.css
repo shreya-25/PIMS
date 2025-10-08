@@ -89,6 +89,7 @@
   .case-header-cp {
     display: flex;
     width: 90%;
+    margin-bottom : 8px;
     justify-content: space-between; 
     align-items: center; 
     text-align: left;

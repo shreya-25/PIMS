@@ -10,7 +10,7 @@ import api from "../../api";
 export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   activeTab,   setActiveTab, onShowCaseSelector }) => {
   const navigate = useNavigate(); 
 
-  const [caseDropdownOpen, setCaseDropdownOpen] = useState(false);
+  const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
   const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
     const [notifications, setNotifications] = useState([]);
   const location = useLocation();
@@ -291,10 +291,10 @@ const handleCreateLead = () => {
 
               Case Log
             </li>
-    {/* <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadsDesk' ? 'active' : ''}`}
+    <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadsDesk' ? 'active' : ''}`}
             onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}
              > <img src={folderIcon1} className="sidebar-icon" alt="" />
-              Leads Desk</li> */}
+              Leads Desk</li>
     
      <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadsDeskTestExecSummary' ? 'active' : ''}`}
             onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}

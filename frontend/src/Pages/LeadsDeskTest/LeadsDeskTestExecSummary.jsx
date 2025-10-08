@@ -158,6 +158,7 @@ export const LeadsDeskTestExecSummary = () => {
 
   const [reportScope, setReportScope] = useState("all"); // 'all' | 'visible' | 'selected'
 const [selectedForReport, setSelectedForReport] = useState(() => new Set());
+const [reportType, setReportType] = useState(null); 
 
 // Range just for the "selected subset" flow
 const [subsetRange, setSubsetRange] = useState({ start: "", end: "" });
@@ -1160,6 +1161,8 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
         </div>
           )}
 
+
+        {/* <div className="left-content-execSummary"> */}
         <div className="left-content-execSummary">
 
         {/* <div className="case-header">
@@ -1172,7 +1175,7 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
           </div> */}
 
           <div className="bottom-sec-ldExecSummary" id="main-content">
-            <CollapsibleSection title="Case Summary" defaultOpen={false}>
+            {/* <CollapsibleSection title="Case Summary" defaultOpen={true}>
             <div className="case-summary-ld">
               <textarea
                 className="textarea-field-ld"
@@ -1182,107 +1185,9 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
                 readOnly={!isEditing}
               ></textarea>
             </div>
-            </CollapsibleSection>
+            </CollapsibleSection> */}
 
-
-              {/* <CaseHeaderSection /> */}
-
-<CollapsibleSection title="Select Leads to View (Range)" defaultOpen={false}>
-  <div className="range-filter">
-    <div className="range-filter__label"> Lead range</div>
-
-    <div className="range-filter__row">
-      <input
-        id="lead-range-from"
-        type="number"
-        inputMode="numeric"
-        pattern="[0-9]*"
-        className="range-filter__input"
-        placeholder="From lead #"
-        value={selectStartLead1}
-        onChange={(e) => setSelectStartLead1(e.target.value)}
-        aria-label="From lead number"
-      />
-
-      <span className="range-filter__sep">—</span>
-
-      <input
-        id="lead-range-to"
-        type="number"
-        inputMode="numeric"
-        pattern="[0-9]*"
-        className="range-filter__input"
-        placeholder="To lead #"
-        value={selectEndLead2}
-        onChange={(e) => setSelectEndLead2(e.target.value)}
-        aria-label="To lead number"
-      />
-
-      <div className="range-filter__actions">
-        <button className="btn btn-primary" onClick={handleShowLeadsInRange}>
-          Apply
-        </button>
-        <button className="btn btn-secondary" onClick={handleShowAllLeads}>
-          Clear
-        </button>
-      </div>
-    </div>
-
-    <p className="range-filter__hint">Enter a lead number range (e.g., 1200 — 1250) and click Apply.</p>
-  </div>
-</CollapsibleSection>
-
-
-<CollapsibleSection title="View Lead Hierarchy" defaultOpen={false}>
-  <div className="hierarchy-filter">
-    <div className="hierarchy-filter__label">Lead chain lookup</div>
-
-    <form
-      className="hierarchy-filter__row"
-      onSubmit={(e) => {
-        e.preventDefault();
-        handleShowHierarchy();
-      }}
-    >
-      <input
-        id="hierarchy-lead"
-        type="number"
-        inputMode="numeric"
-        pattern="[0-9]*"
-        className="hierarchy-filter__input"
-        placeholder="Lead # (e.g., 1234)"
-        value={hierarchyLeadInput}
-        onChange={(e) => setHierarchyLeadInput(e.target.value)}
-        aria-label="Lead number"
-      />
-
-      <div className="hierarchy-filter__actions">
-        <button
-          type="submit"
-          className="btn btn-primary"
-          // disabled={!String(hierarchyLeadInput).trim()}
-        >
-          Show Hierarchy
-        </button>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={handleShowAllLeads}
-        >
-          Clear
-        </button>
-      </div>
-    </form>
-
-    <p className="hierarchy-filter__hint">
-      Enter a lead number to view its parent/child chain of custody.
-    </p>
-  </div>
-</CollapsibleSection>
-
-
-<CollapsibleSection title="Generate Report" defaultOpen={false}>
-  {/* Choice: type vs file */}
+            {/* <CollapsibleSection title="Generate Report" defaultOpen={true}>
   <div className="summaryModeRow">
   <label className="summaryOption">
       <input
@@ -1306,7 +1211,7 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
     </label>
   </div>
 
-  {/* If FILE: show uploader */}
+
   {summaryMode === 'file' && (
     <div style={{ marginBottom: 16 }}>
       <input
@@ -1317,7 +1222,6 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
     </div>
   )}
 
-  {/* --- Report scope controls --- */}
   <div style={{ marginTop: 8 }}>
     <h4>Report Scope</h4>
 
@@ -1376,7 +1280,260 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
   <button type="submit" className="btn btn-primary" onClick={handleRunReportWithSummary}>
     Run Report
   </button>
+</CollapsibleSection> */}
+
+<CollapsibleSection title="Generate Report" defaultOpen={true}>
+
+  {/* Single straight-line checkbox row */}
+  <div className="reportTargetRow" style={{display:'flex',gap:24,alignItems:'center',flexWrap:'wrap',margin:'12px 0'}}>
+    <label className="summaryOption" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+      <input
+        type="checkbox"
+        checked={reportType === 'all'}
+        onChange={() => setReportType(reportType === 'all' ? null : 'all')}
+      />
+      <span className="summaryOptionText">All leads</span>
+    </label>
+
+    <label className="summaryOption" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+      <input
+        type="checkbox"
+        checked={reportType === 'single'}
+        onChange={() => setReportType(reportType === 'single' ? null : 'single')}
+      />
+      <span className="summaryOptionText">Single lead</span>
+    </label>
+
+     <label className="summaryOption" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+      <input
+        type="checkbox"
+        checked={reportType === 'selected'}
+        onChange={() => setReportType(reportType === 'selected' ? null : 'selected')}
+      />
+      <span className="summaryOptionText">Selected leads (range)</span>
+    </label>
+
+    
+
+    <label className="summaryOption" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+      <input
+        type="checkbox"
+        checked={reportType === 'hierarchy'}
+        onChange={() => setReportType(reportType === 'hierarchy' ? null : 'hierarchy')}
+      />
+      <span className="summaryOptionText">Lead hierarchy</span>
+    </label>
+
+    <label className="summaryOption" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+      <input
+        type="checkbox"
+        checked={reportType === 'timeline'}
+        onChange={() => setReportType(reportType === 'timeline' ? null : 'timeline')}
+      />
+      <span className="summaryOptionText">Timeline entry leads</span>
+    </label>
+     <label className="summaryOption" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+      <input
+        type="checkbox"
+        checked={reportType === 'flagged'}
+        onChange={() => setReportType(reportType === 'flagged' ? null : 'flagged')}
+      />
+      <span className="summaryOptionText">Flagged leads</span>
+    </label>
+  </div>
+
+  {/* When "All leads" is selected, show ONLY this part below */}
+  {reportType === 'all' && (
+    <>
+      {/* Summary input mode */}
+      <div className="summaryModeRow">
+        <label className="summaryOption">
+          <input
+            type="radio"
+            name="summary-mode"
+            value="type"
+            checked={summaryMode === 'type'}
+            onChange={() => handleSummaryMode('type')}
+          />
+          <span className="summaryOptionText">Type summary manually</span>
+        </label>
+
+        <label className="summaryOption">
+          <input
+            type="radio"
+            name="summary-mode"
+            value="file"
+            checked={summaryMode === 'file'}
+            onChange={() => handleSummaryMode('file')}
+          />
+          <span className="summaryOptionText">Attach executive report</span>
+        </label>
+      </div>
+
+      {summaryMode === 'file' && (
+        <div style={{ marginBottom: 16 }}>
+          <input
+            type="file"
+            accept=".doc,.docx,.pdf"
+            onChange={handleExecSummaryFileChange}
+          />
+        </div>
+      )}
+
+      <div style={{margin:'8px 0 0'}}>
+        <div style={{marginBottom:8}}>All leads selected — run report.</div>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => {
+            setReportScope('all');
+            handleRunReportWithSummary();
+          }}
+        >
+          Run report
+        </button>
+      </div>
+    </>
+  )}
+
+  {reportType === 'hierarchy' && (<>
+    <div className="hierarchy-filter">
+      <div className="hierarchy-filter__label">Lead chain lookup</div>
+
+      <form
+        className="hierarchy-filter__row"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleShowHierarchy();
+        }}
+      >
+        <input
+          id="hierarchy-lead"
+          type="number"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          className="hierarchy-filter__input"
+          placeholder="Lead # (e.g., 1234)"
+          value={hierarchyLeadInput}
+          onChange={(e) => setHierarchyLeadInput(e.target.value)}
+          aria-label="Lead number"
+        />
+
+        <div className="hierarchy-filter__actions">
+          <button
+            type="submit"
+            className="btn btn-primary"
+            // disabled={!String(hierarchyLeadInput).trim()}
+          >
+            Show Hierarchy
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={handleShowAllLeads}
+          >
+            Clear
+          </button>
+        </div>
+      </form>
+
+      <p className="hierarchy-filter__hint">
+        Enter a lead number to view its parent/child chain of custody.
+      </p>
+    </div>
+
+    <div style={{ marginTop: 8 }}>
+  <button
+    type="button"
+    className="btn btn-primary"
+    onClick={() => {
+      // Use the currently visible hierarchy results
+      setReportScope('visible'); // or a custom scope if you prefer
+      handleRunReportWithSummary();
+    }}
+  >
+    Run report
+  </button>
+</div>
+</>
+)}
+
+ {reportType === 'selected' && (
+    <>
+      <>
+        <div className="range-filter">
+          <div className="range-filter__label"> Lead range</div>
+
+          <div className="range-filter__row">
+            <input
+              id="lead-range-from"
+              type="number"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              className="range-filter__input"
+              placeholder="From lead #"
+              value={selectStartLead1}
+              onChange={(e) => setSelectStartLead1(e.target.value)}
+              aria-label="From lead number"
+            />
+
+            <span className="range-filter__sep">—</span>
+
+            <input
+              id="lead-range-to"
+              type="number"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              className="range-filter__input"
+              placeholder="To lead #"
+              value={selectEndLead2}
+              onChange={(e) => setSelectEndLead2(e.target.value)}
+              aria-label="To lead number"
+            />
+
+            <div className="range-filter__actions">
+              <button className="btn btn-primary" onClick={handleShowLeadsInRange}>
+                Apply
+              </button>
+              <button className="btn btn-secondary" onClick={handleShowAllLeads}>
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <p className="range-filter__hint">
+            Enter a lead number range (e.g., 1200 — 1250) and click Apply.
+          </p>
+        </div>
+        </>
+
+      <div style={{ marginTop: 8 }}>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => {
+            setReportScope('visible'); // use the currently visible filtered leads
+            handleRunReportWithSummary();
+          }}
+        >
+          Run report
+        </button>
+      </div>
+    </>
+  )}
+
+  
+
 </CollapsibleSection>
+
+
+
+              {/* <CaseHeaderSection /> */}
+
+
+
+
+
 
 
               <div className="search-lead-portion">

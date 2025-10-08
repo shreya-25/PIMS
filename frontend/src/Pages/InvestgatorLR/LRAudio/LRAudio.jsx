@@ -1184,7 +1184,7 @@ Case Page
            <table className="leads-table">
           <thead>
             <tr>
-              <th style={{ width: "12%" }}>Date Entered</th>
+              <th style={{ width: "14%" }}>Date Entered</th>
               <th style={{ width: "12%" }}>Narrative Id </th>
               {/* <th>Date Audio Recorded</th> */}
               <th>File Name</th>

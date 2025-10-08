@@ -49,7 +49,7 @@ export const Investigator = () => {
          const isNavDisabled = lead => lead.leadStatus === 'Assigned';
 const disabledStyle = { opacity: 0.5, cursor: 'not-allowed' };
 const [isCaseSummaryOpen, setIsCaseSummaryOpen] = useState(true);
-const [isCaseTeamOpen, setIsCaseTeamOpen] = useState(false);
+const [isCaseTeamOpen, setIsCaseTeamOpen] = useState(true);
 
   console.log("case context", selectedCase);
   const handleSaveClick = () => {

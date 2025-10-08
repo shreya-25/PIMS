@@ -68,7 +68,7 @@ const [caseUpdatedAt, setCaseUpdatedAt] = useState(null);
 const cmRef = useRef(null);
 const invRef = useRef(null);
 const [isCaseSummaryOpen, setIsCaseSummaryOpen] = useState(true);
-const [isCaseTeamOpen, setIsCaseTeamOpen] = useState(false);
+const [isCaseTeamOpen, setIsCaseTeamOpen] = useState(true);
 
 
   useEffect(() => {

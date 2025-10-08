@@ -975,7 +975,7 @@ const handleEdit = idx => {
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th style={{ width: "11%" }}> Narrative Id </th>
+              <th style={{ width: "12%" }}> Narrative Id </th>
               <th>Type</th>
               {/* <th>Collection Date</th> */}
               {/* <th>Disposed Date</th> */}
