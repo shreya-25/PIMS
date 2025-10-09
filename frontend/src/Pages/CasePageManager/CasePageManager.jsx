@@ -1685,15 +1685,18 @@ const toTitleCase = (s = "") =>
 
                 }
                 </div>
-                   <div  className="add-lead-section">
-                {/* <div className="add-lead-section-content"><h2>Click here to add a new lead</h2></div> */}
+
+                   {/* <div  className="add-lead-section">
+          
                 <div className = "add-lead-btn1">
                 <button className="cp-add-lead-btn"  onClick={() => navigate('/createlead', { state: { caseDetails: selectedCase } })}
                 style={{ cursor: 'pointer', width: '100%' }} >
                    <i className="fa-solid fa-plus"></i> Add Lead
                 </button>
                 </div>
-                </div>
+                </div> */}
+
+
                 </div>
 
                 {/* <div className="cp-case-status">

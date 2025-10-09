@@ -7,7 +7,8 @@ import { CaseSelector } from "../CaseSelector/CaseSelector";
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from "../../api";
 
-export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   activeTab,   setActiveTab, onShowCaseSelector }) => {
+export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   activeTab,   setActiveTab, onShowCaseSelector,   variant = "default"
+  }) => {
   const navigate = useNavigate(); 
 
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
@@ -36,6 +37,7 @@ export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   a
   const printIcon = `${process.env.PUBLIC_URL}/Materials/print.png`;
   const searchIcon = `${process.env.PUBLIC_URL}/Materials/search.png`;
   const timelineIcon = `${process.env.PUBLIC_URL}/Materials/timeline.png`;
+  const bellIcon = `${process.env.PUBLIC_URL}/Materials/notification.png`;
 
 const handleCreateLead = () => {
   navigate('/createlead', {
@@ -208,8 +210,54 @@ const handleCreateLead = () => {
     navigate('/LeadReview', { state: { caseDetails: selectedCase, leadDetails: lead } });
   };
 
+  if (variant === "home") {
+    const notifCount = notifications?.length || 0;
+
+    return (
+      <div className="sideitem">
+        <li
+          className={`sidebar-item ${activePage === 'HomePage' ? 'active' : ''}`}
+          onClick={() => navigate("/HomePage")}
+        >
+          <img src={homeIcon} className="sidebar-icon" alt="" />
+          PIMS Home
+        </li>
+
+        <li
+          className={`sidebar-item ${activeTab === 'notifications' ? 'active' : ''}`}
+          onClick={() => setActiveTab?.('notifications')}
+        >
+          <img src={bellIcon} className="sidebar-icon" alt="" />
+          <span className="sidebar-text">Notifications</span>
+          <span className="sidebar-number">{notifCount}</span>
+        </li>
+
+        <li
+          className={`sidebar-item ${['cases','assignedLeads','pendingLeadReturns'].includes(activeTab) ? 'active' : ''}`}
+          onClick={() => setActiveTab?.('cases')} // go straight to ongoing cases view
+        >
+          <img src={folderIcon} className="sidebar-icon" alt="" />
+          <span className="sidebar-text">Case Management</span>
+        </li>
+
+          <li
+        className="sidebar-item sidebar-subitem"
+        style={{ paddingLeft: 32 }}
+          onClick={() => {
+    setActiveTab?.('cases');          // show stats/content area
+    onShowCaseSelector?.(true);       // tell HomePage to open SlideBar
+  }}
+      >
+        <span className="sidebar-text">    <img src={addIcon} className="sidebar-icon" alt="" />
+ Add Case</span>
+      </li>
+      </div>
+    );
+  }
+
 
   return (
+    
     <div className="sideitem">
     
         
@@ -285,12 +333,6 @@ const handleCreateLead = () => {
   </li>
 )}
 
-
-    <li  style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadLog' ? 'active' : ''}`} onClick={() =>navigate("/LeadLog", { state: { caseDetails } } )}>
-    <img src={logIcon} className="sidebar-icon" alt="" />
-
-              Case Log
-            </li>
     <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadsDesk' ? 'active' : ''}`}
             onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}
              > <img src={folderIcon1} className="sidebar-icon" alt="" />
@@ -300,6 +342,12 @@ const handleCreateLead = () => {
             onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}
              > <img src={printIcon} className="sidebar-icon" alt="" />
               Generate Report</li>
+
+                  <li  style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadLog' ? 'active' : ''}`} onClick={() =>navigate("/LeadLog", { state: { caseDetails } } )}>
+    <img src={logIcon} className="sidebar-icon" alt="" />
+
+              Case Log
+            </li>
 
       {/* <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'SearchLead' ? 'active' : ''}`}
             onClick={() => navigate("/SearchLead", { state: { caseDetails } } )}

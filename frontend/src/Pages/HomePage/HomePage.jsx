@@ -20,12 +20,16 @@ import api from "../../api";
 
 export const HomePage = () => {
 
-  const [activeTab, setActiveTab] = useState("cases"); // Default tab
+  const [activeTab, setActiveTab] = useState("notifications"); // Default tab
+  const isCaseMgmt = activeTab !== "notifications";  
   const filterButtonRefs = useRef({});
   const assignedFilterButtonRefs = useRef({});
   const pendingFilterButtonRefs = useRef({});
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [caseToClose, setCaseToClose]       = useState({ caseNo: null, caseName: "" });
+  // NEW: controls the Add Case modal/drawer
+const [showAddCase, setShowAddCase] = useState(false);
+
 
  
     const [currentPage, setCurrentPage] = useState(1);
@@ -56,6 +60,8 @@ export const HomePage = () => {
 
 
     useEffect(() => {
+      if (!isCaseMgmt) return;                
+    let cancelled = false;
       const fetchCases = async () => {
         try {
           const token = localStorage.getItem("token"); // Get JWT token
@@ -71,6 +77,8 @@ export const HomePage = () => {
             },
             params: { officerName: signedInOfficer }, // ✅ Send officerName as query param
           });
+
+          if (cancelled) return;
 
           console.log("✅ API Response:", response.data); // Debugging log
 
@@ -100,8 +108,9 @@ export const HomePage = () => {
               fetchCases(); // Initial call
               const intervalId = setInterval(fetchCases, 15_000); // Poll every 15s
 
-              return () => clearInterval(intervalId); // Cleanup on unmount
-    }, [signedInOfficer]);
+              // return () => clearInterval(intervalId);
+              return () => { cancelled = true; clearInterval(intervalId); };
+    }, [isCaseMgmt, signedInOfficer]);
 
   
     const handleViewAssignedLead = async (lead) => {
@@ -1134,9 +1143,10 @@ const sortedPendingReturns = useMemo(() => {
 
 
   return (
-     <div className="page-scale"> 
-    <div className = "main-page-bodyhp">
-    <Navbar />
+    //  <div className="page-scale"> 
+     <div className="case-page-manager">
+
+         <Navbar />
     <AlertModal
       isOpen={closeConfirmOpen}
       title="Confirm Close"
@@ -1149,16 +1159,59 @@ const sortedPendingReturns = useMemo(() => {
       onClose={() => setCloseConfirmOpen(false)}
     />
 
-    <div className="main-page-contenthp">
+    {showAddCase && (
+  <div className="hp-modal-backdrop" onClick={() => setShowAddCase(false)}>
+    <div className="hp-modal-panel" onClick={(e) => e.stopPropagation()}>
+      <div className="hp-modal-header">
+        <h3>Add Case</h3>
+        <button className="hp-close" onClick={() => setShowAddCase(false)}>×</button>
+      </div>
+
+      <SlideBar
+        onAddCase={(newCase) => {
+          addCase(newCase);          // your existing addCase()
+          setActiveTab('cases');     // ensure we’re still on case mgmt
+          setShowAddCase(false);     // close the modal
+        }}
+        buttonClass="custom-add-case-btn1"
+      />
+    </div>
+  </div>
+)}
+
+
+    <div className = "main-container">
+       <SideBar
+            variant="home"
+            activePage="HomePage"
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            onShowCaseSelector={setShowAddCase}
+          />
+
+
+    {/* <div className="main-page-contenthp"> */}
+            
+           <div className="left-content">
+
       <div className="main-page-abovepart">
+          {!isCaseMgmt && (
+    <>
         <NotificationCard  acceptLead={acceptLead} signedInOfficer={signedInOfficer} 
         />
+    </>
+          )}
+
+{/*         
           <div className= "add-case-section">
             <SlideBar
                   onAddCase={(newCase) => addCase(newCase)}
                   buttonClass="custom-add-case-btn1"
             />
-        </div>
+        </div> */}
+
+
+
         {/* <div className="case-overview-sec">
         <div className="cp-head">
           <h2> Cases Overview</h2>
@@ -1166,6 +1219,9 @@ const sortedPendingReturns = useMemo(() => {
     
         </div> */}
       </div>
+
+            {isCaseMgmt && (
+    <>
       <div className="main-page-belowpart">
       <div className="stats-bar">
         
@@ -1548,10 +1604,15 @@ const sortedPendingReturns = useMemo(() => {
 />
 
         </div>
-      </div>
+          </div>
+    </>
+    )}
+  
+ 
     </div>
    </div>
    </div>
+  //  </div>
   );
 };
 
