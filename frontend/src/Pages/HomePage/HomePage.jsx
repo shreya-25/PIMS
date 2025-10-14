@@ -1159,26 +1159,7 @@ const sortedPendingReturns = useMemo(() => {
       onClose={() => setCloseConfirmOpen(false)}
     />
 
-    {showAddCase && (
-  <div className="hp-modal-backdrop" onClick={() => setShowAddCase(false)}>
-    <div className="hp-modal-panel" onClick={(e) => e.stopPropagation()}>
-      <div className="hp-modal-header">
-        <h3>Add Case</h3>
-        <button className="hp-close" onClick={() => setShowAddCase(false)}>×</button>
-      </div>
-
-      <SlideBar
-        onAddCase={(newCase) => {
-          addCase(newCase);          // your existing addCase()
-          setActiveTab('cases');     // ensure we’re still on case mgmt
-          setShowAddCase(false);     // close the modal
-        }}
-        buttonClass="custom-add-case-btn1"
-      />
-    </div>
-  </div>
-)}
-
+  
 
     <div className = "main-container">
        <SideBar
@@ -1188,6 +1169,21 @@ const sortedPendingReturns = useMemo(() => {
             setActiveTab={setActiveTab}
             onShowCaseSelector={setShowAddCase}
           />
+
+{showAddCase && (
+  <SlideBar
+    // if your SlideBar supports a controlled open state, keep these:
+    isOpen={true}                 // OPTIONAL (see notes below)
+    hideTrigger={true}            // OPTIONAL (hide any internal “Add Case” button)
+    onClose={() => setShowAddCase(false)}
+    onAddCase={(newCase) => {
+      addCase(newCase);
+      setActiveTab('cases');
+      setShowAddCase(false);
+    }}
+    buttonClass="custom-add-case-btn1"
+  />
+)}
 
 
     {/* <div className="main-page-contenthp"> */}

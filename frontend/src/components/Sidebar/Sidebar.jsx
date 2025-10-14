@@ -215,13 +215,13 @@ const handleCreateLead = () => {
 
     return (
       <div className="sideitem">
-        <li
+        {/* <li
           className={`sidebar-item ${activePage === 'HomePage' ? 'active' : ''}`}
           onClick={() => navigate("/HomePage")}
         >
           <img src={homeIcon} className="sidebar-icon" alt="" />
           PIMS Home
-        </li>
+        </li> */}
 
         <li
           className={`sidebar-item ${activeTab === 'notifications' ? 'active' : ''}`}
@@ -229,7 +229,7 @@ const handleCreateLead = () => {
         >
           <img src={bellIcon} className="sidebar-icon" alt="" />
           <span className="sidebar-text">Notifications</span>
-          <span className="sidebar-number">{notifCount}</span>
+          {/* <span className="sidebar-number">{notifCount}</span> */}
         </li>
 
         <li

@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect, useRef } from "react";
 import Navbar from "../../components/Navbar/Navbar";
 import FootBar from "../../components/FootBar/FootBar";
 import { useDataContext } from "../Context/DataContext";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import PersonModal from "../../components/PersonModal/PersonModel";
@@ -790,11 +790,11 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
             </colgroup>
             <tbody>
               <tr>
-                <td className="label-cell">Lead Number:</td>
+                <td className="label-cell">Lead Number</td>
                 <td className="input-cell">
                   <input type="text" value={lead.leadNo} readOnly />
                 </td>
-                <td className="label-cell">Lead Origin:</td>
+                <td className="label-cell">Lead Origin</td>
                 <td className="input-cell">
                   <input
                     type="text"
@@ -802,17 +802,17 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
                     readOnly
                   />
                 </td>
-                <td className="label-cell">Assigned Date:</td>
+                <td className="label-cell">Assigned Date</td>
                 <td className="input-cell">
                   <input type="text" value={formatDate(lead.assignedDate)} readOnly />
                 </td>
-                <td className="label-cell">Completed Date:</td>
+                <td className="label-cell">Completed Date</td>
                 <td className="input-cell">
                   <input type="text" value={formatDate(lead.completedDate)} readOnly />
                 </td>
               </tr>
               <tr>
-                <td className="label-cell">Assigned Officers:</td>
+                <td className="label-cell">Assigned Officers</td>
                 <td className="input-cell" colSpan={7}>
                    <input type="text" value={ Array.isArray(lead.assignedTo) && lead.assignedTo.length ? lead.assignedTo
                               .map((a) => a.username)            
@@ -829,7 +829,7 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
           <table className="leads-table">
             <tbody>
               <tr className="table-first-row">
-                <td>Lead Instruction</td>
+                <td style={{ textAlign: 'center' }}>Lead Instruction</td>
                 <td>
                   <input
                     type="text"
@@ -844,7 +844,7 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
                 lead.leadReturns.map((returnItem) => (
                   <React.Fragment key={returnItem._id || returnItem.leadReturnId}>
                     <tr>
-                      <td>{`Lead Return ID: ${returnItem.leadReturnId}`}</td>
+                      <td style={{ textAlign: 'center' }}>{`Lead Return ID: ${returnItem.leadReturnId}`}</td>
                       <td>
                         <textarea
                           className="lead-return-input"
@@ -1068,7 +1068,7 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="2">No Lead Returns Available</td>
+                  <td colSpan="2" style={{ textAlign: 'center' }}>No Lead Returns Available</td>
                 </tr>
               )}
             </tbody>
@@ -1102,11 +1102,22 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
 
         <div className="right-sec">
 
-        <div className="caseandleadinfo"> 
-          <h5 className = "side-title">  Case {selectedCase.caseNo || ""}: {selectedCase.caseName || "Unknown Case"} </h5> 
+         <div className="ld-head">
+  <Link to="/HomePage" className="crumb">PIMS Home</Link>
+  <span className="sep">{" >> "}</span>
+  <Link
+    to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+    state={{ caseDetails: selectedCase }}
+    className="crumb"
+  >
+    Case Page: {selectedCase.caseNo || ""} - {selectedCase.caseName || "Unknown Case"}
+  </Link>
+  <span className="sep">{" >> "}</span>
+  <span className="crumb-current" aria-current="page">Leads Desk</span>
+</div>
 
+        
 
-          </div>
 
           {/* <div className="header-ld-exec"> */}
         {/* <div className="case-header-ldExecSummary">
@@ -1162,7 +1173,7 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
 
 
         {/* <div className="left-content-execSummary"> */}
-        <div className="">
+        <div className="ld-content-bottom">
 
         {/* <div className="case-header">
             <h2>LEADS DESK</h2>

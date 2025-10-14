@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect, useRef } from "react";
 import Navbar from "../../components/Navbar/Navbar";
 import FootBar from "../../components/FootBar/FootBar";
 import { useDataContext } from "../Context/DataContext";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import PersonModal from "../../components/PersonModal/PersonModel";
@@ -155,6 +155,7 @@ export const LeadsDeskTestExecSummary = () => {
   const [typedSummary, setTypedSummary] = useState("");
   const saveTimeout = useRef(null);
     const { leadDetails, caseDetails } = location.state || {};
+    const [selectedSingleLeadNo, setSelectedSingleLeadNo] = useState("");
 
   const [reportScope, setReportScope] = useState("all"); // 'all' | 'visible' | 'selected'
 const [selectedForReport, setSelectedForReport] = useState(() => new Set());
@@ -193,6 +194,19 @@ const toggleLeadForReport = (leadNo) => {
     else next.add(leadNo);
     return next;
   });
+};
+
+const handleLeadCardClick = (e, lead) => {
+  // Only react to clicks when the "Single lead" target is active
+  if (reportType !== "single") return;
+
+  // Ignore clicks on interactive controls inside the card
+  const tag = e.target?.tagName?.toLowerCase();
+  if (["button", "a", "input", "textarea", "select", "label"].includes(tag)) return;
+
+  setSelectedSingleLeadNo(String(lead.leadNo));
+  // Set scope locally for computeLeadsForReport()
+  setReportScope("single");
 };
 
    // Save to backend
@@ -646,6 +660,14 @@ const computeLeadsForReport = () => {
   if (reportScope === "visible")
     return hierarchyLeadsData.length > 0 ? hierarchyLeadsData : leadsData; // if nothing filtered, fall back to all
   // 'selected'
+  
+  if (reportScope === "single") {
+    if (!selectedSingleLeadNo) return [];
+    // Prefer the currently visible list if any, otherwise all
+    const src = hierarchyLeadsData.length > 0 ? hierarchyLeadsData : leadsData;
+    return src.filter((l) => String(l.leadNo) === String(selectedSingleLeadNo));
+  }
+
    if (reportScope === "selected") {
     const min = toNum(subsetRange.start);
     const max = toNum(subsetRange.end);
@@ -764,7 +786,9 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
 
   // ------------------ Render Leads Table ------------------
   const renderLeads = (leadsArray) => {
+    
     return leadsArray.map((lead, leadIndex) => (
+      
       <div key={leadIndex} className="lead-section">
          {/* <div className="lead-section-head" style={{ marginBottom: 8 }}>
         <label style={{ display:"inline-flex", alignItems:"center", gap:8 }}>
@@ -791,11 +815,11 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
             </colgroup>
             <tbody>
               <tr>
-                <td className="label-cell">Lead Number:</td>
+                <td className="label-cell">Lead Number</td>
                 <td className="input-cell">
                   <input type="text" value={lead.leadNo} readOnly />
                 </td>
-                <td className="label-cell">Lead Origin:</td>
+                <td className="label-cell">Lead Origin</td>
                 <td className="input-cell">
                   <input
                     type="text"
@@ -803,17 +827,17 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
                     readOnly
                   />
                 </td>
-                <td className="label-cell">Assigned Date:</td>
+                <td className="label-cell">Assigned Date</td>
                 <td className="input-cell">
                   <input type="text" value={formatDate(lead.assignedDate)} readOnly />
                 </td>
-                <td className="label-cell">Completed Date:</td>
+                <td className="label-cell">Completed Date</td>
                 <td className="input-cell">
                   <input type="text" value={formatDate(lead.completedDate)} readOnly />
                 </td>
               </tr>
               <tr>
-                <td className="label-cell">Assigned Officers:</td>
+                <td className="label-cell">Assigned Officers</td>
                 <td className="input-cell" colSpan={7}>
                    <input type="text" value={ Array.isArray(lead.assignedTo) && lead.assignedTo.length ? lead.assignedTo
                               .map((a) => a.username)            
@@ -830,7 +854,7 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
           <table className="leads-table">
             <tbody>
               <tr className="table-first-row">
-                <td>Lead Instruction</td>
+                <td style={{ textAlign: 'center' }}>Lead Instruction</td>
                 <td>
                   <input
                     type="text"
@@ -845,7 +869,7 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
                 lead.leadReturns.map((returnItem) => (
                   <React.Fragment key={returnItem._id || returnItem.leadReturnId}>
                     <tr>
-                      <td>{`Lead Return ID: ${returnItem.leadReturnId}`}</td>
+                      <td style={{ textAlign: 'center' }}>{`Lead Return ID: ${returnItem.leadReturnId}`}</td>
                       <td>
                         <textarea
                           className="lead-return-input"
@@ -1069,7 +1093,7 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="2">No Lead Returns Available</td>
+                  <td colSpan="2" style={{ textAlign: 'center' }}>No Lead Returns Available</td>
                 </tr>
               )}
             </tbody>
@@ -1103,10 +1127,24 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
 
         <div className="right-sec">
 
-        <div className="caseandleadinfo"> 
+        {/* <div className="caseandleadinfo"> 
           <h5 className = "side-title">  Case {selectedCase.caseNo || ""}: {selectedCase.caseName || "Unknown Case"} </h5> 
 
 
+          </div> */}
+
+             <div className="ld-head">
+            <Link to="/HomePage" className="crumb">PIMS Home</Link>
+            <span className="sep">{" >> "}</span>
+            <Link
+              to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+              state={{ caseDetails: selectedCase }}
+              className="crumb"
+            >
+              Case Page: {selectedCase.caseNo || ""}: {selectedCase.caseName || "Unknown Case"}
+            </Link>
+            <span className="sep">{" >> "}</span>
+            <span className="crumb-current" aria-current="page">Generate Report</span>
           </div>
 
           {/* <div className="header-ld-exec"> */}
@@ -1285,7 +1323,7 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
 <CollapsibleSection title="Generate Report" defaultOpen={true}>
 
   {/* Single straight-line checkbox row */}
-  <div className="reportTargetRow" style={{display:'flex',gap:24,alignItems:'center',flexWrap:'wrap',margin:'12px 0'}}>
+  <div className="reportTargetRow" style={{display:'flex',gap:24,alignItems:'center',flexWrap:'wrap'}}>
     <label className="summaryOption" style={{display:'inline-flex',alignItems:'center',gap:8}}>
       <input
         type="checkbox"
@@ -1395,6 +1433,58 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
       </div>
     </>
   )}
+
+
+  {reportType === 'single' && (
+   <>
+      <>
+        <div className="range-filter">
+          <div className="range-filter__label"> Select Lead </div>
+
+          <div className="range-filter__row">
+            <input
+              id="lead-range-from"
+              type="number"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              className="range-filter__input"
+              placeholder="Lead #"
+              value={selectStartLead1}
+              onChange={(e) => setSelectStartLead1(e.target.value)}
+              aria-label="Lead number"
+            />
+
+            <div className="range-filter__actions">
+              <button className="btn btn-primary" onClick={handleShowLeadsInRange}>
+                Apply
+              </button>
+              <button className="btn btn-secondary" onClick={handleShowAllLeads}>
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <p className="range-filter__hint">
+            Enter a lead number (e.g., 1200 — 1250) and click Apply.
+          </p>
+        </div>
+        </>
+
+      <div style={{ marginTop: 8 }}>
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => {
+            setReportScope('visible'); // use the currently visible filtered leads
+            handleRunReportWithSummary();
+          }}
+        >
+          Run report
+        </button>
+      </div>
+    </>
+)}
+
 
   {reportType === 'hierarchy' && (<>
     <div className="hierarchy-filter">

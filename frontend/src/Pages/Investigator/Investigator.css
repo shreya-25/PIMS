@@ -1,12 +1,5 @@
 /* Overall layout */
-.case-page-manager {
-    display: flex;
-    flex-direction: column; /* Stack Navbar and Main Container vertically */
-    height: 100vh;
-    background-color: #f9f9f9;
-    font-family: Arial, sans-serif;
-  }
-  
+
   /* Navbar styling (optional, already handled in Navbar.css) */
   
   /* Main container with sidebar and content */

@@ -102,7 +102,7 @@
 .collapsible__header 
 { 
   align-items:center; 
-  padding:12px 14px; 
+  padding: 8px 14px; 
   cursor:pointer; 
   user-select:none; 
   background:#f9fafb; 
@@ -111,7 +111,7 @@
 }
 .collapsible__title { font-weight:600; display:flex; gap:8px; align-items:center; }
 .collapsible__body 
-{ padding:14px; 
+{ padding: 8px 12px; 
   width: 100%;
 }
 .chev { width:16px; display:inline-block; }

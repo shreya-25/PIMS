@@ -52,6 +52,48 @@ body{
 {
   display: flex;
   margin-top: 20px;
+  width: 100%;
+}
+
+.ld-head
+{
+  margin-top: 4px;
+}
+
+.ld-head {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 20px;
+}
+
+/* Links look like normal text until hover/focus */
+.ld-head .crumb {
+  color: inherit;
+  text-decoration: underline;
+  font-size: 20px;
+}
+.ld-head .crumb:visited { color: inherit; }
+.ld-head .crumb:hover,
+.ld-head .crumb:focus {
+  text-decoration: underline;
+  color: #1a5fff;          /* adjust accent as you like */
+}
+
+/* Current page (non-link) styled like an active link */
+.ld-head .crumb-current {
+  color: #1a5fff;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* Subtle separators */
+.ld-head .sep { opacity: 0.6; }
+
+
+.ld-content-bottom
+{
+  width: 100%;
 }
 
 .lead-return-input {

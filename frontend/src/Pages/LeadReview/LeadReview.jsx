@@ -37,6 +37,7 @@ export const LeadReview = () => {
   const [caseSubNumbers, setCaseSubNumbers] = useState([]); 
   const [aoOpen, setAoOpen] = useState(false);
   const [aoQuery, setAoQuery] = useState("");
+  const NO_NUMBER = new Set(["Lead Reopened", "Lead Closed"]);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 const [confirmTitle, setConfirmTitle] = useState("Confirm");
@@ -89,7 +90,6 @@ const presetReasons = [
     Returned:               5,  // "Lead Returned"
     Reopened: 7,
     Completed:              6,  // "Lead Completed"
-    Closed: 8,
   };
 
   const isInvestigator = selectedCase?.role === "Investigator";
@@ -2313,7 +2313,7 @@ const handleDeleteLead = async () => {
           </div>
 
 
-            {canWorkOnReturn && (
+            {/* {canWorkOnReturn && (
             <div className="lead-tracker-container">
               {statuses.map((status, idx) => (
                 <div
@@ -2325,7 +2325,6 @@ const handleDeleteLead = async () => {
                   }}
                   style={{ cursor: status === "Lead Return Submitted" ? "pointer" : "default" }}
                 >
-                 {/* Always render the circle and its number; add “active” class only if idx <= current */}
       <div className={`status-circle ${idx <= currentStatusIndex ? "active" : ""}`}>
         <span className="status-number">{idx + 1}</span>
       </div>
@@ -2341,7 +2340,41 @@ const handleDeleteLead = async () => {
               ))}
             </div>
             
-            )}
+            )} */}
+
+            {canWorkOnReturn && (
+  <div className="lead-tracker-container">
+    {statuses.map((status, idx) => {
+      const hideNumber = status === "Lead Reopened" || status === "Lead Closed";
+      return (
+        <div
+          key={idx}
+          className="lead-tracker-row"
+          onClick={() => {
+            if (status === "Lead Return Submitted") handleNavigation("/LRInstruction");
+            if (status === "Lead Created") setEventsModalOpen(true);
+          }}
+          style={{ cursor: status === "Lead Return Submitted" ? "pointer" : "default" }}
+        >
+          {/* Circle (number hidden for Reopened/Closed) */}
+          <div className={`status-circle ${idx <= currentStatusIndex ? "active" : ""}`}>
+            {!hideNumber && <span className="status-number">{idx + 1}</span>}
+          </div>
+
+          {/* Draw connector line except after the last item */}
+          {idx < statuses.length && (
+            <div className={`status-line ${idx < currentStatusIndex ? "active" : ""}`} />
+          )}
+
+          <div className={`status-text-box ${idx === currentStatusIndex ? "highlighted" : ""}`}>
+            {status}
+          </div>
+        </div>
+      );
+    })}
+  </div>
+)}
+
 
             <LeadEventsModal
   open={eventsModalOpen}

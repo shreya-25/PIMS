@@ -5,7 +5,8 @@ import { useContext } from "react";
 import "./Slidebar.css";
 import api from "../../api"
 
-export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
+export const SlideBar = ({ onAddCase, onClose,  isOpen,             
+  hideTrigger = false,  buttonClass = "add-case-button" }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const managersRef = useRef(null);
   // const dropdownRef = useRef(null);
@@ -25,6 +26,17 @@ export const SlideBar = ({ onAddCase, buttonClass = "add-case-button" }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [allUsers, setAllUsers] = useState([]);
+
+  // keep internal state in sync with parent
+  useEffect(() => {
+    if (typeof isOpen === "boolean") setIsSidebarOpen(isOpen);
+  }, [isOpen]);
+
+  const openSidebar = () => setIsSidebarOpen(true);
+  const closeSidebar = () => {
+    setIsSidebarOpen(false);
+    onClose?.();
+  };
   
   const [managersOpen, setManagersOpen] = useState(false);
   const [investigatorsOpen, setInvestigatorsOpen] = useState(false);
@@ -341,12 +353,18 @@ useEffect(() => {
         onClose={()   => setAlertOpen(false)}
       />
 
-      <button className={buttonClass} onClick={toggleSidebar}>
+        {!hideTrigger && (
+        <button className={buttonClass} onClick={openSidebar}>
+          <i className="fa-solid fa-plus"></i> Add Case
+        </button>
+      )}
+
+      {/* <button className={buttonClass} onClick={toggleSidebar}>
         <i className="fa-solid fa-plus"></i> Add Case
-      </button>
+      </button> */}
       {isSidebarOpen && (
         <div className="slide-bar">
-          <button className="close-btnAC" onClick={toggleSidebar}>
+          <button className="close-btnAC" onClick={closeSidebar}>
             &times;
           </button>
           <h3>Add Case</h3>

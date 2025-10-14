@@ -1,13 +1,20 @@
+ html, body, #root { height: 100%; margin: 0; }
+
+:root {
+  --nav-h: 72px;           /* your fixed navbar’s height (or 0) */
+} 
+  
   /* Sidebar Container */
   .sideitem {
     width: 22%;
+    /* position: fixed;
+     top: 13.3%; */
     background-color: rgba(12, 31, 32, 0.096);
     padding: 10px;
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
     color: rgb(5, 5, 5);
     font-weight: 500;
-    min-height: 100%;
-    /* position: fixed;  */
+    /* min-height: 100%; */
     display: flex;
     flex-direction: column;
     padding: 15px;
@@ -15,6 +22,30 @@
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
     transition: width 0.3s ease;
   }
+
+  /* :root{
+
+  --sidebar-width: 280px;
+  --navbar-height: 0px;
+} */
+
+/* The sidebar panel itself */
+/* .sideitem {
+  position: fixed;
+  top: 100px;
+  height: calc(100dvh - var(--navbar-height));
+  width: 22%;
+  overflow-y: auto;          
+  -webkit-overflow-scrolling: touch;
+  background-color: rgba(12, 31, 32, 0.096);
+  color: #050505;
+  border-right: 1px solid #ddd;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;  
+} */
   
   /* Sidebar Header */
   .sidebar-header {
@@ -74,6 +105,7 @@
   .sidebar-number {
     min-width: 30px;
     text-align: right;
+    color: green;
   }
   .sidebar-item:hover {
     /* background-color: #c4c6c98e; */
