@@ -330,6 +330,20 @@ const handleLeadCardClick = (e, lead) => {
     // handleRunReportWithSummary();
   };
 
+  const handleShowSingleLead = () => {
+  const n = toNum(selectStartLead1);
+  if (!Number.isFinite(n)) {
+    alert("Please enter a valid lead number.");
+    return;
+  }
+  // Find exact match from full list
+  const match = leadsData.filter(l => String(toNum(l.leadNo)) === String(n));
+  setHierarchyLeadsData(match);        // show only that lead
+  setHierarchyChains([]);              // clear chains
+  setSelectedSingleLeadNo(String(n));  // store selection for reportScope='single'
+};
+
+
 
   // ------------------ Show Hierarchy / Show All Leads ------------------
   const handleShowHierarchy = async () => {
@@ -656,36 +670,51 @@ const handleShowLeadsInRange = () => {
 
   // Helper: compute which leads to include based on scope
 const computeLeadsForReport = () => {
-  if (reportScope === "all") return leadsData;
-  if (reportScope === "visible")
-    return hierarchyLeadsData.length > 0 ? hierarchyLeadsData : leadsData; // if nothing filtered, fall back to all
-  // 'selected'
-  
+  const all = Array.isArray(leadsData) ? leadsData : [];
+  const visible = Array.isArray(hierarchyLeadsData) && hierarchyLeadsData.length ? hierarchyLeadsData : all;
+
+  if (reportScope === "all") return all;
+  if (reportScope === "visible") return visible;
+
   if (reportScope === "single") {
-    if (!selectedSingleLeadNo) return [];
-    // Prefer the currently visible list if any, otherwise all
-    const src = hierarchyLeadsData.length > 0 ? hierarchyLeadsData : leadsData;
-    return src.filter((l) => String(l.leadNo) === String(selectedSingleLeadNo));
+    const target = toNum(selectedSingleLeadNo);
+    if (!Number.isFinite(target)) return [];
+    return visible.filter(l => toNum(l.leadNo) === target);
   }
 
-   if (reportScope === "selected") {
-    const min = toNum(subsetRange.start);
-    const max = toNum(subsetRange.end);
+  if (reportScope === "selected") {
+    // 1) Prefer the explicit inputs from the Selected range UI
+    const minInput = toNum(selectStartLead1);
+    const maxInput = toNum(selectEndLead2);
 
-    // invalid or inverted range -> nothing selected
-    if (!Number.isFinite(min) || !Number.isFinite(max) || min > max) return [];
+    // 2) Else fall back to subsetRange if used elsewhere in your UI
+    const min = Number.isFinite(minInput) ? minInput : toNum(subsetRange.start);
+    const max = Number.isFinite(maxInput) ? maxInput : toNum(subsetRange.end);
 
-    // filter from the full set (choose visible via the "visible" radio instead)
-    return leadsData.filter((l) => {
-      const n = toNum(l.leadNo);
-      return Number.isFinite(n) && n >= min && n <= max;
-    });
+    // If we have a valid numeric range, filter from the full data
+    if (Number.isFinite(min) && Number.isFinite(max) && min <= max) {
+      return all.filter(l => {
+        const n = toNum(l.leadNo);
+        return Number.isFinite(n) && n >= min && n <= max;
+      });
+    }
+
+    // If the user already clicked "Apply" and the table is showing the filtered set, use it
+    if (visible.length && visible !== all) return visible;
+
+    // No valid range provided
+    return [];
   }
-  if (selectedForReport.size === 0) return []; // empty subset -> let backend handle or warn
-  const selected = new Set([...selectedForReport].map(String));
-  const all = hierarchyLeadsData.length > 0 ? hierarchyLeadsData : leadsData;
-  return all.filter((l) => selected.has(String(l.leadNo)));
+
+  // Optional: manual checkbox subset (if you use it elsewhere)
+  if (selectedForReport && selectedForReport.size > 0) {
+    const selected = new Set([...selectedForReport].map(String));
+    return visible.filter(l => selected.has(String(l.leadNo)));
+  }
+
+  return [];
 };
+
 
 const [summaryMode, setSummaryMode] = useState('none'); // 'none' | 'type' | 'file'
 const handleSummaryMode = (mode) => setSummaryMode(mode);
@@ -708,7 +737,7 @@ useEffect(() => {
 
 
    // New function to run the report and merge it with an uploaded executive summary document
-   const handleRunReportWithSummary = async () => {
+   const handleRunReportWithSummary = async (explicitLeads) => {
     const token = localStorage.getItem("token");
     const leadsForReport = computeLeadsForReport();
 if (reportScope === "selected" && leadsForReport.length === 0) {
@@ -789,7 +818,10 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
     
     return leadsArray.map((lead, leadIndex) => (
       
-      <div key={leadIndex} className="lead-section">
+      <div key={leadIndex} 
+       className={`lead-section ${String(selectedSingleLeadNo) === String(lead.leadNo) ? 'lead--selected' : ''}`}
+    onClick={(e) => handleLeadCardClick(e, lead)}
+      >
          {/* <div className="lead-section-head" style={{ marginBottom: 8 }}>
         <label style={{ display:"inline-flex", alignItems:"center", gap:8 }}>
           <input
@@ -1435,55 +1467,60 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
   )}
 
 
-  {reportType === 'single' && (
-   <>
-      <>
-        <div className="range-filter">
-          <div className="range-filter__label"> Select Lead </div>
-
-          <div className="range-filter__row">
-            <input
-              id="lead-range-from"
-              type="number"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              className="range-filter__input"
-              placeholder="Lead #"
-              value={selectStartLead1}
-              onChange={(e) => setSelectStartLead1(e.target.value)}
-              aria-label="Lead number"
-            />
-
-            <div className="range-filter__actions">
-              <button className="btn btn-primary" onClick={handleShowLeadsInRange}>
-                Apply
-              </button>
-              <button className="btn btn-secondary" onClick={handleShowAllLeads}>
-                Clear
-              </button>
-            </div>
-          </div>
-
-          <p className="range-filter__hint">
-            Enter a lead number (e.g., 1200 — 1250) and click Apply.
-          </p>
+{reportType === 'single' && (
+  <>
+    <div className="range-filter">
+      <div className="range-filter__label">Select Lead</div>
+      <div className="range-filter__row">
+        <input
+          id="single-lead"
+          type="number"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          className="range-filter__input"
+          placeholder="Lead #"
+          value={selectStartLead1}
+          onChange={(e) => setSelectStartLead1(e.target.value)}
+          aria-label="Lead number"
+        />
+        <div className="range-filter__actions">
+          <button className="btn btn-primary" onClick={handleShowSingleLead}>
+            Apply
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => {
+              setSelectStartLead1("");
+              setHierarchyLeadsData([]);
+              setHierarchyChains([]);
+              setSelectedSingleLeadNo("");
+            }}
+          >
+            Clear
+          </button>
         </div>
-        </>
-
-      <div style={{ marginTop: 8 }}>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => {
-            setReportScope('visible'); // use the currently visible filtered leads
-            handleRunReportWithSummary();
-          }}
-        >
-          Run report
-        </button>
       </div>
-    </>
+      <p className="range-filter__hint">
+        Type a lead number (e.g., 1234) and click Apply, or click a card below to select it.
+      </p>
+    </div>
+
+    <div style={{ marginTop: 8 }}>
+      <button
+        type="button"
+        className="btn btn-primary"
+        onClick={() => {
+          setReportScope('single');    // ✅ use the single scope
+          handleRunReportWithSummary();
+        }}
+        disabled={!selectedSingleLeadNo}
+      >
+        Run report
+      </button>
+    </div>
+  </>
 )}
+
 
 
   {reportType === 'hierarchy' && (<>
@@ -1539,7 +1576,7 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
     onClick={() => {
       // Use the currently visible hierarchy results
       setReportScope('visible'); // or a custom scope if you prefer
-      handleRunReportWithSummary();
+      handleRunReportWithSummary(hierarchyLeadsData);
     }}
   >
     Run report
@@ -1603,7 +1640,7 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
           className="btn btn-primary"
           onClick={() => {
             setReportScope('visible'); // use the currently visible filtered leads
-            handleRunReportWithSummary();
+            handleRunReportWithSummary(hierarchyLeadsData);
           }}
         >
           Run report
