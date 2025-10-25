@@ -646,6 +646,20 @@ useEffect(() => {
 const [selectEndLead2, setSelectEndLead2] = useState("");
 const [visibleChainsCount, setVisibleChainsCount] = useState(2);
 
+// Allow single or multiple flag selection
+const [isMultiFlag, setIsMultiFlag] = useState(true);
+
+// Handle <select> changes
+const handleFlagsChange = (e) => {
+  const picked = Array.from(e.target.selectedOptions).map(o => o.value);
+  // If single-select, keep only the last picked option
+  setSelectedFlags(isMultiFlag ? picked : (picked.slice(-1)));
+};
+
+// Optional: clear selection
+const clearFlags = () => setSelectedFlags([]);
+
+
 // This function will run when the user clicks "Show Leads"
 const handleShowLeadsInRange = () => {
   // Convert the inputs to numbers
@@ -1731,29 +1745,53 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
 {reportType === 'flagged' && (
   <>
     <div className="range-filter">
-      <div className="range-filter__label">Choose flag(s)</div>
+      <div className="range-filter__label" id="flag-select-label">Choose flag(s)</div>
 
-      {/* Multi-select flags (simple checkboxes for clarity) */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
-        {availableFlags.length ? (
-          availableFlags.map(flag => {
-            const checked = selectedFlags.includes(flag);
-            return (
-              <label key={flag} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => {
-                    setSelectedFlags(prev => checked ? prev.filter(f => f !== flag) : [...prev, flag]);
-                  }}
-                />
-                <span className="summaryOptionText">{flag}</span>
-              </label>
-            );
-          })
-        ) : (
-          <span style={{ opacity: 0.7 }}>No flags found on timeline entries.</span>
-        )}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
+        {/* Single vs Multiple toggle */}
+        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <input
+            type="checkbox"
+            checked={isMultiFlag}
+            onChange={(e) => {
+              const next = e.target.checked;
+              setIsMultiFlag(next);
+              // If switching to single and multiple are selected, keep the last one
+              if (!next && selectedFlags.length > 1) {
+                setSelectedFlags([selectedFlags[selectedFlags.length - 1]]);
+              }
+            }}
+          />
+          <span className="summaryOptionText">Allow multiple</span>
+        </label>
+
+        {/* Flags dropdown */}
+        <select
+          aria-labelledby="flag-select-label"
+          className="flag-select"
+          multiple={isMultiFlag}
+          size={Math.min(8, Math.max(3, availableFlags.length))} // good UX height
+          value={selectedFlags}
+          onChange={handleFlagsChange}
+          style={{ minWidth: 260, maxWidth: 420 }}
+        >
+          {availableFlags.length ? (
+            availableFlags.map((flag) => (
+              <option key={flag} value={flag}>{flag}</option>
+            ))
+          ) : (
+            <option disabled>(No timeline flags found)</option>
+          )}
+        </select>
+
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={clearFlags}
+          disabled={!selectedFlags.length}
+        >
+          Clear
+        </button>
       </div>
 
       <p className="hierarchy-filter__hint" style={{ marginTop: 8 }}>
@@ -1771,11 +1809,6 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
             alert("No leads found with the selected flag(s).");
             return;
           }
-          // You can also preview them in the UI if desired:
-          // setHierarchyLeadsData(flaggedLeads);
-          // setReportScope('visible');
-
-          // Run directly with explicit set:
           handleRunReportWithSummary(flaggedLeads);
         }}
         disabled={!selectedFlags.length}
@@ -1785,6 +1818,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
     </div>
   </>
 )}
+
 
 
 {reportType === 'timeline' && (

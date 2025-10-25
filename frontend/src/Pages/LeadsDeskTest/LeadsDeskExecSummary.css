@@ -264,3 +264,16 @@
   font-size: 16px;
   color: #6b7280; /* gray-500 */
 }
+
+.flag-select {
+  padding: 6px 8px;
+  border: 1px solid #cfd4dc;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+}
+.flag-select:focus {
+  outline: none;
+  border-color: #6b9cff;
+  box-shadow: 0 0 0 3px rgba(107,156,255,0.2);
+}
