@@ -8,6 +8,11 @@
 
 }
 
+:root{
+  /* these should already exist globally; keep them in one place app-wide */
+  --nav-h: 110px;     /* navbar height */
+  --sidebar-w: 300px; /* sidebar width */
+}
 
 .main-page-contenthp
 {
@@ -1645,4 +1650,27 @@
 /* make the header cell a positioning context */
 .header-title {
   position: relative;
+}
+
+
+/* New Changes  */
+
+/* Everything to the right of the fixed sidebar */
+.main-container,
+.main-page-contenthp,
+.main-page-content{
+  margin-left: 20%;
+     width: 100%;
+  /* allow the right side to scroll independently if needed */
+  min-height: calc(100dvh - var(--nav-h));
+  overflow: hidden; /* keep internal sections managing their own scroll */
+}
+
+/* The scroller area(s) inside your content */
+.table-scroll-container,
+.main-pagehp,
+.main-page-belowpart {
+  /* these can scroll while the sidebar also scrolls */
+  overflow-y: auto;
+  max-height: calc(100dvh - var(--nav-h) - 20px);
 }

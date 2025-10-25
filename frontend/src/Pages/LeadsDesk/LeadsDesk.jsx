@@ -1148,9 +1148,6 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
   <span className="crumb-current" aria-current="page">Leads Desk</span>
 </div>
 
-        
-
-
           {/* <div className="header-ld-exec"> */}
         {/* <div className="case-header-ldExecSummary">
             <h2>GENERATE REPORT</h2>

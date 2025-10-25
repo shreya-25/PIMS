@@ -1162,6 +1162,7 @@ const sortedPendingReturns = useMemo(() => {
   
 
     <div className = "main-container">
+   
        <SideBar
             variant="home"
             activePage="HomePage"

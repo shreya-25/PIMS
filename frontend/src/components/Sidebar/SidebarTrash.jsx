@@ -1,0 +1,437 @@
+import React, { useContext, useState, useEffect, useMemo} from 'react';
+import axios from "axios";
+import "./Sidebar.css";
+import { CaseContext } from "../../Pages/CaseContext";
+
+import { CaseSelector } from "../CaseSelector/CaseSelector";
+import { useLocation, useNavigate } from 'react-router-dom';
+import api from "../../api";
+
+export const SideBar = ({ leads = {}, cases: initialCases = [],  activePage,   activeTab,   setActiveTab, onShowCaseSelector,   variant = "default"
+  }) => {
+  const navigate = useNavigate(); 
+
+  const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+  const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+    const [notifications, setNotifications] = useState([]);
+  const location = useLocation();
+  const { caseDetails } = location.state || {};
+  const { selectedCase, selectedLead, setSelectedLead , setSelectedCase} = useContext(CaseContext);
+  const {
+    assignedLeads = [],
+    pendingLeads = [],
+    pendingLeadReturns = [],
+    allLeads = []
+  } = leads;
+  
+   const signedInOfficer = localStorage.getItem("loggedInUser");
+  const [caseList, setCaseList] = useState(initialCases);
+  const [assignedLeadsList, setAssignedLeadsList] = useState([]);
+  const [open, setOpen]               = useState(false);
+
+  const folderIcon    = `${process.env.PUBLIC_URL}/Materials/case1.png`;
+  const folderIcon1    = `${process.env.PUBLIC_URL}/Materials/case.png`;
+  const homeIcon    = `${process.env.PUBLIC_URL}/Materials/home.png`;
+  const logIcon    = `${process.env.PUBLIC_URL}/Materials/log2.png`;
+  const addIcon = `${process.env.PUBLIC_URL}/Materials/addicon.svg`;
+  const printIcon = `${process.env.PUBLIC_URL}/Materials/print.png`;
+  const searchIcon = `${process.env.PUBLIC_URL}/Materials/search.png`;
+  const timelineIcon = `${process.env.PUBLIC_URL}/Materials/timeline.png`;
+  const bellIcon = `${process.env.PUBLIC_URL}/Materials/notification.png`;
+
+const handleCreateLead = () => {
+  navigate('/createlead', {
+    state: {
+      caseDetails: selectedCase,
+      // mirrors your LR Instruction button behavior
+      leadOrigin: selectedLead?.leadNo || selectedLead?.id || null,
+      // leadOrigin: selectedLead?.leadNo || leadData.leadNumber
+
+    },
+  });
+};
+
+
+  const isCasePage = activePage === 'CasePageManager' || activePage === 'Investigator';
+ const goToCasePage = () => {
+    const { role } = selectedCase;
+    let dest;
+        if (role === 'Investigator') {
+      dest = '/Investigator';
+    } else if (role === 'Case Manager' || role === 'Detective Supervisor') {
+      // both Case Manager and DS land on the same manager page
+      dest = '/CasePageManager';
+    } else {
+      // fallback
+      dest = '/HomePage';
+    }
+    navigate(dest, { state: { caseDetails: selectedCase } });
+  };
+
+  useEffect(() => {
+  const fetchNotifications = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const resp = await api.get(
+        `/api/notifications/unread/user/${signedInOfficer}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      let list = [];
+      if (Array.isArray(resp.data)) {
+        list = resp.data;
+      } else if (Array.isArray(resp.data.notifications)) {
+        list = resp.data.notifications;
+      }
+      setNotifications(list);
+    } catch (err) {
+      console.error("Error fetching notifications", err);
+      setNotifications([]);
+    }
+  };
+  fetchNotifications();
+}, [signedInOfficer]);
+
+
+
+  const notificationsByCase = useMemo(() => {
+  if (!Array.isArray(notifications)) return {};
+  return notifications.reduce((acc, note) => {
+    const key = String(note.caseNo);
+    (acc[key] ||= []).push(note);
+    return acc;
+  }, {});
+}, [notifications]);
+
+
+
+
+
+
+  // helper array for dropdown items
+  const caseTabs = [
+    ['assignedLeads',       'Assigned Leads',            assignedLeads.length],
+    ['pendingLeads',        'Accepted Leads',            pendingLeads.length],
+    ['pendingLeadReturns',  'Lead Returns for Review',   pendingLeadReturns.length],
+    ['allLeads',            'All Leads',                 allLeads.length],
+  ];
+
+  const leadTabs = [
+    ['assignedLeads',       'Assigned Leads',            assignedLeads.length],
+    ['pendingLeads',        'Pending Leads',            pendingLeads.length],
+    ['pendingLeadReturns',  'Lead Returns In Review',   pendingLeadReturns.length],
+    ['allLeads',            'All Leads',                 allLeads.length],
+  ];
+
+  useEffect(() => {
+    const fetchCases = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const { data } = await api.get("/api/cases", {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { officerName: signedInOfficer }
+        });
+
+        const ongoing = data
+          .filter(c =>
+            c.caseStatus === "Ongoing" &&
+            c.assignedOfficers.some(o => o.name === signedInOfficer)
+          )
+          .map(c => ({
+            id: c.caseNo,
+            title: c.caseName,
+            role: c.assignedOfficers.find(o => o.name === signedInOfficer)?.role || "Unknown"
+          }));
+
+        setCaseList(ongoing);
+      } catch (err) {
+        console.error("Error fetching cases", err);
+      }
+    };
+    fetchCases();
+  }, [signedInOfficer]);
+
+  // 2) Fetch all leads assigned to this officer — then filter by those same ongoing cases
+  useEffect(() => {
+    const fetchLeads = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const { data } = await api.get("/api/lead/assignedTo-leads", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        // only keep leads in our ongoing cases
+        const caseNos = new Set(caseList.map(c => c.id));
+      const filtered = data
+        .filter(l =>
+          caseNos.has(l.caseNo) &&
+          l.leadStatus === "Assigned" &&
+          l.assignedTo.some(a => a.username === signedInOfficer)
+        )
+        .map(l => ({
+          id: l.leadNo,
+          description: l.description,
+          caseNo: l.caseNo,
+          assignedTo: l.assignedTo,  // we’ll need this if you want to drill in
+          leadStatus: l.leadStatus
+        }));
+
+      setAssignedLeadsList(filtered);
+      } catch (err) {
+        console.error("Error fetching assigned leads", err);
+      }
+    };
+
+    if (caseList.length) fetchLeads();
+  }, [signedInOfficer, caseList]);
+
+   const leadsByCase = assignedLeadsList.reduce((acc, lead) => {
+    (acc[lead.caseNo] ||= []).push(lead);
+    return acc;
+  }, {});
+
+  // when you click a case header
+  const handleCaseSelect = (c) => {
+    setSelectedCase({
+      caseNo: c.id,
+      caseName: c.title,
+      role: c.role,
+    });
+    // go to that case’s page
+    const dest = c.role === 'Investigator'
+      ? '/Investigator'
+      : '/CasePageManager';
+    navigate(dest, { state: { caseDetails: c } });
+  };
+
+  // when you click one of the nested leads
+  const handleLeadSelect = (lead) => {
+    setSelectedLead(lead);
+    // navigate to whatever lead‐details page you have
+    navigate('/LeadReview', { state: { caseDetails: selectedCase, leadDetails: lead } });
+  };
+
+  if (variant === "home") {
+    const notifCount = notifications?.length || 0;
+
+    return (
+      <div className="sideitem">
+        {/* <li
+          className={`sidebar-item ${activePage === 'HomePage' ? 'active' : ''}`}
+          onClick={() => navigate("/HomePage")}
+        >
+          <img src={homeIcon} className="sidebar-icon" alt="" />
+          PIMS Home
+        </li> */}
+
+        <li
+          className={`sidebar-item ${activeTab === 'notifications' ? 'active' : ''}`}
+          onClick={() => setActiveTab?.('notifications')}
+        >
+          <img src={bellIcon} className="sidebar-icon" alt="" />
+          <span className="sidebar-text">Notifications</span>
+          {/* <span className="sidebar-number">{notifCount}</span> */}
+        </li>
+
+        <li
+          className={`sidebar-item ${['cases','assignedLeads','pendingLeadReturns'].includes(activeTab) ? 'active' : ''}`}
+          onClick={() => setActiveTab?.('cases')} // go straight to ongoing cases view
+        >
+          <img src={folderIcon} className="sidebar-icon" alt="" />
+          <span className="sidebar-text">Case Management</span>
+        </li>
+
+          <li
+        className="sidebar-item sidebar-subitem"
+        style={{ paddingLeft: 32 }}
+          onClick={() => {
+    setActiveTab?.('cases');          // show stats/content area
+    onShowCaseSelector?.(true);       // tell HomePage to open SlideBar
+  }}
+      >
+        <span className="sidebar-text">    <img src={addIcon} className="sidebar-icon" alt="" />
+ Add Case</span>
+      </li>
+      </div>
+    );
+  }
+
+
+  return (
+    
+    <div className="sideitem">
+    
+        
+    <li className={`sidebar-item ${activePage === 'HomePage' ? 'active' : ''}`} onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >
+    <img src={homeIcon} className="sidebar-icon" alt="" />
+      PIMS Home</li>
+{/*     
+    {isCasePage ? (
+        <>
+       
+          <li
+  className={`sidebar-item ${['CasePageManager','Investigator'].includes(activePage) ? 'active' : ''}`}
+  onClick={() => setLeadDropdownOpen(o => !o)}
+>
+  Case Page {leadDropdownOpen ? '▲' : '▼'}
+</li>
+
+        
+          {leadDropdownOpen && (
+          <ul className="dropdown-list1">
+          {activePage === "CasePageManager"
+            ? caseTabs.map(([tab, label, count]) => (
+                <li
+                  key={tab}
+                  className={`sidebar-item ${activeTab === tab ? "active" : ""}`}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  <div className="sidebar-content">
+                    <span className="sidebar-text">{label}</span>
+                    <span className="sidebar-number">{count}</span>
+                  </div>
+                </li>
+              ))
+            : leadTabs.map(([tab, label, count]) => (
+                <li
+                  key={tab}
+                  className={`sidebar-item ${activeTab === tab ? "active" : ""}`}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  <div className="sidebar-content">
+                    <span className="sidebar-text">{label}</span>
+                    <span className="sidebar-number">{count}</span>
+                  </div>
+                </li>
+              ))}
+        </ul>
+          )}
+        </>
+      ) : (
+      
+        <li
+          className="sidebar-item"
+          onClick={goToCasePage}
+        >
+          Case Page
+        </li>
+      )} */}
+
+<li className={`sidebar-item ${['CasePageManager','Investigator'].includes(activePage) ? 'active' : ''}`}
+          onClick={goToCasePage}
+        >
+          <img src={folderIcon} className="sidebar-icon" alt="" />
+          Case: {selectedCase.caseNo}
+        </li>
+    {['Case Manager', 'Detective Supervisor'].includes(selectedCase?.role) && (
+  <li
+    style={{ paddingLeft: '30px' }}
+     className={`sidebar-item ${activePage === 'CreateLead' ? 'active' : ''}`}
+    onClick={handleCreateLead}
+  >
+    <img src={addIcon} className="sidebar-icon" alt="" />
+    Add Lead
+  </li>
+)}
+
+    <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadsDesk' ? 'active' : ''}`}
+            onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}
+             > <img src={folderIcon1} className="sidebar-icon" alt="" />
+              Leads Desk</li>
+    
+     <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadsDeskTestExecSummary' ? 'active' : ''}`}
+            onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}
+             > <img src={printIcon} className="sidebar-icon" alt="" />
+              Generate Report</li>
+
+                  <li  style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'LeadLog' ? 'active' : ''}`} onClick={() =>navigate("/LeadLog", { state: { caseDetails } } )}>
+    <img src={logIcon} className="sidebar-icon" alt="" />
+
+              Case Log
+            </li>
+
+      {/* <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'SearchLead' ? 'active' : ''}`}
+            onClick={() => navigate("/SearchLead", { state: { caseDetails } } )}
+             > <img src={searchIcon} className="sidebar-icon" alt="" />
+              Advanced Search</li>
+    
+       <li style={{ paddingLeft: '30px' }}  className={`sidebar-item ${activePage === 'ViewTimeline' ? 'active' : ''}`}
+            onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}
+             > <img src={timelineIcon} className="sidebar-icon" alt="" />
+              Timeline Records</li> */}
+
+
+  {/* Toggle Cases dropdown */}
+      {/* Toggle Cases dropdown */}
+{/* 1) Toggle button */}
+<li
+  className="sidebar-item"
+  onClick={() => setCaseDropdownOpen(o => !o)}
+>
+  <img src={folderIcon} className="sidebar-icon" alt="" /> Other Ongoing  Cases {caseDropdownOpen ? '▲' : '▼'}
+</li>
+
+{/* 2) Dropdown list as a sibling, not inside the <li> */}
+{/* 2) Dropdown list as a sibling */}
+{caseDropdownOpen && (
+  <ul className="dropdown-list1">
+    {caseList
+     .filter(c => c.id !== selectedCase.caseNo)
+    .map(c => {
+      // const myLeads = leadsByCase[c.id] || [];
+      // const count   = myLeads.length;
+      const count = notificationsByCase[c.id]?.length || 0;
+      const isActive = selectedCase.caseNo === c.id;
+
+      return (
+        <li
+          key={c.id}
+          className={`sidebar-item ${isActive ? ' active' : ''}`}
+        >
+          <div
+            className="case-headerSB"
+            onClick={() => handleCaseSelect(c)}
+          >
+            {/* Case title */}
+            Case: {c.id}
+            {/* Lead count badge */}
+            {/* <span className="sidebar-number">{count}</span> */}
+            <span className="sidebar-number">
+              {notificationsByCase[String(c.id)]?.length || 0}
+            </span>
+
+          </div>
+
+          {/* nested leads */}
+         {/* {count > 0 && (
+            <ul className="nested-list">
+              {myLeads.map(lead => {
+                const leadActive =
+                  isActive && selectedCase.leadId === lead.id;
+                return (
+                  <li
+                    key={lead.id}
+                    className={`sidebar-item lead-item${leadActive ? ' active' : ''}`}
+                    onClick={() => handleLeadSelect(lead)}
+                  >
+                    Lead {lead.id}: {lead.description}
+                  </li>
+                );
+              })}
+            </ul> */}
+            
+        
+        </li>
+      );
+    })}
+  </ul>
+)}
+
+
+
+
+    </div>
+
+    
+  );
+};
+
