@@ -53,6 +53,21 @@ function CollapsibleSection({ title, defaultOpen = true, rightSlot = null, child
   );
 }
 
+// Normalize parentLeadNo into an array of strings
+const toArray = (val) => {
+  if (Array.isArray(val)) return val.map(String);
+  if (val == null) return [];
+  if (typeof val === "number") return [String(val)];
+  if (typeof val === "string") {
+    return val
+      .split(",")
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
+
+
 
 
 // ---------- Fetch one lead (with returns, persons, vehicles) ----------
@@ -104,28 +119,60 @@ const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
 };
 
 // ---------- Recursively fetch entire chain of leads (child -> parents) ----------
-const fetchLeadHierarchyFullDetails = async (leadNo, caseNo, caseName, token, chain = []) => {
-  const currentLead = await fetchSingleLeadFullDetails(leadNo, caseNo, caseName, token);
-  if (!currentLead) {
-    return [chain];
+// const fetchLeadHierarchyFullDetails = async (leadNo, caseNo, caseName, token, chain = []) => {
+//   const currentLead = await fetchSingleLeadFullDetails(leadNo, caseNo, caseName, token);
+//   if (!currentLead) {
+//     return [chain];
+//   }
+//   const updatedChain = [...chain, currentLead];
+//   if (!currentLead.parentLeadNo || currentLead.parentLeadNo.length === 0) {
+//     return [updatedChain];
+//   }
+//   let allChains = [];
+//   for (const parentNo of currentLead.parentLeadNo) {
+//     const subChains = await fetchLeadHierarchyFullDetails(
+//       parentNo,
+//       caseNo,
+//       caseName,
+//       token,
+//       updatedChain
+//     );
+//     allChains.push(...subChains);
+//   }
+//   return allChains;
+// };
+
+const fetchLeadHierarchyFullDetails = async (
+  leadNo,
+  caseNo,
+  caseName,
+  token,
+  chain = [],
+  visited = new Set()
+) => {
+  const key = String(leadNo);
+  if (visited.has(key)) return [chain]; // prevent loops
+  visited.add(key);
+
+  const current = await fetchSingleLeadFullDetails(leadNo, caseNo, caseName, token);
+
+  // If the *first* fetch fails, return [] (not [chain])
+  if (!current && chain.length === 0) return [];
+  if (!current) return [chain];
+
+  const updated = [...chain, current];
+  const parents = toArray(current.parentLeadNo);
+  if (parents.length === 0) return [updated];
+
+  let all = [];
+  for (const p of parents) {
+    const sub = await fetchLeadHierarchyFullDetails(p, caseNo, caseName, token, updated, visited);
+    all.push(...sub);
   }
-  const updatedChain = [...chain, currentLead];
-  if (!currentLead.parentLeadNo || currentLead.parentLeadNo.length === 0) {
-    return [updatedChain];
-  }
-  let allChains = [];
-  for (const parentNo of currentLead.parentLeadNo) {
-    const subChains = await fetchLeadHierarchyFullDetails(
-      parentNo,
-      caseNo,
-      caseName,
-      token,
-      updatedChain
-    );
-    allChains.push(...subChains);
-  }
-  return allChains;
+  return all;
 };
+
+
 
 export const LeadsDesk = () => {
   // useEffect(() => {
@@ -550,21 +597,6 @@ const handleShowLeadsInRange = () => {
     const [expanded, setExpanded] = useState(false);
     const leadNumbers = chain.map((l) => l.leadNo);
     const displayedNumbers = expanded ? leadNumbers : leadNumbers.slice(0, 2);
-  
-  //   return (
-  //     <div key={chainIndex} style={{ marginBottom: "10px" }}>
-  //       <strong>Chain #{chainIndex + 1}:</strong> {displayedNumbers.join(", ")}
-  //       {leadNumbers.length > 2 && (
-  //         // <button className = "show-more-btn" onClick={() => setExpanded(!expanded)} style={{ marginLeft: "10px" }}>
-  //         //   {expanded ? "Show Less" : "Show More"}
-  //         // </button>
-  //          <button className = "show-more-btn" onClick={() => setExpanded(!expanded)} style={{ marginLeft: "10px" }}>
-  //            {expanded ? "▲" : "▼"}
-  //         </button>
-  //       )}
-  //     </div>
-  //   );
-  // };
 
   return (
     <div
@@ -580,7 +612,7 @@ const handleShowLeadsInRange = () => {
       onClick={() => setExpanded(!expanded)}
     >
       <strong>Chain #{chainIndex + 1}:</strong> {displayedNumbers.join(", ")}{" "}
-      {leadNumbers.length > 2 && (expanded ? "▲ Expand" : "▼")}
+      {leadNumbers.length > 2 && (expanded ? "▲ Shrink" : "▼ Expand")}
       {/* {leadNumbers.length > 2 && (expanded ? "" : "")} */}
     </div>
   );

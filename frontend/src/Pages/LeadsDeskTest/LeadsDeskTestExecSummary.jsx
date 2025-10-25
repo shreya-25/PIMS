@@ -54,6 +54,11 @@ function CollapsibleSection({ title, defaultOpen = true, rightSlot = null, child
 }
 
 
+const cleanLeadRecord = (lead) => ({
+  ...lead,
+  leadNo: String(lead.leadNo ?? ""),
+  parentLeadNo: toArray(lead.parentLeadNo),
+});
 
 // ---------- Fetch one lead (with returns, persons, vehicles) ----------
 const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
@@ -66,7 +71,7 @@ const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
       console.warn(`No lead found for leadNo: ${leadNo}`);
       return null;
     }
-    const lead = leadData[0];
+    const lead = cleanLeadRecord(leadData[0]);
     const { data: returnsData } = await api.get(
       `/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}`,
       { headers: { Authorization: `Bearer ${token}` } }
@@ -103,6 +108,19 @@ const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
   }
 };
 
+const toArray = (val) => {
+  if (Array.isArray(val)) return val.map(String);
+  if (val == null) return [];
+  if (typeof val === "number") return [String(val)];
+  if (typeof val === "string") {
+    return val
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [];
+};
+
 // ---------- Recursively fetch entire chain of leads (child -> parents) ----------
 const fetchLeadHierarchyFullDetails = async (leadNo, caseNo, caseName, token, chain = []) => {
   const currentLead = await fetchSingleLeadFullDetails(leadNo, caseNo, caseName, token);
@@ -114,7 +132,7 @@ const fetchLeadHierarchyFullDetails = async (leadNo, caseNo, caseName, token, ch
     return [updatedChain];
   }
   let allChains = [];
-  for (const parentNo of currentLead.parentLeadNo) {
+  for (const parentNo of toArray(currentLead.parentLeadNo)) {
     const subChains = await fetchLeadHierarchyFullDetails(
       parentNo,
       caseNo,
@@ -452,10 +470,11 @@ const handleLeadCardClick = (e, lead) => {
         );
         const leadsWithDetails = await Promise.all(
           leads.map(async (lead) => {
+            const base = cleanLeadRecord(lead);
             let leadReturns = [];
             try {
               const { data: returnsData } = await api.get(
-                `/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+                `/api/leadReturnResult/${base.leadNo}/${encodeURIComponent(base.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
                 { headers: { Authorization: `Bearer ${token}` } }
               );
               leadReturns = await Promise.all(
