@@ -1,161 +1,93 @@
-.NavbarItems
-{
-  min-height: 50px;
-}
-
-/* Profile section */
-.profile {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  flex-grow: 1;
-}
-
-.user-profile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-/* Profile icon and username */
-.user-profile a {
-  color: rgb(255, 255, 255);
-  text-decoration: none;
-  font-size: 32px;
-  border-radius: 50%; /* Rounded profile image */
-  padding: 5px;
-  transition: all 0.3s ease;
-}
-
-.user-profile a:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  transform: scale(1.1); /* Consistent hover effect */
-}
-
-/* Username styling */
-.username {
-  font-size: 20px;
-  margin: 0;
-}
-
-/* Navbar icons */
-.profile ul {
-  display: flex;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  gap: 25px;
-}
-
-.profile ul li {
-  border: none;
-}
-
-.profile ul li a {
-  color: rgb(255, 255, 255);
-  text-decoration: none;
-  font-size: 25px;
-  position: relative;
-  padding: 5px; /* Ensures padding is consistent */
-  transition: all 0.3s ease;
-}
-
-.profile ul li a:hover {
-  transform: scale(1.1); /* Add a slight zoom effect */
-}
-/* Badge styling */
-.badge {
-  position: absolute;
-  top: -8px;
-  right: -10px;
-  background-color: rgba(172, 32, 32, 0.76);
-  color: white;
-  font-size: 12px;
-  font-weight: bold;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
-}
-
-/* Prevent icons from shifting */
-.profile ul li a i,
-.user-profile a i {
-  display: inline-block; /* Ensures the icons stay in the same place */
-  vertical-align: middle; /* Aligns icons properly */
-  transition: all 0.3s ease;
+.main-container,
+.content-wrapper,
+.page-content,
+header,
+h1 {
+  margin-top: 0;
+  padding-top: 0;
 }
 
 /* Navbar container */
 .NavbarItems {
+  
   display: flex;
   justify-content: space-between;
   align-items: center;
-  /* background-color: #0D8790; */
-  background: rgb(23, 23, 145);
-  padding: 10px 10px;
+  background-color:   rgb(41, 41, 139); 
+  /* background-color: #0a4275; */
+  padding: 0 20px;
+  height: 110px; 
+  color: #ffffff;
   font-family: Arial, sans-serif;
-  color: white;
-  height: 50px;
 }
 
-/* Profile section */
+.navbar-left-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Adjust the logo size for a more compact navbar */
+.police-logo-navbar {
+  width: 100px;
+  height: 100px;
+  object-fit: cover; /* ensures the logo scales nicely */
+}
+
+.pims-text {
+  font-size: 40px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
 .profile {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  flex-grow: 1;
-  margin-bottom: 5px;
+  gap: 1.5rem;
 }
 
-.user-profile a {
-  margin-bottom: 5px;
-}
-
-.username {
-  font-size: 20px;
-  margin: 0;
-}
-
-/* Navbar icons */
+/* Icon list styling */
 .profile ul {
   display: flex;
+  align-items: center;
   list-style: none;
   margin: 0;
-  padding: 10px;
-  gap: 25px;
-  margin-bottom: -7px;
+  padding: 0;
+  gap: 1.5rem;
 }
 
 .profile ul li {
   position: relative;
-}
-
-.profile ul li i {
-  color: white;
-  font-size: 25px;
   cursor: pointer;
-  transition: transform 0.2s;
 }
 
-.profile ul li i:hover {
-  transform: scale(1.1);
+/* FontAwesome icons inside li */
+.profile ul li i {
+  font-size: 30px;
+  color: #ffffff;
+  /* transition: color 0.2s ease; */
 }
 
-/* Badge styling */
+.icon-img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  transition: opacity 0.2s ease;
+}
+
+.icon-img:hover {
+  opacity: 0.8;
+}
+
+/* Notification badges (small circle with a number) */
 .badge {
   position: absolute;
-  top: -8px;
+  top: -10px;
   right: -10px;
-  background-color: rgba(121, 34, 34, 0.829);
-  color: white;
-  font-size: 12px;
+  background-color: crimson;
+  /* background-color: #f2e6ee; */
+  color: #fff;
+  font-size: 0.7rem;
   font-weight: bold;
   border-radius: 50%;
   width: 18px;
@@ -165,54 +97,80 @@
   align-items: center;
 }
 
-/* Dropdown styling */
-.dropdown {
-  position: relative;
-}
-
 .dropdown-list {
   position: absolute;
-  top: 35px;
-  right: -300%;
-  background-color: white;
-  color: black;
+  top: 35px; /* Just below the icon */
+  right: 0;
+  background-color: #fff;
+  color: #333;
   border-radius: 5px;
+  width: 400px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  width: 250px;
-  z-index: 1000;
+  z-index: 999;
 }
 
 .dropdown-item {
-  padding: 20px;
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
   cursor: pointer;
-  transition: background-color 0.2s ease-in-out;
-  border-bottom: 1px solid #ccc;
-  font-size: 15px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+}
+.dropdown-itemNB {
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .dropdown-item:hover {
-  background-color: #f5f5f5;
+  background-color: #f2f2f2;
 }
 
-.profile ul li:nth-last-child(-n+2) i {
-  margin-top: 6px;
-  margin-right: 5px; /* Add spacing if necessary */
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 50px;
+  width: auto;
+  border:3px solid #eee;
+  padding: 15px;
 }
 
+.user-row
+{
+  display: flex;
+  gap: 8px;
+}
+
+.user-profile i {
+  font-size: 35px;
+  color: #ffffff;
+}
+
+.username {
+  font-weight: 500;
+  color: #ffffff;
+  font-size: 20px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  display: flex;
+  align-items: center;
+}
 
 .notifications-dropdown {
   max-height: 300px;
   overflow-y: auto;
 }
 
-.dropdown-itemNB {
-   padding: 20px;
-  cursor: pointer;
-  transition: background-color 0.2s ease-in-out;
-  border-bottom: 1px solid #ccc;
+.dropdown-item {
   font-size: 15px;
-  display: flex;
-  flex-direction: column;
   padding: 8px 12px;
   border-bottom: 1px solid #eee;
   cursor: pointer;
@@ -221,15 +179,42 @@
   background: #f5f5f5;
 }
 .notif-content {
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1.2;
+  text-align: left;
+   width: 100%;
 }
 .notif-date {
-  font-size: 16px;
+  font-size: 15px;
   color: #666;
   margin-top: 4px;
+  text-align: left;
+  width: 100%;
 }
 .dropdown-item.empty {
   text-align: center;
   color: #999;
+}
+
+/* Container: stack items vertically inside the white box */
+.user-profile {
+  display: flex;
+  /* flex-direction: column;   */
+  align-items:center ;
+  gap: 4px;                 /* small space between blocks (optional) */
+}
+
+
+
+
+.user-sep {
+  width: 0;                  /* no width; only the border shows */
+  height:50px;         /* roughly text height */
+  border-left: 1px solid rgba(255,255,255,0.85); /* white on purple */
+  margin: 0 8px;             /* breathing room around the line */
+}
+
+/* keep text on one line if you prefer */
+.user-role, .username {
+  white-space: nowrap;
 }

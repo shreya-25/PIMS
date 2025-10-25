@@ -656,7 +656,7 @@ const { status, isReadOnly } = useLeadStatus({
   });
 
   return (
-    <div className="timeline-container">
+    <div className="lrvideos-container">
       <Navbar />
       <AlertModal
         isOpen={alertOpen}
@@ -850,7 +850,7 @@ Case Page
 
                 </div> */}
                  <SideBar  activePage="CasePageManager" />
-                <div className="left-content">
+                <div className="left-contentLI">
                 <div className="top-menu1" style={{ marginTop: '2px', backgroundColor: '#3333330e' }}>
        <div className="menu-items" style={{ fontSize: '19px' }}>
        

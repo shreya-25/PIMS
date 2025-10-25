@@ -904,7 +904,7 @@ useEffect(() => {
 />
       
 
-      <div className="LRI_Content">
+      <div className="main-container">
        {/* <div className="sideitem">
        <ul className="sidebar-list">
                   

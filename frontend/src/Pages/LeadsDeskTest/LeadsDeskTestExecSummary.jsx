@@ -31,6 +31,18 @@ const formatDate = (dateString) => {
   return `${month}/${day}/${year}`;
 };
 
+const convert12To24 = (time12h) => {
+  if (!time12h) return time12h;
+  const upper = String(time12h).toUpperCase();
+  if (!upper.includes("AM") && !upper.includes("PM")) return time12h;
+
+  const [time, modifier] = upper.split(" ");
+  let [h, m] = time.split(":").map(Number);
+  if (modifier === "AM") { if (h === 12) h = 0; }
+  else { if (h !== 12) h += 12; }
+  return `${String(h).padStart(2,"0")}:${m.toString().padStart(2,"0")}`;
+};
+
 function CollapsibleSection({ title, defaultOpen = true, rightSlot = null, children }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -156,10 +168,15 @@ export const LeadsDeskTestExecSummary = () => {
   const saveTimeout = useRef(null);
     const { leadDetails, caseDetails } = location.state || {};
     const [selectedSingleLeadNo, setSelectedSingleLeadNo] = useState("");
+  const [timelineEntries, setTimelineEntries] = useState([]);
+const [timelineOrderedLeads, setTimelineOrderedLeads] = useState([]);
 
   const [reportScope, setReportScope] = useState("all"); // 'all' | 'visible' | 'selected'
 const [selectedForReport, setSelectedForReport] = useState(() => new Set());
 const [reportType, setReportType] = useState(null); 
+
+const [availableFlags, setAvailableFlags] = useState([]);     // unique flags from timeline
+const [selectedFlags, setSelectedFlags] = useState([]); 
 
 // Range just for the "selected subset" flow
 const [subsetRange, setSubsetRange] = useState({ start: "", end: "" });
@@ -208,6 +225,113 @@ const handleLeadCardClick = (e, lead) => {
   // Set scope locally for computeLeadsForReport()
   setReportScope("single");
 };
+
+const getLeadsForSelectedFlags = () => {
+  if (!selectedFlags.length) return [];
+  // leadNos from timeline entries having any of the selected flags
+  const allowedNos = new Set(
+    (timelineEntries || [])
+      .filter(t => Array.isArray(t.timelineFlag) && t.timelineFlag.some(f => selectedFlags.includes(f)))
+      .map(t => String(t.leadNo))
+  );
+
+  // map to full lead objects from leadsData (dedup), keep a stable order (e.g., by leadNo desc)
+  const out = [];
+  const seen = new Set();
+  for (const lead of leadsData || []) {
+    const key = String(lead.leadNo);
+    if (!seen.has(key) && allowedNos.has(key)) {
+      seen.add(key);
+      out.push(lead);
+    }
+  }
+  // optional: order by event chronological order of first matching timeline entry
+  // If you prefer timeline ascending, uncomment below:
+  // const firstByLead = {};
+  // for (const t of timelineEntries) {
+  //   const k = String(t.leadNo);
+  //   if (!firstByLead[k]) firstByLead[k] = new Date(`${t.eventStartDate}T${convert12To24(t.eventStartTime)}`);
+  // }
+  // out.sort((a,b) => (firstByLead[a.leadNo] - firstByLead[b.leadNo]) || (toNum(a.leadNo) - toNum(b.leadNo)));
+
+  return out;
+};
+
+
+useEffect(() => {
+  const fetchTimeline = async () => {
+    if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+    const token = localStorage.getItem("token");
+    try {
+      const { data } = await api.get(
+        `/api/timeline/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Ascending sort: by eventStartDate then eventStartTime
+      const sorted = [...data].sort((a, b) => {
+        const aDT = new Date(`${a.eventStartDate}T${convert12To24(a.eventStartTime)}`);
+        const bDT = new Date(`${b.eventStartDate}T${convert12To24(b.eventStartTime)}`);
+        return aDT - bDT;
+      });
+
+      setTimelineEntries(sorted);
+
+      // Map sorted entries -> unique leads from your leadsData (ascending order)
+      // NOTE: wait for leadsData to be loaded; if not yet, we'll also compute again below
+      const makeOrderedLeads = (entries, allLeads) => {
+        const out = [];
+        const seen = new Set();
+        for (const e of entries) {
+          const key = String(e.leadNo ?? "");
+          if (!key) continue;
+          if (seen.has(key)) continue;
+          const match = (allLeads || []).find(l => String(l.leadNo) === key);
+          if (match) {
+            seen.add(key);
+            out.push(match);
+          }
+        }
+        return out;
+      };
+
+      setTimelineOrderedLeads(makeOrderedLeads(sorted, leadsData));
+    } catch (err) {
+      console.error("Failed to fetch timeline entries:", err);
+      setTimelineEntries([]);
+      setTimelineOrderedLeads([]);
+    }
+  };
+
+  fetchTimeline();
+  // also recompute whenever leadsData refreshes
+}, [selectedCase?.caseNo, selectedCase?.caseName]);
+
+// If leadsData arrives after timeline, recompute ordered list
+useEffect(() => {
+  if (!timelineEntries.length || !leadsData?.length) return;
+  const out = [];
+  const seen = new Set();
+  for (const e of timelineEntries) {
+    const key = String(e.leadNo ?? "");
+    if (!key || seen.has(key)) continue;
+    const match = leadsData.find(l => String(l.leadNo) === key);
+    if (match) { seen.add(key); out.push(match); }
+  }
+  setTimelineOrderedLeads(out);
+}, [timelineEntries, leadsData]);
+
+useEffect(() => {
+  // collect unique flags from timeline entries (timelineFlag is an array of strings)
+  const uniq = new Set();
+  for (const t of timelineEntries || []) {
+    (Array.isArray(t.timelineFlag) ? t.timelineFlag : []).forEach(f => {
+      const val = String(f || "").trim();
+      if (val) uniq.add(val);
+    });
+  }
+  setAvailableFlags([...uniq].sort((a,b) => a.localeCompare(b)));
+}, [timelineEntries]);
 
    // Save to backend
    const saveExecutiveSummary = async () => {
@@ -737,67 +861,131 @@ useEffect(() => {
 
 
    // New function to run the report and merge it with an uploaded executive summary document
-   const handleRunReportWithSummary = async (explicitLeads) => {
-    const token = localStorage.getItem("token");
-    const leadsForReport = computeLeadsForReport();
-if (reportScope === "selected" && leadsForReport.length === 0) {
-  alert("No leads selected for the subset.");
-  return;
-}
-    if (useWebpageSummary) {
-      try {
-        // Build payload. You may adjust the payload structure as required by your backend.
-        const payload = {
-          user: "Officer 916", // Or get from auth context
-          reportTimestamp: new Date().toLocaleString(),
-          // For a full report, pass the entire leadsData and caseSummary.
-           leadsData: leadsForReport,
-          caseSummary: typedSummary,
-          // Here, you could also include selectedReports if you want sections toggled.
-          selectedReports: { FullReport: true },
-        };
-        // Call your backend endpoint (adjust the URL if needed)
-        const response = await api.post(
-          "/api/report/generateCase",
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            responseType: "blob", // Expect a PDF blob back
-          }
-        );
-        // Create a blob URL and open in a new tab
-        const file = new Blob([response.data], { type: "application/pdf" });
-        const fileURL = URL.createObjectURL(file);
-        window.open(fileURL, "_blank");
-      } catch (error) {
-        console.error("Failed to generate report", error);
-        alert("Error generating PDF");
-      }
+//    const handleRunReportWithSummary = async (explicitLeads) => {
+//     const token = localStorage.getItem("token");
+//     const leadsForReport = computeLeadsForReport();
+// if (reportScope === "selected" && leadsForReport.length === 0) {
+//   alert("No leads selected for the subset.");
+//   return;
+// }
+//     if (useWebpageSummary) {
+//       try {
+//         const payload = {
+//           user: "Officer 916", 
+//           reportTimestamp: new Date().toLocaleString(),
+//            leadsData: leadsForReport,
+//           caseSummary: typedSummary,
+//           selectedReports: { FullReport: true },
+//         };
+//         const response = await api.post(
+//           "/api/report/generateCase",
+//           payload,
+//           {
+//             headers: {
+//               Authorization: `Bearer ${token}`,
+//               "Content-Type": "application/json",
+//             },
+//             responseType: "blob", 
+//           }
+//         );
+//         const file = new Blob([response.data], { type: "application/pdf" });
+//         const fileURL = URL.createObjectURL(file);
+//         window.open(fileURL, "_blank");
+//       } catch (error) {
+//         console.error("Failed to generate report", error);
+//         alert("Error generating PDF");
+//       }
+//   }
+
+//   else if (useFileUpload && execSummaryFile) {
+//     try {
+//       const formData = new FormData();
+//       formData.append("user", "Officer 916");
+//       formData.append("reportTimestamp", new Date().toLocaleString());
+//       formData.append("leadsData", JSON.stringify(leadsData));
+//       formData.append("selectedReports", JSON.stringify({ FullReport: true }));
+//       formData.append("execSummaryFile", execSummaryFile);
+  
+//       const response = await axios.post(
+//         "http://localhost:5000/api/report/generateCaseExecSummary",
+//         formData,
+//         {
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+           
+//           },
+//           responseType: "blob",
+//         }
+//       );
+//       const fileBlob = new Blob([response.data], { type: "application/pdf" });
+//       const fileURL = URL.createObjectURL(fileBlob);
+//       window.open(fileURL, "_blank");
+//     } catch (err) {
+//       console.error("Error generating PDF with upload:", err);
+//       alert("Failed to generate report with uploaded summary");
+//     }
+//   }
+  
+//   };
+
+const handleRunReportWithSummary = async (explicitLeads = null) => {
+  const token = localStorage.getItem("token");
+
+  // Prefer an explicit list (timeline / hierarchy / selected range).
+  // Otherwise fall back to the scoped computation.
+  const computed = computeLeadsForReport();
+  const leadsForReport = Array.isArray(explicitLeads) && explicitLeads.length
+    ? explicitLeads
+    : computed;
+
+  if (!leadsForReport || leadsForReport.length === 0) {
+    alert("No leads selected to include.");
+    return;
   }
 
-  else if (useFileUpload && execSummaryFile) {
+  if (useWebpageSummary) {
+    try {
+      const payload = {
+        user: "Officer 916",
+        reportTimestamp: new Date().toLocaleString(),
+        leadsData: leadsForReport,          // ✅ use filtered/ordered list
+        caseSummary: typedSummary,
+        selectedReports: { FullReport: true },
+      };
+
+      const response = await api.post("/api/report/generateCase", payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        responseType: "blob",
+      });
+
+      const file = new Blob([response.data], { type: "application/pdf" });
+      const fileURL = URL.createObjectURL(file);
+      window.open(fileURL, "_blank");
+    } catch (error) {
+      console.error("Failed to generate report", error);
+      alert("Error generating PDF");
+    }
+  } else if (useFileUpload && execSummaryFile) {
     try {
       const formData = new FormData();
       formData.append("user", "Officer 916");
       formData.append("reportTimestamp", new Date().toLocaleString());
-      formData.append("leadsData", JSON.stringify(leadsData));
+      formData.append("leadsData", JSON.stringify(leadsForReport)); // ✅ same list here
       formData.append("selectedReports", JSON.stringify({ FullReport: true }));
       formData.append("execSummaryFile", execSummaryFile);
-  
+
       const response = await axios.post(
         "http://localhost:5000/api/report/generateCaseExecSummary",
         formData,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            // "Content-Type": "multipart/form-data",
-          },
+          headers: { Authorization: `Bearer ${token}` },
           responseType: "blob",
         }
       );
+
       const fileBlob = new Blob([response.data], { type: "application/pdf" });
       const fileURL = URL.createObjectURL(fileBlob);
       window.open(fileURL, "_blank");
@@ -806,8 +994,8 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
       alert("Failed to generate report with uploaded summary");
     }
   }
-  
-  };
+};
+
 
   
 
@@ -1517,6 +1705,93 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
       >
         Run report
       </button>
+    </div>
+  </>
+)}
+
+{reportType === 'flagged' && (
+  <>
+    <div className="range-filter">
+      <div className="range-filter__label">Choose flag(s)</div>
+
+      {/* Multi-select flags (simple checkboxes for clarity) */}
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
+        {availableFlags.length ? (
+          availableFlags.map(flag => {
+            const checked = selectedFlags.includes(flag);
+            return (
+              <label key={flag} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => {
+                    setSelectedFlags(prev => checked ? prev.filter(f => f !== flag) : [...prev, flag]);
+                  }}
+                />
+                <span className="summaryOptionText">{flag}</span>
+              </label>
+            );
+          })
+        ) : (
+          <span style={{ opacity: 0.7 }}>No flags found on timeline entries.</span>
+        )}
+      </div>
+
+      <p className="hierarchy-filter__hint" style={{ marginTop: 8 }}>
+        Pick one or more flags. The report will include leads with at least one of the selected flags on a timeline entry.
+      </p>
+    </div>
+
+    <div style={{ marginTop: 8 }}>
+      <button
+        type="button"
+        className="btn btn-primary"
+        onClick={() => {
+          const flaggedLeads = getLeadsForSelectedFlags();
+          if (!flaggedLeads.length) {
+            alert("No leads found with the selected flag(s).");
+            return;
+          }
+          // You can also preview them in the UI if desired:
+          // setHierarchyLeadsData(flaggedLeads);
+          // setReportScope('visible');
+
+          // Run directly with explicit set:
+          handleRunReportWithSummary(flaggedLeads);
+        }}
+        disabled={!selectedFlags.length}
+      >
+        Run report
+      </button>
+    </div>
+  </>
+)}
+
+
+{reportType === 'timeline' && (
+  <>
+    <p className="hierarchy-filter__hint" style={{ marginTop: 8 }}>
+      Generate report in hierarchical order of <strong>timeline</strong> (oldest to newest).
+    </p>
+
+    <div style={{ marginTop: 8 }}>
+      <button
+        type="button"
+        className="btn btn-primary"
+        onClick={() => {
+          // use the timeline-ordered list; keep scope as 'visible' for your backend payload builder
+          setReportScope('visible');
+          handleRunReportWithSummary(timelineOrderedLeads);
+        }}
+        disabled={!timelineOrderedLeads.length}
+      >
+        Run report (ascending timeline)
+      </button>
+      {!timelineOrderedLeads.length && (
+        <div style={{ marginTop: 6, fontSize: 13, opacity: 0.8 }}>
+          No timeline-linked leads found yet for this case.
+        </div>
+      )}
     </div>
   </>
 )}

@@ -51,8 +51,14 @@ body{
 .down-content
 {
   display: flex;
-  margin-top: 20px;
+  margin-top: 8px;
   width: 100%;
+}
+
+.right-sec
+{
+    margin-top: 115px;
+
 }
 
 .ld-head
