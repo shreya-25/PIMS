@@ -14,13 +14,29 @@ body{
   /* overflow: hidden; */
 }
 .leads-container {
-  margin-top: 20px;
   padding: 15px;
   /* background: #ecf0f1; */
    background-color: rgba(41, 41, 139, 0.034);
   border-radius: 8px;
+  margin: 8px;
 }
 
+.instruction-input
+{
+  font-size: 16px;
+}
+.search-lead-portion
+{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  /* justify-content: center; */
+}
+.search-lead-head
+{
+  width: 20%;
+}
 .title-ld
 {
   margin-top: 2px;
@@ -51,7 +67,55 @@ body{
 .down-content
 {
   display: flex;
-  margin-top: 20px;
+  margin-top: 8px;
+  width: 100%;
+}
+
+.right-sec
+{
+    margin-top: 115px;
+
+}
+
+.ld-head
+{
+  margin-top: 4px;
+}
+
+.ld-head {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 18px;
+}
+
+/* Links look like normal text until hover/focus */
+.ld-head .crumb {
+  color: inherit;
+  text-decoration: underline;
+  font-size: 18px;
+}
+.ld-head .crumb:visited { color: inherit; }
+.ld-head .crumb:hover,
+.ld-head .crumb:focus {
+  text-decoration: underline;
+  color: #1a5fff;          /* adjust accent as you like */
+}
+
+/* Current page (non-link) styled like an active link */
+.ld-head .crumb-current {
+  color: #1a5fff;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* Subtle separators */
+.ld-head .sep { opacity: 0.6; }
+
+
+.ld-content-bottom
+{
+  width: 100%;
 }
 
 .lead-return-input {
@@ -102,6 +166,7 @@ body{
 .label-cell {
   background-color: #f7f7f7;
   text-align: center; /* or left, as you prefer */
+  font-size: 18px;
 }
 
 .input-cell input,
@@ -161,7 +226,7 @@ body{
 {
   height: 90px;
   width: 100px;
-  font-size: 20px;
+  font-size: 18px;
   border: 1px solid #ccc;
   background-color: #f9f9f9;
 }
@@ -170,7 +235,7 @@ body{
 {
   height: 50px;
   width: 30px;
-  font-size: 20px;
+  font-size: 18px;
   /* border: 1px solid #ccc; */
   background-color: #f9f9f9;
 }
@@ -365,7 +430,7 @@ body{
 .lead-table1 {
   width: 100%;
   border-collapse: collapse;
-  font-size: 20px; 
+  font-size: 18px; 
   text-align: left; 
 }
 
@@ -385,7 +450,7 @@ body{
 
 
  .lead-table1 button{
-  font-size: 20px;
+  font-size: 18px;
   color:#555;
  }
 
@@ -394,7 +459,7 @@ body{
 }
 
 .person-section {
-  margin-top: 20px;
+  margin-top: 18px;
   width: 100%;
   overflow-x: auto;
 }
@@ -421,10 +486,10 @@ body{
 
 .download-btn {
   white-space: nowrap;
-  font-size: 20px;
+  font-size: 18px;
 }
 .lead-table2 button{
-  font-size: 20px;
+  font-size: 18px;
   color:#555;
  }
 
@@ -473,7 +538,7 @@ body{
   background: rgba(255, 255, 255, 0.8);
   color: black;
   border: none;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: bold;
   padding: 8px 12px;
   cursor: pointer;
@@ -507,7 +572,7 @@ body{
   flex: 1;
   border: none;
   padding: 12px;
-  font-size: 20px;
+  font-size: 18px;
   outline: none;
   color: #555;
 }

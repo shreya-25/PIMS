@@ -724,7 +724,7 @@ const handleEdit = idx => {
       <div className="LRI_Content">
     
                   <SideBar  activePage="CasePageManager" />
-                <div className="left-content">
+                <div className="left-contentLI">
                 <div className="top-menu1" style={{ marginTop: '2px', backgroundColor: '#3333330e' }}>
        <div className="menu-items" style={{ fontSize: '19px' }}>
        
@@ -975,7 +975,7 @@ const handleEdit = idx => {
           <thead>
             <tr>
               <th>Date Entered</th>
-              <th style={{ width: "11%" }}> Narrative Id </th>
+              <th style={{ width: "12%" }}> Narrative Id </th>
               <th>Type</th>
               {/* <th>Collection Date</th> */}
               {/* <th>Disposed Date</th> */}

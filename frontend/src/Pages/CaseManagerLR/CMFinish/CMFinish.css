@@ -81,13 +81,13 @@
 }
 
 /* Larger checkboxes & radio buttons */
-input[type="checkbox"],
+/* input[type="checkbox"],
 input[type="radio"] {
   width: 20px;
   height: 20px;
   margin-right: 10px;
   cursor: pointer;
-}
+} */
 
 .checkbox-label,
 .radio-label {

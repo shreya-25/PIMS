@@ -109,14 +109,17 @@ const Navbar = () => {
   return (
     <nav className="NavbarItems">    
       {/* Left Section: Logo and PIMS Text */}
-      <div className="navbar-left-content">
-        <img
-          src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
-          alt="Police Department Logo"
-          className="police-logo-navbar"
-        />
-        <span className="pims-text">PIMS</span>
-      </div>
+       <div className="navbar-left">
+    <img
+      src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
+      alt="Police Department"
+      className="brand-badge"
+    />
+    <div className="brand-copy">
+      <span className="brand-title">PIMS</span>
+      <span className="brand-subtitle">Police Investigation Management System</span>
+    </div>
+  </div>
 
       {/* Right Section: Icons & Profile */}
       <div className="profile">

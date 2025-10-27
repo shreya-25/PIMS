@@ -49,7 +49,7 @@ export const Investigator = () => {
          const isNavDisabled = lead => lead.leadStatus === 'Assigned';
 const disabledStyle = { opacity: 0.5, cursor: 'not-allowed' };
 const [isCaseSummaryOpen, setIsCaseSummaryOpen] = useState(true);
-const [isCaseTeamOpen, setIsCaseTeamOpen] = useState(false);
+const [isCaseTeamOpen, setIsCaseTeamOpen] = useState(true);
 
   console.log("case context", selectedCase);
   const handleSaveClick = () => {
@@ -512,7 +512,7 @@ const assignedColWidths = {
   "Lead Name":          "20%",
   "Due Date":           "13%",
   "Priority":           "10%",
-  "Days Left":          "11%",
+  "Days Left":          "13%",
   "Assigned Officers":  "21%",
 };
 

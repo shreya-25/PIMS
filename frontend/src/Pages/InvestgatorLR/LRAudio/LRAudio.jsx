@@ -958,7 +958,7 @@ Case Page
                 </div> */}
                
                 <SideBar  activePage="CasePageManager" />
-                <div className="left-content">
+                <div className="left-contentLI">
                 <div className="top-menu1" style={{ marginTop: '2px', backgroundColor: '#3333330e' }}>
        <div className="menu-items" style={{ fontSize: '19px' }}>
        
@@ -1184,7 +1184,7 @@ Case Page
            <table className="leads-table">
           <thead>
             <tr>
-              <th style={{ width: "12%" }}>Date Entered</th>
+              <th style={{ width: "14%" }}>Date Entered</th>
               <th style={{ width: "12%" }}>Narrative Id </th>
               {/* <th>Date Audio Recorded</th> */}
               <th>File Name</th>

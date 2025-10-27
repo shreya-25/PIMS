@@ -1,7 +1,7 @@
 .notification-bar {
     width: 90%;
     /* height: 450px; */
-    height: 10%;
+    /* height: 10%; */
     background: white;
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -58,7 +58,7 @@
     /* margin-bottom: 20px; */
     padding: 4px;
     transition: background-color 0.2s;
-    font-size: 20px;
+    font-size: 18px;
 }
 
 .clickable-header h3{
@@ -78,7 +78,7 @@
     color: white;
     border-radius: 50%;
     padding: 4px 8px;
-    font-size: 20px;
+    font-size: 18px;
     margin-left: 5px;
   }
   
@@ -140,7 +140,7 @@
   }
   
   .time {
-    font-size: 18px;
+    font-size: 16px;
     color: gray;
     display: block;
     margin-top: 2px;
@@ -263,7 +263,7 @@
 }
 
 .notification-letter {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 /* Mobile phones */
@@ -316,11 +316,11 @@
   }
 
   .clickable-header {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .message-box {
-    font-size: 20px;
+    font-size: 18px;
     width: 100%;
     margin-right: 0;
   }
@@ -344,7 +344,7 @@
   .view-btnNC,
   .accept-btnNC {
     width: 100%;           
-    font-size: 20px;
+    font-size: 18px;
     height: 42px;
     padding: 10px;
     

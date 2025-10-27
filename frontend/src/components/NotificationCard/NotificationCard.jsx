@@ -352,7 +352,7 @@ await api.put("/api/cases/update-officer-status", {
 
       { !showAll
         ? <div className="notifications-list">
-            {newNotifs.slice(0,5).map(n => {
+            {newNotifs.map(n => {
               const { letter, color } = getType(n);
                const thisAss = n.assignedTo.find(r => r.username === signedInOfficer);
   const isPending = thisAss?.status === "pending";

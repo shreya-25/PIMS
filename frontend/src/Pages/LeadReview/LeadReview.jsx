@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect, useRef} from 'react';
+import React, { useContext, useState, useEffect, useRef, memo} from 'react';
 
 import Navbar from '../../components/Navbar/Navbar';
 import Searchbar from '../../components/Searchbar/Searchbar';
@@ -14,7 +14,7 @@ import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
 import {SideBar } from "../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../components/AlertModal/AlertModal";
 
-
+import { createPortal } from "react-dom";
 
 
 export const LeadReview = () => {
@@ -37,11 +37,27 @@ export const LeadReview = () => {
   const [caseSubNumbers, setCaseSubNumbers] = useState([]); 
   const [aoOpen, setAoOpen] = useState(false);
   const [aoQuery, setAoQuery] = useState("");
+  const NO_NUMBER = new Set(["Lead Reopened", "Lead Closed"]);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+const [deleteReason, setDeleteReason] = useState("");
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 const [confirmTitle, setConfirmTitle] = useState("Confirm");
 const [confirmMessage, setConfirmMessage] = useState("");
 const confirmResolveRef = useRef(null);
+
+// Decline modal state
+const [declineOpen, setDeclineOpen] = useState(false);
+const [declineReason, setDeclineReason] = useState("");
+const presetReasons = [
+  "Not my expertise / outside scope",
+  "Insufficient information provided",
+  "Unavailable in the given timeframe",
+  "Conflict of interest",
+  "Assigned to another officer / duplicate"
+];
+
 
 
    const [showSelectModal, setShowSelectModal] = useState(false);
@@ -77,7 +93,6 @@ const confirmResolveRef = useRef(null);
     Returned:               5,  // "Lead Returned"
     Reopened: 7,
     Completed:              6,  // "Lead Completed"
-    Closed: 8,
   };
 
   const isInvestigator = selectedCase?.role === "Investigator";
@@ -109,7 +124,61 @@ const displayUserAO = (uname) => {
   return u ? `${u.firstName} ${u.lastName} (${u.username})` : uname;
 };
 
+const DeleteReasonModal = memo(function DeleteReasonModal({ open, onCancel, onSubmit }) {
+  const [text, setText] = useState("");
 
+  // reset field each time the modal opens
+  useEffect(() => {
+    if (open) setText("");
+  }, [open]);
+
+  if (!open) return null;
+
+  const body = (
+    <div className="elog-backdrop" onClick={onCancel}>
+      <div className="elog-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="elog-header">
+          <h3>Delete Lead</h3>
+          <button className="elog-close" onClick={onCancel} aria-label="Close">✕</button>
+        </div>
+
+        <section className="elog-block">
+          <div className="elog-title">Please provide a reason (required)</div>
+
+          <textarea
+            className="input-field"
+            placeholder="Add a brief reason for deleting this lead…"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            style={{ minHeight: 120 }}
+          />
+
+          <div className="elog-actions" style={{ display: "flex", gap: 12, marginTop: 12, justifyContent: "flex-end" }}>
+            <button className="save-btn1" onClick={onCancel} style={{ background: "#ccc", color: "#000" }}>
+              Cancel
+            </button>
+            <button
+              className="save-btn1"
+              onClick={() => {
+                const reason = (text || "").trim();
+                if (reason.length < 3) return; // you already show an alert outside if needed
+                onSubmit(reason);
+              }}
+              style={{ background: "#e74c3c" }}
+              title="Delete lead with reason"
+            >
+              Delete
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+
+  // Render in a portal to avoid parent layout/styles causing extra work
+  const root = document.getElementById("modal-root") || document.body;
+  return createPortal(body, root);
+});
   
   useEffect(() => {
     if (!selectedCase?.caseNo) return;
@@ -359,6 +428,68 @@ const computeLeadStatus = (assigned) => {
 //        setAlertOpen(true);
 //   }
 // };
+
+const DeclineReasonModal = ({ open, onCancel, onSubmit }) => {
+  if (!open) return null;
+  return (
+    <div className="elog-backdrop" onClick={onCancel}>
+      <div className="elog-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="elog-header">
+          <h3>Reject Lead</h3>
+          <button className="elog-close" onClick={onCancel} aria-label="Close">✕</button>
+        </div>
+
+        <section className="elog-block">
+          <div className="elog-title">Please provide a reason</div>
+
+          {/* Quick chips */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+            {presetReasons.map(r => (
+              <button
+                key={r}
+                type="button"
+                className="elog-chip"
+                onClick={() => setDeclineReason(prev => prev ? `${prev} ${prev.endsWith('.') ? '' : '.'} ${r}` : r)}
+                title="Use this reason"
+                style={{ backgroundColor: "#ccc", color: "#000" }}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+
+          {/* Textarea */}
+          <textarea
+            className="input-field"
+            placeholder="Type a brief, professional reason (required)…"
+            value={declineReason}
+            onChange={(e) => setDeclineReason(e.target.value)}
+            style={{ minHeight: 120 }}
+          />
+
+          <div className="elog-actions" style={{ display: "flex", gap: 12, marginTop: 12, justifyContent: "flex-end" }}>
+            <button className="save-btn1" onClick={onCancel} style={{ background: "#ccc", color: "#000" }}>
+              Cancel
+            </button>
+            <button
+              className="save-btn1"
+              onClick={() => {
+                const reason = (declineReason || "").trim();
+                if (reason.length < 5) return setAlertMessage("Please provide a few words explaining why you’re declining.");
+                onSubmit(reason);
+              }}
+              style={{ background: "#e74c3c" }}
+              title="Decline with reason"
+            >
+              Submit
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+};
+
 
 const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = leadData) => {
   if (!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")) {
@@ -1443,6 +1574,47 @@ const confirmWithModal = (message, title = "Confirm") =>
     setConfirmOpen(true);
   });
 
+// const handleDeleteLead = async () => {
+//   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+//   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+//   if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+//     setAlertMessage("Please select a case and lead first.");
+//     setAlertOpen(true);
+//     return;
+//   }
+//   const ok = await confirmWithModal(
+//     `This will permanently delete Lead #${lead.leadNo} — “${lead.leadName || lead.description}”.\n\nAre you sure?`,
+//     "Delete Lead"
+//   );
+//   if (!ok) return;
+
+//   try {
+//     setLoading(true);
+//     const token = localStorage.getItem("token");
+//     const encLeadName = encodeURIComponent(lead.leadName || lead.description);
+//     const encCaseName = encodeURIComponent(kase.caseName);
+
+//     await api.delete(
+//       `/api/lead/${lead.leadNo}/${encLeadName}/${kase.caseNo}/${encCaseName}`,
+//       { headers: { Authorization: `Bearer ${token}` } }
+//     );
+
+//     setAlertMessage("Lead deleted successfully.");
+//     setAlertOpen(true);
+
+//     const route = selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager";
+//     navigate(route, { state: { caseDetails: kase } });
+//   } catch (err) {
+//     console.error("Delete lead failed:", err?.response?.data || err);
+//     setAlertMessage("Failed to delete lead. Please try again.");
+//     setAlertOpen(true);
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+
 const handleDeleteLead = async () => {
   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
@@ -1453,12 +1625,17 @@ const handleDeleteLead = async () => {
     return;
   }
 
-  // Confirm
-  const ok = await confirmWithModal(
-    `This will permanently delete Lead #${lead.leadNo} — “${lead.leadName || lead.description}”.\n\nAre you sure?`,
-    "Delete Lead"
-  );
-  if (!ok) return;
+  // Open the delete-reason modal
+  setDeleteReason("");
+  setDeleteOpen(true);
+};
+
+
+const submitDeleteWithReason = async (reason) => {
+  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+  setDeleteOpen(false);
 
   try {
     setLoading(true);
@@ -1466,6 +1643,20 @@ const handleDeleteLead = async () => {
     const encLeadName = encodeURIComponent(lead.leadName || lead.description);
     const encCaseName = encodeURIComponent(kase.caseName);
 
+    // 1) Append reason into the lead.comment before deletion
+    const stamp = new Date().toLocaleString();
+    const by = localStorage.getItem("loggedInUser") || "Unknown";
+    const existingComment = (leadData?.comment || "").trim();
+    const reasonBlock =
+      `[DELETED ${stamp} by ${by}]\nReason: ${reason}${existingComment ? `\n\n${existingComment}` : ""}`;
+
+    await api.put(
+      `/api/lead/update/${lead.leadNo}/${encLeadName}/${kase.caseNo}/${encCaseName}`,
+      { ...leadData, comment: reasonBlock },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // 2) Delete the lead
     await api.delete(
       `/api/lead/${lead.leadNo}/${encLeadName}/${kase.caseNo}/${encCaseName}`,
       { headers: { Authorization: `Bearer ${token}` } }
@@ -1474,7 +1665,6 @@ const handleDeleteLead = async () => {
     setAlertMessage("Lead deleted successfully.");
     setAlertOpen(true);
 
-    // Navigate back to the case page
     const route = selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager";
     navigate(route, { state: { caseDetails: kase } });
   } catch (err) {
@@ -1500,6 +1690,13 @@ const handleDeleteLead = async () => {
               onConfirm={() => setAlertOpen(false)}
               onClose={()   => setAlertOpen(false)}
             />
+
+         <DeleteReasonModal
+  open={deleteOpen}
+  onCancel={() => setDeleteOpen(false)}
+  onSubmit={submitDeleteWithReason}
+/>
+
             <AlertModal
   isOpen={confirmOpen}
   title={confirmTitle}
@@ -1515,6 +1712,20 @@ const handleDeleteLead = async () => {
     confirmResolveRef.current?.(false);
   }}
 />
+
+<DeclineReasonModal
+  open={declineOpen}
+  onCancel={() => { setDeclineOpen(false); setDeclineReason(""); }}
+  onSubmit={async (reason) => {
+    try {
+      await declineLead(leadData.leadNo, leadData.description, reason);
+    } finally {
+      setDeclineOpen(false);
+      setDeclineReason("");
+    }
+  }}
+/>
+
 
       {/* Main Container */}
       <div className="lead-review-container1">
@@ -1634,8 +1845,8 @@ const handleDeleteLead = async () => {
         <div className="case-header-leadReview">
                   <div className="cp-head-leadReview">
                 {
-                  // <h2> {selectedLead?.leadNo ? `Lead: ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"} </h2>
-                  <h2>{selectedLead.leadName? toTitleCase(selectedLead.leadName) : "Unknown Case"}</h2>
+                  <h2> {selectedLead?.leadNo ? `Lead ${selectedLead.leadNo} : ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"} </h2>
+                  // <h2>{selectedLead.leadName? toTitleCase(selectedLead.leadName) : "Unknown Case"}</h2>
 
 
                 }
@@ -1707,14 +1918,12 @@ const handleDeleteLead = async () => {
         Accept
       </button>
 
-      <button
-        
-        style={{ backgroundColor: "#e74c3c", color: "#fff", fontSize: "20px" }}
-        onClick={() => declineLead(leadData.leadNo, leadData.description)}
-          
-      >
-        Reject
-      </button>
+     <button
+  style={{ backgroundColor: "#e74c3c", color: "#fff", fontSize: "20px" }}
+  onClick={() => setDeclineOpen(true)}
+>
+  Reject
+</button>
     </div>
   </div>
 )}
@@ -2227,7 +2436,7 @@ const handleDeleteLead = async () => {
           </div>
 
 
-            {canWorkOnReturn && (
+            {/* {canWorkOnReturn && (
             <div className="lead-tracker-container">
               {statuses.map((status, idx) => (
                 <div
@@ -2239,7 +2448,6 @@ const handleDeleteLead = async () => {
                   }}
                   style={{ cursor: status === "Lead Return Submitted" ? "pointer" : "default" }}
                 >
-                 {/* Always render the circle and its number; add “active” class only if idx <= current */}
       <div className={`status-circle ${idx <= currentStatusIndex ? "active" : ""}`}>
         <span className="status-number">{idx + 1}</span>
       </div>
@@ -2255,7 +2463,41 @@ const handleDeleteLead = async () => {
               ))}
             </div>
             
-            )}
+            )} */}
+
+            {canWorkOnReturn && (
+  <div className="lead-tracker-container">
+    {statuses.map((status, idx) => {
+      const hideNumber = status === "Lead Reopened" || status === "Lead Closed";
+      return (
+        <div
+          key={idx}
+          className="lead-tracker-row"
+          onClick={() => {
+            if (status === "Lead Return Submitted") handleNavigation("/LRInstruction");
+            if (status === "Lead Created") setEventsModalOpen(true);
+          }}
+          style={{ cursor: status === "Lead Return Submitted" ? "pointer" : "default" }}
+        >
+          {/* Circle (number hidden for Reopened/Closed) */}
+          <div className={`status-circle ${idx <= currentStatusIndex ? "active" : ""}`}>
+            {!hideNumber && <span className="status-number">{idx + 1}</span>}
+          </div>
+
+          {/* Draw connector line except after the last item */}
+          {idx < statuses.length && (
+            <div className={`status-line ${idx < currentStatusIndex ? "active" : ""}`} />
+          )}
+
+          <div className={`status-text-box ${idx === currentStatusIndex ? "highlighted" : ""}`}>
+            {status}
+          </div>
+        </div>
+      );
+    })}
+  </div>
+)}
+
 
             <LeadEventsModal
   open={eventsModalOpen}

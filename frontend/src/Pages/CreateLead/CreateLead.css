@@ -68,7 +68,7 @@ body{
   .info-table td {
     padding: 10px;
     border: 1px solid #cbc8c8; /* Soft border */
-    font-size: 20px;
+    font-size: 16px;
     text-align: left; /* Align text to the left */
     width: 100%; /* Ensure each column takes up half of the table */
     word-wrap: break-word; /* Prevents content overflow */
@@ -118,7 +118,7 @@ body{
   border: 1px solid #cbc8c8; /* Soft border */
   padding: 8px; /* Increased padding for spacing */
   text-align: left;
-  font-size: 20px;
+  font-size: 18px;
   vertical-align: middle;
 }
 
@@ -167,7 +167,7 @@ body{
   padding: 8px;
   border: 1px solid #aaa;
   border-radius: 6px;
-  font-size: 20px;
+  font-size: 18px;
   background-color: #fff;
 }
 
@@ -176,14 +176,14 @@ body{
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 4px;
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .textarea-field-cl {
     width: 100%;
     border: 1px solid #ccc;
     border-radius: 4px;
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .dropdown {
@@ -225,7 +225,7 @@ body{
     color: white;
     cursor: pointer;
     background-color:rgba(25, 58, 73, 0.795);
-    font-size: 20px;
+    font-size: 18px;
   }
   
   /* Input Fields - Regular Placeholder */
@@ -233,16 +233,16 @@ body{
 .textarea-field-cl::placeholder,.dropdown {
   /* color: #575555;  */
   font-style: normal; 
-  font-size: 20px;
+  font-size: 18px;
 }
 input[readonly]
 {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .input-field[readonly]
 {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .custom-dropdown-cl {
@@ -251,7 +251,7 @@ input[readonly]
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  font-size: 20px;
+  font-size: 18px;
   background-color: white;
 }
 
@@ -261,11 +261,11 @@ input[readonly]
   align-items: center;
   flex-shrink: 0;
   width: 98%;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .dropdown-icon {
-  font-size: 20px;
+  font-size: 18px;
   /* color: #333; */
 }
 
@@ -296,6 +296,17 @@ input[readonly]
 .dropdown-item input[type="checkbox"] {
   width: 2%;
 }
+
+.dropdown-item input[type="radio"] {
+  width: 15px;
+  height: 15px;
+  border: 2px solid #666;
+  background: white;
+  cursor: pointer;
+  margin-right: 10px;
+  position: relative;
+}
+
 
 .checkbox-label input[type="checkbox"] {
   flex-shrink: 0; /* Prevent checkbox from shrinking */
@@ -349,7 +360,6 @@ input[readonly]
 
 /* Square Checkboxes */
 .dropdown-item input[type="checkbox"] {
-  appearance: none;
   width: 15px;
   height: 15px;
   border: 2px solid #666;
@@ -368,7 +378,7 @@ input[readonly]
 .dropdown-item input[type="checkbox"]:checked::before {
   content: "✔";
   color: white;
-  font-size: 20px;
+  font-size: 10px;
   font-weight: normal;
   position: absolute;
   left: 50%;
@@ -377,13 +387,14 @@ input[readonly]
 }
 
 .dropdown-item label{
-  font-size: 20px;
+  font-size: 16px;
+  margin: 0px;
 }
 
 
 /* Lighter Placeholder */
 .input-field::placeholder {
   color: #575555;
-  font-size: 20px;
+  font-size: 18px;
 }
 

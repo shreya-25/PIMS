@@ -813,7 +813,7 @@ const handleAddOrUpdateReturn = async () => {
         
        <SideBar  activePage="CasePageManager" />
 
-      <div className="left-content">
+      <div className="left-contentLI">
       <div className="top-menu1" style={{ marginTop: '2px', backgroundColor: '#3333330e' }}>
        <div className="menu-items" style={{ fontSize: '19px' }}>
        
@@ -926,8 +926,8 @@ const handleAddOrUpdateReturn = async () => {
         <thead>
           <tr>
             <th style={{ width: "12%" }}>Narrative Id</th>
-            <th style={{ width: "13%" }}>Date Entered</th>
-            <th style={{ width: "11%" }}>Entered By</th>
+            <th style={{ width: "15%" }}>Date Entered</th>
+            <th style={{ width: "15%" }}>Entered By</th>
             <th className="results-col">Narrative</th>
             <th style={{ width: "12%" }}>Actions</th>
             {isCaseManager && (

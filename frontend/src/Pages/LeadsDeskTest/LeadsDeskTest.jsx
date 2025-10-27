@@ -12,7 +12,6 @@ import Pagination from "../../components/Pagination/Pagination";
 import { jsPDF } from "jspdf"; // if still used elsewhere
 import html2canvas from "html2canvas";
 
-import "./LeadsDesk.css";
 
 // ---------- Helper to format dates as MM/DD/YY ----------
 const formatDate = (dateString) => {

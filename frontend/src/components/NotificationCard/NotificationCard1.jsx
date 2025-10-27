@@ -267,7 +267,7 @@ const NotificationCard1 = ({ signedInOfficer }) => {
 
       {!showAll ? (
         <div className="notifications-list">
-          {newNotifs.slice(0, 5).map(renderCard)}
+          {newNotifs.map(renderCard)}
         </div>
       ) : (
         <>

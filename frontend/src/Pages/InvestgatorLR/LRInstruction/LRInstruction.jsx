@@ -605,7 +605,7 @@ Case Page
                 </div> */}
       <SideBar  activePage="CasePageManager" />
 
-       <div className="left-content">
+       <div className="left-contentLI">
        <div className="top-menu1" style={{ marginTop: '2px', backgroundColor: '#3333330e', fontWeight: '900' }}>
        <div className="menu-items" style={{ fontSize: '19px' }}>
        
