@@ -50,6 +50,37 @@ function formatTime(dateString) {
   });
 }
 
+function formatOfficer(off) {
+  if (!off) return "";
+  // common shapes: string, {name}, {fullName}, {displayName}, {firstName,lastName}, {user:{...}}
+  if (typeof off === "string") return off;
+  if (off.fullName) return off.fullName;
+  if (off.displayName) return off.displayName;
+  if (off.name) return off.name;
+  if (off.firstName || off.lastName) {
+    return [off.firstName, off.lastName].filter(Boolean).join(" ").trim();
+  }
+  if (off.user) return formatOfficer(off.user);
+  // fallback to something stable
+  if (off.email) return off.email;
+  if (off.username) return off.username;
+  return "";
+}
+
+function formatOfficerList(arr) {
+  if (!Array.isArray(arr) || arr.length === 0) return "N/A";
+  const names = arr
+    .map(formatOfficer)
+    .filter(Boolean);
+
+  if (names.length === 0) return "N/A";
+  // de-dupe while preserving order
+  const seen = new Set();
+  const deduped = names.filter(n => (seen.has(n) ? false : (seen.add(n), true)));
+  return deduped.join(", ");
+}
+
+
 
 // function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
 //   const minRowHeight = 20;
@@ -306,31 +337,58 @@ function drawStructuredLeadDetails(doc, x, y, lead) {
   }
 
   // Second Row - Assigned Officers
-  y += rowHeight;
-  doc
-    .rect(x, y, colWidths.reduce((a, b) => a + b, 0), rowHeight)
-    .fillAndStroke("#f5f5f5", "#ccc");
-  doc
-    .font("Helvetica-Bold")
-    .fontSize(11)
-    .fillColor("#000")
-    .text("Assigned Officers:", x + padding, y + 5);
+ y += rowHeight;
 
-    const officersText = Array.isArray(lead.assignedTo) && lead.assignedTo.length > 0
-    ? lead.assignedTo.map(o => o.username).join(", ")
-    : "N/A";
-  doc.font("Helvetica").fontSize(12).text(officersText, x + 150 + padding, y + 5);
+const tableWidth   = colWidths.reduce((a, b) => a + b, 0);
+const labelWidth   = 130; // keep same visual as your header row
+const valueWidth   = tableWidth - labelWidth;
+const labelHeight  = 20;  // min box height
 
-   // Second Row - Assigned Officers
-   y += rowHeight;
-   doc
-     .rect(x, y, colWidths.reduce((a, b) => a + b, 0), rowHeight)
-     .fillAndStroke("#f5f5f5", "#ccc");
-   doc
-     .font("Helvetica-Bold")
-     .fontSize(11)
-     .fillColor("#000")
-     .text("Subnumbers:", x + padding, y + 5);
+// Build the officers text from objects/strings
+const officersText = formatOfficerList(lead.assignedTo);
+
+// Measure the wrapped text height for the value cell
+doc.font("Helvetica").fontSize(10); // slightly smaller to fit better
+const paddingX     = 5;
+const paddingY     = 5;
+const textHeight   = doc.heightOfString(officersText, {
+  width: valueWidth - 2 * paddingX,
+  align: "left",
+});
+const rowH         = Math.max(labelHeight, textHeight + 2 * paddingY);
+
+// If it won’t fit this page, break before drawing
+if (y + rowH > doc.page.height - doc.page.margins.bottom) {
+  doc.addPage();
+  y = doc.page.margins.top;
+}
+
+// Draw label cell (gray)
+doc.rect(x, y, labelWidth, rowH).fillAndStroke("#f5f5f5", "#ccc");
+doc
+  .font("Helvetica-Bold")
+  .fontSize(11)
+  .fillColor("#000")
+  .text("Assigned Officers:", x + paddingX, y + paddingY, {
+    width: labelWidth - 2 * paddingX,
+    align: "left",
+  });
+
+// Draw value cell (bordered) with wrapped names
+doc.strokeColor("#999999");
+doc.rect(x + labelWidth, y, valueWidth, rowH).stroke();
+doc
+  .font("Helvetica")
+  .fontSize(10)
+  .fillColor("#000")
+  .text(officersText, x + labelWidth + paddingX, y + paddingY, {
+    width: valueWidth - 2 * paddingX,
+    align: "left",
+  });
+
+return y + rowH + 20;
+
+
  
    const subnumbers = lead.subNumber?.join(", ") || "N/A";
    doc.font("Helvetica").fontSize(12).text(subnumbers, x + 150 + padding, y + 5);

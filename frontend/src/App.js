@@ -68,6 +68,7 @@ import { ChainOfCustody } from './Pages/ChainOfCustody/ChainOfCustody';
 import { Chatbot } from './Pages/Admin/Chatbot';
 import { GlobalErrorProvider } from './GlobalErrorProvider';
 import { DocumentReview } from './Pages/DocumentReview/DocumentReview';
+import { ClosedCase } from './Pages/ClosedCase/ClosedCase';
 
 // import { Report} from './Pages/Report/Report'
 // import {ReportWrapper} from './Pages/Report/ReportWrapper'
@@ -165,6 +166,7 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/ChainOfCustody" element= {<ProtectedLayout>  <ChainOfCustody /> </ProtectedLayout> } />
         <Route path="/Chatbot" element= {<ProtectedLayout>  <Chatbot /> </ProtectedLayout> } />
         <Route path="/DocumentReview" element={<ProtectedLayout><DocumentReview /></ProtectedLayout>} />
+        <Route path="/ClosedCase" element={<ProtectedLayout><ClosedCase /></ProtectedLayout>} />
 
         {/* <Route path ="/Report" element= {<Report />} /> */}
       </Routes>

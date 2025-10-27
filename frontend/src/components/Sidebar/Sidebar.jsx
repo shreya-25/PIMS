@@ -369,43 +369,17 @@ export const SideBar = ({
         )}
 
         {/* Closed Cases for CM/DS */}
-{["Case Manager", "Detective Supervisor"].includes(selectedCase?.role) && (
+{["Case Manager", "Detective Supervisor", "Investigator"].includes(selectedCase?.role) && (
   <>
     <li
       className="sidebar-item"
-      onClick={() => setClosedDropdownOpen((o) => !o)}
+       onClick={() =>
+            navigate("/ClosedCase")
+          }
     >
       <img src={folderIcon} className="sidebar-icon" alt="" />
-      <span>Archived Cases {closedDropdownOpen ? "▲" : "▼"}</span>
+      <span>Archived Cases</span>
     </li>
-
-    {closedDropdownOpen && (
-      <ul className="dropdown-list1">
-        {closedCaseList.length === 0 && (
-          <li className="sidebar-item" style={{ opacity: 0.7 }}>
-            No closed cases
-          </li>
-        )}
-        {closedCaseList.map((c) => {
-          const count = notificationsByCase[String(c.id)]?.length || 0; // optional
-          const isActive = selectedCase?.caseNo === c.id;
-          return (
-            <li
-              key={c.id}
-              className={`sidebar-item${isActive ? " active" : ""}`}
-              onClick={() => handleCaseSelect(c)}
-            >
-              <div className="case-headerSB">
-                <span>Case: {c.id}</span>
-                {/* You can show count or omit it for closed cases */}
-                {/* {count > 0 && <span className="sidebar-number">{count}</span>} */}
-              </div>
-              {/* <div style={{ fontSize: 12, opacity: 0.8 }}>{c.title}</div> */}
-            </li>
-          );
-        })}
-      </ul>
-    )}
   </>
 )}
 

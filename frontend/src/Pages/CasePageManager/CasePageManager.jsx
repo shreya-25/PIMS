@@ -1898,7 +1898,7 @@ const toTitleCase = (s = "") =>
 
           <span className="dropdown-icon" aria-hidden="true">
             <img
-              src={detectiveSupervisorDropdownOpen ? upIcon : downIcon}
+              src={detectiveSupervisorDropdownOpen ? downIcon : upIcon}
               className="caret-icon"
               alt=""
             />
@@ -1950,7 +1950,7 @@ const toTitleCase = (s = "") =>
           : "Select Case Manager(s)"}
                       <span className="dropdown-icon">
                          <img
-    src={caseManagersDropdownOpen ? upIcon : downIcon}
+    src={caseManagersDropdownOpen ? downIcon : upIcon}
     className="caret-icon"
     alt=""
     aria-hidden="true"
@@ -2009,7 +2009,7 @@ const toTitleCase = (s = "") =>
 
                       <span className="dropdown-icon"> 
                          <img
-    src={investigatorsDropdownOpen ? upIcon : downIcon}
+    src={investigatorsDropdownOpen ? downIcon : upIcon}
     className="caret-icon"
     alt=""
     aria-hidden="true"

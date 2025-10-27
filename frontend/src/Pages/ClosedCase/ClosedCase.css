@@ -1,0 +1,21 @@
+/* src/Pages/ClosedCase/ClosedCase.css */
+.cc-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 8px 0 12px;
+}
+.cc-search {
+  max-width: 360px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+.cc-count { color: #6b7280; }
+.cc-th-btn {
+  all: unset;
+  cursor: pointer;
+  font-weight: 600;
+}
+.cc-th-btn:hover { text-decoration: underline; }
