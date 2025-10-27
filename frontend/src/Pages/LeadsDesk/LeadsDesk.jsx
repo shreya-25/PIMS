@@ -861,7 +861,7 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
           <table className="leads-table">
             <tbody>
               <tr className="table-first-row">
-                <td style={{ textAlign: 'center' }}>Lead Instruction</td>
+                <td style={{ textAlign: 'center', fontSize: '18px' }} className="input-cell">Lead Instruction</td>
                 <td>
                   <input
                     type="text"
@@ -876,14 +876,14 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
                 lead.leadReturns.map((returnItem) => (
                   <React.Fragment key={returnItem._id || returnItem.leadReturnId}>
                     <tr>
-                      <td style={{ textAlign: 'center' }}>{`Lead Return ID: ${returnItem.leadReturnId}`}</td>
+                      <td style={{ textAlign: 'center', fontSize: '18px' }}>{`Lead Return ID: ${returnItem.leadReturnId}`}</td>
                       <td>
                         <textarea
                           className="lead-return-input"
                           value={returnItem.leadReturnResult || ""}
                           readOnly
                           style={{
-                            fontSize: "20px",
+                            fontSize: "18px",
                             padding: "10px",
                             borderRadius: "6px",
                             width: "100%",
@@ -1218,7 +1218,7 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
             <div className="case-summary-ld">
               <textarea
                 className="textarea-field-ld"
-                style={{ fontFamily: "inherit", fontSize: "20px" }}
+                style={{ fontFamily: "inherit", fontSize: "18px" }}
                 value={caseSummary}
                 onChange={handleCaseSummaryChange}
                 readOnly={!isEditing}

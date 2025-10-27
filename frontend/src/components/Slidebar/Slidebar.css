@@ -37,7 +37,7 @@ select.input-field option[value=""] {
 
 .form-group label {
   display: block;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: normal;
   margin-bottom: 5px;
   height: 20px;
@@ -45,7 +45,7 @@ select.input-field option[value=""] {
 
 .form-group label {
   display: block;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: normal;
   margin-bottom: 5px;
   height: 20px;
@@ -55,7 +55,7 @@ select.input-field option[value=""] {
 .textarea-field {
   width: 100%; /* Ensure all inputs take full width */
   padding: 10px;
-  font-size: 20px;
+  font-size: 18px;
   border: 1px solid #ccc;
   border-radius: 5px;
   box-sizing: border-box; /* Include padding and border in width */
@@ -81,7 +81,7 @@ select.input-field {
   padding: 15px; /* Increased padding for better appearance */
   border-radius: 5px;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: bold;
   display: block;
   width: 100%; /* Full-width button */
@@ -154,7 +154,7 @@ select.input-field {
 .checkbox-label {
   padding: 5px 0;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .checkbox-label input[type="checkbox"] {
@@ -165,7 +165,7 @@ width: 15px;
 }
 
 .custom-dropdown .input-field::placeholder {
-font-size: 20px; /* Adjust the size as needed */
+font-size: 18px; /* Adjust the size as needed */
 }
 
 /* Group container */
@@ -174,11 +174,11 @@ font-size: 20px; /* Adjust the size as needed */
   margin-bottom: 6px;
   /* font-weight: 600;
   color: #374151; */
-  font-size: 20px;
+  font-size: 18px;
 }
 .inv-dropdown {
   position: relative;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 /* Trigger field */
@@ -212,7 +212,7 @@ font-size: 20px; /* Adjust the size as needed */
 /* Placeholder */
 .inv-placeholder { 
   color: black; 
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 100;
 }
 
@@ -234,7 +234,7 @@ font-size: 20px; /* Adjust the size as needed */
 .inv-chip-x {
   border: none;
   background: transparent;
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1;
   cursor: pointer;
 }
@@ -311,7 +311,7 @@ font-size: 20px; /* Adjust the size as needed */
 .inv-text { 
   flex: 1;
   color: black;
-  font-size: 20px;;
+  font-size: 18px;
  }
 
 /* Empty state */

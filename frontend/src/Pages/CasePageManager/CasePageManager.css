@@ -29,7 +29,7 @@
     align-items: center;
     /* height: calc(100vh - 10px); */
     height: auto;
-    width: 80%;
+    width: 100%;
     box-sizing: border-box;
     /* margin-left : 22%; */
   }
@@ -279,6 +279,52 @@ align-items: center;
   {
     margin: 4px;
   }
+
+/* Anchor for absolute icon inside the Name(s) cell */
+.name-cell {
+  position: relative;
+}
+
+/* Make the header a full-width click target with room for the icon */
+.custom-dropdown .dropdown-head {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 4px 32px 4px 0px;   /* right padding reserves space for icon */
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* Text wraps without colliding with the icon */
+.custom-dropdown .dh-text {
+  display: block;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Caret pinned to the far right, vertically centered */
+.custom-dropdown .dropdown-icon {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;          /* keeps whole header clickable */
+}
+
+/* Arrow image size */
+.caret-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+}
+
+
   .update-lead-btn
   {
     width: 90%;
@@ -531,7 +577,7 @@ align-items: center;
 
 .collapse-header {
   width: 100%;
-  padding: 10px 14px;
+  padding: 10px 8px;
   border: 0;
   background: #f8fafc;       /* very light */
   display: flex;
@@ -546,7 +592,7 @@ align-items: center;
 }
 
 .collapse-title {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .case-team .dropdown-header1 {

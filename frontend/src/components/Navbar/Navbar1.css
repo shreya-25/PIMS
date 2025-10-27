@@ -9,7 +9,7 @@ h1 {
 
 :root{
   /* keep this in ONE place app-wide */
-  --nav-h: 110px;   /* must match your navbar height */
+  --nav-h: 90px;   /* must match your navbar height */
 }
 
 /* FIXED navbar */
@@ -29,23 +29,40 @@ h1 {
   box-shadow: 0 2px 8px rgba(0,0,0,.12);
 }
 
-.navbar-left-content {
+.navbar-left {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 12px;
+  min-width: 0;
 }
 
-/* Adjust the logo size for a more compact navbar */
-.police-logo-navbar {
-  width: 100px;
-  height: 100px;
-  object-fit: cover; /* ensures the logo scales nicely */
+.brand-badge {
+  width: 90px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.15);
 }
 
-.pims-text {
-  font-size: 40px;
-  font-weight: 600;
-  color: #ffffff;
+.brand-copy {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  min-width: 0;
+}
+
+.brand-title {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.brand-subtitle {
+  font-size: 16px;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .profile {
@@ -71,14 +88,14 @@ h1 {
 
 /* FontAwesome icons inside li */
 .profile ul li i {
-  font-size: 30px;
+  font-size: 24px;
   color: #ffffff;
   /* transition: color 0.2s ease; */
 }
 
 .icon-img {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   object-fit: contain;
   transition: opacity 0.2s ease;
 }
@@ -163,7 +180,7 @@ h1 {
 .username {
   font-weight: 500;
   color: #ffffff;
-  font-size: 20px;
+  font-size: 18px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -225,4 +242,5 @@ h1 {
 /* keep text on one line if you prefer */
 .user-role, .username {
   white-space: nowrap;
+  font-size: 18px;
 }

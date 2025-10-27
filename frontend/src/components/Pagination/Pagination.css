@@ -3,7 +3,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 20px;
+  margin-top: 8px;
   font-family: Arial, sans-serif;
   flex-wrap: wrap; /* Allows items to wrap on smaller screens */
   gap: 10px;
@@ -12,7 +12,7 @@
 /* Adjust font size for better responsiveness */
 .pagination-info {
   color: #4a4a4a;
-  font-size: 20px;
+  font-size: 16px;
   text-align: center;
 }
 
@@ -27,7 +27,7 @@
 
 .page-size-selector span {
   width: auto;
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .page-size-dropdown {
@@ -35,7 +35,7 @@
   border-radius: 4px;
   padding: 8px;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 16px;
   width: auto;
 }
 
@@ -58,8 +58,14 @@
   height: 36px;
   width: 36px;
   color: rgba(0, 0, 0, 0.664);
-  font-size: 20px;
+  font-size: 16px;
+
+  display: flex;          /* ✅ Centers content */
+  align-items: center;    /* ✅ Vertically center */
+  justify-content: center;/* ✅ Horizontally center */
+  line-height: 1;         /* ✅ Avoid text shifting */
 }
+
 
 .pagination-button:hover {
   background-color: #f0f0f0;
@@ -121,7 +127,7 @@
   }
 
   .pagination-info {
-      font-size: 20px;
+      font-size: 16px;
   }
 
   .pagination-controls {
@@ -133,7 +139,7 @@
   .pagination-button {
       width: 30px;
       height: 30px;
-      font-size: 20px;
+      font-size: 16px;
   }
 
   .search-container {
@@ -141,13 +147,13 @@
   }
 
   .search-input {
-      font-size: 20px;
+      font-size: 16px;
       padding: 10px;
   }
 
   .search-button {
       padding: 8px 12px;
-      font-size: 20px;
+      font-size: 16px;
   }
 }
 
@@ -155,11 +161,11 @@
   .pagination-button {
       width: 28px;
       height: 28px;
-      font-size: 20px;
+      font-size: 16px;
   }
 
   .pagination-info {
-      font-size: 20px;
+      font-size: 16px;
   }
 
   .page-size-selector {
@@ -173,6 +179,6 @@
   }
 
   .search-input {
-      font-size: 20px;
+      font-size: 16px;
   }
 }

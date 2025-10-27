@@ -19,6 +19,7 @@ import usePresence from "../../hooks/usePresence";
 
 
 
+
 export const CasePageManager = () => {
 
   
@@ -64,11 +65,14 @@ export const CasePageManager = () => {
     const [caseStatus, setCaseStatus] = useState("");
 const [caseUpdatedAt, setCaseUpdatedAt] = useState(null);
 
-     const dsRef = useRef(null);
+const dsRef = useRef(null);
 const cmRef = useRef(null);
 const invRef = useRef(null);
 const [isCaseSummaryOpen, setIsCaseSummaryOpen] = useState(true);
 const [isCaseTeamOpen, setIsCaseTeamOpen] = useState(true);
+
+const upIcon = "/Materials/drop_up.png";
+const downIcon = "/Materials/drop_down.png";
 
 
   useEffect(() => {
@@ -993,8 +997,8 @@ const displayNames = (usernames = []) =>
 
 const caseTeamStyles = {
   table: { width: "100%", borderCollapse: "separate", borderSpacing: 0, tableLayout: "auto" },
-  th:    { textAlign: "left", padding: "8px 10px", borderBottom: "1px solid #eee", verticalAlign: "top", whiteSpace: "nowrap" },
-  td:    { padding: "8px 10px", borderBottom: "1px solid #eee", verticalAlign: "top" , height: "auto",
+  th:    { textAlign: "left", padding: "4px", borderBottom: "1px solid #eee", verticalAlign: "center", whiteSpace: "nowrap", fontSize: "18px" },
+  td:    { padding: "4px", borderBottom: "1px solid #eee", verticalAlign: "center" , height: "auto", fontSize: "18px",
        whiteSpace: "normal",   // allow line breaks
     wordBreak: "break-word", // break long words if needed
     overflowWrap: "anywhere" // modern property, ensures wrapping
@@ -1778,7 +1782,7 @@ const toTitleCase = (s = "") =>
   </button>
 
   {isCaseSummaryOpen && (
-      <div style={{ fontSize: 20 }}>
+      <div style={{ fontSize: 18 }}>
         <textarea
   value={summary ?? ""}
   onChange={e => {
@@ -1795,7 +1799,7 @@ const toTitleCase = (s = "") =>
     outline: "none",
     resize: "none",
     textAlign: "left",   // ensure alignment to the left
-    paddingLeft: "20px"          // remove default left padding
+    paddingLeft: "8px"          // remove default left padding
   }}
 />
      
@@ -1827,7 +1831,7 @@ const toTitleCase = (s = "") =>
           </tr>
         </thead>
         <tbody>
-          <tr>
+          {/* <tr>
             <td style={caseTeamStyles.td}>Detective Supervisor</td>
             <td className="name-cell" style={caseTeamStyles.td}>
               {(selectedCase.role === "Detective Supervisor") ? (
@@ -1838,11 +1842,13 @@ const toTitleCase = (s = "") =>
                     onClick={() => setDetectiveSupervisorDropdownOpen(prev => !prev)}
                   >
 
-                      {selectedDetectiveSupervisor
-        ? displayName(selectedDetectiveSupervisor)
-        : "Select Detective Supervisor"}
+                      {selectedDetectiveSupervisor ? displayName(selectedDetectiveSupervisor) : "Select Detective Supervisor"}
                     <span className="dropdown-icon">
-                      {detectiveSupervisorDropdownOpen ? "▲" : "▼"}
+                        <img
+                          src={detectiveSupervisorDropdownOpen ? upIcon : downIcon}
+                          className="caret-icon"
+                          alt=""
+                        />
                     </span>
                   </div>
                   {detectiveSupervisorDropdownOpen && (
@@ -1873,7 +1879,62 @@ const toTitleCase = (s = "") =>
                 team.detectiveSupervisor || "—"
               )}
             </td>
-          </tr>
+          </tr> */}
+
+          <tr>
+  <td style={caseTeamStyles.td}>Detective Supervisor</td>
+  <td className="name-cell" style={caseTeamStyles.td}>
+    {selectedCase.role === "Detective Supervisor" ? (
+      <div ref={dsRef} className="custom-dropdown">
+        <div
+          className="dropdown-head"
+          onClick={() => setDetectiveSupervisorDropdownOpen(prev => !prev)}
+        >
+          <span className="dh-text">
+            {selectedDetectiveSupervisor
+              ? displayName(selectedDetectiveSupervisor)
+              : "Select Detective Supervisor"}
+          </span>
+
+          <span className="dropdown-icon" aria-hidden="true">
+            <img
+              src={detectiveSupervisorDropdownOpen ? upIcon : downIcon}
+              className="caret-icon"
+              alt=""
+            />
+          </span>
+        </div>
+
+        {detectiveSupervisorDropdownOpen && (
+          <div className="dropdown-options">
+            {allUsers.map(user => (
+              <div key={user.username} className="dropdown-item">
+                <input
+                  type="radio"
+                  name="detectiveSupervisor"
+                  id={`ds-${user.username}`}
+                  value={user.username}
+                  checked={selectedDetectiveSupervisor === user.username}
+                  onChange={() => {
+                    const selected = user.username;
+                    setSelectedDetectiveSupervisor(selected);
+                    saveInvestigators(selectedInvestigators, selectedCaseManagers, selected);
+                  }}
+                />
+                <label htmlFor={`ds-${user.username}`}>
+                  {user.firstName} {user.lastName} ({user.username})
+                </label>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    ) : (
+      team.detectiveSupervisor || "—"
+    )}
+  </td>
+</tr>
+
           <tr>
               <td style={caseTeamStyles.td}>Case Manager{team.caseManagers.length>1 ? "s" : ""}</td>
               <td className="name-cell" style={caseTeamStyles.td}>
@@ -1888,7 +1949,12 @@ const toTitleCase = (s = "") =>
           ? displayNames(selectedCaseManagers)
           : "Select Case Manager(s)"}
                       <span className="dropdown-icon">
-                        {caseManagersDropdownOpen ? "▲" : "▼"}
+                         <img
+    src={caseManagersDropdownOpen ? upIcon : downIcon}
+    className="caret-icon"
+    alt=""
+    aria-hidden="true"
+  />
                       </span>
                     </div>
                     {caseManagersDropdownOpen && (
@@ -1941,7 +2007,15 @@ const toTitleCase = (s = "") =>
                             : "Select Investigators"}
                         </span>
 
-                      <span className="dropdown-icon"> {investigatorsDropdownOpen ? "▲" : "▼"} </span>
+                      <span className="dropdown-icon"> 
+                         <img
+    src={investigatorsDropdownOpen ? upIcon : downIcon}
+    className="caret-icon"
+    alt=""
+    aria-hidden="true"
+  />
+                        
+                         </span>
                       </div>
 
                       {investigatorsDropdownOpen && (
