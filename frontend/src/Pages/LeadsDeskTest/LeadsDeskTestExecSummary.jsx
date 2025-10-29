@@ -219,6 +219,140 @@ function CollapsibleSection({ title, defaultOpen = true, rightSlot = null, child
   );
 }
 
+// --- Professional FlagPicker (searchable, chips, single/multi) ---
+function FlagPicker({
+  flags = [],
+  selected = [],
+  onChange,
+  multiple = true,
+  placeholder = "Choose flag(s)",
+  disabled = false,
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const btnRef = useRef(null);
+  const panelRef = useRef(null);
+
+  const filtered = flags.filter(f => f.toLowerCase().includes(query.toLowerCase()));
+  const isSelected = (f) => selected.includes(f);
+
+  const toggle = (f) => {
+    if (!multiple) {
+      onChange([f]);
+      setOpen(false);
+      return;
+    }
+    const set = new Set(selected);
+    set.has(f) ? set.delete(f) : set.add(f);
+    onChange([...set]);
+  };
+
+  const selectAll = () => onChange(filtered.length ? Array.from(new Set([...selected, ...filtered])) : selected);
+  const clearAll = () => onChange([]);
+
+  // Close on outside click / ESC
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (!open) return;
+      if (
+        panelRef.current &&
+        !panelRef.current.contains(e.target) &&
+        btnRef.current &&
+        !btnRef.current.contains(e.target)
+      ) {
+        setOpen(false);
+      }
+    };
+    const onEsc = (e) => (e.key === "Escape" ? setOpen(false) : null);
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, [open]);
+
+  return (
+    <div className="fp-root">
+      <button
+        type="button"
+        ref={btnRef}
+        className={`fp-btn ${disabled ? "fp-btn--disabled" : ""}`}
+        onClick={() => !disabled && setOpen(o => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        disabled={disabled}
+        title={selected.length ? selected.join(", ") : placeholder}
+      >
+        <div className="fp-btn-content">
+          {selected.length === 0 && <span className="fp-placeholder">{placeholder}</span>}
+          {selected.length > 0 && (
+            <div className="fp-chips">
+              {selected.slice(0, 3).map(f => (
+                <span key={f} className="fp-chip" onClick={(e) => { e.stopPropagation(); }}>
+                  {f}
+                </span>
+              ))}
+              {selected.length > 3 && <span className="fp-chip fp-chip--more">+{selected.length - 3}</span>}
+            </div>
+          )}
+          <span className="fp-caret" aria-hidden>▾</span>
+        </div>
+      </button>
+
+      {open && (
+        <div className="fp-panel" ref={panelRef} role="listbox" aria-multiselectable={multiple}>
+          <div className="fp-toprow">
+            <input
+              className="fp-search"
+              placeholder="Search flags…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              autoFocus
+            />
+            <div className="fp-actions">
+              {multiple && (
+                <button type="button" className="btn btn-secondary fp-small" onClick={selectAll} disabled={!filtered.length}>
+                  Select all
+                </button>
+              )}
+              <button type="button" className="btn btn-secondary fp-small" onClick={clearAll} disabled={!selected.length}>
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <div className="fp-list" tabIndex={-1}>
+            {filtered.length ? (
+              filtered.map(f => (
+                <label key={f} className="fp-item">
+                  {multiple ? (
+                    <input
+                      type="checkbox"
+                      checked={isSelected(f)}
+                      onChange={() => toggle(f)}
+                    />
+                  ) : (
+                    <input
+                      type="radio"
+                      name="flagpicker-radio"
+                      checked={isSelected(f)}
+                      onChange={() => toggle(f)}
+                    />
+                  )}
+                  <span className="fp-item-text">{f}</span>
+                </label>
+              ))
+            ) : (
+              <div className="fp-empty">No flags found</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 const cleanLeadRecord = (lead) => ({
   ...lead,
@@ -333,11 +467,10 @@ const [timelineOrderedLeads, setTimelineOrderedLeads] = useState([]);
   const [reportScope, setReportScope] = useState("all"); // 'all' | 'visible' | 'selected'
 const [selectedForReport, setSelectedForReport] = useState(() => new Set());
 const [reportType, setReportType] = useState(null); 
-
+const [availableFlags, setAvailableFlags] = useState([]);
 const getDeletedReason = (lead) => lead?.deletedReason || "";
 const isDeletedStatus = (s) => String(s ?? "").trim().toLowerCase() === "deleted";
 
-const [availableFlags, setAvailableFlags] = useState([]);     // unique flags from timeline
 const [selectedFlags, setSelectedFlags] = useState([]); 
 
 // Range just for the "selected subset" flow
@@ -374,6 +507,8 @@ const toggleLeadForReport = (leadNo) => {
     return next;
   });
 };
+
+
 
 const handleLeadCardClick = (e, lead) => {
   // Only react to clicks when the "Single lead" target is active
@@ -418,6 +553,17 @@ const getLeadsForSelectedFlags = () => {
 
   return out;
 };
+
+useEffect(() => {
+  const uniq = new Set();
+  for (const t of timelineEntries || []) {
+    (Array.isArray(t.timelineFlag) ? t.timelineFlag : []).forEach(f => {
+      const val = String(f || "").trim();
+      if (val) uniq.add(val);
+    });
+  }
+  setAvailableFlags([...uniq].sort((a,b) => a.localeCompare(b)));
+}, [timelineEntries]);
 
 // New: fetch all leads for the case, then hydrate each using the ViewLR-style loader
 useEffect(() => {
@@ -2070,59 +2216,48 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
     <div className="range-filter">
       <div className="range-filter__label" id="flag-select-label">Choose flag(s)</div>
 
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
-        {/* Single vs Multiple toggle */}
-        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <input
-            type="checkbox"
-            checked={isMultiFlag}
-            onChange={(e) => {
-              const next = e.target.checked;
-              setIsMultiFlag(next);
-              // If switching to single and multiple are selected, keep the last one
-              if (!next && selectedFlags.length > 1) {
-                setSelectedFlags([selectedFlags[selectedFlags.length - 1]]);
-              }
-            }}
-          />
-          <span className="summaryOptionText">Allow multiple</span>
-        </label>
-
-        {/* Flags dropdown */}
-        <select
-          aria-labelledby="flag-select-label"
-          className="flag-select"
-          multiple={isMultiFlag}
-          size={Math.min(8, Math.max(3, availableFlags.length))} // good UX height
-          value={selectedFlags}
-          onChange={handleFlagsChange}
-          style={{ minWidth: 260, maxWidth: 420 }}
-        >
-          {availableFlags.length ? (
-            availableFlags.map((flag) => (
-              <option key={flag} value={flag}>{flag}</option>
-            ))
-          ) : (
-            <option disabled>(No timeline flags found)</option>
-          )}
-        </select>
-
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={clearFlags}
-          disabled={!selectedFlags.length}
-        >
-          Clear
-        </button>
-      </div>
-
-      <p className="hierarchy-filter__hint" style={{ marginTop: 8 }}>
-        Pick one or more flags. The report will include leads with at least one of the selected flags on a timeline entry.
-      </p>
+      {/* Allow multiple toggle */}
+      <label className="summaryOption" style={{ marginLeft: 8 }}>
+        <input
+          type="checkbox"
+          checked={isMultiFlag}
+          onChange={(e) => {
+            const next = e.target.checked;
+            setIsMultiFlag(next);
+            if (!next && selectedFlags.length > 1) {
+              setSelectedFlags([selectedFlags[selectedFlags.length - 1]]);
+            }
+          }}
+        />
+        <span className="summaryOptionText">Allow multiple</span>
+      </label>
     </div>
 
-    <div style={{ marginTop: 8 }}>
+    <div className="fp-row">
+      <FlagPicker
+        flags={availableFlags}
+        selected={selectedFlags}
+        onChange={setSelectedFlags}
+        multiple={isMultiFlag}
+        placeholder="Select timeline flags"
+        disabled={!availableFlags.length}
+      />
+
+      <button
+        type="button"
+        className="btn btn-secondary"
+        onClick={() => setSelectedFlags([])}
+        disabled={!selectedFlags.length}
+      >
+        Clear
+      </button>
+    </div>
+
+    <p className="hierarchy-filter__hint" style={{ marginTop: 6 }}>
+      Pick one or more flags. The report will include leads with at least one of the selected flags on a timeline entry.
+    </p>
+
+    <div style={{ marginTop: 10 }}>
       <button
         type="button"
         className="btn btn-primary"
@@ -2141,6 +2276,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
     </div>
   </>
 )}
+
 
 
 
