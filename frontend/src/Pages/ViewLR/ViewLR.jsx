@@ -1055,8 +1055,6 @@ const actuallyDoSubmitReport = async () => {
 
     {/* If CommentBar supports these callbacks, include them; otherwise omit. */}
  
-
-    <CommentBar tag="DocumentReview" threadKey={publicThreadKey} />
     {String(status).toLowerCase() === "returned" && investigatorUsernames.map(u => (
   <CommentBar
     key={u}

@@ -209,7 +209,7 @@ const tone = (t) =>
   t === "accepted"           ? "ok" :
   t === "cm-approved"        ? "ok" :
   t === "declined"           ? "bad" :
-  t === "cm-returned"        ? "warn" :
+  t === "cm-returned"        ? "info" :
   t === "cm-closed"          ? "muted" :
   t === "cm-reopened"        ? "info" :
   t === "reassigned-added"   ? "info" :

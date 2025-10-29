@@ -119,6 +119,8 @@ const handleReopen = () => {
       setCloseReason("");
       await promotePrivateComments();
       setAlertMessage("Lead closed successfully.");
+      await sendLeadNotification("closed the lead");
+
       setNotifyOpen(true);
 
       navigate(getCasePageRoute(), { replace: true });
@@ -166,6 +168,85 @@ const handleClose = () => {
     }
   };
 
+  // ADD: fetch lead meta to know who to notify
+useEffect(() => {
+  const loadLeadMeta = async () => {
+    try {
+      if (!selectedCase?.caseNo || !selectedCase?.caseName || !selectedLead?.leadNo) return;
+      const token = localStorage.getItem("token");
+      const { data = [] } = await api.get(
+        `/api/lead/lead/${selectedLead.leadNo}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (Array.isArray(data) && data[0]) setLeadData(data[0]);
+    } catch (e) {
+      console.warn("lead meta fetch skipped:", e);
+    }
+  };
+  loadLeadMeta();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [selectedCase?.caseNo, selectedCase?.caseName, selectedLead?.leadNo]);
+
+
+  // ADD: build recipients list (investigators + manager fallback)
+const buildRecipients = () => {
+  const current = localStorage.getItem("loggedInUser");
+  const uniq = new Map();
+
+  const push = (u, role) => {
+    if (!u) return;
+    if (u === current) return; // ✅ exclude signed-in officer from notifications
+    if (!uniq.has(u)) uniq.set(u, { username: u, role, status: "pending", unread: true });
+  };
+
+  (leadData?.assignedTo || []).forEach(a => push(a?.username, "Investigator"));
+
+  if (leadData?.assignedBy)
+    push(leadData.assignedBy, "Case Manager");
+
+  return Array.from(uniq.values());
+};
+
+
+// ADD: send notification
+const sendLeadNotification = async (actionText) => {
+  try {
+    const token = localStorage.getItem("token");
+    const assignedTo = buildRecipients();
+    if (!assignedTo.length) return;
+
+    const payload = {
+      notificationId: Date.now().toString(),
+      assignedBy:     localStorage.getItem("loggedInUser"),
+      assignedTo, // [{ username, role, status, unread }]
+      action1:        actionText, // "approved the lead", etc.
+      post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
+      action2:        "related to the case",
+      post2:          `${selectedCase.caseNo}: ${selectedCase.caseName}`,
+      caseNo:         selectedCase.caseNo,
+      caseName:       selectedCase.caseName,
+      leadNo:         selectedLead.leadNo,
+      leadName:       selectedLead.leadName,
+      type:           "Lead",
+    };
+
+    await api.post("/api/notifications", payload, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  } catch (e) {
+    console.warn("Notification send failed (non-blocking):", e);
+  }
+};
+
+// ADD: map UI status to human-readable action
+const humanizeStatus = (uiStatus) =>
+  uiStatus === "Completed" ? "approved the lead"  :
+  uiStatus === "Returned"  ? "returned the lead"  :
+  uiStatus === "Reopened"  ? "reopened the lead"  :
+  uiStatus === "Closed"    ? "closed the lead"    :
+                             "updated the lead";
+
+
    const submitReturnAndUpdate = async (newStatus) => {
     try {
       const token = localStorage.getItem("token");
@@ -193,8 +274,10 @@ const handleClose = () => {
       );
   
       if (statusRes.status === 200) {
+        await sendLeadNotification(humanizeStatus(uiStatus));
         if (uiStatus === "Completed" || uiStatus === "Closed" || uiStatus === "Returned") {
         await promotePrivateComments();
+         navigate(getCasePageRoute());
         }
          setAlertMessage("Lead Return submitted");
         setAlertOpen(true);
@@ -217,30 +300,30 @@ const handleClose = () => {
        setLocalStatus(uiStatus);
         const investigators = (leadData.assignedTo || []).map(a => a.username);
         const managerName    = leadData.assignedBy;
-      if (investigators.length) {
-        const payload = {
-          notificationId: Date.now().toString(),
-          assignedBy:     localStorage.getItem("loggedInUser"),
-          assignedTo:     investigators.map(u => ({
-           username: u,
-           role:     "Investigator",
-           status:   "pending",
-           unread:   true
-         })),
-          action1:        human,
-          post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
-          action2:        "related to the case",
-          post2:          `${selectedCase.caseNo}: ${selectedCase.caseName}`,
-          caseNo:         selectedCase.caseNo,
-          caseName:       selectedCase.caseName,
-          leadNo:         selectedLead.leadNo,
-          leadName:       selectedLead.leadName,
-          type:           "Lead"
-        };
-        await api.post("/api/notifications", payload, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      }
+      // if (investigators.length) {
+      //   const payload = {
+      //     notificationId: Date.now().toString(),
+      //     assignedBy:     localStorage.getItem("loggedInUser"),
+      //     assignedTo:     investigators.map(u => ({
+      //      username: u,
+      //      role:     "Investigator",
+      //      status:   "pending",
+      //      unread:   true
+      //    })),
+      //     action1:        human,
+      //     post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
+      //     action2:        "related to the case",
+      //     post2:          `${selectedCase.caseNo}: ${selectedCase.caseName}`,
+      //     caseNo:         selectedCase.caseNo,
+      //     caseName:       selectedCase.caseName,
+      //     leadNo:         selectedLead.leadNo,
+      //     leadName:       selectedLead.leadName,
+      //     type:           "Lead"
+      //   };
+      //   await api.post("/api/notifications", payload, {
+      //     headers: { Authorization: `Bearer ${token}` }
+      //   });
+      // }
 
       // alert(`${assignedBy} ${human} and all investigators notified.`);
       navigate(getCasePageRoute());

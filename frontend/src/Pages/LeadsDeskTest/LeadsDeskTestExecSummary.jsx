@@ -43,6 +43,160 @@ const convert12To24 = (time12h) => {
   return `${String(h).padStart(2,"0")}:${m.toString().padStart(2,"0")}`;
 };
 
+// ---- unify return-id extraction (same as ViewLR) ----
+const lrKeyFor = (obj = {}) =>
+  obj.narrativeId ||
+  obj.returnId ||
+  obj.lrId ||
+  obj.leadReturnId ||
+  obj.lead_return_id ||   // snake_case variants
+  obj.lr_id ||
+  obj.leadReturnID ||     // capitalized ID
+  obj.lead_returnId ||
+  obj._id;
+
+
+// ---- group arrays by LR key into a Map(key -> buckets) ----
+function groupSectionsByReturn({
+  persons = [], vehicles = [], enclosures = [], evidence = [],
+  pictures = [], audio = [], videos = [],
+  scratchpad = [], timeline = []
+}) {
+  const map = new Map();
+  const touch = (k) => {
+    if (!map.has(k)) map.set(k, {
+      persons: [], vehicles: [], enclosures: [], evidence: [],
+      pictures: [], audio: [], videos: [],
+      scratchpad: [], timeline: []
+    });
+    return map.get(k);
+  };
+
+  const add = (arr, field) => arr.forEach((x) => touch(lrKeyFor(x))[field].push(x));
+  add(persons,    "persons");
+  add(vehicles,   "vehicles");
+  add(enclosures, "enclosures");
+  add(evidence,   "evidence");
+  add(pictures,   "pictures");
+  add(audio,      "audio");
+  add(videos,     "videos");
+  add(scratchpad, "scratchpad");
+  add(timeline,   "timeline");
+
+  return map;
+}
+
+
+
+// ---- generic safe getter that tries hard to return an array ----
+async function safeGetArray(url, token, keys = []) {
+  try {
+    const { data } = await api.get(url, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    // 1) If it's already an array
+    if (Array.isArray(data)) return data;
+
+    // 2) If it's an object, try known keys in order
+    if (data && typeof data === "object") {
+      for (const k of keys) {
+        if (Array.isArray(data[k])) return data[k];
+      }
+      // 3) Otherwise, if the object itself looks like a single record, wrap it
+      //    (only if it's non-empty and not just meta fields)
+      const values = Object.values(data);
+      const hasNestedArray = values.some(Array.isArray);
+      if (!hasNestedArray && Object.keys(data).length > 0) return [data];
+    }
+
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+// ---- helpers for file/media rendering ----
+const fmt = (v) => (v == null || v === "" ? "N/A" : String(v));
+const getFileName = (u="") => {
+  try { const p = new URL(u); return decodeURIComponent(p.pathname.split("/").pop() || u); }
+  catch { return u?.split("/").pop() || u; }
+};
+const openInNewTab = (url) => window.open(url, "_blank", "noopener,noreferrer");
+
+
+// ---- deep fetch for ONE lead return: pulls every section you want ----
+async function fetchLeadAllSectionsLikeViewLR({ leadNo, leadName, caseNo, caseName, token }) {
+  const headers = { headers: { Authorization: `Bearer ${token}` } };
+  const encLead = encodeURIComponent(leadName || "");
+  const encCase = encodeURIComponent(caseName || "");
+
+  // 1) Fetch the same endpoints as ViewLR
+  const [
+    instrRes,
+    returnsRes,
+    personsRes,
+    vehiclesRes,
+    enclosuresRes,
+    evidenceRes,
+    picturesRes,
+    audioRes,
+    videosRes,
+    notesRes,     // optional: case report may display notes elsewhere
+    timelineRes,  // optional: lead-level timeline
+  ] = await Promise.all([
+    api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+  ]);
+
+  const leadDoc   = instrRes.data?.[0] || {};
+  const returns   = Array.isArray(returnsRes.data)   ? returnsRes.data   : [];
+  const persons   = Array.isArray(personsRes.data)   ? personsRes.data   : [];
+  const vehicles  = Array.isArray(vehiclesRes.data)  ? vehiclesRes.data  : [];
+  const enclosures= Array.isArray(enclosuresRes.data)? enclosuresRes.data: [];
+  const evidence  = Array.isArray(evidenceRes.data)  ? evidenceRes.data  : [];
+  const pictures  = Array.isArray(picturesRes.data)  ? picturesRes.data  : [];
+  const audio     = Array.isArray(audioRes.data)     ? audioRes.data     : [];
+  const videos    = Array.isArray(videosRes.data)    ? videosRes.data    : [];
+  const notes     = Array.isArray(notesRes.data)     ? notesRes.data     : [];
+  const timeline  = Array.isArray(timelineRes.data)  ? timelineRes.data  : [];
+
+const buckets = groupSectionsByReturn({
+  persons, vehicles, enclosures, evidence, pictures, audio, videos,
+  scratchpad: notes,
+  timeline
+});
+ const leadReturns = returns.map((ret) => {
+  const k = lrKeyFor(ret);
+  const g = buckets.get(k) || {
+    persons:[], vehicles:[], enclosures:[], evidence:[],
+    pictures:[], audio:[], videos:[], scratchpad:[], timeline:[]
+  };
+  return { ...ret, ...g };
+});
+
+
+  // 3) Return a structure your report already expects
+  return {
+    ...leadDoc,
+    leadNo: String(leadNo),
+    description: leadDoc?.description ?? leadName,
+    leadReturns,       // ← each return has its attached arrays
+    notes,             // optional: whole-lead scratchpad
+    timelineForLead: timeline, // optional: whole-lead timeline (if you want to show it)
+  };
+}
+
+
 function CollapsibleSection({ title, defaultOpen = true, rightSlot = null, children }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -73,52 +227,39 @@ const cleanLeadRecord = (lead) => ({
 });
 
 // ---------- Fetch one lead (with returns, persons, vehicles) ----------
+// ---------- Fetch one lead (with ALL sections inside each leadReturn) ----------
+// ---------- Fetch one lead (deep, ViewLR-style) ----------
 const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
   try {
-    const { data: leadData } = await api.get(
+    const headers = { headers: { Authorization: `Bearer ${token}` } };
+
+    // Get a minimal lead doc first so we know the correct leadName/description
+    const { data: leadData = [] } = await api.get(
       `/api/lead/lead/${leadNo}/${caseNo}/${encodeURIComponent(caseName)}`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      headers
     );
-    if (!leadData || leadData.length === 0) {
-      console.warn(`No lead found for leadNo: ${leadNo}`);
-      return null;
-    }
+    if (!Array.isArray(leadData) || leadData.length === 0) return null;
+
     const lead = cleanLeadRecord(leadData[0]);
-    const { data: returnsData } = await api.get(
-      `/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    const leadReturns = await Promise.all(
-      returnsData.map(async (lr) => {
-        let persons = [];
-        let vehicles = [];
-        try {
-          const { data: personsData } = await api.get(
-            `/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}/${lr.leadReturnId}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          persons = personsData;
-        } catch (err) {
-          console.error(`Error fetching persons for leadReturn ${lr.leadReturnId}`, err);
-        }
-        try {
-          const { data: vehiclesData } = await api.get(
-            `/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}/${lr.leadReturnId}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          vehicles = vehiclesData;
-        } catch (err) {
-          console.error(`Error fetching vehicles for leadReturn ${lr.leadReturnId}`, err);
-        }
-        return { ...lr, persons, vehicles };
-      })
-    );
-    return { ...lead, leadReturns };
+
+    // Now hydrate exactly like ViewLR (pulls returns + persons/vehicles/enclosures/evidence/pictures/audio/videos/notes/timeline)
+    const full = await fetchLeadAllSectionsLikeViewLR({
+      leadNo: lead.leadNo,
+      leadName: lead.description || "",   // API expects leadName (your "description")
+      caseNo,
+      caseName,
+      token
+    });
+
+    // Merge to keep any fields from the initial list call (if needed)
+    return full ? { ...lead, ...full } : lead;
   } catch (error) {
     console.error(`Error fetching details for leadNo: ${leadNo}`, error);
     return null;
   }
 };
+
+
 
 const toArray = (val) => {
   if (Array.isArray(val)) return val.map(String);
@@ -277,6 +418,46 @@ const getLeadsForSelectedFlags = () => {
 
   return out;
 };
+
+// New: fetch all leads for the case, then hydrate each using the ViewLR-style loader
+useEffect(() => {
+  const fetchAllLeadsViewLRStyle = async () => {
+    if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+    const token = localStorage.getItem("token");
+
+    try {
+      // Get list of leads in the case
+      const { data: leads = [] } = await api.get(
+        `/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Hydrate every lead exactly like ViewLR (same endpoints + grouping)
+      const enriched = await Promise.all(
+        (leads || []).map(async (lead) => {
+          const full = await fetchLeadAllSectionsLikeViewLR({
+            leadNo: lead.leadNo,
+            leadName: lead.description,           // your “leadName” is the instruction/description
+            caseNo: selectedCase.caseNo,
+            caseName: selectedCase.caseName,
+            token
+          });
+          // keep any fields from the list call you still need
+          return { ...lead, ...full };
+        })
+      );
+
+      setLeadsData(enriched);
+      setHierarchyChains([]);
+      setHierarchyLeadsData([]);
+    } catch (err) {
+      console.error("Error fetching leads:", err);
+      setLeadsData([]);
+    }
+  };
+
+  fetchAllLeadsViewLRStyle();
+}, [selectedCase]);
 
 
 useEffect(() => {
@@ -586,64 +767,45 @@ useEffect(() => {
       ]);
 
   // ------------------ Fetch All Leads on Load ------------------
-  useEffect(() => {
-    const fetchLeadsReturnsAndPersons = async () => {
-      if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
-      const token = localStorage.getItem("token");
-      try {
-        const { data: leads } = await api.get(
-          `/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const leadsWithDetails = await Promise.all(
-          leads.map(async (lead) => {
-            const base = cleanLeadRecord(lead);
-            let leadReturns = [];
-            try {
-              const { data: returnsData } = await api.get(
-                `/api/leadReturnResult/${base.leadNo}/${encodeURIComponent(base.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
-                { headers: { Authorization: `Bearer ${token}` } }
-              );
-              leadReturns = await Promise.all(
-                returnsData.map(async (leadReturn) => {
-                  let persons = [];
-                  let vehicles = [];
-                  try {
-                    const { data: personsData } = await api.get(
-                      `/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/${leadReturn.leadReturnId}`,
-                      { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                    persons = personsData;
-                  } catch (err) {
-                    console.error(`Error fetching persons for LeadReturn ${leadReturn.leadReturnId}`, err);
-                  }
-                  try {
-                    const { data: vehiclesData } = await api.get(
-                      `/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/${leadReturn.leadReturnId}`,
-                      { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                    vehicles = vehiclesData;
-                  } catch (err) {
-                    console.error(`Error fetching vehicles for LeadReturn ${leadReturn.leadReturnId}`, err);
-                  }
-                  return { ...leadReturn, persons, vehicles };
-                })
-              );
-            } catch (err) {
-              console.error(`Error fetching returns for Lead ${lead.leadNo}`, err);
-            }
-            return { ...lead, leadReturns };
-          })
-        );
-        setLeadsData(leadsWithDetails);
-        setHierarchyChains([]);
-        setHierarchyLeadsData([]);
-      } catch (err) {
-        console.error("Error fetching leads:", err);
-      }
-    };
-    fetchLeadsReturnsAndPersons();
-  }, [selectedCase]);
+
+  // ------------------ Fetch All Leads on Load (deep) ------------------
+useEffect(() => {
+  const fetchLeadsReturnsAndAllSections = async () => {
+    if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+    const token = localStorage.getItem("token");
+
+    try {
+      // list of all leads in the case
+      const { data: leads = [] } = await api.get(
+        `/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // for each lead, fetch deep (returns + persons/vehicles/enclosures/evidence/pictures/audio/videos/scratchpad/timeline)
+      const leadsWithDetails = await Promise.all(
+        leads.map(async (lead) => {
+          const full = await fetchSingleLeadFullDetails(
+            lead.leadNo,
+            selectedCase.caseNo,
+            selectedCase.caseName,
+            token
+          );
+          // keep original lead fields if deep fetch fails
+          return full ? full : cleanLeadRecord(lead);
+        })
+      );
+
+      setLeadsData(leadsWithDetails);
+      setHierarchyChains([]);
+      setHierarchyLeadsData([]);
+    } catch (err) {
+      console.error("Error fetching leads:", err);
+      setLeadsData([]);
+    }
+  };
+
+  fetchLeadsReturnsAndAllSections();
+}, [selectedCase]);
 
   const [selectStartLead1, setSelectStartLead1] = useState("");
 const [selectEndLead2, setSelectEndLead2] = useState("");
@@ -1039,14 +1201,19 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
 
   // ------------------ Render Leads Table ------------------
   const renderLeads = (leadsArray) => {
-  return leadsArray.map((lead, leadIndex) => {
-    // Be compatible with your earlier helpers if they exist
+  // local helpers so this stays drop-in
+  const _fmt = (v) => (v == null || v === "" ? "N/A" : String(v));
+  const _getFileName = (u = "") => {
+    try { const p = new URL(u); return decodeURIComponent(p.pathname.split("/").pop() || u); }
+    catch { return u?.split("/").pop() || u; }
+  };
+  const _openNew = (url) => window.open(url, "_blank", "noopener,noreferrer");
+
+  return (leadsArray || []).map((lead, leadIndex) => {
     const isDeleted =
       typeof isDeletedStatus === "function"
         ? isDeletedStatus(lead?.leadStatus)
-        : String(lead?.leadStatus ?? "")
-            .trim()
-            .toLowerCase() === "deleted";
+        : String(lead?.leadStatus ?? "").trim().toLowerCase() === "deleted";
 
     const deletedReason =
       typeof getDeletedReason === "function"
@@ -1058,21 +1225,9 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
            "");
 
     return (
-      <div
-        key={leadIndex}
-        className={`lead-section ${isDeleted ? "is-deleted" : ""}`}
-      >
-        {/* <div className="lead-section-head" style={{ marginBottom: 8 }}>
-          <label style={{ display:"inline-flex", alignItems:"center", gap:8 }}>
-            <input
-              type="checkbox"
-              checked={selectedForReport.has(String(lead.leadNo))}
-              onChange={() => toggleLeadForReport(String(lead.leadNo))}
-            />
-            <span className="summaryOptionText">Include this lead in subset</span>
-          </label>
-        </div> */}
+      <div key={leadIndex} className={`lead-section ${isDeleted ? "is-deleted" : ""}`}>
         <div className="leads-container">
+          {/* Lead header */}
           <table className="lead-details-table">
             <colgroup>
               <col style={{ width: "15%" }} />
@@ -1087,25 +1242,19 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
             <tbody>
               <tr>
                 <td className="label-cell">Lead Number</td>
-                <td className="input-cell">
-                  <input type="text" value={lead.leadNo} readOnly />
-                </td>
+                <td className="input-cell"><input type="text" value={lead.leadNo} readOnly /></td>
                 <td className="label-cell">Lead Origin</td>
                 <td className="input-cell">
                   <input
                     type="text"
-                    value={lead.parentLeadNo ? lead.parentLeadNo.join(", ") : ""}
+                    value={Array.isArray(lead.parentLeadNo) ? lead.parentLeadNo.join(", ") : (lead.parentLeadNo || "")}
                     readOnly
                   />
                 </td>
                 <td className="label-cell">Assigned Date</td>
-                <td className="input-cell">
-                  <input type="text" value={formatDate(lead.assignedDate)} readOnly />
-                </td>
+                <td className="input-cell"><input type="text" value={formatDate(lead.assignedDate)} readOnly /></td>
                 <td className="label-cell">Completed Date</td>
-                <td className="input-cell">
-                  <input type="text" value={formatDate(lead.completedDate)} readOnly />
-                </td>
+                <td className="input-cell"><input type="text" value={formatDate(lead.completedDate)} readOnly /></td>
               </tr>
               <tr>
                 <td className="label-cell">Assigned Officers</td>
@@ -1124,16 +1273,11 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
             </tbody>
           </table>
 
+          {/* Instruction + deleted reason */}
           <table className="leads-table">
             <tbody>
-              {/* Lead Instruction */}
               <tr className="table-first-row">
-                <td
-                  style={{ textAlign: "center", fontSize: "18px" }}
-                  className="input-cell"
-                >
-                  Lead Instruction
-                </td>
+                <td style={{ textAlign: "center", fontSize: "18px" }} className="input-cell">Lead Instruction</td>
                 <td>
                   <input
                     type="text"
@@ -1144,24 +1288,20 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                 </td>
               </tr>
 
-              {/* NEW: Deleted Reason (only when deleted) */}
               {isDeleted && (
                 <tr className="deleted-row">
-                  <td      style={{ textAlign: "center", fontSize: "18px" }} className="label-cell">Deleted Reason</td>
+                  <td style={{ textAlign: "center", fontSize: "18px" }} className="label-cell">Deleted Reason</td>
                   <td>
-                    <input
-                      type="text"
-                      value={deletedReason || "N/A"}
-                      readOnly
-                      className="instruction-input"
-                    />
+                    <input type="text" value={deletedReason || "N/A"} readOnly className="instruction-input" />
                   </td>
                 </tr>
               )}
 
-              {lead.leadReturns && lead.leadReturns.length > 0 ? (
-                lead.leadReturns.map((returnItem) => (
-                  <React.Fragment key={returnItem._id || returnItem.leadReturnId}>
+              {/* Lead Returns */}
+              {Array.isArray(lead.leadReturns) && lead.leadReturns.length > 0 ? (
+                lead.leadReturns.map((returnItem, ri) => (
+                  <React.Fragment key={returnItem._id || returnItem.leadReturnId || ri}>
+                    {/* LR body text */}
                     <tr>
                       <td style={{ textAlign: "center", fontSize: "18px" }}>
                         {`Lead Return ID: ${returnItem.leadReturnId}`}
@@ -1182,24 +1322,49 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                             whiteSpace: "pre-wrap",
                             wordWrap: "break-word",
                           }}
-                          rows={Math.max(
-                            (returnItem.leadReturnResult || "").length / 50,
-                            2
-                          )}
+                          rows={Math.max(((returnItem.leadReturnResult || "").length / 50) | 0, 2)}
                         />
                       </td>
                     </tr>
 
-                    {/* Persons */}
+                    {/* LR meta */}
                     <tr>
-                      <td colSpan={2}>
-                        {returnItem.persons && returnItem.persons.length > 0 && (
+                      <td colSpan={2} style={{ paddingTop: 6 }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10 }}>
+                          <div><strong>Entered By:</strong><div>{_fmt(returnItem.enteredBy || returnItem.createdBy)}</div></div>
+                          <div><strong>Entered Date:</strong><div>{formatDate(returnItem.enteredDate || returnItem.createdAt)}</div></div>
+                          <div><strong>Entered Time:</strong><div>{_fmt(returnItem.enteredTime)}</div></div>
+                          <div><strong>Access:</strong><div>{_fmt(returnItem.accessLevel || returnItem.access)}</div></div>
+                          <div><strong>Status:</strong><div>{_fmt(returnItem.status || returnItem.leadReturnStatus)}</div></div>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Counts row (debug/visibility) */}
+<tr>
+  <td colSpan={2} style={{ paddingTop: 6, opacity: 0.85 }}>
+    <div style={{ display:"flex", gap:16, flexWrap:"wrap" }}>
+      <span><strong>Persons:</strong> {returnItem.persons?.length ?? 0}</span>
+      <span><strong>Vehicles:</strong> {returnItem.vehicles?.length ?? 0}</span>
+      <span><strong>Enclosures:</strong> {returnItem.enclosures?.length ?? 0}</span>
+      <span><strong>Evidence:</strong> {returnItem.evidence?.length ?? 0}</span>
+      <span><strong>Pictures:</strong> {returnItem.pictures?.length ?? 0}</span>
+      <span><strong>Audio:</strong> {returnItem.audio?.length ?? 0}</span>
+      <span><strong>Videos:</strong> {returnItem.videos?.length ?? 0}</span>
+      <span><strong>Notes:</strong> {returnItem.scratchpad?.length ?? 0}</span>
+      <span><strong>Timeline:</strong> {returnItem.timeline?.length ?? 0}</span>
+    </div>
+  </td>
+</tr>
+
+
+                    {/* Persons */}
+                    {Array.isArray(returnItem.persons) && returnItem.persons.length > 0 && (
+                      <tr>
+                        <td colSpan={2}>
                           <div className="person-section">
                             <h3 className="title-ld">Person Details</h3>
-                            <table
-                              className="lead-table2"
-                              style={{ width: "100%", tableLayout: "fixed" }}
-                            >
+                            <table className="lead-table2" style={{ width: "100%", tableLayout: "fixed" }}>
                               <thead>
                                 <tr>
                                   <th>Date Entered</th>
@@ -1210,27 +1375,14 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {returnItem.persons.map((person, index) => (
-                                  <tr key={person._id || index}>
+                                {returnItem.persons.map((person, pi) => (
+                                  <tr key={person._id || pi}>
                                     <td>{formatDate(person.enteredDate)}</td>
-                                    <td>
-                                      {person.firstName
-                                        ? `${person.firstName}, ${person.lastName}`
-                                        : "N/A"}
-                                    </td>
-                                    <td>{person.cellNumber}</td>
-                                    <td
-                                      style={{
-                                        whiteSpace: "normal",
-                                        wordWrap: "break-word",
-                                      }}
-                                    >
+                                    <td>{person.firstName ? `${person.firstName}, ${person.lastName}` : "N/A"}</td>
+                                    <td>{_fmt(person.cellNumber)}</td>
+                                    <td style={{ whiteSpace: "normal", wordWrap: "break-word" }}>
                                       {person.address
-                                        ? `${person.address.street1 || ""}, ${
-                                            person.address.city || ""
-                                          }, ${person.address.state || ""}, ${
-                                            person.address.zipCode || ""
-                                          }`
+                                        ? `${person.address.street1 || ""}, ${person.address.city || ""}, ${person.address.state || ""}, ${person.address.zipCode || ""}`
                                         : "N/A"}
                                     </td>
                                     <td>
@@ -1254,31 +1406,28 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                               </tbody>
                             </table>
                           </div>
-                        )}
-                      </td>
+                        </td>
 
-                      {/* Keep your modal placement as-is */}
-                      <PersonModal
-                        isOpen={showPersonModal}
-                        onClose={closePersonModal}
-                        leadNo={personModalData.leadNo}
-                        description={personModalData.description}
-                        caseNo={personModalData.caseNo}
-                        caseName={personModalData.caseName}
-                        leadReturnId={personModalData.leadReturnId}
-                      />
-                    </tr>
+                        {/* Person modal lives once per LR row so it's fine here */}
+                        <PersonModal
+                          isOpen={showPersonModal}
+                          onClose={closePersonModal}
+                          leadNo={personModalData.leadNo}
+                          description={personModalData.description}
+                          caseNo={personModalData.caseNo}
+                          caseName={personModalData.caseName}
+                          leadReturnId={personModalData.leadReturnId}
+                        />
+                      </tr>
+                    )}
 
                     {/* Vehicles */}
-                    <tr>
-                      <td colSpan={2}>
-                        {returnItem.vehicles && returnItem.vehicles.length > 0 && (
+                    {Array.isArray(returnItem.vehicles) && returnItem.vehicles.length > 0 && (
+                      <tr>
+                        <td colSpan={2}>
                           <div className="person-section">
                             <h3 className="title-ld">Vehicles Details</h3>
-                            <table
-                              className="lead-table2"
-                              style={{ width: "100%", tableLayout: "fixed" }}
-                            >
+                            <table className="lead-table2" style={{ width: "100%", tableLayout: "fixed" }}>
                               <thead>
                                 <tr>
                                   <th>Date Entered</th>
@@ -1291,29 +1440,27 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {returnItem.vehicles.map((vehicle, index) => (
-                                  <tr key={vehicle._id || index}>
+                                {returnItem.vehicles.map((vehicle, vi) => (
+                                  <tr key={vehicle._id || vi}>
                                     <td>{formatDate(vehicle.enteredDate)}</td>
-                                    <td>{vehicle.make}</td>
-                                    <td>{vehicle.model}</td>
+                                    <td>{_fmt(vehicle.make)}</td>
+                                    <td>{_fmt(vehicle.model)}</td>
                                     <td>
                                       <div style={{ display: "flex", alignItems: "center" }}>
-                                        <span style={{ width: "60px", display: "inline-block" }}>
-                                          {vehicle.primaryColor}
-                                        </span>
+                                        <span style={{ width: 60, display: "inline-block" }}>{_fmt(vehicle.primaryColor)}</span>
                                         <div
                                           style={{
-                                            width: "18px",
-                                            height: "18px",
+                                            width: 18,
+                                            height: 18,
                                             backgroundColor: vehicle.primaryColor,
-                                            marginLeft: "15px",
+                                            marginLeft: 15,
                                             border: "1px solid #000",
                                           }}
                                         />
                                       </div>
                                     </td>
-                                    <td>{vehicle.plate}</td>
-                                    <td>{vehicle.state}</td>
+                                    <td>{_fmt(vehicle.plate)}</td>
+                                    <td>{_fmt(vehicle.state)}</td>
                                     <td>
                                       <button
                                         className="download-btn"
@@ -1336,40 +1483,299 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                               </tbody>
                             </table>
                           </div>
-                        )}
-                      </td>
+                        </td>
 
-                      {/* Keep your modal placement as-is */}
-                      <VehicleModal
-                        isOpen={showVehicleModal}
-                        onClose={closeVehicleModal}
-                        leadNo={vehicleModalData.leadNo}
-                        leadName={vehicleModalData.description}
-                        caseNo={vehicleModalData.caseNo}
-                        caseName={vehicleModalData.caseName}
-                        leadReturnId={vehicleModalData.leadReturnId}
-                        leadsDeskCode={vehicleModalData.leadsDeskCode}
-                      />
-                    </tr>
+                        <VehicleModal
+                          isOpen={showVehicleModal}
+                          onClose={closeVehicleModal}
+                          leadNo={vehicleModalData.leadNo}
+                          leadName={vehicleModalData.description}
+                          caseNo={vehicleModalData.caseNo}
+                          caseName={vehicleModalData.caseName}
+                          leadReturnId={vehicleModalData.leadReturnId}
+                          leadsDeskCode={vehicleModalData.leadsDeskCode}
+                        />
+                      </tr>
+                    )}
 
-                    {/* Media (kept commented out / unchanged) */}
-                    <tr>
-                      <td colSpan={2}>
-                        {/* your Uploaded Files table (if you enable it later) */}
-                      </td>
-                      <MediaModal
-                        isOpen={showMediaModal}
-                        onClose={closeMediaModal}
-                        media={selectedMedia}
-                      />
-                    </tr>
+                    {/* Enclosures */}
+                    {Array.isArray(returnItem.enclosures) && returnItem.enclosures.length > 0 && (
+                      <tr>
+                        <td colSpan={2}>
+                          <div className="person-section">
+                            <h3 className="title-ld">Enclosures</h3>
+                            <table className="lead-table2" style={{ width: "100%", tableLayout: "fixed" }}>
+                              <thead>
+                                <tr>
+                                  <th>Date</th>
+                                  <th>Title</th>
+                                  <th>Kind</th>
+                                  <th>File / Link</th>
+                                  <th>Notes</th>
+                                  <th>Access</th>
+                                  <th>Action</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {returnItem.enclosures.map((enc, ei) => {
+                                  const isLink = !!enc?.linkUrl && !enc?.fileUrl;
+                                  const href = enc?.fileUrl || enc?.linkUrl;
+                                  return (
+                                    <tr key={enc?._id || ei}>
+                                      <td>{formatDate(enc?.enteredDate || enc?.createdAt)}</td>
+                                      <td style={{ wordBreak: "break-word" }}>{_fmt(enc?.title)}</td>
+                                      <td>{isLink ? "Link" : "File"}</td>
+                                      <td style={{ wordBreak: "break-word" }}>
+                                        {href ? (
+                                          <a onClick={(e) => { e.preventDefault(); _openNew(href); }} href={href}>
+                                            {_getFileName(href)}
+                                          </a>
+                                        ) : "N/A"}
+                                      </td>
+                                      <td style={{ whiteSpace: "pre-wrap" }}>{_fmt(enc?.notes || enc?.description)}</td>
+                                      <td>{_fmt(enc?.accessLevel || enc?.access)}</td>
+                                      <td>
+                                        {href && (
+                                          <button className="download-btn" onClick={() => _openNew(href)}>Open</button>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Evidence */}
+                    {Array.isArray(returnItem.evidence) && returnItem.evidence.length > 0 && (
+                      <tr>
+                        <td colSpan={2}>
+                          <div className="person-section">
+                            <h3 className="title-ld">Evidence</h3>
+                            <table className="lead-table2" style={{ width: "100%", tableLayout: "fixed" }}>
+                              <thead>
+                                <tr>
+                                  <th>Date</th>
+                                  <th>Type</th>
+                                  <th>Description</th>
+                                  <th>Tag / ID</th>
+                                  <th>Status</th>
+                                  <th>Access</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {returnItem.evidence.map((ev, evi) => (
+                                  <tr key={ev?._id || evi}>
+                                    <td>{formatDate(ev?.enteredDate || ev?.createdAt)}</td>
+                                    <td>{_fmt(ev?.evidenceType || ev?.type)}</td>
+                                    <td style={{ whiteSpace: "pre-wrap" }}>{_fmt(ev?.description)}</td>
+                                    <td>{_fmt(ev?.tag || ev?.evidenceId)}</td>
+                                    <td>{_fmt(ev?.status)}</td>
+                                    <td>{_fmt(ev?.accessLevel || ev?.access)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Pictures */}
+                    {Array.isArray(returnItem.pictures) && returnItem.pictures.length > 0 && (
+                      <tr>
+                        <td colSpan={2}>
+                          <div className="person-section">
+                            <h3 className="title-ld">Pictures</h3>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                              {returnItem.pictures.map((pic, pi) => {
+                                const url = pic?.url || pic?.fileUrl;
+                                return (
+                                  <div key={pic?._id || pi} style={{ width: 140 }}>
+                                    <div
+                                      role="button"
+                                      onClick={() => openMediaModal({ ...pic, url, type: "jpg" })}
+                                      style={{
+                                        width: 140, height: 90, overflow: "hidden", border: "1px solid #ddd",
+                                        borderRadius: 6, display: "flex", alignItems: "center",
+                                        justifyContent: "center", cursor: "pointer"
+                                      }}
+                                      title="Click to preview"
+                                    >
+                                      {url ? (
+                                        <img src={url} alt={pic?.caption || "Picture"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                      ) : <span>N/A</span>}
+                                    </div>
+                                    <div style={{ fontSize: 12, marginTop: 6, wordBreak: "break-word" }}>
+                                      {_fmt(pic?.caption || _getFileName(url || ""))}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Audio */}
+                    {Array.isArray(returnItem.audio) && returnItem.audio.length > 0 && (
+                      <tr>
+                        <td colSpan={2}>
+                          <div className="person-section">
+                            <h3 className="title-ld">Audio</h3>
+                            <table className="lead-table2" style={{ width: "100%" }}>
+                              <thead>
+                                <tr>
+                                  <th>Date</th>
+                                  <th>Title</th>
+                                  <th>Player</th>
+                                  <th>Access</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {returnItem.audio.map((au, ai) => {
+                                  const src = au?.url || au?.fileUrl;
+                                  return (
+                                    <tr key={au?._id || ai}>
+                                      <td>{formatDate(au?.enteredDate || au?.createdAt)}</td>
+                                      <td style={{ wordBreak: "break-word" }}>{_fmt(au?.title || _getFileName(src || ""))}</td>
+                                      <td>{src ? <audio controls src={src} style={{ width: "100%" }} /> : "N/A"}</td>
+                                      <td>{_fmt(au?.accessLevel || au?.access)}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Videos */}
+                    {Array.isArray(returnItem.videos) && returnItem.videos.length > 0 && (
+                      <tr>
+                        <td colSpan={2}>
+                          <div className="person-section">
+                            <h3 className="title-ld">Videos</h3>
+                            <table className="lead-table2" style={{ width: "100%" }}>
+                              <thead>
+                                <tr>
+                                  <th>Date</th>
+                                  <th>Title</th>
+                                  <th>Player</th>
+                                  <th>Access</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {returnItem.videos.map((vd, vi) => {
+                                  const src = vd?.url || vd?.fileUrl;
+                                  return (
+                                    <tr key={vd?._id || vi}>
+                                      <td>{formatDate(vd?.enteredDate || vd?.createdAt)}</td>
+                                      <td style={{ wordBreak: "break-word" }}>{_fmt(vd?.title || _getFileName(src || ""))}</td>
+                                      <td>
+                                        {src ? (
+                                          <video controls style={{ width: "100%", maxWidth: 420 }}>
+                                            <source src={src} type="video/mp4" />
+                                            Your browser does not support the video tag.
+                                          </video>
+                                        ) : "N/A"}
+                                      </td>
+                                      <td>{_fmt(vd?.accessLevel || vd?.access)}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Scratchpad / Notes */}
+                    {Array.isArray(returnItem.scratchpad) && returnItem.scratchpad.length > 0 && (
+                      <tr>
+                        <td colSpan={2}>
+                          <div className="person-section">
+                            <h3 className="title-ld">Notes</h3>
+                            <table className="lead-table2" style={{ width: "100%", tableLayout: "fixed" }}>
+                              <thead>
+                                <tr>
+                                  <th>Date</th>
+                                  <th>Author</th>
+                                  <th>Note</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {returnItem.scratchpad.map((n, ni) => (
+                                  <tr key={n?._id || ni}>
+                                    <td>{formatDate(n?.enteredDate || n?.createdAt)}</td>
+                                    <td>{_fmt(n?.author || n?.enteredBy)}</td>
+                                    <td style={{ whiteSpace: "pre-wrap" }}>{_fmt(n?.note || n?.text || n?.content)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Timeline (this LR) */}
+                    {Array.isArray(returnItem.timeline) && returnItem.timeline.length > 0 && (
+                      <tr>
+                        <td colSpan={2}>
+                          <div className="person-section">
+                            <h3 className="title-ld">Timeline (This Lead Return)</h3>
+                            <table className="lead-table2" style={{ width: "100%", tableLayout: "fixed" }}>
+                              <thead>
+                                <tr>
+                                  <th>Start</th>
+                                  <th>End</th>
+                                  <th>Title</th>
+                                  <th>Flags</th>
+                                  <th>Description</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {returnItem.timeline
+                                  .slice()
+                                  .sort((a, b) => {
+                                    const aDT = new Date(`${a.eventStartDate}T${convert12To24(a.eventStartTime)}`);
+                                    const bDT = new Date(`${b.eventStartDate}T${convert12To24(b.eventStartTime)}`);
+                                    return aDT - bDT;
+                                  })
+                                  .map((t, ti) => (
+                                    <tr key={t?._id || ti}>
+                                      <td>{formatDate(t?.eventStartDate)} {_fmt(t?.eventStartTime)}</td>
+                                      <td>{formatDate(t?.eventEndDate)} {_fmt(t?.eventEndTime)}</td>
+                                      <td style={{ wordBreak: "break-word" }}>{_fmt(t?.eventTitle || t?.title)}</td>
+                                      <td>{Array.isArray(t?.timelineFlag) ? t.timelineFlag.join(", ") : _fmt(t?.timelineFlag)}</td>
+                                      <td style={{ whiteSpace: "pre-wrap" }}>{_fmt(t?.eventDescription || t?.description)}</td>
+                                    </tr>
+                                  ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Media modal (keep after media sections) */}
+                    <MediaModal
+                      isOpen={showMediaModal}
+                      onClose={closeMediaModal}
+                      media={selectedMedia}
+                    />
                   </React.Fragment>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="2" style={{ textAlign: "center" }}>
-                    No Lead Returns Available
-                  </td>
+                  <td colSpan={2} style={{ textAlign: "center" }}>No Lead Returns Available</td>
                 </tr>
               )}
             </tbody>
@@ -1490,113 +1896,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
           </div> */}
 
           <div className="bottom-sec-ldExecSummary" id="main-content">
-            {/* <CollapsibleSection title="Case Summary" defaultOpen={true}>
-            <div className="case-summary-ld">
-              <textarea
-                className="textarea-field-ld"
-                style={{ fontFamily: "inherit", fontSize: "20px" }}
-                value={caseSummary}
-                onChange={handleCaseSummaryChange}
-                readOnly={!isEditing}
-              ></textarea>
-            </div>
-            </CollapsibleSection> */}
-
-            {/* <CollapsibleSection title="Generate Report" defaultOpen={true}>
-  <div className="summaryModeRow">
-  <label className="summaryOption">
-      <input
-        type="radio"
-        name="summary-mode"
-        value="type"
-        checked={summaryMode === 'type'}
-        onChange={() => handleSummaryMode('type')}
-      />
-      <span className="summaryOptionText">Type summary manually</span>
-    </label>
- <label className="summaryOption">      <input
-        type="radio"
-        name="summary-mode"
-        value="file"
-        checked={summaryMode === 'file'}
-        onChange={() => handleSummaryMode('file')}
-      />
-          <span className="summaryOptionText">Attach executive report</span>
-
-    </label>
-  </div>
-
-
-  {summaryMode === 'file' && (
-    <div style={{ marginBottom: 16 }}>
-      <input
-        type="file"
-        accept=".doc,.docx,.pdf"
-        onChange={handleExecSummaryFileChange}
-      />
-    </div>
-  )}
-
-  <div style={{ marginTop: 8 }}>
-    <h4>Report Scope</h4>
-
-    <label style={{ display: "flex", gap: 8, alignItems: "center", margin: "6px 0" }}>
-      <input
-        type="radio"
-        name="report-scope"
-        value="all"
-        checked={reportScope === "all"}
-        onChange={() => setReportScope("all")}
-      />
-      <span className="summaryOptionText">All leads in the case</span>
-    </label>
-
-    <label style={{ display: "flex", gap: 8, alignItems: "center", margin: "6px 0" }}>
-      <input
-        type="radio"
-        name="report-scope"
-        value="selected"
-        checked={reportScope === "selected"}
-        onChange={() => setReportScope("selected")}
-      />
-      <span className="summaryOptionText">Manually selected subset (via checkboxes next to each lead)</span>
-
-    </label>
-
- {reportScope === "selected" && (
-  <div style={{ margin: "8px 0 12px" }}>
-    <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-      <span className="summaryOptionText">Limit visible leads by range:</span>
-      <input
-        type="text"
-        placeholder="From #"
-        value={subsetRange.start}
-        onChange={(e) => setSubsetRange((r) => ({ ...r, start: e.target.value }))}
-        style={{ width: 100, padding: "6px 8px" }}
-      />
-      <span>—</span>
-      <input
-        type="text"
-        placeholder="To #"
-        value={subsetRange.end}
-        onChange={(e) => setSubsetRange((r) => ({ ...r, end: e.target.value }))}
-        style={{ width: 100, padding: "6px 8px" }}
-      />
-      <button  type="submit" className="btn btn-primary" onClick={applySubsetRange}>Apply</button>
-      <button  type="submit" className="btn btn-secondary"   onClick={clearSubsetRange}>Clear</button>
-
-      <span className="hierarchy-filter__hint"> Only leads in this range will be displayed below. Tick the checkboxes to include them in the subset.
-    </span>
-    </div>
-  </div>
-)}
-  </div>
-
-  <button type="submit" className="btn btn-primary" onClick={handleRunReportWithSummary}>
-    Run Report
-  </button>
-</CollapsibleSection> */}
-
+          
 <CollapsibleSection title="Generate Report" defaultOpen={true}>
 
   {/* Single straight-line checkbox row */}
