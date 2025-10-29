@@ -110,6 +110,8 @@ export const ViewLR = () => {
     message: ''
   });
 
+
+
 const toggleComments = useCallback(() => setShowComments(s => !s), []);
 const closeComments  = useCallback(() => setShowComments(false), []);
 
@@ -369,6 +371,13 @@ const actuallyDoSubmitReport = async () => {
         setAlertOpen(true);
     }
   };
+
+    const userOf = (val) =>
+  typeof val === "string"
+    ? val.trim()
+    : (val?.username || val?.assignee || val?.name || "").trim();
+
+    const managerUsername = userOf(leadData?.assignedBy);
   
 
   const handleSubmitReport = () => {
@@ -1040,30 +1049,23 @@ const actuallyDoSubmitReport = async () => {
                   <CommentBar tag="ViewLR" threadKey={threadKey} autoFocus={false} />
                 </div> */}
 
-               {showComments && (
+             {showComments && (
   <aside className={styles.commentSec}>
-    <div
-      className={styles.commentHeader}
-      onClick={closeComments}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && closeComments()}
-    >
-      {/* <span>Comments</span> */}
-      {/* <button className={styles.commentCloseBtn} aria-label="Hide comments">×</button> */}
-    </div>
-
-    {/* If CommentBar supports these callbacks, include them; otherwise omit. */}
- 
-    {String(status).toLowerCase() === "returned" && investigatorUsernames.map(u => (
-  <CommentBar
-    key={u}
-    tag="DocumentReview"
-    threadKey={`${publicThreadKey}::${u}`}
-    readOnly
-    label={`Private notes by ${u}`}
-  />
-))}
+    <CommentBar
+      combined
+      status={status}
+      caseNo={caseNo}
+      caseName={caseName}
+      leadNo={leadNo}
+      leadName={leadName}
+      includePrivateFrom={[
+        currentUser,          // me (investigator)
+        managerUsername,      // case manager who returned it
+        // optionally include other assignees if you want a shared private stream:
+        // ...investigatorUsernames
+      ].filter(Boolean)}
+      autoFocus={false}
+    />
   </aside>
 )}
 
