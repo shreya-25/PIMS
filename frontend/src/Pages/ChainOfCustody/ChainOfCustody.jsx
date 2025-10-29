@@ -39,6 +39,35 @@ const attachFiles = async (items, idFieldName, filesEndpoint) => {
     })
   );
 };
+
+  const signedInOfficer = localStorage.getItem("loggedInUser");
+
+const primaryUsername =
+  leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
+
+// am I the primary investigator on this lead?
+const isPrimaryInvestigator =
+  selectedCase?.role === "Investigator" &&
+  !!signedInOfficer &&
+  signedInOfficer === primaryUsername;
+
+// primary goes to the interactive ViewLR page
+const goToViewLR = () => {
+  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+  if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
+    setAlertMessage("Please select a case and lead first.");
+    setAlertOpen(true);
+    return;
+  }
+
+  navigate("/viewLR", {
+    state: { caseDetails: kase, leadDetails: lead }
+  });
+};
+
+
   
 
   // --- fetch users for name resolution
@@ -418,16 +447,18 @@ const tone = (t) =>
               Manage Lead Return
             </span>
               )}
-              {(["Investigator"].includes(selectedCase?.role)) && (
-                 <span
-              className="menu-item"
-              onClick={handleViewLeadReturn}
-              title={isGenerating ? "Preparing report…" : "View Lead Return"}
-              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-            >
-              View Lead Return
-            </span>
-              )}
+             {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
+  <span className="menu-item" onClick={goToViewLR}>
+    Submit Lead Return
+  </span>
+)}
+
+  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
+  <span className="menu-item" onClick={goToViewLR}>
+   Review Lead Return
+  </span>
+)}
+
 
               <span
                 className="menu-item active"
