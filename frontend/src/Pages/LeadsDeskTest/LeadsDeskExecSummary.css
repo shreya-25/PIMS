@@ -125,21 +125,48 @@
   margin-bottom: 12px;
 }
 
+.summaryModeRow1 {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  margin-bottom: 12px;
+  margin-top: 8px;
+  margin-left: 10px;
+}
+
+
 .summaryOption {
   display: inline-flex;
   gap: 8px;
   align-items: center;
 }
 
+.summaryOption1 {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  width: 15%;
+}
 /* Force the text size (beats most overrides) */
 .summaryOptionText {
   font-size: 18px !important;
   line-height: 1.4;
 }
 
+.summaryOptionText1 {
+  font-size: 18px !important;
+  line-height: 1.0;
+}
+
+
 /* Optional: make the radio itself look bigger */
 .summaryOption input[type="radio"] {
   transform: scale(1.2);
+}
+
+.summaryOption1 input[type="radio"] {
+  transform: scale(1.2);
+  width: 10%;
 }
 
 .range-filter {

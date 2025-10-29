@@ -749,8 +749,13 @@ const handleAddOrUpdateReturn = async () => {
   onClose={() => { setConfirmOpen(false); setPendingDeleteId(null); }} // Cancel
 />
 
-      
-           <div className="top-menu"   style={{ paddingLeft: '20%' }}>
+      <div className="LRI_Content">
+        
+       <SideBar  activePage="CasePageManager" />
+
+      <div className="left-contentLI">
+
+            <div className="top-menu1">
       <div className="menu-items" >
         <span className="menu-item " onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
@@ -809,11 +814,6 @@ const handleAddOrUpdateReturn = async () => {
                   </div>
        </div>
 
-      <div className="LRI_Content">
-        
-       <SideBar  activePage="CasePageManager" />
-
-      <div className="left-contentLI">
       <div className="top-menu1" style={{ marginTop: '2px', backgroundColor: '#3333330e' }}>
        <div className="menu-items" style={{ fontSize: '19px' }}>
        

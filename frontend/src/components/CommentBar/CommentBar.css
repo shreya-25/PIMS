@@ -23,19 +23,19 @@
 .cbar__title { font-weight: 600; }
 
 /* Composer */
-.cbar__composer { padding: 12px 14px 8px; border-bottom: 1px solid #efeff2; }
-.cbar__row { display: flex; align-items: flex-start; gap: 10px; }
+.cbar__composer { padding: 12px 14px 8px; border-bottom: 1px solid #efeff2;}
+.cbar__row { display: flex; align-items: flex-start; gap: 10px;   }
 
 .cbar__textarea {
   flex: 1 1 auto;
-  min-height: 400px;                /* bigger textbox */
+  min-height: 130px;                /* bigger textbox */
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid #d8d8df;
   outline: none;
   resize: vertical;
   font-size: 18px;
-  line-height: 1.4;
+  line-height: 1.0;
   background: #fff;
 }
 .cbar__textarea:focus {
@@ -86,7 +86,7 @@
 .cbar__error { color: #b3261e; }
 
 /* List */
-.cbar__list { list-style: none; padding: 8px 10px 16px; margin: 0; overflow: auto; }
+.cbar__list { list-style: none; padding: 8px 10px 16px; margin: 0; overflow: auto; min-height: 70%; }
 .cbar__item { display: flex; gap: 10px; padding: 10px 6px; }
 
 /* .cbar__avatar {

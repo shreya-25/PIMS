@@ -64,6 +64,8 @@ export const CasePageManager = () => {
     const [selectedDetectiveSupervisor, setSelectedDetectiveSupervisor] = useState("");
     const [caseStatus, setCaseStatus] = useState("");
 const [caseUpdatedAt, setCaseUpdatedAt] = useState(null);
+const isDeletedStatus = (s) => String(s || "").toLowerCase() === "deleted";
+
 
 const dsRef = useRef(null);
 const cmRef = useRef(null);
@@ -2738,12 +2740,21 @@ const toTitleCase = (s = "") =>
     : "None"}
 </td>
 
-              <td style={{ width: "9%", textAlign: "center" }}>
-                <button className="view-btn1" onClick={()=>handleLeadClick(lead)}>
-                  Manage
-                </button>
-                
-              </td>
+            <td style={{ width: "9%", textAlign: "center" }}>
+  <button
+    className="view-btn1"
+    onClick={() => !isDeletedStatus(lead.leadStatus) && handleLeadClick(lead)}
+    disabled={isDeletedStatus(lead.leadStatus)}
+    style={{
+      opacity: isDeletedStatus(lead.leadStatus) ? 0.5 : 1,
+      cursor: isDeletedStatus(lead.leadStatus) ? "not-allowed" : "pointer"
+    }}
+  >
+    Manage
+  </button>
+</td>
+
+
             </tr>
           )) : (
             <tr>

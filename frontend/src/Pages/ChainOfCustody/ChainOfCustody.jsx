@@ -39,6 +39,35 @@ const attachFiles = async (items, idFieldName, filesEndpoint) => {
     })
   );
 };
+
+  const signedInOfficer = localStorage.getItem("loggedInUser");
+
+const primaryUsername =
+  leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
+
+// am I the primary investigator on this lead?
+const isPrimaryInvestigator =
+  selectedCase?.role === "Investigator" &&
+  !!signedInOfficer &&
+  signedInOfficer === primaryUsername;
+
+// primary goes to the interactive ViewLR page
+const goToViewLR = () => {
+  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+  if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
+    setAlertMessage("Please select a case and lead first.");
+    setAlertOpen(true);
+    return;
+  }
+
+  navigate("/viewLR", {
+    state: { caseDetails: kase, leadDetails: lead }
+  });
+};
+
+
   
 
   // --- fetch users for name resolution
@@ -137,38 +166,65 @@ const AssignmentLog = ({ events, status }) => {
   const stream  = [...evs].sort((a, b) => new Date(a.at) - new Date(b.at));
 
   const msg = (ev) => {
-    const people = (ev.to || []).map(nameOf).join(", ") || "—";
-    switch (ev.type) {
-      case "assigned":
-        return `Assigned to ${people}${ev.primaryInvestigator ? ` • Primary: ${nameOf(ev.primaryInvestigator)}` : ""}`;
-      case "accepted":
-        return `${people} accepted`;
-      case "declined":
-        return `${people} declined${ev.reason ? ` • Reason: ${ev.reason}` : ""}`;
-      case "reassigned-added":
-        return `Added ${people}${ev.primaryInvestigator ? ` • Primary: ${nameOf(ev.primaryInvestigator)}` : ""}`;
-      case "reassigned-removed":
-        return `Removed ${people}`;
-      default:
-        return ev.type || "—";
-    }
-  };
+  const people = (ev.to || []).map(nameOf).join(", ") || "—";
+  switch (ev.type) {
+    case "assigned":
+      return `Assigned to ${people}${ev.primaryInvestigator ? ` • Primary: ${nameOf(ev.primaryInvestigator)}` : ""}`;
+    case "accepted":
+      return `${people} accepted`;
+    case "declined":
+      return `${people} declined${ev.reason ? ` • Reason: ${ev.reason}` : ""}`;
+    case "reassigned-added":
+      return `Added ${people}${ev.primaryInvestigator ? ` • Primary: ${nameOf(ev.primaryInvestigator)}` : ""}`;
+    case "reassigned-removed":
+      return `Removed ${people}`;
+    case "pi-submitted":
+      return `Primary Investigator submitted lead return${ev.leadReturnId ? ` • Return ID: ${ev.leadReturnId}` : ""}`;
+    case "cm-approved":
+      return `Case Manager approved${ev.reason ? ` • Note: ${ev.reason}` : ""}`;
+    case "cm-returned":
+      return `Case Manager returned for changes${ev.reason ? ` • Reason: ${ev.reason}` : ""}`;
+    case "cm-closed":
+      return `Case Manager closed${ev.reason ? ` • Reason: ${ev.reason}` : ""}`;
+    case "cm-reopened":
+      return `Case Manager reopened${ev.reason ? ` • Note: ${ev.reason}` : ""}`;
+    default:
+      return ev.type || "—";
+  }
+};
 
-  const icon = (t) =>
-    t === "accepted" ? "✓"
-    : t === "declined" ? "✕"
-    : t === "reassigned-added" ? "+"
-    : t === "reassigned-removed" ? "−"
-    : "●";
+const icon = (t) =>
+  t === "accepted"           ? "✓" :
+  t === "declined"           ? "✕" :
+  t === "reassigned-added"   ? "+" :
+  t === "reassigned-removed" ? "−" :
+  t === "pi-submitted"       ? "⤴" :
+  t === "cm-approved"        ? "✔" :
+  t === "cm-returned"        ? "↺" :
+  t === "cm-closed"          ? "⏹" :
+  t === "cm-reopened"        ? "↻" :
+                               "●";
 
-  const tone = (t) =>
-    t === "accepted" ? "ok"
-    : t === "declined" ? "bad"
-    : t === "reassigned-added" ? "info"
-    : t === "reassigned-removed" ? "muted"
-    : "base";
+const tone = (t) =>
+  t === "accepted"           ? "ok" :
+  t === "cm-approved"        ? "ok" :
+  t === "declined"           ? "bad" :
+  t === "cm-returned"        ? "info" :
+  t === "cm-closed"          ? "muted" :
+  t === "cm-reopened"        ? "info" :
+  t === "reassigned-added"   ? "info" :
+  t === "reassigned-removed" ? "muted" :
+  t === "pi-submitted"       ? "base" :
+                               "base";
+
 
   const statusClass = String(status || "").toLowerCase().replace(/\s+/g, "-");
+
+//   const cmApproved = evs.filter(e => e.type === "cm-approved").length;
+// const cmReturned = evs.filter(e => e.type === "cm-returned").length;
+// const cmClosed   = evs.filter(e => e.type === "cm-closed").length;
+// const cmReopened = evs.filter(e => e.type === "cm-reopened").length;
+// const piSubmitted= evs.filter(e => e.type === "pi-submitted").length;
 
   return (
     <div className="elog card">
@@ -182,6 +238,14 @@ const AssignmentLog = ({ events, status }) => {
         <span className="counter bad">Declined {declinedAt.size}</span>
         <span className="counter base">Pending {pending.length}</span>
       </div>
+
+      {/* <div className="elog-counters extra">
+  <span className="counter base">PI submitted {piSubmitted}</span>
+  <span className="counter ok">CM approved {cmApproved}</span>
+  <span className="counter warn">CM returned {cmReturned}</span>
+  <span className="counter muted">CM closed {cmClosed}</span>
+  <span className="counter info">CM reopened {cmReopened}</span>
+</div> */}
 
       {stream.length === 0 ? (
         <div className="muted">No activity yet.</div>
@@ -383,16 +447,18 @@ const AssignmentLog = ({ events, status }) => {
               Manage Lead Return
             </span>
               )}
-              {(["Investigator"].includes(selectedCase?.role)) && (
-                 <span
-              className="menu-item"
-              onClick={handleViewLeadReturn}
-              title={isGenerating ? "Preparing report…" : "View Lead Return"}
-              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-            >
-              View Lead Return
-            </span>
-              )}
+             {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
+  <span className="menu-item" onClick={goToViewLR}>
+    Submit Lead Return
+  </span>
+)}
+
+  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
+  <span className="menu-item" onClick={goToViewLR}>
+   Review Lead Return
+  </span>
+)}
+
 
               <span
                 className="menu-item active"

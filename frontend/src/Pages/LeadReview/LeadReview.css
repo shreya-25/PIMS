@@ -60,6 +60,7 @@ html, body {
   box-sizing: border-box;
   width: 75%;
   overflow-x: auto;
+  margin-top: 110px;
 }
  .caseandleadinfo
   {
@@ -72,6 +73,7 @@ html, body {
   .main-leadreview-cont
   {
     padding: 16px;
+    /* margin-top: 110px; */
   }
 
   .side-titleLeft-lr p
@@ -404,7 +406,7 @@ html, body {
 
 .accept-reject-section
 {
-  width: 94%;
+  width: 95%;
 }
 
 .accept-reject-section h3{

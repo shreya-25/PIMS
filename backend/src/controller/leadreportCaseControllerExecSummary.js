@@ -1887,6 +1887,36 @@ function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
 //   return currY + padding;
 // }
 
+function formatOfficer(off) {
+  if (!off) return "";
+  // common shapes: string, {name}, {fullName}, {displayName}, {firstName,lastName}, {user:{...}}
+  if (typeof off === "string") return off;
+  if (off.fullName) return off.fullName;
+  if (off.displayName) return off.displayName;
+  if (off.name) return off.name;
+  if (off.firstName || off.lastName) {
+    return [off.firstName, off.lastName].filter(Boolean).join(" ").trim();
+  }
+  if (off.user) return formatOfficer(off.user);
+  // fallback to something stable
+  if (off.email) return off.email;
+  if (off.username) return off.username;
+  return "";
+}
+
+function formatOfficerList(arr) {
+  if (!Array.isArray(arr) || arr.length === 0) return "N/A";
+  const names = arr
+    .map(formatOfficer)
+    .filter(Boolean);
+
+  if (names.length === 0) return "N/A";
+  // de-dupe while preserving order
+  const seen = new Set();
+  const deduped = names.filter(n => (seen.has(n) ? false : (seen.add(n), true)));
+  return deduped.join(", ");
+}
+
 function drawTextBox(doc, x, y, width, title, content) {
   const padding   = 5;
   const fontSize  = 10;
@@ -2066,40 +2096,103 @@ function formatDate(dateString) {
 }
 
 function drawStructuredLeadDetails(doc, x, y, lead) {
-  const colWidths = [130, 130, 130, 122];
-  const rowHeight = 20;
   const padding = 5;
+  const contentWidth =
+    doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
-  // Header row
+  // proportions sum to 1
+  const colWidths = [
+    Math.round(contentWidth * 0.25), // Lead Number
+    Math.round(contentWidth * 0.25), // Lead Origin
+    Math.round(contentWidth * 0.20), // Assigned Date
+    Math.round(contentWidth * 0.30)  // Completed Date
+  ];
+
+  const minRowH = 20;
+
   const headers = ["Lead Number:", "Lead Origin:", "Assigned Date:", "Completed Date:"];
   const values = [
     lead.leadNo || "N/A",
-    lead.parentLeadNo ? lead.parentLeadNo.join(", ") : "N/A",
+    Array.isArray(lead.parentLeadNo) ? lead.parentLeadNo.join(", ") : (lead.parentLeadNo || "N/A"),
     lead.assignedDate ? formatDate(lead.assignedDate) : "N/A",
     lead.completedDate ? formatDate(lead.completedDate) : "N/A",
   ];
 
+  // ----- First Row: Headers (Grey) -----
   let currX = x;
+  doc.font("Helvetica-Bold").fontSize(11);
   for (let i = 0; i < headers.length; i++) {
-    doc.rect(currX, y, colWidths[i], rowHeight).fillAndStroke("#f5f5f5", "#ccc");
-    doc.fillColor("#000").font("Helvetica-Bold").fontSize(11).text(headers[i], currX + padding, y + 5);
+    doc.rect(currX, y, colWidths[i], minRowH).fillAndStroke("#f5f5f5", "#ccc");
+    doc.fillColor("#000").text(headers[i], currX + padding, y + 5, {
+      width: colWidths[i] - 2 * padding,
+      align: "left",
+    });
     currX += colWidths[i];
   }
-  y += rowHeight;
+
+  // ----- Second Row: Values (auto height) -----
+  doc.font("Helvetica").fontSize(12);
+
+  let valueRowHeight = minRowH;
+  for (let i = 0; i < values.length; i++) {
+    const h = doc.heightOfString(values[i], {
+      width: colWidths[i] - 2 * padding,
+      align: "left",
+    }) + 2 * padding;
+    valueRowHeight = Math.max(valueRowHeight, h);
+  }
+
+  y += minRowH;
   currX = x;
   for (let i = 0; i < values.length; i++) {
-    doc.rect(currX, y, colWidths[i], rowHeight).stroke();
-    doc.font("Helvetica").fontSize(12).text(values[i], currX + padding, y + 5);
+    doc.rect(currX, y, colWidths[i], valueRowHeight).stroke();
+    doc.text(values[i], currX + padding, y + padding, {
+      width: colWidths[i] - 2 * padding,
+      align: "left",
+    });
     currX += colWidths[i];
   }
-  y += rowHeight;
-  doc.rect(x, y, colWidths.reduce((a, b) => a + b, 0), rowHeight)
-    .fillAndStroke("#f5f5f5", "#ccc");
-  doc.font("Helvetica-Bold").fontSize(11).fillColor("#000").text("Assigned Officers:", x + padding, y + 5);
-  const officersText = lead.assignedTo?.join(", ") || "N/A";
-  doc.font("Helvetica").fontSize(12).text(officersText, x + 130 + padding, y + 5);
-  return y + rowHeight + 20;
+
+  // ----- Third Row: Assigned Officers (Label + WRAPPED Value) -----
+  y += valueRowHeight;
+
+  const labelWidth = colWidths[0]; // ✅ same width as Lead Number
+  const valueWidth = contentWidth - labelWidth; // 🔥 This gives more room to names
+
+  // Properly formatted list → prevents [object Object]
+  const officersText = formatOfficerList(lead.assignedTo);
+
+  doc.font("Helvetica").fontSize(12);
+  const officersTextH =
+    doc.heightOfString(officersText, {
+      width: valueWidth - 2 * padding,
+      align: "left",
+    }) + 2 * padding;
+
+  const officersRowH = Math.max(minRowH, officersTextH);
+
+  // Label cell
+  doc.rect(x, y, labelWidth, officersRowH).fillAndStroke("#f5f5f5", "#ccc");
+  doc.font("Helvetica-Bold").fontSize(11)
+    .fillColor("#000")
+    .text("Assigned Officers:", x + padding, y + padding, {
+      width: labelWidth - 2 * padding,
+      align: "left",
+    });
+
+  // Value cell
+  doc.rect(x + labelWidth, y, valueWidth, officersRowH).stroke();
+  doc.font("Helvetica").fontSize(12)
+    .fillColor("#000")
+    .text(officersText, x + labelWidth + padding, y + padding, {
+      width: valueWidth - 2 * padding,
+      align: "left",
+    });
+
+  return y + officersRowH + 20;
 }
+
+
 
 /* ==============================
    DOCX-to-PDF Conversion Functions
