@@ -137,38 +137,65 @@ const AssignmentLog = ({ events, status }) => {
   const stream  = [...evs].sort((a, b) => new Date(a.at) - new Date(b.at));
 
   const msg = (ev) => {
-    const people = (ev.to || []).map(nameOf).join(", ") || "—";
-    switch (ev.type) {
-      case "assigned":
-        return `Assigned to ${people}${ev.primaryInvestigator ? ` • Primary: ${nameOf(ev.primaryInvestigator)}` : ""}`;
-      case "accepted":
-        return `${people} accepted`;
-      case "declined":
-        return `${people} declined${ev.reason ? ` • Reason: ${ev.reason}` : ""}`;
-      case "reassigned-added":
-        return `Added ${people}${ev.primaryInvestigator ? ` • Primary: ${nameOf(ev.primaryInvestigator)}` : ""}`;
-      case "reassigned-removed":
-        return `Removed ${people}`;
-      default:
-        return ev.type || "—";
-    }
-  };
+  const people = (ev.to || []).map(nameOf).join(", ") || "—";
+  switch (ev.type) {
+    case "assigned":
+      return `Assigned to ${people}${ev.primaryInvestigator ? ` • Primary: ${nameOf(ev.primaryInvestigator)}` : ""}`;
+    case "accepted":
+      return `${people} accepted`;
+    case "declined":
+      return `${people} declined${ev.reason ? ` • Reason: ${ev.reason}` : ""}`;
+    case "reassigned-added":
+      return `Added ${people}${ev.primaryInvestigator ? ` • Primary: ${nameOf(ev.primaryInvestigator)}` : ""}`;
+    case "reassigned-removed":
+      return `Removed ${people}`;
+    case "pi-submitted":
+      return `Primary Investigator submitted lead return${ev.leadReturnId ? ` • Return ID: ${ev.leadReturnId}` : ""}`;
+    case "cm-approved":
+      return `Case Manager approved${ev.reason ? ` • Note: ${ev.reason}` : ""}`;
+    case "cm-returned":
+      return `Case Manager returned for changes${ev.reason ? ` • Reason: ${ev.reason}` : ""}`;
+    case "cm-closed":
+      return `Case Manager closed${ev.reason ? ` • Reason: ${ev.reason}` : ""}`;
+    case "cm-reopened":
+      return `Case Manager reopened${ev.reason ? ` • Note: ${ev.reason}` : ""}`;
+    default:
+      return ev.type || "—";
+  }
+};
 
-  const icon = (t) =>
-    t === "accepted" ? "✓"
-    : t === "declined" ? "✕"
-    : t === "reassigned-added" ? "+"
-    : t === "reassigned-removed" ? "−"
-    : "●";
+const icon = (t) =>
+  t === "accepted"           ? "✓" :
+  t === "declined"           ? "✕" :
+  t === "reassigned-added"   ? "+" :
+  t === "reassigned-removed" ? "−" :
+  t === "pi-submitted"       ? "⤴" :
+  t === "cm-approved"        ? "✔" :
+  t === "cm-returned"        ? "↺" :
+  t === "cm-closed"          ? "⏹" :
+  t === "cm-reopened"        ? "↻" :
+                               "●";
 
-  const tone = (t) =>
-    t === "accepted" ? "ok"
-    : t === "declined" ? "bad"
-    : t === "reassigned-added" ? "info"
-    : t === "reassigned-removed" ? "muted"
-    : "base";
+const tone = (t) =>
+  t === "accepted"           ? "ok" :
+  t === "cm-approved"        ? "ok" :
+  t === "declined"           ? "bad" :
+  t === "cm-returned"        ? "warn" :
+  t === "cm-closed"          ? "muted" :
+  t === "cm-reopened"        ? "info" :
+  t === "reassigned-added"   ? "info" :
+  t === "reassigned-removed" ? "muted" :
+  t === "pi-submitted"       ? "base" :
+                               "base";
+
 
   const statusClass = String(status || "").toLowerCase().replace(/\s+/g, "-");
+
+//   const cmApproved = evs.filter(e => e.type === "cm-approved").length;
+// const cmReturned = evs.filter(e => e.type === "cm-returned").length;
+// const cmClosed   = evs.filter(e => e.type === "cm-closed").length;
+// const cmReopened = evs.filter(e => e.type === "cm-reopened").length;
+// const piSubmitted= evs.filter(e => e.type === "pi-submitted").length;
 
   return (
     <div className="elog card">
@@ -182,6 +209,14 @@ const AssignmentLog = ({ events, status }) => {
         <span className="counter bad">Declined {declinedAt.size}</span>
         <span className="counter base">Pending {pending.length}</span>
       </div>
+
+      {/* <div className="elog-counters extra">
+  <span className="counter base">PI submitted {piSubmitted}</span>
+  <span className="counter ok">CM approved {cmApproved}</span>
+  <span className="counter warn">CM returned {cmReturned}</span>
+  <span className="counter muted">CM closed {cmClosed}</span>
+  <span className="counter info">CM reopened {cmReopened}</span>
+</div> */}
 
       {stream.length === 0 ? (
         <div className="muted">No activity yet.</div>

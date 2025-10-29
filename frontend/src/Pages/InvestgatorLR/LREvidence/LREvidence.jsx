@@ -660,8 +660,13 @@ const handleEdit = idx => {
   onClose={() => { setDeleteOpen(false); setPendingDeleteIndex(null); }}
 />
 
+      <div className="LRI_Content">
+    
+                  <SideBar  activePage="CasePageManager" />
+                <div className="left-contentLI">
 
-        <div className="top-menu"   style={{ paddingLeft: '20%' }}>
+                  
+        <div className="top-menu1" >
       <div className="menu-items" >
         <span className="menu-item " onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
@@ -721,10 +726,6 @@ const handleEdit = idx => {
        
        </div>
 
-      <div className="LRI_Content">
-    
-                  <SideBar  activePage="CasePageManager" />
-                <div className="left-contentLI">
                 <div className="top-menu1" style={{ marginTop: '2px', backgroundColor: '#3333330e' }}>
        <div className="menu-items" style={{ fontSize: '19px' }}>
        

@@ -162,29 +162,7 @@ const CommentBar = forwardRef(
         </header>
 
         {/* Composer (big textbox + Save/Cancel to the right) */}
-        <div className="cbar__composer">
-          <div className="cbar__row">
-            <textarea
-              ref={inputRef}
-              className="cbar__textarea"
-              placeholder="Write a comment…"
-              rows={5}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={onKeyDown}
-              disabled={!ready}
-            />
-          </div>
-          <div className="cbar__hint">
-            Tip: Press Ctrl+Enter to post.
-            {!ready && (
-              <span style={{ marginLeft: 8, color: "#b45309" }}>
-                Select case & lead to comment.
-              </span>
-            )}
-          </div>
-        </div>
-
+      
         {loading && <div className="cbar__loading">Loading comments…</div>}
         {error && <div className="cbar__error">{error}</div>}
 
@@ -230,6 +208,30 @@ const CommentBar = forwardRef(
             <li className="cbar__empty">No comments yet.</li>
           )}
         </ul>
+
+         <div className="cbar__composer">
+          <div className="cbar__row">
+            <textarea
+              ref={inputRef}
+              className="cbar__textarea"
+              placeholder="Write a comment…"
+              rows={5}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={onKeyDown}
+              disabled={!ready}
+            />
+          </div>
+          <div className="cbar__hint">
+            Tip: Press Ctrl+Enter to post.
+            {!ready && (
+              <span style={{ marginLeft: 8, color: "#b45309" }}>
+                Select case & lead to comment.
+              </span>
+            )}
+          </div>
+        </div>
+
       </aside>
     );
   }

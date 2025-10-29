@@ -687,64 +687,6 @@ setAlertOpen(true);
   onClose={cancelDeleteVideo}
 />
 
-
-        <div className="top-menu"   style={{ paddingLeft: '20%' }}>
-      <div className="menu-items" >
-        <span className="menu-item " onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/LeadReview", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } }} > Lead Information</span>
-                   <span className="menu-item active" >Add Lead Return</span>
-                    {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
-           <span
-              className="menu-item"
-              onClick={handleViewLeadReturn}
-              title={isGenerating ? "Preparing report…" : "View Lead Return"}
-              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-            >
-              Manage Lead Return
-            </span>
-              )}
-
-            {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
-    Submit Lead Return
-  </span>
-)}
-  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
-   Review Lead Return
-  </span>
-)}
-
-                   <span className="menu-item" onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/ChainOfCustody", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } else {
-                     setAlertMessage("Please select a case and lead first.");
-                    setAlertOpen(true);
-                  }
-                }}>Lead Chain of Custody</span>
-          
-                  </div>
-       </div>
-
       <div className="LRI_Content">
       {/* <div className="sideitem">
        <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
@@ -806,6 +748,64 @@ Case Page
                 </div> */}
                  <SideBar  activePage="CasePageManager" />
                 <div className="left-contentLI">
+
+                      <div className="top-menu1">
+      <div className="menu-items" >
+        <span className="menu-item " onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/LeadReview", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } }} > Lead Information</span>
+                   <span className="menu-item active" >Add Lead Return</span>
+                    {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
+           <span
+              className="menu-item"
+              onClick={handleViewLeadReturn}
+              title={isGenerating ? "Preparing report…" : "View Lead Return"}
+              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
+            >
+              Manage Lead Return
+            </span>
+              )}
+
+            {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
+  <span className="menu-item" onClick={goToViewLR}>
+    Submit Lead Return
+  </span>
+)}
+  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
+  <span className="menu-item" onClick={goToViewLR}>
+   Review Lead Return
+  </span>
+)}
+
+                   <span className="menu-item" onClick={() => {
+                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+                  if (lead && kase) {
+                    navigate("/ChainOfCustody", {
+                      state: {
+                        caseDetails: kase,
+                        leadDetails: lead
+                      }
+                    });
+                  } else {
+                     setAlertMessage("Please select a case and lead first.");
+                    setAlertOpen(true);
+                  }
+                }}>Lead Chain of Custody</span>
+          
+                  </div>
+       </div>
+       
                 <div className="top-menu1" style={{ marginTop: '2px', backgroundColor: '#3333330e' }}>
        <div className="menu-items" style={{ fontSize: '19px' }}>
        

@@ -44,6 +44,7 @@ export const Investigator = () => {
          const toTitleCase = (s = "") =>
   s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
 
+const isDeletedStatus = (s) => String(s || "").toLowerCase() === "deleted";
 
 
          const isNavDisabled = lead => lead.leadStatus === 'Assigned';
@@ -1595,14 +1596,21 @@ const sortedAllLeads = useMemo(() => {
                   : lead.leadStatus}
               </td>
               <td>{(lead.assignedOfficers || []).join(', ') || <em>None</em>}</td>
-              <td style={{ width: "9%", textAlign: "center" }}>
-                <button
-                  className="view-btn1"
-                  onClick={() => handleLeadClick(lead)}
-                >
-                  Manage
-                </button>
-              </td>
+             
+                       <td style={{ width: "9%", textAlign: "center" }}>
+  <button
+    className="view-btn1"
+    onClick={() => !isDeletedStatus(lead.leadStatus) && handleLeadClick(lead)}
+    disabled={isDeletedStatus(lead.leadStatus)}
+    style={{
+      opacity: isDeletedStatus(lead.leadStatus) ? 0.5 : 1,
+      cursor: isDeletedStatus(lead.leadStatus) ? "not-allowed" : "pointer"
+    }}
+  >
+    Manage
+  </button>
+</td>
+
             </tr>
           ))
         ) : (

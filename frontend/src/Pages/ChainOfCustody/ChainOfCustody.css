@@ -65,3 +65,11 @@
 }
 .elog-item .line{ font-weight:600; font-size:20px; text-align:left; color:#111827; }
 .elog-item .meta{ color:#6b7280; font-size:18px; text-align:left; margin-top:4px; }
+
+.elog-counters.extra { margin-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; }
+.counter.ok    { background: #e0f2f1; color: #065f46; }
+.counter.bad   { background: #fee2e2; color: #7f1d1d; }
+.counter.base  { background: #eef2ff; color: #1e3a8a; }
+.counter.warn  { background: #fef3c7; color: #92400e; }
+.counter.muted { background: #f3f4f6; color: #374151; }
+.counter.info  { background: #dbeafe; color: #1e40af; }

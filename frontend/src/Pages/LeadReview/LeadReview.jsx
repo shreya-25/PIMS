@@ -1659,7 +1659,8 @@ const submitDeleteWithReason = async (reason) => {
     // 2) Delete the lead
     await api.delete(
       `/api/lead/${lead.leadNo}/${encLeadName}/${kase.caseNo}/${encCaseName}`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${token}` },
+    data: { reason } },
     );
 
     setAlertMessage("Lead deleted successfully.");

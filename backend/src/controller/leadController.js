@@ -425,7 +425,7 @@ const searchLeadsByKeyword = async (req, res) => {
 };
 
 // controller/leadController.js
-const deleteLead = async (req, res) => {
+const HarddeleteLead = async (req, res) => {
   const { leadNo, leadName, caseNo, caseName } = req.params;
 
   try {
@@ -462,33 +462,88 @@ const deleteLead = async (req, res) => {
   }
 };
 
+// PUT /api/lead/:leadNo/:leadName/:caseNo/:caseName/soft-delete
+const deleteLead = async (req, res) => {
+  const { leadNo, leadName, caseNo, caseName } = req.params;
+  const { reason } = req.body;
+
+  try {
+    const role = req.user?.role || "";
+    const allowed = /^(case\s*manager|detective\s*supervisor)$/i.test(role);
+    if (!allowed) {
+      return res.status(403).json({ message: "Unauthorized: Only Case Managers or Detective Supervisors can delete a lead." });
+    }
+    if (!reason || reason.trim().length < 3) {
+      return res.status(400).json({ message: "Reason is required." });
+    }
+
+    const lead = await Lead.findOne({
+      leadNo: Number(leadNo),
+      description: leadName,
+      caseNo, caseName
+    });
+    if (!lead) return res.status(404).json({ message: "Lead not found." });
+
+    const actor = req.user?.name || "unknown";
+
+    // mark deleted + keep audit trail
+    lead.isDeleted     = true;
+    lead.deletedAt     = new Date();
+    lead.deletedBy     = actor;
+    lead.deletedReason = reason;
+
+    // optionally keep previous comment; do not overwrite
+    lead.comment = [lead.comment, `[DELETED ${new Date().toLocaleString()} by ${actor}] Reason: ${reason}`]
+      .filter(Boolean).join("\n\n");
+
+    // update visible status + add an event for Chain of Custody
+    lead.leadStatus = "Deleted";
+    lead.events.push({
+      type: "cm-deleted",
+      by: actor,
+      to: (lead.assignedTo || []).map(a => a.username),
+      reason,
+      primaryInvestigator: lead.primaryInvestigator || null,
+      statusAfter: "Deleted",
+      at: new Date()
+    });
+
+    await lead.save();
+    return res.status(200).json({ message: "Lead marked as deleted.", lead });
+  } catch (err) {
+    console.error("Error soft-deleting lead:", err);
+    return res.status(500).json({ message: "Server error while deleting lead." });
+  }
+};
+
+
 
 const setLeadStatusToInReview = async (req, res) => {
   try {
     const { leadNo, description, caseName, caseNo, submittedDate } = req.body;
-
     if (!leadNo || !description || !caseName || !caseNo) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
-    const lead = await Lead.findOne({
-      leadNo,
-      description,
-      caseName,
-      caseNo,
+    const lead = await Lead.findOne({ leadNo, description, caseName, caseNo });
+    if (!lead) return res.status(404).json({ message: "Lead not found." });
+
+    const actor = req.user?.name || "unknown";
+
+    lead.leadStatus   = "In Review";
+    lead.submittedDate = submittedDate ? new Date(submittedDate) : new Date();
+    lead.submittedBy   = actor;
+
+    lead.events.push({
+      type: "pi-submitted",
+      by: actor,
+      to: [],                // (optional) who is affected
+      primaryInvestigator: lead.primaryInvestigator || null,
+      statusAfter: "In Review",
+      at: new Date()
     });
 
-    if (!lead) {
-      return res.status(404).json({ message: "Lead not found." });
-    }
-
-    lead.leadStatus = "In Review";
-    lead.submittedDate  = submittedDate ? new Date(submittedDate) : new Date();
     await lead.save();
-
-    console.log(`✅ [DEBUG] Lead ${leadNo} status set to 'In Review' for case ${caseName} (${caseNo})`);
-
-
     return res.status(200).json({ message: "Lead status set to 'In Review'.", lead });
   } catch (err) {
     console.error("Error updating lead status to 'In Review':", err.message);
@@ -496,32 +551,32 @@ const setLeadStatusToInReview = async (req, res) => {
   }
 };
 
+
 const setLeadStatusToComplete = async (req, res) => {
   try {
     const { leadNo, description, caseName, caseNo, approvedDate } = req.body;
-
     if (!leadNo || !description || !caseName || !caseNo) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
-    const lead = await Lead.findOne({
-      leadNo,
-      description,
-      caseName,
-      caseNo,
+    const lead = await Lead.findOne({ leadNo, description, caseName, caseNo });
+    if (!lead) return res.status(404).json({ message: "Lead not found." });
+
+    const actor = req.user?.name || "unknown";
+
+    lead.leadStatus   = "Completed";
+    lead.approvedDate = approvedDate ? new Date(approvedDate) : new Date();
+
+    lead.events.push({
+      type: "cm-approved",
+      by: actor,
+      to: (lead.assignedTo || []).map(a => a.username),
+      primaryInvestigator: lead.primaryInvestigator || null,
+      statusAfter: "Completed",
+      at: new Date()
     });
 
-    if (!lead) {
-      return res.status(404).json({ message: "Lead not found." });
-    }
-
-    lead.leadStatus = "Completed";
-    lead.approvedDate  = approvedDate ? new Date(approvedDate): new Date();
     await lead.save();
-
-    console.log(`✅ [DEBUG] Lead ${leadNo} status set to 'Completed' for case ${caseName} (${caseNo})`);
-
-
     return res.status(200).json({ message: "Lead status set to 'Completed'.", lead });
   } catch (err) {
     console.error("Error updating lead status to 'Completed':", err.message);
@@ -563,54 +618,70 @@ const setLeadStatusToPending = async (req, res) => {
 
 const setLeadStatusToReturned = async (req, res) => {
   try {
-    const { leadNo, description, caseName, caseNo } = req.body;
-
+    const { leadNo, description, caseName, caseNo, reason } = req.body;
     if (!leadNo || !description || !caseName || !caseNo) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
-    const lead = await Lead.findOne({
-      leadNo,
-      description,
-      caseName,
-      caseNo,
+    const lead = await Lead.findOne({ leadNo, description, caseName, caseNo });
+    if (!lead) return res.status(404).json({ message: "Lead not found." });
+
+    const actor = req.user?.name || "unknown";
+
+    lead.leadStatus   = "Returned";
+    lead.returnedDate = new Date();
+
+    lead.events.push({
+      type: "cm-returned",
+      by: actor,
+      to: (lead.assignedTo || []).map(a => a.username),
+      reason: reason || "",
+      primaryInvestigator: lead.primaryInvestigator || null,
+      statusAfter: "Returned",
+      at: new Date()
     });
 
-    if (!lead) {
-      return res.status(404).json({ message: "Lead not found." });
-    }
-
-    lead.leadStatus = "Returned";
     await lead.save();
-
-    console.log(`✅ [DEBUG] Lead ${leadNo} status set to 'Returned" for case ${caseName} (${caseNo})`);
-
-
     return res.status(200).json({ message: "Lead status set to 'Returned'.", lead });
   } catch (err) {
-    console.error("Error updating lead status to 'Completed':", err.message);
+    console.error("Error updating lead status to 'Returned':", err.message);
     return res.status(500).json({ message: "Something went wrong while updating status." });
   }
 };
 
+
 const setLeadStatusToReopened = async (req, res) => {
- try {
+  try {
     const { leadNo, description, caseName, caseNo } = req.body;
     if (!leadNo || !description || !caseName || !caseNo) {
       return res.status(400).json({ message: "All fields are required." });
     }
+
     const lead = await Lead.findOne({ leadNo, description, caseName, caseNo });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
-    lead.leadStatus = "Reopened";
+    const actor = req.user?.name || "unknown";
+
+    lead.leadStatus   = "Reopened";
+    lead.reopenedDate = new Date();
+
+    lead.events.push({
+      type: "cm-reopened",
+      by: actor,
+      to: (lead.assignedTo || []).map(a => a.username),
+      primaryInvestigator: lead.primaryInvestigator || null,
+      statusAfter: "Reopened",
+      at: new Date()
+    });
+
     await lead.save();
-    console.log(`✅ [DEBUG] Lead ${leadNo} status set to 'Reopened' for case ${caseName} (${caseNo})`);
     return res.status(200).json({ message: "Lead status set to 'Reopened'.", lead });
   } catch (err) {
     console.error("Error updating lead status to 'Reopened':", err.message);
-        return res.status(500).json({ message: "Something went wrong while updating status." });
+    return res.status(500).json({ message: "Something went wrong while updating status." });
   }
 };
+
 
 // const updateLead = async (req, res) => {
 //   try {
@@ -949,22 +1020,26 @@ const setLeadStatusToClosed = async (req, res) => {
       return res.status(400).json({ message: "All fields (including reason) are required." });
     }
 
-    const lead = await Lead.findOne({
-      leadNo: Number(leadNo),
-      description,
-      caseNo,
-      caseName
+    const lead = await Lead.findOne({ leadNo: Number(leadNo), description, caseNo, caseName });
+    if (!lead) return res.status(404).json({ message: "Lead not found." });
+
+    const actor = req.user?.name || "unknown";
+
+    lead.leadStatus = "Closed";
+    lead.closedDate = new Date();
+    lead.comment    = reason; // or move to a dedicated `closeReason` field
+
+    lead.events.push({
+      type: "cm-closed",
+      by: actor,
+      to: (lead.assignedTo || []).map(a => a.username),
+      reason,
+      primaryInvestigator: lead.primaryInvestigator || null,
+      statusAfter: "Closed",
+      at: new Date()
     });
-    if (!lead) {
-      return res.status(404).json({ message: "Lead not found." });
-    }
 
-    // update status, completedDate, and store the reason
-    lead.leadStatus     = "Closed";
-    lead.completedDate  = new Date();
-    lead.comment        = reason;           // or a new `closeReason` field
     await lead.save();
-
     return res.status(200).json({ message: "Lead closed successfully.", lead });
   } catch (err) {
     console.error("Error closing lead:", err);
