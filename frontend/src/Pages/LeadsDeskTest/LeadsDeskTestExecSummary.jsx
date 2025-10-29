@@ -1144,7 +1144,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
   if (useWebpageSummary) {
     try {
       const payload = {
-        user: "Officer 916",
+        user: localStorage.getItem("loggedInUser"),
         reportTimestamp: new Date().toLocaleString(),
         leadsData: leadsForReport,          // ✅ use filtered/ordered list
         caseSummary: typedSummary,
@@ -1341,7 +1341,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                     </tr>
 
                     {/* Counts row (debug/visibility) */}
-<tr>
+{/* <tr>
   <td colSpan={2} style={{ paddingTop: 6, opacity: 0.85 }}>
     <div style={{ display:"flex", gap:16, flexWrap:"wrap" }}>
       <span><strong>Persons:</strong> {returnItem.persons?.length ?? 0}</span>
@@ -1355,7 +1355,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
       <span><strong>Timeline:</strong> {returnItem.timeline?.length ?? 0}</span>
     </div>
   </td>
-</tr>
+</tr> */}
 
 
                     {/* Persons */}
@@ -1730,7 +1730,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                       <tr>
                         <td colSpan={2}>
                           <div className="person-section">
-                            <h3 className="title-ld">Timeline (This Lead Return)</h3>
+                            <h3 className="title-ld">Timeline</h3>
                             <table className="lead-table2" style={{ width: "100%", tableLayout: "fixed" }}>
                               <thead>
                                 <tr>
@@ -1751,8 +1751,8 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                                   })
                                   .map((t, ti) => (
                                     <tr key={t?._id || ti}>
-                                      <td>{formatDate(t?.eventStartDate)} {_fmt(t?.eventStartTime)}</td>
-                                      <td>{formatDate(t?.eventEndDate)} {_fmt(t?.eventEndTime)}</td>
+                                      <td>{formatDate(t?.eventStartDate)}</td>
+                                      <td>{formatDate(t?.eventEndDate)} </td>
                                       <td style={{ wordBreak: "break-word" }}>{_fmt(t?.eventTitle || t?.title)}</td>
                                       <td>{Array.isArray(t?.timelineFlag) ? t.timelineFlag.join(", ") : _fmt(t?.timelineFlag)}</td>
                                       <td style={{ whiteSpace: "pre-wrap" }}>{_fmt(t?.eventDescription || t?.description)}</td>
