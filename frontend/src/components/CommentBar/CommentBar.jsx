@@ -1,240 +1,218 @@
+// components/CommentBar/CommentBar.jsx
 import React, {
-  useState,
-  useEffect,
-  useContext,
-  forwardRef,
-  useImperativeHandle,
-  useRef,
-  useCallback,
+  useState, useEffect, useContext, useRef, useCallback, forwardRef, useImperativeHandle
 } from "react";
+import api from "../../api";
 import { CaseContext } from "../../Pages/CaseContext";
 import "./CommentBar.css";
-import api from "../../api";
 
-const CommentBar = forwardRef(
-  ({ tag, autoFocus = true }, ref) => {
-    const { selectedCase, selectedLead } = useContext(CaseContext) || {};
-    const [comments, setComments] = useState([]);   // server shape
-    const [draft, setDraft] = useState("");
-    const [editingId, setEditingId] = useState(null); // _id when editing
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const inputRef = useRef(null);
+/**
+ * Props:
+ * - caseNo, caseName, leadNo, leadName (preferred). If omitted, falls back to CaseContext.
+ * - tag: string to group comments, e.g. "ViewLR" or "DocumentReview"
+ * - autoFocus: boolean
+ */
+const CommentBar = forwardRef(function CommentBar(
+  {
+    caseNo: pCaseNo,
+    caseName: pCaseName,
+    leadNo: pLeadNo,
+    leadName: pLeadName,
+    tag = "ViewLR",
+    autoFocus = true,
+  },
+  ref
+) {
+  const { selectedCase, selectedLead } = useContext(CaseContext) || {};
 
-    const enteredBy = localStorage.getItem("loggedInUser") || "Unknown";
-    const token = localStorage.getItem("token");
+  // ---- Resolve exact scope (prefer explicit props) ----
+  const caseNo   = pCaseNo   ?? selectedCase?.caseNo;
+  const caseName = pCaseName ?? selectedCase?.caseName;
+  const leadNo   = pLeadNo   ?? selectedLead?.leadNo;
+  const leadName = pLeadName ?? selectedLead?.leadName;
 
-    const ready =
-      selectedCase?.caseNo &&
-      selectedCase?.caseName &&
-      selectedLead?.leadNo &&
-      selectedLead?.leadName &&
-      tag;
+  const ready = Boolean(caseNo && caseName && leadNo && leadName && tag);
 
-    // ---- Fetch comments (same API as your old component) ----
-    const fetchComments = useCallback(async () => {
-      if (!ready) return;
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await api.get("/api/comment", {
-          params: {
-            caseNo: selectedCase.caseNo,
-            caseName: selectedCase.caseName,
-            leadNo: selectedLead.leadNo,
-            leadName: selectedLead.leadName,
-            tag,
-          },
+  const [comments, setComments]   = useState([]);  // server rows
+  const [draft, setDraft]         = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState(null);
+
+  const inputRef = useRef(null);
+  const token    = localStorage.getItem("token");
+  const enteredBy = localStorage.getItem("loggedInUser") || "Unknown";
+
+  // ---- Fetch (strictly scoped to case+lead+tag) ----
+  const fetchComments = useCallback(async () => {
+    if (!ready) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get("/api/comment", {
+        params: { caseNo, caseName, leadNo, leadName, tag },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const list = Array.isArray(res.data) ? res.data.slice() : [];
+      list.sort((a, b) => new Date(b.enteredDate) - new Date(a.enteredDate));
+      setComments(list);
+    } catch (e) {
+      console.error("Comment load failed:", e);
+      setError("Failed to load comments.");
+      setComments([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [ready, caseNo, caseName, leadNo, leadName, tag, token]);
+
+  useEffect(() => { fetchComments(); }, [fetchComments]);
+
+  useEffect(() => {
+    if (autoFocus) setTimeout(() => inputRef.current?.focus(), 0);
+  }, [autoFocus]);
+
+  useImperativeHandle(ref, () => ({
+    reload: fetchComments,
+    focusComposer: () => inputRef.current?.focus(),
+    setDraft: (t) => setDraft(t ?? ""),
+  }), [fetchComments]);
+
+  // ---- Save (create/update) with strict scope ----
+  const saveDraft = async () => {
+    const text = draft.trim();
+    if (!text || !ready) return;
+
+    try {
+      if (editingId) {
+        const res = await api.put(
+          `/api/comment/${editingId}`,
+          { comment: text },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setComments(prev => prev.map(c => (c._id === editingId ? res.data : c)));
+        setEditingId(null);
+        setDraft("");
+      } else {
+        const body = {
+          caseNo,
+          caseName,
+          leadNo,
+          description: leadName,   // backend expects description = leadName in your API
+          tag,
+          enteredBy,
+          enteredDate: new Date(),
+          comment: text,
+        };
+        const res = await api.post("/api/comment", body, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        // Sort newest first, just like before
-        const list = Array.isArray(res.data) ? res.data.slice() : [];
-        list.sort((a, b) => new Date(b.enteredDate) - new Date(a.enteredDate));
-        setComments(list);
-      } catch (e) {
-        console.error("Error loading comments:", e);
-        setError("Failed to load comments");
-      } finally {
-        setLoading(false);
+        setComments(prev => [res.data, ...prev]);
+        setDraft("");
       }
-    }, [ready, selectedCase, selectedLead, tag, token]);
+    } catch (e) {
+      console.error("Comment save failed:", e);
+      setError("Failed to save comment.");
+    }
+  };
 
-    useEffect(() => {
-      fetchComments();
-    }, [fetchComments]);
+  const startEdit = (row) => {
+    setEditingId(row._id);
+    setDraft(row.comment || "");
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
 
-    useEffect(() => {
-      if (autoFocus) setTimeout(() => inputRef.current?.focus(), 0);
-    }, [autoFocus]);
+  const cancelDraft = () => {
+    setEditingId(null);
+    setDraft("");
+  };
 
-    useImperativeHandle(
-      ref,
-      () => ({
-        focusComposer: () => inputRef.current?.focus(),
-        setDraft: (t) => setDraft(t ?? ""),
-        reload: fetchComments,
-      }),
-      [fetchComments]
-    );
+  const onKeyDown = (e) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      saveDraft();
+    }
+  };
 
-    // ---- Save (create/update) using SAME endpoints ----
-    const saveDraft = async () => {
-      const text = draft.trim();
-      if (!text || !ready) return;
-
-      try {
-        if (editingId) {
-          // UPDATE
-          const res = await api.put(
-            `/api/comment/${editingId}`,
-            { comment: text },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-
-          // Replace item in list
-          setComments((prev) =>
-            prev.map((c) => (c._id === editingId ? res.data : c))
-          );
-          setEditingId(null);
-          setDraft("");
-        } else {
-          // CREATE
-          const body = {
-            caseNo: selectedCase.caseNo,
-            caseName: selectedCase.caseName,
-            leadNo: selectedLead.leadNo,
-            description: selectedLead.leadName, // matches your POST body
-            tag,
-            enteredBy,
-            enteredDate: new Date(),
-            comment: text,
-          };
-
-          const res = await api.post("/api/comment", body, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          // Prepend new comment from server
-          setComments((c) => [res.data, ...c]);
-          setDraft("");
-        }
-      } catch (e) {
-        console.error("Error saving comment:", e);
-        setError("Failed to save comment");
-      }
-    };
-
-    const startEdit = (c) => {
-      setEditingId(c._id);
-      setDraft(c.comment || "");
-      setTimeout(() => inputRef.current?.focus(), 0);
-    };
-
-    const cancelDraft = () => {
-      setDraft("");
-      setEditingId(null);
-    };
-
-    const onKeyDown = (e) => {
-      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        saveDraft();
-      }
-    };
-
-    return (
-      <aside className="cbar">
-        <header className="cbar__header">
-          <div className="cbar__title">Comments</div>
-              <div className="cbar__actions">
-              <button
-                className="cbar__btn cbar__btn--primary"
-                onClick={saveDraft}
-                disabled={!draft.trim() || !ready}
-                title="Save (Ctrl+Enter)"
-              >
-                Save
-              </button>
-              <button className="cbar__btn" disabled={!draft.trim() || !ready} onClick={cancelDraft}>
-                Cancel
-              </button>
-            </div>
-        </header>
-
-        {/* Composer (big textbox + Save/Cancel to the right) */}
-      
-        {loading && <div className="cbar__loading">Loading comments…</div>}
-        {error && <div className="cbar__error">{error}</div>}
-
-        {/* List */}
-        <ul className="cbar__list">
-          {comments
-            .filter((c) => c.tag === tag) // safety—API already filters
-            .map((c) => (
-              <li key={c._id} className="cbar__item">
-                <div className="cbar__avatar">
-                  {(c.enteredBy || "A").charAt(0)}
-                </div>
-                <div className="cbar__bubble">
-                  <div className="cbar__meta">
-                    <strong>{c.enteredBy || "Anonymous"}</strong>
-                    <span className="cbar__dot">•</span>
-                    <time dateTime={c.enteredDate}>
-                      {new Date(c.enteredDate).toLocaleString()}
-                    </time>
-                    {c.enteredBy === enteredBy && (
-                      <button
-                        className="cbar__edit"
-                        onClick={() => startEdit(c)}
-                      >
-                        Edit
-                      </button>
-                    )}
-                  </div>
-
-                  {/* If editing this row, show live draft text so buttons remain at top */}
-                  {editingId === c._id ? (
-                    <div className="cbar__text cbar__text--editing">
-                      (Editing…)
-                    </div>
-                  ) : (
-                    <div className="cbar__text">{c.comment}</div>
-                  )}
-                </div>
-              </li>
-            ))}
-
-          {comments.length === 0 && !loading && (
-            <li className="cbar__empty">No comments yet.</li>
-          )}
-        </ul>
-
-         <div className="cbar__composer">
-          <div className="cbar__row">
-            <textarea
-              ref={inputRef}
-              className="cbar__textarea"
-              placeholder="Write a comment…"
-              rows={5}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={onKeyDown}
-              disabled={!ready}
-            />
-          </div>
-          <div className="cbar__hint">
-            Tip: Press Ctrl+Enter to post.
-            {!ready && (
-              <span style={{ marginLeft: 8, color: "#b45309" }}>
-                Select case & lead to comment.
-              </span>
-            )}
-          </div>
+  return (
+    <aside className="cbar">
+      <header className="cbar__header">
+        <div className="cbar__title">Comments</div>
+        <div className="cbar__actions">
+          <button
+            className="cbar__btn cbar__btn--primary"
+            onClick={saveDraft}
+            disabled={!draft.trim() || !ready}
+            title="Save (Ctrl+Enter)"
+          >
+            Save
+          </button>
+          <button
+            className="cbar__btn"
+            onClick={cancelDraft}
+            disabled={!draft.trim() || !ready}
+          >
+            Cancel
+          </button>
         </div>
+      </header>
 
-      </aside>
-    );
-  }
-);
+      {!ready && (
+        <div className="cbar__hint" style={{ marginBottom: 8 }}>
+          Select a case &amp; lead to comment.
+        </div>
+      )}
+
+      {loading && <div className="cbar__loading">Loading comments…</div>}
+      {error && <div className="cbar__error">{error}</div>}
+
+      <ul className="cbar__list">
+        {comments.map((c) => (
+          <li key={c._id} className="cbar__item">
+            <div className="cbar__avatar">{(c.enteredBy || "A").charAt(0)}</div>
+            <div className="cbar__bubble">
+              <div className="cbar__meta">
+                <strong>{c.enteredBy || "Anonymous"}</strong>
+                <span className="cbar__dot">•</span>
+                <time dateTime={c.enteredDate}>
+                  {new Date(c.enteredDate).toLocaleString()}
+                </time>
+                {c.enteredBy === enteredBy && (
+                  <button className="cbar__edit" onClick={() => startEdit(c)}>
+                    Edit
+                  </button>
+                )}
+              </div>
+
+              {editingId === c._id ? (
+                <div className="cbar__text cbar__text--editing">(Editing…)</div>
+              ) : (
+                <div className="cbar__text">{c.comment}</div>
+              )}
+            </div>
+          </li>
+        ))}
+        {comments.length === 0 && !loading && (
+          <li className="cbar__empty">No comments yet.</li>
+        )}
+      </ul>
+
+      <div className="cbar__composer">
+        <div className="cbar__row">
+          <textarea
+            ref={inputRef}
+            className="cbar__textarea"
+            placeholder="Write a comment…"
+            rows={5}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={onKeyDown}
+            disabled={!ready}
+          />
+        </div>
+        <div className="cbar__hint">Tip: Press Ctrl+Enter to post.</div>
+      </div>
+    </aside>
+  );
+});
 
 export default CommentBar;
