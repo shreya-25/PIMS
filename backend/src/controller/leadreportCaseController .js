@@ -46,6 +46,62 @@ function normalizeLeadReturn(lr) {
   };
 }
 
+// --- Watermark helpers ---
+function drawWatermark(doc, opts = {}) {
+  const {
+    text = "CONFIDENTIAL",
+    opacity = 0.08,
+    angle = -45,
+    font = "Helvetica-Bold",
+    fontSize = 120,
+    color = "#000000",
+    dx = 0, // fine-tune horizontal offset if needed
+    dy = 0  // fine-tune vertical offset if needed
+  } = opts;
+
+  const cx = doc.page.width / 2 + dx;
+  const cy = doc.page.height / 2 + dy;
+
+  doc.save();
+  doc.fillColor(color).opacity(opacity).font(font).fontSize(fontSize);
+
+  // rotate around the center, then draw centered text
+  doc.rotate(angle, { origin: [cx, cy] });
+  const w = doc.widthOfString(text);
+  const h = doc.currentLineHeight();
+  doc.text(text, cx - w / 2, cy - h / 2, { lineBreak: false });
+
+  // restore drawing state
+  doc.rotate(-angle, { origin: [cx, cy] });
+  doc.opacity(1).restore();
+}
+
+// optional: image watermark (PNG/JPG path or Buffer)
+function drawImageWatermark(doc, img, opts = {}) {
+  const {
+    opacity = 0.08,
+    angle = -45,
+    maxWidth = 400,
+    maxHeight = 400,
+    dx = 0,
+    dy = 0,
+  } = opts;
+
+  const cx = doc.page.width / 2 + dx;
+  const cy = doc.page.height / 2 + dy;
+
+  doc.save();
+  doc.opacity(opacity);
+  doc.rotate(angle, { origin: [cx, cy] });
+  // draw with center anchoring
+  const x = cx - maxWidth / 2;
+  const y = cy - maxHeight / 2;
+  doc.image(img, x, y, { fit: [maxWidth, maxHeight] });
+  doc.rotate(-angle, { origin: [cx, cy] });
+  doc.opacity(1).restore();
+}
+
+
 
 // Time-only formatter for timeline
 function formatTimeOnly(dateString) {
@@ -681,6 +737,11 @@ function generateCaseReport(req, res) {
     // Create doc
     const doc = new PDFDocument({ size: "LETTER", margin: 50 });
 
+    const WM = { text: "DRAFT", opacity: 0.08, angle: -35, fontSize: 100 };
+
+// Draw on the first page, and on every page added afterward
+doc.on("pageAdded", () => drawWatermark(doc, WM));
+
     // Pipe the PDF into the response
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline; filename=report.pdf");
@@ -711,6 +772,8 @@ function generateCaseReport(req, res) {
 
     // Reset color
     doc.fillColor("black");
+
+    drawWatermark(doc, WM);
 
     // ---------- Case Summary ----------
     if (caseSummary) {
