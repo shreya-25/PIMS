@@ -1483,7 +1483,7 @@ const allColKey    = {
   "Assigned Officers":  "assignedOfficers"
 };
 const allColWidths = {
-  "Lead No.":           "11%",
+  "Lead No.":           "8%",
   "Lead Log Summary":   "32%",
   "Lead Status":        "14%",
   "Assigned Officers":  "22%"
@@ -2549,7 +2549,7 @@ const toTitleCase = (s = "") =>
             ) : (
               <tr>
                 <td colSpan="5" style={{ textAlign: 'center', padding: "8px" }}>
-                  No Accepted Leads Available
+                  No Leads Available
                 </td>
               </tr>
             )}

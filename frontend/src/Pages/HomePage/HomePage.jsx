@@ -756,8 +756,8 @@ const addCase = (newCase) => {
   const columnWidths = {
   "Case No.":   "7%",
   "Case Name":  "16%",         // you can tweak widths…
-  "Created At": "7%",         // ← new
-  "Role":       "8%",
+  "Created At": "6%",         // ← new
+  "Role":       "7%",
 };
 
 // Columns + mapping to your data fields
@@ -877,7 +877,7 @@ const sortedCases = useMemo(() => {
     "Assigned Officers":"assignedOfficers"
   };
   const assignedColWidths = {
-    "Lead No.":           "8%",
+    "Lead No.":           "7%",
     "Lead Name":         "22%",
     "Case Name":          "18%",
     "Assigned Officers": "15%"
@@ -1291,7 +1291,7 @@ const sortedPendingReturns = useMemo(() => {
                       </th>
                     );
                   })}
-                  <th style={{ width: "8%", textAlign: "center" }} >Actions</th>{/* extra column for “View” button */}
+                  <th style={{ width: "7%", textAlign: "center" }} >Actions</th>{/* extra column for “View” button */}
                 </tr>
               </thead>
               <tbody>
@@ -1444,7 +1444,7 @@ const sortedPendingReturns = useMemo(() => {
 <table className="leads-table" style={{ minWidth: "1000px" }}>
       <thead>
         <tr>
-          <th style={{ width: "10%" }}>Lead No.</th>
+          <th style={{ width: "8%" }}>Lead No.</th>
           <th>Lead Name</th>
           <th>Assigned Officers</th>
           <th>Case Name</th>
@@ -1496,10 +1496,10 @@ const sortedPendingReturns = useMemo(() => {
 <table className="leads-table" style={{ minWidth: "1000px" }}>
 
   <colgroup>
-      <col style={{ width: "10%" }} />     {/* Lead No. */}
+      <col style={{ width: "8%" }} />     {/* Lead No. */}
       <col style={{ width: "35%" }} />   {/* Lead Name */}
       <col style={{ width: "30%" }} />   {/* Case Name */}
-      <col style={{ width: "6%" }} />     {/* Actions */}
+      <col style={{ width: "10%" }} />     {/* Actions */}
     </colgroup>
               <thead>
                 <tr>

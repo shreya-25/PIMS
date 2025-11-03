@@ -1,11 +1,89 @@
-.LRI_Content
-{
-    display: flex;
-      margin-left: 20%;
-     width: 80%;
-       /* min-height: calc(150dvh - var(--nav-h)); */
-  overflow: hidden;
-  margin-top: 110px;
+:root{
+  --nav-h: 110px;          /* adjust to your Navbar height */
+  --menu-h: 56px;         /* height of each .top-menu1 bar */
+  --menus-gap: 0px;       /* small gap between menus */
+  --sidebar-w: 20%;
+}
+
+.navbar, header.navbar, .Navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1100;
+}
+
+.LRI_Content {
+  display: flex;
+  margin-left: var(--sidebar-w);
+  width: calc(100% - var(--sidebar-w));
+  margin-top: var(--nav-h);     /* equal to navbar height */
+  overflow: hidden;             /* only inner column scrolls */
+}
+
+/* SINGLE, merged definition — this is your scroll container */
+.left-contentLI{
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+
+   padding-top: calc((2 * var(--menu-h)) + var(--menus-gap));
+
+  /* make this column the scroller */
+  height: calc(100dvh - var(--nav-h));
+  overflow: auto;
+}
+
+/* First fixed menu (under navbar) */
+.left-contentLI .top-menu1:first-of-type{
+  position: fixed;
+  top: var(--nav-h);
+  left: var(--sidebar-w);
+  width: calc(100vw - var(--sidebar-w));
+  height: var(--menu-h);
+  z-index: 1050;
+  box-sizing: border-box;
+  background:#fff;              /* prevents see-through on scroll */
+}
+
+/* Second fixed menu (under the first) */
+.left-contentLI .top-menu1:nth-of-type(2){
+  position: fixed;
+  top: calc(var(--nav-h) + var(--menu-h) + var(--menus-gap));
+  left: var(--sidebar-w);
+  width: calc(100vw - var(--sidebar-w));
+  height: var(--menu-h);
+  z-index: 1050;
+  box-sizing: border-box;
+  background:#fff;
+}
+
+
+
+/* Optional: keep inner sections full-width within the scroll column */
+.LRI-content-section,
+.bottom-content-LRI,
+.case-header,
+.caseandleadinfo{
+  width: 100%;
+  max-width: 100%;
+}
+
+.LRI_Content {
+  display: flex;
+  margin-left: var(--sidebar-w);                 /* respect fixed sidebar */
+  width: calc(100% - var(--sidebar-w));
+  margin-top: 110px;                                  /* navbar is fixed now */
+  overflow: hidden;                               /* keep only inner column scrollable */
+}
+
+/* Optional: keep inner sections full width within the scroll column */
+.LRI-content-section,
+.bottom-content-LRI,
+.case-header,
+.caseandleadinfo {
+  width: 100%;
+  max-width: 100%;
 }
 
 .info-table-sec

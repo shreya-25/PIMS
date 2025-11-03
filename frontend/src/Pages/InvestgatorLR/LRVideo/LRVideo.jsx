@@ -806,7 +806,7 @@ Case Page
                   </div>
        </div>
        
-                <div className="top-menu1" style={{ marginTop: '2px', backgroundColor: '#3333330e' }}>
+                <div className="top-menu1">
        <div className="menu-items" style={{ fontSize: '19px' }}>
        
         <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
@@ -897,7 +897,7 @@ Case Page
     className="evidence-head"
     onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
   >
-    <option value="">Select Narrative Id</option>
+    <option value="">Select Id</option>
 
     {/* keep current value visible even if it's not in the latest API list (e.g., older record) */}
     {videoData.leadReturnId &&

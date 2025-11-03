@@ -87,10 +87,10 @@ export const ClosedCase = () => {
 
   // ── Filter + Sort (mirrors HomePage pattern) ────────────────────────────────
   const columnWidths = {
-    "Case No.": "10%",
+    "Case No.": "8%",
     "Case Name": "20%",
-    "Closed At": "15%",
-    "Role": "15%",
+    "Closed At": "8%",
+    "Role": "9%",
   };
 
   const colKey = {
@@ -252,6 +252,14 @@ export const ClosedCase = () => {
             <div className="content-section">
             <div className="table-scroll-container">
               <table className="leads-table">
+                <colgroup>
+    <col style={{ width: columnWidths["Case No."] }} />
+    <col style={{ width: columnWidths["Case Name"] }} />
+    <col style={{ width: columnWidths["Closed At"] }} />
+    <col style={{ width: columnWidths["Role"] }} />
+    <col style={{ width: "5%" }} /> {/* Actions */}
+  </colgroup>
+
                 <thead>
                   <tr>
                     {["Case No.", "Case Name", "Closed At", "Role"].map((col) => {
