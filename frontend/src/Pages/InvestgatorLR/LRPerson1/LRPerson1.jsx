@@ -676,7 +676,7 @@ useEffect(() => {
 
        <div className="LRI_Content">
     
-                  <SideBar  activePage="CasePageManager" />
+                  <SideBar  activePage="LeadReview" />
                 <div className="left-contentLI">
 
                            <div className="top-menu1" >

@@ -3,8 +3,52 @@
   background:#fff;border:1px solid #e5e7eb;border-radius:14px;
   box-shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.04);
   margin: 8px;
+  margin-top: 90px;
   width: 90%;
 }
+
+/* Make the card a flex column and the actual scroll container */
+.elog.card,
+.card.elog {
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;     /* tune to your layout */
+  overflow: auto;       /* <— scrollbar lives here */
+}
+
+/* Sticky header */
+.elog-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fff;
+  margin-bottom: 0;           /* sticky sections usually manage their own spacing */
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* Sticky counters, below the header */
+.elog-counters {
+  position: sticky;
+  /* adjust if your header is taller/shorter (try 56–72px if it wraps) */
+  top: 48px;
+  z-index: 1;
+  background: #fff;
+  padding: 10px 0 12px;
+  border-bottom: 1px solid #f1f5f9;
+  margin: 0;                   /* reset old margin */
+}
+
+/* The stream just flex-fills the remaining space */
+.elog-scroll {
+  flex: 1 1 auto;
+  min-height: 0;               /* critical for scroll in flex children */
+  overflow: visible;           /* <— no local scroll here */
+  padding-top: 12px;           /* breathing room below counters */
+}
+
+/* keep your existing styles … */
+
 
 .elog{ padding:18px 20px; }
 .elog-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; font-size: 20px; }
@@ -73,3 +117,17 @@
 .counter.warn  { background: #fef3c7; color: #92400e; }
 .counter.muted { background: #f3f4f6; color: #374151; }
 .counter.info  { background: #dbeafe; color: #1e40af; }
+
+
+.elog-scroll {
+  overflow: auto;
+  /* subtract the (estimated) header + counters height from the card */
+  /* If your header/counters are taller/shorter, tweak this. */
+  padding-top: 0;         /* content starts right below counters */
+}
+
+/* Optional: if you prefer not to set a fixed calc height, letting flex handle it */
+.elog-scroll {
+  flex: 1 1 auto;   /* take remaining space */
+  min-height: 0;    /* critical so flex child can actually shrink and scroll */
+}

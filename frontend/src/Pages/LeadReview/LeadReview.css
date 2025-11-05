@@ -1,24 +1,73 @@
-/* Remove default browser margins and ensure full height */
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%; /* or 100vh */
-  width: 100%;
-  font-family: Arial, sans-serif;
+:root{
+  --nav-h: 110px;   /* match your Navbar height */
+  --menu-h: 56px;   /* top-menu1 height */
+  --sidebar-w: 20%; /* your sidebar width */
 }
 
-.lead-review-page {
+/* Make Navbar fixed (works for common variants) */
+.navbar, header.navbar, .Navbar, header .Navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  z-index: 1100;
+}
+
+/* ===== Sidebar fixed ===== */
+.sidebar-fixed,
+.sideitem,           /* fallback if SideBar renders .sideitem */
+.sidebar, .Sidebar { /* extra safety */
+  position: fixed !important;
+  top: var(--nav-h);
+  left: 0;
+  width: var(--sidebar-w);
+  height: calc(100dvh - var(--nav-h));
+  overflow: auto;
+  z-index: 1040; /* under navbar, over page */
+}
+
+/* ===== Top menu fixed under the navbar and beside the sidebar ===== */
+.top-menu1{
+   position: fixed;
+  top: var(--nav-h);
+  left: var(--sidebar-w);
+  width: calc(100vw - var(--sidebar-w));
+  height: var(--menu-h);
+  z-index: 1050;
+  background-color: #ffffff;
   display: flex;
   flex-direction: column;
-  min-height: 100vh; 
-  font-family: Arial, sans-serif;
+  justify-content: center;
+  align-items:center;
 }
 
-.lead-review-container1 {
-  display: flex;
-  width:100%;
-  overflow-x: auto;
+.menu-items
+{
+  display:flex;
+  justify-content: center;
+  align-items: center;
 }
+
+/* ===== Content column becomes the scroller ===== */
+.lead-review-container1{
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 100dvh;
+  overflow: hidden; /* only inner content scrolls */
+}
+
+/* Main content sits to the right of the fixed sidebar and under nav+menu */
+.lead-main-content{
+  margin-left: var(--sidebar-w);
+  width: calc(100% - var(--sidebar-w));
+  /* push content below fixed navbar and top-menu1 */
+  padding-top: calc(var(--nav-h) + var(--menu-h));
+  /* make this the scroll container */
+  height: 100dvh;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
 
 .case-header-leadReview
 {
@@ -52,7 +101,6 @@ html, body {
 
 /* Content area */
 .lead-main-content {
-    margin-left: 20%;
   display: flex;
   flex-direction: column;
   flex: 1;      
@@ -60,7 +108,6 @@ html, body {
   box-sizing: border-box;
   width: 75%;
   overflow-x: auto;
-  margin-top: 110px;
 }
  .caseandleadinfo
   {

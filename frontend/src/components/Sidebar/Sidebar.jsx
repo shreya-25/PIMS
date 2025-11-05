@@ -20,6 +20,9 @@ export const SideBar = ({
   const { selectedCase, selectedLead, setSelectedLead, setSelectedCase } =
     useContext(CaseContext);
 
+  const showLeadCrumbPages = new Set(["LeadReview", "LeadInformation"]); // add/remove pages here
+const leadActivePages     = new Set(["LeadReview", "LeadInformation"]); // which pages should highlight it
+
   const {
     assignedLeads = [],
     pendingLeads = [],
@@ -300,6 +303,25 @@ export const SideBar = ({
             <span>Add Lead</span>
           </li>
         )}
+
+        {selectedLead && showLeadCrumbPages.has(activePage) && (
+  <li
+    className={`sidebar-item ${leadActivePages.has(activePage) ? "active" : ""}`}
+    style={{ paddingLeft: 30 }}
+    onClick={() => {
+      const dest =
+        activePage === "LeadReview" ? "/LeadReview" : "/LeadInformation";
+      navigate(dest, {
+        state: { caseDetails: selectedCase, leadDetails: selectedLead },
+      });
+    }}
+  >
+    <img src={folderIcon1} className="sidebar-icon" alt="" />
+    <span>Lead: {selectedLead?.leadNo || "-"}</span>
+  </li>
+)}
+
+
 
         <li
           className={`sidebar-item ${

@@ -692,7 +692,7 @@ const goToViewLR = () => {
 
        <div className="LRI_Content">
        
-<SideBar  activePage="CasePageManager" />
+<SideBar  activePage="LeadReview" />
 
                 <div className="left-contentLI">
 

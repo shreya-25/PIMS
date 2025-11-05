@@ -170,9 +170,10 @@
   gap: 10px;
   width: 100%;
   /* background-color: #3333330e; */
-  background-color: rgba(12, 31, 32, 0.096);
+
+  /* background-color: rgba(12, 31, 32, 0.096); */
   /* margin: 15px; */
-}
+  }
 
 .side-title p
 {

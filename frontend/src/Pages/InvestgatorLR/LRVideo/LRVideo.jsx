@@ -746,7 +746,7 @@ Case Page
             )}
 
                 </div> */}
-                 <SideBar  activePage="CasePageManager" />
+                 <SideBar  activePage="LeadReview" />
                 <div className="left-contentLI">
 
                       <div className="top-menu1">
