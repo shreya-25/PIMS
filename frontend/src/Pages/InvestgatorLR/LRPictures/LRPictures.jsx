@@ -61,7 +61,25 @@ const alphabetToNumber = (str = "") => {
   return n;
 };
 
+const isHttpUrl = (s) => /^https?:\/\/\S+$/i.test((s || "").trim());
 
+function getMissingPictureFields({ pictureData, file, isEditing }) {
+  const missing = [];
+
+  // hard-required
+  if (!pictureData.leadReturnId?.trim())     missing.push("Narrative Id");
+  if (!pictureData.datePictureTaken?.trim()) missing.push("Date Picture Taken");
+
+  // upload-mode rules
+  if (pictureData.isLink) {
+    if (!isHttpUrl(pictureData.link)) missing.push("Link (valid URL)");
+  } else {
+    // file mode: require file on create; optional on edit
+    if (!isEditing && !file) missing.push("Image File");
+  }
+
+  return missing;
+}
   
     const formatDate = (dateString) => {
       if (!dateString) return "";
@@ -460,9 +478,13 @@ const handleDeletePicture = async idx => {
   setPictures(ps => ps.filter((_, i) => i !== idx));
 };
 const handleAddPicture = async () => {
+
   // ✅ Only the fields you truly want to require. Remove file/link requirement.
-  if (!pictureData.datePictureTaken || !pictureData.description) {
-    setAlertMessage("Please fill in the required fields.");
+   const missing = getMissingPictureFields({ pictureData, file, isEditing: false });
+  if (missing.length) {
+    setAlertMessage(
+      `Please fill the required field${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}.`
+    );
     setAlertOpen(true);
     return;
   }

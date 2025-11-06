@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect, useMemo} from 'react';
 import { useLocation, useNavigate } from "react-router-dom";
 
 import Navbar from '../../../components/Navbar/Navbar';
@@ -25,11 +25,26 @@ export const LRTimeline = () => {
     //     };
     //   }, []);
   const navigate = useNavigate();
-  const FORM_KEY = "LRTimeline:form";
-  const LIST_KEY = "LRTimeline:list";
+  const { selectedCase, selectedLead, setSelectedLead,  leadStatus, setLeadStatus } = useContext(CaseContext);
+
+  const { formKey, listKey } = useMemo(() => {
+  const cn   = selectedCase?.caseNo ?? "NA";
+  const cNam = encodeURIComponent(selectedCase?.caseName ?? "NA");
+  const ln   = selectedLead?.leadNo ?? "NA";
+  const lNam = encodeURIComponent(selectedLead?.leadName ?? "NA");
+  return {
+    formKey: `LRTimeline:form:${cn}:${cNam}:${ln}:${lNam}`,
+    listKey: `LRTimeline:list:${cn}:${cNam}:${ln}:${lNam}`,
+  };
+}, [
+  selectedCase?.caseNo,
+  selectedCase?.caseName,
+  selectedLead?.leadNo,
+  selectedLead?.leadName,
+]);
+
   const location = useLocation();
   const [leadData, setLeadData] = useState({});
-  const { selectedCase, selectedLead, setSelectedLead,  leadStatus, setLeadStatus } = useContext(CaseContext);
   const [entries, setEntries] = useState([]);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
@@ -94,17 +109,39 @@ const performDelete = async () => {
     };
   
    const [timelineEntries, setTimelineEntries] = useState(() => {
-   const saved = sessionStorage.getItem(LIST_KEY);
-   return saved ? JSON.parse(saved) : [];
- });
+  const saved = sessionStorage.getItem(listKey);
+  return saved ? JSON.parse(saved) : [];
+});
 
-  const [newEntry, setNewEntry] = useState(() => {
-   const saved = sessionStorage.getItem(FORM_KEY);
-   return saved
-     ? JSON.parse(saved)
-     : { date:'', leadReturnId:'', eventStartDate:'', eventEndDate:'',
-         startTime:'', endTime:'', location:'', description:'', flag:'' };
- });
+const DEFAULT_ENTRY = {
+  date: "",
+  leadReturnId: "",
+  eventStartDate: "",
+  eventEndDate: "",
+  startTime: "",
+  endTime: "",
+  location: "",
+  description: "",
+  flag: "",
+};
+
+
+const [newEntry, setNewEntry] = useState(() => {
+  const saved = sessionStorage.getItem(formKey);
+  return saved ? JSON.parse(saved) : DEFAULT_ENTRY;
+});
+
+useEffect(() => {
+  setNewEntry(() => {
+    const saved = sessionStorage.getItem(formKey);
+    return saved ? JSON.parse(saved) : DEFAULT_ENTRY;
+  });
+  setTimelineEntries(() => {
+    const saved = sessionStorage.getItem(listKey);
+    return saved ? JSON.parse(saved) : [];
+  });
+  setEditingIndex(null);
+}, [formKey, listKey]);
 
 
   const [timelineFlags, setTimelineFlags] = useState([
@@ -117,15 +154,46 @@ const performDelete = async () => {
   const [editingIndex, setEditingIndex] = useState(null);
   const isEditing = editingIndex !== null;
 
-  // whenever the draft form changes, save it
-useEffect(() => {
-  sessionStorage.setItem(FORM_KEY, JSON.stringify(newEntry));
-}, [newEntry]);
+  useEffect(() => { sessionStorage.setItem(formKey, JSON.stringify(newEntry)); }, [formKey, newEntry]);
+useEffect(() => { sessionStorage.setItem(listKey, JSON.stringify(timelineEntries)); }, [listKey, timelineEntries]);
 
-// whenever the list changes, save it
-useEffect(() => {
-  sessionStorage.setItem(LIST_KEY, JSON.stringify(timelineEntries));
-}, [timelineEntries]);
+
+const required = (s) => !!String(s ?? "").trim();
+
+function getMissingTimelineFields(ne, { isEditing = false } = {}) {
+  const miss = [];
+  if (!required(ne.leadReturnId))  miss.push("Narrative Id");
+  if (!required(ne.date))          miss.push("Event Date");
+  if (!required(ne.eventStartDate)) miss.push("Event Start Date");
+  if (!required(ne.eventEndDate))   miss.push("Event End Date");
+  if (!required(ne.startTime))     miss.push("Start Time");
+  if (!required(ne.endTime))       miss.push("End Time");
+  if (!required(ne.location))      miss.push("Location");
+  if (!required(ne.description))   miss.push("Description");
+  return miss;
+}
+
+// Build an ISO timestamp safely in local date context (avoids TZ surprises)
+function combineDateTimeISO(dateStr, timeStr) {
+  // dateStr: "YYYY-MM-DD", timeStr: "HH:MM"
+  const [y,m,d] = dateStr.split("-").map(Number);
+  const [H,MM]  = timeStr.split(":").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d, H, MM)); // store as UTC ISO
+  return dt.toISOString();
+}
+
+function assertChronology(ne) {
+  const startISO = combineDateTimeISO(ne.date, ne.startTime);
+  const endISO   = combineDateTimeISO(ne.date, ne.endTime);
+  if (new Date(startISO) > new Date(endISO)) {
+    return "Start Time must be before End Time.";
+  }
+  if (new Date(ne.eventStartDate) > new Date(ne.eventEndDate)) {
+    return "Event Start Date must be on/before Event End Date.";
+  }
+  return "";
+}
+
 
 
   const handleInputChange = (field, value) => {
@@ -503,7 +571,7 @@ const goToViewLR = () => {
         description: "",
         flag: "",
       });
-      sessionStorage.removeItem(FORM_KEY);
+      sessionStorage.removeItem(formKey);
     } catch (err) {
       console.error("Error saving timeline entry:", err);
        setAlertMessage("Failed to add timeline entry.");
@@ -559,6 +627,19 @@ const handleAccessChange = (idx, newAccess) => {
 };
 
 async function handleSubmit() {
+  const missing = getMissingTimelineFields(newEntry, { isEditing: editingIndex !== null });
+  if (missing.length) {
+    setAlertMessage(`Please fill the required field${missing.length>1?"s":""}: ${missing.join(", ")}.`);
+    setAlertOpen(true);
+    return;
+  }
+  const chronoErr = assertChronology(newEntry);
+  if (chronoErr) {
+    setAlertMessage(chronoErr);
+    setAlertOpen(true);
+    return;
+  }
+
   const {
     date, leadReturnId, eventStartDate, eventEndDate,
     startTime, endTime, location, description, flag
@@ -1039,10 +1120,10 @@ Case Page
                 <th style={{ width: "17%" }}>Event Time Range</th>
                 <th style={{ width: "15%" }}>Event Location</th>
                 <th style={{ width: "11%" }}>Description</th>
-                <th style={{ width: "11%" }}>Actions</th>
-                {isCaseManager && (
+                {/* <th style={{ width: "11%" }}>Actions</th> */}
+                {/* {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
-            )}
+            )} */}
               </tr>
             </thead>
             <tbody>
@@ -1081,7 +1162,7 @@ Case Page
                   </div>
                 </td>
               
-                {isCaseManager && (
+                {/* {isCaseManager && (
           <td>
             <select
               value={entry.access}
@@ -1091,11 +1172,11 @@ Case Page
               <option value="Case Manager">Case Manager Only</option>
             </select>
           </td>
-        )}
+        )} */}
       </tr>
        ))) : (
         <tr>
-          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
+          <td colSpan={isCaseManager ? 5 : 5} style={{ textAlign:'center' }}>
             No Timeline Entry Available
           </td>
         </tr>

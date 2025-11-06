@@ -51,6 +51,26 @@ const confirmDelete = async () => {
   await performDelete(idx); // calls the actual delete
 };
 
+function getMissingEvidenceFields({ evidenceData, file, editIndex }) {
+  const missing = [];
+
+  // Required fields
+  if (!evidenceData.leadReturnId?.trim()) missing.push("Narrative Id");
+  if (!evidenceData.collectionDate?.trim()) missing.push("Collection Date");
+
+  // Upload-type specific checks
+  const mode = evidenceData.uploadMode; // 'none' | 'file' | 'link'
+  if (mode === "link") {
+    if (!evidenceData.link?.trim()) missing.push("Link");
+  } else if (mode === "file") {
+    // Only require a file when creating new; replacement is optional on edit
+    if (editIndex === null && !file) missing.push("File");
+  }
+
+  return missing;
+}
+
+
 // DELETE without any prompt
 const performDelete = async (idx) => {
   const ev = evidences[idx];
@@ -408,6 +428,15 @@ const goToViewLR = () => {
   
 
 const handleSaveEvidence = async () => {
+
+  const missing = getMissingEvidenceFields({ evidenceData, file, editIndex });
+  if (missing.length) {
+    setAlertMessage(
+      `Please fill the required field${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}.`
+    );
+    setAlertOpen(true);
+    return;
+  }
   const fd = new FormData();
 
   // FILE: only if in file mode AND a file was chosen

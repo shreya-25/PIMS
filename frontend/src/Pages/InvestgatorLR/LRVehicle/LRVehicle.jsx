@@ -51,10 +51,26 @@ export const LRVehicle = () => {
     state: '',
     leadReturnId:'',
     information: '',
+    enteredDate: new Date().toISOString().slice(0,10),
      };
   });
 
+  const REQUIRED_FIELDS = [
+  { key: "leadReturnId", label: "Narrative Id" },
+  { key: "enteredDate",  label: "Entered Date" },
+  { key: "vin",          label: "VIN" },
+];
   
+function findMissingFields(obj) {
+  const isEmpty = (v) => {
+    if (v == null) return true;
+    if (typeof v === "string") return v.trim() === "";
+    return false;
+  };
+  return REQUIRED_FIELDS
+    .filter(({ key }) => isEmpty(obj[key]))
+    .map(({ label }) => label);
+}
 
 
   useEffect(() => {
@@ -512,6 +528,16 @@ const goToViewLR = () => {
 
 
   const handleSaveVehicle = async () => {
+
+     const missing = findMissingFields(vehicleData);
+  if (missing.length) {
+    setAlertMessage(
+      `Please fill the required field${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}.`
+    );
+    setAlertOpen(true);
+    return;
+  }
+
     const token = localStorage.getItem("token");
     const payload = {
       leadNo:        selectedLead.leadNo,
@@ -843,8 +869,8 @@ const goToViewLR = () => {
  </select>
             <label>Entered Date*</label>
             <input
-              type="text"
-              value= {formatDate(new Date().toISOString())}
+              type="date"
+              value={vehicleData.enteredDate || todayISO}
               onChange={(e) => handleChange('enteredDate', e.target.value)}
             />
             <label>Model</label>

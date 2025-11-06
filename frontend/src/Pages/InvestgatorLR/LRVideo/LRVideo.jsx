@@ -91,6 +91,23 @@ const cancelDeleteVideo = () => {
   setPendingDeleteIndex(null);
 };
 
+const isHttpUrl = (s) => /^https?:\/\/\S+$/i.test((s || "").trim());
+
+function getMissingVideoFields({ videoData, file, isEditing }) {
+  const missing = [];
+  if (!videoData.leadReturnId?.trim())     missing.push("Narrative Id");
+  if (!videoData.dateVideoRecorded?.trim()) missing.push("Date Video Recorded");
+  if (!videoData.description?.trim())       missing.push("Description");
+
+  if (videoData.isLink) {
+    if (!isHttpUrl(videoData.link)) missing.push("Link (valid URL)");
+  } else {
+    if (!isEditing && !file) missing.push("Video File");
+  }
+  return missing;
+}
+
+
 // Confirm delete (no window.confirm)
 const confirmDeleteVideo = async () => {
   const idx = pendingDeleteIndex;
@@ -423,17 +440,14 @@ useEffect(() => {
 
 
    const handleAddVideo = async () => {
-    // Validation:
-   if (
-  !videoData.leadReturnId ||
-  !videoData.dateVideoRecorded ||
-  !videoData.description ||
-  (videoData.isLink && !videoData.link.trim())
-) {
-  setAlertMessage("Please fill in Date, Narrative Id, Description, and a link if using Link mode.");
-setAlertOpen(true);
-   return;
-}
+    const missing = getMissingVideoFields({ videoData, file, isEditing: false });
+  if (missing.length) {
+    setAlertMessage(
+      `Please fill the required field${missing.length>1?"s":""}: ${missing.join(", ")}.`
+    );
+    setAlertOpen(true);
+    return;
+  }
     // Build FormData
     const fd = new FormData();
     fd.append("leadNo", selectedLead.leadNo);
