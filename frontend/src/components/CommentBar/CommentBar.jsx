@@ -129,7 +129,7 @@ const CommentBar = forwardRef(function CommentBar(
   };
 
   const onKeyDown = (e) => {
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    if (e.key === "Enter") {
       e.preventDefault();
       saveDraft();
     }
@@ -214,7 +214,7 @@ const CommentBar = forwardRef(function CommentBar(
             <img src={sendIcon} alt="send" className="cbar__sendIcon" />
           </button>
         </div>
-        <div className="cbar__hint">Tip: Press Ctrl+Enter to post.</div>
+        {/* <div className="cbar__hint">Tip: Press Ctrl+Enter to post.</div> */}
       </div>
 
     </aside>
