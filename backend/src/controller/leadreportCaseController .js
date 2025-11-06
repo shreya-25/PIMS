@@ -736,14 +736,29 @@ function generateCaseReport(req, res) {
    const caseNo   =  leadsData?.[0]?.caseNo   || "";
   const caseName = leadsData?.[0]?.caseName || "";
 
+
   try {
     // Create doc
     const doc = new PDFDocument({ size: "LETTER", margin: 50 });
 
-    const WM = { text: "DRAFT", opacity: 0.08, angle: -35, fontSize: 100 };
+     const showExecSummary =
+    summaryMode !== 'none' &&
+    typeof caseSummary === 'string' &&
+    caseSummary.trim().length > 0;
 
-// Draw on the first page, and on every page added afterward
-doc.on("pageAdded", () => drawWatermark(doc, WM));
+    const reportTitle = showExecSummary ? "Final Case Report" : "Preliminary Case Report";
+
+
+    const WM = { text: "DRAFT", opacity: 0.08, angle: -35, fontSize: 100 };
+    const shouldWatermark = !showExecSummary;
+
+    if (shouldWatermark) {
+      // watermark the first page
+      drawWatermark(doc, WM);
+      // and every subsequently added page
+      doc.on("pageAdded", () => drawWatermark(doc, WM));
+    }
+
 
     // Pipe the PDF into the response
     res.setHeader("Content-Type", "application/pdf");
@@ -775,22 +790,16 @@ doc.on("pageAdded", () => drawWatermark(doc, WM));
     doc.fillColor("white")
       .font("Helvetica-Bold")
       .fontSize(14)
-      .text("Final Case Report", 0, currentY, { align: "center" });
+      .text(reportTitle, 0, currentY, { align: "center" });
     currentY = doc.y + 5;
 
     doc.fillColor("white").font("Helvetica").fontSize(10);
-    doc.text(`Case No: ${caseNo}: ${caseName}`, { align: "center" });
+    doc.text(`Case: ${caseNo}: ${caseName}`, { align: "center" });
     currentY = doc.y + 30;
 
     // Reset color
     doc.fillColor("black");
 
-    drawWatermark(doc, WM);
-
-     const showExecSummary =
-    summaryMode !== 'none' &&
-    typeof caseSummary === 'string' &&
-    caseSummary.trim().length > 0;
 
     // ---------- Case Summary ----------
     if (showExecSummary) {

@@ -2565,9 +2565,9 @@ const toTitleCase = (s = "") =>
 
     <colgroup>
       <col style={{ width: "6%" }} />     {/* Lead No. */}
-      <col style={{ width: "45%" }} />   {/* Lead Name */}
+      <col style={{ width: "30%" }} />   {/* Lead Name */}
       <col style={{ width: "30%" }} />   {/* Case Name */}
-      <col style={{ width: "9%" }} />     {/* Actions */}
+      <col style={{ width: "10%" }} />     {/* Actions */}
     </colgroup>
                <thead>
                       <tr>
@@ -2626,7 +2626,7 @@ const toTitleCase = (s = "") =>
                       <td>{lead.id}</td>
                       <td>{lead.description}</td>
                        <td>{lead.caseName}</td>
-                      <td style={{ width: "9%", textAlign: "center" }}>
+                      <td style={{ width: "11%", textAlign: "center" }}>
                         <button
                               className="continue-btn"
                               onClick={() => {
