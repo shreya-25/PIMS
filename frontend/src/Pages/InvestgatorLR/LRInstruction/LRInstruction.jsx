@@ -451,63 +451,8 @@ console.log("isReadOnly", isReadOnly);
       
 
 <div className="LRI_Content">
-       {/* <div className="sideitem">
-       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-       <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
-        </li>
-        {caseDropdownOpen && (
-      <ul >
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>  
-                  <li
-  className="sidebar-item"
-  onClick={() =>
-    selectedCase.role === "Investigator"
-      ? navigate("/Investigator")
-      : navigate("/CasePageManager")
-  }
->
-Case Page
-</li>
-
-
-            {selectedCase.role !== "Investigator" && (
-<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-       
-              {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
-            </li>)}
-        
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-
-            </ul>
-        )}
-          <li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
-          </li>
-        {leadDropdownOpen && (
-          <ul>
-              <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-              View Lead Chain of Custody
-            </li>
-             )}
-          </ul>
-
-            )}
-
-                </div> */}
-      <SideBar  activePage="CasePageManager" />
+      
+      <SideBar  activePage="LeadReview" />
 
        <div className="left-contentLI">
 
@@ -567,7 +512,7 @@ Case Page
           
                   </div>
        </div>
-       <div className="top-menu1" style={{ marginTop: '2px', backgroundColor: '#3333330e', fontWeight: '900' }}>
+       <div className="top-menu1">
        <div className="menu-items" style={{ fontSize: '19px' }}>
        
         <span className="menu-item active" style={{fontWeight: '600' }} onClick={() => handleNavigation('/LRInstruction')}>
@@ -603,33 +548,10 @@ Case Page
           <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
             Timeline
           </span>
-          {/* <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span> */}
-          {/* {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
-            <span
-              className="menu-item"
-              onClick={handleViewLeadReturn}   
-              title={isGenerating ? "Preparing report…" : "Manage Lead Return"}
-              style={{ fontWeight: '400', opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-            >
-              Review
-            </span>
-          )}
-          {selectedCase?.role === "Investigator" && (
-            <span
-              className="menu-item"
-              onClick={goToViewLR}
-              style={{fontWeight: '400' }}
-              title="View Lead Return"
-            >
-              Submit
-            </span>
-          )} */}
+
          </div> </div>
        <div className="caseandleadinfo">
           <h5 className = "side-title"> 
-             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
                <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo} &gt; Lead Instruction
                  </p>
              </h5>
@@ -642,15 +564,6 @@ Case Page
 
           </div>
 
-       {/* <div className="main-content-cl"> */}
-        {/* Left Section */}
-        {/* <div className="left-section">
-          <img
-            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} // Replace with the actual path to your logo
-            alt="Police Department Logo"
-            className="police-logo"
-          />
-        </div> */}
 
         {/* Center Section */}
         <div className="case-header">

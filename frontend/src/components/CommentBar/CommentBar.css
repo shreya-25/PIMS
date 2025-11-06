@@ -96,25 +96,39 @@
 } */
 
 .cbar__avatar {
-  width: 30px;
-  height: 30px;
+  position: relative;
+  top: 5px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: #7c3aed;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
   color: #fff;
-
-  /* Center the glyph precisely */
   display: flex;
-  align-items: center;
-  justify-content: center;
-
+  align-items: center;       /* centers vertically */
+  justify-content: center;   /* centers horizontally */
   font-weight: 600;
   font-size: 18px;
-  /* line-height: 1;         */
   flex: 0 0 auto;
-  /* Optional: if it still looks a tad high on your machine,
-     uncomment the tiny nudge below (0.5–1px is usually enough) */
-  /* transform: translateY(0.5px); */
+  line-height: 1;            /* prevents baseline offset */
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(124, 58, 237, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
+
+/* This optional inner span corrects subpixel font offset on some browsers */
+.cbar__avatar span {
+  position: relative;
+  top: -2px; 
+  font-size: larger;
+}
+
+/* Hover animation */
+.cbar__avatar:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(124, 58, 237, 0.35);
+}
+
+
 .cbar__bubble {
   flex: 1 1 auto; background: #fafafe; border: 1px solid #eeeef5;
   border-radius: 12px; 
@@ -122,7 +136,7 @@
   align-items:center;
 }
 .cbar__meta {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 4px;
   font-size: 15px; color: #6b6b75; margin-bottom: 6px; 
   height: 30px;
 }
@@ -138,4 +152,67 @@
 @media (max-width: 520px) {
   .cbar { width: 100%; }
   .cbar__actions { flex-direction: row; min-width: 0; }
+}
+
+
+.cbar__composer {
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid #efeff2;
+}
+
+/* wrap to position the send btn over textarea */
+.cbar__inputWrap {
+  position: relative;
+  display: flex;
+}
+
+.cbar__textarea {
+  flex: 1 1 auto;
+  min-height: 130px;
+  padding: 10px 48px 10px 12px; /* space for the send btn */
+  border-radius: 12px;
+  border: 1px solid #d8d8df;
+  outline: none;
+  resize: vertical;
+  font-size: 18px;
+  line-height: 1;
+  background: #fff;
+}
+
+/* SEND BUTTON */
+.cbar__sendBtn {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 999px;
+  background: #eaf1ff;          /* light bluish like ChatGPT */
+  cursor: pointer;
+  transition: transform 0.12s ease-out;
+  /* make this the positioning context for the img */
+  display: block;
+}
+
+.cbar__sendBtn:not(:disabled):hover {
+  transform: translateY(-1px);
+  background: #d8e5ff;
+}
+
+.cbar__sendBtn:disabled {
+  background: #d3d6de;
+  cursor: not-allowed;
+}
+
+/* FORCE ICON TO TRUE CENTER */
+.cbar__sendIcon {
+  position: absolute;
+  top: 50%;
+  left: 55%;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+  object-fit: contain;
+  pointer-events: none;
 }

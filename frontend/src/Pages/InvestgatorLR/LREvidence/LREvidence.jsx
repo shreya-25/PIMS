@@ -662,7 +662,7 @@ const handleEdit = idx => {
 
       <div className="LRI_Content">
     
-                  <SideBar  activePage="CasePageManager" />
+                  <SideBar  activePage="LeadReview" />
                 <div className="left-contentLI">
 
                   
@@ -726,7 +726,7 @@ const handleEdit = idx => {
        
        </div>
 
-                <div className="top-menu1" style={{ marginTop: '2px', backgroundColor: '#3333330e' }}>
+                <div className="top-menu1" >
        <div className="menu-items" style={{ fontSize: '19px' }}>
        
         <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
@@ -821,7 +821,7 @@ const handleEdit = idx => {
               value={evidenceData.leadReturnId}
               onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
             >
-              <option value="">Select Narrative Id</option>
+              <option value="">Select Id</option>
               {narrativeIds.map(id => (
                 <option key={id} value={id}>{id}</option>
               ))}

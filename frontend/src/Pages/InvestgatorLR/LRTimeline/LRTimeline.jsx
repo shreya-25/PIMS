@@ -754,7 +754,7 @@ Case Page
             )}
 
                 </div> */}
-                 <SideBar  activePage="CasePageManager" />
+                 <SideBar  activePage="LeadReview" />
                 <div className="left-contentLI">
 
                        <div className="top-menu1">
@@ -852,7 +852,7 @@ Case Page
           </span>
          </div> */}
        </div>
-                <div className="top-menu1" style={{ marginTop: '2px', backgroundColor: '#3333330e' }}>
+                <div className="top-menu1">
        <div className="menu-items" style={{ fontSize: '19px' }}>
        
         <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
@@ -940,7 +940,7 @@ Case Page
   value={newEntry.leadReturnId}
   onChange={(e) => handleInputChange('leadReturnId', e.target.value)}
 >
-  <option value="">Select Narrative Id</option>
+  <option value="">Select Id</option>
 
   {/* Keep current value visible even if it's not in the latest API list (editing/legacy) */}
   {newEntry.leadReturnId &&
@@ -1125,11 +1125,7 @@ Case Page
           <button className="cancel-btn">Cancel</button>
         </div> */}
 
-        <FootBar
-        onPrevious={() => navigate(-1)} // Takes user to the last visited page
-        onNext={() => navigate("/LRFinish")} // Takes user to CM Return page
-      />
-        
+       
     </div>
     </div>
     </div>

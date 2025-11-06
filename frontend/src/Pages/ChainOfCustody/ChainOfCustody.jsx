@@ -20,6 +20,9 @@ export const ChainOfCustody = () => {
     const [alertMessage, setAlertMessage] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
 
+   const toTitleCase = (s = "") =>
+  s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+
 // helper to attach files for sections that have uploads
 const attachFiles = async (items, idFieldName, filesEndpoint) => {
   return Promise.all(
@@ -229,7 +232,12 @@ const tone = (t) =>
   return (
     <div className="elog card">
       <div className="elog-header">
-        <h3> Lead  Log</h3>
+       <h3>
+  {selectedLead?.leadNo
+    ? `Lead: ${toTitleCase(selectedLead?.leadName || "")}`
+    : "LEAD DETAILS"}
+</h3>
+
         <div className={`chip chip-status ${statusClass}`}>{status || "—"}</div>
       </div>
 
@@ -246,6 +254,8 @@ const tone = (t) =>
   <span className="counter muted">CM closed {cmClosed}</span>
   <span className="counter info">CM reopened {cmReopened}</span>
 </div> */}
+
+ <div className="elog-scroll">
 
       {stream.length === 0 ? (
         <div className="muted">No activity yet.</div>
@@ -264,6 +274,7 @@ const tone = (t) =>
           ))}
         </ul>
       )}
+      </div>
     </div>
   );
 };
@@ -405,7 +416,7 @@ const tone = (t) =>
       <Navbar />
 
       <div className="main-container">
-        <SideBar activePage="CasePageManager" />
+        <SideBar activePage="LeadReview" />
 
         <div className="left-content">
           <div className="top-menu1">
@@ -476,28 +487,6 @@ const tone = (t) =>
               </span>
             </div>
           </div>
-
-            {/* <div className="caseandleadinfo">
-          <h5 className = "side-title"> 
-               <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo} &gt; Chain of Custody
-                 </p>
-             </h5>
-          <h5 className="side-title">
-{selectedLead?.leadNo
-        ? `Your Role: ${selectedCase.role || ""}`
-    : ``}
-</h5>
-
-          </div> */}
-
-
-          {/* <div className="case-header">
-            <h1>
-              {selectedLead?.leadNo
-                ? `LEAD: ${selectedLead.leadNo} | ${(selectedLead.leadName || "").toUpperCase()}`
-                : "LEAD DETAILS"}
-            </h1>
-          </div> */}
 
           {/* FULL-PAGE ASSIGNMENT LOG */}
           <AssignmentLog

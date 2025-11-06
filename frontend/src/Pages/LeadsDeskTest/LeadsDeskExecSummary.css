@@ -144,6 +144,14 @@
   display: inline-flex;
   gap: 8px;
   align-items: center;
+  width: 15%;
+}
+
+.summaryOption2 {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
   width: 20%;
 }
 /* Force the text size (beats most overrides) */
@@ -152,8 +160,13 @@
   line-height: 1.4;
 }
 
-.summaryOptionText1 {
+.summaryOptionText2 {
   font-size: 18px !important;
+  line-height: 1.0;
+}
+
+.summaryOptionText1 {
+  font-size: 20px !important;
   line-height: 1.0;
 }
 
@@ -163,9 +176,21 @@
   transform: scale(1.2);
 }
 
+.summaryOption2 input[type="radio"] {
+  transform: scale(1.2);
+  width: 10%;
+}
+
+/* Make all checkboxes larger */
+.summaryOption1 input[type="checkbox"]{
+  transform: scale(1.6); /* adjust 1.6 → bigger or smaller */
+  cursor: pointer;
+}
+
 .summaryOption1 input[type="radio"] {
   transform: scale(1.2);
   width: 10%;
+  font-size: larger;
 }
 
 .range-filter {
@@ -419,12 +444,12 @@
   padding: 8px 10px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 18px;
 }
 .fp-search:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.2); }
 
 .fp-actions { display: flex; gap: 8px; }
-.fp-small { padding: 8px 10px; font-size: 14px; }
+.fp-small { padding: 8px 10px; font-size: 18px; }
 
 .fp-list {
   padding: 6px 10px 10px;
@@ -440,9 +465,9 @@
   user-select: none;
 }
 .fp-item:hover { background: #f9fafb; }
-.fp-item input { transform: scale(1.1); }
-.fp-item-text { font-size: 14px; color: #111827; }
-.fp-empty { padding: 16px; color: #6b7280; font-size: 14px; }
+.fp-item input { transform: scale(1.5); }
+.fp-item-text { font-size: 18px; color: #111827; }
+.fp-empty { padding: 16px; color: #6b7280; font-size: 18px; }
 
 /* layout helper next to picker */
 .fp-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }

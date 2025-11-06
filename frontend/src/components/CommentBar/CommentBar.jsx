@@ -43,6 +43,8 @@ const CommentBar = forwardRef(function CommentBar(
   const token    = localStorage.getItem("token");
   const enteredBy = localStorage.getItem("loggedInUser") || "Unknown";
 
+  const sendIcon = `${process.env.PUBLIC_URL}/Materials/send.png`;
+
   // ---- Fetch (strictly scoped to case+lead+tag) ----
   const fetchComments = useCallback(async () => {
     if (!ready) return;
@@ -137,23 +139,6 @@ const CommentBar = forwardRef(function CommentBar(
     <aside className="cbar">
       <header className="cbar__header">
         <div className="cbar__title">Comments</div>
-        <div className="cbar__actions">
-          <button
-            className="cbar__btn cbar__btn--primary"
-            onClick={saveDraft}
-            disabled={!draft.trim() || !ready}
-            title="Save (Ctrl+Enter)"
-          >
-            Save
-          </button>
-          <button
-            className="cbar__btn"
-            onClick={cancelDraft}
-            disabled={!draft.trim() || !ready}
-          >
-            Cancel
-          </button>
-        </div>
       </header>
 
       {!ready && (
@@ -168,7 +153,10 @@ const CommentBar = forwardRef(function CommentBar(
       <ul className="cbar__list">
         {comments.map((c) => (
           <li key={c._id} className="cbar__item">
-            <div className="cbar__avatar">{(c.enteredBy || "A").charAt(0)}</div>
+            <div className="cbar__avatar">
+              <span>{(c.enteredBy || "A").charAt(0)} </span>
+
+              </div>
             <div className="cbar__bubble">
               <div className="cbar__meta">
                 <strong>{c.enteredBy || "Anonymous"}</strong>
@@ -196,8 +184,8 @@ const CommentBar = forwardRef(function CommentBar(
         )}
       </ul>
 
-      <div className="cbar__composer">
-        <div className="cbar__row">
+          <div className="cbar__composer">
+        <div className="cbar__inputWrap">
           <textarea
             ref={inputRef}
             className="cbar__textarea"
@@ -208,9 +196,27 @@ const CommentBar = forwardRef(function CommentBar(
             onKeyDown={onKeyDown}
             disabled={!ready}
           />
+          <button
+            type="button"
+            className="cbar__sendBtn"
+            onClick={saveDraft}
+            disabled={!draft.trim() || !ready}
+            title="Send (Ctrl+Enter)"
+          >
+            {/* simple send icon (can swap with svg) */}
+            {/* <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="cbar__sendIcon"
+              viewBox="0 0 24 24"
+            >
+              <path d="M3 4.27v15.46l18-7.73L3 4.27zm2.4 3.62 9.72 3.38-9.72 3.38v-2.66l4.38-.72-4.38-.72V7.89z" />
+            </svg> */}
+            <img src={sendIcon} alt="send" className="cbar__sendIcon" />
+          </button>
         </div>
         <div className="cbar__hint">Tip: Press Ctrl+Enter to post.</div>
       </div>
+
     </aside>
   );
 });

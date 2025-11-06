@@ -1731,19 +1731,18 @@ const submitDeleteWithReason = async (reason) => {
       {/* Main Container */}
       <div className="lead-review-container1">
 
-       <SideBar  activePage="CasePageManager" />
+
+       <SideBar  activePage="LeadReview" />
      
         {/* Content Area */}
         <div className="lead-main-content">
           {/* Page Header */}
 
-          
-
-           {canWorkOnReturn && (
-                   <div className="top-menu">
+            {canWorkOnReturn && (
+                   <div className="top-menu1">
         <div className="menu-items">
         <span className="menu-item active" > Lead Information</span>
-          <span className="menu-item" onClick={() => {
+          <span className="menu-item " onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
@@ -1808,50 +1807,23 @@ const submitDeleteWithReason = async (reason) => {
                 }}>Lead Chain of Custody</span>
           
         </div>
-      </div>
-                  )}
-              
-              
+            </div>
+            )}
 
-          {/* <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} |  Your Role: {selectedCase.role || ""}</h5>
+        <div className="main-leadreview-cont">
 
-          <h5 className="side-titleRight">
-  {selectedLead?.leadNo
-    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${leadData.leadStatus || leadStatus || "Unknown Status"}`
-    : `LEAD DETAILS | ${leadData?.leadStatus || leadStatus || "Unknown Status"}`}
-</h5>
-
-          </div> */}
-
-               {/* <div className="caseandleadinfo">
-          <h5 className = "side-title"> 
-               <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo}
-                 </p>
-             </h5>
-          <h5 className="side-title">
-  {selectedLead?.leadNo
-        ? `Your Role: ${selectedCase.role || ""}`
-    : ` ${leadStatus}`}
-</h5>
-
-          </div> */}
-
-          <div className="main-leadreview-cont">
-
-           {/* <div className = "side-titleLeft-lr">
-                  <p> PIMS &gt; Cases &gt; Lead \ {selectedLead.leadNo} 
-                 </p>
-                </div> */}
         <div className="case-header-leadReview">
-                  <div className="cp-head-leadReview">
-                {
-                  <h2> {selectedLead?.leadNo ? `Lead ${selectedLead.leadNo} : ${selectedLead.leadName?.toUpperCase()}` : "LEAD DETAILS"} </h2>
-                  // <h2>{selectedLead.leadName? toTitleCase(selectedLead.leadName) : "Unknown Case"}</h2>
+          <div className="cp-head-leadReview">
+            {
+              // <h2> {selectedLead?.leadNo ? `Lead: ${selectedLead.leadName?.toTitleCase(selectedLead.leadName)}` : "LEAD DETAILS"} </h2>
+              <h2>
+  {selectedLead?.leadNo
+    ? `Lead: ${toTitleCase(selectedLead?.leadName || "")}`
+    : "LEAD DETAILS"}
+</h2>
 
-
-                }
-                </div>
+            }
+          </div>
 
                  <div className="add-lead-section">
   <div className="add-lead-btn1">
@@ -2508,7 +2480,7 @@ const submitDeleteWithReason = async (reason) => {
 
                 </div>
 
-</div>
+        </div>
         </div>
       </div>
     </div>

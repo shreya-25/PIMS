@@ -250,6 +250,7 @@ function FlagPicker({
   const selectAll = () => onChange(filtered.length ? Array.from(new Set([...selected, ...filtered])) : selected);
   const clearAll = () => onChange([]);
 
+
   // Close on outside click / ESC
   useEffect(() => {
     const onDocClick = (e) => {
@@ -271,6 +272,8 @@ function FlagPicker({
       document.removeEventListener("keydown", onEsc);
     };
   }, [open]);
+
+  
 
   return (
     <div className="fp-root">
@@ -565,6 +568,8 @@ useEffect(() => {
   setAvailableFlags([...uniq].sort((a,b) => a.localeCompare(b)));
 }, [timelineEntries]);
 
+
+
 // New: fetch all leads for the case, then hydrate each using the ViewLR-style loader
 useEffect(() => {
   const fetchAllLeadsViewLRStyle = async () => {
@@ -681,6 +686,8 @@ useEffect(() => {
   setAvailableFlags([...uniq].sort((a,b) => a.localeCompare(b)));
 }, [timelineEntries]);
 
+
+
    // Save to backend
    const saveExecutiveSummary = async () => {
     if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
@@ -719,6 +726,8 @@ useEffect(() => {
     return () => clearTimeout(saveTimeout.current);
   }, [typedSummary, useWebpageSummary, selectedCase.caseNo, selectedCase.caseName]);
 
+
+  
 
   useEffect(() => {
     if (!selectedCase?.caseNo) return;
@@ -1200,83 +1209,9 @@ useEffect(() => {
   }
 }, [summaryMode]);
 
-
-
-
-
-   // New function to run the report and merge it with an uploaded executive summary document
-//    const handleRunReportWithSummary = async (explicitLeads) => {
-//     const token = localStorage.getItem("token");
-//     const leadsForReport = computeLeadsForReport();
-// if (reportScope === "selected" && leadsForReport.length === 0) {
-//   alert("No leads selected for the subset.");
-//   return;
-// }
-//     if (useWebpageSummary) {
-//       try {
-//         const payload = {
-//           user: "Officer 916", 
-//           reportTimestamp: new Date().toLocaleString(),
-//            leadsData: leadsForReport,
-//           caseSummary: typedSummary,
-//           selectedReports: { FullReport: true },
-//         };
-//         const response = await api.post(
-//           "/api/report/generateCase",
-//           payload,
-//           {
-//             headers: {
-//               Authorization: `Bearer ${token}`,
-//               "Content-Type": "application/json",
-//             },
-//             responseType: "blob", 
-//           }
-//         );
-//         const file = new Blob([response.data], { type: "application/pdf" });
-//         const fileURL = URL.createObjectURL(file);
-//         window.open(fileURL, "_blank");
-//       } catch (error) {
-//         console.error("Failed to generate report", error);
-//         alert("Error generating PDF");
-//       }
-//   }
-
-//   else if (useFileUpload && execSummaryFile) {
-//     try {
-//       const formData = new FormData();
-//       formData.append("user", "Officer 916");
-//       formData.append("reportTimestamp", new Date().toLocaleString());
-//       formData.append("leadsData", JSON.stringify(leadsData));
-//       formData.append("selectedReports", JSON.stringify({ FullReport: true }));
-//       formData.append("execSummaryFile", execSummaryFile);
-  
-//       const response = await axios.post(
-//         "http://localhost:5000/api/report/generateCaseExecSummary",
-//         formData,
-//         {
-//           headers: {
-//             Authorization: `Bearer ${token}`,
-           
-//           },
-//           responseType: "blob",
-//         }
-//       );
-//       const fileBlob = new Blob([response.data], { type: "application/pdf" });
-//       const fileURL = URL.createObjectURL(fileBlob);
-//       window.open(fileURL, "_blank");
-//     } catch (err) {
-//       console.error("Error generating PDF with upload:", err);
-//       alert("Failed to generate report with uploaded summary");
-//     }
-//   }
-  
-//   };
-
 const handleRunReportWithSummary = async (explicitLeads = null) => {
   const token = localStorage.getItem("token");
 
-  // Prefer an explicit list (timeline / hierarchy / selected range).
-  // Otherwise fall back to the scoped computation.
   const computed = computeLeadsForReport();
   const leadsForReport = Array.isArray(explicitLeads) && explicitLeads.length
     ? explicitLeads
@@ -1287,14 +1222,25 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
     return;
   }
 
-  if (useWebpageSummary) {
-    try {
+  // IMPORTANT: whatever you call your selector for report type:
+  // e.g., reportTypeId: "All" | "WithoutSummary" | etc.
+  const isAllReport = String(reportType).toLowerCase() === "all";
+
+  // Decide if we should include an executive summary at all
+  const hasWebSummary = Boolean(useWebpageSummary && typedSummary && typedSummary.trim().length);
+  const hasFileSummary = Boolean(useFileUpload && execSummaryFile);
+  const includeExec = isAllReport && (hasWebSummary || hasFileSummary);
+
+  try {
+    if (includeExec && hasWebSummary) {
+      // SAME endpoint as before; include summary text
       const payload = {
         user: localStorage.getItem("loggedInUser"),
         reportTimestamp: new Date().toLocaleString(),
-        leadsData: leadsForReport,          // ✅ use filtered/ordered list
+        leadsData: leadsForReport,
         caseSummary: typedSummary,
         selectedReports: { FullReport: true },
+        summaryMode: "web",                 // 👈 tell backend a summary is present (text)
       };
 
       const response = await api.post("/api/report/generateCase", payload, {
@@ -1308,18 +1254,18 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
       const file = new Blob([response.data], { type: "application/pdf" });
       const fileURL = URL.createObjectURL(file);
       window.open(fileURL, "_blank");
-    } catch (error) {
-      console.error("Failed to generate report", error);
-      alert("Error generating PDF");
+      return;
     }
-  } else if (useFileUpload && execSummaryFile) {
-    try {
+
+    if (includeExec && hasFileSummary) {
+      // Upload flow with file
       const formData = new FormData();
-      formData.append("user", "Officer 916");
+      formData.append("user", localStorage.getItem("loggedInUser") || "Officer 916");
       formData.append("reportTimestamp", new Date().toLocaleString());
-      formData.append("leadsData", JSON.stringify(leadsForReport)); // ✅ same list here
+      formData.append("leadsData", JSON.stringify(leadsForReport));
       formData.append("selectedReports", JSON.stringify({ FullReport: true }));
       formData.append("execSummaryFile", execSummaryFile);
+      formData.append("summaryMode", "file");    // 👈 tell backend a summary is present (file)
 
       const response = await axios.post(
         "http://localhost:5000/api/report/generateCaseExecSummary",
@@ -1333,15 +1279,37 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
       const fileBlob = new Blob([response.data], { type: "application/pdf" });
       const fileURL = URL.createObjectURL(fileBlob);
       window.open(fileURL, "_blank");
-    } catch (err) {
-      console.error("Error generating PDF with upload:", err);
-      alert("Failed to generate report with uploaded summary");
+      return;
     }
+
+    // Else: NOT including an executive summary (either report type != All, or no summary provided)
+    {
+      const payload = {
+        user: localStorage.getItem("loggedInUser"),
+        reportTimestamp: new Date().toLocaleString(),
+        leadsData: leadsForReport,
+        caseSummary: "",                           // 👈 empty
+        selectedReports: { FullReport: isAllReport },
+        summaryMode: "none",                       // 👈 force backend to skip summary
+      };
+
+      const response = await api.post("/api/report/generateCase", payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        responseType: "blob",
+      });
+
+      const file = new Blob([response.data], { type: "application/pdf" });
+      const fileURL = URL.createObjectURL(file);
+      window.open(fileURL, "_blank");
+    }
+  } catch (error) {
+    console.error("Failed to generate report", error);
+    alert("Error generating PDF");
   }
 };
-
-
-  
 
 
 
@@ -2012,7 +1980,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
        </div> */}
 
        <div className="down-content"> 
-          {summaryMode === 'type' && (
+          {reportType === 'all' && summaryMode === 'type' && (
         <div className="exec-summary-sec">
           <h3>Executive Summary</h3>
 
@@ -2046,60 +2014,60 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
 <CollapsibleSection title="Generate Report" defaultOpen={true}>
 
   {/* Single straight-line checkbox row */}
-  <div className="reportTargetRow" style={{display:'flex',gap:24,alignItems:'center',flexWrap:'wrap'}}>
-    <label className="summaryOption" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+  <div className="reportTargetRow" style={{display:'flex',gap:20,alignItems:'center',flexWrap:'wrap'}}>
+    <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:8, fontSize: '20px'}}>
       <input
         type="checkbox"
         checked={reportType === 'all'}
         onChange={() => setReportType(reportType === 'all' ? null : 'all')}
       />
-      <span className="summaryOptionText">All leads</span>
+      <span className="summaryOptionText1">All leads</span>
     </label>
 
-    <label className="summaryOption" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+    <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:8}}>
       <input
         type="checkbox"
         checked={reportType === 'single'}
         onChange={() => setReportType(reportType === 'single' ? null : 'single')}
       />
-      <span className="summaryOptionText">Single lead</span>
+      <span className="summaryOptionText1">Single lead</span>
     </label>
 
-     <label className="summaryOption" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+     <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:8}}>
       <input
         type="checkbox"
         checked={reportType === 'selected'}
         onChange={() => setReportType(reportType === 'selected' ? null : 'selected')}
       />
-      <span className="summaryOptionText">Selected leads (range)</span>
+      <span className="summaryOptionText1">Selected leads</span>
     </label>
 
     
 
-    <label className="summaryOption" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+    <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:8}}>
       <input
         type="checkbox"
         checked={reportType === 'hierarchy'}
         onChange={() => setReportType(reportType === 'hierarchy' ? null : 'hierarchy')}
       />
-      <span className="summaryOptionText">Lead hierarchy</span>
+      <span className="summaryOptionText1">Lead hierarchy</span>
     </label>
 
-    <label className="summaryOption" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+    <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:8}}>
       <input
         type="checkbox"
         checked={reportType === 'timeline'}
         onChange={() => setReportType(reportType === 'timeline' ? null : 'timeline')}
       />
-      <span className="summaryOptionText">Timeline entry leads</span>
+      <span className="summaryOptionText1">Timeline leads</span>
     </label>
-     <label className="summaryOption" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+     <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:8}}>
       <input
         type="checkbox"
         checked={reportType === 'flagged'}
         onChange={() => setReportType(reportType === 'flagged' ? null : 'flagged')}
       />
-      <span className="summaryOptionText">Flagged leads</span>
+      <span className="summaryOptionText1">Flagged leads</span>
     </label>
   </div>
 
@@ -2108,7 +2076,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
     <>
       {/* Summary input mode */}
       <div className="summaryModeRow1">
-        <label className="summaryOption1">
+        <label className="summaryOption2">
           <input
             type="radio"
             name="summary-mode"
@@ -2116,10 +2084,10 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
             checked={summaryMode === 'type'}
             onChange={() => handleSummaryMode('type')}
           />
-          <span className="summaryOptionText1">Type summary manually</span>
+          <span className="summaryOptionText2">Type summary manually</span>
         </label>
 
-        <label className="summaryOption1">
+        <label className="summaryOption2">
           <input
             type="radio"
             name="summary-mode"
@@ -2127,7 +2095,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
             checked={summaryMode === 'file'}
             onChange={() => handleSummaryMode('file')}
           />
-          <span className="summaryOptionText1">Attach executive report</span>
+          <span className="summaryOptionText2">Attach executive report</span>
         </label>
       </div>
 
@@ -2213,11 +2181,11 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
 
 {reportType === 'flagged' && (
   <>
-    <div className="range-filter">
-      <div className="range-filter__label" id="flag-select-label">Choose flag(s)</div>
+    <div className="range-filter" style={{ marginTop: "8px", marginBottom: "8px" }}>
+      <div className="range-filter__label" id="flag-select-label" style={{ fontSize: "18px" }}>Choose flag(s)</div>
 
       {/* Allow multiple toggle */}
-      <label className="summaryOption" style={{ marginLeft: 8 }}>
+      <label className="summaryOption1" style={{ marginLeft: 8, fontSize: "18px" }}>
         <input
           type="checkbox"
           checked={isMultiFlag}
@@ -2229,7 +2197,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
             }
           }}
         />
-        <span className="summaryOptionText">Allow multiple</span>
+        <span className="summaryOptionText1">Allow multiple</span>
       </label>
     </div>
 

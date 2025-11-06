@@ -436,7 +436,29 @@ const actuallyDoSubmitReport = async () => {
               <span className="menu-item active" onClick={() => go("/ViewLR")}>View All</span>
             </div>
           </div> */}
-          <div className="top-menu">
+
+            <div className="LRI_Content9">
+                    {/* <SideBar  activePage="CasePageManager" /> */}
+
+          <div className="left-content9">
+            {loading ? (
+              <div className="loading">Loading…</div>
+            ) : (
+              <>
+              
+          {/* <div className="caseandleadinfo">
+            <h5 className="side-title">
+              PIMS &gt; Cases &gt; Lead #{leadNo} &gt; View All
+            </h5>
+            <h5 className="side-title">
+              Case: {caseName} &nbsp;|&nbsp; Lead: {leadName}
+            </h5>
+          </div> */}
+
+       <div className={styles.cont}>
+                  <div className={`${styles.lrsec} ${styles.singleCol} ${!showComments ? styles.lrsecFull : ""}`}>
+
+                         <div className="top-menu">
         <div className="menu-items">
                 <span className="menu-item " onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
@@ -495,27 +517,6 @@ const actuallyDoSubmitReport = async () => {
           
         </div>
       </div>
-
-            <div className="LRI_Content9">
-                    {/* <SideBar  activePage="CasePageManager" /> */}
-
-          <div className="left-content9">
-            {loading ? (
-              <div className="loading">Loading…</div>
-            ) : (
-              <>
-              
-          {/* <div className="caseandleadinfo">
-            <h5 className="side-title">
-              PIMS &gt; Cases &gt; Lead #{leadNo} &gt; View All
-            </h5>
-            <h5 className="side-title">
-              Case: {caseName} &nbsp;|&nbsp; Lead: {leadName}
-            </h5>
-          </div> */}
-
-       <div className={styles.cont}>
-                  <div className={`${styles.lrsec} ${styles.singleCol} ${!showComments ? styles.lrsecFull : ""}`}>
 
                   {/* Instructions */}
                   <section className={styles.block}>
