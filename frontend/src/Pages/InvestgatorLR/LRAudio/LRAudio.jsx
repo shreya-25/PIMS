@@ -90,6 +90,27 @@ const confirmDeleteAudio = async () => {
   }
 };
 
+// basic URL check
+const isHttpUrl = (s) => /^https?:\/\/\S+$/i.test((s || "").trim());
+
+function getMissingAudioFields({ audioData, file, isEditing }) {
+  const missing = [];
+
+  // hard-required
+  if (!audioData.leadReturnId?.trim())     missing.push("Narrative Id");
+  if (!audioData.dateAudioRecorded?.trim()) missing.push("Date Audio Recorded");
+
+  // upload-mode rules
+  if (audioData.isLink) {
+    if (!isHttpUrl(audioData.link)) missing.push("Link (valid URL)");
+  } else {
+    // file mode: require file on create; optional on edit
+    if (!isEditing && !file) missing.push("Audio File");
+  }
+
+  return missing;
+}
+
     
   const { leadDetails, caseDetails } = location.state || {};
   const [editingId, setEditingId] = useState(null);
@@ -447,17 +468,16 @@ const goToViewLR = () => {
   
 
   const handleAddAudio = async () => {
-  // 1️⃣ Validation:
-  if (
-    !audioData.leadReturnId ||
-  !audioData.dateAudioRecorded ||
-    // If link mode, require a link; if file mode, file is optional now
-   (audioData.isLink && !audioData.link.trim())
- ) {
-    setAlertMessage("Please fill in all required fields and either select a file or enter a valid link.");
+  
+     const missing = getMissingAudioFields({ audioData, file, isEditing: false });
+  if (missing.length) {
+    setAlertMessage(
+      `Please fill the required field${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}.`
+    );
     setAlertOpen(true);
     return;
   }
+
 
   // 2️⃣ Build FormData
   const formData = new FormData();

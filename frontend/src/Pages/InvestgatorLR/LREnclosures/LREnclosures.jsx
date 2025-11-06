@@ -59,6 +59,24 @@ const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
         navigate(route, { state: { caseDetails } });
     };
 
+    function getMissingFields({ enclosureData, file, editIndex }) {
+  const missing = [];
+
+  // Always require Narrative Id
+  if (!enclosureData.returnId?.trim()) missing.push("Narrative Id");
+
+  // Optional: validate upload choice
+  if (enclosureData.isLink) {
+    if (!enclosureData.link?.trim()) missing.push("Link");
+  } else {
+    // Require a file only when creating (for edits, replacing file is optional)
+    if (editIndex === null && !file) missing.push("File");
+  }
+
+  return missing;
+}
+
+
 
   const handleInputChange = (field, value) => {
     setEnclosureData({ ...enclosureData, [field]: value });
@@ -448,6 +466,15 @@ const goToViewLR = () => {
 
 
   const handleSave = async () => {
+
+    const missing = getMissingFields({ enclosureData, file, editIndex });
+  if (missing.length) {
+    setAlertMessage(
+      `Please fill the required field${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}.`
+    );
+    setAlertOpen(true);
+    return;
+  }
   
     const fd = new FormData();
     if (!enclosureData.isLink && file) {
