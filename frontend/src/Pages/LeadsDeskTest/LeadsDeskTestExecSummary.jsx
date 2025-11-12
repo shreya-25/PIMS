@@ -1339,7 +1339,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
            "");
 
     return (
-      <div key={leadIndex} className={`lead-section ${isDeleted ? "is-deleted" : ""}`}>
+      <div key={leadIndex} className={`lead-section ${isDeleted ? "is-deleted" : ""}`} onClick={(e) => handleLeadCardClick(e, lead)} >
         <div className="leads-container">
           {/* Lead header */}
           <table className="lead-details-table">
@@ -2015,7 +2015,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
 
   {/* Single straight-line checkbox row */}
   <div className="reportTargetRow" style={{display:'flex',gap:20,alignItems:'center',flexWrap:'wrap'}}>
-    <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:8, fontSize: '20px'}}>
+    <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:2, fontSize: '20px'}}>
       <input
         type="checkbox"
         checked={reportType === 'all'}
@@ -2024,7 +2024,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
       <span className="summaryOptionText1">All leads</span>
     </label>
 
-    <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+    <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:2}}>
       <input
         type="checkbox"
         checked={reportType === 'single'}
@@ -2033,7 +2033,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
       <span className="summaryOptionText1">Single lead</span>
     </label>
 
-     <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+     <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:2}}>
       <input
         type="checkbox"
         checked={reportType === 'selected'}
@@ -2044,7 +2044,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
 
     
 
-    <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+    <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:2}}>
       <input
         type="checkbox"
         checked={reportType === 'hierarchy'}
@@ -2053,7 +2053,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
       <span className="summaryOptionText1">Lead hierarchy</span>
     </label>
 
-    <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+    <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:2}}>
       <input
         type="checkbox"
         checked={reportType === 'timeline'}
@@ -2061,7 +2061,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
       />
       <span className="summaryOptionText1">Timeline leads</span>
     </label>
-     <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:8}}>
+     <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:2}}>
       <input
         type="checkbox"
         checked={reportType === 'flagged'}
