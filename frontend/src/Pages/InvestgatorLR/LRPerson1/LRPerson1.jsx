@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect} from 'react';
 
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import FootBar from '../../../components/FootBar/FootBar';
 import Navbar from '../../../components/Navbar/Navbar';
 import './LRPerson1.css';

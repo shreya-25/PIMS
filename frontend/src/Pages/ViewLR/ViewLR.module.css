@@ -1,36 +1,72 @@
 /* ====== ViewLR Layout Chrome ====== */
-.viewlr-root {
+:root {
+  /* match your actual navbar height */
+  --navbar-height: 56px;
+  --topmenu-height: 56px;
+}
+
+/* shell with left + right columns */
+.LRI_Content9 {
+  display: flex;
+  height: calc(100vh - var(--navbar-height));
+  overflow: hidden;             /* prevent page-level scroll */
+}
+
+/* left column (the one that should contain the sticky bar) */
+.left-content9 {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+}
+
+/* inner column that hosts sticky + scroll area */
+.lrsec {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  background: #fafafa;
-}
-.left-content9
-{
+  min-height: 0;                /* allow child to overflow: auto */
   width: 100%;
 }
 
-/* Shell: Sidebar (left) + Main (center) + CommentBar (right) */
-.viewlr-shell {
-  display: flex;
-  min-height: calc(100vh - 56px); /* minus Navbar height (adjust if yours differs) */
-}
-
-/* Your SideBar component sits first in the flex row; it controls its own width */
-
-/* Main content column (center) */
-.viewlr-main {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;           /* prevent overflow from long content */
-  border-left: 1px solid #efefef;
+/* ✅ sticky top menu scoped to the left column */
+.top-menu2 {
+  position: sticky;
+  top: var(--navbar-height);    /* sits right under fixed Navbar */
+  z-index: 5;                   /* above content, below modals */
   background: #fff;
+  border-bottom: 1px solid #eaeaea;
+  height: var(--topmenu-height);
+  width: 50%;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  box-sizing: border-box;
+  margin-left: -30px;
+  margin-top: 20px;
 }
 
-.lrcontent
-{
-  display:flex;
+.dr-title h3{
+  margin: 0;
+}
+
+/* items inside the bar */
+.top-menu1 .menu-items {
+  display: flex;
+  gap: 16px;
+  white-space: nowrap;
+  overflow: auto hidden;        /* horizontal scroll if many */
+  font-size: 15px;
+}
+
+.top-menu1 .menu-item { padding: 10px 6px; cursor: pointer; }
+.top-menu1 .menu-item.active { font-weight: 600; border-bottom: 2px solid currentColor; }
+
+/* ✅ only this area scrolls; keeps sticky bar in place */
+.scrollOnly {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;                /* keep your current spacing */
+  box-sizing: border-box;
 }
 /* ====== Case & Lead breadcrumb ====== */
 .caseandleadinfo {
@@ -175,9 +211,10 @@
 
 .lrsec {
   flex: 1 1 auto;      /* grow to fill */
-  min-width: 0;
-  padding: 0 16px;
+  min-width: 78%;
+  /* padding: 0 16px; */
   margin-bottom: 20px;
+  /* margin-top:20px; */
   /* remove: width: 80%; */
 }
 

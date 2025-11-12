@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect} from 'react';
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 
 import Navbar from "../../../components/Navbar/Navbar";
 import "./LRScratchpad.css"; // Custom CSS file for Scratchpad styling
@@ -807,9 +807,27 @@ Case Page
           </div> */}
                <div className="caseandleadinfo">
           <h5 className = "side-title"> 
-             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
-               <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo} &gt; Lead Notes
-                 </p>
+             <div className="ld-head">
+                                        <Link to="/HomePage" className="crumb">PIMS Home</Link>
+                                        <span className="sep">{" >> "}</span>
+                                        <Link
+                                          to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+                                          state={{ caseDetails: selectedCase }}
+                                          className="crumb"
+                                        >
+                                          Case: {selectedCase.caseNo || ""}
+                                        </Link>
+                                        <span className="sep">{" >> "}</span>
+                                        <Link
+                                          to={"/LeadReview"}
+                                          state={{ leadDetails: selectedLead }}
+                                          className="crumb"
+                                        >
+                                          Lead: {selectedLead.leadNo || ""}
+                                        </Link>
+                                        <span className="sep">{" >> "}</span>
+                                        <span className="crumb-current" aria-current="page">Lead Notes</span>
+                                      </div>
              </h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
@@ -970,7 +988,7 @@ Case Page
     </button>
   </div>
 )} */}
-        <Comment tag= "Scratchpad"/>
+        {/* <Comment tag= "Scratchpad"/> */}
 
 </div>
 

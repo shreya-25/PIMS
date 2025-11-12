@@ -437,7 +437,7 @@ const actuallyDoSubmitReport = async () => {
             </div>
           </div> */}
 
-            <div className="LRI_Content9">
+            <div className={styles.LRI_Content9}>
                     {/* <SideBar  activePage="CasePageManager" /> */}
 
           <div className="left-content9">
@@ -521,7 +521,30 @@ const actuallyDoSubmitReport = async () => {
                   {/* Instructions */}
                   <section className={styles.block}>
                           <header className="dr-toolbar">
-          <div className="dr-title">Lead Return Review</div>
+          <div className="dr-title"> 
+            {/* <div className="ld-head">
+                                     <Link to="/HomePage" className="crumb">PIMS Home</Link>
+                                     <span className="sep">{" >> "}</span>
+                                     <Link
+                                       to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+                                       state={{ caseDetails: selectedCase }}
+                                       className="crumb"
+                                     >
+                                       Case: {selectedCase.caseNo || ""}
+                                     </Link>
+                                     <span className="sep">{" >> "}</span>
+                                     <Link
+                                       to={"/LeadReview"}
+                                       state={{ leadDetails: selectedLead }}
+                                       className="crumb"
+                                     >
+                                       Lead: {selectedLead.leadNo || ""}
+                                     </Link>
+                                     <span className="sep">{" >> "}</span>
+                                     <span className="crumb-current" aria-current="page">Review Lead Return</span>
+                                   </div> */}
+                                     Lead Return Review
+                                   </div>
           <div className="">
               {canShowSubmit && (
                     <button className="approve-btn-lr" onClick={handleSubmitReport}>
@@ -557,6 +580,8 @@ const actuallyDoSubmitReport = async () => {
                         </div>
 
                   </section>
+
+                  <div className={styles.scrollOnly}>
 
                   {/* Lead Returns */}
                   <section className={styles.block}>
@@ -1043,6 +1068,7 @@ const actuallyDoSubmitReport = async () => {
                       );
                     })}
                   </section>
+                  </div>
                 </div>
 
                 {/* Right rail: comments stays active even when the sheet is open */}
@@ -1051,7 +1077,8 @@ const actuallyDoSubmitReport = async () => {
                 </div> */}
 
              {showComments && (
-  <aside className={styles.commentSec}>
+  <aside className={styles.commentSec} 
+  style={{ '--cbar-list-height': 'calc(100vh - 40vh)' }}>
     <CommentBar
       combined
       status={status}

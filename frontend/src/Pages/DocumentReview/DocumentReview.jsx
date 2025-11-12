@@ -1,6 +1,8 @@
 
 import { useMemo, useContext, useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import Navbar from '../../components/Navbar/Navbar';
+
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { Document, Page, pdfjs } from "react-pdf";
 import CommentBar from "../../components/CommentBar/CommentBar";
 import { CaseContext } from "../CaseContext";
@@ -61,6 +63,15 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
 
   const styles = useMemo(() => ({ zoomLabel: { minWidth: 56, textAlign: "center" } }), []);
   const confirmActionRef = useRef(null);
+
+  const LOCKED_STATUSES = new Set(["completed", "closed", "returned"]);
+const isCommentsLocked = LOCKED_STATUSES.has(String(status || "").toLowerCase());
+
+const normStatus  = String(status || "").toLowerCase();
+const isReturned  = normStatus === "returned";
+const isCompleted = normStatus === "completed";
+const isClosed    = normStatus === "closed";
+
 
   const handleApprove = () => {
      confirmActionRef.current = () => submitReturnAndUpdate('complete');
@@ -387,25 +398,54 @@ const humanizeStatus = (uiStatus) =>
 
   return (
     <div className="dr-shell">
+      {/* <Navbar/> */}
       <section className="dr-left">
         <header className="dr-toolbar">
-          <div className="dr-title">Document Review</div>
+          <div className="dr-title"><div className="ld-head">
+                           <Link to="/HomePage" className="crumb">PIMS Home</Link>
+                           <span className="sep">{" >> "}</span>
+                           <Link
+                             to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+                             state={{ caseDetails: selectedCase }}
+                             className="crumb"
+                           >
+                             Case
+                           </Link>
+                           <span className="sep">{" >> "}</span>
+                           <Link
+                             to={"/LeadReview"}
+                             state={{ leadDetails: selectedLead }}
+                             className="crumb"
+                           >
+                             Lead
+                           </Link>
+                           <span className="sep">{" >> "}</span>
+                           <span className="crumb-current" aria-current="page">Document Review</span>
+                         </div></div>
           <div className="dr-zoom">
             <button className="dr-download" onClick={handleDownload}>Download PDF</button>
             <button onClick={() => setScale((s) => Math.max(0.6, +(s - 0.1).toFixed(2)))}>−</button>
             <div aria-live="polite" style={styles.zoomLabel}>{(scale * 100).toFixed(0)}%</div>
             <button onClick={() => setScale((s) => Math.min(2, +(s + 0.1).toFixed(2)))}>+</button>
           </div>
-          
-           {(["Completed","Closed"].includes(status)) ? (
-   <button className="approve-btn-lr" onClick={handleReopen}>Reopen</button>
- ) : (
-   <div className="btn-sec-dr">
-     <button className="approve-btn-lr" onClick={handleApprove}>Approve</button>
-     <button className="return-btn-lr"  onClick={handleReturn}>Return</button>
-     <button className="close-btn-lr"   onClick={() => setShowCloseModal(true)}>Close</button>
-   </div>
- )}
+          {(isCompleted || isClosed) ? (
+  // Completed/Closed → only Reopen
+  <button className="approve-btn-lr" onClick={handleReopen}>Reopen</button>
+) : isReturned ? (
+  // Returned → only Approve and Close
+  <div className="btn-sec-dr">
+    <button className="approve-btn-lr" onClick={handleApprove}>Approve</button>
+    <button className="close-btn-lr"   onClick={() => setShowCloseModal(true)}>Close</button>
+  </div>
+) : (
+  // Default → Approve, Return, Close
+  <div className="btn-sec-dr">
+    <button className="approve-btn-lr" onClick={handleApprove}>Approve</button>
+    <button className="return-btn-lr"  onClick={handleReturn}>Return</button>
+    <button className="close-btn-lr"   onClick={() => setShowCloseModal(true)}>Close</button>
+  </div>
+)}
+
 
         </header>
 
@@ -448,6 +488,8 @@ const humanizeStatus = (uiStatus) =>
         threadKey={activeThreadKey}
         // Optional extra metadata (safe to ignore if CommentBar doesn’t read them)
         visibility={isPublicPhase ? "public" : "private"}
+          disabled={isCommentsLocked}
+        lockReason={status}
         owner={currentUser}
       />
     </div>

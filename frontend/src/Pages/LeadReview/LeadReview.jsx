@@ -203,19 +203,42 @@ const normalizeAssignedTo = (arr) =>
   );
 
 // compute the aggregate lead status from per-officer statuses
-const computeLeadStatus = (assigned) => {
+// const computeLeadStatus = (assigned) => {
+//   const list = normalizeAssignedTo(assigned);
+//   if (list.length === 0) return "Assigned";
+//   const statuses = list.map(a => a.status);
+//   const allAccepted = statuses.every(s => s === "accepted");
+//   const allDeclined = statuses.every(s => s === "declined");
+//   const anyDeclined = statuses.includes("declined");
+
+//   if (allAccepted) return "Accepted";
+//   if (allDeclined) return "Rejected";
+//   if (anyDeclined) return "To Reassign";
+//   return "Assigned";
+// };
+
+const computeLeadStatus = (assigned, primaryUser) => {
   const list = normalizeAssignedTo(assigned);
+
+  // ✅ If primary accepted, overall status is Accepted
+  if (primaryUser) {
+    const pri = list.find(a => a.username === primaryUser);
+    if (pri?.status === "accepted") return "Accepted";
+  }
+
   if (list.length === 0) return "Assigned";
-  const statuses = list.map(a => a.status);
+
+  const statuses    = list.map(a => a.status);
   const allAccepted = statuses.every(s => s === "accepted");
   const allDeclined = statuses.every(s => s === "declined");
   const anyDeclined = statuses.includes("declined");
 
-  if (allAccepted) return "Accepted";
-  if (allDeclined) return "Rejected";
-  if (anyDeclined) return "To Reassign";
+  if (allAccepted)   return "Accepted";
+  if (allDeclined)   return "Rejected";
+  if (anyDeclined)   return "To Reassign";
   return "Assigned";
 };
+
 
 
 // const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = leadData) => {
@@ -681,6 +704,8 @@ const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = 
 //   }
 // };
 
+
+
 // who’s still "active" = not declined (pending or accepted)
 const nonDeclinedUsernames = (assigned) =>
   normalizeAssignedTo(assigned)
@@ -742,6 +767,34 @@ const autoPromotePrimaryIfSingleActive = async (leadObj) => {
 
 
 
+// const acceptLead = async (leadNo, description) => {
+//   try {
+//     const token = localStorage.getItem("token");
+//     const { data } = await api.put(
+//       `/api/lead/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/assignedTo`,
+//       { officerUsername: signedInOfficer, status: "accepted" },
+//       { headers: { Authorization: `Bearer ${token}` } }
+//     );
+
+//     const lead = data.lead;
+//     setLeadData(lead);
+//     setLeadStatus?.(lead.leadStatus);
+
+//      await autoPromotePrimaryIfSingleActive(lead);
+
+//     setAlertMessage(
+//       lead.leadStatus === "Accepted"
+//         ? "All officers accepted. Lead is 'Accepted'."
+//         : "You accepted. Waiting on others."
+//     );
+//     setAlertOpen(true);
+//   } catch (error) {
+//     console.error("Accept failed:", error.response?.data || error);
+//     setAlertMessage("Failed to accept lead.");
+//     setAlertOpen(true);
+//   }
+// };
+
 const acceptLead = async (leadNo, description) => {
   try {
     const token = localStorage.getItem("token");
@@ -751,18 +804,38 @@ const acceptLead = async (leadNo, description) => {
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    // Server returns the updated lead (with events + recomputed leadStatus)
-    const lead = data.lead;
+    let lead = data.lead;
+    const primary = lead.primaryInvestigator || lead.primaryOfficer;
+    const meIsPrimary = signedInOfficer === primary;
+
+    // If I'm primary → force overall status to Accepted
+    if (meIsPrimary && lead.leadStatus !== "Accepted") {
+      const headers = { headers: { Authorization: `Bearer ${token}` } };
+      const updated = {
+        ...lead,
+        leadStatus: "Accepted",
+      };
+
+      await api.put(
+        `/api/lead/update/${lead.leadNo}/${encodeURIComponent(lead.description)}/${lead.caseNo}/${encodeURIComponent(lead.caseName)}`,
+        updated,
+        headers
+      );
+      lead = updated;
+    }
+
     setLeadData(lead);
     setLeadStatus?.(lead.leadStatus);
 
-     await autoPromotePrimaryIfSingleActive(lead);
+    await autoPromotePrimaryIfSingleActive(lead); // keep your existing helper
 
     setAlertMessage(
-      lead.leadStatus === "Accepted"
-        ? "All officers accepted. Lead is 'Accepted'."
-        : "You accepted. Waiting on others."
-    );
+  lead.leadStatus === "Accepted"
+    ? (meIsPrimary
+        ? "As the Primary Investigator, your acceptance has set the lead status to “Accepted”."
+        : "All assignees have accepted. Lead status is “Accepted”.")
+    : "Acceptance received. Pending responses from remaining assignees."
+);
     setAlertOpen(true);
   } catch (error) {
     console.error("Accept failed:", error.response?.data || error);
@@ -913,7 +986,8 @@ console.log("SL, SC", selectedLead, selectedCase);
     ...item,
     assignedOfficer: item.assignedOfficer || [],
     assignedTo: assignedNorm,
-    leadStatus: item.leadStatus || computeLeadStatus(assignedNorm),
+    // leadStatus: item.leadStatus || computeLeadStatus(assignedNorm),
+    leadStatus: item.leadStatus || computeLeadStatus(assignedNorm, item.primaryInvestigator || item.primaryOfficer),
     primaryOfficer: item.primaryInvestigator || "",
   });
 
@@ -1677,6 +1751,25 @@ const submitDeleteWithReason = async (reason) => {
   }
 };
 
+const assignmentHoverText = React.useMemo(() => {
+  const list = normalizeAssignedTo(leadData?.assignedTo);
+  if (!list.length) return "No officers assigned.";
+
+  const icon = (s) =>
+    s === "accepted" ? "✓" :
+    s === "declined" ? "✕" :
+    "•"; // pending
+
+  const display = (u) => {
+    const m = allUsers.find(x => x.username === u);
+    return m ? `${m.firstName} ${m.lastName} (${m.username})` : u;
+  };
+
+  // one line per officer
+  return list
+    .map(({ username, status }) => `${icon(status)} ${display(username)} — ${status}`)
+    .join("\n");
+}, [leadData?.assignedTo, allUsers]);
 
 
 
@@ -1735,7 +1828,7 @@ const submitDeleteWithReason = async (reason) => {
        <SideBar  activePage="LeadReview" />
      
         {/* Content Area */}
-        <div className="lead-main-content">
+        <div className={`lead-main-content ${canWorkOnReturn ? 'has-menu' : ''}`}>
           {/* Page Header */}
 
             {canWorkOnReturn && (
@@ -1868,7 +1961,7 @@ const submitDeleteWithReason = async (reason) => {
                   )} */}
                 </div>
                
-{showDecisionBlock && (
+{/* {showDecisionBlock && (
     <div
     className="accept-reject-section"
     style={{
@@ -1899,7 +1992,34 @@ const submitDeleteWithReason = async (reason) => {
 </button>
     </div>
   </div>
+)} */}
+
+{showDecisionBlock && (
+  <div className="accept-reject-section">
+    <div className = "acceptance-head">
+    <h3 className="decision-title">Do you want to Accept / Reject this lead?</h3>
+    </div>
+
+    <div className="decision-actions">
+      <button
+        className="btn-accept"
+        onClick={() =>
+          acceptLead(leadData.leadNo, leadData.description)
+        }
+      >
+        Accept
+      </button>
+
+      <button
+        className="btn-reject"
+        onClick={() => setDeclineOpen(true)}
+      >
+        Reject
+      </button>
+    </div>
+  </div>
 )}
+
 
 
 
@@ -2439,36 +2559,44 @@ const submitDeleteWithReason = async (reason) => {
             )} */}
 
             {canWorkOnReturn && (
-  <div className="lead-tracker-container">
-    {statuses.map((status, idx) => {
-      const hideNumber = status === "Lead Reopened" || status === "Lead Closed";
-      return (
-        <div
-          key={idx}
-          className="lead-tracker-row"
-          onClick={() => {
-            if (status === "Lead Return Submitted") handleNavigation("/LRInstruction");
-            if (status === "Lead Created") setEventsModalOpen(true);
-          }}
-          style={{ cursor: status === "Lead Return Submitted" ? "pointer" : "default" }}
-        >
-          {/* Circle (number hidden for Reopened/Closed) */}
-          <div className={`status-circle ${idx <= currentStatusIndex ? "active" : ""}`}>
-            {!hideNumber && <span className="status-number">{idx + 1}</span>}
-          </div>
+ <div className="lead-tracker-container">
+  {statuses.map((status, idx) => {
+    const hideNumber = status === "Lead Reopened" || status === "Lead Closed";
+    const isAcceptedStep = status === "Lead Accepted";
+    const tip = isAcceptedStep ? assignmentHoverText : undefined;
 
-          {/* Draw connector line except after the last item */}
-          {idx < statuses.length && (
-            <div className={`status-line ${idx < currentStatusIndex ? "active" : ""}`} />
-          )}
-
-          <div className={`status-text-box ${idx === currentStatusIndex ? "highlighted" : ""}`}>
-            {status}
-          </div>
+    return (
+      <div
+        key={idx}
+        className="lead-tracker-row"
+        onClick={() => {
+          if (status === "Lead Return Submitted") handleNavigation("/LRInstruction");
+          if (status === "Lead Created") setEventsModalOpen(true);
+        }}
+        style={{ cursor: status === "Lead Return Submitted" ? "pointer" : "default" }}
+      >
+        {/* Circle */}
+        <div className={`status-circle ${idx <= currentStatusIndex ? "active" : ""}`}>
+          {!hideNumber && <span className="status-number">{idx + 1}</span>}
         </div>
-      );
-    })}
-  </div>
+
+        {/* Line */}
+        {idx < statuses.length && (
+          <div className={`status-line ${idx < currentStatusIndex ? "active" : ""}`} />
+        )}
+
+        {/* ✅ Tooltip ONLY on Lead Accepted */}
+        <div
+          className={`status-text-box ${idx === currentStatusIndex ? "highlighted" : ""} ${isAcceptedStep ? "has-tip" : ""}`}
+          {...(isAcceptedStep ? { "data-tip": tip } : {})}
+        >
+          {status}
+        </div>
+      </div>
+    );
+  })}
+</div>
+
 )}
 
 

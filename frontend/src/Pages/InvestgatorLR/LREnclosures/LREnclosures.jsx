@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef, useMemo} from 'react';
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import Navbar from '../../../components/Navbar/Navbar';
 import "./LREnclosures.css"; // Custom CSS file for Enclosures styling
 import FootBar from '../../../components/FootBar/FootBar';
@@ -837,9 +837,27 @@ const performDeleteEnclosure = async () => {
               
                <div className="caseandleadinfo">
           <h5 className = "side-title"> 
-             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
-               <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo} &gt; Lead Enclosures
-                 </p>
+            <div className="ld-head">
+                                       <Link to="/HomePage" className="crumb">PIMS Home</Link>
+                                       <span className="sep">{" >> "}</span>
+                                       <Link
+                                         to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+                                         state={{ caseDetails: selectedCase }}
+                                         className="crumb"
+                                       >
+                                         Case: {selectedCase.caseNo || ""}
+                                       </Link>
+                                       <span className="sep">{" >> "}</span>
+                                       <Link
+                                         to={"/LeadReview"}
+                                         state={{ leadDetails: selectedLead }}
+                                         className="crumb"
+                                       >
+                                         Lead: {selectedLead.leadNo || ""}
+                                       </Link>
+                                       <span className="sep">{" >> "}</span>
+                                       <span className="crumb-current" aria-current="page">Lead Enclosures</span>
+                                     </div>
              </h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
@@ -1117,7 +1135,7 @@ const performDeleteEnclosure = async () => {
     </button>
   </div>
 )} */}
-        <Comment tag= "Enclosures"/>
+        {/* <Comment tag= "Enclosures"/> */}
       </div>
       </div>
       <FootBar
