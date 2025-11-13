@@ -1442,7 +1442,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                     </tr>
 
                     {/* LR meta */}
-                    <tr>
+                    {/* <tr>
                       <td colSpan={2} style={{ paddingTop: 6 }}>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10 }}>
                           <div><strong>Entered By:</strong><div>{_fmt(returnItem.enteredBy || returnItem.createdBy)}</div></div>
@@ -1452,7 +1452,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                           <div><strong>Status:</strong><div>{_fmt(returnItem.status || returnItem.leadReturnStatus)}</div></div>
                         </div>
                       </td>
-                    </tr>
+                    </tr> */}
 
                     {/* Counts row (debug/visibility) */}
 {/* <tr>
@@ -1699,7 +1699,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                     )}
 
                     {/* Pictures */}
-                    {Array.isArray(returnItem.pictures) && returnItem.pictures.length > 0 && (
+                    {/* {Array.isArray(returnItem.pictures) && returnItem.pictures.length > 0 && (
                       <tr>
                         <td colSpan={2}>
                           <div className="person-section">
@@ -1733,7 +1733,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                           </div>
                         </td>
                       </tr>
-                    )}
+                    )} */}
 
                     {/* Audio */}
                     {Array.isArray(returnItem.audio) && returnItem.audio.length > 0 && (
