@@ -20,6 +20,8 @@ const CommentBar = forwardRef(function CommentBar(
     leadName: pLeadName,
     tag = "ViewLR",
     autoFocus = true,
+    disabled = false, 
+    lockReason = "", 
   },
   ref
 ) {
@@ -44,6 +46,8 @@ const CommentBar = forwardRef(function CommentBar(
   const enteredBy = localStorage.getItem("loggedInUser") || "Unknown";
 
   const sendIcon = `${process.env.PUBLIC_URL}/Materials/send.png`;
+
+  const isDisabled = disabled || !ready;  
 
   // ---- Fetch (strictly scoped to case+lead+tag) ----
   const fetchComments = useCallback(async () => {
@@ -82,7 +86,7 @@ const CommentBar = forwardRef(function CommentBar(
   // ---- Save (create/update) with strict scope ----
   const saveDraft = async () => {
     const text = draft.trim();
-    if (!text || !ready) return;
+     if (isDisabled || !text) return; 
 
     try {
       if (editingId) {
@@ -118,6 +122,7 @@ const CommentBar = forwardRef(function CommentBar(
   };
 
   const startEdit = (row) => {
+    if (isDisabled) return; 
     setEditingId(row._id);
     setDraft(row.comment || "");
     setTimeout(() => inputRef.current?.focus(), 0);
@@ -129,6 +134,7 @@ const CommentBar = forwardRef(function CommentBar(
   };
 
   const onKeyDown = (e) => {
+    if (isDisabled) return; 
     if (e.key === "Enter") {
       e.preventDefault();
       saveDraft();
@@ -194,14 +200,20 @@ const CommentBar = forwardRef(function CommentBar(
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={onKeyDown}
-            disabled={!ready}
+            disabled={isDisabled}  
+            aria-disabled={isDisabled}
           />
           <button
             type="button"
             className="cbar__sendBtn"
             onClick={saveDraft}
-            disabled={!draft.trim() || !ready}
-            title="Send (Ctrl+Enter)"
+            disabled={isDisabled || !draft.trim()} 
+            aria-disabled={isDisabled || !draft.trim()}
+            title={
+              isDisabled
+                ? (lockReason ? `Disabled — ${lockReason}` : "Disabled")
+                : "Send (Enter)"
+            }
           >
             {/* simple send icon (can swap with svg) */}
             {/* <svg

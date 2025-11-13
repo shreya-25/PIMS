@@ -131,7 +131,8 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   gap: 10px;
   /* background-color: #3333330e; */
-  background-color: rgba(12, 31, 32, 0.096);
+  /* background-color: rgba(12, 31, 32, 0.096); */
+  background-color: #fff;
   /* margin: 15px; */
 }
 

@@ -306,12 +306,12 @@ function drawStructuredLeadDetails(doc, x, y, lead) {
   const padding = 5;
 
   // Header Row
-  const headers = ["Lead Origin:", "Assigned By","Assigned Date:", "Completed Date:"];
+  const headers = ["Lead Origin:", "Assigned By","Assigned Date:", "Submitted Date:"];
   const values = [
     lead.parentLeadNo ? lead.parentLeadNo.join(", ") : "N/A",
     lead.assignedBy ? lead.assignedBy : "N/A",
     lead.assignedDate ? formatDate(lead.assignedDate) : "N/A",
-    lead.completedDate ? formatDate(lead.completedDate) : "N/A",
+    lead.submittedDate ? formatDate(lead.submittedDate) : "N/A",
   ];
 
   let currX = x;

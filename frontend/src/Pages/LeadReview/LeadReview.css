@@ -68,6 +68,10 @@
   box-sizing: border-box;
 }
 
+.lead-main-content.has-menu{
+  padding-top: calc(var(--nav-h) + var(--menu-h));
+}
+
 
 .case-header-leadReview
 {
@@ -456,11 +460,6 @@
   width: 95%;
 }
 
-.accept-reject-section h3{
-
-margin: 0px 0px 8px 0px;
-}
-
 .events-modal__backdrop {
   position: fixed; inset: 0;
   background: rgba(0,0,0,0.45);
@@ -575,3 +574,111 @@ margin: 0px 0px 8px 0px;
 
 .elog-body { flex:1; min-width:0; }
 .elog-line { font-weight:500; line-height:1.35; font-size:20px; }
+
+/* Generic tooltip */
+.has-tip {
+  position: relative;
+}
+
+/* Show tooltip on hover/focus */
+.has-tip:hover::after,
+.has-tip:focus-visible::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 0;            /* tweak as needed */
+  top: 100%;          /* below the element */
+  transform: translateY(8px);
+  padding: 8px 10px;
+  max-width: 320px;
+  white-space: pre;   /* preserves \n lines */
+  background: #111;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.35;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+  z-index: 9999;
+  pointer-events: none;  /* don’t block mouse */
+  opacity: 0.95;
+}
+
+/* Optional small arrow */
+.has-tip:hover::before,
+.has-tip:focus-visible::before {
+  content: "";
+  position: absolute;
+  left: 10px;         /* aligns with bubble */
+  top: 100%;
+  transform: translateY(2px);
+  border-width: 6px;
+  border-style: solid;
+  border-color: #111 transparent transparent transparent;
+  z-index: 10000;
+  pointer-events: none;
+}
+
+/* Outer container */
+.accept-reject-section {
+  /* margin: 12px 0; */
+  padding: 8px;
+  border: 1px solid #dcdcdc;
+  border-radius: 10px;
+  background-color: #fafafa;
+  display: flex;
+  align-items: center; 
+  gap: 16px;
+}
+
+/* Center the heading */
+.acceptance-head {
+  display: flex;
+  justify-content: center;
+}
+
+/* Heading style */
+.decision-title {
+  font-size: 18px;
+  font-weight: 600;
+  /* padding: 8px; */
+  margin: 0;
+  text-align: center;
+  width: fit-content;
+}
+
+/* Button Row */
+.decision-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+/* Buttons */
+.btn-accept {
+  background-color: #2c7be5;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  font-size: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-accept:hover {
+  background-color: #1a68d1;
+}
+
+.btn-reject {
+  background-color: #e74c3c;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  font-size: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-reject:hover {
+  background-color: #cf3e30;
+}

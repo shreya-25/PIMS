@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useMemo} from 'react';
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 
 import Navbar from '../../../components/Navbar/Navbar';
 import './LRTimeline.css';
@@ -57,6 +57,27 @@ const alphabetToNumber = (str = "") => {
   let n = 0;
   for (let i = 0; i < str.length; i++) n = n * 26 + (str.charCodeAt(i) - 64);
   return n;
+};
+
+const handleNext = () => {
+  const role = selectedCase?.role || "";
+
+  // Case Manager / Detective Supervisor → Manage Lead Return (PDF flow)
+  if (role === "Case Manager" || role === "Detective Supervisor") {
+    if (!isGenerating) handleViewLeadReturn(); // prevent double click during generation
+    return;
+  }
+
+  // Investigators (both primary and non-primary) → ViewLR (submit/review)
+  if (role === "Investigator") {
+    goToViewLR();
+    return;
+  }
+
+  // Fallback: just go to LeadReview if role is unknown
+  navigate("/LeadReview", {
+    state: { caseDetails: selectedCase, leadDetails: selectedLead },
+  });
 };
 
 const [confirmOpen, setConfirmOpen] = useState(false);
@@ -159,6 +180,10 @@ useEffect(() => { sessionStorage.setItem(listKey, JSON.stringify(timelineEntries
 
 
 const required = (s) => !!String(s ?? "").trim();
+
+// put this near other handlers, after isPrimaryInvestigator is defined
+
+
 
 function getMissingTimelineFields(ne, { isEditing = false } = {}) {
   const miss = [];
@@ -987,9 +1012,27 @@ Case Page
 
                <div className="caseandleadinfo">
           <h5 className = "side-title"> 
-             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
-               <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo} &gt; Lead Timelines
-                 </p>
+            <div className="ld-head">
+                                       <Link to="/HomePage" className="crumb">PIMS Home</Link>
+                                       <span className="sep">{" >> "}</span>
+                                       <Link
+                                         to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+                                         state={{ caseDetails: selectedCase }}
+                                         className="crumb"
+                                       >
+                                         Case: {selectedCase.caseNo || ""}
+                                       </Link>
+                                       <span className="sep">{" >> "}</span>
+                                       <Link
+                                         to={"/LeadReview"}
+                                         state={{ leadDetails: selectedLead }}
+                                         className="crumb"
+                                       >
+                                         Lead: {selectedLead.leadNo || ""}
+                                       </Link>
+                                       <span className="sep">{" >> "}</span>
+                                       <span className="crumb-current" aria-current="page">Lead Timeline</span>
+                                     </div>
              </h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
@@ -1197,7 +1240,7 @@ Case Page
   </div>
 )} */}
 
-          <Comment tag= "Timeline"/>
+          {/* <Comment tag= "Timeline"/> */}
         </div>
         </div>
       {/* <div className="form-buttons-timeline">
@@ -1205,7 +1248,10 @@ Case Page
           <button className="next-btn" onClick={() => handleNavigation("/LRFinish")}>Next</button>
           <button className="cancel-btn">Cancel</button>
         </div> */}
-
+      <FootBar
+        onPrevious={() => navigate(-1)} // Takes user to the last visited page
+        onNext={handleNext} 
+      />
        
     </div>
     </div>

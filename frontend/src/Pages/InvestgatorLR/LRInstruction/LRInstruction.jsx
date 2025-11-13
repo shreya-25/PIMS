@@ -1,6 +1,6 @@
 import FootBar from '../../../components/FootBar/FootBar';
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import ReactToPrint from 'react-to-print';
 import { pickHigherStatus } from '../../../utils/status'
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
@@ -552,8 +552,27 @@ console.log("isReadOnly", isReadOnly);
          </div> </div>
        <div className="caseandleadinfo">
           <h5 className = "side-title"> 
-               <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo} &gt; Lead Instruction
-                 </p>
+                <div className="ld-head">
+                           <Link to="/HomePage" className="crumb">PIMS Home</Link>
+                           <span className="sep">{" >> "}</span>
+                           <Link
+                             to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+                             state={{ caseDetails: selectedCase }}
+                             className="crumb"
+                           >
+                             Case: {selectedCase.caseNo || ""}
+                           </Link>
+                           <span className="sep">{" >> "}</span>
+                           <Link
+                             to={"/LeadReview"}
+                             state={{ leadDetails: selectedLead }}
+                             className="crumb"
+                           >
+                             Lead: {selectedLead.leadNo || ""}
+                           </Link>
+                           <span className="sep">{" >> "}</span>
+                           <span className="crumb-current" aria-current="page">Lead Instructions</span>
+                         </div>
              </h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
@@ -563,6 +582,8 @@ console.log("isReadOnly", isReadOnly);
 </h5>
 
           </div>
+
+          
 
 
         {/* Center Section */}

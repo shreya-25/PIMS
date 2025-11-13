@@ -414,46 +414,15 @@ const actuallyDoSubmitReport = async () => {
         onConfirm={() => setNotifyConfig(n => ({ ...n, open: false }))}
         onClose={() => setNotifyConfig(n => ({ ...n, open: false }))}
       />
-      
-      {/* <div className="styles.lrcontent"> */}
+    
+      <div className={styles.LRI_Content9}>
+        {/* <SideBar  activePage="CasePageManager" /> */}
 
-        {/* Main content */}
-        {/* <div className={styles.lrcontent}> */}
-          {/* Top menu (same pattern as LRFinish) */}
-          {/* <div className="top-menu" style={{ marginTop: 2, background: "#3333330e" }}>
-            <div className="menu-items" style={{ fontSize: 19 }}>
-              <span className="menu-item" onClick={() => go("/LRInstruction")}>Instructions</span>
-              <span className="menu-item" onClick={() => go("/LRReturn")}>Narrative</span>
-              <span className="menu-item" onClick={() => go("/LRPerson")}>Person</span>
-              <span className="menu-item" onClick={() => go("/LRVehicle")}>Vehicles</span>
-              <span className="menu-item" onClick={() => go("/LREnclosures")}>Enclosures</span>
-              <span className="menu-item" onClick={() => go("/LREvidence")}>Evidence</span>
-              <span className="menu-item" onClick={() => go("/LRPictures")}>Pictures</span>
-              <span className="menu-item" onClick={() => go("/LRAudio")}>Audio</span>
-              <span className="menu-item" onClick={() => go("/LRVideo")}>Videos</span>
-              <span className="menu-item" onClick={() => go("/LRScratchpad")}>Notes</span>
-              <span className="menu-item" onClick={() => go("/LRTimeline")}>Timeline</span>
-              <span className="menu-item active" onClick={() => go("/ViewLR")}>View All</span>
-            </div>
-          </div> */}
-
-            <div className="LRI_Content9">
-                    {/* <SideBar  activePage="CasePageManager" /> */}
-
-          <div className="left-content9">
+          <div className={styles.leftContent9}>
             {loading ? (
               <div className="loading">Loading…</div>
             ) : (
               <>
-              
-          {/* <div className="caseandleadinfo">
-            <h5 className="side-title">
-              PIMS &gt; Cases &gt; Lead #{leadNo} &gt; View All
-            </h5>
-            <h5 className="side-title">
-              Case: {caseName} &nbsp;|&nbsp; Lead: {leadName}
-            </h5>
-          </div> */}
 
        <div className={styles.cont}>
                   <div className={`${styles.lrsec} ${styles.singleCol} ${!showComments ? styles.lrsecFull : ""}`}>
@@ -521,7 +490,30 @@ const actuallyDoSubmitReport = async () => {
                   {/* Instructions */}
                   <section className={styles.block}>
                           <header className="dr-toolbar">
-          <div className="dr-title">Lead Return Review</div>
+          <div className="dr-title"> 
+            {/* <div className="ld-head">
+                                     <Link to="/HomePage" className="crumb">PIMS Home</Link>
+                                     <span className="sep">{" >> "}</span>
+                                     <Link
+                                       to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+                                       state={{ caseDetails: selectedCase }}
+                                       className="crumb"
+                                     >
+                                       Case: {selectedCase.caseNo || ""}
+                                     </Link>
+                                     <span className="sep">{" >> "}</span>
+                                     <Link
+                                       to={"/LeadReview"}
+                                       state={{ leadDetails: selectedLead }}
+                                       className="crumb"
+                                     >
+                                       Lead: {selectedLead.leadNo || ""}
+                                     </Link>
+                                     <span className="sep">{" >> "}</span>
+                                     <span className="crumb-current" aria-current="page">Review Lead Return</span>
+                                   </div> */}
+                                     Lead Return Review
+                                   </div>
           <div className="">
               {canShowSubmit && (
                     <button className="approve-btn-lr" onClick={handleSubmitReport}>
@@ -557,6 +549,8 @@ const actuallyDoSubmitReport = async () => {
                         </div>
 
                   </section>
+
+                  <div className={styles.scrollOnly}>
 
                   {/* Lead Returns */}
                   <section className={styles.block}>
@@ -1043,6 +1037,7 @@ const actuallyDoSubmitReport = async () => {
                       );
                     })}
                   </section>
+                  </div>
                 </div>
 
                 {/* Right rail: comments stays active even when the sheet is open */}
@@ -1051,7 +1046,8 @@ const actuallyDoSubmitReport = async () => {
                 </div> */}
 
              {showComments && (
-  <aside className={styles.commentSec}>
+  <aside className={styles.commentSec} 
+  style={{ '--cbar-list-height': 'calc(100vh - 40vh)' }}>
     <CommentBar
       combined
       status={status}

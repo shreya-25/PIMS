@@ -6,7 +6,7 @@ import VehicleModal from "../../../components/VehicleModal/VehicleModal";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import { useDataContext } from "../../Context/DataContext"; // Import Context
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import Comment from "../../../components/Comment/Comment";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
@@ -832,9 +832,27 @@ const goToViewLR = () => {
           </div> */}
             <div className="caseandleadinfo">
           <h5 className = "side-title"> 
-             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
-               <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo} &gt; Lead Vehicle
-                 </p>
+             <div className="ld-head">
+                                        <Link to="/HomePage" className="crumb">PIMS Home</Link>
+                                        <span className="sep">{" >> "}</span>
+                                        <Link
+                                          to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+                                          state={{ caseDetails: selectedCase }}
+                                          className="crumb"
+                                        >
+                                          Case: {selectedCase.caseNo || ""}
+                                        </Link>
+                                        <span className="sep">{" >> "}</span>
+                                        <Link
+                                          to={"/LeadReview"}
+                                          state={{ leadDetails: selectedLead }}
+                                          className="crumb"
+                                        >
+                                          Lead: {selectedLead.leadNo || ""}
+                                        </Link>
+                                        <span className="sep">{" >> "}</span>
+                                        <span className="crumb-current" aria-current="page">Lead Vehicles</span>
+                                      </div>
              </h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
@@ -1122,7 +1140,7 @@ const goToViewLR = () => {
   </div>
 )} */}
 
-        <Comment tag= "Vehicle"/>
+        {/* <Comment tag= "Vehicle"/> */}
 
 </div>
 </div>

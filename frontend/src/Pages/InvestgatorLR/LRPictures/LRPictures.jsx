@@ -5,7 +5,7 @@ import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import React, { useContext, useState, useEffect, useRef} from 'react';
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../../components/AlertModal/AlertModal";
@@ -974,9 +974,27 @@ Case Page
           </div> */}
                <div className="caseandleadinfo">
           <h5 className = "side-title"> 
-             {/* Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""} */}
-               <p> PIMS &gt; Cases &gt; Lead # {selectedLead.leadNo} &gt; Lead Pictures
-                 </p>
+           <div className="ld-head">
+                                      <Link to="/HomePage" className="crumb">PIMS Home</Link>
+                                      <span className="sep">{" >> "}</span>
+                                      <Link
+                                        to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+                                        state={{ caseDetails: selectedCase }}
+                                        className="crumb"
+                                      >
+                                        Case: {selectedCase.caseNo || ""}
+                                      </Link>
+                                      <span className="sep">{" >> "}</span>
+                                      <Link
+                                        to={"/LeadReview"}
+                                        state={{ leadDetails: selectedLead }}
+                                        className="crumb"
+                                      >
+                                        Lead: {selectedLead.leadNo || ""}
+                                      </Link>
+                                      <span className="sep">{" >> "}</span>
+                                      <span className="crumb-current" aria-current="page">Lead Pictures</span>
+                                    </div>
              </h5>
           <h5 className="side-title">
   {selectedLead?.leadNo
@@ -1225,7 +1243,7 @@ Case Page
   </div>
 )} */}
 
-        <Comment tag= "Pictures"/>
+        {/* <Comment tag= "Pictures"/> */}
        </div>
     </div>
     

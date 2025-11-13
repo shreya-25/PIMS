@@ -3,7 +3,7 @@ import Navbar from '../../components/Navbar/Navbar';
 import './LeadLog.css';
 import Filter from "../../components/Filter/Filter";
 import Sort from "../../components/Sort/Sort";
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import Pagination from "../../components/Pagination/Pagination";
@@ -494,7 +494,21 @@ const formatDate = (dateString) => {
                   <p> PIMS &gt; Cases \ {selectedCase.caseNo || ""} &gt; Lead Log
                  </p>
                 </div> */}
-
+          <div className = "side-titleLeft">
+             <div className="ld-head">
+            <Link to="/HomePage" className="crumb">PIMS Home</Link>
+            <span className="sep">{" >> "}</span>
+            <Link
+              to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+              state={{ caseDetails: selectedCase }}
+              className="crumb"
+            >
+              Case Page: {selectedCase.caseNo || ""} - {selectedCase.caseName || "Unknown Case"}
+            </Link>
+            <span className="sep">{" >> "}</span>
+            <span className="crumb-current" aria-current="page">Case Log</span>
+          </div>
+          </div>
 
 
          <div className="case-header">

@@ -1081,7 +1081,7 @@ const sortedAllLeads = useMemo(() => {
                 <div className="case-header-cp">
                   <div className="cp-head">
                 {
-                 <h2>{selectedCase?.caseName ? toTitleCase(selectedCase.caseName) : "Unknown Case"}</h2>
+                 <h2>Case: {selectedCase?.caseName ? toTitleCase(selectedCase.caseName) : "Unknown Case"}</h2>
 
                 }
                 </div>

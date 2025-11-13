@@ -86,7 +86,9 @@
 .cbar__error { color: #b3261e; }
 
 /* List */
-.cbar__list { list-style: none; padding: 8px 10px 16px; margin: 0; overflow: auto; min-height: 70%; }
+.cbar__list { list-style: none; padding: 8px 10px 16px; margin: 0; overflow: auto; 
+ height: var(--cbar-list-height, calc(100vh - 25vh));
+}
 .cbar__item { display: flex; gap: 10px; padding: 10px 6px; }
 
 /* .cbar__avatar {
@@ -215,4 +217,18 @@
   transform: translate(-50%, -50%);
   object-fit: contain;
   pointer-events: none;
+}
+
+.cbar__lock {
+  margin: 8px 0 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f6f7f8;
+  color: #555;
+  font-size: 12px;
+}
+
+.cbar__composer--disabled {
+  opacity: 0.6;
+  pointer-events: none; /* keeps focus/hover off the controls */
 }
