@@ -1163,7 +1163,7 @@ Case Page
                 <th style={{ width: "17%" }}>Event Time Range</th>
                 <th style={{ width: "15%" }}>Event Location</th>
                 <th style={{ width: "11%" }}>Description</th>
-                {/* <th style={{ width: "11%" }}>Actions</th> */}
+                <th style={{ width: "11%" }}>Actions</th>
                 {/* {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
             )} */}
@@ -1219,7 +1219,7 @@ Case Page
       </tr>
        ))) : (
         <tr>
-          <td colSpan={isCaseManager ? 5 : 5} style={{ textAlign:'center' }}>
+          <td colSpan={isCaseManager ? 6 : 6} style={{ textAlign:'center' }}>
             No Timeline Entry Available
           </td>
         </tr>
