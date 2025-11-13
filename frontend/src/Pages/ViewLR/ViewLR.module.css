@@ -1,31 +1,70 @@
-/* ====== ViewLR Layout Chrome ====== */
-:root {
-  /* match your actual navbar height */
-  --navbar-height: 56px;
-  --topmenu-height: 56px;
+:root{
+  --navbar-height:56px;
+  --topmenu-height:56px;
 }
 
-/* shell with left + right columns */
-.LRI_Content9 {
-  display: flex;
+/* page columns */
+.LRI_Content9{
+  display: grid;
+  grid-template-columns: 100% 20%; /* left + comments */
+  gap: 16px;
   height: calc(100vh - var(--navbar-height));
-  overflow: hidden;             /* prevent page-level scroll */
+  overflow: visible;                  /* don't hide here */
 }
 
-/* left column (the one that should contain the sticky bar) */
-.left-content9 {
-  flex: 1 1 auto;
+/* left column wrapper */
+.leftContent9{
   min-width: 0;
   display: flex;
 }
 
-/* inner column that hosts sticky + scroll area */
-.lrsec {
+/* holds header + scroller */
+.lrsec{
   display: flex;
   flex-direction: column;
-  min-height: 0;                /* allow child to overflow: auto */
+  height: calc(100vh - var(--navbar-height));
+  overflow: hidden;     /* child (scrollOnly) will scroll */
   width: 100%;
 }
+
+/* top bar just sits above the scroller */
+.topMenu{
+  height: var(--topmenu-height);
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-bottom: 1px solid #eaeaea;
+  padding: 0 12px;
+  z-index: 5;
+}
+
+/* ✅ the only scroller */
+.scrollOnly{
+  flex: 1 1 auto;
+  min-height: 0;        /* critical for flex children to allow scrolling */
+  overflow: auto;       /* this is the scroll container */
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* comment rail: own scroll */
+/* .commentSec{
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: calc(100vh - var(--navbar-height));
+  width: 100%;
+  overflow: auto;
+} */
+
+
+/* inner column that hosts sticky + scroll area */
+/* .lrsec {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;     
+  width: 100%;
+} */
 
 /* ✅ sticky top menu scoped to the left column */
 .top-menu2 {
@@ -61,13 +100,13 @@
 .top-menu1 .menu-item.active { font-weight: 600; border-bottom: 2px solid currentColor; }
 
 /* ✅ only this area scrolls; keeps sticky bar in place */
-.scrollOnly {
+/* .scrollOnly {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
-  padding: 16px;                /* keep your current spacing */
+  padding: 16px;            
   box-sizing: border-box;
-}
+} */
 /* ====== Case & Lead breadcrumb ====== */
 .caseandleadinfo {
   display: grid;
@@ -109,7 +148,7 @@
   background: #ffffff;
   border: 1px solid #eef0f4;
   box-shadow: 0 1px 0 rgba(17, 24, 39, 0.02);
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 .block > h3 {
@@ -122,10 +161,6 @@
   background: #fcfcfd;
 }
 
-.kvRow
-{
-
-}
 
 /* ====== Return Card (per Narrative / Lead Return) ====== */
 .return-card {
@@ -211,7 +246,7 @@
 
 .lrsec {
   flex: 1 1 auto;      /* grow to fill */
-  min-width: 78%;
+  min-width: 72%;
   /* padding: 0 16px; */
   margin-bottom: 20px;
   /* margin-top:20px; */
