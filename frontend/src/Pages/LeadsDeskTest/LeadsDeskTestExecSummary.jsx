@@ -1313,7 +1313,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
         reportTimestamp: new Date().toLocaleString(),
         leadsData: leadsForReport,
         caseSummary: "",                           // 👈 empty
-        selectedReports: { FullReport: isAllReport },
+        selectedReports: { FullReport: true },
         summaryMode: "none",                       // 👈 force backend to skip summary
       };
 
