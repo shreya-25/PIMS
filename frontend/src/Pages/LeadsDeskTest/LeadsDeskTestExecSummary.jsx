@@ -687,6 +687,14 @@ useEffect(() => {
 }, [timelineEntries]);
 
 
+useEffect(() => {
+  if (reportType !== 'all') {
+    setSummaryMode('none');
+    setUseWebpageSummary(false);
+    setUseFileUpload(false);
+  }
+}, [reportType]);
+
 
    // Save to backend
    const saveExecutiveSummary = async () => {
@@ -1144,6 +1152,22 @@ const handleShowLeadsInRange = () => {
   const s = String(v ?? "").replace(/[^\d]/g, "");
   return s ? Number.parseInt(s, 10) : NaN;
 };
+
+const getSingleLeadForReport = () => {
+  const target = toNum(selectedSingleLeadNo);
+  if (!Number.isFinite(target)) return null;
+
+  // Prefer the leads currently visible in the UI (hierarchy/single view),
+  // otherwise fall back to the full list.
+  const source = (hierarchyLeadsData && hierarchyLeadsData.length)
+    ? hierarchyLeadsData
+    : leadsData;
+
+  if (!Array.isArray(source) || !source.length) return null;
+
+  return source.find(l => toNum(l.leadNo) === target) || null;
+};
+
 
   // Helper: compute which leads to include based on scope
 const computeLeadsForReport = () => {
@@ -2164,17 +2188,34 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
     </div>
 
     <div style={{ marginTop: 8 }}>
-      <button
+      {/* <button
         type="button"
         className="btn btn-primary"
         onClick={() => {
-          setReportScope('single');    // ✅ use the single scope
+          setReportScope('single');    
           handleRunReportWithSummary();
         }}
         disabled={!selectedSingleLeadNo}
       >
         Run report
-      </button>
+      </button> */}
+      <button
+  type="button"
+  className="btn btn-primary"
+  onClick={() => {
+    const lead = getSingleLeadForReport();
+    if (!lead) {
+      alert("Selected lead not found.");
+      return;
+    }
+    // Directly pass this one lead to the report generator
+    handleRunReportWithSummary([lead]);
+  }}
+  disabled={!selectedSingleLeadNo}
+>
+  Run report
+</button>
+
     </div>
   </>
 )}

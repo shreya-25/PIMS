@@ -58,6 +58,20 @@ const [showAddCase, setShowAddCase] = useState(false);
         return `${month}/${day}/${year}`;
     };
 
+    const mapCaseForOfficer = (c, officerName) => {
+  const officer = Array.isArray(c.assignedOfficers)
+    ? c.assignedOfficers.find(o => o.name === officerName || o.username === officerName)
+    : null;
+
+  return {
+    id:        c.caseNo,
+    title:     c.caseName,
+    status:    c.caseStatus,
+    role:      officer?.role || "",
+    createdAt: c.createdAt
+  };
+};
+
 
     useEffect(() => {
       if (!isCaseMgmt) return;                
@@ -83,30 +97,41 @@ const [showAddCase, setShowAddCase] = useState(false);
           console.log("✅ API Response:", response.data); // Debugging log
 
           // ✅ Filter cases where the signed-in officer is assigned
-          const assignedCases = response.data
-            .filter(c =>
-              c.caseStatus === "Ongoing" &&
-              c.assignedOfficers.some(o => o.name === signedInOfficer)
-            )
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-            .map(c => {
-              const officer = c.assignedOfficers.find(o => o.name === signedInOfficer);
-              return {
-                id: c.caseNo,
-                title: c.caseName,
-                status: c.caseStatus,
-                role: officer?.role || "Unknown",
-                createdAt: c.createdAt 
-              };
-            });
+          // const assignedCases = response.data
+          //   .filter(c =>
+          //     c.caseStatus === "Ongoing" &&
+          //     c.assignedOfficers.some(o => o.name === signedInOfficer)
+          //   )
+          //   .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          //   .map(c => {
+          //     const officer = c.assignedOfficers.find(o => o.name === signedInOfficer);
+          //     return {
+          //       id: c.caseNo,
+          //       title: c.caseName,
+          //       status: c.caseStatus,
+          //       role: officer?.role || "Unknown",
+          //       createdAt: c.createdAt 
+          //     };
+          //   });
 
-            setCases(assignedCases); // ✅ Set filtered cases in state
+          //   setCases(assignedCases); 
+          const assignedCases = response.data
+  .filter(c =>
+    c.caseStatus === "Ongoing" &&
+    Array.isArray(c.assignedOfficers) &&
+    c.assignedOfficers.some(o => o.name === signedInOfficer || o.username === signedInOfficer)
+  )
+  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  .map(c => mapCaseForOfficer(c, signedInOfficer));
+
+setCases(assignedCases);
+
             } catch (error) {
                console.error("❌ Error fetching cases:", error.response?.data || error);
               }
               };
               fetchCases(); // Initial call
-              const intervalId = setInterval(fetchCases, 15_000); // Poll every 15s
+              const intervalId = setInterval(fetchCases, 5_000); // Poll every 15s
 
               // return () => clearInterval(intervalId);
               return () => { cancelled = true; clearInterval(intervalId); };
@@ -727,15 +752,24 @@ console.log("pending LR",leads );
   
 
 
-  // Adding a case to the list
- // Adding a case to the list
-const addCase = (newCase) => {
-  if (!newCase.id || !newCase.title || !newCase.status) {
-    // alert("Case must have an ID, title, and status.");
-    return;
-  }
-    setCases((prevCases) => [newCase, ...prevCases]);
+
+// const addCase = (newCase) => {
+//   if (!newCase.id || !newCase.title || !newCase.status) {
+//     return;
+//   }
+//     setCases((prevCases) => [newCase, ...prevCases]);
+// };
+
+const addCase = (serverCase) => {
+  // serverCase is the full object from POST /api/cases
+  const mapped = mapCaseForOfficer(serverCase, signedInOfficer);
+
+  setCases(prevCases => {
+    const withoutDup = prevCases.filter(c => c.id !== mapped.id);
+    return [mapped, ...withoutDup];
+  });
 };
+
 
   // Continue a pending lead return
   const continueLead = (leadId) => {

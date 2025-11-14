@@ -1828,7 +1828,16 @@ const assignmentHoverText = React.useMemo(() => {
        <SideBar  activePage="LeadReview" />
      
         {/* Content Area */}
-        <div className={`lead-main-content ${canWorkOnReturn ? 'has-menu' : ''}`}>
+        <div
+  className={`lead-main-content ${
+    canWorkOnReturn
+      ? "has-menu"
+      : showDecisionBlock
+      ? "decision-only"
+      : ""
+  }`}
+>
+
           {/* Page Header */}
 
             {canWorkOnReturn && (

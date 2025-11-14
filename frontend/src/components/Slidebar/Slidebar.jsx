@@ -195,7 +195,7 @@ useEffect(() => {
       status: "Ongoing",
       caseNo: caseDetails.number.trim(),
       caseName: caseDetails.title.trim(),
-      role: "Case Manager",
+      role: "",
       caseSummary: caseDetails.summary,
       executiveCaseSummary: caseDetails.executiveCaseSummary,
       managers: caseDetails.managers.map(username => ({ username })),
@@ -252,19 +252,37 @@ useEffect(() => {
         throw new Error(data.message || "Failed to create case");
       }
   
+      // setAlertMessage("Case Created Successfully!");
+      // setAlertOpen(true);
+      // onAddCase(newCase);
+      // setCaseDetails({
+      //   title: "",
+      //   number: "",
+      //   managers: [],
+      //   investigators: [],
+      //   summary: "",
+      //   executiveCaseSummary: "",
+      //   status: "Ongoing",
+      // });
+      // setIsSidebarOpen(false);
       setAlertMessage("Case Created Successfully!");
-      setAlertOpen(true);
-      onAddCase(newCase);
-      setCaseDetails({
-        title: "",
-        number: "",
-        managers: [],
-        investigators: [],
-        summary: "",
-        executiveCaseSummary: "",
-        status: "Ongoing",
-      });
-      setIsSidebarOpen(false);
+setAlertOpen(true);
+
+// use the *real* created case from backend:
+const createdCase = response.data;
+onAddCase?.(createdCase);
+
+setCaseDetails({
+  title: "",
+  number: "",
+  managers: [],
+  investigators: [],
+  summary: "",
+  executiveCaseSummary: "",
+  status: "Ongoing",
+});
+setIsSidebarOpen(false);
+
 
       const creator = signedInOfficer;
       const everyone = [

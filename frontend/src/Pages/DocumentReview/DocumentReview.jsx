@@ -128,7 +128,7 @@ const handleReopen = () => {
       setShowCloseModal(false);
       setLocalStatus("Closed"); 
       setCloseReason("");
-      await promotePrivateComments();
+      // await promotePrivateComments();
       setAlertMessage("Lead closed successfully.");
       await sendLeadNotification("closed the lead");
 
@@ -287,7 +287,7 @@ const humanizeStatus = (uiStatus) =>
       if (statusRes.status === 200) {
         await sendLeadNotification(humanizeStatus(uiStatus));
         if (uiStatus === "Completed" || uiStatus === "Closed" || uiStatus === "Returned") {
-        await promotePrivateComments();
+        // await promotePrivateComments();
          navigate(getCasePageRoute());
         }
          setAlertMessage("Lead Return submitted");
@@ -352,48 +352,56 @@ const humanizeStatus = (uiStatus) =>
     }
   };
 
-  const caseNo   = selectedCase?.caseNo;
-  const caseName = selectedCase?.caseName;
-  const leadNo   = selectedLead?.leadNo;
-  const leadName = selectedLead?.leadName;
+//   const caseNo   = selectedCase?.caseNo;
+//   const caseName = selectedCase?.caseName;
+//   const leadNo   = selectedLead?.leadNo;
+//   const leadName = selectedLead?.leadName;
 
-  // Thread keys
-  const publicThreadKey  = `${caseNo}:${caseName}::${leadNo}:${leadName}`;
-  const privateThreadKey = `${publicThreadKey}::${currentUser}`;
+//   const publicThreadKey  = `${caseNo}:${caseName}::${leadNo}:${leadName}`;
+//   const privateThreadKey = `${publicThreadKey}::${currentUser}`;
 
-  // When these statuses hit, comments become public
- const PUBLIC_PHASE_STATUSES = new Set(["Returned", "Reopened", "Completed", "Closed"]);
+//  const PUBLIC_PHASE_STATUSES = new Set(["Returned", "Reopened", "Completed", "Closed"]);
 
-  const isPublicPhase =
-    PUBLIC_PHASE_STATUSES.has(status) || String(status).toLowerCase() === "pending";
+//   const isPublicPhase =
+//     PUBLIC_PHASE_STATUSES.has(status) || String(status).toLowerCase() === "pending";
 
-  // Pick where the comment goes / is read from
-  const activeTag       = isPublicPhase ? "ViewLR" : "DocumentReview";
-  const activeThreadKey = isPublicPhase ? publicThreadKey : privateThreadKey;
+//   const activeTag       = isPublicPhase ? "ViewLR" : "DocumentReview";
+//   const activeThreadKey = isPublicPhase ? publicThreadKey : privateThreadKey;
+
+const caseNo   = selectedCase?.caseNo;
+const caseName = selectedCase?.caseName;
+const leadNo   = selectedLead?.leadNo;
+const leadName = selectedLead?.leadName;
+
+// Single shared thread for everyone
+const publicThreadKey = `${caseNo}:${caseName}::${leadNo}:${leadName}`;
+
+// Always use the public thread + ViewLR tag so it’s shared across pages
+const activeTag       = "ViewLR";
+const activeThreadKey = publicThreadKey;
+
+// Everything is effectively "public phase" now
+const isPublicPhase = true;
 
   // ---- promote private → public when decision happens ----
-  const promotePrivateComments = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      // Minimal backend you can add:
-      // POST /api/comments/promote { fromTag, fromKey, toTag, toKey, author }
-      // If you already have a different endpoint, swap this call.
-      await api.post(
-        "/api/comments/promote",
-        {
-          fromTag: "DocumentReview",
-          fromKey: privateThreadKey,
-          toTag: "ViewLR",
-          toKey: publicThreadKey,
-          author: currentUser, // guardrail on server
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-    } catch (e) {
-      // Non-blocking: UI shouldn’t fail if promotion isn't wired yet
-      console.warn("Comment promotion skipped/failed (non-blocking):", e);
-    }
-  };
+  // const promotePrivateComments = async () => {
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     await api.post(
+  //       "/api/comments/promote",
+  //       {
+  //         fromTag: "DocumentReview",
+  //         fromKey: privateThreadKey,
+  //         toTag: "ViewLR",
+  //         toKey: publicThreadKey,
+  //         author: currentUser, 
+  //       },
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+  //   } catch (e) {
+  //     console.warn("Comment promotion skipped/failed (non-blocking):", e);
+  //   }
+  // };
 
 
   return (
@@ -486,8 +494,8 @@ const humanizeStatus = (uiStatus) =>
       <CommentBar
         tag={activeTag}
         threadKey={activeThreadKey}
-        // Optional extra metadata (safe to ignore if CommentBar doesn’t read them)
-        visibility={isPublicPhase ? "public" : "private"}
+        // visibility={isPublicPhase ? "public" : "private"}
+        visibility="public"
           disabled={isCommentsLocked}
         lockReason={status}
         owner={currentUser}
