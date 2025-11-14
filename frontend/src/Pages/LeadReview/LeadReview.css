@@ -455,6 +455,20 @@
   box-shadow: 0 0 10px rgb(80, 80, 189);
 }
 
+.lead-main-content.decision-only {
+  padding-top: 110px; 
+}
+
+/* Make header + accept block sit closer together */
+.case-header-leadReview h2 {
+  margin: 0 0 8px;    /* remove big default h2 margin-top */
+}
+
+/* Keep Accept/Reject block snug under the header */
+.accept-reject-section {
+  margin-top: 8px;
+}
+
 .accept-reject-section
 {
   width: 95%;
