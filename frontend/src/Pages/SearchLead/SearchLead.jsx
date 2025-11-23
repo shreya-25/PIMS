@@ -1,50 +1,21 @@
-import React, { useContext, useState, useEffect, useRef } from "react";
+import React, { useContext, useState, useEffect, useRef, useMemo, } from "react";
 import Navbar from "../../components/Navbar/Navbar";
 import "./SearchLead.css";
 import Pagination from "../../components/Pagination/Pagination";
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import api from "../../api"; // adjust the path as needed
 import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
-import {SideBar } from "../../components/Sidebar/Sidebar";
+import { SideBar } from "../../components/Sidebar/Sidebar";
+import Filter from "../../components/Filter/Filter";
 
-
-
-const sampleLeads = [
-  // {
-  //   id: "Lead45",
-  //   name: "Collect Audio Records from Dispatcher",
-  //   dueDate: "12/25/2024",
-  //   priority: "High",
-  //   remainingDays: 0,
-  //   flags: "Important",
-  //   assignedOfficers: "Officer 1, Officer 3",
-  // },
-  // {
-  //   id: "Lead20",
-  //   name: "Interview Mr. John",
-  //   dueDate: "12/31/2024",
-  //   priority: "Medium",
-  //   remainingDays: 0,
-  //   flags: "None",
-  //   assignedOfficers: "Officer 2",
-  // },
-  // {
-  //   id: "Lead84",
-  //   name: "Collect Evidence from 63 Mudray Street",
-  //   dueDate: "12/29/2024",
-  //   priority: "Low",
-  //   remainingDays: 0,
-  //   flags: "None",
-  //   assignedOfficers: "Officer 4",
-  // },
-];
+const sampleLeads = [];
 
 export const SearchLead = () => {
   const navigate = useNavigate();
 
-  // Initial static rows (3 rows)
+  // Initial static rows (1 row)
   const initialStaticRows = Array(1).fill({
     junction: "And",
     field: "",
@@ -53,141 +24,131 @@ export const SearchLead = () => {
   });
 
   const [staticRows, setStaticRows] = useState(initialStaticRows);
-  const [dynamicRows, setDynamicRows] = useState([]); // Dynamic rows managed separately
-  const [matchingLeads, setMatchingLeads] = useState([]);
-   const [searchTerm, setSearchTerm] = useState("");
+  const [dynamicRows, setDynamicRows] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
-    const [currentPage, setCurrentPage] = useState(1);
-      const [pageSize, setPageSize] = useState(50);
-      const totalPages = 10; // Change based on your data
-      const totalEntries = 100;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [totalEntries, setTotalEntries] = useState(0);
 
-        const { selectedCase, setSelectedLead } = useContext(CaseContext);
+    const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
 
-        const [leads, setLeads] = useState({
-          assignedLeads: [],
-          pendingLeads: [],
-          pendingLeadReturns: [],
-          allLeads: [],
-        } );
-        
-        const [showSelectModal, setShowSelectModal] = useState(false);
-        const [pendingRoute, setPendingRoute]   = useState(null);
-      
+  const [leads, setLeads] = useState({
+    assignedLeads: [],
+    pendingLeads: [],
+    pendingLeadReturns: [],
+    allLeads: [],
+  });
 
-  // Sample lead data for matching
- const [leadsData, setLeadsData] = useState([]);
+  const [showSelectModal, setShowSelectModal] = useState(false);
+  const [pendingRoute, setPendingRoute] = useState(null);
 
- console.log(selectedCase);
+  // Now this will hold a FLAT array of leads:
+  // [ { caseNo, caseName, leadNo, description, ... }, ... ]
+  const [leadsData, setLeadsData] = useState([]);
 
- useEffect(() => {
-  const fetchAllLeads = async () => {
-    if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+  console.log(selectedCase);
 
-    try {
-      const token = localStorage.getItem("token");
-      const resp = await api.get(
-        `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+  useEffect(() => {
+    const fetchAllLeads = async () => {
+      if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
 
-      // assume resp.data is an array
-      let leadsArray = Array.isArray(resp.data) ? resp.data : [];
-
-      // if user is _not_ a Case Manager, strip out CM-only leads:
-      if (selectedCase.role !== "Case Manager") {
-        leadsArray = leadsArray.filter(
-          (l) => l.accessLevel !== "Only Case Manager and Assignees"
+      try {
+        const token = localStorage.getItem("token");
+        const resp = await api.get(
+          `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-      }
 
-      setLeads((prev) => ({
-        ...prev,
-        allLeads: leadsArray.map((lead) => ({
-          leadNo: lead.leadNo,
-          description: lead.description,
-          leadStatus: lead.leadStatus,
-          // any other fields you need...
-        })),
-      }));
-    } catch (err) {
-      console.error("Error fetching all leads:", err);
-    }
+        let leadsArray = Array.isArray(resp.data) ? resp.data : [];
+
+        if (selectedCase.role !== "Case Manager") {
+          leadsArray = leadsArray.filter(
+            (l) => l.accessLevel !== "Only Case Manager and Assignees"
+          );
+        }
+
+        setLeads((prev) => ({
+          ...prev,
+          allLeads: leadsArray.map((lead) => ({
+            leadNo: lead.leadNo,
+            description: lead.description,
+            leadStatus: lead.leadStatus,
+          })),
+        }));
+      } catch (err) {
+        console.error("Error fetching all leads:", err);
+      }
+    };
+
+    fetchAllLeads();
+  }, [selectedCase]);
+
+  const handleSelectLead = (lead) => {
+    setSelectedLead({
+      leadNo: lead.leadNo,
+      leadName: lead.description,
+      caseName: lead.caseName,
+      caseNo: lead.caseNo,
+    });
+
+    setShowSelectModal(false);
+    navigate(pendingRoute, {
+      state: {
+        caseDetails: selectedCase,
+        leadDetails: lead,
+      },
+    });
+
+    setPendingRoute(null);
   };
 
-  fetchAllLeads();
-}, [selectedCase])
-
-const handleSelectLead = (lead) => {
-  setSelectedLead({
-    leadNo: lead.leadNo,
-    leadName: lead.description,
-    caseName: lead.caseName,
-    caseNo: lead.caseNo,
-  });
-
-  setShowSelectModal(false);
-  navigate(pendingRoute, {
-    state: {
-      caseDetails: selectedCase,
-      leadDetails: lead
-    }
-  });
-  
-  setPendingRoute(null);
-};
-
-
-  // Function to filter fetched leads using advanced search criteria
+  // Function kept for future use (not used in handleSearch now)
   const applyAdvancedFilters = (leads) => {
-    // Combine static and dynamic rows; filter out any rows with an empty field or value
     const combinedRows = [...staticRows, ...dynamicRows].filter(
       (row) => row.field && row.value.trim() !== ""
     );
-    // If no filter criteria is provided, return the full lead list.
     if (combinedRows.length === 0) return leads;
 
-    // Filter leads by checking each row's criterion against each lead.
     return leads.filter((lead) => {
-      // Initially assume the lead satisfies every filter
       let satisfiesAll = true;
 
-      // Iterate over each filter row. Here we assume that all conditions must be met (logical AND)
       combinedRows.forEach((row) => {
         const filterValue = row.value.toLowerCase().trim();
         let leadValue = "";
 
-        // Map the filter field to the corresponding lead property.
         switch (row.field) {
           case "Lead Number":
-            leadValue = lead.leadNo ? lead.leadNo.toLowerCase() : "";
+            leadValue = lead.leadNo ? String(lead.leadNo).toLowerCase() : "";
             break;
           case "Priority":
             leadValue = lead.priority ? lead.priority.toLowerCase() : "";
             break;
           case "Due Date":
-            // Use the same display format as formatDate (or compare ISO strings if preferred)
-            leadValue = lead.dueDate ? formatDate(lead.dueDate).toLowerCase() : "";
+            leadValue = lead.dueDate
+              ? formatDate(lead.dueDate).toLowerCase()
+              : "";
             break;
           case "Flag":
-            // Assuming 'associatedFlags' holds flag information as a string
-            leadValue = lead.associatedFlags ? lead.associatedFlags.toLowerCase() : "";
+            leadValue = lead.associatedFlags
+              ? lead.associatedFlags.toLowerCase()
+              : "";
             break;
           case "Keyword":
           case "Lead Name":
-            // Compare the description if using keyword or name
-            leadValue = lead.description ? lead.description.toLowerCase() : "";
+            leadValue = lead.description
+              ? lead.description.toLowerCase()
+              : "";
             break;
           case "Assigned To":
-            // Join assigned officers into a single string for comparison
-            leadValue = lead.assignedTo ? lead.assignedTo.join(" ").toLowerCase() : "";
+            leadValue = Array.isArray(lead.assignedTo)
+              ? lead.assignedTo.join(" ").toLowerCase()
+              : "";
             break;
-          // Add additional cases as needed
           default:
             leadValue = "";
         }
 
-        // Check the criterion using the evaluator ("equals" or "contains")
         if (row.evaluator === "equals") {
           if (leadValue !== filterValue) {
             satisfiesAll = false;
@@ -203,48 +164,108 @@ const handleSelectLead = (lead) => {
     });
   };
 
-
-// Updated handleSearch: first fetch from API, then apply advanced filters
+  // UPDATED handleSearch: fetch, combine, FLATTEN (no grouping)
 const handleSearch = async () => {
   try {
     const token = localStorage.getItem("token");
 
-    // Combine advanced rows from static and dynamic arrays
-    const advancedRows = [
-      ...staticRows,
-      ...dynamicRows,
-    ].filter((row) => row.field && row.value.trim() !== "");
+    const advancedRows = [...staticRows, ...dynamicRows].filter(
+      (row) => row.field && row.value.trim() !== ""
+    );
 
     let fieldParam = "";
     let keywordParam = "";
 
     if (advancedRows.length > 0) {
-      // For simplicity, use the first advanced row for backend filtering.
       fieldParam = advancedRows[0].field;
-      keywordParam = advancedRows[0].value;
+      keywordParam = advancedRows[0].value.trim();
     } else {
-      keywordParam = searchTerm.trim() ? searchTerm : "";
+      keywordParam = searchTerm.trim();
     }
 
-    const response = await api.get("/api/lead/search", {
-      params: {
-        caseNo: selectedCase.caseNo,
-        caseName: selectedCase.caseName,
-        keyword: keywordParam,
-        field: fieldParam,
-      },
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    if (!keywordParam) {
+      setLeadsData([]);
+      setTotalEntries(0);
+      return;
+    }
 
-    console.log("Fetched leads:", response.data);
-    setLeadsData(response.data);
+    console.log("🔍 Searching for keyword:", keywordParam);
+
+    // existing /api/lead/search for the selected case (optional)
+    let leadSearchData = [];
+    try {
+      const leadResp = await api.get("/api/lead/search", {
+        params: {
+          caseNo: selectedCase.caseNo,
+          caseName: selectedCase.caseName,
+          keyword: keywordParam,
+          field: fieldParam,
+        },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      leadSearchData = Array.isArray(leadResp.data) ? leadResp.data : [];
+    } catch (err) {
+      console.warn("Lead search failed (api/lead/search):", err?.response?.status);
+    }
+
+    let leadReturnResultsData = [];
+    try {
+      const lrrResp = await api.get("/api/leadReturnResult", {
+        params: { keyword: keywordParam },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      console.log("✅ response from /api/leadReturnResult:", lrrResp.data);
+
+      if (Array.isArray(lrrResp.data)) {
+        // plain array from backend
+        leadReturnResultsData = lrrResp.data;
+      } else if (Array.isArray(lrrResp.data?.results)) {
+        // wrapped: { results: [...] }
+        leadReturnResultsData = lrrResp.data.results;
+      } else {
+        console.warn(
+          "Unexpected response shape for /api/leadReturnResult:",
+          lrrResp.data
+        );
+        leadReturnResultsData = [];
+      }
+    } catch (err) {
+      console.warn(
+        "Keyword search failed (api/leadReturnResult):",
+        err?.response?.status,
+        err?.response?.data
+      );
+    }
+
+    // Combine & dedupe again on frontend (optional)
+    const combinedMap = new Map();
+    const addToMap = (item) => {
+      const key = `${item.caseNo || ""}::${item.leadNo || ""}::${
+        item.description || ""
+      }`;
+      if (!combinedMap.has(key)) {
+        combinedMap.set(key, item);
+      }
+    };
+
+    leadSearchData.forEach(addToMap);
+    leadReturnResultsData.forEach(addToMap);
+
+    const combinedResults = Array.from(combinedMap.values());
+    console.log("Flat combined search results:", combinedResults);
+
+    setLeadsData(combinedResults);
+    setTotalEntries(combinedResults.length);
+    setCurrentPage(1);
   } catch (error) {
-    console.error("Error fetching search results:", error);
+    console.error("❌ Error in handleSearch:", error);
+    setLeadsData([]);
+    setTotalEntries(0);
   }
 };
 
 
-  // Handles input changes for static or dynamic rows
   const handleInputChange = (index, field, value, isDynamic = false) => {
     if (isDynamic) {
       const updatedRows = [...dynamicRows];
@@ -267,20 +288,22 @@ const handleSearch = async () => {
     return `${month}/${day}/${year}`;
   };
 
-  // Clears static row content (does not remove it)
   const handleClearStaticRow = (index) => {
     const updatedRows = [...staticRows];
-    updatedRows[index] = { junction: "And", field: "", evaluator: "", value: "" };
+    updatedRows[index] = {
+      junction: "And",
+      field: "",
+      evaluator: "",
+      value: "",
+    };
     setStaticRows(updatedRows);
   };
 
-  // Removes dynamic rows entirely
   const handleRemoveDynamicRow = (index) => {
     const updatedRows = dynamicRows.filter((_, i) => i !== index);
     setDynamicRows(updatedRows);
   };
 
-  // Adds a new dynamic row
   const handleAddRow = () => {
     setDynamicRows([
       ...dynamicRows,
@@ -288,193 +311,256 @@ const handleSearch = async () => {
     ]);
   };
 
-  // Search function to filter matching leads
-  // const handleSearch = () => {
-  //   const combinedRows = [...staticRows, ...dynamicRows];
+  const location = useLocation();
+  const { caseDetails } = location.state || {};
 
-  //   const filteredLeads = sampleLeads.filter((lead) => {
-  //     return combinedRows.some((row) => {
-  //       const value = row.value.toLowerCase();
-  //       switch (row.field) {
-  //         case "Lead Number":
-  //           return lead.id.toLowerCase().includes(value);
-  //         case "Keyword":
-  //         case "Lead Name":
-  //           return lead.name.toLowerCase().includes(value);
-  //         case "Assigned To":
-  //           return lead.assignedOfficers.toLowerCase().includes(value);
-  //         default:
-  //           return false;
-  //       }
-  //     });
-  //   });
+  const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
+  const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
 
-  //   setMatchingLeads(filteredLeads);
-  // };
+  const onShowCaseSelector = (route) => {
+    navigate(route, { state: { caseDetails } });
+  };
 
-      const location = useLocation();
-      const { caseDetails } = location.state || {};
+  const handleLeadClick = (lead) => {
+  setSelectedLead({
+      leadNo: lead.leadNo != null ? lead.leadNo : lead.id,
+      incidentNo: lead.incidentNo,
+      leadName: lead.description,
+      dueDate: lead.dueDate || "",
+      priority: lead.priority || "Medium",
+      flags: lead.flags || [],
+      assignedOfficers: lead.assignedOfficers || [],
+      leadStatus: lead.leadStatus,
+      caseName: lead.caseName,
+      caseNo: lead.caseNo,
+      summary: lead.summary
+  });
+  setLeadStatus(lead.leadStatus);  
 
-        const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
-        const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
-        const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
-      
-        const onShowCaseSelector = (route) => {
-          navigate(route, { state: { caseDetails } });
+  // Navigate to Lead Review Page
+  navigate("/leadReview", { state: { leadDetails: lead, caseDetails: selectedCase } });
+};
+
+   // ─────────────────────────────────────────────
+  // FILTER + SORT (like HomePage tables)
+  // ─────────────────────────────────────────────
+
+  // map header label → data key
+  const colKey = {
+    "Case No.": "caseNo",
+    "Case Name": "caseName",
+    "Lead No.": "leadNo",
+    "Lead Name": "description",
+    "Assigned Officers": "assignedOfficers",
+  };
+
+  const columnWidths = {
+    "Case No.": "10%",
+    "Case Name": "18%",
+    "Lead No.": "8%",
+    "Lead Name": "20%",
+    "Assigned Officers": "15%",
+  };
+
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: "asc",
+  });
+
+  const [filterConfig, setFilterConfig] = useState({
+    caseNo: [],
+    caseName: [],
+    leadNo: [],
+    description: [],
+    assignedOfficers: [],
+  });
+
+  const [openFilter, setOpenFilter] = useState(null);
+  const filterButtonRefs = useRef({});
+  const [filterSearch, setFilterSearch] = useState({});
+  const [tempFilterSelections, setTempFilterSelections] = useState({});
+
+  // distinct values for each column
+  const distinctValues = useMemo(() => {
+    const map = {
+      caseNo: new Set(),
+      caseName: new Set(),
+      leadNo: new Set(),
+      description: new Set(),
+      assignedOfficers: new Set(),
+    };
+
+    leadsData.forEach((lead) => {
+      map.caseNo.add(String(lead.caseNo || "NA"));
+      map.caseName.add(lead.caseName || "NA");
+      map.leadNo.add(String(lead.leadNo || ""));
+      map.description.add(lead.description || "");
+
+      if (Array.isArray(lead.assignedTo?.assignees)) {
+        lead.assignedTo.assignees.forEach((officer) =>
+          map.assignedOfficers.add(officer)
+        );
+      }
+    });
+
+    return Object.fromEntries(
+      Object.entries(map).map(([key, set]) => [key, [...set]])
+    );
+  }, [leadsData]);
+
+  // sort helper
+  const sortColumn = (dataKey, direction) => {
+    setSortConfig({ key: dataKey, direction });
+  };
+
+  // search within filter popup
+  const handleFilterSearch = (dataKey, txt) =>
+    setFilterSearch((fs) => ({ ...fs, [dataKey]: txt }));
+
+  // toggle "select all"
+  const toggleSelectAll = (dataKey) => {
+    const all = distinctValues[dataKey] || [];
+    setTempFilterSelections((ts) => ({
+      ...ts,
+      [dataKey]:
+        ts[dataKey]?.length === all.length ? [] : [...all],
+    }));
+  };
+
+  const allChecked = (dataKey) => {
+    const sel = tempFilterSelections[dataKey] || [];
+    return sel.length === (distinctValues[dataKey] || []).length;
+  };
+
+  // toggle individual value
+  const handleCheckboxToggle = (dataKey, v) => {
+    setTempFilterSelections((ts) => {
+      const sel = ts[dataKey] || [];
+      return {
+        ...ts,
+        [dataKey]: sel.includes(v)
+          ? sel.filter((x) => x !== v)
+          : [...sel, v],
       };
+    });
+  };
 
-      const handleLeadClick = (lead) => {
-        setSelectedLead({
-            leadNo: lead.leadNo,
-            incidentNo: lead.incidentNo,
-            leadName: lead.description,
-            dueDate: lead.dueDate || "N/A",
-            priority: lead.priority || "Medium",
-            flags: lead.flags || [],
-            assignedOfficers: lead.assignedOfficers || [],
-            leadStatus: lead.leadStatus,
-            caseName: lead.caseName,
-            caseNo: lead.caseNo
-        });
-      
-        // Navigate to Lead Review Page
-        navigate("/leadReview", { state: { leadDetails: lead, caseDetails: selectedCase } });
-      };
-        
+  // apply filter
+  const applyFilter = (dataKey) => {
+    setFilterConfig((fc) => ({
+      ...fc,
+      [dataKey]: tempFilterSelections[dataKey] || [],
+    }));
+    setOpenFilter(null);
+  };
+
+  // filtered + sorted leads
+  const sortedFilteredLeads = useMemo(() => {
+    // 1) filter
+    const filtered = leadsData.filter((lead) => {
+      return Object.entries(filterConfig).every(([field, selected]) => {
+        if (!selected || selected.length === 0) return true;
+
+        if (field === "assignedOfficers") {
+          const officers = Array.isArray(lead.assignedTo?.assignees)
+            ? lead.assignedTo.assignees
+            : [];
+          return officers.some((o) => selected.includes(o));
+        }
+
+        const value =
+          field === "caseNo" || field === "leadNo"
+            ? String(lead[field] ?? "")
+            : String(lead[field] ?? "");
+
+        return selected.includes(value);
+      });
+    });
+
+    // 2) sort
+    if (!sortConfig.key) return filtered;
+
+    const { key, direction } = sortConfig;
+
+    return [...filtered].sort((a, b) => {
+      let aV;
+      let bV;
+
+      if (key === "assignedOfficers") {
+        const aArr = Array.isArray(a.assignedTo?.assignees)
+          ? a.assignedTo.assignees
+          : [];
+        const bArr = Array.isArray(b.assignedTo?.assignees)
+          ? b.assignedTo.assignees
+          : [];
+        aV = aArr[0] || "";
+        bV = bArr[0] || "";
+      } else {
+        aV = a[key];
+        bV = b[key];
+      }
+
+      const aStr = String(aV ?? "");
+      const bStr = String(bV ?? "");
+
+      return direction === "asc"
+        ? aStr.localeCompare(bStr)
+        : bStr.localeCompare(aStr);
+    });
+  }, [leadsData, filterConfig, sortConfig]);
+
+  // optional: slice for pagination
+  const pagedLeads = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return sortedFilteredLeads.slice(start, end);
+  }, [sortedFilteredLeads, currentPage, pageSize]);
+
+  // Summary stats: unique cases & total leads for current search results
+const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
+  const caseSet = new Set();
+  leadsData.forEach((lead) => {
+    if (lead.caseNo != null) {
+      caseSet.add(lead.caseNo);
+    }
+  });
+  return {
+    uniqueCasesCount: caseSet.size,
+    totalLeadsCount: leadsData.length,
+  };
+}, [leadsData]);
+
 
   return (
     <div className="searchlead-container">
       <Navbar />
       <div className="main-container">
-            {/* Sidebar */}
-            {/* <div className="sideitem">
-                    <ul className="sidebar-list">
-                    
-                    <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-                    <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
-        </li>
-        {caseDropdownOpen && (
-      <ul >
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
-            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
-            {selectedCase.role !== "Investigator" && (
-<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item active"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" 
-             onClick={() => {
-              selectedCase.role === "Investigator"
-              ? setPendingRoute("/LRInstruction")
-              : setPendingRoute("/CMInstruction")
-        
-              setShowSelectModal(true);
-            }}>View Lead Return</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-           
-              {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
-            </li>)}
-     
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-           </ul>
-        )}
-
-<li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
-</li>
-        {leadDropdownOpen && (
-          <ul>
-               <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
-           
-           {selectedCase.role !== "Investigator" && (
- <li
- className="sidebar-item"
- onClick={() => {
-   setPendingRoute("/ChainOfCustody", { state: { caseDetails } });
-   setShowSelectModal(true);
- }}
->    View Lead Chain of Custody
-  </li> )}
-  </ul>)}
-       
-
-                    </ul>
-
-                    {showSelectModal && (
-      <SelectLeadModal
-        leads={leads.allLeads}
-        onSelect={handleSelectLead}
-        onClose={() => setShowSelectModal(false)}
-      />
-    )}
-                </div> */}
-                 <SideBar  activePage="SearchLead" />
-                <div className="left-content">
-
-                {/* <div className="caseandleadinfo">
-          <h5 className = "side-title"> 
-               <p> PIMS &gt; Cases &gt; Advanced Search
-                 </p>
-             </h5>
-          <h5 className="side-title">
-  {selectedCase?.role
-        ? `Your Role: ${selectedCase.role || ""}`
-    : ``}
-</h5>
-
-          </div> */}
-{/* 
-<div className="case-header">
-  <h2 className="">SEARCH LEAD</h2>
-</div> */}
-
-   {/* <div className="top-menu1">
-        <div className="menu-items">
-           <span className="menu-item " onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}>
-            Leads Desk
-          </span>
-        <span className="menu-item " onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}>
-            Generate Report
-          </span>
-          <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
-            Add/View Case Notes
-          </span>
-          <span className="menu-item active" onClick={() => navigate('/SearchLead', { state: { caseDetails } } )} >
-            Advanced Search
-          </span>
-          <span className="menu-item" onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}>
-          View Timelines
-          </span>
-         </div>
-       </div> */}
-
-      <div className="main-content-searchlead">
-
-
-     
+        <SideBar activePage="SearchLead" />
+        <div className="left-content">
+          <div className="main-content-searchlead">
             <div className="search-page-bar">
               <div className="search-bar-page">
                 <div className="search-container1">
                   <i className="fa-solid fa-magnifying-glass"></i>
-                  <input type="text" className="search-input1" placeholder="Search Lead" 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      console.log("Enter pressed, calling handleSearch");
-                      handleSearch();
-                    }
-                  }} />
+                  <input
+                    type="text"
+                    className="search-input1"
+                    placeholder="Search Lead"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        console.log("Enter pressed, calling handleSearch");
+                        handleSearch();
+                      }
+                    }}
+                  />
                 </div>
               </div>
-              </div>
+            </div>
 
-                {/* Advanced Search Toggle Button */}
+            {/* Advanced Search Toggle Button */}
             <div className="advanced-search-toggle">
               <button
                 className="save-btn1"
@@ -483,223 +569,356 @@ const handleSearch = async () => {
                 {showAdvancedSearch ? "Advanced Search" : "Advanced Search"}
               </button>
             </div>
-          
 
-       {/* Conditionally Render Advanced Search Section */}
-       {showAdvancedSearch && (
+            {/* Conditionally Render Advanced Search Section */}
+            {showAdvancedSearch && (
               <>
-        <table className="search-table">
-          <thead>
-            <tr>
-              <th>Junction</th>
-              <th>Field</th>
-              <th>Evaluator</th>
-              <th>Value</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* Render Static Rows */}
-            {staticRows.map((row, index) => (
-              <tr key={`static-${index}`}>
-                <td>
-                  <select
-                    value={row.junction}
-                    onChange={(e) =>
-                      handleInputChange(index, "junction", e.target.value)
-                    }
-                  >
-                    <option value="And">And</option>
-                    <option value="Or">Or</option>
-                  </select>
-                </td>
-                <td>
-                  <select
-                    value={row.field}
-                    onChange={(e) =>
-                      handleInputChange(index, "field", e.target.value)
-                    }
-                  >
-                    <option value="">Select Field</option>
-                    <option value="Keyword">Keyword</option>
-                    <option value="Assigned To">Assigned To</option>
-                    <option value="Lead Number">Lead Number</option>
-                    <option value="Remaining Days">Remaining Days</option>
-                    <option value="Priority">Priority</option>
-                    <option value="Due Date">Due Date</option>
-                    <option value="Flag">Flag</option>
-                  </select>
-                </td>
-                <td>
-                  <select
-                    value={row.evaluator}
-                    onChange={(e) =>
-                      handleInputChange(index, "evaluator", e.target.value)
-                    }
-                  >
-                    <option value="equals">Equals</option>
-                    <option value="contains">Contains</option>
-                  </select>
-                </td>
-                <td>
-                  <input
-                    type="text"
-                    value={row.value}
-                    onChange={(e) =>
-                      handleInputChange(index, "value", e.target.value)
-                    }
-                  />
-                </td>
-                <td>
-                  <button
-                    className="clear-btn"
-                    onClick={() => handleClearStaticRow(index)}
-                  >
-                    Clear row
-                  </button>
-                </td>
-              </tr>
-            ))}
+                <table className="search-table">
+                  <thead>
+                    <tr>
+                      <th>Junction</th>
+                      <th>Field</th>
+                      <th>Evaluator</th>
+                      <th>Value</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {staticRows.map((row, index) => (
+                      <tr key={`static-${index}`}>
+                        <td>
+                          <select
+                            value={row.junction}
+                            onChange={(e) =>
+                              handleInputChange(
+                                index,
+                                "junction",
+                                e.target.value
+                              )
+                            }
+                          >
+                            <option value="And">And</option>
+                            <option value="Or">Or</option>
+                          </select>
+                        </td>
+                        <td>
+                          <select
+                            value={row.field}
+                            onChange={(e) =>
+                              handleInputChange(
+                                index,
+                                "field",
+                                e.target.value
+                              )
+                            }
+                          >
+                            <option value="">Select Field</option>
+                            <option value="Keyword">Keyword</option>
+                            <option value="Assigned To">Assigned To</option>
+                            <option value="Lead Number">Lead Number</option>
+                            <option value="Remaining Days">
+                              Remaining Days
+                            </option>
+                            <option value="Priority">Priority</option>
+                            <option value="Due Date">Due Date</option>
+                            <option value="Flag">Flag</option>
+                          </select>
+                        </td>
+                        <td>
+                          <select
+                            value={row.evaluator}
+                            onChange={(e) =>
+                              handleInputChange(
+                                index,
+                                "evaluator",
+                                e.target.value
+                              )
+                            }
+                          >
+                            <option value="equals">Equals</option>
+                            <option value="contains">Contains</option>
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            value={row.value}
+                            onChange={(e) =>
+                              handleInputChange(
+                                index,
+                                "value",
+                                e.target.value
+                              )
+                            }
+                          />
+                        </td>
+                        <td>
+                          <button
+                            className="clear-btn"
+                            onClick={() => handleClearStaticRow(index)}
+                          >
+                            Clear row
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
 
-            {/* Render Dynamic Rows */}
-            {dynamicRows.map((row, index) => (
-              <tr key={`dynamic-${index}`}>
-                <td>
-                  <select
-                    value={row.junction}
-                    onChange={(e) =>
-                      handleInputChange(index, "junction", e.target.value, true)
-                    }
-                  >
-                    <option value="And">And</option>
-                    <option value="Or">Or</option>
-                  </select>
-                </td>
-                <td>
-                  <select
-                    value={row.field}
-                    onChange={(e) =>
-                      handleInputChange(index, "field", e.target.value, true)
-                    }
-                  >
-                    <option value="">Select Field</option>
-                    <option value="Keyword">Keyword</option>
-                    <option value="Assigned To">Assigned To</option>
-                    <option value="Lead Number">Lead Number</option>
-                    <option value="Remaining Days">Remaining Days</option>
-                    <option value="Priority">Priority</option>
-                    <option value="Due Date">Due Date</option>
-                    <option value="Flag">Flag</option>
-                  </select>
-                </td>
-                <td>
-                  <select
-                    value={row.evaluator}
-                    onChange={(e) =>
-                      handleInputChange(index, "evaluator", e.target.value, true)
-                    }
-                  >
-                    <option value="equals">Equals</option>
-                    <option value="contains">Contains</option>
-                  </select>
-                </td>
-                <td>
-                  <input
-                    type="text"
-                    value={row.value}
-                    onChange={(e) =>
-                      handleInputChange(index, "value", e.target.value, true)
-                    }
-                  />
-                </td>
-                <td>
-                  <button
-                    className="clear-btn"
-                    onClick={() => handleRemoveDynamicRow(index)}
-                  >
-                    Remove row
+                    {dynamicRows.map((row, index) => (
+                      <tr key={`dynamic-${index}`}>
+                        <td>
+                          <select
+                            value={row.junction}
+                            onChange={(e) =>
+                              handleInputChange(
+                                index,
+                                "junction",
+                                e.target.value,
+                                true
+                              )
+                            }
+                          >
+                            <option value="And">And</option>
+                            <option value="Or">Or</option>
+                          </select>
+                        </td>
+                        <td>
+                          <select
+                            value={row.field}
+                            onChange={(e) =>
+                              handleInputChange(
+                                index,
+                                "field",
+                                e.target.value,
+                                true
+                              )
+                            }
+                          >
+                            <option value="">Select Field</option>
+                            <option value="Keyword">Keyword</option>
+                            <option value="Assigned To">Assigned To</option>
+                            <option value="Lead Number">Lead Number</option>
+                            <option value="Remaining Days">
+                              Remaining Days
+                            </option>
+                            <option value="Priority">Priority</option>
+                            <option value="Due Date">Due Date</option>
+                            <option value="Flag">Flag</option>
+                          </select>
+                        </td>
+                        <td>
+                          <select
+                            value={row.evaluator}
+                            onChange={(e) =>
+                              handleInputChange(
+                                index,
+                                "evaluator",
+                                e.target.value,
+                                true
+                              )
+                            }
+                          >
+                            <option value="equals">Equals</option>
+                            <option value="contains">Contains</option>
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            type="text"
+                            value={row.value}
+                            onChange={(e) =>
+                              handleInputChange(
+                                index,
+                                "value",
+                                e.target.value,
+                                true
+                              )
+                            }
+                          />
+                        </td>
+                        <td>
+                          <button
+                            className="clear-btn"
+                            onClick={() => handleRemoveDynamicRow(index)}
+                          >
+                            Remove row
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div className="searchlead-btns-container">
+                  <button className="add-row-btn" onClick={handleAddRow}>
+                    + Add Row
                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        
-        {/* Button Section */}
-        <div className="searchlead-btns-container">
-          <button className="add-row-btn" onClick={handleAddRow}>
-            + Add Row
-          </button>
-          <button className="add-row-btn" onClick={handleSearch}>
-            Search
-          </button>
+                  <button className="add-row-btn" onClick={handleSearch}>
+                    Search
+                  </button>
+                </div>
+              </>
+            )}
+
+             <div className="results-section">
+              <p className="results-title">Matching Cases & Leads</p>
+              <div className="result-line"></div>
+                {/* {leadsData.length > 0 && (
+    <div className="results-summary">
+      <span>
+        <strong>Cases matched:</strong> {uniqueCasesCount}
+      </span>
+      <span style={{ marginLeft: "24px" }}>
+        <strong>Leads matched:</strong> {totalLeadsCount}
+      </span>
+    </div>
+  )} */}
+  {leadsData.length > 0 && (
+  <div className="results-summary">
+    <div className="results-circle">
+      <div className="results-circle-count">{uniqueCasesCount}</div>
+      <div className="results-circle-label">Cases</div>
+    </div>
+
+    <div className="results-circle">
+      <div className="results-circle-count">{totalLeadsCount}</div>
+      <div className="results-circle-label">Leads</div>
+    </div>
+  </div>
+)}
+
+
+              <table className="results-table">
+                <thead>
+                  <tr>
+                    {[
+                      "Case No.",
+                      "Case Name",
+                      "Lead No.",
+                      "Lead Name",
+                      "Assigned Officers",
+                    ].map((col) => {
+                      const dataKey = colKey[col];
+                      return (
+                        <th
+                          key={col}
+                          style={{ width: columnWidths[col] }}
+                          className="column-header1"
+                        >
+                          <div className="header-title">
+                            {col}
+                            <span>
+                              <button
+                                ref={(el) =>
+                                  (filterButtonRefs.current[dataKey] = el)
+                                }
+                                onClick={() =>
+                                  setOpenFilter((prev) =>
+                                    prev === dataKey ? null : dataKey
+                                  )
+                                }
+                              >
+                                <img
+                                  src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
+                                  className="icon-image"
+                                  alt="filter"
+                                />
+                              </button>
+                              <Filter
+                                dataKey={dataKey}
+                                distinctValues={distinctValues}
+                                open={openFilter === dataKey}
+                                anchorRef={{
+                                  current: filterButtonRefs.current[dataKey],
+                                }}
+                                searchValue={filterSearch[dataKey] || ""}
+                                selections={
+                                  tempFilterSelections[dataKey] || []
+                                }
+                                onSort={sortColumn}
+                                onSearch={handleFilterSearch}
+                                allChecked={allChecked}
+                                onToggleAll={toggleSelectAll}
+                                onToggleOne={handleCheckboxToggle}
+                                onApply={applyFilter}
+                                onCancel={() => setOpenFilter(null)}
+                              />
+                            </span>
+                          </div>
+                        </th>
+                      );
+                    })}
+                    <th style={{ width: "10%" }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagedLeads.length > 0 ? (
+                    pagedLeads.map((lead, index) => (
+                      <tr key={index}>
+                        <td>{lead.caseNo || "NA"}</td>
+                        <td>{lead.caseName || "NA"}</td>
+                        <td>{lead.leadNo}</td>
+                        <td>{lead.description}</td>
+                        <td
+                          style={{
+                            width: "14%",
+                            wordBreak: "break-word",
+                            overflowWrap: "break-word",
+                            whiteSpace: "normal",
+                          }}
+                        >
+                          {Array.isArray(lead.assignedTo?.assignees) &&
+                          lead.assignedTo.assignees.length > 0 ? (
+                            lead.assignedTo.assignees.map((officer, idx) => (
+                              <span
+                                key={idx}
+                                style={{
+                                  display: "block",
+                                  marginBottom: "4px",
+                                  padding: "8px 0px 0px 8px",
+                                }}
+                              >
+                                {officer}
+                              </span>
+                            ))
+                          ) : (
+                            <span>NA</span>
+                          )}
+                        </td>
+
+                        <td>
+                          <button
+                            className="view-btn1"
+                            onClick={() => handleLeadClick(lead)}
+                          >
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan="6"
+                        style={{ textAlign: "center", color: "#aaa" }}
+                      >
+                        No matching leads available
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+
+              <Pagination
+                currentPage={currentPage}
+                totalEntries={totalEntries}
+                onPageChange={setCurrentPage}
+                pageSize={pageSize}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
+          </div>
         </div>
-
-        </>
-       )}
-
-        <div className="results-section">
-  <p className="results-title">Matching Leads</p>
-  <div className="result-line"></div>
-  <table className="results-table">
-    <thead>
-      <tr>
-        <th style={{ width: "10%" }}>Lead No.</th>
-        <th>Lead Name</th>
-        <th style={{ width: "10%" }}>Due Date</th>
-        <th style={{ width: "8%" }}>Priority</th>
-        <th style={{ width: "10%" }}>Flags</th>
-        <th style={{ width: "15%" }}>Assigned Officers</th>
-        <th style={{ width: "12%" }}>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {leadsData.length > 0 ? (
-        leadsData.map((lead, index) => (
-          <tr key={index}>
-            <td>{lead.leadNo}</td>
-            <td>{lead.description}</td>
-            <td>{formatDate(lead.dueDate) || "NA"}</td>
-            <td>{lead.priority || "NA"}</td>
-            <td>{lead.associatedFlags || "NA"}</td>
-            <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
-              {/* {lead.assignedOfficers.join(", ")} */}
-              {lead.assignedTo.map((officer, index) => (
-                <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
-              ))}
-              </td>
-            <td>
-              <button className="save-btn1" 
-              //  onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.description} } )}>
-              onClick={() => handleLeadClick(lead)}>
-              {/* onClick={() => navigate(`/lead/${lead.id}`)} */}
-              View</button>
-            </td>
-          </tr>
-        ))
-      ) : (
-        // Render empty rows if no data is available
-        Array.from({ length: 1 }).map((_, index) => (
-          <tr key={`empty-${index}`}>
-            <td colSpan="7" style={{ textAlign: 'center', color: '#aaa' }}>
-              No matching leads available
-            </td>
-          </tr>
-        ))
-      )}
-    </tbody>
-  </table>
-  <Pagination
-  currentPage={currentPage}
-  totalEntries={totalEntries}  // Automatically calculate total entries
-  onPageChange={setCurrentPage} // Update current page state
-  pageSize={pageSize}
-  onPageSizeChange={setPageSize} // Update page size state
-/>
-</div>
       </div>
-    </div>
-    </div>
     </div>
   );
 };

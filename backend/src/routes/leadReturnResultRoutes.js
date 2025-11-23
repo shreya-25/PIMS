@@ -1,7 +1,7 @@
 const express = require("express");
 const { createLeadReturnResult, getLeadReturnResultsByOfficer, getLeadReturnResultByLeadNoandLeadName,
     updateLeadReturnResult,
-    deleteLeadReturnResult } = require("../controller/leadReturnResultController");
+    deleteLeadReturnResult, searchCasesAndLeadsByKeyword  } = require("../controller/leadReturnResultController");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
 
@@ -13,7 +13,10 @@ router.post("/create", verifyToken, createLeadReturnResult);
 // Route to get lead return results assigned to or assigned by the authenticated officer
 router.get("/officer-leads", verifyToken, getLeadReturnResultsByOfficer);
 
-router.get("/:leadNo/:leadName/:caseNo/:caseName",verifyToken, getLeadReturnResultByLeadNoandLeadName)
+router.get("/:leadNo/:leadName/:caseNo/:caseName",verifyToken, getLeadReturnResultByLeadNoandLeadName);
+
+router.get("/", verifyToken, searchCasesAndLeadsByKeyword);
+
 
 // router.delete("/delete/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId", deleteLeadReturnResult);
 

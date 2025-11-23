@@ -183,7 +183,7 @@
     margin-top: 20px;
     padding: 12px 24px;
     /* background-color: #6a3a3a; */
-    background-color: rgba(23, 23, 145, 0.667);
+    background-color: rgba(34, 34, 146, 0.667);
     color: white;
     font-size: 20px;
     border: none;
@@ -197,3 +197,38 @@
   /* .main-page-btn:hover {
     background-color: #6a3a3a;
   } */
+
+  .results-summary {
+  display: flex;
+  gap: 16px;
+  margin: 10px 0 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.results-circle {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 2px solid #242377;          /* tweak color as you like */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  background: #f7fafc;                /* soft background */
+}
+
+.results-circle-count {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.results-circle-label {
+  font-size: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 4px;
+  color: #555;
+}

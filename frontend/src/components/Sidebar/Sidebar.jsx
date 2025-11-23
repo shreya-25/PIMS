@@ -43,6 +43,7 @@ export const SideBar = ({
   const addIcon     = `${process.env.PUBLIC_URL}/Materials/addicon.svg`;
   const printIcon   = `${process.env.PUBLIC_URL}/Materials/print.png`;
   const bellIcon    = `${process.env.PUBLIC_URL}/Materials/notification.png`;
+   const searchIcon    = `${process.env.PUBLIC_URL}/Materials/search1.png`;
 
   const handleCreateLead = () => {
     navigate("/createlead", {
@@ -328,6 +329,14 @@ export const SideBar = ({
         >
           <img src={logIcon} className="sidebar-icon" alt="" />
           <span>Case Log</span>
+        </li>
+
+        <li
+          className={`sidebar-item ${activePage === "LeadLog" ? "active" : ""}`}
+          onClick={() => navigate("/SearchLead", { state: { caseDetails } })}
+        >
+          <img src={searchIcon} className="sidebar-icon" alt="" />
+          <span>Advanced Search </span>
         </li>
 
         {/* Other Ongoing Cases */}

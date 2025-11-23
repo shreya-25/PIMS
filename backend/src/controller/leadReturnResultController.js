@@ -1,4 +1,5 @@
 const LeadReturnResult = require("../models/leadReturnResult");
+const LeadReturn = require("../models/leadreturn");
 
 // Helpers to convert between A…Z strings and numbers
 function alphabetToNumber(str) {
@@ -188,7 +189,87 @@ const deleteLeadReturnResult = async (req, res) => {
     }
 };
 
+const searchCasesAndLeadsByKeyword = async (req, res) => {
+  try {
+    const { keyword } = req.query;
+
+    if (!keyword || !keyword.trim()) {
+      return res.status(400).json({ message: "Keyword is required." });
+    }
+
+    console.log("🔍 searchCasesAndLeadsByKeyword – keyword:", keyword);
+
+    const regex = new RegExp(keyword.trim(), "i"); // case-insensitive
+
+    // 1) Search in LeadReturn
+    const leadReturns = await LeadReturn.find({
+      $or: [
+        { description: regex },
+        { caseName: regex },
+        { caseNo: regex },
+      ],
+    });
+
+    // 2) Search in LeadReturnResult
+    const leadReturnResults = await LeadReturnResult.find({
+      $or: [
+        { description: regex },
+        { leadReturnResult: regex },
+        { caseName: regex },
+        { caseNo: regex },
+      ],
+    });
+
+    // 3) Build a FLAT list of unified lead entries
+    const flatResults = [];
+
+    // from LeadReturn
+    for (const lr of leadReturns) {
+      flatResults.push({
+        caseNo: lr.caseNo,
+        caseName: lr.caseName,
+        leadNo: lr.leadNo,
+        description: lr.description,
+        source: "LeadReturn",
+        fullLeadReturn: lr,
+      });
+    }
+
+    // from LeadReturnResult
+    for (const lrr of leadReturnResults) {
+      flatResults.push({
+        caseNo: lrr.caseNo,
+        caseName: lrr.caseName,
+        leadNo: lrr.leadNo,
+        description: lrr.description,
+        source: "LeadReturnResult",
+        fullLeadReturn: lrr,
+      });
+    }
+
+    // 4) Optional: de-duplicate by caseNo + leadNo + description
+    const dedupMap = new Map();
+    for (const item of flatResults) {
+      const key = `${item.caseNo || ""}::${item.leadNo || ""}::${
+        item.description || ""
+      }`;
+      if (!dedupMap.has(key)) {
+        dedupMap.set(key, item);
+      }
+    }
+
+    const deduped = Array.from(dedupMap.values());
+    console.log("✅ searchCasesAndLeadsByKeyword – results count:", deduped.length);
+
+    return res.status(200).json(deduped);
+  } catch (err) {
+    console.error("Error searching cases and leads by keyword:", err);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+
 
 // module.exports = { createLeadReturnResult, getLeadReturnResultsByOfficer, getLeadReturnResultByLeadNoandLeadName };
 module.exports = { createLeadReturnResult, getLeadReturnResultsByOfficer, getLeadReturnResultByLeadNoandLeadName, updateLeadReturnResult,
-    deleteLeadReturnResult};
+    deleteLeadReturnResult, searchCasesAndLeadsByKeyword };
