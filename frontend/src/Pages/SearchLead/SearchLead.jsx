@@ -30,6 +30,8 @@ export const SearchLead = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [totalEntries, setTotalEntries] = useState(0);
+  const signedInOfficer = localStorage.getItem("loggedInUser");
+
 
     const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
 
@@ -200,6 +202,7 @@ const handleSearch = async () => {
           caseName: selectedCase.caseName,
           keyword: keywordParam,
           field: fieldParam,
+          officerName: signedInOfficer,   
         },
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -211,7 +214,7 @@ const handleSearch = async () => {
     let leadReturnResultsData = [];
     try {
       const lrrResp = await api.get("/api/leadReturnResult", {
-        params: { keyword: keywordParam },
+        params: { keyword: keywordParam, officerName: signedInOfficer,  },
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -253,11 +256,33 @@ const handleSearch = async () => {
     leadReturnResultsData.forEach(addToMap);
 
     const combinedResults = Array.from(combinedMap.values());
-    console.log("Flat combined search results:", combinedResults);
+console.log("Flat combined search results:", combinedResults);
 
-    setLeadsData(combinedResults);
-    setTotalEntries(combinedResults.length);
-    setCurrentPage(1);
+    const combinedWithOfficers = combinedResults.map(item => {
+  let officers = [];
+
+  // Case 1: from /api/lead/search – usually assignedTo is an array of { username, ... }
+  if (Array.isArray(item.assignedTo)) {
+    officers = item.assignedTo.map(o => o.username || o);
+  }
+  // Case 2: from LeadReturnResult / LeadReturn – often { assignedTo: { assignees: [...] } }
+  else if (Array.isArray(item.assignedTo?.assignees)) {
+    officers = item.assignedTo.assignees.slice();
+  }
+  // Case 3: buried inside fullLeadReturn (if you kept that)
+  else if (Array.isArray(item.fullLeadReturn?.assignedTo?.assignees)) {
+    officers = item.fullLeadReturn.assignedTo.assignees.slice();
+  }
+
+  return {
+    ...item,
+    assignedOfficers: officers,  // ✅ normalized field
+  };
+});
+
+setLeadsData(combinedWithOfficers);
+setTotalEntries(combinedWithOfficers.length);
+setCurrentPage(1);
   } catch (error) {
     console.error("❌ Error in handleSearch:", error);
     setLeadsData([]);
@@ -383,35 +408,36 @@ const handleSearch = async () => {
 
   // distinct values for each column
   const distinctValues = useMemo(() => {
-    const map = {
-      caseNo: new Set(),
-      caseName: new Set(),
-      leadNo: new Set(),
-      description: new Set(),
-      assignedOfficers: new Set(),
-    };
+  const map = {
+    caseNo: new Set(),
+    caseName: new Set(),
+    leadNo: new Set(),
+    description: new Set(),
+    assignedOfficers: new Set(),
+  };
 
-    leadsData.forEach((lead) => {
-      map.caseNo.add(String(lead.caseNo || "NA"));
-      map.caseName.add(lead.caseName || "NA");
-      map.leadNo.add(String(lead.leadNo || ""));
-      map.description.add(lead.description || "");
+  leadsData.forEach((lead) => {
+    map.caseNo.add(String(lead.caseNo || "NA"));
+    map.caseName.add(lead.caseName || "NA");
+    map.leadNo.add(String(lead.leadNo || ""));
+    map.description.add(lead.description || "");
 
-      if (Array.isArray(lead.assignedTo?.assignees)) {
-        lead.assignedTo.assignees.forEach((officer) =>
-          map.assignedOfficers.add(officer)
-        );
-      }
-    });
+    if (Array.isArray(lead.assignedOfficers)) {
+      lead.assignedOfficers.forEach((officer) =>
+        map.assignedOfficers.add(officer)
+      );
+    }
+  });
 
-    return Object.fromEntries(
-      Object.entries(map).map(([key, set]) => [key, [...set]])
-    );
-  }, [leadsData]);
+  return Object.fromEntries(
+    Object.entries(map).map(([key, set]) => [key, [...set]])
+  );
+}, [leadsData]);
+
 
   // sort helper
   const sortColumn = (dataKey, direction) => {
-    setSortConfig({ key: dataKey, direction });
+    setSortConfig({ key: dataKey, direction: (direction || "asc").toLowerCase(), });
   };
 
   // search within filter popup
@@ -456,59 +482,64 @@ const handleSearch = async () => {
   };
 
   // filtered + sorted leads
-  const sortedFilteredLeads = useMemo(() => {
-    // 1) filter
-    const filtered = leadsData.filter((lead) => {
-      return Object.entries(filterConfig).every(([field, selected]) => {
-        if (!selected || selected.length === 0) return true;
+const sortedFilteredLeads = useMemo(() => {
+  // 1) filter
+  const filtered = leadsData.filter((lead) => {
+    return Object.entries(filterConfig).every(([field, selected]) => {
+      if (!selected || selected.length === 0) return true;
 
-        if (field === "assignedOfficers") {
-          const officers = Array.isArray(lead.assignedTo?.assignees)
-            ? lead.assignedTo.assignees
-            : [];
-          return officers.some((o) => selected.includes(o));
-        }
-
+      // Special handling for assignedOfficers (array of names)
+      if (field === "assignedOfficers") {
+        const officers = Array.isArray(lead.assignedOfficers)
+          ? lead.assignedOfficers
+          : [];
+        return officers.some((o) => selected.includes(o));
+      } else {
+        // All other scalar fields
         const value =
           field === "caseNo" || field === "leadNo"
             ? String(lead[field] ?? "")
             : String(lead[field] ?? "");
 
         return selected.includes(value);
-      });
-    });
-
-    // 2) sort
-    if (!sortConfig.key) return filtered;
-
-    const { key, direction } = sortConfig;
-
-    return [...filtered].sort((a, b) => {
-      let aV;
-      let bV;
-
-      if (key === "assignedOfficers") {
-        const aArr = Array.isArray(a.assignedTo?.assignees)
-          ? a.assignedTo.assignees
-          : [];
-        const bArr = Array.isArray(b.assignedTo?.assignees)
-          ? b.assignedTo.assignees
-          : [];
-        aV = aArr[0] || "";
-        bV = bArr[0] || "";
-      } else {
-        aV = a[key];
-        bV = b[key];
       }
-
-      const aStr = String(aV ?? "");
-      const bStr = String(bV ?? "");
-
-      return direction === "asc"
-        ? aStr.localeCompare(bStr)
-        : bStr.localeCompare(aStr);
     });
-  }, [leadsData, filterConfig, sortConfig]);
+  });
+
+  // 2) sort
+  if (!sortConfig.key) return filtered;
+
+  const { key, direction } = sortConfig;
+  const dir = (direction || "asc").toLowerCase(); // normalize
+
+  return [...filtered].sort((a, b) => {
+    let aStr;
+    let bStr;
+
+    if (key === "assignedOfficers") {
+      // ✅ Join all officers into a string so it's sortable
+      const aArr = Array.isArray(a.assignedOfficers)
+        ? a.assignedOfficers
+        : [];
+      const bArr = Array.isArray(b.assignedOfficers)
+        ? b.assignedOfficers
+        : [];
+
+      aStr = aArr.join(", "); // e.g. "Adams, Brown"
+      bStr = bArr.join(", ");
+    } else {
+      const aV = a[key];
+      const bV = b[key];
+      aStr = String(aV ?? "");
+      bStr = String(bV ?? "");
+    }
+
+    return dir === "asc"
+      ? aStr.localeCompare(bStr)
+      : bStr.localeCompare(aStr);
+  });
+}, [leadsData, filterConfig, sortConfig]);
+
 
   // optional: slice for pagination
   const pagedLeads = useMemo(() => {
@@ -866,9 +897,8 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
                             whiteSpace: "normal",
                           }}
                         >
-                          {Array.isArray(lead.assignedTo?.assignees) &&
-                          lead.assignedTo.assignees.length > 0 ? (
-                            lead.assignedTo.assignees.map((officer, idx) => (
+                          {Array.isArray(lead.assignedOfficers) && lead.assignedOfficers.length > 0 ? (
+                            lead.assignedOfficers.map((officer, idx) => (
                               <span
                                 key={idx}
                                 style={{
@@ -883,6 +913,7 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
                           ) : (
                             <span>NA</span>
                           )}
+
                         </td>
 
                         <td>
