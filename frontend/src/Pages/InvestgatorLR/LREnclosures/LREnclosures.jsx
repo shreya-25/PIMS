@@ -3,11 +3,8 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import Navbar from '../../../components/Navbar/Navbar';
 import "./LREnclosures.css"; // Custom CSS file for Enclosures styling
 import FootBar from '../../../components/FootBar/FootBar';
-import axios from "axios";
 import { CaseContext } from "../../CaseContext";
-import Comment from "../../../components/Comment/Comment";
-import api, { BASE_URL } from "../../../api";
-import Attachment from "../../../components/Attachment/Attachment";
+import api from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../../components/AlertModal/AlertModal";
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
