@@ -56,6 +56,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: pims-backend
+        path: ./backend
 
     - name: Azure Login
       uses: azure/login@v2
