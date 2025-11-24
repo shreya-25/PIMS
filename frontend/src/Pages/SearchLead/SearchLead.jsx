@@ -385,7 +385,7 @@ setCurrentPage(1);
     "Case Name": "18%",
     "Lead No.": "8%",
     "Lead Name": "20%",
-    "Assigned Officers": "15%",
+    "Assigned Officers": "11%",
   };
 
   const [sortConfig, setSortConfig] = useState({
