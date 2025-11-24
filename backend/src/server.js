@@ -111,6 +111,10 @@ app.use('/uploads', express.static(path.join(__dirname, 'temp_uploads')));
 
 app.use("/api/report", reportRoutes); // For report generation
 
+app.get("/", (req, res) => {
+  res.send("Server is ready");
+});
+
 if (process.env.NODE_ENV === 'production') {
   const buildPath = path.join(__dirname, '..', '..', 'frontend', 'build');
   app.use(express.static(buildPath));
