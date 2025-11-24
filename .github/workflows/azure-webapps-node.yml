@@ -1,4 +1,4 @@
-name: Deploy PIMS backend + frontend
+name: Deploy PIMS fullstack (backend + frontend)
 
 on:
   push:
@@ -10,39 +10,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Use Node.js 20
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
+      - name: Use Node.js 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
 
-    # Install backend dependencies
-    - name: Install backend deps
-      working-directory: backend
-      run: npm install
+      # Backend install
+      - name: Install backend deps
+        working-directory: backend
+        run: npm install
 
-    # Install + build frontend
-    - name: Install frontend deps
-      working-directory: frontend
-      run: npm install
+      # Frontend install + build
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm install
 
-    - name: Build frontend
-      working-directory: frontend
-      run: npm run build
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
 
-    # Copy frontend build → backend/build
-    - name: Move frontend build into backend
-      run: |
-        rm -rf backend/build
-        cp -r frontend/build backend/build
-
-    # Upload only backend folder
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: pims-backend
-        path: backend/
+      # Upload WHOLE repo (backend + frontend)
+      - name: Upload entire repo
+        uses: actions/upload-artifact@v4
+        with:
+          name: pims-full
+          path: .   # <--- WHOLE project
 
   deploy:
     runs-on: ubuntu-latest
@@ -52,22 +46,22 @@ jobs:
       contents: read
 
     steps:
-    - name: Download built backend
-      uses: actions/download-artifact@v4
-      with:
-        name: pims-backend
-        path: ./backend
+      - name: Download full project
+        uses: actions/download-artifact@v4
+        with:
+          name: pims-full
+          path: .
 
-    - name: Azure Login
-      uses: azure/login@v2
-      with:
-        client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_3956D9505F21462996F36A6CCA629333 }}
-        tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_8C7A7230F3D649D1B65780754391E937 }}
-        subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_097B630F1BCC4B3E9967BC778F170891 }}
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_3956D9505F21462996F36A6CCA629333 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_8C7A7230F3D649D1B65780754391E937 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_097B630F1BCC4B3E9967BC778F170891 }}
 
-    - name: Deploy to Azure
-      uses: azure/webapps-deploy@v3
-      with:
-        app-name: 'pims'
-        slot-name: 'Production'
-        package: ./backend
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'pims'
+          slot-name: 'Production'
+          package: .
