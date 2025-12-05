@@ -381,11 +381,11 @@ setCurrentPage(1);
   };
 
   const columnWidths = {
-    "Case No.": "10%",
+    "Case No.": "12%",
     "Case Name": "18%",
-    "Lead No.": "8%",
+    "Lead No.": "12%",
     "Lead Name": "20%",
-    "Assigned Officers": "11%",
+    "Assigned Officers": "18%",
   };
 
   const [sortConfig, setSortConfig] = useState({
@@ -592,14 +592,7 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
             </div>
 
             {/* Advanced Search Toggle Button */}
-            <div className="advanced-search-toggle">
-              <button
-                className="save-btn1"
-                onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-              >
-                {showAdvancedSearch ? "Advanced Search" : "Advanced Search"}
-              </button>
-            </div>
+        
 
             {/* Conditionally Render Advanced Search Section */}
             {showAdvancedSearch && (
