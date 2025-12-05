@@ -6,6 +6,6 @@
     "node": "16.x"
   },
   "scripts": {
-    "start": "npm run start --prefix backend",
+    "start": "npm run dev --prefix backend",
     "heroku-postbuild": "npm install --prefix backend && NPM_CONFIG_PRODUCTION=false npm install --prefix frontend && npm run build --prefix frontend"  }
 }

@@ -1,67 +1,65 @@
-name: Deploy PIMS fullstack (backend + frontend)
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Build and deploy Node.js app to Azure Web App - pims
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
+    permissions:
+      contents: read #This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node.js 20
+      - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: '20.x'
 
-      # Backend install
-      - name: Install backend deps
-        working-directory: backend
-        run: npm install
-
-      # Frontend install + build
-      - name: Install frontend deps
-        working-directory: frontend
-        run: npm install
-
-      - name: Build frontend
-        working-directory: frontend
-        run: npm run build
-
-      # Upload WHOLE repo (backend + frontend)
-      - name: Upload entire repo
+      - name: npm install, build, and test
+        run: |
+          npm install
+          npm run build --if-present
+          npm run test --if-present
+      
+      - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: pims-full
-          path: .   # <--- WHOLE project
+          name: node-app
+          path: .
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write
-      contents: read
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
 
     steps:
-      - name: Download full project
+      - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: pims-full
-          path: .
-
-      - name: Azure Login
+          name: node-app
+      
+      - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_3956D9505F21462996F36A6CCA629333 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_8C7A7230F3D649D1B65780754391E937 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_097B630F1BCC4B3E9967BC778F170891 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_776D4A404612405FA43530C786552E4D }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_6A5694313C9D4F17AD53C24823A0573A }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_7DE62DC4FC5B427FA77D3FF83AC7451F }}
 
-      - name: Deploy to Azure Web App
+      - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
+        id: deploy-to-webapp
         with:
           app-name: 'pims'
           slot-name: 'Production'
           package: .
+          
