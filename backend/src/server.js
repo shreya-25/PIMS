@@ -151,7 +151,7 @@ console.log(process.env.MONGO_URI);
 
 // Start Server
 const PORT = process.env.PORT || 7002;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Server started at http://localhost:${PORT}`);
 });
 
