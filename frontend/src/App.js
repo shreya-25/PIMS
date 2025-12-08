@@ -32,20 +32,6 @@ import { LRVideo } from './Pages/InvestgatorLR/LRVideo/LRVideo';
 import { LRScratchpad } from './Pages/InvestgatorLR/LRScratchpad/LRScratchpad';
 import { LRTimeline } from './Pages/InvestgatorLR/LRTimeline/LRTimeline';
 import { LRFinish } from './Pages/InvestgatorLR/LRFinish/LRFinish';
-import { CMInstruction } from './Pages/CaseManagerLR/CMInstruction/CMInstruction';
-import { CMReturn } from './Pages/CaseManagerLR/CMReturn/CMReturn';
-import { CMPerson } from './Pages/CaseManagerLR/CMPerson/CMPerson';
-import { CMPerson1 } from './Pages/CaseManagerLR/CMPerson1/CMPerson1';
-import { CMPerson2 } from './Pages/CaseManagerLR/CMPerson2/CMPerson2';
-import { CMVehicle } from './Pages/CaseManagerLR/CMVehicle/CMVehicle';
-import { CMEnclosures } from './Pages/CaseManagerLR/CMEnclosures/CMEnclosures';
-import { CMEvidence } from './Pages/CaseManagerLR/CMEvidence/CMEvidence';
-import { CMPictures } from './Pages/CaseManagerLR/CMPictures/CMPictures';
-import { CMAudio } from './Pages/CaseManagerLR/CMAudio/CMAudio';
-import { CMVideo } from './Pages/CaseManagerLR/CMVideo/CMVideo';
-import { CMScratchpad } from './Pages/CaseManagerLR/CMScratchpad/CMScratchpad';
-import { CMTimeline } from './Pages/CaseManagerLR/CMTimeline/CMTimeline';
-import { CMFinish } from './Pages/CaseManagerLR/CMFinish/CMFinish';
 import { FlaggedLead } from './Pages/FlaggedLead/FlaggedLead';
 import { SearchLead } from './Pages/SearchLead/SearchLead';
 import { ViewTimeline } from './Pages/ViewTimeline/ViewTimeline';
@@ -59,7 +45,6 @@ import { AdminDB } from './Pages/Admin/AdminDB';
 import { AdminDashboard } from './Pages/Admin/Dashboard/AdminDashboard';
 import { OfficerManagement } from './Pages/OfficerManagement/OfficerManagement';
 import { LeadInfo } from './Pages/LeadInfo/LeadInfo';
-import { CaseInformation } from './Pages/CaseInformation/CaseInformation';
 import {LeadReview} from './Pages/LeadReview/LeadReview';
 import { LeadsDesk } from './Pages/LeadsDesk/LeadsDesk';
 import { LeadsDeskTest } from './Pages/LeadsDeskTest/LeadsDeskTest';
@@ -141,23 +126,8 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/AdminDB" element={<ProtectedLayout> <AdminDB /> </ProtectedLayout>} />
         <Route path="/OfficerManagement" element={<ProtectedLayout>  <OfficerManagement />  </ProtectedLayout>} />
         <Route path="/LeadInfo" element={<ProtectedLayout>  <LeadInfo />  </ProtectedLayout>} />
-        <Route path="/CMInstruction" element={<ProtectedLayout>   <CMInstruction />   </ProtectedLayout>} />
-        <Route path="/CMReturn" element={<ProtectedLayout>  <CMReturn />  </ProtectedLayout>} />
-        <Route path="/CMPerson" element={<ProtectedLayout>  <CMPerson />  </ProtectedLayout>} />
-        <Route path="/CMPerson1" element={<ProtectedLayout>  <CMPerson1 />  </ProtectedLayout>} />
-        <Route path="/CMPerson2" element={<ProtectedLayout>  <CMPerson2 />  </ProtectedLayout>} />
-        <Route path="/CMVehicle" element={<ProtectedLayout> <CMVehicle /> </ProtectedLayout>} />
-        <Route path="/CMEnclosures" element={<ProtectedLayout>  <CMEnclosures />  </ProtectedLayout>} />
-        <Route path="/CMEvidence" element={<ProtectedLayout> <CMEvidence /> </ProtectedLayout>} />
-        <Route path="/CMPictures" element={<ProtectedLayout> <CMPictures /> </ProtectedLayout>} />
-        <Route path="/CMAudio" element={<ProtectedLayout>  <CMAudio />  </ProtectedLayout>} />
-        <Route path="/CMVideo" element={<ProtectedLayout>  <CMVideo />  </ProtectedLayout>} />
-        <Route path="/CMFinish" element={<ProtectedLayout> <CMFinish /> </ProtectedLayout>} />
-        <Route path="/CMScratchpad" element={<ProtectedLayout> <CMScratchpad /> </ProtectedLayout>} />
-        <Route path="/CMTimeline" element={<ProtectedLayout> <CMTimeline /> </ProtectedLayout>} />
-        <Route path="/ViewLR" element={<ProtectedLayout> <ViewLR /> </ProtectedLayout>} />
+          <Route path="/ViewLR" element={<ProtectedLayout> <ViewLR /> </ProtectedLayout>} />
         <Route path="/AdminDashboard" element={<ProtectedLayout> <AdminDashboard /> </ProtectedLayout>} />
-        <Route path="/CaseInformation" element={<ProtectedLayout>  <CaseInformation /> </ProtectedLayout> } />
         <Route path="/LeadReview" element = {<ProtectedLayout> <LeadReview /> </ProtectedLayout> } />
         <Route path="/LeadsDesk" element= {<ProtectedLayout>  <LeadsDesk /> </ProtectedLayout> } />
         <Route path="/LeadsDeskTest" element= {<ProtectedLayout>  <LeadsDeskTest /> </ProtectedLayout> } />

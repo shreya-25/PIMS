@@ -1,324 +1,238 @@
-import React, { useEffect, useState, useContext  } from "react";
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import React, { useEffect, useState, useContext } from "react";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { AlertModal } from "../AlertModal/AlertModal";
 import api from "../../api";
-import "./Navbar1.css";
+import styles from "./Navbar.module.css";
 import { CaseContext } from "../../Pages/CaseContext";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [username, setUsername] = useState("");
-  const [notifications, setNotifications] = useState(0);
-  const [chats, setChats] = useState(0);
-  const [emails, setEmails] = useState(0);
-   const [alertOpen,    setAlertOpen]    = useState(false);
-  const [alertMessage, setAlertMessage] = useState("");
-  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const { selectedCase } = useContext(CaseContext) || {};
 
-  const [newNotifs, setNewNotifs]         = useState([]);
-
+  // ============================================================================
+  // STATE MANAGEMENT
+  // ============================================================================
+  const [username, setUsername] = useState("");
+  const [newNotifs, setNewNotifs] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showChats, setShowChats] = useState(false);
-  const [showEmails, setShowEmails] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
-  const [notificationList, setNotificationList] = useState([]);
-  const [chatList, setChatList] = useState([]);
-  const [emailList, setEmailList] = useState([]);
-
+  // ============================================================================
+  // COMPUTED VALUES
+  // ============================================================================
   const roleFromCase = selectedCase?.role?.trim();
-  const roleFromStorage = localStorage.getItem("userRole") || ""; // optional fallback
+  const roleFromStorage = localStorage.getItem("userRole") || "";
   const role = roleFromCase || roleFromStorage;
   const onHome = location.pathname === "/HomePage" || location.pathname === "/";
   const showRole = !!role && !onHome;
 
-  const handleNavigation = (route) => {
-    navigate(route); // Navigate to respective page
-  };
-   const doLogout = () => {
-    localStorage.removeItem("loggedInUser");
-    window.location.href = "/";
-  };
-
+  // ============================================================================
+  // DATA FETCHING
+  // ============================================================================
   useEffect(() => {
     const loggedInUser = localStorage.getItem("loggedInUser");
     if (loggedInUser) {
       setUsername(loggedInUser);
     }
 
-    // Sample data
-    setNotifications(3);
-    setChats(5);
-    setEmails(4);
-    
-     const fetchNewOnly = async () => {
-     if (!loggedInUser) return;
-     try {
-       const { data } = await api.get(`/api/notifications/user/${loggedInUser}`);
-       // filter to only “unread” & “pending” Ongoing case/lead notifications
-       const fresh = data
-         .filter(n =>
-           (n.type === "Case" || n.type === "Lead") &&
-           n.caseStatus === "Open" &&
-           n.assignedTo.some(r =>
-             r.username === loggedInUser &&
-             r.status === "pending" &&
-             r.unread === true
-           )
-         )
-         .sort((a, b) => new Date(b.time) - new Date(a.time));
-       setNewNotifs(fresh);
-     } catch (e) {
-       console.error("Failed to load notifications", e);
-     }
-   };
+    const fetchNewNotifications = async () => {
+      if (!loggedInUser) return;
 
-   fetchNewOnly();
-   const intervalId = setInterval(fetchNewOnly, 15000);
-   return () => clearInterval(intervalId);
-    setChatList([
-      "Officer 1 replied to Lead 33 return",
-      "Officer 5 replied to Lead 20 return",
-      "Officer 6 commented on Lead 50",
-      "Officer 8 commented on Lead 34",
-      "Officer 5 replied to Lead 10 return",
-    ]);
-    setEmailList([
-      "Email from Officer 3",
-      "Weekly Newsletter",
-      "Press Event Meeting Invitation",
-      "Email from Officer 6",
-    ]);
+      try {
+        const { data } = await api.get(`/api/notifications/user/${loggedInUser}`);
+
+        // Filter to only "unread" & "pending" notifications for ongoing cases/leads
+        const fresh = data
+          .filter(
+            (n) =>
+              (n.type === "Case" || n.type === "Lead") &&
+              n.caseStatus === "Open" &&
+              n.assignedTo.some(
+                (r) =>
+                  r.username === loggedInUser &&
+                  r.status === "pending" &&
+                  r.unread === true
+              )
+          )
+          .sort((a, b) => new Date(b.time) - new Date(a.time));
+
+        setNewNotifs(fresh);
+      } catch (error) {
+        console.error("Failed to load notifications", error);
+      }
+    };
+
+    fetchNewNotifications();
+    const intervalId = setInterval(fetchNewNotifications, 15000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
-  const handleNotificationClick = (index) => {
-    // setNewNotifs(prev => prev.filter((_, i) => i !== index));
-    navigate('/HomePage');
+  // ============================================================================
+  // EVENT HANDLERS
+  // ============================================================================
+  const handleNavigation = (route) => {
+    navigate(route);
   };
 
-  const handleChatClick = (index) => {
-    setNewNotifs(prev => prev.filter((_, i) => i !== index));
+  const handleNotificationClick = () => {
+    setShowNotifications(false);
+    navigate("/HomePage");
   };
 
-  const handleEmailClick = (index) => {
-    setEmails((prev) => Math.max(0, prev - 1));
-    setEmailList((prev) => prev.filter((_, i) => i !== index));
+  const handleLogout = () => {
+    localStorage.removeItem("loggedInUser");
+    window.location.href = "/";
   };
 
+  const toggleNotifications = () => {
+    setShowNotifications((prev) => !prev);
+  };
+
+  // ============================================================================
+  // UTILITY FUNCTIONS
+  // ============================================================================
+  const formatNotificationDate = (dateString) => {
+    const date = new Date(dateString);
+    const dateStr = date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+    const timeStr = date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `${dateStr} ${timeStr}`;
+  };
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
   return (
-    <nav className="NavbarItems">    
-      {/* Left Section: Logo and PIMS Text */}
-       <div className="navbar-left">
-    <img
-      src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
-      alt="Police Department"
-      className="brand-badge"
-    />
-    <div className="brand-copy">
-      <span className="brand-title">PIMS</span>
-      <span className="brand-subtitle">Police Investigation Management System</span>
-    </div>
-  </div>
+    <>
+      <nav className={styles.navbar}>
+        {/* Left Section: Logo and Brand */}
+        <div className={styles.navbarLeft}>
+          <img
+            src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`}
+            alt="Police Department"
+            className={styles.brandBadge}
+          />
+          <div className={styles.brandCopy}>
+            <span className={styles.brandTitle}>PIMS</span>
+            <span className={styles.brandSubtitle}>
+              Police Investigation Management System
+            </span>
+          </div>
+        </div>
 
-      {/* Right Section: Icons & Profile */}
-      <div className="profile">
-
-           {/* User Profile Info */}
-           {/* <div className="user-profile">
-           <div className="userImg">
-
-          <i className="fa-solid fa-user"></i>
-            <div className="user-ident">
-          <div className="username">{username || "Guest"}</div>
-      </div>
-      </div>
-      {showRole && <div className="user-role">Role: {role}</div>}
-        </div> */}
-        <div className="user-profile">
-  <div className="user-row">
-    <i className="fa-solid fa-user" aria-hidden="true"></i>
-    <span className="username">{username || "Guest"}</span>
-  </div>
-    {showRole && <span className="user-sep" aria-hidden="true"></span>}
-     {showRole && <div className="user-role">Role: {role}</div>}
-</div>
-
-        {/* <div className="user-profile">
-  <div className="user-row">
-    {showRole && <div className="user-role">Role: {role}</div>}
-  </div>
-</div> */}
-
-
-        <ul>
-          {/* Home */}
-          <li>
-            <img
-              src={`${process.env.PUBLIC_URL}/Materials/home-white.png`}
-              alt="Home"
-              onClick={() => handleNavigation("/HomePage")}
-              className="icon-img"
-            />
-          </li>
-
-          {/* Emails */}
-          {/* <li className="dropdown1">
-            <i
-              className="fa-solid fa-envelope"
-              onClick={() => {
-                setShowEmails(!showEmails);
-                setShowChats(false);
-                setShowNotifications(false);
-              }}
-            ></i>
-            {emails > 0 && <span className="badge">{emails}</span>}
-            {showEmails && (
-              <div className="dropdown-list">
-                {emailList.map((email, index) => (
-                  <div 
-                    key={index} 
-                    className="dropdown-item" 
-                    onClick={() => handleEmailClick(index)}
-                  >
-                    {email}
-                  </div>
-                ))}
-              </div>
-            )}
-          </li> */}
-
-          {/* Chats */}
-          {/* <li className="dropdown1">
-            <i
-              className="fa-brands fa-rocketchat"
-              onClick={() => {
-                setShowChats(!showChats);
-                setShowEmails(false);
-                setShowNotifications(false);
-              }}
-            ></i>
-            {chats > 0 && <span className="badge">{chats}</span>}
-            {showChats && (
-              <div className="dropdown-list">
-                {chatList.map((chat, index) => (
-                  <div 
-                    key={index} 
-                    className="dropdown-item" 
-                    onClick={() => handleChatClick(index)}
-                  >
-                    {chat}
-                  </div>
-                ))}
-              </div>
-            )}
-          </li> */}
-
-          {/* Notifications */}
-          <li className="dropdown1">
-            <i
-              className="fa-solid fa-bell"
-              onClick={() => {
-                setShowNotifications(!showNotifications);
-                setShowChats(false);
-                setShowEmails(false);
-              }}
-            ></i>
-            {newNotifs.length > 0 && <span className="badge">{newNotifs.length}</span>}
-            {showNotifications && (
-              // <div className="dropdown-list">
-              //    {newNotifs.length > 0 
-              //       ? newNotifs.map((n, idx) => (
-              //           <div
-              //             key={n._id}
-              //             className="dropdown-item"
-              //             onClick={() => handleNotificationClick(idx)}
-              //           >
-              //             <strong>{n.assignedBy}</strong> {n.action1}
-              //           </div>
-              //         ))
-              //       : <div className="dropdown-item">No new notifications</div>
-              //     }
-              // </div>
-               <div className="dropdown-list">
-      {newNotifs.length > 0
-        ? newNotifs.map((n, idx) => (
-            <div
-              key={n._id}
-              className="dropdown-itemNB"
-              onClick={() => handleNotificationClick(idx)}
-            >
-              <div className="notif-content">
-                <strong>{n.assignedBy}</strong> {n.action1}
-              </div>
-              <div className="notif-date">
-                {new Date(n.time).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric"
-                })}{" "}
-                {new Date(n.time).toLocaleTimeString("en-US", {
-                  hour: "2-digit",
-                  minute: "2-digit"
-                })}
-              </div>
+        {/* Right Section: User Info & Actions */}
+        <div className={styles.navbarRight}>
+          {/* User Profile */}
+          <div className={styles.userProfile}>
+            <div className={styles.userRow}>
+              <i className="fa-solid fa-user" aria-hidden="true"></i>
+              <span className={styles.username}>{username || "Guest"}</span>
             </div>
-          ))
-        : <div className="dropdown-item empty">No new notifications</div>
-      }
-    </div>
+            {showRole && (
+              <>
+                <span className={styles.userSep} aria-hidden="true"></span>
+                <div className={styles.userRole}>Role: {role}</div>
+              </>
             )}
-          </li>
+          </div>
 
-          {/* Profile */}
-          {/* <li>
-            <Link to="#">
-              <i className="fa-solid fa-user-pen"></i>
-            </Link>
-          </li> */}
+          {/* Action Icons */}
+          <ul className={styles.iconList}>
+            {/* Home */}
+            <li>
+              <img
+                src={`${process.env.PUBLIC_URL}/Materials/home-white.png`}
+                alt="Home"
+                onClick={() => handleNavigation("/HomePage")}
+                className={styles.iconImg}
+                role="button"
+                tabIndex={0}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") handleNavigation("/HomePage");
+                }}
+              />
+            </li>
 
-          {/* Logout */}
-          <li>
-            <Link
-              to="#"
-               onClick={e => {
-              e.preventDefault();
-              setLogoutConfirmOpen(true);
-            }}
-            >
-              <i className="fa-solid fa-right-from-bracket"></i>
-            </Link>
-          </li>
-        </ul>
-      </div>
-       <AlertModal
+            {/* Notifications */}
+            <li className={styles.dropdown}>
+              <i
+                className="fa-solid fa-bell"
+                onClick={toggleNotifications}
+                role="button"
+                tabIndex={0}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") toggleNotifications();
+                }}
+                aria-label="Notifications"
+              ></i>
+              {newNotifs.length > 0 && (
+                <span className={styles.badge}>{newNotifs.length}</span>
+              )}
+              {showNotifications && (
+                <div className={styles.dropdownList}>
+                  {newNotifs.length > 0 ? (
+                    newNotifs.map((notification) => (
+                      <div
+                        key={notification._id}
+                        className={styles.dropdownItem}
+                        onClick={handleNotificationClick}
+                      >
+                        <div className={styles.notifContent}>
+                          <strong>{notification.assignedBy}</strong>{" "}
+                          {notification.action1}
+                        </div>
+                        <div className={styles.notifDate}>
+                          {formatNotificationDate(notification.time)}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className={`${styles.dropdownItem} ${styles.empty}`}>
+                      No new notifications
+                    </div>
+                  )}
+                </div>
+              )}
+            </li>
+
+            {/* Logout */}
+            <li>
+              <Link
+                to="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setLogoutConfirmOpen(true);
+                }}
+                aria-label="Logout"
+              >
+                <i className="fa-solid fa-right-from-bracket"></i>
+              </Link>
+            </li>
+          </ul>
+        </div>
+      </nav>
+
+      {/* Logout Confirmation Modal */}
+      <AlertModal
         isOpen={logoutConfirmOpen}
         title="Confirm Logout"
         message="Are you sure you want to log out?"
         onConfirm={() => {
           setLogoutConfirmOpen(false);
-          doLogout();
+          handleLogout();
         }}
         onClose={() => setLogoutConfirmOpen(false)}
       />
-    </nav>
+    </>
   );
 };
 
 export default Navbar;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
