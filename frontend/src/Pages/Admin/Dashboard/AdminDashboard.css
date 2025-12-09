@@ -162,6 +162,7 @@ tr:nth-child(even) {
 
 iframe {
   width: 100%;
-  height: calc(100vh - 60px); /* Adjust based on navbar height */
+  height: calc(100vh - 30px); /* Adjust based on navbar height */
   border: none;
+  margin-top: 3%;
 }

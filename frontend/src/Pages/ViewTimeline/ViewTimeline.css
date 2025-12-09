@@ -6,9 +6,9 @@
     font-family: Arial, sans-serif;
     background-color: #ffffff;
     width: 100vw;
-    height: 100vh;
+    min-height: 100vh;
   }
-  
+
   .timeline-section {
     padding: 20px;
     background-color: #ffffff;
@@ -16,7 +16,7 @@
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     position: relative;
     width: 100%;
-    height: 50%;
+    min-height: 400px;
   }
   
   .timeline-horizontal {
@@ -43,20 +43,21 @@
   .timeline-entry-horizontal {
     position: relative;
     flex: none;
-    width: 350px; /* Fixed width */
-    height: 300px; /* Fixed height */
+    width: 350px;
+    min-height: 280px;
+    max-height: 320px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     text-align: center;
     background-color: #f8f9fa;
     padding: 15px;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    /* z-index: 1; Ensures it appears above the line */
-}
-  
+    overflow: hidden;
+  }
+
   .timeline-marker-horizontal {
     width: 15px;
     height: 15px;
@@ -65,54 +66,82 @@
     border-radius: 50%;
     box-shadow: 0 0 0 3px #393d42;
     margin-bottom: 10px;
+    flex-shrink: 0;
   }
-  
+
   .timeline-content-horizontal {
     background-color: #f8f9fa;
-    width: 300px;
-    height: 200px;
-    padding: 15px;
+    width: 100%;
+    padding: 10px;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     text-align: center;
-    margin-top: 10%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
-  
+
   .timeline-datetime {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
   }
-  
+
   .timeline-date {
-    /* font-weight: bold; */
-    font-size: 20px;
+    font-size: 14px;
     color: #393d42;
     margin: 0;
+    line-height: 1.3;
   }
-  
+
   .timeline-time {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 700;
     color: #393d42;
-    margin-top: 10px;
+    margin-top: 5px;
+    line-height: 1.2;
   }
-  
+
   .timeline-lead-horizontal {
-    font-size: 18px;
+    font-size: 16px;
     color: #007bff;
     cursor: pointer;
     text-decoration: underline;
-    margin: 10px 0;
+    margin: 5px 0;
+    flex-shrink: 0;
   }
-  
+
   .timeline-lead-horizontal:hover {
     color: #0056b3;
   }
-  
-  .timeline-location,
-  .timeline-flag,
-  .timeline-description {
-    margin: 5px 0;
+
+  .timeline-location {
+    margin: 3px 0;
     color: #6c757d;
+    font-size: 14px;
+    line-height: 1.3;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+
+  .timeline-flag {
+    margin: 3px 0;
+    color: #6c757d;
+    font-size: 14px;
+    line-height: 1.3;
+    flex-shrink: 0;
+  }
+
+  .timeline-description {
+    margin: 3px 0;
+    color: #6c757d;
+    font-size: 13px;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    max-height: 60px;
   }
   
   .timeline-horizontal::-webkit-scrollbar {
@@ -129,33 +158,142 @@
   }
 
   .filter-sort-container {
-    display: flex;
-    justify-content: space-between;
-    margin: 20px;
-    padding: 10px;
+    margin: 20px auto;
+    padding: 30px;
     background-color: #f8f9fa;
     border: 1px solid #ddd;
     border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     width: 90%;
+    max-width: 1400px;
   }
-  
-  .filter-container, .sort-container {
+
+  .filter-container {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 90%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    flex: 1;
   }
-  
-  label {
+
+  .filter-sort-container > .filter-container:nth-child(1),
+  .filter-sort-container > .filter-container:nth-child(2) {
+    display: inline-block;
+    width: calc(50% - 10px);
+    vertical-align: top;
+  }
+
+  .filter-sort-container > .filter-container:nth-child(1) {
+    margin-right: 20px;
+  }
+
+  .filter-sort-container > .filter-container:nth-child(3),
+  .filter-sort-container > .filter-container:nth-child(4) {
+    display: inline-block;
+    width: calc(50% - 10px);
+    vertical-align: top;
+    margin-top: 20px;
+  }
+
+  .filter-sort-container > .filter-container:nth-child(3) {
+    margin-right: 20px;
+  }
+
+  .filter-sort-container > button.save-btn1 {
+    display: block;
+    margin: 20px auto 0;
+    padding: 12px 40px;
     font-size: 16px;
-    color: #393d42;
+    color: #fff;
+    background-color: #5a6c7d;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
   }
-  
+
+  .filter-sort-container > button.save-btn1:hover {
+    background-color: #485563;
+  }
+
+  .sort-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    margin: 30px auto 50px;
+    padding: 25px;
+    background-color: #ffffff;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .sort-container label {
+    font-size: 18px;
+    font-weight: 700;
+    color: #007bff;
+    text-align: center;
+  }
+
+  .sort-container select {
+    width: 100%;
+    max-width: 350px;
+    padding: 12px;
+    font-size: 15px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    background-color: #fff;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+  }
+
+  .sort-container select:focus {
+    outline: none;
+    border-color: #007bff;
+  }
+
+  .sort-container button.save-btn1 {
+    padding: 12px 40px;
+    font-size: 16px;
+    color: #fff;
+    background-color: #5a6c7d;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  .sort-container button.save-btn1:hover {
+    background-color: #485563;
+  }
+
+  label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #393d42;
+    margin-bottom: 5px;
+  }
+
   select {
-    padding: 5px 10px;
-    border: 1px solid #ddd;
+    padding: 10px;
+    border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 14px;
+    width: 100%;
+  }
+
+  input[type="date"],
+  input[type="time"] {
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
   }
 
   .timeline-filter-dropdown {
@@ -163,11 +301,11 @@
     display: inline-block;
     width: 100%;
   }
-  
+
   .timeline-filter-dropdown-btn {
     width: 100%;
-    padding: 8px 12px;
-    font-size: 16px;
+    padding: 10px 12px;
+    font-size: 14px;
     border: 1px solid #ccc;
     border-radius: 4px;
     background-color: #fff;
@@ -175,7 +313,7 @@
     cursor: pointer;
     appearance: none;
   }
-  
+
   .timeline-filter-dropdown-btn:after {
     content: "▼";
     float: right;
@@ -183,105 +321,70 @@
     font-size: 12px;
     color: #888;
   }
-  
+
   .timeline-filter-dropdown-content {
-    display: none;
     position: absolute;
-    background-color: #f9f9f9;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
-    z-index: 1;
-    padding: 8px;
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    padding: 4px;
     width: 100%;
-    max-height: 150px;
+    max-height: 250px;
     overflow-y: auto;
-  }
-  
-  .timeline-filter-dropdown:hover .timeline-filter-dropdown-content {
-    display: block;
-  }
-  
-  .timeline-filter-dropdown-content div {
-    padding: 5px;
-    display: flex;
-    align-items: center;
-  }
-  
-  .timeline-filter-dropdown-content div:hover {
-    background-color: #f1f1f1;
-  }
-  
-  .timeline-filter-dropdown-content input {
-    margin-right: 8px;
-  }
-  
-  .filter-sort-container {
-    margin-top: 3%;
-    margin-left: 3%;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    padding: 20px;
-    background-color: #f8f9fa;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-  
-  .filter-container, .sort-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
+    top: 100%;
+    margin-top: 6px;
   }
 
-  .sort-container
-  {
-    margin-left: 40%;
-    width: 20%;
-  }
-  
-  label {
-    font-size: 14px;
-    color: #393d42;
-  }
-  
-  input, select {
-    padding: 10px;
-    font-size: 20px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    width: 100%;
-  }
-  
-  .timeline-filter-btn {
-    padding: 10px 20px;
-    font-size: 14px;
-    color: #fff;
-    background-color: #007bff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  
-  
-  .timeline-filter-btn:hover {
-    background-color: #0056b3;
-  }
-  
-  .filter-sort-container .filter-group {
-    grid-column: span 2;
-    padding: 10px;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    background: #ffffff;
-  }
-  
-  .filter-sort-container .timeline-filter-btn-container {
+  .timeline-filter-dropdown-content div {
+    padding: 10px 12px;
     display: flex;
-    justify-content: flex-end;
     align-items: center;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+    margin: 2px 0;
+  }
+
+  .timeline-filter-dropdown-content div:hover {
+    background-color: #f3f4f6;
+  }
+
+  .timeline-filter-dropdown-content input[type="checkbox"],
+  .timeline-filter-dropdown-content input[type="radio"] {
+    margin-right: 10px;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    accent-color: #007bff;
+  }
+
+  .timeline-filter-dropdown-content label {
+    cursor: pointer;
+    margin-bottom: 0;
+    font-size: 14px;
+    font-weight: 400;
+    color: #1f2937;
+    flex: 1;
+    user-select: none;
+  }
+
+  .timeline-filter-dropdown-content::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .timeline-filter-dropdown-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+
+  .timeline-filter-dropdown-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+  }
+
+  .timeline-filter-dropdown-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
   }
   

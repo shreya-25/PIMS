@@ -165,6 +165,21 @@ export const ViewTimeline = () => {
     setLocations(uniqueLocations);
   }, [timelineEntries]);
 
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.timeline-filter-dropdown')) {
+        setShowFlagDropdown(false);
+        setShowLocationDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   // Handle location filter checkbox change
   const handleLocationChange = (locationValue) => {
     setFilters((prev) => {
@@ -176,7 +191,7 @@ export const ViewTimeline = () => {
   };
 
     const formatTimeRange = (startTime, endTime) => {
-    const options = { hour: "2-digit", minute: "2-digit", hour12: false };
+    const options = { hour: "2-digit", minute: "2-digit", hour12: true };
     const start = new Date(startTime).toLocaleTimeString([], options);
     const end = new Date(endTime).toLocaleTimeString([], options);
     return `${start} to ${end}`;
@@ -222,9 +237,9 @@ export const ViewTimeline = () => {
 
     // Filter by time range
     if (filters.startTime && filters.endTime) {
-      // Convert filter times to 24-hour format first.
-      const filterStart24 = convert12To24(filters.startTime);
-      const filterEnd24 = convert12To24(filters.endTime);
+      // Time inputs are already in 24-hour format (HH:MM)
+      const filterStart24 = filters.startTime;
+      const filterEnd24 = filters.endTime;
 
       filtered = filtered.filter((entry) => {
         if (!entry.eventStartTime || !entry.eventEndTime) return false;
@@ -240,6 +255,10 @@ export const ViewTimeline = () => {
     }
 
     setFilteredEntries(filtered);
+
+    // Close dropdowns after applying filter
+    setShowFlagDropdown(false);
+    setShowLocationDropdown(false);
   };
 
   // Handle sorting by event date and start time.
@@ -356,7 +375,7 @@ export const ViewTimeline = () => {
                     <h3 className="timeline-lead-horizontal" onClick={() => handleViewDetails(entry.leadNo)}>
                       Lead {entry.leadNo}
                     </h3>
-                    <p className="timeline-location">{entry.eventLocation}</p>
+                    <p className="timeline-location"><strong>LOCATION:</strong> {entry.eventLocation}</p>
                     {entry.timelineFlag && entry.timelineFlag.length > 0 && (
                       <p className="timeline-flag">
                         <span className="red-flag">🚩</span> {entry.timelineFlag.join(', ')}

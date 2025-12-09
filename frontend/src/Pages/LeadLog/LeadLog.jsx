@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect, useRef, useMemo } from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import './LeadLog.css';
 import Filter from "../../components/Filter/Filter";
@@ -25,11 +25,27 @@ export const LeadLog = () => {
 
        const [showFilter, setShowFilter] = useState(false);
       const [showSort, setShowSort] = useState(false);
-  
+
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(50);
     const totalPages = 10; // Change based on your data
     const totalEntries = 100;
+
+  // Filter and Sort state
+  const filterButtonRefs = useRef({});
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [filterConfig, setFilterConfig] = useState({
+    leadNo: [],
+    description: [],
+    assignedDate: [],
+    leadStatus: [],
+    assignedTo: [],
+    submittedDate: [],
+    approvedDate: []
+  });
+  const [openFilter, setOpenFilter] = useState(null);
+  const [filterSearch, setFilterSearch] = useState({});
+  const [tempFilterSelections, setTempFilterSelections] = useState({});
   
 
   const navigate = useNavigate(); // Initialize the navigate function
@@ -421,6 +437,157 @@ const formatDate = (dateString) => {
   return `${month}/${day}/${year}`;
 };
 
+  // Column mapping for filter/sort
+  const colKey = {
+    "Lead #": "leadNo",
+    "Lead Log Summary": "description",
+    "Date Created": "assignedDate",
+    "Status": "leadStatus",
+    "Assigned To": "assignedTo",
+    "Date Submitted": "submittedDate",
+    "Date Approved": "approvedDate"
+  };
+
+  const columnWidths = {
+    "Lead #": "10%",
+    "Lead Log Summary": "auto",
+    "Date Created": "14%",
+    "Status": "10%",
+    "Assigned To": "13%",
+    "Date Submitted": "15%",
+    "Date Approved": "15%"
+  };
+
+  // Compute distinct values for filters
+  const distinctValues = useMemo(() => {
+    const map = {
+      leadNo: new Set(),
+      description: new Set(),
+      assignedDate: new Set(),
+      leadStatus: new Set(),
+      assignedTo: new Set(),
+      submittedDate: new Set(),
+      approvedDate: new Set()
+    };
+
+    leadLogData.forEach(lead => {
+      map.leadNo.add(String(lead.leadNo || ""));
+      map.description.add(lead.description || "");
+      map.assignedDate.add(formatDate(lead.assignedDate));
+      map.leadStatus.add(lead.leadStatus || "");
+
+      // Handle assignedTo array
+      if (Array.isArray(lead.assignedTo)) {
+        lead.assignedTo.forEach(officer => {
+          const name = officer.username || officer;
+          if (name) map.assignedTo.add(name);
+        });
+      }
+
+      map.submittedDate.add(formatDate(lead.submittedDate));
+      map.approvedDate.add(formatDate(lead.approvedDate));
+    });
+
+    return Object.fromEntries(
+      Object.entries(map).map(([key, set]) => [key, [...set].filter(v => v !== "")])
+    );
+  }, [leadLogData]);
+
+  // Filter and sort handlers
+  const sortColumn = (dataKey, direction) => {
+    setSortConfig({ key: dataKey, direction });
+  };
+
+  const handleFilterSearch = (dataKey, txt) =>
+    setFilterSearch(fs => ({ ...fs, [dataKey]: txt }));
+
+  const toggleSelectAll = (dataKey) => {
+    const all = distinctValues[dataKey] || [];
+    setTempFilterSelections(ts => ({
+      ...ts,
+      [dataKey]: ts[dataKey]?.length === all.length ? [] : [...all]
+    }));
+  };
+
+  const allChecked = (dataKey) => {
+    const sel = tempFilterSelections[dataKey] || [];
+    return sel.length === (distinctValues[dataKey] || []).length;
+  };
+
+  const handleCheckboxToggle = (dataKey, v) => {
+    setTempFilterSelections(ts => {
+      const sel = ts[dataKey] || [];
+      return {
+        ...ts,
+        [dataKey]: sel.includes(v)
+          ? sel.filter(x => x !== v)
+          : [...sel, v]
+      };
+    });
+  };
+
+  const applyFilter = (dataKey) => {
+    setFilterConfig(fc => ({
+      ...fc,
+      [dataKey]: tempFilterSelections[dataKey] || []
+    }));
+    setOpenFilter(null);
+  };
+
+  // Filtered and sorted data
+  const sortedFilteredLeads = useMemo(() => {
+    // 1) Filter
+    const filtered = leadLogData.filter(lead => {
+      return Object.entries(filterConfig).every(([field, selected]) => {
+        if (!selected || selected.length === 0) return true;
+
+        if (field === "assignedTo") {
+          const officers = Array.isArray(lead.assignedTo)
+            ? lead.assignedTo.map(o => o.username || o)
+            : [];
+          return officers.some(o => selected.includes(o));
+        } else if (field === "assignedDate" || field === "submittedDate" || field === "approvedDate") {
+          const value = formatDate(lead[field]);
+          return selected.includes(value);
+        } else {
+          const value = String(lead[field] ?? "");
+          return selected.includes(value);
+        }
+      });
+    });
+
+    // 2) Sort
+    if (!sortConfig.key) return filtered;
+
+    const { key, direction } = sortConfig;
+    return [...filtered].sort((a, b) => {
+      let aVal, bVal;
+
+      if (key === "assignedTo") {
+        const aOfficers = Array.isArray(a.assignedTo) ? a.assignedTo.map(o => o.username || o).join(", ") : "";
+        const bOfficers = Array.isArray(b.assignedTo) ? b.assignedTo.map(o => o.username || o).join(", ") : "";
+        aVal = aOfficers;
+        bVal = bOfficers;
+      } else if (key === "assignedDate" || key === "submittedDate" || key === "approvedDate") {
+        aVal = a[key] ? new Date(a[key]).getTime() : 0;
+        bVal = b[key] ? new Date(b[key]).getTime() : 0;
+      } else {
+        aVal = String(a[key] ?? "");
+        bVal = String(b[key] ?? "");
+      }
+
+      if (aVal < bVal) return direction === "asc" ? -1 : 1;
+      if (aVal > bVal) return direction === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [leadLogData, filterConfig, sortConfig]);
+
+  // Paginated data
+  const paginatedLeads = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return sortedFilteredLeads.slice(start, end);
+  }, [sortedFilteredLeads, currentPage, pageSize]);
 
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
   const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
@@ -560,65 +727,47 @@ const formatDate = (dateString) => {
 
       <div className="table-section1">
       <div className="table-section">
-      <div className="table-controls">
-      <div className="search-bar">
-      <div className="search-container1">
-      <i className="fa-solid fa-magnifying-glass"></i>
-      <input
-        type="text"
-        className="search-input1"
-        placeholder="Search Lead"
-      />
-      {/* <button className="search-button">Search</button> */}
-      </div>
-      </div>
-    <div className="empty-space"></div>
-    <div className="control-buttons">
-    <button onClick={() => setShowFilter(true)} className="icon-button">
-                      <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
-                        alt="Filter Icon"
-                        className="icon-image"
-                      />
-                    </button>
-                    <button onClick={() => setShowSort(true)} className="icon-button">
-                      <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
-                        alt="Sort Icon"
-                        className="icon-image"
-                      />
-                    </button>
-                    <button onClick={() => setShowSort(true)} className="icon-button">
-                      <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/download.png`}
-                        alt="Sort Icon"
-                        className="icon-image"
-                      />
-                    </button>
-                    <button onClick={() => setShowSort(true)} className="icon-button">
-                      <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/printer.png`}
-                        alt="Sort Icon"
-                        className="icon-image"
-                      />
-                    </button>
-    </div>
-  </div>
         <table className="leads-table" style={caseTeamStyles.table}>
           <thead>
             <tr>
-              <th style={{ ...caseTeamStyles.th, width: "10%" }}>Lead #</th>
-              <th>Lead Log Summary</th>
-              <th style={{ ...caseTeamStyles.th,  width: "14%" }}>Date Created</th>
-              <th style={{...caseTeamStyles.th,  width: "10%" }}>Status</th>
-              <th style={{...caseTeamStyles.th,  width: "13%" }}>Assigned To</th>
-              <th style={{ ...caseTeamStyles.th, width: "15%" }}>Date Submitted</th>
-              <th style={{ ...caseTeamStyles.th, width: "15%" }}>Date Approved</th>
+              {["Lead #", "Lead Log Summary", "Date Created", "Status", "Assigned To", "Date Submitted", "Date Approved"].map(col => {
+                const dataKey = colKey[col];
+                return (
+                  <th key={col} style={{ ...caseTeamStyles.th, width: columnWidths[col] }} className="column-header1">
+                    <div className="header-title">
+                      {col}
+                      <span>
+                        <button
+                          ref={el => (filterButtonRefs.current[dataKey] = el)}
+                          onClick={() => setOpenFilter(prev => prev === dataKey ? null : dataKey)}
+                        >
+                          <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className="icon-image" alt="filter" />
+                        </button>
+                        <Filter
+                          dataKey={dataKey}
+                          distinctValues={distinctValues}
+                          open={openFilter === dataKey}
+                          anchorRef={{ current: filterButtonRefs.current[dataKey] }}
+                          searchValue={filterSearch[dataKey] || ''}
+                          selections={tempFilterSelections[dataKey] || []}
+                          onSort={sortColumn}
+                          onSearch={handleFilterSearch}
+                          allChecked={allChecked}
+                          onToggleAll={toggleSelectAll}
+                          onToggleOne={handleCheckboxToggle}
+                          onApply={applyFilter}
+                          onCancel={() => setOpenFilter(null)}
+                        />
+                      </span>
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
-          {leadLogData.length > 0 ? (
-              leadLogData.map((entry, index) => (
+          {paginatedLeads.length > 0 ? (
+              paginatedLeads.map((entry, index) => (
                 <tr key={index} >
                   <td style={caseTeamStyles.td}>{entry.leadNo}</td>
                   {/* <td 
@@ -667,10 +816,10 @@ const formatDate = (dateString) => {
 
       <Pagination
   currentPage={currentPage}
-  totalEntries={totalEntries}  // Automatically calculate total entries
-  onPageChange={setCurrentPage} // Update current page state
+  totalEntries={sortedFilteredLeads.length}
+  onPageChange={setCurrentPage}
   pageSize={pageSize}
-  onPageSizeChange={setPageSize} // Update page size state
+  onPageSizeChange={setPageSize}
 />
 
       </div>

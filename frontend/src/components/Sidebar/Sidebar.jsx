@@ -332,7 +332,7 @@ export const SideBar = ({
         </li>
 
         <li
-          className={`sidebar-item ${activePage === "LeadLog" ? "active" : ""}`}
+          className={`sidebar-item ${activePage === "SearchLead" ? "active" : ""}`}
           onClick={() => navigate("/SearchLead", { state: { caseDetails } })}
         >
           <img src={searchIcon} className="sidebar-icon" alt="" />
@@ -372,6 +372,34 @@ export const SideBar = ({
           <li className="sidebar-item" onClick={() => navigate("/ClosedCase")}>
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Archived Cases</span>
+          </li>
+        )}
+
+        {["Case Manager", "Detective Supervisor", "Investigator"].includes(selectedCase?.role) && (
+          <li
+            className={`sidebar-item ${activePage === "Chatbot" ? "active" : ""}`}
+            onClick={() => navigate("/Chatbot", { state: { caseDetails } })}
+          >
+            <img src={folderIcon} className="sidebar-icon" alt="" />
+            <span>Chatbot</span>
+          </li>
+        )}
+         {["Case Manager", "Detective Supervisor", "Investigator"].includes(selectedCase?.role) && (
+          <li
+            className={`sidebar-item ${activePage === "AdminDashboard" ? "active" : ""}`}
+            onClick={() => navigate("/AdminDashboard", { state: { caseDetails } })}
+          >
+            <img src={folderIcon} className="sidebar-icon" alt="" />
+            <span>Crime Dashboard</span>
+          </li>
+        )}
+         {["Case Manager", "Detective Supervisor", "Investigator"].includes(selectedCase?.role) && (
+          <li
+            className={`sidebar-item ${activePage === "ViewTimeline" ? "active" : ""}`}
+            onClick={() => navigate("/ViewTimeline", { state: { caseDetails } })}
+          >
+            <img src={folderIcon} className="sidebar-icon" alt="" />
+            <span>Timeline Enteries</span>
           </li>
         )}
       </ul>

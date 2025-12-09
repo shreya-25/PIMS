@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import "./Chatbot.css";
 import Navbar from "../../components/Navbar/Navbar";
 import { useNavigate } from "react-router-dom";
+import { SideBar } from "../../components/Sidebar/Sidebar";
+
 
 export const Chatbot = () => {
   const navigate = useNavigate();
@@ -95,7 +97,13 @@ export const Chatbot = () => {
   return (
     <div className="admin-container">
       <Navbar />
-      <div className="top-menu">
+       <SideBar
+                activePage="Chatbot"
+                activeTab=""
+                setActiveTab={() => {}}
+                onShowCaseSelector={() => {}}
+              />
+      {/* <div className="top-menu">
         <div className="menu-items">
           <span className="menu-item" onClick={() => handleNavigation('/AdminUR')}>User Registration</span>
           <span className="menu-item" onClick={() => handleNavigation('/AdminCM')}>Case Management</span>
@@ -106,7 +114,7 @@ export const Chatbot = () => {
           <span className="menu-item active" onClick={() => handleNavigation('/Chatbot')}>Chatbot</span>
           <span className="menu-item" onClick={() => handleNavigation('/AdminDB')}>Database Backup</span>
         </div>
-      </div>
+      </div> */}
 
       <div className="chatbot-container">
         <div className="chat-window">
