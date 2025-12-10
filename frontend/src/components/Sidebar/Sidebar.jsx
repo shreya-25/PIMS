@@ -375,7 +375,7 @@ export const SideBar = ({
           </li>
         )}
 
-        {["Case Manager", "Detective Supervisor", "Investigator"].includes(selectedCase?.role) && (
+        {/* {["Case Manager", "Detective Supervisor", "Investigator"].includes(selectedCase?.role) && (
           <li
             className={`sidebar-item ${activePage === "Chatbot" ? "active" : ""}`}
             onClick={() => navigate("/Chatbot", { state: { caseDetails } })}
@@ -401,7 +401,7 @@ export const SideBar = ({
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Timeline Enteries</span>
           </li>
-        )}
+        )} */}
       </ul>
     </aside>
   );

@@ -290,7 +290,7 @@
   input[type="date"],
   input[type="time"] {
     padding: 10px;
-    font-size: 14px;
+    font-size: 18px;
     border: 1px solid #ccc;
     border-radius: 4px;
     width: 100%;
