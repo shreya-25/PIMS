@@ -112,9 +112,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'temp_uploads')));
 app.use("/api/report", reportRoutes); // For report generation
 
 if (process.env.NODE_ENV === 'production') {
-  // const buildPath = path.join(__dirname, '..', '..', 'frontend', 'build');
+  const buildPath = path.join(__dirname, '..', '..', 'frontend', 'build');
   // const buildPath = path.join(__dirname, 'build');
-  const buildPath = path.join(__dirname, '..', 'frontend', 'build');
+  // const buildPath = path.join(__dirname, '..', 'frontend', 'build');
   app.use(express.static(buildPath));
 
   // All other GET requests not handled by API go to React’s index.html
