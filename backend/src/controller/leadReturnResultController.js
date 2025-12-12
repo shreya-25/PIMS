@@ -1,5 +1,6 @@
 const LeadReturnResult = require("../models/leadReturnResult");
 const LeadReturn = require("../models/leadreturn");
+const LRPerson = require("../models/LRPerson");
 
 // Helpers to convert between A…Z strings and numbers
 function alphabetToNumber(str) {
@@ -284,28 +285,51 @@ const deleteLeadReturnResult = async (req, res) => {
       ],
     };
 
-    // 2) Officer assignment condition
-    //    Adjust paths to your actual schema if needed.
-    const officerMatch = officerName
-      ? {
-          $or: [
-            { "assignedTo.assignees": officerName }, // array of assignees
-            { "assignedBy.assignee": officerName },  // single assignee
-          ],
-        }
-      : {};
+    // 2) Build query properly - combine text search with officer filter using $and
+    let leadReturnQuery = textMatch;
+    let leadReturnResultQuery = textMatch;
 
-    // 2a) LeadReturn documents (if you query them above)
-    const leadReturns = await LeadReturn.find({
-      ...textMatch,
-      ...officerMatch,
-    });
+    if (officerName) {
+      const officerCondition = {
+        $or: [
+          { "assignedTo.assignees": officerName },
+          { "assignedBy.assignee": officerName },
+        ],
+      };
+
+      leadReturnQuery = {
+        $and: [textMatch, officerCondition],
+      };
+
+      leadReturnResultQuery = {
+        $and: [textMatch, officerCondition],
+      };
+    }
+
+    // 2a) LeadReturn documents
+    const leadReturns = await LeadReturn.find(leadReturnQuery);
 
     // 2b) LeadReturnResult documents
-    const leadReturnResults = await LeadReturnResult.find({
-      ...textMatch,
-      ...officerMatch,
-    });
+    const leadReturnResults = await LeadReturnResult.find(leadReturnResultQuery);
+
+    // 2c) Search LRPerson by firstName or lastName (no officer filter for person searches)
+    const personTextMatch = {
+      $or: [
+        { firstName: regex },
+        { lastName: regex },
+        { alias: regex },
+      ],
+    };
+
+    const lrPersons = await LRPerson.find(personTextMatch);
+
+    console.log(`📊 Search Results Summary:`);
+    console.log(`   - LeadReturn: ${leadReturns.length}`);
+    console.log(`   - LeadReturnResult: ${leadReturnResults.length}`);
+    console.log(`   - LRPerson: ${lrPersons.length}`);
+    if (lrPersons.length > 0) {
+      console.log(`   - Found persons:`, lrPersons.map(p => `${p.firstName} ${p.lastName}`));
+    }
 
     // 3) Build a FLAT list of unified lead entries
     const flatResults = [];
@@ -331,6 +355,19 @@ const deleteLeadReturnResult = async (req, res) => {
         description: lrr.description,
         source: "LeadReturnResult",
         fullLeadReturn: lrr,
+      });
+    }
+
+    // from LRPerson - add the associated lead info
+    for (const person of lrPersons) {
+      flatResults.push({
+        caseNo: person.caseNo,
+        caseName: person.caseName,
+        leadNo: person.leadNo,
+        description: person.description,
+        source: "LRPerson",
+        matchedPerson: `${person.firstName || ""} ${person.lastName || ""}`.trim(),
+        fullLeadReturn: person,
       });
     }
 
