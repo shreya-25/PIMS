@@ -2715,7 +2715,7 @@ const toTitleCase = (s = "") =>
               <td>{lead.description}</td>
               <td style={{ 
   color:
-    ["Assigned", "Accepted", "Approved", "Returned", "Completed"].includes(lead.leadStatus)
+    ["Assigned", "Accepted", "Approved", "Returned", "Completed", "Reopened"].includes(lead.leadStatus)
       ? "green"
       : lead.leadStatus === "In Review"
       ? "red"

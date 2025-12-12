@@ -1580,7 +1580,7 @@ const sortedAllLeads = useMemo(() => {
               <td>{lead.description}</td>
               <td
                 style={{
-                  color: ['Assigned','Accepted','Returned'].includes(
+                  color: ['Assigned','Accepted','Returned', 'Reopened'].includes(
                     lead.leadStatus
                   )
                     ? 'red'

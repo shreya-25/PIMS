@@ -184,7 +184,7 @@ export const LeadsDesk = () => {
 
   const navigate = useNavigate();
   const pdfRef = useRef();
-  const { selectedCase } = useContext(CaseContext);
+  const { selectedCase, setSelectedLead, setLeadStatus } = useContext(CaseContext);
   const { persons } = useDataContext();
       const location = useLocation();
 
@@ -403,6 +403,31 @@ const toggleLeadForReport = (leadNo) => {
     setHierarchyLeadInput("");
     setHierarchyChains([]);
     setHierarchyLeadsData([]);
+  };
+
+  const handleLeadClick = (lead) => {
+    setSelectedLead({
+      leadNo: lead.leadNo,
+      incidentNo: lead.incidentNo,
+      leadName: lead.description,
+      dueDate: lead.dueDate || "",
+      priority: lead.priority || "Medium",
+      flags: lead.flags || [],
+      assignedOfficers: lead.assignedTo ? lead.assignedTo.map((a) => a.username) : [],
+      leadStatus: lead.leadStatus,
+      caseName: lead.caseName || selectedCase.caseName,
+      caseNo: lead.caseNo || selectedCase.caseNo,
+      summary: lead.summary
+    });
+    setLeadStatus(lead.leadStatus);
+
+    // Navigate to Lead Review Page
+    navigate("/leadReview", {
+      state: {
+        leadDetails: lead,
+        caseDetails: selectedCase
+      }
+    });
   };
 
   
@@ -849,7 +874,17 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
               <tr>
                 <td className="label-cell">Lead Number</td>
                 <td className="input-cell">
-                  <input type="text" value={lead.leadNo} readOnly />
+                  <span
+                    onClick={() => handleLeadClick(lead)}
+                    style={{
+                      textDecoration: 'underline',
+                      color: '#007bff',
+                      cursor: 'pointer',
+                      fontWeight: '500'
+                    }}
+                  >
+                    {lead.leadNo}
+                  </span>
                 </td>
                 <td className="label-cell">Lead Origin</td>
                 <td className="input-cell">
@@ -863,9 +898,9 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
                 <td className="input-cell">
                   <input type="text" value={formatDate(lead.assignedDate)} readOnly />
                 </td>
-                <td className="label-cell">Completed Date</td>
+                <td className="label-cell">Approved Date</td>
                 <td className="input-cell">
-                  <input type="text" value={formatDate(lead.completedDate)} readOnly />
+                  <input type="text" value={formatDate(lead.approvedDate)} readOnly />
                 </td>
               </tr>
               <tr>
