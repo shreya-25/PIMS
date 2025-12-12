@@ -136,11 +136,9 @@ export const SideBar = ({
     fetchLeads();
   }, [signedInOfficer, caseList]);
 
-  // CM/DS: get per-case count of "In Review" leads for ALL ongoing cases
+  // Fetch per-case counts based on the officer's role in EACH specific case
   useEffect(() => {
-    const isCMDS =
-      signedInRole === "Case Manager" || signedInRole === "Detective Supervisor";
-    if (!isCMDS || !caseList.length) {
+    if (!caseList.length) {
       setReviewCountByCase({});
       return;
     }
@@ -153,25 +151,104 @@ export const SideBar = ({
         const entries = await Promise.all(
           caseList.map(async (c) => {
             try {
-              // Prefer asking the server to filter by status if supported
-              const { data } = await api.get(`/api/lead/case/${c.id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-                params: { status: "In Review" },
-              });
+              // Check the officer's role for THIS specific case
+              const isCMorDS = c.role === "Case Manager" || c.role === "Detective Supervisor";
 
-              const arr = Array.isArray(data?.leads)
-                ? data.leads
-                : Array.isArray(data)
-                ? data
-                : [];
+              if (isCMorDS) {
+                // For CM/DS: count "In Review" leads
+                const { data } = await api.get(`/api/lead/case/${c.id}/${encodeURIComponent(c.title)}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
 
-              const count = arr.filter(
-                (l) =>
-                  String(l.caseNo) === String(c.id) &&
-                  (l.leadStatus === "In Review" || l.status === "In Review")
-              ).length;
+                const arr = Array.isArray(data?.leads)
+                  ? data.leads
+                  : Array.isArray(data)
+                  ? data
+                  : [];
 
-              return [String(c.id), count];
+                console.log(`[Sidebar Debug] Case ${c.id} - CM/DS mode:`, {
+                  rawData: data,
+                  arrayLength: arr.length,
+                  leads: arr.map(l => ({
+                    leadNo: l.leadNo,
+                    caseNo: l.caseNo,
+                    leadStatus: l.leadStatus,
+                    status: l.status
+                  }))
+                });
+
+                // Count leads where leadStatus is "In Review", "Submitted", or "To review"
+                const count = arr.filter(
+                  (l) => {
+                    const matchesCase = String(l.caseNo) === String(c.id);
+                    const matchesStatus = l.leadStatus === "In Review" ||
+                                         l.leadStatus === "Submitted" ||
+                                         l.leadStatus === "To review" ||
+                                         l.status === "In Review" ||
+                                         l.status === "Submitted" ||
+                                         l.status === "To review";
+
+                    console.log(`[Sidebar Debug] Lead ${l.leadNo}:`, {
+                      caseNo: l.caseNo,
+                      matchesCase,
+                      leadStatus: l.leadStatus,
+                      status: l.status,
+                      matchesStatus,
+                      included: matchesCase && matchesStatus
+                    });
+
+                    return matchesCase && matchesStatus;
+                  }
+                ).length;
+
+                console.log(`[Sidebar Debug] Case ${c.id} final count:`, count);
+
+                return [String(c.id), count];
+              } else {
+                // For Investigator: fetch and count "Assigned" leads for this case
+                const { data } = await api.get(`/api/lead/case/${c.id}/${encodeURIComponent(c.title)}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+
+                const arr = Array.isArray(data?.leads)
+                  ? data.leads
+                  : Array.isArray(data)
+                  ? data
+                  : [];
+
+                console.log(`[Sidebar Debug] Case ${c.id} - Investigator mode:`, {
+                  rawData: data,
+                  arrayLength: arr.length,
+                  leads: arr.map(l => ({
+                    leadNo: l.leadNo,
+                    caseNo: l.caseNo,
+                    leadStatus: l.leadStatus,
+                    assignedTo: l.assignedTo
+                  }))
+                });
+
+                // Count leads that are "Assigned" to this officer
+                const assignedCount = arr.filter((l) => {
+                  const matchesCase = String(l.caseNo) === String(c.id);
+                  const isAssigned = l.leadStatus === "Assigned";
+                  const assignedToOfficer = l.assignedTo?.some((a) => a.username === signedInOfficer);
+
+                  console.log(`[Sidebar Debug] Lead ${l.leadNo}:`, {
+                    caseNo: l.caseNo,
+                    matchesCase,
+                    leadStatus: l.leadStatus,
+                    isAssigned,
+                    assignedToOfficer,
+                    included: matchesCase && isAssigned && assignedToOfficer
+                  });
+
+                  return matchesCase && isAssigned && assignedToOfficer;
+                }).length;
+
+                console.log(`[Sidebar Debug] Case ${c.id} final assigned count:`, assignedCount);
+
+                return [String(c.id), assignedCount];
+              }
             } catch (e) {
               return [String(c.id), 0];
             }
@@ -180,7 +257,7 @@ export const SideBar = ({
 
         if (!cancelled) setReviewCountByCase(Object.fromEntries(entries));
       } catch (e) {
-        console.error("Error fetching In Review counts", e);
+        console.error("Error fetching counts", e);
         if (!cancelled) setReviewCountByCase({});
       }
     };
@@ -189,24 +266,12 @@ export const SideBar = ({
     return () => {
       cancelled = true;
     };
-  }, [signedInRole, caseList]);
+  }, [caseList, assignedLeadsList]);
 
-  // Build the badge map:
-  // - Investigator -> count of "Assigned" per case from assignedLeadsList
-  // - CM/DS       -> count of "In Review" per case from reviewCountByCase
+  // Build the badge map: use reviewCountByCase which now contains role-specific counts
   const badgeCountByCase = useMemo(() => {
-    if (signedInRole === "Investigator") {
-      return assignedLeadsList.reduce((acc, l) => {
-        const cno = String(l.caseNo ?? "");
-        if (!cno) return acc;
-        if (l.leadStatus === "Assigned") {
-          acc[cno] = (acc[cno] || 0) + 1;
-        }
-        return acc;
-      }, {});
-    }
     return reviewCountByCase;
-  }, [signedInRole, assignedLeadsList, reviewCountByCase]);
+  }, [reviewCountByCase]);
 
   const getCaseBadgeCount = (caseId) =>
     badgeCountByCase[String(caseId)] || 0;
