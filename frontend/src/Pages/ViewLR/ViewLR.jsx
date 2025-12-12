@@ -385,11 +385,12 @@ const actuallyDoSubmitReport = async () => {
     open: true,
     title: 'Confirm Submission',
     message:
-      `Once you submit, no assigned investigator can edit this anymore.\n\n`
-      + `Are you absolutely sure you want to submit the lead return for Case Manager approval?`,
+      `Once submitted, assigned investigators will no longer be able to edit this.\n\n`
+      + ` Are you sure you want to submit the lead return for Case Manager approval?`,
     onConfirm: actuallyDoSubmitReport
   });
 };
+
 
 
   return (

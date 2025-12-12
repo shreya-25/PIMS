@@ -452,8 +452,80 @@ const computeLeadStatus = (assigned, primaryUser) => {
 //   }
 // };
 
-const DeclineReasonModal = ({ open, onCancel, onSubmit }) => {
+// const DeclineReasonModal = ({ open, onCancel, onSubmit }) => {
+//   if (!open) return null;
+//   return (
+//     <div className="elog-backdrop" onClick={onCancel}>
+//       <div className="elog-modal" onClick={(e) => e.stopPropagation()}>
+//         <div className="elog-header">
+//           <h3>Reject Lead</h3>
+//           <button className="elog-close" onClick={onCancel} aria-label="Close">✕</button>
+//         </div>
+
+//         <section className="elog-block">
+//           <div className="elog-title">Please provide a reason</div>
+
+//           {/* Quick chips */}
+//           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+//             {presetReasons.map(r => (
+//               <button
+//                 key={r}
+//                 type="button"
+//                 className="elog-chip"
+//                 onClick={() => setDeclineReason(prev => prev ? `${prev} ${prev.endsWith('.') ? '' : '.'} ${r}` : r)}
+//                 title="Use this reason"
+//                 style={{ backgroundColor: "#ccc", color: "#000" }}
+//               >
+//                 {r}
+//               </button>
+//             ))}
+//           </div>
+
+//           {/* Textarea */}
+//           <textarea
+//             className="input-field"
+//             placeholder="Type a brief, professional reason (required)…"
+//             value={declineReason}
+//             onChange={(e) => setDeclineReason(e.target.value)}
+//             style={{ minHeight: 120 }}
+//           />
+
+//           <div className="elog-actions" style={{ display: "flex", gap: 12, marginTop: 12, justifyContent: "flex-end" }}>
+//             <button className="save-btn1" onClick={onCancel} style={{ background: "#ccc", color: "#000" }}>
+//               Cancel
+//             </button>
+//             <button
+//               className="save-btn1"
+//               onClick={() => {
+//                 const reason = (declineReason || "").trim();
+//                 if (reason.length < 5) return setAlertMessage("Please provide a few words explaining why you’re declining.");
+//                 onSubmit(reason);
+//               }}
+//               style={{ background: "#e74c3c" }}
+//               title="Decline with reason"
+//             >
+//               Submit
+//             </button>
+//           </div>
+//         </section>
+//       </div>
+//     </div>
+//   );
+// };
+
+const DeclineReasonModal = ({ open, onCancel, onSubmit, presetReasons }) => {
+  const [localReason, setLocalReason] = useState("");
+  const textareaRef = useRef(null);
+
+  // Reset when modal opens/closes
+  useEffect(() => {
+    if (!open) {
+      setLocalReason("");
+    }
+  }, [open]);
+
   if (!open) return null;
+  
   return (
     <div className="elog-backdrop" onClick={onCancel}>
       <div className="elog-modal" onClick={(e) => e.stopPropagation()}>
@@ -472,9 +544,53 @@ const DeclineReasonModal = ({ open, onCancel, onSubmit }) => {
                 key={r}
                 type="button"
                 className="elog-chip"
-                onClick={() => setDeclineReason(prev => prev ? `${prev} ${prev.endsWith('.') ? '' : '.'} ${r}` : r)}
-                title="Use this reason"
-                style={{ backgroundColor: "#ccc", color: "#000" }}
+                onClick={() => {
+                  const textarea = textareaRef.current;
+                  if (!textarea) {
+                    // Fallback if ref not available
+                    const current = localReason.trim();
+                    if (!current) {
+                      setLocalReason(r);
+                    } else {
+                      const needsPeriod = !current.endsWith('.');
+                      setLocalReason(`${current}${needsPeriod ? '.' : ''} ${r}`);
+                    }
+                    return;
+                  }
+
+                  const start = textarea.selectionStart;
+                  const end = textarea.selectionEnd;
+                  const currentValue = localReason;
+
+                  // Insert at cursor position
+                  const before = currentValue.substring(0, start);
+                  const after = currentValue.substring(end);
+                  
+                  // Add spacing if needed
+                  const needsSpaceBefore = before.length > 0 && !before.endsWith(' ') && !before.endsWith('.');
+                  const needsPeriodBefore = before.length > 0 && !before.endsWith('.') && !before.endsWith(' ');
+                  
+                  let insertion = r;
+                  if (before.length > 0) {
+                    if (needsPeriodBefore) {
+                      insertion = `. ${r}`;
+                    } else if (needsSpaceBefore) {
+                      insertion = ` ${r}`;
+                    }
+                  }
+
+                  const newValue = before + insertion + after;
+                  setLocalReason(newValue);
+
+                  // Set cursor position after inserted text
+                  setTimeout(() => {
+                    const newCursorPos = before.length + insertion.length;
+                    textarea.setSelectionRange(newCursorPos, newCursorPos);
+                    textarea.focus();
+                  }, 0);
+                }}
+                title="Click to insert this reason"
+                style={{ backgroundColor: "#ccc", color: "#000", cursor: "pointer" }}
               >
                 {r}
               </button>
@@ -483,11 +599,13 @@ const DeclineReasonModal = ({ open, onCancel, onSubmit }) => {
 
           {/* Textarea */}
           <textarea
+            ref={textareaRef}
             className="input-field"
             placeholder="Type a brief, professional reason (required)…"
-            value={declineReason}
-            onChange={(e) => setDeclineReason(e.target.value)}
+            value={localReason}
+            onChange={(e) => setLocalReason(e.target.value)}
             style={{ minHeight: 120 }}
+            autoFocus
           />
 
           <div className="elog-actions" style={{ display: "flex", gap: 12, marginTop: 12, justifyContent: "flex-end" }}>
@@ -497,9 +615,12 @@ const DeclineReasonModal = ({ open, onCancel, onSubmit }) => {
             <button
               className="save-btn1"
               onClick={() => {
-                const reason = (declineReason || "").trim();
-                if (reason.length < 5) return setAlertMessage("Please provide a few words explaining why you’re declining.");
-                onSubmit(reason);
+                const trimmedReason = localReason.trim();
+                if (trimmedReason.length < 5) {
+                  alert("Please provide a few words explaining why you're declining.");
+                  return;
+                }
+                onSubmit(trimmedReason);
               }}
               style={{ background: "#e74c3c" }}
               title="Decline with reason"
@@ -832,8 +953,8 @@ const acceptLead = async (leadNo, description) => {
     setAlertMessage(
   lead.leadStatus === "Accepted"
     ? (meIsPrimary
-        ? "As the Primary Investigator, your acceptance has set the lead status to “Accepted”."
-        : "All assignees have accepted. Lead status is “Accepted”.")
+        ? "Lead accepted by Primary Investigator"
+        : "All assignees have accepted this lead")
     : "Acceptance received. Pending responses from remaining assignees."
 );
     setAlertOpen(true);
@@ -1807,7 +1928,7 @@ const assignmentHoverText = React.useMemo(() => {
   }}
 />
 
-<DeclineReasonModal
+{/* <DeclineReasonModal
   open={declineOpen}
   onCancel={() => { setDeclineOpen(false); setDeclineReason(""); }}
   onSubmit={async (reason) => {
@@ -1818,6 +1939,25 @@ const assignmentHoverText = React.useMemo(() => {
       setDeclineReason("");
     }
   }}
+/> */}
+
+<DeclineReasonModal
+  open={declineOpen}
+  onCancel={() => { 
+    setDeclineOpen(false); 
+    setDeclineReason(""); 
+  }}
+  onSubmit={async (reason) => {
+    try {
+      await declineLead(leadData.leadNo, leadData.description, reason);
+    } finally {
+      setDeclineOpen(false);
+      setDeclineReason("");
+    }
+  }}
+  reason={declineReason}
+  setReason={setDeclineReason}
+  presetReasons={presetReasons}
 />
 
 
