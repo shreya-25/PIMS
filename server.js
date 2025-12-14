@@ -1,2 +1,2 @@
 // server.js in project root
-require('./backend/server.js');
+require('./backend/src/server.js');

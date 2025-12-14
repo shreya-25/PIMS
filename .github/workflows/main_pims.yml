@@ -37,11 +37,18 @@ jobs:
       - name: Prepare deployment package
         run: |
           mkdir deploy
-          xcopy backend deploy\backend\ /E /I /Y /EXCLUDE:.github\workflows\exclude.txt
+          xcopy backend deploy\backend\ /E /I /Y
           if exist deploy\backend\.env del deploy\backend\.env
+          if exist deploy\backend\node_modules rmdir /S /Q deploy\backend\node_modules
           xcopy frontend\build deploy\frontend\build\ /E /I /Y
           copy package.json deploy\
+          copy server.js deploy\
           copy web.config deploy\
+
+      - name: Install production dependencies in backend
+        run: |
+          cd deploy\backend
+          npm install --production
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
