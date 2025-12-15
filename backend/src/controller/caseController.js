@@ -50,6 +50,8 @@ const Case = require("../models/case");
 
 exports.createCase = async (req, res) => {
   try {
+    console.log("📥 Received case creation request:", JSON.stringify(req.body, null, 2));
+
     const {
       caseNo,
       caseName,
@@ -62,14 +64,17 @@ exports.createCase = async (req, res) => {
 
     // --- validate required fields ---
      if (!Array.isArray(managers) || managers.length === 0) {
+      console.error("❌ Validation failed: No managers provided");
       return res.status(400).json({
         message: "At least one Case Manager is required."
       });
     }
     if (!detectiveSupervisor) {
+      console.error("❌ Validation failed: No detective supervisor provided");
       return res.status(400).json({ message: "Detective Supervisor is required" });
     }
     if (!caseNo || !caseName) {
+      console.error("❌ Validation failed: Missing caseNo or caseName");
       return res.status(400).json({
         message: "caseNo, caseName are required"
       });
@@ -78,6 +83,7 @@ exports.createCase = async (req, res) => {
     // --- ensure unique caseNo ---
     const existingCase = await Case.findOne({ caseNo });
     if (existingCase) {
+      console.error(`❌ Duplicate caseNo: ${caseNo}`);
       return res.status(400).json({
         message: "Case number already exists. Please use a unique caseNo."
       });
@@ -85,29 +91,32 @@ exports.createCase = async (req, res) => {
 
     const duplicateName = await Case.findOne({ caseName: caseName.trim() });
 if (duplicateName) {
+  console.error(`❌ Duplicate caseName: ${caseName}`);
   return res.status(409).json({
     message: "Case name already exists. Please choose a different name."
   });
 }
 
-    // --- build assignedOfficers array ---
+    // --- build assignedOfficers array with flexible field mapping ---
     const assignedOfficers = [
       ...managers.map(mgr => ({
-        name: mgr.username,
+        name: mgr.username || mgr.name || mgr,  // Handle different formats
         role: "Case Manager",
         status: "accepted"
       })),
       {
-        name: detectiveSupervisor,
+        name: typeof detectiveSupervisor === 'string' ? detectiveSupervisor : detectiveSupervisor.name || detectiveSupervisor.username,
         role: "Detective Supervisor",
         status: "accepted"
       },
       ...selectedOfficers.map(off => ({
-        name: off.name,
+        name: off.username || off.name || off,  // Handle different formats
         role: "Investigator",
         status: "pending"
       }))
     ];
+
+    console.log("👥 Assigned Officers:", JSON.stringify(assignedOfficers, null, 2));
 
     // --- save the new case ---
     const newCase = new Case({
@@ -118,11 +127,15 @@ if (duplicateName) {
       assignedOfficers,
       caseStatus: "Ongoing"
     });
+
+    console.log("💾 Attempting to save case to database...");
     await newCase.save();
+    console.log("✅ Case saved successfully:", newCase._id);
 
     res.status(201).json({ message: "Case created successfully", data: newCase });
   } catch (err) {
     console.error("❌ Error creating case:", err);
+    console.error("❌ Error stack:", err.stack);
     res.status(500).json({ message: "Error creating case", error: err.message });
   }
 };
