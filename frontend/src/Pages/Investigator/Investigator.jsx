@@ -46,6 +46,12 @@ export const Investigator = () => {
 
 const isDeletedStatus = (s) => String(s || "").toLowerCase() === "deleted";
 
+const formatUser = (username) => {
+  if (!username) return "—";
+  const u = allUsers?.find(x => x.username === username);
+  return u ? `${u.firstName} ${u.lastName} (${u.username})` : username; // fallback
+};
+
 
          const isNavDisabled = lead => lead.leadStatus === 'Assigned';
 const disabledStyle = { opacity: 0.5, cursor: 'not-allowed' };
@@ -62,6 +68,24 @@ const [team, setTeam] = useState({
   caseManagers: [],
   investigators: []
 });
+
+const [allUsers, setAllUsers] = useState([]);
+
+useEffect(() => {
+  async function fetchUsers() {
+    try {
+      const token = localStorage.getItem("token");
+      const { data } = await api.get("/api/users/usernames", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      // Assume data.users is an array of { username, firstName, lastName, role, … }
+      setAllUsers(data.users || []);
+    } catch (err) {
+      console.error("Could not load user list:", err);
+    }
+  }
+  fetchUsers();
+}, []);
 
 useEffect(() => {
     async function load() {
@@ -1172,17 +1196,17 @@ const sortedAllLeads = useMemo(() => {
           <tbody>
             <tr>
               <td style={caseTeamStyles.td}>Detective Supervisor</td>
-              <td style={caseTeamStyles.td}>{team.detectiveSupervisor || "—"}</td>
+              <td style={caseTeamStyles.td}>{formatUser(team.detectiveSupervisor)}</td>
               </tr>
             <tr>
               <td style={caseTeamStyles.td}>Case Manager</td>
-              <td style={caseTeamStyles.td}>{(team.caseManagers||[]).join(", ") || "—"}</td>
+              <td style={caseTeamStyles.td}>{(team.caseManagers||[]).map(formatUser).join(", ") || "—"}</td>
             </tr>
             <tr>
               <td style={caseTeamStyles.td}>Investigator{team.investigators.length > 1 ? "s" : ""}</td>
               <td style={caseTeamStyles.td}>
                 {team.investigators.length
-                  ? team.investigators.join(", ")
+                  ? team.investigators.map(formatUser).join(", ")
                   : "None assigned"}
               </td>
             </tr>

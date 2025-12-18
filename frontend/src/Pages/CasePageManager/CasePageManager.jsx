@@ -1467,6 +1467,13 @@ const sortedPendingLRs = useMemo(() => {
   return data;
 }, [leads.pendingLeadReturns, pendingLRFilterConfig, pendingLRSortConfig]);
 
+const formatUser = (username) => {
+  if (!username) return "—";
+  const u = allUsers?.find(x => x.username === username);
+  return u ? `${u.firstName} ${u.lastName} (${u.username})` : username; // fallback
+};
+
+
 // ─── All Leads filter/sort setup ──────────────────────────────────────────
 
 // Columns + mapping
@@ -1918,7 +1925,8 @@ const toTitleCase = (s = "") =>
                   value={user.username}
                   checked={selectedDetectiveSupervisor === user.username}
                   onChange={() => {
-                    const selected = user.username;
+                    // const selected = user.username;
+                    const selected = `${user.firstName} ${user.lastName} (${user.username})`;
                     setSelectedDetectiveSupervisor(selected);
                     saveInvestigators(selectedInvestigators, selectedCaseManagers, selected);
                   }}
@@ -1932,7 +1940,7 @@ const toTitleCase = (s = "") =>
         )}
       </div>
     ) : (
-      team.detectiveSupervisor || "—"
+       formatUser(team.detectiveSupervisor)|| "—"
     )}
   </td>
 </tr>
