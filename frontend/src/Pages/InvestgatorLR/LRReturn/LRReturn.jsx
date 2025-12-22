@@ -11,6 +11,7 @@ import {SideBar } from "../../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../../components/AlertModal/AlertModal";
 import { pickHigherStatus } from '../../../utils/status'
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
+import { ActivityLog } from '../../../components/ActivityLog/ActivityLog';
 
 export const LRReturn = () => {
 
@@ -46,6 +47,7 @@ export const LRReturn = () => {
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [auditLogRefresh, setAuditLogRefresh] = useState(0);
     const isDisabled = leadStatus === "In Review" || leadStatus === "Completed"|| leadStatus === "Closed";
     const caseNo = selectedCase?.caseNo ?? caseDetails.caseNo;
     const { status, isReadOnly } = useLeadStatus({
@@ -185,6 +187,7 @@ const performDeleteReturn = async () => {
     const filtered = returns.filter(r => r.leadReturnId !== pendingDeleteId);
     setReturns(filtered);
     setLeadReturns(filtered);
+    setAuditLogRefresh(prev => prev + 1); // Trigger audit log refresh
   } catch (err) {
     console.error("Error deleting return:", err);
     setAlertMessage("Failed to delete narrative.");
@@ -576,6 +579,7 @@ const handleAccessChange = async (idx, newAccess) => {
       copy[idx] = response.data;
       return copy;
     });
+    setAuditLogRefresh(prev => prev + 1); // Trigger audit log refresh
   } catch (err) {
     console.error("Failed to update accessLevel", err);
      setAlertMessage("Could not change access. Try again.");
@@ -615,6 +619,7 @@ const handleAddOrUpdateReturn = async () => {
       setReturns(rs => rs.map(r => r.leadReturnId === editId ? resp.data : r));
       setEditMode(false);
       setEditId(null);
+      setAuditLogRefresh(prev => prev + 1); // Trigger audit log refresh
 
     } else {
       // ─── CREATE NEW ──────────────────────────────────────────────────
@@ -645,6 +650,7 @@ const handleAddOrUpdateReturn = async () => {
 
       setReturnData(defaultForm(officerName));        // <- clear form (no leadReturnId)
       try { sessionStorage.removeItem(FORM_KEY); } catch {}
+      setAuditLogRefresh(prev => prev + 1); // Trigger audit log refresh
     }
   } catch (err) {
     console.error("Error saving return:", err);
@@ -1023,6 +1029,14 @@ const handleAddOrUpdateReturn = async () => {
 </tbody>
 
         </table>
+
+        {/* Activity Log Component */}
+        <ActivityLog
+          caseNo={effectiveCase?.caseNo}
+          leadNo={effectiveLead?.leadNo}
+          entityType="LeadReturnResult"
+          refreshTrigger={auditLogRefresh}
+        />
 
         {/* <Comment tag= "Return"/> */}
 

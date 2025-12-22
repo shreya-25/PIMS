@@ -6,18 +6,18 @@ const leadReturnResultsSchema = new mongoose.Schema(
         description: { type: String, required: true },
         assignedTo: {
             assignees: [{ type: String, required: true }],
-            lRStatus: { 
-                type: String, 
-                enum: ["Assigned", "Pending", "Approved", "Returned", "Completed", "Submitted"], 
+            lRStatus: {
+                type: String,
+                enum: ["Assigned", "Pending", "Approved", "Returned", "Completed", "Submitted"],
                 default: "Assigned"
             }
         },
         assignedBy: {
             assignee: { type: String, required: true },
-            lRStatus: { 
-                type: String, 
-                enum: ["Assigned", "Pending"], 
-                default: "Assigned" 
+            lRStatus: {
+                type: String,
+                enum: ["Assigned", "Pending"],
+                default: "Assigned"
             }
         },
         enteredDate:  { type: Date },
@@ -30,7 +30,11 @@ const leadReturnResultsSchema = new mongoose.Schema(
             type: String,
             enum: ["Only Case Manager", "Everyone"],
             default: "Everyone"
-          }
+          },
+        // Soft delete fields
+        isDeleted: { type: Boolean, default: false },
+        deletedAt: { type: Date },
+        deletedBy: { type: String }
     },
     { timestamps: true }
 );

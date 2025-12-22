@@ -1,6 +1,7 @@
 const LeadReturnResult = require("../models/leadReturnResult");
 const LeadReturn = require("../models/leadreturn");
 const LRPerson = require("../models/LRPerson");
+const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 
 // Helpers to convert between A…Z strings and numbers
 function alphabetToNumber(str) {
@@ -99,6 +100,29 @@ const createLeadReturnResult = async (req, res) => {
     });
 
     await newLeadReturnResult.save();
+
+    // Log the creation in audit log
+    await createAuditLog({
+      caseNo,
+      caseName,
+      leadNo,
+      leadName: description,
+      entityType: "LeadReturnResult",
+      entityId: newId,
+      action: "CREATE",
+      performedBy: {
+        username: enteredBy,
+        role: req.user?.role || "Unknown"
+      },
+      oldValue: null,
+      newValue: sanitizeForAudit(newLeadReturnResult.toObject()),
+      metadata: {
+        ip: req.ip || req.connection?.remoteAddress,
+        userAgent: req.get('user-agent')
+      },
+      accessLevel: accessLevel || "Everyone"
+    });
+
     return res.status(201).json(newLeadReturnResult);
   } catch (err) {
     console.error("Error creating lead return result:", err);
@@ -130,11 +154,12 @@ const getLeadReturnResultByLeadNoandLeadName = async (req, res) => {
     try {
         const { leadNo, leadName, caseNo, caseName } = req.params;
 
-        const query = { 
-            leadNo: Number(leadNo), // Ensure number type 
-            description: leadName,  
-            caseNo: caseNo, 
-            caseName: caseName
+        const query = {
+            leadNo: Number(leadNo), // Ensure number type
+            description: leadName,
+            caseNo: caseNo,
+            caseName: caseName,
+            isDeleted: { $ne: true } // Exclude soft-deleted records
         };
 
         const leadReturns = await LeadReturnResult.find(query);
@@ -151,15 +176,45 @@ const updateLeadReturnResult = async (req, res) => {
         const { leadNo, caseNo, leadReturnId } = req.params;
         const updateData = req.body;
 
+        // First, get the old value before updating
+        const oldResult = await LeadReturnResult.findOne({
+            leadNo: Number(leadNo),
+            caseNo,
+            leadReturnId
+        });
+
+        if (!oldResult) {
+            return res.status(404).json({ message: "Lead return result not found." });
+        }
+
         const updatedResult = await LeadReturnResult.findOneAndUpdate(
             { leadNo: Number(leadNo), caseNo, leadReturnId },
             updateData,
             { new: true }
         );
 
-        if (!updatedResult) {
-            return res.status(404).json({ message: "Lead return result not found." });
-        }
+        // Log the update in audit log
+        await createAuditLog({
+            caseNo,
+            caseName: updatedResult.caseName,
+            leadNo: Number(leadNo),
+            leadName: updatedResult.description,
+            entityType: "LeadReturnResult",
+            entityId: leadReturnId,
+            action: "UPDATE",
+            performedBy: {
+                username: req.user?.name || "Unknown",
+                role: req.user?.role || "Unknown"
+            },
+            oldValue: sanitizeForAudit(oldResult.toObject()),
+            newValue: sanitizeForAudit(updatedResult.toObject()),
+            metadata: {
+                ip: req.ip || req.connection?.remoteAddress,
+                userAgent: req.get('user-agent'),
+                changedFields: Object.keys(updateData).join(', ')
+            },
+            accessLevel: updatedResult.accessLevel || "Everyone"
+        });
 
         res.status(200).json(updatedResult);
     } catch (err) {
@@ -168,22 +223,57 @@ const updateLeadReturnResult = async (req, res) => {
     }
 };
 
-// Delete a specific lead return result entry
+// Delete a specific lead return result entry (SOFT DELETE)
 const deleteLeadReturnResult = async (req, res) => {
     try {
         const { leadNo, caseNo, leadReturnId } = req.params;
 
-        const deletedResult = await LeadReturnResult.findOneAndDelete({
+        // Get the record before soft-deleting
+        const existingResult = await LeadReturnResult.findOne({
             leadNo: Number(leadNo),
             caseNo,
             leadReturnId
         });
 
-        if (!deletedResult) {
+        if (!existingResult) {
             return res.status(404).json({ message: "Lead return result not found." });
         }
 
-        res.status(200).json({ message: "Lead return result deleted successfully." });
+        // Perform soft delete
+        const deletedResult = await LeadReturnResult.findOneAndUpdate(
+            { leadNo: Number(leadNo), caseNo, leadReturnId },
+            {
+                isDeleted: true,
+                deletedAt: new Date(),
+                deletedBy: req.user?.name || "Unknown"
+            },
+            { new: true }
+        );
+
+        // Log the deletion in audit log
+        await createAuditLog({
+            caseNo,
+            caseName: existingResult.caseName,
+            leadNo: Number(leadNo),
+            leadName: existingResult.description,
+            entityType: "LeadReturnResult",
+            entityId: leadReturnId,
+            action: "DELETE",
+            performedBy: {
+                username: req.user?.name || "Unknown",
+                role: req.user?.role || "Unknown"
+            },
+            oldValue: sanitizeForAudit(existingResult.toObject()),
+            newValue: null,
+            metadata: {
+                ip: req.ip || req.connection?.remoteAddress,
+                userAgent: req.get('user-agent'),
+                notes: "Soft delete - record marked as deleted"
+            },
+            accessLevel: existingResult.accessLevel || "Everyone"
+        });
+
+        res.status(200).json({ message: "Lead return result deleted successfully.", data: deletedResult });
     } catch (err) {
         console.error("Error deleting lead return result:", err.message);
         res.status(500).json({ message: "Something went wrong" });
