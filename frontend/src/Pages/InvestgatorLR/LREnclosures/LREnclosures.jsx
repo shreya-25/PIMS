@@ -8,6 +8,7 @@ import api from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../../components/AlertModal/AlertModal";
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
+import { ActivityLog } from '../../../components/ActivityLog/ActivityLog';
 
 
 
@@ -20,6 +21,7 @@ export const LREnclosures = () => {
   const [leadData, setLeadData] = useState({});
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
+  const [auditLogRefresh, setAuditLogRefresh] = useState(0);
   const [narrativeIds, setNarrativeIds] = useState([]);
 
   const { leadDetails, caseDetails } = location.state || {};
@@ -47,8 +49,12 @@ const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);  
-  
+    const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
+
+    // Fallback to location.state if context is not available
+    const effectiveCase = selectedCase?.caseNo ? selectedCase : caseDetails;
+    const effectiveLead = selectedLead?.leadNo ? selectedLead : leadDetails;
+
     const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
     const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
     
@@ -540,6 +546,7 @@ const goToViewLR = () => {
       if (fileInputRef.current) fileInputRef.current.value = "";
       setEditIndex(null);
       setOriginalDesc("");
+      setAuditLogRefresh(prev => prev + 1); // Trigger audit log refresh
     } catch (err) {
       console.error("Save error:", err.response || err);
        setAlertMessage("Save failed: " + (err.response?.data?.message || err.message));
@@ -616,6 +623,7 @@ const performDeleteEnclosure = async () => {
 
     // Remove from list
     setEnclosures(list => list.filter((_, i) => i !== idx));
+    setAuditLogRefresh(prev => prev + 1); // Trigger audit log refresh
   } catch (err) {
     console.error(err);
     setAlertMessage("Failed to delete");
@@ -1128,10 +1136,19 @@ const performDeleteEnclosure = async () => {
       className="save-btn1"
       onClick={handleSubmitReport}
     >
-      Submit 
+      Submit
     </button>
   </div>
 )} */}
+
+        {/* Activity Log Component */}
+        <ActivityLog
+          caseNo={effectiveCase?.caseNo}
+          leadNo={effectiveLead?.leadNo}
+          entityType="LREnclosure"
+          refreshTrigger={auditLogRefresh}
+        />
+
         {/* <Comment tag= "Enclosures"/> */}
       </div>
       </div>

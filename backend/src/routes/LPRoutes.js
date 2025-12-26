@@ -12,12 +12,14 @@ router.get("/lrperson/:leadNo/:leadName/:caseNo/:caseName/:id", verifyToken, get
 
 router.put(
     '/:leadNo/:caseNo/:leadReturnId/:firstName',
+    verifyToken,
     updateLRPerson
   );
-  
-  // DELETE  /api/lrperson/:leadNo/:caseNo/:leadReturnId/:firstName/:lastName
+
+  // DELETE  /api/lrperson/:leadNo/:caseNo/:leadReturnId/:firstName
   router.delete(
     '/:leadNo/:caseNo/:leadReturnId/:firstName',
+    verifyToken,
     deleteLRPerson
   );
 

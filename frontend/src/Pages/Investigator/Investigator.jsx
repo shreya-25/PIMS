@@ -214,6 +214,7 @@ setLeadStatus(lead.leadStatus);
   const handleLRClick = (lead) => {
   // 1. Build caseDetails and leadDetails
   const caseDetails = {
+    _id: lead.caseId || lead.caseNo,
     caseNo:   lead.caseNo,
     caseName: lead.caseName,
     role: "Investigator"

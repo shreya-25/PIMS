@@ -12,6 +12,7 @@ import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../../components/AlertModal/AlertModal";
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
+import { ActivityLog } from '../../../components/ActivityLog/ActivityLog';
 
 
 
@@ -26,6 +27,7 @@ export const LRVehicle = () => {
   const [leadData, setLeadData] = useState({});
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
+  const [auditLogRefresh, setAuditLogRefresh] = useState(0);
   const [rawVehicles, setRawVehicles] = useState(() => {
     const saved = sessionStorage.getItem(LIST_KEY);
     return saved ? JSON.parse(saved) : [];
@@ -171,6 +173,7 @@ const performDeleteVehicle = async () => {
       access:      v.access ?? "Everyone",
     }));
     setVehicles(newDisplay);
+    setAuditLogRefresh(prev => prev + 1); // Trigger audit log refresh
 
   } catch (e) {
     console.error(e);
@@ -197,6 +200,10 @@ const performDeleteVehicle = async () => {
       });
       
 const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
+
+// Fallback to location.state if context is not available
+const effectiveCase = selectedCase?.caseNo ? selectedCase : caseDetails;
+const effectiveLead = selectedLead?.leadNo ? selectedLead : leadDetails;
 
 useEffect(() => {
   if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
@@ -583,6 +590,7 @@ const goToViewLR = () => {
         primaryColor:'', secondaryColor:'', state:'',
         leadReturnId:'', information:''
       });
+      setAuditLogRefresh(prev => prev + 1); // Trigger audit log refresh
         setAlertMessage(editIndex!==null ? "Vehicle updated" : "Vehicle added");
      setAlertOpen(true);
     } catch (err) {
@@ -1135,10 +1143,18 @@ const goToViewLR = () => {
       className="save-btn1"
       onClick={handleSubmitReport}
     >
-      Submit 
+      Submit
     </button>
   </div>
 )} */}
+
+        {/* Activity Log Component */}
+        <ActivityLog
+          caseNo={effectiveCase?.caseNo}
+          leadNo={effectiveLead?.leadNo}
+          entityType="LRVehicle"
+          refreshTrigger={auditLogRefresh}
+        />
 
         {/* <Comment tag= "Vehicle"/> */}
 

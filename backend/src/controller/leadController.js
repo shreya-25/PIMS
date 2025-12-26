@@ -20,6 +20,7 @@ const computeAggregateStatus = (assignedTo = []) => {
 const createLead = async (req, res) => {
   try {
     const {
+      caseId,
       parentLeadNo = [],
       incidentNo,
       subNumber = [],
@@ -43,6 +44,7 @@ const createLead = async (req, res) => {
     } = req.body;
 
      const missing = [];
+    if (!caseId)      missing.push('Case ID');
     if (!caseName)    missing.push('Case Name');
     if (!caseNo)      missing.push('Case Number');
     if (!summary)     missing.push('Lead Log Summary');
@@ -78,6 +80,7 @@ const createLead = async (req, res) => {
         };
 
         savedLead = await new Lead({
+          caseId,
           leadNo: nextLeadNo,
           parentLeadNo,
           incidentNo,

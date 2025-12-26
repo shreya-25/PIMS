@@ -99,15 +99,66 @@ export const ActivityLog = ({ caseNo, leadNo, entityType = null, refreshTrigger 
 
   const getFieldLabel = (fieldName) => {
     const labels = {
+      // Common fields
       leadReturnResult: 'Narrative Content',
       accessLevel: 'Access Level',
       enteredBy: 'Entered By',
       enteredDate: 'Date Entered',
       leadReturnId: 'Narrative ID',
       assignedTo: 'Assigned To',
-      assignedBy: 'Assigned By'
+      assignedBy: 'Assigned By',
+
+      // Person fields
+      firstName: 'First Name',
+      lastName: 'Last Name',
+      middleInitial: 'Middle Initial',
+      suffix: 'Suffix',
+      cellNumber: 'Cell Number',
+      alias: 'Alias',
+      businessName: 'Business Name',
+      address: 'Address',
+      ssn: 'SSN',
+      age: 'Age',
+      email: 'Email',
+      occupation: 'Occupation',
+      personType: 'Person Type',
+      condition: 'Condition',
+      cautionType: 'Caution Type',
+      sex: 'Sex',
+      race: 'Race',
+      ethnicity: 'Ethnicity',
+      skinTone: 'Skin Tone',
+      eyeColor: 'Eye Color',
+      hairColor: 'Hair Color',
+      glasses: 'Glasses',
+      height: 'Height',
+      weight: 'Weight',
+      scar: 'Scar',
+      tattoo: 'Tattoo',
+      mark: 'Mark',
+
+      // Vehicle fields
+      year: 'Year',
+      make: 'Make',
+      model: 'Model',
+      plate: 'Plate',
+      vin: 'VIN',
+      state: 'State',
+      category: 'Category',
+      type: 'Type',
+      primaryColor: 'Primary Color',
+      secondaryColor: 'Secondary Color',
+      information: 'Information',
+
+      // Enclosure fields
+      enclosureDescription: 'Description',
+      originalName: 'Original File Name',
+      filename: 'File Name',
+      s3Key: 'File Key',
+      isLink: 'Is Link',
+      link: 'Link'
     };
-    return labels[fieldName] || fieldName;
+    return labels[fieldName] || fieldName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
   };
 
   const formatFieldValue = (value) => {
@@ -131,15 +182,15 @@ export const ActivityLog = ({ caseNo, leadNo, entityType = null, refreshTrigger 
     const oldVal = log.oldValue;
     const newVal = log.newValue;
 
-    // Only show relevant fields
-    const relevantFields = ['leadReturnResult', 'accessLevel', 'assignedTo', 'assignedBy'];
+    // Skip internal/technical fields
+    const skipFields = ['_id', '__v', 'createdAt', 'updatedAt',
+                        'leadNo', 'description', 'caseNo', 'caseName',
+                        'enteredDate', 'enteredBy',
+                        'isDeleted', 'deletedAt', 'deletedBy', 'additionalData'];
 
     Object.keys(newVal).forEach(key => {
-      // Skip internal/technical fields
-      if (key === '_id' || key === '__v' || key === 'createdAt' || key === 'updatedAt' ||
-          key === 'leadNo' || key === 'description' || key === 'caseNo' || key === 'caseName' ||
-          key === 'leadReturnId' || key === 'enteredDate' || key === 'enteredBy' ||
-          key === 'isDeleted' || key === 'deletedAt' || key === 'deletedBy') return;
+      // Skip internal fields
+      if (skipFields.includes(key)) return;
 
       const oldValue = oldVal[key];
       const newValue = newVal[key];
@@ -178,17 +229,32 @@ export const ActivityLog = ({ caseNo, leadNo, entityType = null, refreshTrigger 
   };
 
   const getActionDescription = (log) => {
+    const entityLabels = {
+      'LeadReturnResult': 'narrative',
+      'LRPerson': 'person',
+      'LRVehicle': 'vehicle',
+      'LREnclosure': 'enclosure',
+      'LREvidence': 'evidence',
+      'LRPicture': 'picture',
+      'LRAudio': 'audio',
+      'LRVideo': 'video',
+      'LRScratchpad': 'note',
+      'LRTimeline': 'timeline entry'
+    };
+
+    const entityLabel = entityLabels[log.entityType] || 'record';
+
     switch (log.action) {
       case 'CREATE':
-        return `created narrative #${log.entityId}`;
+        return `created ${entityLabel} #${log.entityId}`;
       case 'UPDATE':
-        return `updated narrative #${log.entityId}`;
+        return `updated ${entityLabel} #${log.entityId}`;
       case 'DELETE':
-        return `deleted narrative #${log.entityId}`;
+        return `deleted ${entityLabel} #${log.entityId}`;
       case 'RESTORE':
-        return `restored narrative #${log.entityId}`;
+        return `restored ${entityLabel} #${log.entityId}`;
       default:
-        return `performed action on narrative #${log.entityId}`;
+        return `performed action on ${entityLabel} #${log.entityId}`;
     }
   };
 
@@ -265,7 +331,7 @@ export const ActivityLog = ({ caseNo, leadNo, entityType = null, refreshTrigger 
                   {getActionIcon(log.action)} {log.action}
                 </span> */}
                 <span className="action-summary">
-                  <strong>{log.performedBy.username}</strong> {getActionDescription(log)}
+                  <strong>{log.performedBy?.username || log.performedBy || 'Unknown'}</strong> {getActionDescription(log)}
                 </span>
                 <span className="timestamp">{formatTimestamp(log.timestamp)}</span>
                 <span className="expand-icon">{showDetails[log._id] ? '▼' : '▶'}</span>
@@ -298,12 +364,42 @@ export const ActivityLog = ({ caseNo, leadNo, entityType = null, refreshTrigger 
 
                   {log.action === 'DELETE' && log.oldValue && (
                     <div className="deleted-info">
-                      <div className="info-header">Deleted Narrative Details:</div>
+                      <div className="info-header">Deleted Details:</div>
                       <div className="info-content">
-                        <div className="detail-row">
-                          <span className="detail-label">Narrative ID:</span>
-                          <span className="detail-value">{log.oldValue.leadReturnId}</span>
-                        </div>
+                        {log.oldValue.leadReturnId && (
+                          <div className="detail-row">
+                            <span className="detail-label">Narrative ID:</span>
+                            <span className="detail-value">{log.oldValue.leadReturnId}</span>
+                          </div>
+                        )}
+                        {log.oldValue.firstName && (
+                          <div className="detail-row">
+                            <span className="detail-label">Name:</span>
+                            <span className="detail-value">
+                              {log.oldValue.firstName} {log.oldValue.middleInitial || ''} {log.oldValue.lastName || ''}
+                            </span>
+                          </div>
+                        )}
+                        {log.oldValue.vin && (
+                          <div className="detail-row">
+                            <span className="detail-label">VIN:</span>
+                            <span className="detail-value">{log.oldValue.vin}</span>
+                          </div>
+                        )}
+                        {log.oldValue.make && (
+                          <div className="detail-row">
+                            <span className="detail-label">Vehicle:</span>
+                            <span className="detail-value">
+                              {log.oldValue.year || ''} {log.oldValue.make} {log.oldValue.model || ''}
+                            </span>
+                          </div>
+                        )}
+                        {log.oldValue.originalName && (
+                          <div className="detail-row">
+                            <span className="detail-label">File:</span>
+                            <span className="detail-value">{log.oldValue.originalName}</span>
+                          </div>
+                        )}
                         {log.oldValue.leadReturnResult && (
                           <div className="detail-row">
                             <span className="detail-label">Content Preview:</span>
@@ -326,12 +422,42 @@ export const ActivityLog = ({ caseNo, leadNo, entityType = null, refreshTrigger 
 
                   {log.action === 'CREATE' && log.newValue && (
                     <div className="created-info">
-                      <div className="info-header">New Narrative Details:</div>
+                      <div className="info-header">New Details:</div>
                       <div className="info-content">
-                        <div className="detail-row">
-                          <span className="detail-label">Narrative ID:</span>
-                          <span className="detail-value">{log.newValue.leadReturnId}</span>
-                        </div>
+                        {log.newValue.leadReturnId && (
+                          <div className="detail-row">
+                            <span className="detail-label">Narrative ID:</span>
+                            <span className="detail-value">{log.newValue.leadReturnId}</span>
+                          </div>
+                        )}
+                        {log.newValue.firstName && (
+                          <div className="detail-row">
+                            <span className="detail-label">Name:</span>
+                            <span className="detail-value">
+                              {log.newValue.firstName} {log.newValue.middleInitial || ''} {log.newValue.lastName || ''}
+                            </span>
+                          </div>
+                        )}
+                        {log.newValue.vin && (
+                          <div className="detail-row">
+                            <span className="detail-label">VIN:</span>
+                            <span className="detail-value">{log.newValue.vin}</span>
+                          </div>
+                        )}
+                        {log.newValue.make && (
+                          <div className="detail-row">
+                            <span className="detail-label">Vehicle:</span>
+                            <span className="detail-value">
+                              {log.newValue.year || ''} {log.newValue.make} {log.newValue.model || ''}
+                            </span>
+                          </div>
+                        )}
+                        {log.newValue.originalName && (
+                          <div className="detail-row">
+                            <span className="detail-label">File:</span>
+                            <span className="detail-value">{log.newValue.originalName}</span>
+                          </div>
+                        )}
                         {log.newValue.leadReturnResult && (
                           <div className="detail-row">
                             <span className="detail-label">Content Preview:</span>

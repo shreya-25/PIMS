@@ -76,12 +76,12 @@ export const CaseProvider = ({ children }) => {
     const [leadInstructions, setLeadInstructions] = useState(null);
     const [leadReturns, setLeadReturns] = useState(null);
     const [leadPersons, setLeadPersons] = useState(null);
-    const [leadVehicles, setleadVehicles] = useState(null);
-    const [leadEnclosures, setleadEnclosures] = useState(null);
-    const [leadEvidence, setleadEvidence] = useState(null);
-    const [leadPictures, setleadPictures] = useState(null);
-    const [leadAudio, setleadAudio] = useState(null);
-    const [leadVideos, setleadVideos] = useState(null);
+    const [leadVehicles, setLeadVehicles] = useState(null);
+    const [leadEnclosures, setLeadEnclosures] = useState(null);
+    const [leadEvidence, setLeadEvidence] = useState(null);
+    const [leadPictures, setLeadPictures] = useState(null);
+    const [leadAudio, setLeadAudio] = useState(null);
+    const [leadVideos, setLeadVideos] = useState(null);
     const [leadStatus, setLeadStatus] = useState("");
 
     // Persist case details when updated
@@ -116,15 +116,17 @@ export const CaseProvider = ({ children }) => {
     };
 
     return (
-        <CaseContext.Provider value={{ 
-            selectedCase, setSelectedCase, 
-            selectedLead, setSelectedLead, 
-            token, setToken, 
+        <CaseContext.Provider value={{
+            selectedCase, setSelectedCase,
+            selectedLead, setSelectedLead,
+            token, setToken,
             leadInstructions, setLeadInstructions,
             leadReturns, setLeadReturns,
             leadPersons, setLeadPersons,
+            leadVehicles, setLeadVehicles,
+            leadEnclosures, setLeadEnclosures,
             selectedReports, setSelectedReports,
-            withAutoRefresh, leadStatus,         
+            withAutoRefresh, leadStatus,
             setLeadStatus,
             refreshKey, triggerRefresh
         }}>

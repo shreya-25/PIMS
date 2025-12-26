@@ -588,8 +588,7 @@ useEffect(() => {
         `/api/lrperson/${selectedLead.leadNo}/` +
           `${selectedCase.caseNo}/` +
           `${person.leadReturnId}/` +
-          `${person.firstName}/` +
-          `${person.lastName}`,
+          `${person.firstName}`,
         payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );

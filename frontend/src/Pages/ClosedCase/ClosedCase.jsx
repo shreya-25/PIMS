@@ -220,13 +220,14 @@ export const ClosedCase = () => {
 
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleView = (c) => {
-    setSelectedCase({ caseNo: c.id, caseName: c.title, role: c.role });
+    const caseObj = { _id: c._id || c.id, caseNo: c.id, caseName: c.title, role: c.role };
+    setSelectedCase(caseObj);
     localStorage.setItem(
       "selectedCase",
-      JSON.stringify({ caseNo: c.id, caseName: c.title, role: c.role })
+      JSON.stringify(caseObj)
     );
     navigate("/CasePageManager", {
-      state: { caseDetails: { caseNo: c.id, caseName: c.title, role: c.role } },
+      state: { caseDetails: caseObj },
     });
   };
 

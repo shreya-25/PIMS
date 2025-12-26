@@ -277,7 +277,7 @@ export const SideBar = ({
     badgeCountByCase[String(caseId)] || 0;
 
   const handleCaseSelect = (c) => {
-    setSelectedCase({ caseNo: c.id, caseName: c.title, role: c.role });
+    setSelectedCase({ _id: c._id || c.id, caseNo: c.id, caseName: c.title, role: c.role });
     const dest = c.role === "Investigator" ? "/Investigator" : "/CasePageManager";
     navigate(dest, { state: { caseDetails: c } });
   };

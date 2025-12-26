@@ -1,4 +1,5 @@
 const LRPerson = require("../models/LRPerson");
+const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 
 // **Create a new LRPerson entry**
 const createLRPerson = async (req, res) => {
@@ -86,6 +87,29 @@ const createLRPerson = async (req, res) => {
         });
 
         await newLRPerson.save();
+
+        // Log the creation in audit log
+        await createAuditLog({
+            caseNo,
+            caseName,
+            leadNo,
+            leadName: description,
+            entityType: "LRPerson",
+            entityId: `${firstName}_${leadReturnId}`,
+            action: "CREATE",
+            performedBy: {
+                username: req.user?.name || enteredBy || "Unknown",
+                role: req.user?.role || "Unknown"
+            },
+            oldValue: null,
+            newValue: sanitizeForAudit(newLRPerson.toObject()),
+            metadata: {
+                ip: req.ip || req.connection?.remoteAddress,
+                userAgent: req.get('user-agent')
+            },
+            accessLevel: accessLevel || "Everyone"
+        });
+
         res.status(201).json(newLRPerson);
     } catch (err) {
         console.error("Error creating LRPerson:", err.message);
@@ -152,7 +176,19 @@ const updateLRPerson = async (req, res) => {
         firstName
       } = req.params;
       const updateData = req.body;
-  
+
+      // Get the old value before updating
+      const existingPerson = await LRPerson.findOne({
+        leadNo: Number(leadNo),
+        caseNo,
+        leadReturnId,
+        firstName
+      });
+
+      if (!existingPerson) {
+        return res.status(404).json({ message: "Person not found." });
+      }
+
       const updated = await LRPerson.findOneAndUpdate(
         {
           leadNo:       Number(leadNo),
@@ -166,11 +202,30 @@ const updateLRPerson = async (req, res) => {
           runValidators: true
         }
       );
-  
-      if (!updated) {
-        return res.status(404).json({ message: "Person not found." });
-      }
-  
+
+      // Log the update in audit log
+      await createAuditLog({
+        caseNo,
+        caseName: updated.caseName,
+        leadNo: Number(leadNo),
+        leadName: updated.description,
+        entityType: "LRPerson",
+        entityId: `${firstName}_${leadReturnId}`,
+        action: "UPDATE",
+        performedBy: {
+          username: req.user?.name || "Unknown",
+          role: req.user?.role || "Unknown"
+        },
+        oldValue: sanitizeForAudit(existingPerson.toObject()),
+        newValue: sanitizeForAudit(updated.toObject()),
+        metadata: {
+          ip: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('user-agent'),
+          changedFields: Object.keys(updateData)
+        },
+        accessLevel: updated.accessLevel || "Everyone"
+      });
+
       res.status(200).json(updated);
     } catch (err) {
       console.error("Error updating person:", err);
@@ -187,17 +242,47 @@ const updateLRPerson = async (req, res) => {
         leadReturnId,
         firstName
       } = req.params;
-  
+
+      // Get the record before deleting
+      const existingPerson = await LRPerson.findOne({
+        leadNo: Number(leadNo),
+        caseNo,
+        leadReturnId,
+        firstName
+      });
+
+      if (!existingPerson) {
+        return res.status(404).json({ message: "Person not found." });
+      }
+
       const deleted = await LRPerson.findOneAndDelete({
         leadNo:       Number(leadNo),
         caseNo,
         leadReturnId,
         firstName      });
-  
-      if (!deleted) {
-        return res.status(404).json({ message: "Person not found." });
-      }
-  
+
+      // Log the deletion in audit log
+      await createAuditLog({
+        caseNo,
+        caseName: existingPerson.caseName,
+        leadNo: Number(leadNo),
+        leadName: existingPerson.description,
+        entityType: "LRPerson",
+        entityId: `${firstName}_${leadReturnId}`,
+        action: "DELETE",
+        performedBy: {
+          username: req.user?.name || "Unknown",
+          role: req.user?.role || "Unknown"
+        },
+        oldValue: sanitizeForAudit(existingPerson.toObject()),
+        newValue: null,
+        metadata: {
+          ip: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('user-agent')
+        },
+        accessLevel: existingPerson.accessLevel || "Everyone"
+      });
+
       res.status(200).json({ message: "Person deleted successfully." });
     } catch (err) {
       console.error("Error deleting person:", err);

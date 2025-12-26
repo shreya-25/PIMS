@@ -1,4 +1,5 @@
 const LRVehicle = require("../models/LRVehicle");
+const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 
 // **Create a new LRVehicle entry**
 const createLRVehicle = async (req, res) => {
@@ -54,6 +55,29 @@ const createLRVehicle = async (req, res) => {
         });
 
         await newLRVehicle.save();
+
+        // Log the creation in audit log
+        await createAuditLog({
+            caseNo,
+            caseName,
+            leadNo,
+            leadName: description,
+            entityType: "LRVehicle",
+            entityId: `${vin}_${leadReturnId}`,
+            action: "CREATE",
+            performedBy: {
+                username: req.user?.name || enteredBy || "Unknown",
+                role: req.user?.role || "Unknown"
+            },
+            oldValue: null,
+            newValue: sanitizeForAudit(newLRVehicle.toObject()),
+            metadata: {
+                ip: req.ip || req.connection?.remoteAddress,
+                userAgent: req.get('user-agent')
+            },
+            accessLevel: accessLevel || "Everyone"
+        });
+
         res.status(201).json(newLRVehicle);
     } catch (err) {
         console.error("Error creating LRVehicle:", err.message);
@@ -116,7 +140,19 @@ const updateLRVehicle = async (req, res) => {
     try {
       const { leadNo, caseNo, leadReturnId, vin } = req.params;
       const updateData = req.body;
-  
+
+      // Get the old value before updating
+      const existingVehicle = await LRVehicle.findOne({
+        leadNo: Number(leadNo),
+        caseNo,
+        leadReturnId,
+        vin
+      });
+
+      if (!existingVehicle) {
+        return res.status(404).json({ message: "Vehicle not found." });
+      }
+
       const updated = await LRVehicle.findOneAndUpdate(
         {
           leadNo:       Number(leadNo),
@@ -127,10 +163,30 @@ const updateLRVehicle = async (req, res) => {
         updateData,
         { new: true, runValidators: true }
       );
-  
-      if (!updated) {
-        return res.status(404).json({ message: "Vehicle not found." });
-      }
+
+      // Log the update in audit log
+      await createAuditLog({
+        caseNo,
+        caseName: updated.caseName,
+        leadNo: Number(leadNo),
+        leadName: updated.description,
+        entityType: "LRVehicle",
+        entityId: `${vin}_${leadReturnId}`,
+        action: "UPDATE",
+        performedBy: {
+          username: req.user?.name || "Unknown",
+          role: req.user?.role || "Unknown"
+        },
+        oldValue: sanitizeForAudit(existingVehicle.toObject()),
+        newValue: sanitizeForAudit(updated.toObject()),
+        metadata: {
+          ip: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('user-agent'),
+          changedFields: Object.keys(updateData)
+        },
+        accessLevel: updated.accessLevel || "Everyone"
+      });
+
       res.status(200).json(updated);
     } catch (err) {
       console.error("Error updating vehicle:", err);
@@ -142,17 +198,48 @@ const updateLRVehicle = async (req, res) => {
   const deleteLRVehicle = async (req, res) => {
     try {
       const { leadNo, caseNo, leadReturnId, vin } = req.params;
-  
+
+      // Get the record before deleting
+      const existingVehicle = await LRVehicle.findOne({
+        leadNo: Number(leadNo),
+        caseNo,
+        leadReturnId,
+        vin
+      });
+
+      if (!existingVehicle) {
+        return res.status(404).json({ message: "Vehicle not found." });
+      }
+
       const deleted = await LRVehicle.findOneAndDelete({
         leadNo:       Number(leadNo),
         caseNo,
         leadReturnId,
         vin
       });
-  
-      if (!deleted) {
-        return res.status(404).json({ message: "Vehicle not found." });
-      }
+
+      // Log the deletion in audit log
+      await createAuditLog({
+        caseNo,
+        caseName: existingVehicle.caseName,
+        leadNo: Number(leadNo),
+        leadName: existingVehicle.description,
+        entityType: "LRVehicle",
+        entityId: `${vin}_${leadReturnId}`,
+        action: "DELETE",
+        performedBy: {
+          username: req.user?.name || "Unknown",
+          role: req.user?.role || "Unknown"
+        },
+        oldValue: sanitizeForAudit(existingVehicle.toObject()),
+        newValue: null,
+        metadata: {
+          ip: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('user-agent')
+        },
+        accessLevel: existingVehicle.accessLevel || "Everyone"
+      });
+
       res.status(200).json({ message: "Vehicle deleted successfully." });
     } catch (err) {
       console.error("Error deleting vehicle:", err);

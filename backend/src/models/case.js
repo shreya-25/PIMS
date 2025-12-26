@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const caseSchema = new mongoose.Schema(
     {
         caseNo: { type: String, required: true, unique: true },
-        caseName: { type: String, required: true, unique: true },
+        caseName: { type: String, required: true },
         assignedOfficers: [
             {
                 name: { type: String, required: true },
@@ -27,17 +27,3 @@ const caseSchema = new mongoose.Schema(
 
 module.exports = mongoose.model("Case", caseSchema);
 
- // allLeads: [{
-        //     name: { type: String, required: true },
-        //     number: { type: Number, required: true },
-        //     status: { type: String, enum: ['Assigned', 'Pending', 'Completed'], required: true }
-        // }
-
-        // ], 
-        // allLeadReturns: [
-        //     {
-        //         name: { type: String, required: true },
-        //         number: { type: Number, required: true },
-        //         status: { type: String, enum: ['Assigned', 'Pending', 'Completed'], required: true }
-        //     }
-        // ],

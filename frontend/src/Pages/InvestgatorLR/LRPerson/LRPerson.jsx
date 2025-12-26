@@ -12,6 +12,7 @@ import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../../components/AlertModal/AlertModal";
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
+import { ActivityLog } from '../../../components/ActivityLog/ActivityLog';
 
 
 export const LRPerson = () => {
@@ -26,12 +27,16 @@ export const LRPerson = () => {
     //   }, []);
     const navigate = useNavigate(); // Initialize useNavigate hook
        const location = useLocation();
-          
+
         const { leadDetails, caseDetails } = location.state || {};
           const [loading, setLoading] = useState(true);
           const [error, setError] = useState("");
           const [rawPersons, setRawPersons] = useState([]);
+          const [auditLogRefresh, setAuditLogRefresh] = useState(0);
             const { selectedCase, selectedLead, setSelectedLead, setSelectedCase, leadStatus, setLeadPersons, setLeadStatus } = useContext(CaseContext);
+
+          const effectiveCase = selectedCase?.caseNo ? selectedCase : caseDetails;
+          const effectiveLead = selectedLead?.leadNo ? selectedLead : leadDetails;
 
                 const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
                 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
@@ -237,6 +242,7 @@ const performDeletePerson = async () => {
       : remapped.filter(r => r.accessLevel === "Everyone");
 
     setPersons(newVisible);
+    setAuditLogRefresh(prev => prev + 1); // Trigger audit log refresh
   } catch (err) {
     console.error("Delete failed", err);
     setAlertMessage("Failed to delete person.");
@@ -923,10 +929,18 @@ const handleDeletePerson = async (idx) => {
       className="save-btn1"
       onClick={handleSubmitReport}
     >
-      Submit 
+      Submit
     </button>
   </div>
 )} */}
+
+      {/* Activity Log Component */}
+      <ActivityLog
+        caseNo={effectiveCase?.caseNo}
+        leadNo={effectiveLead?.leadNo}
+        entityType="LRPerson"
+        refreshTrigger={auditLogRefresh}
+      />
 
       {/* <Comment tag = "Person"/> */}
 </div>

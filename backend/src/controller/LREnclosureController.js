@@ -1,6 +1,7 @@
 const LREnclosure = require("../models/LREnclosure");
 const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
+const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 
 // ---------- helpers ----------
 const one = (v) => Array.isArray(v) ? v[0] : v;
@@ -71,6 +72,31 @@ const createLREnclosure = async (req, res) => {
     });
 
     await newLREnclosure.save();
+
+    // Log the creation in audit log
+    await createAuditLog({
+      caseNo: newLREnclosure.caseNo,
+      caseName: newLREnclosure.caseName,
+      leadNo: newLREnclosure.leadNo,
+      leadName: newLREnclosure.description,
+      entityType: "LREnclosure",
+      entityId: `${newLREnclosure.leadReturnId}_${newLREnclosure._id}`,
+      action: "CREATE",
+      performedBy: {
+        username: req.user?.name || newLREnclosure.enteredBy || "Unknown",
+        role: req.user?.role || "Unknown"
+      },
+      oldValue: null,
+      newValue: sanitizeForAudit(newLREnclosure.toObject()),
+      metadata: {
+        ip: req.ip || req.connection?.remoteAddress,
+        userAgent: req.get('user-agent'),
+        fileType: newLREnclosure.type,
+        isLink: newLREnclosure.isLink
+      },
+      accessLevel: newLREnclosure.accessLevel || "Everyone"
+    });
+
     return res.status(201).json({ message: "Enclosure created successfully", enclosure: newLREnclosure });
   } catch (err) {
     console.error("Error creating LREnclosure:", err);
@@ -120,6 +146,9 @@ const updateLREnclosure = async (req, res) => {
     });
     if (!enc) return res.status(404).json({ message: "Enclosure not found" });
 
+    // Store old value for audit
+    const oldEnclosure = enc.toObject();
+
     // Replace file if a new one was sent
     if (req.file) {
       if (enc.s3Key) {
@@ -156,6 +185,30 @@ const updateLREnclosure = async (req, res) => {
     enc.enteredBy = asString(one(req.body.enteredBy)) || enc.enteredBy;
 
     await enc.save();
+
+    // Log the update in audit log
+    await createAuditLog({
+      caseNo: enc.caseNo,
+      caseName: enc.caseName,
+      leadNo: Number(leadNo),
+      leadName: enc.description,
+      entityType: "LREnclosure",
+      entityId: `${leadReturnId}_${enc._id}`,
+      action: "UPDATE",
+      performedBy: {
+        username: req.user?.name || "Unknown",
+        role: req.user?.role || "Unknown"
+      },
+      oldValue: sanitizeForAudit(oldEnclosure),
+      newValue: sanitizeForAudit(enc.toObject()),
+      metadata: {
+        ip: req.ip || req.connection?.remoteAddress,
+        userAgent: req.get('user-agent'),
+        fileUpdated: !!req.file
+      },
+      accessLevel: enc.accessLevel || "Everyone"
+    });
+
     res.json(enc);
   } catch (err) {
     console.error("Error updating LREnclosure:", err);
@@ -168,6 +221,16 @@ const deleteLREnclosure = async (req, res) => {
   try {
     const { leadNo, leadName, caseNo, caseName, leadReturnId } = req.params;
 
+    // Get the record before deleting
+    const existingEnclosure = await LREnclosure.findOne({
+      leadNo: Number(leadNo),
+      description: leadName,
+      caseNo,
+      caseName,
+      leadReturnId
+    });
+    if (!existingEnclosure) return res.status(404).json({ message: "Enclosure not found" });
+
     const enc = await LREnclosure.findOneAndDelete({
       leadNo: Number(leadNo),
       description: leadName,
@@ -175,12 +238,34 @@ const deleteLREnclosure = async (req, res) => {
       caseName,
       leadReturnId
     });
-    if (!enc) return res.status(404).json({ message: "Enclosure not found" });
 
     if (enc.s3Key) {
       try { await deleteFromS3(enc.s3Key); }
       catch (s3Err) { console.warn(`Could not delete file from S3: ${s3Err.message}`); }
     }
+
+    // Log the deletion in audit log
+    await createAuditLog({
+      caseNo,
+      caseName,
+      leadNo: Number(leadNo),
+      leadName,
+      entityType: "LREnclosure",
+      entityId: `${leadReturnId}_${enc._id}`,
+      action: "DELETE",
+      performedBy: {
+        username: req.user?.name || "Unknown",
+        role: req.user?.role || "Unknown"
+      },
+      oldValue: sanitizeForAudit(existingEnclosure.toObject()),
+      newValue: null,
+      metadata: {
+        ip: req.ip || req.connection?.remoteAddress,
+        userAgent: req.get('user-agent'),
+        s3FileDeleted: !!enc.s3Key
+      },
+      accessLevel: existingEnclosure.accessLevel || "Everyone"
+    });
 
     return res.json({ message: "Enclosure deleted successfully" });
   } catch (err) {

@@ -64,6 +64,7 @@ const [showAddCase, setShowAddCase] = useState(false);
     : null;
 
   return {
+    _id:       c._id,
     id:        c.caseNo,
     title:     c.caseName,
     status:    c.caseStatus,
@@ -182,31 +183,23 @@ setCases(assignedCases);
     };
 
 const handleCaseClick = (caseDetails) => {
- 
 
-  // Save case details in context
-  setSelectedCase({
+  const caseObj = {
+    _id: caseDetails._id,
     caseNo: caseDetails.id,
     caseName: caseDetails.title,
     role: caseDetails.role
-  });
+  };
+
+  // Save case details in context
+  setSelectedCase(caseObj);
 
   // Navigate to the appropriate page based on role
   if (caseDetails.role === "Investigator") {
     localStorage.setItem("role", "Investigator");
-    setSelectedCase({
-      caseNo: caseDetails.id,
-      caseName: caseDetails.title,
-      role: caseDetails.role
-    });
     navigate("/Investigator", { state: { caseDetails } });
   } else if (caseDetails.role === "Case Manager" || caseDetails.role === "Detective Supervisor") {
     localStorage.setItem("role", "Case Manager");
-    setSelectedCase({
-      caseNo: caseDetails.id,
-      caseName: caseDetails.title,
-      role: caseDetails.role
-    });
     navigate("/CasePageManager", { state: { caseDetails } });
   }
 };

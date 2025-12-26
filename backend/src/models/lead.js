@@ -89,14 +89,14 @@ const leadSchema = new mongoose.Schema(
 
     dueDate: Date,
     priority: String,
-      isDeleted:    { type: Boolean, default: false, index: true },
+    isDeleted:    { type: Boolean, default: false, index: true },
   deletedAt:    { type: Date },
   deletedBy:    { type: String },
   deletedReason:{ type: String },
 
     caseName: { type: String, required: true },
     caseNo:   { type: String, required: true },
-
+    caseId: { type: mongoose.Schema.Types.ObjectId, ref: "Case", required: true, index: true },
     associatedFlags: [{ type: String }],
 
     submittedDate:  { type: Date },

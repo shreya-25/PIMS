@@ -571,6 +571,7 @@ const orderedAssignees = hasAssignees
     const response = await api.post(
       "/api/lead/create",
       {
+        caseId:               selectedCase.id || selectedCase._id,  // ✅ Add MongoDB ObjectId
         caseName:             selectedCase.caseName,
         caseNo:               selectedCase.caseNo,
         parentLeadNo:         originNumbers,
