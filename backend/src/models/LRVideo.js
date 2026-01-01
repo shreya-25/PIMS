@@ -57,6 +57,12 @@ const lrVideoSchema = new mongoose.Schema(
       enum: ["Only Case Manager", "Everyone"],
       default: "Everyone",
     },
+    // Reference to complete lead return version
+    completeLeadReturnId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CompleteleadReturn",
+      index: true
+    }
   },
   { timestamps: true }
 );

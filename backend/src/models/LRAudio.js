@@ -41,6 +41,12 @@ const lrAudioSchema = new mongoose.Schema(
       enum: ["Case Manager Only", "Everyone"], // ← align with frontend option text
       default: "Everyone",
     },
+    // Reference to complete lead return version
+    completeLeadReturnId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CompleteleadReturn",
+      index: true
+    }
   },
   { timestamps: true }
 );

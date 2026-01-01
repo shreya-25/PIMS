@@ -2,6 +2,7 @@ const LeadReturnResult = require("../models/leadReturnResult");
 const LeadReturn = require("../models/leadreturn");
 const LRPerson = require("../models/LRPerson");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
+const { createSnapshot } = require("../utils/leadReturnVersioning");
 
 // Helpers to convert between A…Z strings and numbers
 function alphabetToNumber(str) {
@@ -123,6 +124,19 @@ const createLeadReturnResult = async (req, res) => {
       accessLevel: accessLevel || "Everyone"
     });
 
+    // Create a snapshot after creating the narrative
+    try {
+      await createSnapshot(
+        leadNo,
+        enteredBy || "Unknown",
+        "Manual Snapshot"
+      );
+      console.log(`Snapshot created after creating narrative ${newId} for lead ${leadNo}`);
+    } catch (snapshotErr) {
+      console.error("Error creating snapshot after narrative creation:", snapshotErr.message);
+      // Don't fail the request if snapshot creation fails
+    }
+
     return res.status(201).json(newLeadReturnResult);
   } catch (err) {
     console.error("Error creating lead return result:", err);
@@ -189,7 +203,11 @@ const updateLeadReturnResult = async (req, res) => {
 
         const updatedResult = await LeadReturnResult.findOneAndUpdate(
             { leadNo: Number(leadNo), caseNo, leadReturnId },
-            updateData,
+            {
+                ...updateData,
+                lastModifiedDate: new Date(),
+                lastModifiedBy: req.user?.name || "Unknown"
+            },
             { new: true }
         );
 
@@ -215,6 +233,19 @@ const updateLeadReturnResult = async (req, res) => {
             },
             accessLevel: updatedResult.accessLevel || "Everyone"
         });
+
+        // Create a snapshot after updating the narrative
+        try {
+            await createSnapshot(
+                Number(leadNo),
+                req.user?.name || "Unknown",
+                "Manual Snapshot"
+            );
+            console.log(`Snapshot created after updating narrative ${leadReturnId} for lead ${leadNo}`);
+        } catch (snapshotErr) {
+            console.error("Error creating snapshot after narrative update:", snapshotErr.message);
+            // Don't fail the request if snapshot creation fails
+        }
 
         res.status(200).json(updatedResult);
     } catch (err) {
@@ -272,6 +303,19 @@ const deleteLeadReturnResult = async (req, res) => {
             },
             accessLevel: existingResult.accessLevel || "Everyone"
         });
+
+        // Create a snapshot after deleting the narrative
+        try {
+            await createSnapshot(
+                Number(leadNo),
+                req.user?.name || "Unknown",
+                "Manual Snapshot"
+            );
+            console.log(`Snapshot created after deleting narrative ${leadReturnId} for lead ${leadNo}`);
+        } catch (snapshotErr) {
+            console.error("Error creating snapshot after narrative deletion:", snapshotErr.message);
+            // Don't fail the request if snapshot creation fails
+        }
 
         res.status(200).json({ message: "Lead return result deleted successfully.", data: deletedResult });
     } catch (err) {

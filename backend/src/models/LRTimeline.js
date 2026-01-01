@@ -34,15 +34,21 @@ const lrTimelineSchema = new mongoose.Schema(
         eventLocation: { type: String, required: true },
         eventDescription: { type: String, required: true },
         timelineFlag: {
-            type: [String], 
+            type: [String],
             default: []
-          },
-          accessLevel: {
+        },
+        accessLevel: {
             type: String,
             enum: ["Only Case Manager", "Everyone"],
             default: "Everyone"
-          }
-       
+        },
+        // Reference to complete lead return version
+        completeLeadReturnId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "CompleteleadReturn",
+            index: true
+        }
+
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields
 );

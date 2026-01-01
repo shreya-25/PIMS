@@ -34,7 +34,17 @@ const leadReturnSchema = new mongoose.Schema(
             type: String,
             enum: ["Only Case Manager", "Everyone"],
             default: "Everyone"
-          }
+        },
+        // Reference to complete lead return version
+        completeLeadReturnId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "CompleteleadReturn",
+            index: true
+        },
+        currentVersionId: {
+            type: Number,
+            default: 1
+        }
     },
     { timestamps: true }
 );

@@ -1,5 +1,6 @@
 const Lead = require("../models/lead");
 const mongoose = require("mongoose");
+const { createSnapshot } = require("../utils/leadReturnVersioning");
 
 
 // lead.controller.js (or wherever your createLead function is defined)
@@ -547,6 +548,16 @@ const setLeadStatusToInReview = async (req, res) => {
     });
 
     await lead.save();
+
+    // Create snapshot for "Submitted" status
+    try {
+      await createSnapshot(leadNo, actor, "Submitted");
+      console.log(`Snapshot created for lead ${leadNo} - Submitted`);
+    } catch (snapshotErr) {
+      console.error("Error creating snapshot:", snapshotErr.message);
+      // Don't fail the request if snapshot creation fails
+    }
+
     return res.status(200).json({ message: "Lead status set to 'In Review'.", lead });
   } catch (err) {
     console.error("Error updating lead status to 'In Review':", err.message);
@@ -580,6 +591,16 @@ const setLeadStatusToComplete = async (req, res) => {
     });
 
     await lead.save();
+
+    // Create snapshot for "Approved" status
+    try {
+      await createSnapshot(leadNo, actor, "Approved");
+      console.log(`Snapshot created for lead ${leadNo} - Approved`);
+    } catch (snapshotErr) {
+      console.error("Error creating snapshot:", snapshotErr.message);
+      // Don't fail the request if snapshot creation fails
+    }
+
     return res.status(200).json({ message: "Lead status set to 'Completed'.", lead });
   } catch (err) {
     console.error("Error updating lead status to 'Completed':", err.message);
@@ -645,6 +666,16 @@ const setLeadStatusToReturned = async (req, res) => {
     });
 
     await lead.save();
+
+    // Create snapshot for "Returned" status
+    try {
+      await createSnapshot(leadNo, actor, "Returned");
+      console.log(`Snapshot created for lead ${leadNo} - Returned`);
+    } catch (snapshotErr) {
+      console.error("Error creating snapshot:", snapshotErr.message);
+      // Don't fail the request if snapshot creation fails
+    }
+
     return res.status(200).json({ message: "Lead status set to 'Returned'.", lead });
   } catch (err) {
     console.error("Error updating lead status to 'Returned':", err.message);
@@ -678,6 +709,16 @@ const setLeadStatusToReopened = async (req, res) => {
     });
 
     await lead.save();
+
+    // Create snapshot for "Reopened" status
+    try {
+      await createSnapshot(leadNo, actor, "Reopened");
+      console.log(`Snapshot created for lead ${leadNo} - Reopened`);
+    } catch (snapshotErr) {
+      console.error("Error creating snapshot:", snapshotErr.message);
+      // Don't fail the request if snapshot creation fails
+    }
+
     return res.status(200).json({ message: "Lead status set to 'Reopened'.", lead });
   } catch (err) {
     console.error("Error updating lead status to 'Reopened':", err.message);

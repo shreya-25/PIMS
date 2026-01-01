@@ -40,10 +40,16 @@ const lrEnclosureSchema = new mongoose.Schema(
             type: String,
             enum: ["Only Case Manager", "Everyone"],
             default: "Everyone"
-          },
-          isLink: { type: Boolean, default: false },
-  link: { type: String, default: null },   
-       
+        },
+        isLink: { type: Boolean, default: false },
+        link: { type: String, default: null },
+        // Reference to complete lead return version
+        completeLeadReturnId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "CompleteleadReturn",
+            index: true
+        }
+
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields
 );

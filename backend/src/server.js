@@ -19,7 +19,8 @@ const LRTimelineRoutes = require("./routes/LRTimelineRoute.js");
 const LRScratchpadRoutes = require("./routes/LRScratchpadRoutes");
 // const LogRoutes = require("./routes/LogRoutes.js");
 const CommentRoutes = require("./routes/CommentRoutes.js");
-const auditLogRoutes = require("./routes/auditLogRoutes.js");
+const activityLogRoutes = require("./routes/activityLogRoutes.js");
+const leadReturnVersionRoutes = require("./routes/leadReturnVersionRoutes.js");
 const { dbConnect } = require("./config/dbConnect"); // Import dbConnect properly
 const path = require('path');
 const presenceRoutes = require("./routes/presenceRoutes");
@@ -106,7 +107,8 @@ app.use("/api/timeline", LRTimelineRoutes);
 app.use("/api/scratchpad", LRScratchpadRoutes);
 app.use("/api/comment", CommentRoutes);
 app.use("/api/presence", verifyToken, presenceRoutes);
-app.use("/api/audit", auditLogRoutes);
+app.use("/api/audit", activityLogRoutes);
+app.use("/api/leadreturn-versions", leadReturnVersionRoutes);
 // app.use("/api/logs", LogRoutes);
 
 app.use('/uploads', express.static(path.join(__dirname, 'temp_uploads')));

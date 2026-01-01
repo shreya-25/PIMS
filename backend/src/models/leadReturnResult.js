@@ -22,6 +22,8 @@ const leadReturnResultsSchema = new mongoose.Schema(
         },
         enteredDate:  { type: Date },
         enteredBy: { type: String, required: true},
+        lastModifiedDate: { type: Date },
+        lastModifiedBy: { type: String },
         caseName: { type: String, required: true},
         caseNo: { type: String , required: true},
         leadReturnId: { type: String , required: true},
@@ -34,7 +36,13 @@ const leadReturnResultsSchema = new mongoose.Schema(
         // Soft delete fields
         isDeleted: { type: Boolean, default: false },
         deletedAt: { type: Date },
-        deletedBy: { type: String }
+        deletedBy: { type: String },
+        // Reference to complete lead return version
+        completeLeadReturnId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "CompleteleadReturn",
+            index: true
+        }
     },
     { timestamps: true }
 );

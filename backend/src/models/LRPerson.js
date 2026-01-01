@@ -65,12 +65,18 @@ const lrPersonSchema = new mongoose.Schema(
         scar:{ type: String },
         tattoo: { type: String },
         mark: { type: String },
-        additionalData: { type: Schema.Types.Mixed }, 
+        additionalData: { type: Schema.Types.Mixed },
         accessLevel: {
             type: String,
             enum: ["Only Case Manager", "Everyone"],
             default: "Everyone"
-          }
+        },
+        // Reference to complete lead return version
+        completeLeadReturnId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "CompleteleadReturn",
+            index: true
+        }
     },
     { timestamps: true } // Automatically adds createdAt and updatedAt fields
 );

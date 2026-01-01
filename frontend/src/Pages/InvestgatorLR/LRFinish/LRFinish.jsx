@@ -561,17 +561,20 @@ const actuallyDoSubmitReport = async () => {
         assignedBy: {
           assignee: localStorage.getItem("officerName") || "Unknown Officer",
           lRStatus: "Pending"
-        }
+        },
+        accessLevel: "Everyone"
       };
 
-      const response = await api.post("/api/leadReturn/create", body, {
+      // Update lead return status to Submitted (creates it if doesn't exist, without "Created" snapshot)
+      const response = await api.put("/api/leadReturn/set-lrstatus-submitted", body, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         }
       });
 
-      if (response.status === 201) {
+      if (response.status === 200) {
+        // Update lead status to In Review
         const statusResponse = await api.put(
           "/api/lead/status/in-review",
           {
@@ -595,7 +598,7 @@ const actuallyDoSubmitReport = async () => {
           setLocalStatus("In Review");
           console.log("status from hook", status);
 
-          
+
           // alert("Lead Return submitted");
            setAlertMessage("Lead Return submitted!");
       setAlertOpen(true);
@@ -607,7 +610,7 @@ const actuallyDoSubmitReport = async () => {
             assignedBy:     localStorage.getItem("loggedInUser"),
             assignedTo: [{
               username: manager,
-              role:     "Case Manager",           
+              role:     "Case Manager",
               status:   "pending",
               unread:   true
             }],
@@ -624,7 +627,7 @@ const actuallyDoSubmitReport = async () => {
           });
         }
 
-       
+
          setAlertMessage("Lead Return submitted!");
       setAlertOpen(true);
         } else {
