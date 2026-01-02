@@ -30,7 +30,7 @@ const lrScratchpadSchema = new mongoose.Schema(
         type: { type: String, required: true, enum: ["Case", "Lead"]},
         accessLevel: {
             type: String,
-            enum: ["Only Case Manager", "Everyone"],
+            enum: ["Everyone", "Case Manager", "Case Manager and Assignees"],
             default: "Everyone"
         },
         // Reference to complete lead return version

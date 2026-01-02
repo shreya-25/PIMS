@@ -815,9 +815,9 @@ useEffect(() => {
           <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
             Timeline
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
+          {/* <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
             Finish
-          </span>
+          </span> */}
          </div> </div>
    
                 <div className = "LRI-content-section">
@@ -874,7 +874,7 @@ useEffect(() => {
                   onChange={(e) => handleChange("lastName", e.target.value)}
                 />
               </td>
-              <td>First Name *</td>
+              <td>First Name</td>
               <td>
                 <input
                   type="text"

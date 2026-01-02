@@ -34,6 +34,7 @@ const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
        const [alertOpen, setAlertOpen] = useState(false);
           const [alertMessage, setAlertMessage] = useState("");
   const [narrativeIds, setNarrativeIds] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const normalizeId = (id) => String(id ?? "").trim().toUpperCase();
 const alphabetToNumber = (str = "") => {
@@ -76,6 +77,7 @@ const DEFAULT_VIDEO = {
   link: "",
   videoSrc: "",
  filename: "",
+ accessLevel: "Everyone",
 };
 const [videoData, setVideoData] = useState(DEFAULT_VIDEO);
 
@@ -440,6 +442,8 @@ useEffect(() => {
 
 
    const handleAddVideo = async () => {
+    if (isSubmitting) return; // Prevent multiple submissions
+
     const missing = getMissingVideoFields({ videoData, file, isEditing: false });
   if (missing.length) {
     setAlertMessage(
@@ -448,6 +452,8 @@ useEffect(() => {
     setAlertOpen(true);
     return;
   }
+
+  setIsSubmitting(true);
     // Build FormData
     const fd = new FormData();
     fd.append("leadNo", selectedLead.leadNo);
@@ -459,6 +465,7 @@ useEffect(() => {
     fd.append("enteredDate", new Date().toISOString());
     fd.append("dateVideoRecorded", videoData.dateVideoRecorded);
     fd.append("videoDescription", videoData.description);
+    fd.append("accessLevel", "Everyone");
 
     // Link fields
     fd.append("isLink", videoData.isLink);
@@ -497,10 +504,18 @@ useEffect(() => {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+
+      // Clear session storage
+      sessionStorage.removeItem(formKey);
+
+      setAlertMessage("Video added successfully!");
+      setAlertOpen(true);
     } catch (err) {
       const msg = err?.response?.data?.message || err?.message || "Failed to upload video.";
       setAlertMessage(msg);
        setAlertOpen(true);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -558,19 +573,68 @@ useEffect(() => {
         signedUrl: video.signedUrl || "",
         link: video.link || "",
         isLink: video.isLink,
+        accessLevel: video.accessLevel || "Everyone",
       }));
-      setVideos(mappedVideos);
+
+      // Default access:
+      const withAccess = mappedVideos.map(r => ({
+        ...r,
+        accessLevel: r.accessLevel ?? "Everyone"
+      }));
+
+      // Filter based on role and access level
+      let visible = withAccess;
+      if (!isCaseManager) {
+        const currentUser = localStorage.getItem("loggedInUser")?.trim();
+        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+
+        visible = withAccess.filter(video => {
+          if (video.accessLevel === "Everyone") return true;
+          if (video.accessLevel === "Case Manager and Assignees") {
+            const isAssignedToLead = leadAssignees.some(a => a === currentUser);
+            return isAssignedToLead;
+          }
+          return false; // "Case Manager Only"
+        });
+      }
+
+      setVideos(visible);
                     } catch (error) {
                       console.error("Error fetching videos:", error);
                     }
                   };
 
-                  const handleAccessChange = (idx, newAccess) => {
-                    setVideos(rs => {
-                      const copy = [...rs];
-                      copy[idx] = { ...copy[idx], accessLevel: newAccess };
-                      return copy;
-                    });
+                  const handleAccessChange = async (idx, newAccessLevel) => {
+                    const video = videos[idx];
+                    const token = localStorage.getItem("token");
+
+                    try {
+                      // Send as FormData since backend expects multipart due to upload.single("file") middleware
+                      const fd = new FormData();
+                      fd.append("accessLevel", newAccessLevel);
+
+                      await api.put(`/api/lrvideo/${video.id}`,
+                        fd,
+                        {
+                          headers: { Authorization: `Bearer ${token}` },
+                          transformRequest: [(data, headers) => {
+                            delete headers["Content-Type"]; // Let browser set correct boundary
+                            return data;
+                          }]
+                        }
+                      );
+
+                      // Update local state
+                      setVideos(rs => {
+                        const copy = [...rs];
+                        copy[idx] = { ...copy[idx], accessLevel: newAccessLevel };
+                        return copy;
+                      });
+                    } catch (err) {
+                      console.error("Failed to update accessLevel", err);
+                      setAlertMessage("Could not change access level. Please try again.");
+                      setAlertOpen(true);
+                    }
                   };
                     const isCaseManager = 
     selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";  
@@ -596,10 +660,13 @@ useEffect(() => {
     });
   };
                   
-    //  B) on “Update Video”
+    //  B) on "Update Video"
     const handleUpdateVideo = async () => {
+    if (isSubmitting) return; // Prevent multiple submissions
     if (editingIndex === null) return;
     const v = videos[editingIndex];
+
+    setIsSubmitting(true);
 
     // Validation for “link” mode
     if (videoData.isLink && !videoData.link.trim()) {
@@ -613,6 +680,7 @@ useEffect(() => {
     fd.append("leadReturnId", videoData.leadReturnId);
     fd.append("dateVideoRecorded", videoData.dateVideoRecorded);
     fd.append("videoDescription", videoData.description);
+    fd.append("accessLevel", "Everyone");
     fd.append("isLink", videoData.isLink);
 
     if (videoData.isLink) {
@@ -649,11 +717,19 @@ useEffect(() => {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+
+      // Clear session storage
+      sessionStorage.removeItem(formKey);
+
+      setAlertMessage("Video updated successfully!");
+      setAlertOpen(true);
     } catch (err) {
       console.error("Error updating video:", err);
-   
-      setAlertMessage("Failed to update video.");
+
+      setAlertMessage("Failed to update video: " + (err.response?.data?.message || err.message));
        setAlertOpen(true);
+    } finally {
+      setIsSubmitting(false);
     }
   };
                   
@@ -1016,7 +1092,7 @@ Case Page
                   <button
                     disabled={
                       selectedLead?.leadStatus === "In Review" ||
-                      selectedLead?.leadStatus === "Completed" || isReadOnly
+                      selectedLead?.leadStatus === "Completed" || isReadOnly || isSubmitting
                     }
                     className="save-btn1"
                     onClick={
@@ -1025,12 +1101,13 @@ Case Page
                         : handleAddVideo
                     }
                   >
-                    {editingIndex !== null ? "Update Video" : "Add Video"}
+                    {isSubmitting ? (editingIndex !== null ? "Updating..." : "Adding...") : (editingIndex !== null ? "Update Video" : "Add Video")}
                   </button>
 
                   {editingIndex !== null && (
                     <button
                       className="save-btn1"
+                      disabled={isSubmitting}
                       onClick={() => {
                         setEditingIndex(null);
                        setVideoData(DEFAULT_VIDEO);
@@ -1137,8 +1214,9 @@ Case Page
               value={video.accessLevel}
               onChange={e => handleAccessChange(index, e.target.value)}
             >
-              <option value="Everyone">Everyone</option>
-              <option value="Case Manager">Case Manager Only</option>
+              <option value="Everyone">All</option>
+              <option value="Case Manager Only">Case Manager</option>
+              <option value="Case Manager and Assignees">Assignees</option>
             </select>
           </td>
         )}

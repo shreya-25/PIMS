@@ -57,6 +57,7 @@ function getMissingEvidenceFields({ evidenceData, file, editIndex }) {
   // Required fields
   if (!evidenceData.leadReturnId?.trim()) missing.push("Narrative Id");
   if (!evidenceData.collectionDate?.trim()) missing.push("Collection Date");
+  if (!evidenceData.evidenceDescription?.trim()) missing.push("Description");
 
   // Upload-type specific checks
   const mode = evidenceData.uploadMode; // 'none' | 'file' | 'link'
@@ -136,7 +137,8 @@ const defaultEvidence = () => ({
   originalName: "",
   filename: "",
   // NEW
-  uploadMode: "none", // 'none' | 'file' | 'link'
+  uploadMode: "file", // 'file' | 'link'
+  accessLevel: "Everyone",
 });
 
 
@@ -457,6 +459,7 @@ const handleSaveEvidence = async () => {
   fd.append("collectionDate",    evidenceData.collectionDate);
   fd.append("disposedDate",      evidenceData.disposedDate);
   fd.append("disposition",       evidenceData.disposition);
+  fd.append("accessLevel",       evidenceData.accessLevel || "Everyone");
 
   // LINK flags/values
   const isLink = evidenceData.uploadMode === "link";
@@ -551,18 +554,30 @@ const handleSaveEvidence = async () => {
         collectionDate: formatDate(enc.collectionDate),
         disposedDate: formatDate(enc.disposedDate),
         disposition: enc.disposition,
-        originalName:        enc.originalName,
         filename:            enc.filename,
-         link:                enc.link || "" ,
-               signedUrl: enc.signedUrl || "",  
+        link:                enc.link || "",
+        signedUrl: enc.signedUrl || "",
+        accessLevel: enc.accessLevel ?? "Everyone",
+        enteredBy: enc.enteredBy
       }));
 
-      const withAccess = mappedEvidences.map(r => ({
-        ...r,
-        access: r.access ?? "Everyone"
-      }));
-  
-      setEvidences(withAccess);
+      // Filter based on role and access level
+      let visible = mappedEvidences;
+      if (!isCaseManager) {
+        const currentUser = localStorage.getItem("loggedInUser")?.trim();
+        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+
+        visible = mappedEvidences.filter(ev => {
+          if (ev.accessLevel === "Everyone") return true;
+          if (ev.accessLevel === "Case Manager and Assignees") {
+            const isAssignedToLead = leadAssignees.some(a => a === currentUser);
+            return isAssignedToLead;
+          }
+          return false; // "Case Manager" only
+        });
+      }
+
+      setEvidences(visible);
       setLoading(false);
       setError("");
     } catch (err) {
@@ -577,12 +592,34 @@ const handleSaveEvidence = async () => {
     console.log("Selected file:", event.target.files[0]);
   };
 
-  const handleAccessChange = (idx, newAccess) => {
-    setEvidences(rs => {
-      const copy = [...rs];
-      copy[idx] = { ...copy[idx], access: newAccess };
-      return copy;
-    });
+  const handleAccessChange = async (idx, newAccess) => {
+    const ev = evidences[idx];
+    const token = localStorage.getItem("token");
+
+    const url = `/api/lrevidence/${selectedLead.leadNo}/` +
+                `${encodeURIComponent(selectedLead.leadName)}/` +
+                `${selectedCase.caseNo}/` +
+                `${encodeURIComponent(selectedCase.caseName)}/` +
+                `${ev.returnId}/` +
+                `${encodeURIComponent(ev.evidenceDescription)}`;
+
+    try {
+      await api.put(url,
+        { accessLevel: newAccess },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Update local state
+      setEvidences(prev => {
+        const copy = [...prev];
+        copy[idx] = { ...copy[idx], accessLevel: newAccess };
+        return copy;
+      });
+    } catch (err) {
+      console.error("Failed to update accessLevel", err);
+      setAlertMessage("Could not change access level. Please try again.");
+      setAlertOpen(true);
+    }
   };
   const isCaseManager = 
     selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
@@ -592,7 +629,6 @@ const handleEdit = idx => {
   setEditIndex(idx);
   setOriginalDesc(ev.evidenceDescription);
 
-  const hasFile = !!(ev.signedUrl || ev.originalName || ev.filename);
   const hasLink = !!ev.link;
 
   setEvidenceData({
@@ -606,7 +642,8 @@ const handleEdit = idx => {
     link:                ev.link || "",
     originalName:        ev.originalName,
     filename:            ev.filename,
-    uploadMode:          hasLink ? "link" : hasFile ? "file" : "none", // NEW
+    uploadMode:          hasLink ? "link" : "file", // NEW
+    accessLevel:         ev.accessLevel || "Everyone",
   });
 
   if (fileInputRef.current) fileInputRef.current.value = "";
@@ -877,14 +914,19 @@ const handleEdit = idx => {
           </div>
           <div className="form-row-evidence">
             <label className="evidence-head">Type</label>
-            <input
-              type="text"
+            <select
               value={evidenceData.type}
-            
               onChange={(e) => handleInputChange("type", e.target.value)}
-            />
+            >
+              <option value="">Select Type</option>
+              <option value="Document">Document</option>
+              <option value="Business Records">Business Records</option>
+              <option value="Cellular Phone Records">Cellular Phone Records</option>
+              <option value="Deposition">Deposition</option>
+              <option value="Statement">Statement</option>
+            </select>
           </div>
-          <label className="evidence-head">Description</label>
+          <label className="evidence-head">Description*</label>
 <textarea
   value={evidenceData.evidenceDescription}
   onChange={e => handleInputChange("evidenceDescription", e.target.value)}
@@ -895,7 +937,7 @@ const handleEdit = idx => {
   <select
     value={evidenceData.uploadMode}
     onChange={e => {
-      const mode = e.target.value; // 'none' | 'file' | 'link'
+      const mode = e.target.value; // 'file' | 'link'
       setEvidenceData(prev => ({
         ...prev,
         uploadMode: mode,
@@ -909,11 +951,20 @@ const handleEdit = idx => {
       }
     }}
   >
-    <option value="none">None</option>
     <option value="file">File</option>
     <option value="link">Link</option>
   </select>
 </div>
+
+{/* If editing a file‐upload entry, show current filename */}
+{editIndex !== null && evidenceData.uploadMode === "file" && evidenceData.originalName && (
+  <div className="form-row-evidence">
+    <label>Current File:</label>
+    <span className="current-filename">
+      {evidenceData.originalName}
+    </span>
+  </div>
+)}
 
 {evidenceData.uploadMode === "file" && (
   <div className="form-row-evidence">
@@ -934,43 +985,6 @@ const handleEdit = idx => {
       placeholder="https://..."
       value={evidenceData.link}
       onChange={e => setEvidenceData(prev => ({ ...prev, link: e.target.value }))}
-    />
-  </div>
-)}
-
-
-{/* If editing a file‐upload entry, show current filename */}
-{editIndex !== null && !evidenceData.isLink && evidenceData.originalName && (
-  <div className="form-row-evidence">
-    <label>Current File:</label>
-    <span className="current-filename">
-      {evidenceData.originalName}
-    </span>
-  </div>
-)}
-
-{/* File vs Link input */}
-{!evidenceData.isLink ? (
-  <div className="form-row-evidence">
-    <label>
-      {editIndex === null ? "Upload File" : "Replace File (optional)*"}
-    </label>
-    <input
-      type="file"
-      ref={fileInputRef}
-      onChange={handleFileChange}
-    />
-  </div>
-) : (
-  <div className="form-row-evidence">
-    <label>Paste Link*</label>
-    <input
-      type="text"
-      placeholder="https://..."
-      value={evidenceData.link}
-      onChange={e =>
-        setEvidenceData(prev => ({ ...prev, link: e.target.value }))
-      }
     />
   </div>
 )}
@@ -1089,11 +1103,12 @@ const handleEdit = idx => {
                 {isCaseManager && (
           <td>
             <select
-              value={item.access}
+              value={item.accessLevel}
               onChange={e => handleAccessChange(index, e.target.value)}
             >
-              <option value="Everyone">Everyone</option>
-              <option value="Case Manager">Case Manager Only</option>
+              <option value="Everyone">All</option>
+              <option value="Case Manager">Case Manager</option>
+              <option value="Case Manager and Assignees">Assignees</option>
             </select>
           </td>
         )}

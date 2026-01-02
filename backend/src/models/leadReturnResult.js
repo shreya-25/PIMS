@@ -30,7 +30,7 @@ const leadReturnResultsSchema = new mongoose.Schema(
         leadReturnResult: { type: String, required: true},
         accessLevel: {
             type: String,
-            enum: ["Only Case Manager", "Everyone"],
+            enum: ["Everyone", "Case Manager", "Case Manager and Assignees"],
             default: "Everyone"
           },
         // Soft delete fields

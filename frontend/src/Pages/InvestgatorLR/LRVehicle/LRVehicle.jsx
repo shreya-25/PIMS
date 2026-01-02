@@ -60,7 +60,6 @@ export const LRVehicle = () => {
   const REQUIRED_FIELDS = [
   { key: "leadReturnId", label: "Narrative Id" },
   { key: "enteredDate",  label: "Entered Date" },
-  { key: "vin",          label: "VIN" },
 ];
   
 function findMissingFields(obj) {
@@ -146,12 +145,15 @@ const performDeleteVehicle = async () => {
 
     const r = rawVehicles[rawIdx];
 
+    // Use VIN or fallback to empty string (encode empty as '-EMPTY-')
+    const vinParam = r.vin ? encodeURIComponent(String(r.vin)) : encodeURIComponent('-EMPTY-');
+
     // build encoded URL (avoid 404s when VIN/IDs contain special chars)
     const url =
       `/api/lrvehicle/${encodeURIComponent(String(selectedLead.leadNo))}` +
       `/${encodeURIComponent(String(selectedCase.caseNo))}` +
       `/${encodeURIComponent(String(r.leadReturnId))}` +
-      `/${encodeURIComponent(String(r.vin))}`;
+      `/${vinParam}`;
 
     const token = localStorage.getItem("token");
     await api.delete(url, { headers: { Authorization: `Bearer ${token}` } });
@@ -160,7 +162,8 @@ const performDeleteVehicle = async () => {
     const newRaw = rawVehicles.filter((_, i) => i !== rawIdx);
     setRawVehicles(newRaw);
 
-    const newDisplay = newRaw.map(v => ({
+    const remapped = newRaw.map((v, i) => ({
+      rawIndex:    i, // keep this so future edits/deletes are exact
       returnId:    v.leadReturnId,
       dateEntered: formatDate(v.enteredDate),
       year:        v.year,
@@ -170,9 +173,27 @@ const performDeleteVehicle = async () => {
       vin:         v.vin,
       plate:       v.plate,
       state:       v.state,
-      access:      v.access ?? "Everyone",
+      accessLevel: v.accessLevel ?? "Everyone",
+      enteredBy:   v.enteredBy
     }));
-    setVehicles(newDisplay);
+
+    // Filter based on role and access level
+    let newVisible = remapped;
+    if (!isCaseManager) {
+      const currentUser = localStorage.getItem("loggedInUser")?.trim();
+      const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+
+      newVisible = remapped.filter(r => {
+        if (r.accessLevel === "Everyone") return true;
+        if (r.accessLevel === "Case Manager and Assignees") {
+          const isAssignedToLead = leadAssignees.some(a => a === currentUser);
+          return isAssignedToLead;
+        }
+        return false; // "Case Manager" only - hide from investigators
+      });
+    }
+
+    setVehicles(newVisible);
     setAuditLogRefresh(prev => prev + 1); // Trigger audit log refresh
 
   } catch (e) {
@@ -313,8 +334,22 @@ useEffect(() => {
     const [showVehicleModal, setShowVehicleModal] = useState(false);
 
     const handleEditVehicle = (idx) => {
-      const v = rawVehicles[idx];
-      setEditIndex(idx);
+      const vis = vehicles[idx];
+      // Prefer rawIndex if available, otherwise find by composite keys
+      let rawIdx = vis?.rawIndex;
+      if (rawIdx == null) {
+        rawIdx = rawVehicles.findIndex(r =>
+          r.leadReturnId === vis.returnId && r.vin === vis.vin
+        );
+      }
+
+      if (rawIdx < 0) {
+        console.error("Could not resolve vehicle in raw list");
+        return;
+      }
+
+      const v = rawVehicles[rawIdx];
+      setEditIndex(rawIdx);
       // pre-fill your form fields from the raw document
       setVehicleData({
         leadReturnId:  v.leadReturnId,
@@ -553,16 +588,19 @@ const goToViewLR = () => {
       caseName:      selectedCase.caseName,
       enteredBy:     username,
       enteredDate:   vehicleData.enteredDate || new Date().toISOString(),
+      accessLevel:   vehicleData.accessLevel || "Everyone",
       ...vehicleData
     };
-  
+
     try {
       let res;
       if (editIndex !== null) {
         // update existing
         const old = rawVehicles[editIndex];
+        // Use VIN or fallback to empty string (encode empty as '-EMPTY-')
+        const vinParam = old.vin ? encodeURIComponent(old.vin) : encodeURIComponent('-EMPTY-');
         res = await api.put(
-          `/api/lrvehicle/${selectedLead.leadNo}/${selectedCase.caseNo}/${old.leadReturnId}/${old.vin}`,
+          `/api/lrvehicle/${selectedLead.leadNo}/${selectedCase.caseNo}/${encodeURIComponent(old.leadReturnId)}/${vinParam}`,
           payload,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -579,7 +617,7 @@ const goToViewLR = () => {
         );
         setRawVehicles([res.data, ...rawVehicles]);
       }
-  
+
       // rebuild your display array
       fetchVehicles();  // or you can do your existing map of setVehicles
       // exit edit mode
@@ -588,14 +626,14 @@ const goToViewLR = () => {
         year: '', make: '', model: '', plate: '',
         category: '', type: '', color:'', vin: '',
         primaryColor:'', secondaryColor:'', state:'',
-        leadReturnId:'', information:''
+        leadReturnId:'', information:'', enteredDate: todayISO
       });
       setAuditLogRefresh(prev => prev + 1); // Trigger audit log refresh
         setAlertMessage(editIndex!==null ? "Vehicle updated" : "Vehicle added");
      setAlertOpen(true);
     } catch (err) {
       console.error(err);
-  
+
         setAlertMessage("Save failed: " + (err.response?.data?.message || err.message));
      setAlertOpen(true);
     }
@@ -608,7 +646,7 @@ const goToViewLR = () => {
     const leadName = encodeURIComponent(selectedLead.leadName);
     const caseNo = selectedCase.caseNo;
     const caseName = encodeURIComponent(selectedCase.caseName);
-  
+
     try {
       const res = await api.get(
         `/api/lrvehicle/lrvehicle/${leadNo}/${leadName}/${caseNo}/${caseName}`,
@@ -618,9 +656,10 @@ const goToViewLR = () => {
           },
         }
       );
-  
+
       setRawVehicles(res.data);
-      const mapped = res.data.map((vehicle) => ({
+      const mapped = res.data.map((vehicle, i) => ({
+        rawIndex: i, // keep this so future edits/deletes are exact
         returnId: vehicle.leadReturnId,
         dateEntered: formatDate(vehicle.enteredDate),
         year: vehicle.year,
@@ -630,14 +669,32 @@ const goToViewLR = () => {
         vin: vehicle.vin,
         plate: vehicle.plate,
         state: vehicle.state,
+        accessLevel: vehicle.accessLevel || "Everyone",
+        enteredBy: vehicle.enteredBy
       }));
 
       const withAccess = mapped.map(r => ({
         ...r,
-        access: r.access ?? "Everyone"
+        accessLevel: r.accessLevel ?? "Everyone"
       }));
-  
-      setVehicles(withAccess);
+
+      // Filter based on role and access level
+      let visible = withAccess;
+      if (!isCaseManager) {
+        const currentUser = localStorage.getItem("loggedInUser")?.trim();
+        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+
+        visible = withAccess.filter(v => {
+          if (v.accessLevel === "Everyone") return true;
+          if (v.accessLevel === "Case Manager and Assignees") {
+            const isAssignedToLead = leadAssignees.some(a => a === currentUser);
+            return isAssignedToLead;
+          }
+          return false; // "Case Manager" only - hide from investigators
+        });
+      }
+
+      setVehicles(visible);
 
       setError("");
     } catch (err) {
@@ -646,12 +703,86 @@ const goToViewLR = () => {
     }
   };
   
-  const handleAccessChange = (idx, newAccess) => {
-    setVehicles(rs => {
-      const copy = [...rs];
-      copy[idx] = { ...copy[idx], access: newAccess };
-      return copy;
-    });
+  const handleAccessChange = async (idx, newAccess) => {
+    const vis = vehicles[idx];
+
+    // Prefer rawIndex if available, otherwise find by composite keys
+    let rawIdx = vis?.rawIndex;
+    if (rawIdx == null) {
+      rawIdx = rawVehicles.findIndex(r =>
+        r.leadReturnId === vis.returnId && r.vin === vis.vin
+      );
+    }
+
+    if (rawIdx < 0) {
+      console.error("Could not resolve vehicle in raw list");
+      setAlertMessage("Could not find vehicle record. Please refresh the page.");
+      setAlertOpen(true);
+      return;
+    }
+
+    const v = rawVehicles[rawIdx];
+
+    // Use VIN or fallback to empty string (encode empty as '-EMPTY-')
+    const vinParam = v.vin ? encodeURIComponent(v.vin) : encodeURIComponent('-EMPTY-');
+
+    const token = localStorage.getItem("token");
+    const url = `/api/lrvehicle/${selectedLead.leadNo}/${selectedCase.caseNo}/` +
+          `${encodeURIComponent(v.leadReturnId)}/${vinParam}`;
+
+    try {
+      // 1) Persist to server
+      const { data: updatedDoc } = await api.put(
+        url,
+        { accessLevel: newAccess },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // 2) Swap it into rawVehicles
+      const newRaw = rawVehicles.map((r, i) =>
+        i === rawIdx ? updatedDoc : r
+      );
+      setRawVehicles(newRaw);
+
+      // 3) Remap to UI shape
+      const remapped = newRaw.map((v, i) => ({
+        rawIndex: i, // keep this so future edits/deletes are exact
+        returnId: v.leadReturnId,
+        dateEntered: formatDate(v.enteredDate),
+        year: v.year,
+        make: v.make,
+        model: v.model,
+        color: v.primaryColor,
+        vin: v.vin,
+        plate: v.plate,
+        state: v.state,
+        accessLevel: v.accessLevel || "Everyone",
+        enteredBy: v.enteredBy
+      }));
+
+      // 4) Filter again for non-CMs
+      let visible = remapped;
+      if (!isCaseManager) {
+        const currentUser = localStorage.getItem("loggedInUser")?.trim();
+        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+
+        visible = remapped.filter(r => {
+          if (r.accessLevel === "Everyone") return true;
+          if (r.accessLevel === "Case Manager and Assignees") {
+            const isAssignedToLead = leadAssignees.some(a => a === currentUser);
+            return isAssignedToLead;
+          }
+          return false; // "Case Manager" only - hide from investigators
+        });
+      }
+
+      setVehicles(visible);
+
+    } catch (err) {
+      console.error("Failed to update accessLevel", err);
+      setAlertMessage("Could not change access level. Please try again.");
+      setAlertOpen(true);
+    }
   };
   
   const handleDeleteVehicle = async (idx) => {
@@ -678,9 +809,11 @@ const goToViewLR = () => {
         vin:         vehicle.vin,
         plate:       vehicle.plate,
         state:       vehicle.state,
-        access:      vehicle.access ?? "Everyone"
+        accessLevel: vehicle.accessLevel ?? "Everyone",
+        enteredBy:   vehicle.enteredBy
       }));
       setVehicles(newDisplay);
+      setAuditLogRefresh(prev => prev + 1);
     } catch (e) {
       console.error(e);
        setAlertMessage("Failed to delete");
@@ -934,7 +1067,7 @@ const goToViewLR = () => {
             />
           </div>
           <div className="form-row4">
-            <label>VIN *</label>
+            <label>VIN</label>
             <input
               type="text"
               value={vehicleData.vin}
@@ -1051,7 +1184,16 @@ const goToViewLR = () => {
             </tr>
           </thead>
           <tbody>
-    {vehicles.length > 0 ? vehicles.map((vehicle, index) => (
+    {vehicles.length > 0 ? vehicles.map((vehicle, index) => {
+      const canModify = vehicle.enteredBy?.trim() === signedInOfficer?.trim();
+      const disableActions =
+        selectedLead?.leadStatus === "In Review" ||
+        selectedLead?.leadStatus === "Completed" ||
+        selectedLead?.leadStatus === "Closed" ||
+        isReadOnly ||
+        !canModify;
+
+      return (
       <tr key={index}>
         <td>{vehicle.dateEntered}</td>
         <td>{vehicle.returnId}</td>
@@ -1071,7 +1213,7 @@ const goToViewLR = () => {
           ></div>
         </div>
       </td>
-     
+
         {/* <td>{vehicle.state}</td> */}
         <td> <button className="download-btn" onClick={() => openVehicleModal(
                       selectedLead.leadNo,
@@ -1092,23 +1234,24 @@ const goToViewLR = () => {
   />
   <td>
                   <div classname = "lr-table-btn">
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-
+                  <button
+                    onClick={() => handleEditVehicle(index)}
+                    disabled={disableActions}
+                  >
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
                   className="edit-icon"
-                  onClick={() => handleEditVehicle(index)}
-
                 />
                   </button>
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-
+                  <button
+                    onClick={() => requestDeleteVehicle(index)}
+                    disabled={disableActions}
+                  >
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  onClick={() => requestDeleteVehicle(index)}
                 />
                   </button>
                   </div>
@@ -1116,16 +1259,18 @@ const goToViewLR = () => {
                 {isCaseManager && (
           <td>
             <select
-              value={vehicle.access}
+              value={vehicle.accessLevel}
               onChange={e => handleAccessChange(index, e.target.value)}
             >
-              <option value="Everyone">Everyone</option>
-              <option value="Case Manager">Case Manager Only</option>
+              <option value="Everyone">All</option>
+              <option value="Case Manager">Case Manager</option>
+              <option value="Case Manager and Assignees">Assignees</option>
             </select>
           </td>
         )}
       </tr>
-       )) : (
+      );
+    }) : (
         <tr>
           <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
             No Vehicle Data Available
@@ -1149,12 +1294,12 @@ const goToViewLR = () => {
 )} */}
 
         {/* Activity Log Component */}
-        <ActivityLog
+        {/* <ActivityLog
           caseNo={effectiveCase?.caseNo}
           leadNo={effectiveLead?.leadNo}
           entityType="LRVehicle"
           refreshTrigger={auditLogRefresh}
-        />
+        /> */}
 
         {/* <Comment tag= "Vehicle"/> */}
 

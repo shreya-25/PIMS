@@ -69,6 +69,7 @@ function getMissingPictureFields({ pictureData, file, isEditing }) {
   // hard-required
   if (!pictureData.leadReturnId?.trim())     missing.push("Narrative Id");
   if (!pictureData.datePictureTaken?.trim()) missing.push("Date Picture Taken");
+  if (!pictureData.description?.trim())      missing.push("Description");
 
   // upload-mode rules
   if (pictureData.isLink) {
@@ -381,7 +382,8 @@ const goToViewLR = () => {
       image:            pic.image,
       filename:         pic.filename,
       link:             pic.link || "",
-      isLink:           !!pic.link
+      isLink:           !!pic.link,
+      accessLevel:      pic.accessLevel || "Everyone"
     });
     setIsEditing(true);
     setEditingIndex(idx);
@@ -503,6 +505,7 @@ const handleAddPicture = async () => {
   fd.append("enteredDate", new Date().toISOString());
   fd.append("datePictureTaken", pictureData.datePictureTaken);
   fd.append("pictureDescription", pictureData.description);
+  fd.append("accessLevel", "Everyone"); // Default access level
 
   // link is optional
   fd.append("isLink", !!pictureData.isLink);
@@ -569,14 +572,21 @@ const handleAddPicture = async () => {
 const handleUpdatePicture = async () => {
   const pic = pictures[editingIndex];
 
-  // 1️⃣ Validation for link-mode
-  if (pictureData.isLink && !pictureData.link.trim()) {
-    setAlertMessage("Please enter a valid link.");
-                      setAlertOpen(true);
+  // 1️⃣ Validation for description
+  if (!pictureData.description?.trim()) {
+    setAlertMessage("Please enter a description.");
+    setAlertOpen(true);
     return;
   }
 
-  // 2️⃣ Build FormData
+  // 2️⃣ Validation for link-mode
+  if (pictureData.isLink && !pictureData.link.trim()) {
+    setAlertMessage("Please enter a valid link.");
+    setAlertOpen(true);
+    return;
+  }
+
+  // 3️⃣ Build FormData
   const fd = new FormData();
   // only include a new file if user replaced it
   if (!pictureData.isLink && file) {
@@ -590,6 +600,7 @@ const handleUpdatePicture = async () => {
   fd.append("datePictureTaken", pictureData.datePictureTaken);
   fd.append("pictureDescription", pictureData.description);
   fd.append("enteredBy", localStorage.getItem("loggedInUser"));
+  fd.append("accessLevel", pictureData.accessLevel || pic.accessLevel || "Everyone");
   fd.append("isLink", pictureData.isLink);
   if (pictureData.isLink) {
     fd.append("link", pictureData.link.trim());
@@ -675,7 +686,7 @@ const handleUpdatePicture = async () => {
   
       const mappedPictures = res.data.map((pic) => ({
         dateEntered: formatDate(pic.enteredDate),
-        rawEnteredDate:  pic.enteredDate, 
+        rawEnteredDate:  pic.enteredDate,
         returnId: pic.leadReturnId,
         datePictureTaken: formatDate(pic.datePictureTaken),
         rawDatePictureTaken: pic.datePictureTaken,
@@ -684,11 +695,13 @@ const handleUpdatePicture = async () => {
         description: pic.pictureDescription,
          image: pic.signedUrl || pic.link,
           filename: pic.filename,
-          link: pic.link || ""
+          link: pic.link || "",
+          accessLevel: pic.accessLevel || "Everyone",
+          pictureId: pic._id
       }));
       const withAccess = mappedPictures.map(r => ({
         ...r,
-        access: r.access ?? "Everyone"
+        accessLevel: r.accessLevel ?? "Everyone"
       }));
   
       setPictures(withAccess);
@@ -700,12 +713,47 @@ const handleUpdatePicture = async () => {
     const isCaseManager = 
     selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
   // handler to change access per row
-const handleAccessChange = (idx, newAccess) => {
-  setPictures(rs => {
-    const copy = [...rs];
-    copy[idx] = { ...copy[idx], access: newAccess };
-    return copy;
-  });
+const handleAccessChange = async (idx, newAccessLevel) => {
+  const picture = pictures[idx];
+  const token = localStorage.getItem("token");
+
+  const url =
+    `/api/lrpicture/` +
+    `${selectedLead.leadNo}/` +
+    `${encodeURIComponent(selectedLead.leadName)}/` +
+    `${selectedCase.caseNo}/` +
+    `${encodeURIComponent(selectedCase.caseName)}/` +
+    `${picture.returnId}/` +
+    `${encodeURIComponent(picture.description)}`;
+
+  try {
+    // Send as FormData to match the multer middleware expectation
+    const fd = new FormData();
+    fd.append("leadReturnId", picture.returnId);
+    fd.append("datePictureTaken", picture.rawDatePictureTaken);
+    fd.append("pictureDescription", picture.description);
+    fd.append("enteredBy", localStorage.getItem("loggedInUser"));
+    fd.append("accessLevel", newAccessLevel);
+
+    await api.put(url, fd, {
+      headers: { Authorization: `Bearer ${token}` },
+      transformRequest: [(data, headers) => {
+        delete headers["Content-Type"];
+        return data;
+      }]
+    });
+
+    // Update local state
+    setPictures(prev => {
+      const copy = [...prev];
+      copy[idx] = { ...copy[idx], accessLevel: newAccessLevel };
+      return copy;
+    });
+  } catch (err) {
+    console.error("Failed to update accessLevel", err);
+    setAlertMessage("Could not change access level. Please try again.");
+    setAlertOpen(true);
+  }
 };
 
     const { status, isReadOnly } = useLeadStatus({
@@ -1041,7 +1089,7 @@ Case Page
 
           </div>
           <div className="form-row-pic">
-            <label  className="evidence-head">Description</label>
+            <label  className="evidence-head">Description*</label>
             <textarea
               value={pictureData.description}
                className="evidence-head"
@@ -1212,11 +1260,12 @@ Case Page
                 {isCaseManager && (
           <td>
             <select
-              value={picture.access}
+              value={picture.accessLevel}
               onChange={e => handleAccessChange(index, e.target.value)}
             >
-              <option value="Everyone">Everyone</option>
-              <option value="Case Manager">Case Manager Only</option>
+              <option value="Everyone">All</option>
+              <option value="Case Manager">Case Manager</option>
+              <option value="Case Manager and Assignees">Assignees</option>
             </select>
           </td>
         )}

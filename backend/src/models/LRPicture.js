@@ -27,7 +27,7 @@ const lrPictureSchema = new mongoose.Schema(
         leadReturnId: { type: String, required: true },
         enteredDate: { type: Date, required: true },
         datePictureTaken: { type: Date, required: true },
-        pictureDescription: { type: String }, 
+        pictureDescription: { type: String, required: true }, 
         // fileId: { type: mongoose.Schema.Types.ObjectId, ref: "uploads" },
         // For disk storage, store file details instead of fileId
           // File-based (all optional now)
@@ -43,7 +43,7 @@ const lrPictureSchema = new mongoose.Schema(
     filePath: { type: String, default: null },
         accessLevel: {
             type: String,
-            enum: ["Only Case Manager", "Everyone"],
+            enum: ["Everyone", "Case Manager", "Case Manager and Assignees"],
             default: "Everyone"
         },
         isLink: { type: Boolean, default: false },

@@ -28,8 +28,11 @@ const lrEvidenceSchema = new mongoose.Schema(
         enteredDate: { type: Date, required: true },
         collectionDate: { type: Date, required: true },
         disposedDate: { type: Date},
-        type: { type: String },
-        evidenceDescription: { type: String }, 
+        type: {
+            type: String,
+            enum: ["Document", "Business Records", "Cellular Phone Records", "Deposition", "Statement", ""],
+        },
+        evidenceDescription: { type: String, required: true }, 
         // fileId: { type: mongoose.Schema.Types.ObjectId, ref: "uploads" },
         s3Key:        { type: String, trim: true },     // <- no required()
   originalName: { type: String },
@@ -51,7 +54,7 @@ const lrEvidenceSchema = new mongoose.Schema(
 
         accessLevel: {
             type: String,
-            enum: ["Only Case Manager", "Everyone"],
+            enum: ["Everyone", "Case Manager", "Case Manager and Assignees"],
             default: "Everyone"
         },
         // Reference to complete lead return version

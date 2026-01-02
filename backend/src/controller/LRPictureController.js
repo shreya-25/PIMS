@@ -152,6 +152,11 @@ const updateLRPicture = async (req, res) => {
     pic.pictureDescription = req.body.pictureDescription;
     pic.enteredBy = req.body.enteredBy;
 
+    // Update accessLevel if provided
+    if (req.body.accessLevel !== undefined) {
+      pic.accessLevel = req.body.accessLevel || "Everyone";
+    }
+
     // 4️⃣ Save updated record
     await pic.save();
 

@@ -26,7 +26,7 @@ const lrAudioSchema = new mongoose.Schema(
     leadReturnId:      { type: String, required: true },
     enteredDate:       { type: Date,   required: true },
     dateAudioRecorded: { type: Date,   required: true },
-    audioDescription:  { type: String },
+    audioDescription:  { type: String, required: true },
 
     // Storage (all optional to allow metadata-only records)
     isLink:       { type: Boolean, default: false },
@@ -38,7 +38,7 @@ const lrAudioSchema = new mongoose.Schema(
 
     accessLevel: {
       type: String,
-      enum: ["Case Manager Only", "Everyone"], // ← align with frontend option text
+      enum: ["Case Manager Only", "Case Manager and Assignees", "Everyone"],
       default: "Everyone",
     },
     // Reference to complete lead return version

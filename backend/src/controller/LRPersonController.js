@@ -45,6 +45,16 @@ const createLRPerson = async (req, res) => {
             additionalData // Allows additional dynamic fields
         } = req.body;
 
+        // Validate accessLevel if provided
+        if (accessLevel) {
+            const validAccessLevels = ["Everyone", "Case Manager", "Case Manager and Assignees"];
+            if (!validAccessLevels.includes(accessLevel)) {
+                return res.status(400).json({
+                    message: `Invalid accessLevel. Must be one of: ${validAccessLevels.join(', ')}`
+                });
+            }
+        }
+
         const newLRPerson = new LRPerson({
             leadNo,
             description,
@@ -176,6 +186,16 @@ const updateLRPerson = async (req, res) => {
         firstName
       } = req.params;
       const updateData = req.body;
+
+      // Validate accessLevel if it's being updated
+      if (updateData.accessLevel) {
+        const validAccessLevels = ["Everyone", "Case Manager", "Case Manager and Assignees"];
+        if (!validAccessLevels.includes(updateData.accessLevel)) {
+          return res.status(400).json({
+            message: `Invalid accessLevel. Must be one of: ${validAccessLevels.join(', ')}`
+          });
+        }
+      }
 
       // Get the old value before updating
       const existingPerson = await LRPerson.findOne({

@@ -167,6 +167,11 @@ const updateLREvidence = async (req, res) => {
     ev.evidenceDescription = req.body.evidenceDescription || ev.evidenceDescription;
     ev.enteredBy = req.body.enteredBy || ev.enteredBy;
 
+    // Update accessLevel if provided
+    if (req.body.accessLevel !== undefined) {
+      ev.accessLevel = req.body.accessLevel || "Everyone";
+    }
+
     await ev.save();
     return res.json(ev);
   } catch (err) {

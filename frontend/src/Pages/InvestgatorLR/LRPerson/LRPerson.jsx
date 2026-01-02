@@ -235,11 +235,24 @@ const performDeletePerson = async () => {
       accessLevel:  pp.accessLevel || "Everyone",
       firstName:    pp.firstName,
       lastName:     pp.lastName,
+      enteredBy:    pp.enteredBy,
     }));
 
-    const newVisible = isCaseManager
-      ? remapped
-      : remapped.filter(r => r.accessLevel === "Everyone");
+    // Filter based on role and access level
+    let newVisible = remapped;
+    if (!isCaseManager) {
+      const currentUser = localStorage.getItem("loggedInUser")?.trim();
+      const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+
+      newVisible = remapped.filter(r => {
+        if (r.accessLevel === "Everyone") return true;
+        if (r.accessLevel === "Case Manager and Assignees") {
+          const isAssignedToLead = leadAssignees.some(a => a === currentUser);
+          return isAssignedToLead;
+        }
+        return false; // "Case Manager" only - hide from investigators
+      });
+    }
 
     setPersons(newVisible);
     setAuditLogRefresh(prev => prev + 1); // Trigger audit log refresh
@@ -471,7 +484,8 @@ const goToViewLR = () => {
           person.address?.street1 &&
           `${person.address.street1}, ${person.address.city || ""}, ${person.address.state || ""}`,
         leadReturnId: person.leadReturnId,
-        accessLevel: person.accessLevel || "Everyone"
+        accessLevel: person.accessLevel || "Everyone",
+        enteredBy: person.enteredBy
       }));
 
       const withAccess = mappedPersons.map(r => ({
@@ -479,9 +493,21 @@ const goToViewLR = () => {
         accessLevel: r.accessLevel ?? "Everyone"
       }));
 
-      const visible = isCaseManager
-                      ? withAccess
-                      : withAccess.filter(p => p.accessLevel === "Everyone");
+      // Filter based on role and access level
+      let visible = withAccess;
+      if (!isCaseManager) {
+        const currentUser = localStorage.getItem("loggedInUser")?.trim();
+        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+
+        visible = withAccess.filter(p => {
+          if (p.accessLevel === "Everyone") return true;
+          if (p.accessLevel === "Case Manager and Assignees") {
+            const isAssignedToLead = leadAssignees.some(a => a === currentUser);
+            return isAssignedToLead;
+          }
+          return false; // "Case Manager" only - hide from investigators
+        });
+      }
       setPersons(visible);
       setLeadPersons(personsFromApi);
       setError("");
@@ -564,13 +590,25 @@ const handleDeletePerson = async (idx) => {
       name:         `${p.firstName} ${p.lastName}`,
       phoneNo:      p.cellNumber || "N/A",
       address:      `${p.address?.street1 || ""}, ${p.address?.city || ""}`,
-      accessLevel:  p.accessLevel || "Everyone"
+      accessLevel:  p.accessLevel || "Everyone",
+      enteredBy:    p.enteredBy
     }));
 
     // 4) Filter again for non-CMs
-    const visible = isCaseManager
-      ? remapped
-      : remapped.filter(r => r.accessLevel === "Everyone");
+    let visible = remapped;
+    if (!isCaseManager) {
+      const currentUser = localStorage.getItem("loggedInUser")?.trim();
+      const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+
+      visible = remapped.filter(r => {
+        if (r.accessLevel === "Everyone") return true;
+        if (r.accessLevel === "Case Manager and Assignees") {
+          const isAssignedToLead = leadAssignees.some(a => a === currentUser);
+          return isAssignedToLead;
+        }
+        return false; // "Case Manager" only - hide from investigators
+      });
+    }
 
     setPersons(visible);
 
@@ -828,64 +866,70 @@ const handleDeletePerson = async (idx) => {
         <table className="leads-table">
           <thead>
             <tr>
-              <th style={{ width: "13%" }}>Date Entered</th>
-              <th style={{ width: "12%" }}>Narrative Id </th>
+              <th style={{ width: "9%" }}>Date</th>
+              <th style={{ width: "9%" }}>Id </th>
               <th style={{ width: "12%" }}>Name</th>
               <th style={{ width: "12%" }}>Phone No</th>
               {/* <th>Address</th> */}
-              <th style={{ width: "14%" }}>More</th>
-              <th style={{ width: "14%" }}>Actions</th>
+              <th style={{ width: "9%" }}>More</th>
+              <th style={{ width: "9%" }}>Actions</th>
               {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
             )}
             </tr>
           </thead>
           <tbody>
-            {persons.length > 0 ? persons.map((person, index) => (
+            {persons.length > 0 ? persons.map((person, index) => {
+              const canModify = person.enteredBy?.trim() === signedInOfficer?.trim();
+              const disableActions =
+                selectedLead?.leadStatus === "In Review" ||
+                selectedLead?.leadStatus === "Completed" ||
+                selectedLead?.leadStatus === "Closed" ||
+                isReadOnly ||
+                !canModify;
+
+              return (
               <tr
                 key={index}
                 className={selectedRow === index ? "selected-row" : ""}
                 onClick={() => setSelectedRow(index)}
               >
                 <td>{person.dateEntered}</td>
-                <td>{person.returnId}</td>  
+                <td>{person.returnId}</td>
                 <td>{person.name}</td>
                 <td>{person.phoneNo}</td>
                 {/* <td>{person.address}</td> */}
-                <td>  <button className="download-btn" onClick={() =>
-                              openPersonModal(
-                                selectedLead.leadNo,
-                                selectedLead.leadName,
-                                selectedCase.caseNo,
-                                selectedCase.caseName,
-                                person.leadReturnId
-                              )
-                            }>View</button></td>
-                            <PersonModal
-  isOpen={showPersonModal}
-  onClose={closePersonModal}
-  leadNo={personModalData.leadNo}
-  description={personModalData.description}
-  caseNo={personModalData.caseNo}
-  caseName={personModalData.caseName}
-  leadReturnId={personModalData.leadReturnId}
-/>
-<td>
-                  <div classname = "lr-table-btn">
-                  <button>
+                <td>
+                  <button className="view-person-btn" onClick={() =>
+                    openPersonModal(
+                      selectedLead.leadNo,
+                      selectedLead.leadName,
+                      selectedCase.caseNo,
+                      selectedCase.caseName,
+                      person.leadReturnId
+                    )
+                  }>View</button>
+                </td>
+                <td>
+                  <div className="lr-table-btn">
+                  <button
+                    onClick={() => handleEditPerson(index)}
+                    disabled={disableActions}
+                  >
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
                   className="edit-icon"
-                  onClick={() => handleEditPerson(index)}
                 />
                   </button>
-                  <button>
+                  <button
+                    onClick={() => requestDeletePerson(index)}
+                    disabled={disableActions}
+                  >
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
                   className="edit-icon"
-                  onClick={() => requestDeletePerson(index)}
                 />
                   </button>
                   </div>
@@ -893,16 +937,18 @@ const handleDeletePerson = async (idx) => {
                 {isCaseManager && (
           <td>
             <select
-              value={person.access}
+              value={person.accessLevel}
               onChange={e => handleAccessChange(index, e.target.value)}
             >
-              <option value="Everyone">Everyone</option>
-              <option value="Case Manager">Only Case Manager</option>
+              <option value="Everyone">All</option>
+              <option value="Case Manager">Case Manager</option>
+              <option value="Case Manager and Assignees">Assignees</option>
             </select>
           </td>
         )}
       </tr>
-       )) : (
+      );
+    }) : (
         <tr>
           <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
             No Details Available
@@ -911,6 +957,18 @@ const handleDeletePerson = async (idx) => {
       )}
           </tbody>
         </table>
+
+        {/* Person Modal */}
+        <PersonModal
+          isOpen={showPersonModal}
+          onClose={closePersonModal}
+          leadNo={personModalData.leadNo}
+          description={personModalData.description}
+          caseNo={personModalData.caseNo}
+          caseName={personModalData.caseName}
+          leadReturnId={personModalData.leadReturnId}
+        />
+
         {/* <button onClick={() => handleNavigation('/LRPerson1')} className="save-btn1
         ">Add Person</button> */}
 
@@ -935,12 +993,12 @@ const handleDeletePerson = async (idx) => {
 )} */}
 
       {/* Activity Log Component */}
-      <ActivityLog
+      {/* <ActivityLog
         caseNo={effectiveCase?.caseNo}
         leadNo={effectiveLead?.leadNo}
         entityType="LRPerson"
         refreshTrigger={auditLogRefresh}
-      />
+      /> */}
 
       {/* <Comment tag = "Person"/> */}
 </div>

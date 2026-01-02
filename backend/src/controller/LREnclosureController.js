@@ -184,6 +184,11 @@ const updateLREnclosure = async (req, res) => {
     enc.enclosureDescription = asString(one(req.body.enclosureDescription)) || enc.enclosureDescription;
     enc.enteredBy = asString(one(req.body.enteredBy)) || enc.enteredBy;
 
+    // Update accessLevel if provided
+    if (req.body.accessLevel !== undefined) {
+      enc.accessLevel = asString(one(req.body.accessLevel)) || "Everyone";
+    }
+
     await enc.save();
 
     // Log the update in audit log

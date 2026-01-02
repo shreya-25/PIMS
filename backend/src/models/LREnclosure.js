@@ -38,7 +38,7 @@ const lrEnclosureSchema = new mongoose.Schema(
   filename: { type: String, default: null },
         accessLevel: {
             type: String,
-            enum: ["Only Case Manager", "Everyone"],
+            enum: ["Everyone", "Case Manager", "Case Manager and Assignees"],
             default: "Everyone"
         },
         isLink: { type: Boolean, default: false },

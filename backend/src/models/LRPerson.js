@@ -28,7 +28,7 @@ const lrPersonSchema = new mongoose.Schema(
         leadReturnId: { type: String , required: true},
         enteredDate: { type: Date, required: true },  // Date field
         lastName: { type: String},
-        firstName: { type: String, required: true },
+        firstName: { type: String },
         middleInitial: { type: String },
         suffix: { type: String },
         cellNumber: { type: String },
@@ -68,7 +68,7 @@ const lrPersonSchema = new mongoose.Schema(
         additionalData: { type: Schema.Types.Mixed },
         accessLevel: {
             type: String,
-            enum: ["Only Case Manager", "Everyone"],
+            enum: ["Everyone", "Case Manager", "Case Manager and Assignees"],
             default: "Everyone"
         },
         // Reference to complete lead return version

@@ -32,7 +32,7 @@ const lrVehicleSchema = new mongoose.Schema(
         make: { type: String },
         model: { type: String },
         plate: { type: String },
-        vin: { type: String , required: true},
+        vin: { type: String },
         state: { type: String },
         category: { type: String },
         type: { type: String },
@@ -43,7 +43,7 @@ const lrVehicleSchema = new mongoose.Schema(
         additionalData: { type: Schema.Types.Mixed }, // Flexible structure for extra fields
         accessLevel: {
             type: String,
-            enum: ["Only Case Manager and Assignees", "Everyone"],
+            enum: ["Everyone", "Case Manager", "Case Manager and Assignees"],
             default: "Everyone"
         },
         // Reference to complete lead return version

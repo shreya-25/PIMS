@@ -23,6 +23,7 @@ export const LRReturn = () => {
     const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus, setLeadReturns  } = useContext(CaseContext);
     const effectiveCase = selectedCase?.caseNo ? selectedCase : caseDetails;
     const effectiveLead = selectedLead?.leadNo ? selectedLead : leadDetails;
+    const [expandedRows, setExpandedRows] = useState(new Set());
 
     const storagePrefix = React.useMemo(() => {
     const cn = effectiveCase?.caseNo ?? "";
@@ -530,7 +531,54 @@ useEffect(() => {
       setMaxReturnId(maxNumericId);
 
       // role-based filtering
-      const visible = isCaseManager ? withAccess : withAccess.filter(r => r.accessLevel === "Everyone");
+      let visible = withAccess;
+
+      if (!isCaseManager) {
+        // For investigators/non-case managers
+        const currentUser = localStorage.getItem("loggedInUser")?.trim();
+        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+
+        console.log("🔍 Filtering returns for investigator:", currentUser);
+        console.log("📋 Lead assignees:", leadAssignees);
+        console.log("📋 Lead data full:", leadData);
+
+        visible = withAccess.filter(r => {
+          console.log(`\n  ═══ Checking return ${r.leadReturnId} ═══`);
+          console.log(`  accessLevel: "${r.accessLevel}"`);
+          console.log(`  Full return object:`, r);
+
+          if (r.accessLevel === "Everyone") {
+            console.log(`    ✅ Everyone - visible`);
+            return true;
+          }
+
+          if (r.accessLevel === "Case Manager and Assignees") {
+            // Check if current user is assigned to this lead OR to this specific return
+            const returnAssignees = (r.assignedTo?.assignees || []).map(a => a?.trim());
+
+            console.log(`    Current user: "${currentUser}"`);
+            console.log(`    Lead assignees:`, leadAssignees);
+            console.log(`    Return assignees:`, returnAssignees);
+            console.log(`    Return assignedTo object:`, r.assignedTo);
+
+            const isAssignedToLead = leadAssignees.some(a => a === currentUser);
+            const isAssignedToReturn = returnAssignees.some(a => a === currentUser);
+
+            console.log(`    Is assigned to lead: ${isAssignedToLead}`);
+            console.log(`    Is assigned to return: ${isAssignedToReturn}`);
+
+            const canView = isAssignedToLead || isAssignedToReturn;
+            console.log(`    ${canView ? '✅ VISIBLE' : '❌ HIDDEN'} - Final decision`);
+            return canView;
+          }
+
+          console.log(`    ❌ Case Manager only - hidden`);
+          return false; // "Case Manager" only - hide from investigators
+        });
+
+        console.log(`\n📊 FINAL RESULT: Filtered ${visible.length} out of ${withAccess.length} returns`);
+        console.log(`📊 Visible return IDs:`, visible.map(v => v.leadReturnId));
+      }
 
       // set both local + context
       setReturns(visible);
@@ -552,6 +600,7 @@ useEffect(() => {
   effectiveCase?.caseNo,
   effectiveCase?.caseName,
   isCaseManager,     // so list re-filters immediately if role changes
+  leadData?.assignedTo,  // re-filter when assignees change
   setLeadReturns
 ]);
 
@@ -955,11 +1004,11 @@ const handleAddOrUpdateReturn = async () => {
       <table className="leads-table">
         <thead>
           <tr>
-            <th style={{ width: "12%" }}>Narrative Id</th>
-            <th style={{ width: "15%" }}>Date Entered</th>
-            <th style={{ width: "15%" }}>Entered By</th>
+            <th style={{ width: "8%" }}>Id</th>
+            <th style={{ width: "9%" }}>Date</th>
+            <th style={{ width: "12%" }}>Entered By</th>
             <th className="results-col">Narrative</th>
-            <th style={{ width: "12%" }}>Actions</th>
+            <th style={{ width: "10%" }}>Actions</th>
             {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
             )}
@@ -969,6 +1018,9 @@ const handleAddOrUpdateReturn = async () => {
 <tbody>
   {returns.length > 0 ? returns.map((ret, idx) => {
     const canModify = ret.enteredBy.trim() === officerName.trim();
+    const isExpanded = expandedRows.has(ret.leadReturnId);
+    const narrativeText = ret.leadReturnResult || "";
+    const shouldTruncate = narrativeText.length > 150;
 
     // console.log("Can Modify?", canModify, "| enteredBy:", ret.enteredBy, "| officerName:", officerName);
     const disableActions =
@@ -977,17 +1029,36 @@ const handleAddOrUpdateReturn = async () => {
       isReadOnly||
       !canModify;
 
+    const toggleExpand = () => {
+      setExpandedRows(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(ret.leadReturnId)) {
+          newSet.delete(ret.leadReturnId);
+        } else {
+          newSet.add(ret.leadReturnId);
+        }
+        return newSet;
+      });
+    };
+
     return (
       <tr key={ret.leadReturnId || idx}>
         <td>{ret.leadReturnId}</td>
         <td>{formatDate(ret.enteredDate)}</td>
         <td>{ret.enteredBy}</td>
-        <td className="results-col">
-          {ret.leadReturnResult}
-            {/* <div className="scrollable-cell">
-              {ret.leadReturnResult}
-            </div> */}
-          </td>
+        <td className="narrative-cell">
+          <div className={isExpanded ? "narrative-content-expanded" : "narrative-content-collapsed"}>
+            {ret.leadReturnResult}
+          </div>
+          {shouldTruncate && (
+            <button
+              className="view-toggle-btn"
+              onClick={toggleExpand}
+            >
+              {isExpanded ? "View Less ▲" : "View ▶"}
+            </button>
+          )}
+        </td>
         <td>
           <div className="lr-table-btn">
             <button
@@ -1017,9 +1088,11 @@ const handleAddOrUpdateReturn = async () => {
             <select
               value={ret.accessLevel}
               onChange={(e) => handleAccessChange(idx, e.target.value)}
+              className="access-dropdown"
             >
-              <option value="Everyone">Everyone</option>
-              <option value="Case Manager">Only Case Manager</option>
+              <option value="Everyone">All</option>
+              <option value="Case Manager">Case Manager</option>
+              <option value="Case Manager and Assignees">Assignees</option>
             </select>
           </td>
         )}

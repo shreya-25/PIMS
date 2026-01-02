@@ -81,3 +81,27 @@ button:disabled {
 {
   min-height: 90vh;
 }
+
+/* View Person Button */
+.view-person-btn {
+  background: none;
+  border: 1px solid #007bff;
+  color: #007bff;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.view-person-btn:hover {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.view-person-btn:active {
+  transform: scale(0.98);
+}

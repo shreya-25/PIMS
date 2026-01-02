@@ -29,6 +29,16 @@ const createLRVehicle = async (req, res) => {
             accessLevel,
         } = req.body;
 
+        // Validate accessLevel if provided
+        if (accessLevel) {
+            const validAccessLevels = ["Everyone", "Case Manager", "Case Manager and Assignees"];
+            if (!validAccessLevels.includes(accessLevel)) {
+                return res.status(400).json({
+                    message: `Invalid accessLevel. Must be one of: ${validAccessLevels.join(', ')}`
+                });
+            }
+        }
+
         const newLRVehicle = new LRVehicle({
             leadNo,
             description,
@@ -141,12 +151,25 @@ const updateLRVehicle = async (req, res) => {
       const { leadNo, caseNo, leadReturnId, vin } = req.params;
       const updateData = req.body;
 
+      // Handle empty VIN (sent as '-EMPTY-' from frontend)
+      const actualVin = vin === '-EMPTY-' ? '' : vin;
+
+      // Validate accessLevel if it's being updated
+      if (updateData.accessLevel) {
+        const validAccessLevels = ["Everyone", "Case Manager", "Case Manager and Assignees"];
+        if (!validAccessLevels.includes(updateData.accessLevel)) {
+          return res.status(400).json({
+            message: `Invalid accessLevel. Must be one of: ${validAccessLevels.join(', ')}`
+          });
+        }
+      }
+
       // Get the old value before updating
       const existingVehicle = await LRVehicle.findOne({
         leadNo: Number(leadNo),
         caseNo,
         leadReturnId,
-        vin
+        vin: actualVin
       });
 
       if (!existingVehicle) {
@@ -158,7 +181,7 @@ const updateLRVehicle = async (req, res) => {
           leadNo:       Number(leadNo),
           caseNo,
           leadReturnId,
-          vin            // or whichever unique field you prefer
+          vin:          actualVin
         },
         updateData,
         { new: true, runValidators: true }
@@ -199,12 +222,15 @@ const updateLRVehicle = async (req, res) => {
     try {
       const { leadNo, caseNo, leadReturnId, vin } = req.params;
 
+      // Handle empty VIN (sent as '-EMPTY-' from frontend)
+      const actualVin = vin === '-EMPTY-' ? '' : vin;
+
       // Get the record before deleting
       const existingVehicle = await LRVehicle.findOne({
         leadNo: Number(leadNo),
         caseNo,
         leadReturnId,
-        vin
+        vin: actualVin
       });
 
       if (!existingVehicle) {
@@ -215,7 +241,7 @@ const updateLRVehicle = async (req, res) => {
         leadNo:       Number(leadNo),
         caseNo,
         leadReturnId,
-        vin
+        vin:          actualVin
       });
 
       // Log the deletion in audit log

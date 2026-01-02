@@ -68,6 +68,9 @@ const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
   // Always require Narrative Id
   if (!enclosureData.returnId?.trim()) missing.push("Narrative Id");
 
+  // Require Enclosure Description
+  if (!enclosureData.enclosure?.trim()) missing.push("Enclosure Description");
+
   // Optional: validate upload choice
   if (enclosureData.isLink) {
     if (!enclosureData.link?.trim()) missing.push("Link");
@@ -144,11 +147,29 @@ const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
         enclosure: enc.enclosureDescription,
         returnId: enc.leadReturnId,
         originalName: enc.originalName,
-        filename:      enc.filename,  
-        link:        enc.link || ""
+        filename:      enc.filename,
+        link:        enc.link || "",
+        accessLevel: enc.accessLevel ?? "Everyone",
+        enteredBy: enc.enteredBy
       }));
 
-      setEnclosures(mapped);
+      // Filter based on role and access level
+      let visible = mapped;
+      if (!isCaseManager) {
+        const currentUser = localStorage.getItem("loggedInUser")?.trim();
+        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+
+        visible = mapped.filter(enc => {
+          if (enc.accessLevel === "Everyone") return true;
+          if (enc.accessLevel === "Case Manager and Assignees") {
+            const isAssignedToLead = leadAssignees.some(a => a === currentUser);
+            return isAssignedToLead;
+          }
+          return false; // "Case Manager" only - hide from investigators
+        });
+      }
+
+      setEnclosures(visible);
     } catch (err) {
       console.error(err);
       setError("Failed to load enclosures");
@@ -251,6 +272,7 @@ const DEFAULT_FORM = {
   link: '',
   originalName: '',
   filename: '',
+  accessLevel: 'Everyone',
 };
 
 const [enclosureData, setEnclosureData] = useState(DEFAULT_FORM);
@@ -498,6 +520,7 @@ const goToViewLR = () => {
     fd.append("enteredDate", new Date().toISOString());
     fd.append("type", enclosureData.type);
     fd.append("enclosureDescription", enclosureData.enclosure);
+    fd.append("accessLevel", enclosureData.accessLevel || "Everyone");
   
     // Link-related fields
     fd.append("isLink", enclosureData.isLink || false);
@@ -540,7 +563,7 @@ const goToViewLR = () => {
   
       // Refresh & reset form
       await fetchEnclosures();
-      setEnclosureData({ returnId: "", type: "", enclosure: "", isLink: false, link: "", originalName: "", filename: "" });
+      setEnclosureData({ returnId: "", type: "", enclosure: "", isLink: false, link: "", originalName: "", filename: "", accessLevel: "Everyone" });
 
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -565,9 +588,10 @@ const goToViewLR = () => {
       type:     enc.type,
       enclosure:enc.enclosure,
       isLink: !!enc.link,
-    link: enc.link || "",
-    originalName: enc.originalName, // ← grab it here
-    filename:     enc.filename 
+      link: enc.link || "",
+      originalName: enc.originalName,
+      filename:     enc.filename,
+      accessLevel: enc.accessLevel || "Everyone"
     });
     // clear file input so user can choose new one if desired
     setFile(null);
@@ -676,16 +700,29 @@ const performDeleteEnclosure = async () => {
         returnId: enc.leadReturnId,
         originalName: enc.originalName,
         link: enc.link || "",
-        filename: enc.filename, 
+        filename: enc.filename,
         signedUrl: enc.signedUrl || "",
+        accessLevel: enc.accessLevel ?? "Everyone",
+        enteredBy: enc.enteredBy
       }));
 
-      const withAccess = mappedEnclosures.map(r => ({
-        ...r,
-        access: r.access ?? "Everyone"
-      }));
-  
-      setEnclosures(withAccess);
+      // Filter based on role and access level
+      let visible = mappedEnclosures;
+      if (!isCaseManager) {
+        const currentUser = localStorage.getItem("loggedInUser")?.trim();
+        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+
+        visible = mappedEnclosures.filter(enc => {
+          if (enc.accessLevel === "Everyone") return true;
+          if (enc.accessLevel === "Case Manager and Assignees") {
+            const isAssignedToLead = leadAssignees.some(a => a === currentUser);
+            return isAssignedToLead;
+          }
+          return false; // "Case Manager" only - hide from investigators
+        });
+      }
+
+      setEnclosures(visible);
       setLoading(false);
       setError("");
     } catch (err) {
@@ -695,14 +732,36 @@ const performDeleteEnclosure = async () => {
     }
   };
   
-   const isCaseManager = 
+   const isCaseManager =
     selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
-  const handleAccessChange = (idx, newAccess) => {
-    setEnclosures(rs => {
-      const copy = [...rs];
-      copy[idx] = { ...copy[idx], access: newAccess };
-      return copy;
-    });
+
+  const handleAccessChange = async (idx, newAccess) => {
+    const enc = enclosures[idx];
+    const token = localStorage.getItem("token");
+
+    try {
+      const url = `/api/lrenclosure/${selectedLead.leadNo}/` +
+                  `${encodeURIComponent(selectedLead.leadName)}/` +
+                  `${selectedCase.caseNo}/` +
+                  `${encodeURIComponent(selectedCase.caseName)}/` +
+                  `${enc.returnId}/`;
+
+      await api.put(url,
+        { accessLevel: newAccess },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Update local state
+      setEnclosures(prev => {
+        const copy = [...prev];
+        copy[idx] = { ...copy[idx], accessLevel: newAccess };
+        return copy;
+      });
+    } catch (err) {
+      console.error("Failed to update accessLevel", err);
+      setAlertMessage("Could not change access level. Please try again.");
+      setAlertOpen(true);
+    }
   };
   const { status, isReadOnly } = useLeadStatus({
     caseNo: selectedCase.caseNo,
@@ -899,14 +958,20 @@ const performDeleteEnclosure = async () => {
           </div>
           <div className="form-row-evidence">
             <label>Enclosure Type</label>
-            <input
-              type="text"
+            <select
               value={enclosureData.type}
               onChange={(e) => handleInputChange("type", e.target.value)}
-            />
+            >
+              <option value="">Select Type</option>
+              <option value="Document">Document</option>
+              <option value="Business Records">Business Records</option>
+              <option value="Cellular Phone Records">Cellular Phone Records</option>
+              <option value="Deposition">Deposition</option>
+              <option value="Statement">Statement</option>
+            </select>
           </div>
           <div className="form-row-evidence">
-            <label>Enclosure Description</label>
+            <label>Enclosure Description *</label>
             <textarea
               value={enclosureData.enclosure}
               onChange={(e) => handleInputChange("enclosure", e.target.value)}
@@ -1032,7 +1097,7 @@ const performDeleteEnclosure = async () => {
               <th>Date Entered</th>
               <th>Narrative Id </th>
               <th>Type</th>
-              <th>Enclosure</th>
+              <th>Description</th>
               <th>File Name</th>
               <th>Actions</th>
               {isCaseManager && (
@@ -1099,11 +1164,12 @@ const performDeleteEnclosure = async () => {
                 {isCaseManager && (
           <td>
             <select
-              value={enclosure.access}
+              value={enclosure.accessLevel}
               onChange={e => handleAccessChange(index, e.target.value)}
             >
-              <option value="Everyone">Everyone</option>
-              <option value="Case Manager">Case Manager Only</option>
+              <option value="Everyone">All</option>
+              <option value="Case Manager">Case Manager</option>
+              <option value="Case Manager and Assignees">Assignees</option>
             </select>
           </td>
         )}
@@ -1142,12 +1208,12 @@ const performDeleteEnclosure = async () => {
 )} */}
 
         {/* Activity Log Component */}
-        <ActivityLog
+        {/* <ActivityLog
           caseNo={effectiveCase?.caseNo}
           leadNo={effectiveLead?.leadNo}
           entityType="LREnclosure"
           refreshTrigger={auditLogRefresh}
-        />
+        /> */}
 
         {/* <Comment tag= "Enclosures"/> */}
       </div>

@@ -15,9 +15,9 @@ const createLRScratchpad = async (req, res) => {
             enteredDate,
             text,
             type,
-            accessLevel,
-
         } = req.body;
+
+        const accessLevel = req.body.accessLevel || "Everyone";
 
         const newScratchpad = new LRScratchpad({
             leadNo,
@@ -97,14 +97,21 @@ async function updateLRScratchpad(req, res) {
     try {
       const { id } = req.params;
       // Only these fields are updatable
-      const { leadReturnId, text, type } = req.body;
-  
+      const { leadReturnId, text, type, accessLevel } = req.body;
+
+      const updateData = { leadReturnId, text, type };
+
+      // Update accessLevel if provided
+      if (accessLevel !== undefined) {
+        updateData.accessLevel = accessLevel || "Everyone";
+      }
+
       const updated = await LRScratchpad.findByIdAndUpdate(
         id,
-        { leadReturnId, text, type },
+        updateData,
         { new: true }
       );
-  
+
       if (!updated) return res.status(404).json({ message: "Not found" });
       res.json(updated);
     } catch (err) {

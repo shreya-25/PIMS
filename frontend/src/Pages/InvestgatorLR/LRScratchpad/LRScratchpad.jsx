@@ -157,7 +157,7 @@ useEffect(() => {
    const saved = sessionStorage.getItem(FORM_KEY);
    return saved
      ? JSON.parse(saved)
-     : { text: "", returnId: "" };
+     : { text: "", returnId: "", accessLevel: "Everyone" };
  });
 
   const handleInputChange = (field, value) => {
@@ -175,14 +175,15 @@ useEffect(() => {
       leadNo: selectedLead?.leadNo,
       description: selectedLead?.leadName,
       assignedTo: {},
-      assignedBy: {}, 
+      assignedBy: {},
       enteredBy: localStorage.getItem("loggedInUser"),
       caseName: selectedCase?.caseName,
       caseNo: selectedCase?.caseNo,
       leadReturnId: noteData.returnId, // Default or fetched
       enteredDate: new Date().toISOString(),
       text: noteData.text,
-      type: "Lead"
+      type: "Lead",
+      accessLevel: noteData.accessLevel || "Everyone"
     };
   
     const token = localStorage.getItem("token");
@@ -200,10 +201,11 @@ useEffect(() => {
           ...res.data,
           dateEntered: formatDate(res.data.enteredDate),
           returnId: res.data.leadReturnId,
+          accessLevel: res.data.accessLevel || "Everyone",
         },
       ]);
-  
-      setNoteData({ text: "" });
+
+      setNoteData({ text: "", returnId: "", accessLevel: "Everyone" });
       sessionStorage.removeItem(FORM_KEY);
     } catch (err) {
       console.error("Error saving scratchpad note:", err.message);
@@ -282,13 +284,26 @@ useEffect(() => {
         ...note,
         dateEntered: formatDate(note.enteredDate),
         returnId: note.leadReturnId || "",
+        accessLevel: note.accessLevel ?? "Everyone"
       }));
-    const withAccess = formatted.map(r => ({
-      ...r,
-      access: r.access ?? "Everyone"
-    }));
 
-    setNotes(formatted);
+      // Filter based on role and access level
+      let visible = formatted;
+      if (!isCaseManager) {
+        const currentUser = localStorage.getItem("loggedInUser")?.trim();
+        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+
+        visible = formatted.filter(note => {
+          if (note.accessLevel === "Everyone") return true;
+          if (note.accessLevel === "Case Manager and Assignees") {
+            const isAssignedToLead = leadAssignees.some(a => a === currentUser);
+            return isAssignedToLead;
+          }
+          return false; // "Case Manager" only
+        });
+      }
+
+      setNotes(visible);
 
     } catch (error) {
       console.error("Error fetching scratchpad notes:", error);
@@ -490,12 +505,28 @@ const goToViewLR = () => {
    const isCaseManager = 
     selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
 
-  const handleAccessChange = (idx, newAccess) => {
-    setNotes(rs => {
-      const copy = [...rs];
-      copy[idx] = { ...copy[idx], access: newAccess };
-      return copy;
-    });
+  const handleAccessChange = async (idx, newAccess) => {
+    const note = notes[idx];
+    const token = localStorage.getItem("token");
+
+    try {
+      await api.put(
+        `/api/scratchpad/${note._id}`,
+        { accessLevel: newAccess },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Update local state
+      setNotes(prev => {
+        const copy = [...prev];
+        copy[idx] = { ...copy[idx], accessLevel: newAccess };
+        return copy;
+      });
+    } catch (err) {
+      console.error("Failed to update accessLevel", err);
+      setAlertMessage("Could not change access level. Please try again.");
+      setAlertOpen(true);
+    }
   };
 
   function handleEditClick(idx) {
@@ -504,6 +535,7 @@ const goToViewLR = () => {
     setNoteData({
       text: n.text,
       returnId: n.leadReturnId || "",
+      accessLevel: n.accessLevel || "Everyone",
     });
   }
 
@@ -514,13 +546,18 @@ const goToViewLR = () => {
     try {
       await api.put(
         `/api/scratchpad/${note._id}`,
-        { leadReturnId: noteData.returnId, text: noteData.text, type: "Lead" },
+        {
+          leadReturnId: noteData.returnId,
+          text: noteData.text,
+          type: "Lead",
+          accessLevel: noteData.accessLevel || "Everyone"
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       await fetchNotes();
       // reset form
       setEditingIndex(null);
-      setNoteData({ text: "", returnId: "" });
+      setNoteData({ text: "", returnId: "", accessLevel: "Everyone" });
       sessionStorage.removeItem(FORM_KEY);
     } catch (err) {
       console.error("Update failed", err);
@@ -897,7 +934,7 @@ Case Page
                  disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
                   onClick={() => {
                     setEditingIndex(null);
-                    setNoteData({ text: "", returnId: "" });
+                    setNoteData({ text: "", returnId: "", accessLevel: "Everyone" });
                   }}
                   className="save-btn1"
                 >
@@ -956,11 +993,12 @@ Case Page
                 {isCaseManager && (
           <td>
             <select
-              value={note.access}
+              value={note.accessLevel}
               onChange={e => handleAccessChange(index, e.target.value)}
             >
-              <option value="Everyone">Everyone</option>
-              <option value="Case Manager">Case Manager Only</option>
+              <option value="Everyone">All</option>
+              <option value="Case Manager">Case Manager</option>
+              <option value="Case Manager and Assignees">Assignees</option>
             </select>
           </td>
         )}

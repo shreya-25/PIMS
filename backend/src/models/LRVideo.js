@@ -51,10 +51,10 @@ const lrVideoSchema = new mongoose.Schema(
       },
     },
 
-    // keep if you're still using it elsewhere; otherwise remove from schema+controller
+    // Access control for videos
     accessLevel: {
       type: String,
-      enum: ["Only Case Manager", "Everyone"],
+      enum: ["Case Manager Only", "Case Manager and Assignees", "Everyone"],
       default: "Everyone",
     },
     // Reference to complete lead return version

@@ -46,6 +46,7 @@ export const LRAudio = () => {
   const fileInputRef = useRef(null);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -99,6 +100,7 @@ function getMissingAudioFields({ audioData, file, isEditing }) {
   // hard-required
   if (!audioData.leadReturnId?.trim())     missing.push("Narrative Id");
   if (!audioData.dateAudioRecorded?.trim()) missing.push("Date Audio Recorded");
+  if (!audioData.description?.trim())      missing.push("Description");
 
   // upload-mode rules
   if (audioData.isLink) {
@@ -468,8 +470,9 @@ const goToViewLR = () => {
   
 
   const handleAddAudio = async () => {
-  
-     const missing = getMissingAudioFields({ audioData, file, isEditing: false });
+  if (isSubmitting) return; // Prevent multiple submissions
+
+  const missing = getMissingAudioFields({ audioData, file, isEditing: false });
   if (missing.length) {
     setAlertMessage(
       `Please fill the required field${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}.`
@@ -478,7 +481,7 @@ const goToViewLR = () => {
     return;
   }
 
-
+  setIsSubmitting(true);
   // 2️⃣ Build FormData
   const formData = new FormData();
     if (!audioData.isLink && file) {
@@ -493,7 +496,7 @@ const goToViewLR = () => {
   formData.append("enteredDate", new Date().toISOString());
   formData.append("dateAudioRecorded", audioData.dateAudioRecorded);
   formData.append("audioDescription", audioData.description);
-  formData.append("accessLevel", audioData.accessLevel || "Everyone");
+  formData.append("accessLevel", "Everyone");
 
   // 3️⃣ Link fields
   formData.append("isLink", audioData.isLink);
@@ -529,11 +532,14 @@ const goToViewLR = () => {
     // after resetting audioData and file...
     sessionStorage.removeItem(formKey);
 
-
+    setAlertMessage("Audio added successfully!");
+    setAlertOpen(true);
   } catch (error) {
     console.error("Error uploading audio:", error);
-    setAlertMessage("Failed to upload audio.");
+    setAlertMessage("Failed to upload audio: " + (error.response?.data?.message || error.message));
     setAlertOpen(true);
+  } finally {
+    setIsSubmitting(false);
   }
 };
 
@@ -584,7 +590,23 @@ const goToViewLR = () => {
       accessLevel: r.accessLevel ?? "Everyone"
     }));
 
-    setAudioFiles(withAccess);
+    // Filter based on role and access level
+    let visible = withAccess;
+    if (!isCaseManager) {
+      const currentUser = localStorage.getItem("loggedInUser")?.trim();
+      const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+
+      visible = withAccess.filter(audio => {
+        if (audio.accessLevel === "Everyone") return true;
+        if (audio.accessLevel === "Case Manager and Assignees") {
+          const isAssignedToLead = leadAssignees.some(a => a === currentUser);
+          return isAssignedToLead;
+        }
+        return false; // "Case Manager Only"
+      });
+    }
+
+    setAudioFiles(visible);
   } catch (error) {
     console.error("Error fetching audios:", error);
   }
@@ -604,12 +626,37 @@ const goToViewLR = () => {
                   const isCaseManager = 
     selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
                 
-    const handleAccessChange = (idx, newAccessLevel) => {
-  setAudioFiles(rs => {
-    const copy = [...rs];
-    copy[idx] = { ...copy[idx], accessLevel: newAccessLevel };
-    return copy;
-  });
+    const handleAccessChange = async (idx, newAccessLevel) => {
+  const audio = audioFiles[idx];
+  const token = localStorage.getItem("token");
+
+  try {
+    // Send as FormData since backend expects multipart due to upload.single("file") middleware
+    const fd = new FormData();
+    fd.append("accessLevel", newAccessLevel);
+
+    await api.put(`/api/lraudio/${audio.id}`,
+      fd,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        transformRequest: [(data, headers) => {
+          delete headers["Content-Type"]; // Let browser set correct boundary
+          return data;
+        }]
+      }
+    );
+
+    // Update local state
+    setAudioFiles(rs => {
+      const copy = [...rs];
+      copy[idx] = { ...copy[idx], accessLevel: newAccessLevel };
+      return copy;
+    });
+  } catch (err) {
+    console.error("Failed to update accessLevel", err);
+    setAlertMessage("Could not change access level. Please try again.");
+    setAlertOpen(true);
+  }
 };
 
 
@@ -657,8 +704,7 @@ const handleEditAudio = idx => {
     link: a.isLink ? a.link : "",
     // existing file data
     audioSrc: a.isLink ? "" : a.audioSrc,
-    filename: a.isLink ? "" : a.originalName,
-     accessLevel: a.accessLevel || "Everyone"
+    filename: a.isLink ? "" : a.originalName
   });
 };
 
@@ -708,15 +754,19 @@ const handleEditAudio = idx => {
 // };
 
 const handleUpdateAudio = async () => {
+  if (isSubmitting) return; // Prevent multiple submissions
+
   const idx = editingId;
   const a   = audioFiles[idx];
   const fd  = new FormData();
+
+  setIsSubmitting(true);
 
   // 1️⃣ Always send these fields:
   fd.append("leadReturnId", audioData.leadReturnId);
   fd.append("dateAudioRecorded", audioData.dateAudioRecorded);
   fd.append("audioDescription", audioData.description);
-  fd.append("accessLevel", audioData.accessLevel || "Everyone");
+  fd.append("accessLevel", "Everyone");
 
   // 2️⃣ Indicate link‐mode or file‐mode
   fd.append("isLink", audioData.isLink);
@@ -763,10 +813,14 @@ const handleUpdateAudio = async () => {
     // after resetting audioData and file...
 sessionStorage.removeItem(formKey);
 
+    setAlertMessage("Audio updated successfully!");
+    setAlertOpen(true);
   } catch (error) {
     console.error("Error updating audio:", error);
-    setAlertMessage("Failed to update audio.");
+    setAlertMessage("Failed to update audio: " + (error.response?.data?.message || error.message));
     setAlertOpen(true);
+  } finally {
+    setIsSubmitting(false);
   }
 };
 
@@ -1109,7 +1163,7 @@ Case Page
 
           </div>
           <div className="form-row-audio">
-            <label className="evidence-head">Description</label>
+            <label className="evidence-head">Description*</label>
             <textarea
               value={audioData.description}
               className="evidence-head"
@@ -1164,19 +1218,6 @@ Case Page
     />
   </div>
 )}
-<div className="form-row-audio">
-  <label>Access Level</label>
-  <select
-    value={audioData.accessLevel || "Everyone"}
-    onChange={e =>
-      setAudioData(prev => ({ ...prev, accessLevel: e.target.value }))
-    }
-  >
-    <option value="Everyone">Everyone</option>
-    <option value="Case Manager">Case Manager Only</option>
-  </select>
-</div>
-
 
         </div>
         <div className="form-buttons-audio">
@@ -1185,15 +1226,16 @@ Case Page
           className="save-btn1" onClick={handleAddAudio}>Add Audio</button> */}
 
   <button
-  disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
+  disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly || isSubmitting}
    onClick={ isEditing ? handleUpdateAudio : handleAddAudio }
     className="save-btn1"
  >
-   {isEditing ? "Update Audio" : "Add Audio"}
+   {isSubmitting ? (isEditing ? "Updating..." : "Adding...") : (isEditing ? "Update Audio" : "Add Audio")}
   </button>
   {isEditing && (
     <button
      className="save-btn1"
+     disabled={isSubmitting}
      onClick={() => {
         setEditingId(null);
  setAudioData(DEFAULT_AUDIO);
@@ -1246,10 +1288,12 @@ Case Page
     <a href={audio.link} target="_blank" rel="noopener noreferrer" className="link-button">
       {audio.link}
     </a>
-  ) : (
+  ) : audio.signedUrl ? (
     <a href={audio.signedUrl} target="_blank" rel="noopener noreferrer" className="link-button">
       {audio.originalName || "Download"}
     </a>
+  ) : (
+    <span style={{ color: "gray" }}>No File Available</span>
   )}
 </td>
 
@@ -1282,8 +1326,9 @@ Case Page
               value={audio.accessLevel}
               onChange={e => handleAccessChange(index, e.target.value)}
             >
-              <option value="Everyone">Everyone</option>
-              <option value="Case Manager">Case Manager Only</option>
+              <option value="Everyone">All</option>
+              <option value="Case Manager Only">Case Manager</option>
+              <option value="Case Manager and Assignees">Assignees</option>
             </select>
           </td>
         )}

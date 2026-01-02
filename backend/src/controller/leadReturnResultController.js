@@ -190,6 +190,22 @@ const updateLeadReturnResult = async (req, res) => {
         const { leadNo, caseNo, leadReturnId } = req.params;
         const updateData = req.body;
 
+        console.log(`📝 Updating lead return result: leadNo=${leadNo}, caseNo=${caseNo}, leadReturnId=${leadReturnId}`);
+        console.log(`📦 Update data:`, updateData);
+
+        // Validate accessLevel if it's being updated
+        if (updateData.accessLevel) {
+            const validAccessLevels = ["Everyone", "Case Manager", "Case Manager and Assignees"];
+            console.log(`🔍 Validating accessLevel: "${updateData.accessLevel}"`);
+            if (!validAccessLevels.includes(updateData.accessLevel)) {
+                console.log(`❌ Invalid accessLevel: "${updateData.accessLevel}"`);
+                return res.status(400).json({
+                    message: `Invalid accessLevel. Must be one of: ${validAccessLevels.join(', ')}`
+                });
+            }
+            console.log(`✅ accessLevel validation passed`);
+        }
+
         // First, get the old value before updating
         const oldResult = await LeadReturnResult.findOne({
             leadNo: Number(leadNo),
@@ -208,7 +224,7 @@ const updateLeadReturnResult = async (req, res) => {
                 lastModifiedDate: new Date(),
                 lastModifiedBy: req.user?.name || "Unknown"
             },
-            { new: true }
+            { new: true, runValidators: true }
         );
 
         // Log the update in audit log
