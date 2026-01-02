@@ -1176,7 +1176,7 @@ const goToViewLR = () => {
               <th style={{ width: "10%" }}>Model</th>
               <th style={{ width: "10%" }}>Color</th>
               {/* <th>State</th> */}
-              <th style={{ width: "15%" }}>More</th>
+              <th style={{ width: "9%" }}>More</th>
               <th style={{ width: "14%" }}>Actions</th>
               {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
@@ -1215,7 +1215,7 @@ const goToViewLR = () => {
       </td>
 
         {/* <td>{vehicle.state}</td> */}
-        <td> <button className="download-btn" onClick={() => openVehicleModal(
+        <td> <button className="view-person-btn" onClick={() => openVehicleModal(
                       selectedLead.leadNo,
                       selectedLead.leadName,
                       selectedCase.caseNo,

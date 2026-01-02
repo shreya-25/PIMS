@@ -121,18 +121,19 @@ const updateLRTimeline = async (req, res) => {
     try {
       const { id } = req.params;
       // build updates only from allowed fields
-      const updates = {
-        leadReturnId: req.body.leadReturnId,
-        eventDate: req.body.eventDate,
-        eventStartDate: req.body.eventStartDate,
-        eventEndDate: req.body.eventEndDate,
-        eventStartTime: req.body.eventStartTime,
-        eventEndTime: req.body.eventEndTime,
-        eventLocation: req.body.eventLocation,
-        eventDescription: req.body.eventDescription,
-        timelineFlag: req.body.timelineFlag,
-      };
-  
+      const updates = {};
+
+      if (req.body.leadReturnId !== undefined) updates.leadReturnId = req.body.leadReturnId;
+      if (req.body.eventDate !== undefined) updates.eventDate = req.body.eventDate;
+      if (req.body.eventStartDate !== undefined) updates.eventStartDate = req.body.eventStartDate;
+      if (req.body.eventEndDate !== undefined) updates.eventEndDate = req.body.eventEndDate;
+      if (req.body.eventStartTime !== undefined) updates.eventStartTime = req.body.eventStartTime;
+      if (req.body.eventEndTime !== undefined) updates.eventEndTime = req.body.eventEndTime;
+      if (req.body.eventLocation !== undefined) updates.eventLocation = req.body.eventLocation;
+      if (req.body.eventDescription !== undefined) updates.eventDescription = req.body.eventDescription;
+      if (req.body.timelineFlag !== undefined) updates.timelineFlag = req.body.timelineFlag;
+      if (req.body.accessLevel !== undefined) updates.accessLevel = req.body.accessLevel;
+
       const updated = await LRTimeline.findByIdAndUpdate(id, updates, { new: true });
       if (!updated) return res.status(404).json({ message: "Timeline entry not found." });
       res.json({ message: "Timeline entry updated", timeline: updated });

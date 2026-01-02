@@ -134,8 +134,8 @@ const performDelete = async () => {
   return saved ? JSON.parse(saved) : [];
 });
 
-const DEFAULT_ENTRY = {
-  date: "",
+const getDefaultEntry = () => ({
+  date: new Date().toISOString().split('T')[0],
   leadReturnId: "",
   eventStartDate: "",
   eventEndDate: "",
@@ -144,18 +144,29 @@ const DEFAULT_ENTRY = {
   location: "",
   description: "",
   flag: "",
-};
+  accessLevel: "Everyone",
+});
 
 
 const [newEntry, setNewEntry] = useState(() => {
   const saved = sessionStorage.getItem(formKey);
-  return saved ? JSON.parse(saved) : DEFAULT_ENTRY;
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    // Ensure date is set even if not in saved data
+    return { ...getDefaultEntry(), ...parsed };
+  }
+  return getDefaultEntry();
 });
 
 useEffect(() => {
   setNewEntry(() => {
     const saved = sessionStorage.getItem(formKey);
-    return saved ? JSON.parse(saved) : DEFAULT_ENTRY;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Ensure date is set even if not in saved data
+      return { ...getDefaultEntry(), ...parsed };
+    }
+    return getDefaultEntry();
   });
   setTimelineEntries(() => {
     const saved = sessionStorage.getItem(listKey);
@@ -188,12 +199,6 @@ const required = (s) => !!String(s ?? "").trim();
 function getMissingTimelineFields(ne, { isEditing = false } = {}) {
   const miss = [];
   if (!required(ne.leadReturnId))  miss.push("Narrative Id");
-  if (!required(ne.date))          miss.push("Event Date");
-  if (!required(ne.eventStartDate)) miss.push("Event Start Date");
-  if (!required(ne.eventEndDate))   miss.push("Event End Date");
-  if (!required(ne.startTime))     miss.push("Start Time");
-  if (!required(ne.endTime))       miss.push("End Time");
-  if (!required(ne.location))      miss.push("Location");
   if (!required(ne.description))   miss.push("Description");
   return miss;
 }
@@ -208,13 +213,18 @@ function combineDateTimeISO(dateStr, timeStr) {
 }
 
 function assertChronology(ne) {
-  const startISO = combineDateTimeISO(ne.date, ne.startTime);
-  const endISO   = combineDateTimeISO(ne.date, ne.endTime);
-  if (new Date(startISO) > new Date(endISO)) {
-    return "Start Time must be before End Time.";
+  // Only validate if all fields are provided
+  if (ne.date && ne.startTime && ne.endTime) {
+    const startISO = combineDateTimeISO(ne.date, ne.startTime);
+    const endISO   = combineDateTimeISO(ne.date, ne.endTime);
+    if (new Date(startISO) > new Date(endISO)) {
+      return "Start Time must be before End Time.";
+    }
   }
-  if (new Date(ne.eventStartDate) > new Date(ne.eventEndDate)) {
-    return "Event Start Date must be on/before Event End Date.";
+  if (ne.eventStartDate && ne.eventEndDate) {
+    if (new Date(ne.eventStartDate) > new Date(ne.eventEndDate)) {
+      return "Event Start Date must be on/before Event End Date.";
+    }
   }
   return "";
 }
@@ -230,7 +240,7 @@ function assertChronology(ne) {
     const url = `/api/timeline/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`;
     try {
       const res = await api.get(url, { headers: { Authorization: `Bearer ${token}` } });
-      setTimelineEntries(res.data.map(e => ({
+      const mappedEntries = res.data.map(e => ({
         id: e._id,
         rawEventDate: e.eventDate,
         rawStartDate: e.eventStartDate,
@@ -241,13 +251,34 @@ function assertChronology(ne) {
         eventLocation: e.eventLocation,
         eventDescription: e.eventDescription,
         flags: e.timelineFlag || [],
-        access: e.access || "Everyone",
+        accessLevel: e.accessLevel || "Everyone",
         // for display:
         date: formatDate(e.eventDate),
         timeRange: formatTimeRangeNY(e.eventStartTime, e.eventEndTime),
         location: e.eventLocation,
         description: e.eventDescription,
-      })));
+      }));
+
+      // Filter based on role and access level
+      const isCaseManager =
+        selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
+
+      let visible = mappedEntries;
+      if (!isCaseManager) {
+        const currentUser = localStorage.getItem("loggedInUser")?.trim();
+        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+
+        visible = mappedEntries.filter(entry => {
+          if (entry.accessLevel === "Everyone") return true;
+          if (entry.accessLevel === "Case Manager and Assignees") {
+            const isAssignedToLead = leadAssignees.some(a => a === currentUser);
+            return isAssignedToLead;
+          }
+          return false; // "Case Manager" only
+        });
+      }
+
+      setTimelineEntries(visible);
     } catch (err) {
       console.error("Error fetching timeline entries:", err);
     }
@@ -270,16 +301,23 @@ function assertChronology(ne) {
   }, [selectedLead, selectedCase]);
   
   const formatTimeRangeNY = (startTime, endTime) => {
+    if (!startTime || !endTime) return "";
+
     const options = {
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
       timeZone: "America/New_York",
     };
-  
-    const start = new Date(startTime).toLocaleTimeString("en-US", options);
-    const end = new Date(endTime).toLocaleTimeString("en-US", options);
-  
+
+    const startDate = new Date(startTime);
+    const endDate = new Date(endTime);
+
+    if (isNaN(startDate) || isNaN(endDate)) return "";
+
+    const start = startDate.toLocaleTimeString("en-US", options);
+    const end = endDate.toLocaleTimeString("en-US", options);
+
     return `${start} - ${end}`;
   };
   
@@ -643,12 +681,27 @@ const goToViewLR = () => {
     selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
 
     // handler to change access per row
-const handleAccessChange = (idx, newAccess) => {
-  setTimelineEntries(rs => {
-    const copy = [...rs];
-    copy[idx] = { ...copy[idx], access: newAccess };
-    return copy;
-  });
+const handleAccessChange = async (idx, newAccess) => {
+  const entry = timelineEntries[idx];
+  const token = localStorage.getItem("token");
+
+  try {
+    await api.put(`/api/timeline/${entry.id}`,
+      { accessLevel: newAccess },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // Update local state
+    setTimelineEntries(prev => {
+      const copy = [...prev];
+      copy[idx] = { ...copy[idx], accessLevel: newAccess };
+      return copy;
+    });
+  } catch (err) {
+    console.error("Failed to update accessLevel", err);
+    setAlertMessage("Could not change access level. Please try again.");
+    setAlertOpen(true);
+  }
 };
 
 async function handleSubmit() {
@@ -669,11 +722,11 @@ async function handleSubmit() {
     date, leadReturnId, eventStartDate, eventEndDate,
     startTime, endTime, location, description, flag
   } = newEntry;
-  if (!date || !eventStartDate || !eventEndDate || !startTime || !endTime || !location || !description) {
-    setAlertMessage("Please fill in all required fields.");
-       setAlertOpen(true);
-  }
   const token = localStorage.getItem("token");
+
+  // Ensure date is set, use today's date if not
+  const finalDate = date && date.trim() ? date : new Date().toISOString().split('T')[0];
+
   const payload = {
     leadNo: selectedLead.leadNo,
     description: selectedLead.leadName,
@@ -684,17 +737,21 @@ async function handleSubmit() {
     caseNo: selectedCase.caseNo,
     leadReturnId,
     enteredDate: new Date().toISOString(),
-    eventDate: date,
-    eventStartDate,
-    eventEndDate,
-    eventStartTime: combineDateTime(date, startTime),
-    eventEndTime: combineDateTime(date, endTime),
-    eventLocation: location,
+    eventDate: finalDate,
     eventDescription: description,
     timelineFlag: flag ? [flag] : [],
+    accessLevel: newEntry.accessLevel || "Everyone",
   };
 
+  // Only include optional fields if they have values
+  if (eventStartDate) payload.eventStartDate = eventStartDate;
+  if (eventEndDate) payload.eventEndDate = eventEndDate;
+  if (finalDate && startTime) payload.eventStartTime = combineDateTime(finalDate, startTime);
+  if (finalDate && endTime) payload.eventEndTime = combineDateTime(finalDate, endTime);
+  if (location) payload.eventLocation = location;
+
   try {
+    console.log("Submitting payload:", payload);
     if (editingIndex === null) {
       // CREATE
       await api.post("/api/timeline/create", payload, {
@@ -710,13 +767,11 @@ async function handleSubmit() {
     // refresh, reset form
     await fetchTimelineEntries();
     setEditingIndex(null);
-    setNewEntry({
-      date: '', leadReturnId:'', eventStartDate:'', eventEndDate:'',
-      startTime:'', endTime:'', location:'', description:'', flag:''
-    });
+    setNewEntry(getDefaultEntry());
   } catch (err) {
-    console.error(err);
-    setAlertMessage(`Failed to ${editingIndex===null? 'add':'update'} entry`);
+    console.error("Error details:", err);
+    console.error("Error response:", err.response?.data);
+    setAlertMessage(`Failed to ${editingIndex===null? 'add':'update'} entry: ${err.response?.data?.message || err.message}`);
        setAlertOpen(true);
   }
 }
@@ -751,7 +806,8 @@ function handleEdit(idx) {
     endTime:        new Date(e.rawEndTime).toISOString().substr(11,5),
     location: e.eventLocation,
     description: e.eventDescription,
-    flag: e.flags[0] || ''
+    flag: e.flags[0] || '',
+    accessLevel: e.accessLevel || "Everyone"
   });
 }
 const { status, isReadOnly } = useLeadStatus({
@@ -1053,12 +1109,6 @@ Case Page
              <h3>Add/Edit Entry</h3>
         
           <div className="timeline-form">
-            <label>Date *</label>
-            <input
-              type="date"
-              value={newEntry.date}
-              onChange={(e) => handleInputChange('date', e.target.value)}
-            />
             <label>Narrative Id *</label>
            <select
   value={newEntry.leadReturnId}
@@ -1077,31 +1127,31 @@ Case Page
     <option key={id} value={id}>{id}</option>
   ))}
 </select>
-             <label> Event Start Date *</label>
+             <label> Event Start Date</label>
             <input
               type="date"
               value={newEntry.eventStartDate}
               onChange={(e) => handleInputChange('eventStartDate', e.target.value)}
             />
-            <label> Event End Date *</label>
+            <label> Event End Date</label>
             <input
               type="date"
               value={newEntry.eventEndDate}
               onChange={(e) => handleInputChange('eventEndDate', e.target.value)}
             />
-            <label>Start Time *</label>
+            <label>Start Time</label>
             <input
               type="time"
               value={newEntry.startTime}
               onChange={(e) => handleInputChange('startTime', e.target.value)}
             />
-            <label>End Time *</label>
+            <label>End Time</label>
             <input
               type="time"
               value={newEntry.endTime}
               onChange={(e) => handleInputChange('endTime', e.target.value)}
             />
-            <label>Location *</label>
+            <label>Location</label>
             <input
               type="text"
               value={newEntry.location}
@@ -1143,11 +1193,7 @@ Case Page
                   className="customer-btn"
                   onClick={()=>{
                     setEditingIndex(null);
-                    setNewEntry({
-                      date:'',leadReturnId:'',eventStartDate:'',
-                      eventEndDate:'',startTime:'',endTime:'',
-                      location:'',description:'',flag:''
-                    });
+                    setNewEntry(getDefaultEntry());
                   }}>
                   Cancel
                 </button>
@@ -1164,9 +1210,9 @@ Case Page
                 <th style={{ width: "15%" }}>Event Location</th>
                 <th style={{ width: "11%" }}>Description</th>
                 <th style={{ width: "11%" }}>Actions</th>
-                {/* {isCaseManager && (
+                {isCaseManager && (
               <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
-            )} */}
+            )}
               </tr>
             </thead>
             <tbody>
@@ -1204,22 +1250,23 @@ Case Page
                   </button>
                   </div>
                 </td>
-              
-                {/* {isCaseManager && (
+
+                {isCaseManager && (
           <td>
             <select
-              value={entry.access}
+              value={entry.accessLevel || "Everyone"}
               onChange={e => handleAccessChange(index, e.target.value)}
             >
-              <option value="Everyone">Everyone</option>
-              <option value="Case Manager">Case Manager Only</option>
+              <option value="Everyone">All</option>
+              <option value="Case Manager">Case Manager</option>
+              <option value="Case Manager and Assignees">Assignees</option>
             </select>
           </td>
-        )} */}
+        )}
       </tr>
        ))) : (
         <tr>
-          <td colSpan={isCaseManager ? 6 : 6} style={{ textAlign:'center' }}>
+          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
             No Timeline Entry Available
           </td>
         </tr>

@@ -4,21 +4,21 @@ const { Schema } = mongoose;
 const lrTimelineSchema = new mongoose.Schema(
     {
         leadNo: { type: Number, required: true },
-        description: { type: String, required: true },
+        description: { type: String },
         assignedTo: {
             assignees: [{ type: String }],
-            lRStatus: { 
-                type: String, 
-                enum: ["Assigned", "Pending", "Approved", "Returned", "Completed", "Submitted"], 
+            lRStatus: {
+                type: String,
+                enum: ["Assigned", "Pending", "Approved", "Returned", "Completed", "Submitted"],
                 default: "Assigned"
             }
         },
         assignedBy: {
             assignee: { type: String },
-            lRStatus: { 
-                type: String, 
-                enum: ["Assigned", "Pending"], 
-                default: "Assigned" 
+            lRStatus: {
+                type: String,
+                enum: ["Assigned", "Pending"],
+                default: "Assigned"
             }
         },
         enteredBy: { type: String, required: true },
@@ -31,7 +31,7 @@ const lrTimelineSchema = new mongoose.Schema(
         eventEndDate: { type: Date },
         eventStartTime: { type: Date},
         eventEndTime: { type: Date },
-        eventLocation: { type: String, required: true },
+        eventLocation: { type: String },
         eventDescription: { type: String, required: true },
         timelineFlag: {
             type: [String],
@@ -39,7 +39,7 @@ const lrTimelineSchema = new mongoose.Schema(
         },
         accessLevel: {
             type: String,
-            enum: ["Only Case Manager", "Everyone"],
+            enum: ["Everyone", "Case Manager", "Case Manager and Assignees"],
             default: "Everyone"
         },
         // Reference to complete lead return version

@@ -85,22 +85,21 @@ button:disabled {
 /* View Person Button */
 .view-person-btn {
   background: none;
-  border: 1px solid #007bff;
-  color: #007bff;
+  border: 1px solid #0c0c0c;
+  color: #000000;
   cursor: pointer;
   font-size: 16px;
   font-weight: 500;
   padding: 4px 12px;
-  border-radius: 4px;
   transition: all 0.2s ease;
   white-space: nowrap;
 }
 
-.view-person-btn:hover {
+/* .view-person-btn:hover {
   background-color: #007bff;
   color: white;
   border-color: #007bff;
-}
+} */
 
 .view-person-btn:active {
   transform: scale(0.98);

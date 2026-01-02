@@ -7,18 +7,18 @@ const lrPictureSchema = new mongoose.Schema(
         description: { type: String },
         assignedTo: {
             assignees: [{ type: String }],
-            lRStatus: { 
-                type: String, 
-                enum: ["Assigned", "Pending", "Approved", "Returned", "Completed", "Submitted"], 
+            lRStatus: {
+                type: String,
+                enum: ["Assigned", "Pending", "Approved", "Returned", "Completed", "Submitted"],
                 default: "Assigned"
             }
         },
         assignedBy: {
             assignee: { type: String },
-            lRStatus: { 
-                type: String, 
-                enum: ["Assigned", "Pending"], 
-                default: "Assigned" 
+            lRStatus: {
+                type: String,
+                enum: ["Assigned", "Pending"],
+                default: "Assigned"
             }
         },
         enteredBy: { type: String, required: true },
@@ -26,7 +26,7 @@ const lrPictureSchema = new mongoose.Schema(
         caseNo: { type: String, required: true },
         leadReturnId: { type: String, required: true },
         enteredDate: { type: Date, required: true },
-        datePictureTaken: { type: Date, required: true },
+        datePictureTaken: { type: Date },
         pictureDescription: { type: String, required: true }, 
         // fileId: { type: mongoose.Schema.Types.ObjectId, ref: "uploads" },
         // For disk storage, store file details instead of fileId
