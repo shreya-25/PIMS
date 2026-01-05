@@ -4,7 +4,7 @@ import { CaseContext } from "../CaseContext";
 import "./LeadVersionHistory.css";
 
 export const LeadVersionHistory = () => {
-  const { selectedLead } = useContext(CaseContext);
+  const { selectedLead, selectedCase } = useContext(CaseContext);
   const [versions, setVersions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -29,15 +29,48 @@ export const LeadVersionHistory = () => {
     const token = localStorage.getItem("token");
 
     try {
+      // Build params object only with available filters
+      // Use selectedLead case info first, fallback to selectedCase if not available
+      const params = {};
+      const caseNo = selectedLead.caseNo || selectedCase?.caseNo;
+      const caseName = selectedLead.caseName || selectedCase?.caseName;
+
+      // TEMPORARY: Disable filtering to test if ANY versions exist for this lead
+      // if (caseNo) {
+      //   params.caseNo = caseNo;
+      // }
+      // if (caseName) {
+      //   params.caseName = caseName;
+      // }
+
+      console.log('⚠️ FILTERING DISABLED FOR TESTING - Fetching ALL versions for leadNo:', selectedLead.leadNo);
+      console.log('Would filter by:', {
+        leadNo: selectedLead.leadNo,
+        caseNo: caseNo,
+        caseName: caseName,
+        fromLead: { caseNo: selectedLead.caseNo, caseName: selectedLead.caseName },
+        fromCase: { caseNo: selectedCase?.caseNo, caseName: selectedCase?.caseName },
+        params
+      });
+
+      // Fetch version history filtered by leadNo, caseNo, and caseName
+      // This ensures we only show logs for the specific case/lead combination
       const { data } = await api.get(
         `/api/leadreturn-versions/${selectedLead.leadNo}/history`,
         {
           headers: { Authorization: `Bearer ${token}` },
+          params
         }
       );
 
+      console.log('📥 Received version history response:', {
+        success: data.success,
+        count: data.count,
+        versionsLength: data.data?.length
+      });
+
       if (data.success) {
-        setVersions(data.data);
+        setVersions(data.data || []);
 
         // Fetch activity logs for all versions (compare each with previous)
         const activityLogs = {};
@@ -490,6 +523,9 @@ export const LeadVersionHistory = () => {
     return (
       <div className="version-history-container">
         <p className="no-lead-message">Please select a lead to view version history.</p>
+        <p style={{ fontSize: '12px', color: '#666', marginTop: '10px' }}>
+          Debug: selectedLead = {JSON.stringify(selectedLead)}
+        </p>
       </div>
     );
   }
@@ -501,6 +537,10 @@ export const LeadVersionHistory = () => {
         <h3 className="lead-info">
           LEAD {selectedLead.leadNo}: {selectedLead.leadName?.toUpperCase()}
         </h3>
+        {/* Debug info */}
+        <div style={{ fontSize: '11px', color: '#666', marginTop: '5px' }}>
+          Case: {selectedLead.caseNo || selectedCase?.caseNo || 'N/A'} - {selectedLead.caseName || selectedCase?.caseName || 'N/A'}
+        </div>
         {/* <div className="header-actions">
           <button className="btn-primary" onClick={createManualSnapshot}>
             Create Manual Snapshot
@@ -667,7 +707,17 @@ export const LeadVersionHistory = () => {
       <div className="versions-list">
         <h3>All Versions ({versions.length})</h3>
         {versions.length === 0 && !loading && (
-          <p className="no-versions">No versions found for this lead.</p>
+          <div className="no-versions">
+            <p>No versions found for this lead.</p>
+            <p style={{ fontSize: '12px', color: '#999', marginTop: '10px' }}>
+              This could mean:
+              <ul style={{ textAlign: 'left', marginTop: '5px' }}>
+                <li>No snapshots have been created for this lead yet</li>
+                <li>The case/lead filter is too restrictive (check console logs)</li>
+                <li>There was an error fetching the data (check console)</li>
+              </ul>
+            </p>
+          </div>
         )}
 
         {versions.map((version) => (

@@ -9,14 +9,62 @@ export const CaseProvider = ({ children }) => {
     const LEAD_KEY  = "selectedLead";
     const TOKEN_KEY = "token";
 
-    const [selectedCase, setSelectedCase] = useState(() => {
-    const v = sessionStorage.getItem(CASE_KEY);
-    return v ? JSON.parse(v) : null;
-  });
-  const [selectedLead, setSelectedLead] = useState(() => {
-    const v = sessionStorage.getItem(LEAD_KEY);
-    return v ? JSON.parse(v) : null;
-  });
+    // Emergency: Clear corrupted storage if it exists
+    // This runs once on component mount to ensure clean state
+    try {
+      const testKeys = [CASE_KEY, LEAD_KEY];
+      testKeys.forEach(key => {
+        try {
+          const val = sessionStorage.getItem(key);
+          if (val) {
+            const parsed = JSON.parse(val);
+            // If it's an array or primitive, clear it immediately
+            if (Array.isArray(parsed) || (typeof parsed !== 'object') || parsed === null) {
+              console.warn(`Clearing invalid ${key} from sessionStorage (type: ${typeof parsed}, isArray: ${Array.isArray(parsed)})`);
+              sessionStorage.removeItem(key);
+            }
+          }
+        } catch (e) {
+          console.warn(`Clearing corrupted ${key} from sessionStorage:`, e);
+          sessionStorage.removeItem(key);
+        }
+      });
+    } catch (e) {
+      console.error("Emergency storage cleanup failed:", e);
+    }
+
+    // Helper function to safely parse and validate storage data
+    const safeParseStorage = (key, storageName = 'sessionStorage') => {
+      try {
+        const storage = storageName === 'sessionStorage' ? sessionStorage : localStorage;
+        const value = storage.getItem(key);
+        if (!value) return null;
+
+        const parsed = JSON.parse(value);
+
+        // Validate that parsed value is a plain object (not an array or other type)
+        if (parsed === null) return null;
+        if (typeof parsed === 'object' && !Array.isArray(parsed)) {
+          return parsed;
+        }
+
+        console.warn(`Invalid data type for ${key} in ${storageName}:`, typeof parsed, parsed);
+        storage.removeItem(key);
+        return null;
+      } catch (error) {
+        console.error(`Error parsing ${key} from ${storageName}:`, error);
+        try {
+          const storage = storageName === 'sessionStorage' ? sessionStorage : localStorage;
+          storage.removeItem(key);
+        } catch (e) {
+          console.error(`Failed to remove corrupted ${key}:`, e);
+        }
+        return null;
+      }
+    };
+
+    const [selectedCase, setSelectedCase] = useState(() => safeParseStorage(CASE_KEY));
+  const [selectedLead, setSelectedLead] = useState(() => safeParseStorage(LEAD_KEY));
   const [token, setToken] = useState(() => {
     return sessionStorage.getItem(TOKEN_KEY) || "";
   });

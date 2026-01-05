@@ -196,10 +196,17 @@ function generateActivityLog(fromVersion, toVersion) {
     });
 
     changes.updated.forEach(item => {
+      console.log('📝 Processing updated narrative:', {
+        narrativeId: item.newData.leadReturnId,
+        allChanges: item.changes.map(c => c.field),
+        hasLeadReturnResultChange: item.changes.some(c => c.field === 'leadReturnResult')
+      });
+
       // For narratives, only show changes to leadReturnResult field
       const leadReturnResultChanges = item.changes.filter(change => change.field === 'leadReturnResult');
 
       if (leadReturnResultChanges.length > 0) {
+        console.log('✅ Found leadReturnResult change for narrative', item.newData.leadReturnId);
         leadReturnResultChanges.forEach(change => {
           // Create details with only leadReturnId and leadReturnResult
           const narrativeDetails = {
@@ -218,6 +225,8 @@ function generateActivityLog(fromVersion, toVersion) {
             details: narrativeDetails
           });
         });
+      } else {
+        console.log('⚠️ No leadReturnResult changes detected for narrative', item.newData.leadReturnId, 'Changes:', item.changes);
       }
     });
   }

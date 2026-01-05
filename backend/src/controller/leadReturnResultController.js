@@ -252,14 +252,16 @@ const updateLeadReturnResult = async (req, res) => {
 
         // Create a snapshot after updating the narrative
         try {
-            await createSnapshot(
+            console.log(`🔄 Creating snapshot for lead ${leadNo} after updating narrative ${leadReturnId}`);
+            const snapshot = await createSnapshot(
                 Number(leadNo),
                 req.user?.name || "Unknown",
                 "Manual Snapshot"
             );
-            console.log(`Snapshot created after updating narrative ${leadReturnId} for lead ${leadNo}`);
+            console.log(`✅ Snapshot ${snapshot.versionId} created after updating narrative ${leadReturnId} for lead ${leadNo}`);
+            console.log(`📊 Snapshot contains ${snapshot.leadReturnResults?.length || 0} narratives`);
         } catch (snapshotErr) {
-            console.error("Error creating snapshot after narrative update:", snapshotErr.message);
+            console.error("❌ Error creating snapshot after narrative update:", snapshotErr.message);
             // Don't fail the request if snapshot creation fails
         }
 

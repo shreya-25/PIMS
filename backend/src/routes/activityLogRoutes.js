@@ -10,19 +10,38 @@ const AuditLog = require("../models/AuditLog");
  */
 router.get("/logs", verifyToken, async (req, res) => {
     try {
-        const { caseNo, leadNo, action, entityType, limit = 50 } = req.query;
+        const { caseNo, caseName, leadNo, action, entityType, limit = 50 } = req.query;
 
-        if (!leadNo) {
+        // Build query - filter by both caseNo and leadNo if provided
+        const query = {};
+
+        if (leadNo) {
+            query.leadNo = parseInt(leadNo);
+        }
+
+        if (caseNo) {
+            query.caseNo = caseNo;
+        }
+
+        if (caseName) {
+            query.caseName = caseName;
+        }
+
+        if (action) {
+            query.action = action;
+        }
+
+        if (entityType) {
+            query.entityType = entityType;
+        }
+
+        // If no filters provided, return empty array
+        if (Object.keys(query).length === 0) {
             return res.json({
                 success: true,
                 logs: []
             });
         }
-
-        // Build query
-        const query = { leadNo: parseInt(leadNo) };
-        if (action) query.action = action;
-        if (entityType) query.entityType = entityType;
 
         // Fetch from audit log system
         const logs = await AuditLog.find(query)
@@ -32,6 +51,7 @@ router.get("/logs", verifyToken, async (req, res) => {
 
         res.json({
             success: true,
+            count: logs.length,
             logs: logs
         });
     } catch (error) {

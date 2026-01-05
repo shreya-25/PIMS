@@ -235,11 +235,40 @@ router.get("/:leadNo/activity/:fromVersion/:toVersion", async (req, res) => {
  * @route   GET /api/leadreturn-versions/:leadNo/history
  * @desc    Get version history summary for a lead return
  * @access  Private
+ * @query   caseNo - Filter by case number
+ * @query   caseName - Filter by case name
  */
 router.get("/:leadNo/history", async (req, res) => {
     try {
         const { leadNo } = req.params;
-        const versions = await getAllVersions(parseInt(leadNo));
+        const { caseNo, caseName } = req.query;
+
+        console.log('📋 Version History Request:', {
+            leadNo,
+            caseNo,
+            caseName,
+            hasFilters: !!(caseNo || caseName)
+        });
+
+        // Get all versions for this lead number
+        let versions = await getAllVersions(parseInt(leadNo));
+        console.log(`📊 Found ${versions.length} total versions for leadNo ${leadNo}`);
+
+        // Filter by caseNo and/or caseName if provided
+        if (caseNo || caseName) {
+            const beforeFilter = versions.length;
+            versions = versions.filter(v => {
+                let matches = true;
+                if (caseNo && v.caseNo !== caseNo) {
+                    matches = false;
+                }
+                if (caseName && v.caseName !== caseName) {
+                    matches = false;
+                }
+                return matches;
+            });
+            console.log(`🔍 After filtering: ${versions.length} versions (was ${beforeFilter})`);
+        }
 
         const history = versions.map(v => ({
             versionId: v.versionId,
@@ -248,6 +277,8 @@ router.get("/:leadNo/history", async (req, res) => {
             versionCreatedAt: v.versionCreatedAt,
             isCurrentVersion: v.isCurrentVersion,
             status: v.assignedTo?.lRStatus,
+            caseNo: v.caseNo,
+            caseName: v.caseName,
             itemCounts: {
                 results: v.leadReturnResults?.length || 0,
                 audios: v.audios?.length || 0,
