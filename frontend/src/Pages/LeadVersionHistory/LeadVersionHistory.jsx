@@ -538,7 +538,7 @@ export const LeadVersionHistory = () => {
           LEAD {selectedLead.leadNo}: {selectedLead.leadName?.toUpperCase()}
         </h3>
         {/* Debug info */}
-        <div style={{ fontSize: '11px', color: '#666', marginTop: '5px' }}>
+        <div style={{ fontSize: '18px', color: '#666', marginTop: '5px' }}>
           Case: {selectedLead.caseNo || selectedCase?.caseNo || 'N/A'} - {selectedLead.caseName || selectedCase?.caseName || 'N/A'}
         </div>
         {/* <div className="header-actions">

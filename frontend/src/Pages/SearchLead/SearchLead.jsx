@@ -23,17 +23,40 @@ export const SearchLead = () => {
     value: "",
   });
 
-  const [staticRows, setStaticRows] = useState(initialStaticRows);
-  const [dynamicRows, setDynamicRows] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  // Helper function to load saved state from localStorage
+  const loadSavedState = (key, defaultValue) => {
+    try {
+      const saved = localStorage.getItem(key);
+      return saved ? JSON.parse(saved) : defaultValue;
+    } catch (error) {
+      console.error(`Error loading ${key} from localStorage:`, error);
+      return defaultValue;
+    }
+  };
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-  const [totalEntries, setTotalEntries] = useState(0);
+  const [staticRows, setStaticRows] = useState(() =>
+    loadSavedState('searchLead_staticRows', initialStaticRows)
+  );
+  const [dynamicRows, setDynamicRows] = useState(() =>
+    loadSavedState('searchLead_dynamicRows', [])
+  );
+  const [searchTerm, setSearchTerm] = useState(() =>
+    loadSavedState('searchLead_searchTerm', "")
+  );
+
+  const [currentPage, setCurrentPage] = useState(() =>
+    loadSavedState('searchLead_currentPage', 1)
+  );
+  const [pageSize, setPageSize] = useState(() =>
+    loadSavedState('searchLead_pageSize', 50)
+  );
+  const [totalEntries, setTotalEntries] = useState(() =>
+    loadSavedState('searchLead_totalEntries', 0)
+  );
   const signedInOfficer = localStorage.getItem("loggedInUser");
 
 
-    const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
+    const { selectedCase, setSelectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
 
   const [leads, setLeads] = useState({
     assignedLeads: [],
@@ -47,9 +70,40 @@ export const SearchLead = () => {
 
   // Now this will hold a FLAT array of leads:
   // [ { caseNo, caseName, leadNo, description, ... }, ... ]
-  const [leadsData, setLeadsData] = useState([]);
+  const [leadsData, setLeadsData] = useState(() =>
+    loadSavedState('searchLead_leadsData', [])
+  );
 
   console.log(selectedCase);
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('searchLead_staticRows', JSON.stringify(staticRows));
+  }, [staticRows]);
+
+  useEffect(() => {
+    localStorage.setItem('searchLead_dynamicRows', JSON.stringify(dynamicRows));
+  }, [dynamicRows]);
+
+  useEffect(() => {
+    localStorage.setItem('searchLead_searchTerm', JSON.stringify(searchTerm));
+  }, [searchTerm]);
+
+  useEffect(() => {
+    localStorage.setItem('searchLead_leadsData', JSON.stringify(leadsData));
+  }, [leadsData]);
+
+  useEffect(() => {
+    localStorage.setItem('searchLead_currentPage', JSON.stringify(currentPage));
+  }, [currentPage]);
+
+  useEffect(() => {
+    localStorage.setItem('searchLead_pageSize', JSON.stringify(pageSize));
+  }, [pageSize]);
+
+  useEffect(() => {
+    localStorage.setItem('searchLead_totalEntries', JSON.stringify(totalEntries));
+  }, [totalEntries]);
 
   useEffect(() => {
     const fetchAllLeads = async () => {
@@ -348,10 +402,14 @@ setCurrentPage(1);
   };
 
   const handleLeadClick = (lead) => {
+  console.log("🔍 handleLeadClick - Lead data:", lead);
+  console.log("🔍 selectedCase:", selectedCase);
+
+  // Set the selected lead in context
   setSelectedLead({
       leadNo: lead.leadNo != null ? lead.leadNo : lead.id,
+      leadName: lead.description, // ✅ Use description as leadName
       incidentNo: lead.incidentNo,
-      leadName: lead.description,
       dueDate: lead.dueDate || "",
       priority: lead.priority || "Medium",
       flags: lead.flags || [],
@@ -361,10 +419,36 @@ setCurrentPage(1);
       caseNo: lead.caseNo,
       summary: lead.summary
   });
-  setLeadStatus(lead.leadStatus);  
+  setLeadStatus(lead.leadStatus);
 
-  // Navigate to Lead Review Page
-  navigate("/leadReview", { state: { leadDetails: lead, caseDetails: selectedCase } });
+  // Prepare case details - use lead's case info or selectedCase
+  const caseDetailsToUse = {
+    caseNo: lead.caseNo || selectedCase?.caseNo,
+    caseName: lead.caseName || selectedCase?.caseName,
+    role: selectedCase?.role || "Investigator",
+    caseStatus: selectedCase?.caseStatus || "Open"
+  };
+
+  // ✅ Update selectedCase context to match the lead's case
+  // This ensures LeadReview has the correct case context
+  setSelectedCase(caseDetailsToUse);
+
+  console.log("✅ Navigating with caseDetails:", caseDetailsToUse);
+
+  // Navigate to Lead Review Page with complete state
+  navigate("/leadReview", {
+    state: {
+      leadDetails: {
+        leadNo: lead.leadNo,
+        leadName: lead.description, // ✅ Critical: leadName must be set
+        caseName: lead.caseName,
+        caseNo: lead.caseNo,
+        leadStatus: lead.leadStatus,
+        ...lead
+      },
+      caseDetails: caseDetailsToUse
+    }
+  });
 };
 
    // ─────────────────────────────────────────────
@@ -393,18 +477,25 @@ setCurrentPage(1);
     direction: "asc",
   });
 
-  const [filterConfig, setFilterConfig] = useState({
-    caseNo: [],
-    caseName: [],
-    leadNo: [],
-    description: [],
-    assignedOfficers: [],
-  });
+  const [filterConfig, setFilterConfig] = useState(() =>
+    loadSavedState('searchLead_filterConfig', {
+      caseNo: [],
+      caseName: [],
+      leadNo: [],
+      description: [],
+      assignedOfficers: [],
+    })
+  );
 
   const [openFilter, setOpenFilter] = useState(null);
   const filterButtonRefs = useRef({});
   const [filterSearch, setFilterSearch] = useState({});
   const [tempFilterSelections, setTempFilterSelections] = useState({});
+
+  // Save filter config to localStorage
+  useEffect(() => {
+    localStorage.setItem('searchLead_filterConfig', JSON.stringify(filterConfig));
+  }, [filterConfig]);
 
   // distinct values for each column
   const distinctValues = useMemo(() => {
