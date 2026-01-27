@@ -129,9 +129,11 @@ const createLeadReturnResult = async (req, res) => {
       await createSnapshot(
         leadNo,
         enteredBy || "Unknown",
-        "Manual Snapshot"
+        "Manual Snapshot",
+        caseNo,
+        caseName
       );
-      console.log(`Snapshot created after creating narrative ${newId} for lead ${leadNo}`);
+      console.log(`Snapshot created after creating narrative ${newId} for lead ${leadNo} in case ${caseNo}`);
     } catch (snapshotErr) {
       console.error("Error creating snapshot after narrative creation:", snapshotErr.message);
       // Don't fail the request if snapshot creation fails
@@ -256,9 +258,11 @@ const updateLeadReturnResult = async (req, res) => {
             const snapshot = await createSnapshot(
                 Number(leadNo),
                 req.user?.name || "Unknown",
-                "Manual Snapshot"
+                "Manual Snapshot",
+                caseNo,
+                oldResult.caseName
             );
-            console.log(`✅ Snapshot ${snapshot.versionId} created after updating narrative ${leadReturnId} for lead ${leadNo}`);
+            console.log(`✅ Snapshot ${snapshot.versionId} created after updating narrative ${leadReturnId} for lead ${leadNo} in case ${caseNo}`);
             console.log(`📊 Snapshot contains ${snapshot.leadReturnResults?.length || 0} narratives`);
         } catch (snapshotErr) {
             console.error("❌ Error creating snapshot after narrative update:", snapshotErr.message);
@@ -327,9 +331,11 @@ const deleteLeadReturnResult = async (req, res) => {
             await createSnapshot(
                 Number(leadNo),
                 req.user?.name || "Unknown",
-                "Manual Snapshot"
+                "Manual Snapshot",
+                caseNo,
+                existingResult.caseName
             );
-            console.log(`Snapshot created after deleting narrative ${leadReturnId} for lead ${leadNo}`);
+            console.log(`Snapshot created after deleting narrative ${leadReturnId} for lead ${leadNo} in case ${caseNo}`);
         } catch (snapshotErr) {
             console.error("Error creating snapshot after narrative deletion:", snapshotErr.message);
             // Don't fail the request if snapshot creation fails

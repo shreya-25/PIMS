@@ -1,0 +1,29 @@
+{
+  "name": "pims-performance-tests",
+  "version": "1.0.0",
+  "description": "Performance testing suite for PIMS application",
+  "scripts": {
+    "monitor": "node monitor-resources.js",
+    "db-analyze": "node analyze-db-size.js",
+    "storage-analyze": "node analyze-storage.js",
+    "load-test": "artillery run artillery-load-test.yml",
+    "load-test-report": "artillery run artillery-load-test.yml --output report.json && artillery report report.json",
+    "quick-test": "artillery quick --count 50 --num 100 http://localhost:5000/test",
+    "all-tests": "npm run storage-analyze && npm run db-analyze && npm run load-test-report"
+  },
+  "keywords": [
+    "performance",
+    "testing",
+    "monitoring",
+    "load-testing"
+  ],
+  "author": "PIMS Development Team",
+  "license": "ISC",
+  "dependencies": {
+    "mongoose": "^6.9.2",
+    "dotenv": "^16.6.1"
+  },
+  "devDependencies": {
+    "artillery": "^2.0.0"
+  }
+}

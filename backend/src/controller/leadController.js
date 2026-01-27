@@ -551,8 +551,8 @@ const setLeadStatusToInReview = async (req, res) => {
 
     // Create snapshot for "Submitted" status
     try {
-      await createSnapshot(leadNo, actor, "Submitted");
-      console.log(`Snapshot created for lead ${leadNo} - Submitted`);
+      await createSnapshot(leadNo, actor, "Submitted", lead.caseNo, lead.caseName);
+      console.log(`Snapshot created for lead ${leadNo} in case ${lead.caseNo} - Submitted`);
     } catch (snapshotErr) {
       console.error("Error creating snapshot:", snapshotErr.message);
       // Don't fail the request if snapshot creation fails
@@ -594,8 +594,8 @@ const setLeadStatusToComplete = async (req, res) => {
 
     // Create snapshot for "Approved" status
     try {
-      await createSnapshot(leadNo, actor, "Approved");
-      console.log(`Snapshot created for lead ${leadNo} - Approved`);
+      await createSnapshot(leadNo, actor, "Approved", caseNo, caseName);
+      console.log(`Snapshot created for lead ${leadNo} in case ${caseNo} - Approved`);
     } catch (snapshotErr) {
       console.error("Error creating snapshot:", snapshotErr.message);
       // Don't fail the request if snapshot creation fails
@@ -669,8 +669,8 @@ const setLeadStatusToReturned = async (req, res) => {
 
     // Create snapshot for "Returned" status
     try {
-      await createSnapshot(leadNo, actor, "Returned");
-      console.log(`Snapshot created for lead ${leadNo} - Returned`);
+      await createSnapshot(leadNo, actor, "Returned", caseNo, caseName);
+      console.log(`Snapshot created for lead ${leadNo} in case ${caseNo} - Returned`);
     } catch (snapshotErr) {
       console.error("Error creating snapshot:", snapshotErr.message);
       // Don't fail the request if snapshot creation fails
@@ -712,8 +712,8 @@ const setLeadStatusToReopened = async (req, res) => {
 
     // Create snapshot for "Reopened" status
     try {
-      await createSnapshot(leadNo, actor, "Reopened");
-      console.log(`Snapshot created for lead ${leadNo} - Reopened`);
+      await createSnapshot(leadNo, actor, "Reopened", caseNo, caseName);
+      console.log(`Snapshot created for lead ${leadNo} in case ${caseNo} - Reopened`);
     } catch (snapshotErr) {
       console.error("Error creating snapshot:", snapshotErr.message);
       // Don't fail the request if snapshot creation fails

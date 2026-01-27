@@ -45,6 +45,19 @@ function compareArrays(oldArray = [], newArray = [], idField = '_id', labelField
     } else {
       const oldItem = oldMap.get(id);
       const fieldChanges = compareObjects(oldItem, newItem);
+
+      // Debug: Log what compareObjects found
+      if (id === 'A') {
+        console.log('🔍 DEBUG: Comparing narrative A:', {
+          oldContentLength: oldItem.leadReturnResult?.length,
+          newContentLength: newItem.leadReturnResult?.length,
+          oldKeys: Object.keys(oldItem),
+          newKeys: Object.keys(newItem),
+          fieldChangesFound: fieldChanges.length,
+          changedFields: fieldChanges.map(c => c.field)
+        });
+      }
+
       if (fieldChanges.length > 0) {
         changes.updated.push({
           id: newItem[idField],
@@ -67,10 +80,45 @@ function compareObjects(oldObj, newObj) {
   const changes = [];
   const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
 
-  // Skip these fields from comparison
-  const skipFields = ['_id', 'createdAt', 'updatedAt', '__v', 'completeLeadReturnId'];
+  // Skip these fields from comparison - these are metadata that shouldn't trigger "updated" logs
+  const skipFields = [
+    '_id',
+    'createdAt',
+    'updatedAt',
+    '__v',
+    'completeLeadReturnId',
+    'resultId', // MongoDB ObjectId for narratives
+    'personId', // MongoDB ObjectId for persons
+    'vehicleId', // MongoDB ObjectId for vehicles
+    'timelineId', // MongoDB ObjectId for timelines
+    'evidenceId', // MongoDB ObjectId for evidences
+    'pictureId', // MongoDB ObjectId for pictures
+    'audioId', // MongoDB ObjectId for audios
+    'videoId', // MongoDB ObjectId for videos
+    'enclosureId', // MongoDB ObjectId for enclosures
+    'scratchpadId', // MongoDB ObjectId for scratchpads
+    'enteredDate', // When record was created
+    'enteredBy', // Who created the record
+    'lastModifiedDate', // Timestamp metadata
+    'lastModifiedBy', // User metadata
+    'deletedAt', // Soft delete metadata
+    'deletedBy' // Soft delete metadata
+  ];
 
   allKeys.forEach(key => {
+    // Debug logging for leadReturnResult field
+    if (key === 'leadReturnResult') {
+      console.log('🔍 DEBUG compareObjects - leadReturnResult field:', {
+        key,
+        oldValueLength: oldObj[key]?.length,
+        newValueLength: newObj[key]?.length,
+        willBeSkipped: skipFields.includes(key) || key.startsWith('_') || key.startsWith('$') || key.includes('$'),
+        oldValuePreview: oldObj[key]?.substring(0, 50),
+        newValuePreview: newObj[key]?.substring(0, 50),
+        areEqual: oldObj[key] === newObj[key]
+      });
+    }
+
     // Skip internal MongoDB fields and parent references
     if (skipFields.includes(key) || key.startsWith('_') || key.startsWith('$') || key.includes('$')) return;
 
@@ -146,18 +194,38 @@ function generateActivityLog(fromVersion, toVersion) {
 
   // Compare lead return results
   if (fromVersion.leadReturnResults || toVersion.leadReturnResults) {
-    console.log('Comparing narratives...');
-    console.log('From version narratives:', fromVersion.leadReturnResults?.length || 0);
-    console.log('To version narratives:', toVersion.leadReturnResults?.length || 0);
+    console.log('🔍 Comparing narratives...');
+    console.log('📊 From version narratives:', fromVersion.leadReturnResults?.length || 0);
+    console.log('📊 To version narratives:', toVersion.leadReturnResults?.length || 0);
 
+    // Log narrative IDs for debugging
+    if (fromVersion.leadReturnResults?.length > 0) {
+      console.log('📋 From version narrative IDs:', fromVersion.leadReturnResults.map(r => ({
+        leadReturnId: r.leadReturnId,
+        resultId: r.resultId?.toString().substring(0, 8),
+        contentLength: r.leadReturnResult?.length || 0,
+        contentPreview: r.leadReturnResult?.substring(0, 50) + '...'
+      })));
+    }
+    if (toVersion.leadReturnResults?.length > 0) {
+      console.log('📋 To version narrative IDs:', toVersion.leadReturnResults.map(r => ({
+        leadReturnId: r.leadReturnId,
+        resultId: r.resultId?.toString().substring(0, 8),
+        contentLength: r.leadReturnResult?.length || 0,
+        contentPreview: r.leadReturnResult?.substring(0, 50) + '...'
+      })));
+    }
+
+    // CRITICAL FIX: Use 'leadReturnId' (stable identifier like "A", "B", "C")
+    // instead of 'resultId' (MongoDB ObjectId which can change)
     const changes = compareArrays(
       fromVersion.leadReturnResults,
       toVersion.leadReturnResults,
-      'resultId',
+      'leadReturnId', // Changed from 'resultId' to 'leadReturnId'
       'leadReturnResult'
     );
 
-    console.log('Narrative changes found:', {
+    console.log('✅ Narrative changes found:', {
       added: changes.added.length,
       deleted: changes.deleted.length,
       updated: changes.updated.length
@@ -202,12 +270,19 @@ function generateActivityLog(fromVersion, toVersion) {
         hasLeadReturnResultChange: item.changes.some(c => c.field === 'leadReturnResult')
       });
 
-      // For narratives, only show changes to leadReturnResult field
-      const leadReturnResultChanges = item.changes.filter(change => change.field === 'leadReturnResult');
+      // For narratives, we care about content changes (leadReturnResult)
+      // But also show other significant field changes if they occur
+      const contentChanges = item.changes.filter(change => change.field === 'leadReturnResult');
+      const otherSignificantChanges = item.changes.filter(change =>
+        change.field !== 'leadReturnResult' &&
+        !change.field.includes('Date') &&
+        !change.field.includes('By') &&
+        change.field !== 'isDeleted'
+      );
 
-      if (leadReturnResultChanges.length > 0) {
+      if (contentChanges.length > 0) {
         console.log('✅ Found leadReturnResult change for narrative', item.newData.leadReturnId);
-        leadReturnResultChanges.forEach(change => {
+        contentChanges.forEach(change => {
           // Create details with only leadReturnId and leadReturnResult
           const narrativeDetails = {
             leadReturnId: item.newData.leadReturnId, // The actual narrative ID
@@ -219,14 +294,34 @@ function generateActivityLog(fromVersion, toVersion) {
             entityType: 'Narrative',
             entityId: item.id,
             field: change.field,
-            description: `Updated narrative ${item.label}`,
+            description: `Updated narrative ${item.newData.leadReturnId}`,
+            oldValue: change.oldValue,
+            newValue: change.newValue,
+            details: narrativeDetails
+          });
+        });
+      } else if (otherSignificantChanges.length > 0) {
+        console.log('ℹ️ Found other significant changes for narrative', item.newData.leadReturnId, 'Fields:', otherSignificantChanges.map(c => c.field));
+        // Log other significant changes (like accessLevel changes)
+        otherSignificantChanges.forEach(change => {
+          const narrativeDetails = {
+            leadReturnId: item.newData.leadReturnId,
+            leadReturnResult: item.newData.leadReturnResult
+          };
+
+          activities.push({
+            action: 'updated',
+            entityType: 'Narrative',
+            entityId: item.id,
+            field: change.field,
+            description: `Updated narrative ${item.newData.leadReturnId} - ${change.field}`,
             oldValue: change.oldValue,
             newValue: change.newValue,
             details: narrativeDetails
           });
         });
       } else {
-        console.log('⚠️ No leadReturnResult changes detected for narrative', item.newData.leadReturnId, 'Changes:', item.changes);
+        console.log('⚠️ Only metadata changes detected for narrative', item.newData.leadReturnId, 'Changes:', item.changes.map(c => c.field).join(', '));
       }
     });
   }

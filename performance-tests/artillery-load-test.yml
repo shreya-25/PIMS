@@ -1,0 +1,156 @@
+# Artillery Load Test Configuration for PIMS
+# This simulates realistic user behavior with multiple scenarios
+
+config:
+  target: "http://localhost:5000"
+  phases:
+    # Phase 1: Warm-up (1 minute)
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm-up phase"
+
+    # Phase 2: Normal load (5 minutes)
+    - duration: 300
+      arrivalRate: 20
+      name: "Normal load"
+
+    # Phase 3: Peak load (2 minutes)
+    - duration: 120
+      arrivalRate: 50
+      name: "Peak load"
+
+    # Phase 4: Cool down (1 minute)
+    - duration: 60
+      arrivalRate: 5
+      name: "Cool down"
+
+  # Payload for testing
+  payload:
+    path: "./test-data.csv"
+    fields:
+      - "username"
+      - "password"
+
+  # Performance thresholds
+  ensure:
+    maxErrorRate: 1  # Max 1% error rate
+    p95: 2000        # 95th percentile < 2000ms
+    p99: 5000        # 99th percentile < 5000ms
+
+scenarios:
+  # Scenario 1: Public endpoints (20% of traffic)
+  - name: "Public Access"
+    weight: 20
+    flow:
+      - get:
+          url: "/test"
+          expect:
+            - statusCode: 200
+
+  # Scenario 2: User Login (30% of traffic)
+  - name: "User Authentication"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            username: "testuser"
+            password: "testpass123"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+          expect:
+            - statusCode: 200
+
+  # Scenario 3: View Cases (25% of traffic)
+  - name: "Browse Cases"
+    weight: 25
+    flow:
+      # Login first
+      - post:
+          url: "/api/auth/login"
+          json:
+            username: "investigator1"
+            password: "password123"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+
+      # Get all cases
+      - get:
+          url: "/api/cases"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+      # Get cases by officer
+      - get:
+          url: "/api/cases/cases-by-officer"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+  # Scenario 4: View Leads (20% of traffic)
+  - name: "View Leads"
+    weight: 20
+    flow:
+      # Login
+      - post:
+          url: "/api/auth/login"
+          json:
+            username: "investigator1"
+            password: "password123"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+
+      # Get assigned leads
+      - get:
+          url: "/api/lead/assignedTo-leads"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+      # Search leads
+      - get:
+          url: "/api/lead/search?keyword=test"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+  # Scenario 5: Heavy Operations (5% of traffic)
+  - name: "Heavy Operations"
+    weight: 5
+    flow:
+      # Login
+      - post:
+          url: "/api/auth/login"
+          json:
+            username: "casemanager1"
+            password: "password123"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+
+      # Get lead return versions (heavy query)
+      - get:
+          url: "/api/leadreturn-versions/LEAD001/all"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: [200, 404]  # 404 if lead doesn't exist
+
+      # Get audit logs (heavy query)
+      - get:
+          url: "/api/audit/activity-log?limit=100"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+
+      # Think time between heavy operations
+      - think: 2

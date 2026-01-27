@@ -28,6 +28,8 @@ const postUpdateSnapshot = async (req, res, updatedLeadReturn, username) => {
     try {
         const status = updatedLeadReturn.assignedTo?.lRStatus;
         const leadNo = updatedLeadReturn.leadNo;
+        const caseNo = updatedLeadReturn.caseNo;
+        const caseName = updatedLeadReturn.caseName;
 
         // Create snapshot when:
         // 1. Lead is Returned
@@ -46,19 +48,19 @@ const postUpdateSnapshot = async (req, res, updatedLeadReturn, username) => {
                 versionReason = "Approved";
             }
 
-            console.log(`Creating snapshot for lead ${leadNo} - Reason: ${versionReason}`);
+            console.log(`Creating snapshot for lead ${leadNo} in case ${caseNo} - Reason: ${versionReason}`);
 
-            await createSnapshot(leadNo, username, versionReason);
+            await createSnapshot(leadNo, username, versionReason, caseNo, caseName);
 
-            console.log(`Snapshot created successfully for lead ${leadNo}`);
+            console.log(`Snapshot created successfully for lead ${leadNo} in case ${caseNo}`);
         }
 
         // Also create snapshot when lead is reopened (status changes from Returned/Completed to Assigned/Pending)
         if (["Assigned", "Pending"].includes(status) && req.previousStatus) {
             if (["Returned", "Completed"].includes(req.previousStatus)) {
-                console.log(`Creating reopened snapshot for lead ${leadNo}`);
-                await createSnapshot(leadNo, username, "Reopened");
-                console.log(`Reopened snapshot created successfully for lead ${leadNo}`);
+                console.log(`Creating reopened snapshot for lead ${leadNo} in case ${caseNo}`);
+                await createSnapshot(leadNo, username, "Reopened", caseNo, caseName);
+                console.log(`Reopened snapshot created successfully for lead ${leadNo} in case ${caseNo}`);
             }
         }
     } catch (error) {
@@ -105,7 +107,9 @@ const shouldCreateSnapshot = (oldStatus, newStatus) => {
  *       leadReturn.leadNo,
  *       oldStatus,
  *       leadReturn.assignedTo?.lRStatus,
- *       req.user.username
+ *       req.user.username,
+ *       leadReturn.caseNo,
+ *       leadReturn.caseName
  *     );
  *
  *     res.json(leadReturn);
@@ -114,7 +118,7 @@ const shouldCreateSnapshot = (oldStatus, newStatus) => {
  *   }
  * });
  */
-const createSnapshotIfNeeded = async (leadNo, oldStatus, newStatus, username) => {
+const createSnapshotIfNeeded = async (leadNo, oldStatus, newStatus, username, caseNo = null, caseName = null) => {
     try {
         if (!shouldCreateSnapshot(oldStatus, newStatus)) {
             return null;
@@ -133,9 +137,9 @@ const createSnapshotIfNeeded = async (leadNo, oldStatus, newStatus, username) =>
             versionReason = "Reopened";
         }
 
-        console.log(`Creating snapshot for lead ${leadNo} - Reason: ${versionReason}`);
-        const snapshot = await createSnapshot(leadNo, username, versionReason);
-        console.log(`Snapshot created successfully for lead ${leadNo}, version ${snapshot.versionId}`);
+        console.log(`Creating snapshot for lead ${leadNo} in case ${caseNo} - Reason: ${versionReason}`);
+        const snapshot = await createSnapshot(leadNo, username, versionReason, caseNo, caseName);
+        console.log(`Snapshot created successfully for lead ${leadNo} in case ${caseNo}, version ${snapshot.versionId}`);
 
         return snapshot;
     } catch (error) {

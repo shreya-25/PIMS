@@ -17,17 +17,32 @@ const { logSnapshotCreation } = require("./auditLogger");
  * @param {Number} leadNo - The lead number to snapshot
  * @param {String} versionCreatedBy - Username of person creating the version
  * @param {String} versionReason - Reason for creating version (Created, Returned, Reopened, Manual Snapshot)
+ * @param {String} caseNo - Optional case number to ensure correct lead is snapshotted
+ * @param {String} caseName - Optional case name to ensure correct lead is snapshotted
  * @returns {Object} The created snapshot document
  */
-async function createSnapshot(leadNo, versionCreatedBy, versionReason = "Manual Snapshot") {
+async function createSnapshot(leadNo, versionCreatedBy, versionReason = "Manual Snapshot", caseNo = null, caseName = null) {
     try {
         // Get the main lead return record
-        const leadReturn = await LeadReturn.findOne({ leadNo });
+        // CRITICAL: Include case filters to handle duplicate leadNo values across different cases
+        const query = { leadNo };
+        if (caseNo) query.caseNo = caseNo;
+        if (caseName) query.caseName = caseName;
+
+        const leadReturn = await LeadReturn.findOne(query);
         if (!leadReturn) {
-            throw new Error(`Lead return with leadNo ${leadNo} not found`);
+            throw new Error(`Lead return with leadNo ${leadNo}${caseNo ? ` in case ${caseNo}` : ''} not found`);
         }
 
-        // Get all related records
+        // Build query filter for related records
+        // CRITICAL: Filter by caseNo and caseName to ensure we only snapshot records for this specific case
+        const relatedRecordQuery = { leadNo };
+        if (caseNo) relatedRecordQuery.caseNo = caseNo;
+        if (caseName) relatedRecordQuery.caseName = caseName;
+
+        console.log('🔍 Fetching related records with query:', relatedRecordQuery);
+
+        // Get all related records filtered by leadNo + case
         const [
             leadReturnResults,
             audios,
@@ -40,33 +55,75 @@ async function createSnapshot(leadNo, versionCreatedBy, versionReason = "Manual 
             scratchpads,
             timelines
         ] = await Promise.all([
-            LeadReturnResult.find({ leadNo, isDeleted: { $ne: true } }).lean(),
-            LRAudio.find({ leadNo }).lean(),
-            LRVideo.find({ leadNo }).lean(),
-            LRPicture.find({ leadNo }).lean(),
-            LREnclosure.find({ leadNo }).lean(),
-            LREvidence.find({ leadNo }).lean(),
-            LRPerson.find({ leadNo }).lean(),
-            LRVehicle.find({ leadNo }).lean(),
-            LRScratchpad.find({ leadNo, type: "Lead" }).lean(),
-            LRTimeline.find({ leadNo }).lean()
+            LeadReturnResult.find({ ...relatedRecordQuery, isDeleted: { $ne: true } }).lean(),
+            LRAudio.find(relatedRecordQuery).lean(),
+            LRVideo.find(relatedRecordQuery).lean(),
+            LRPicture.find(relatedRecordQuery).lean(),
+            LREnclosure.find(relatedRecordQuery).lean(),
+            LREvidence.find(relatedRecordQuery).lean(),
+            LRPerson.find(relatedRecordQuery).lean(),
+            LRVehicle.find(relatedRecordQuery).lean(),
+            LRScratchpad.find({ ...relatedRecordQuery, type: "Lead" }).lean(),
+            LRTimeline.find(relatedRecordQuery).lean()
         ]);
 
-        // Get the current highest version for this lead
-        const lastVersion = await CompleteleadReturn.findOne({ leadNo })
+        console.log(`📊 Fetched related records for lead ${leadNo} in case ${caseNo}:`, {
+            leadReturnResults: leadReturnResults.length,
+            audios: audios.length,
+            videos: videos.length,
+            pictures: pictures.length,
+            enclosures: enclosures.length,
+            evidences: evidences.length,
+            persons: persons.length,
+            vehicles: vehicles.length,
+            scratchpads: scratchpads.length,
+            timelines: timelines.length
+        });
+
+        // Log narrative details for debugging version comparison issues
+        if (leadReturnResults.length > 0) {
+            console.log('📝 Narratives being snapshotted:', leadReturnResults.map(r => ({
+                _id: r._id.toString(),
+                leadReturnId: r.leadReturnId,
+                content: r.leadReturnResult?.substring(0, 50) + '...',
+                isDeleted: r.isDeleted
+            })));
+        }
+
+        // Get the current highest version for this lead + case combination
+        // This ensures each lead within each case has its own version numbering
+        const lastVersion = await CompleteleadReturn.findOne({
+            leadNo,
+            caseNo: leadReturn.caseNo,
+            caseName: leadReturn.caseName
+        })
             .sort({ versionId: -1 })
             .select("versionId _id");
 
         const newVersionId = lastVersion ? lastVersion.versionId + 1 : 1;
         const parentVersionId = lastVersion ? lastVersion._id : null;
 
-        // Mark all previous versions as not current
+        // Mark all previous versions as not current for this lead + case
         if (lastVersion) {
             await CompleteleadReturn.updateMany(
-                { leadNo, isCurrentVersion: true },
+                {
+                    leadNo,
+                    caseNo: leadReturn.caseNo,
+                    caseName: leadReturn.caseName,
+                    isCurrentVersion: true
+                },
                 { isCurrentVersion: false }
             );
         }
+
+        // Log the case information being saved
+        console.log('📸 Creating snapshot with case info:', {
+            leadNo: leadReturn.leadNo,
+            caseNo: leadReturn.caseNo,
+            caseName: leadReturn.caseName,
+            versionId: newVersionId,
+            versionReason
+        });
 
         // Create the snapshot document
         const snapshot = new CompleteleadReturn({
@@ -287,8 +344,9 @@ async function createSnapshot(leadNo, versionCreatedBy, versionReason = "Manual 
         }
 
         // Update the main lead return record with the snapshot reference
+        // Use query to ensure we update the correct lead in the correct case
         await LeadReturn.findOneAndUpdate(
-            { leadNo },
+            query,
             {
                 completeLeadReturnId: snapshot._id,
                 currentVersionId: newVersionId
@@ -296,45 +354,46 @@ async function createSnapshot(leadNo, versionCreatedBy, versionReason = "Manual 
         );
 
         // Update all related records with the snapshot reference
+        // Use relatedRecordQuery to ensure we only update records for this case
         await Promise.all([
             LeadReturnResult.updateMany(
-                { leadNo },
+                relatedRecordQuery,
                 { completeLeadReturnId: snapshot._id }
             ),
             LRAudio.updateMany(
-                { leadNo },
+                relatedRecordQuery,
                 { completeLeadReturnId: snapshot._id }
             ),
             LRVideo.updateMany(
-                { leadNo },
+                relatedRecordQuery,
                 { completeLeadReturnId: snapshot._id }
             ),
             LRPicture.updateMany(
-                { leadNo },
+                relatedRecordQuery,
                 { completeLeadReturnId: snapshot._id }
             ),
             LREnclosure.updateMany(
-                { leadNo },
+                relatedRecordQuery,
                 { completeLeadReturnId: snapshot._id }
             ),
             LREvidence.updateMany(
-                { leadNo },
+                relatedRecordQuery,
                 { completeLeadReturnId: snapshot._id }
             ),
             LRPerson.updateMany(
-                { leadNo },
+                relatedRecordQuery,
                 { completeLeadReturnId: snapshot._id }
             ),
             LRVehicle.updateMany(
-                { leadNo },
+                relatedRecordQuery,
                 { completeLeadReturnId: snapshot._id }
             ),
             LRScratchpad.updateMany(
-                { leadNo, type: "Lead" },
+                { ...relatedRecordQuery, type: "Lead" },
                 { completeLeadReturnId: snapshot._id }
             ),
             LRTimeline.updateMany(
-                { leadNo },
+                relatedRecordQuery,
                 { completeLeadReturnId: snapshot._id }
             )
         ]);
@@ -349,29 +408,35 @@ async function createSnapshot(leadNo, versionCreatedBy, versionReason = "Manual 
 /**
  * Get the current version of a lead return
  * @param {Number} leadNo - The lead number
+ * @param {String} caseNo - Optional case number for filtering
+ * @param {String} caseName - Optional case name for filtering
  * @returns {Object} The current version snapshot
  */
-async function getCurrentVersion(leadNo) {
-    return await CompleteleadReturn.getCurrentVersion(leadNo);
+async function getCurrentVersion(leadNo, caseNo = null, caseName = null) {
+    return await CompleteleadReturn.getCurrentVersion(leadNo, caseNo, caseName);
 }
 
 /**
  * Get all versions of a lead return
  * @param {Number} leadNo - The lead number
+ * @param {String} caseNo - Optional case number for filtering
+ * @param {String} caseName - Optional case name for filtering
  * @returns {Array} All version snapshots
  */
-async function getAllVersions(leadNo) {
-    return await CompleteleadReturn.getAllVersions(leadNo);
+async function getAllVersions(leadNo, caseNo = null, caseName = null) {
+    return await CompleteleadReturn.getAllVersions(leadNo, caseNo, caseName);
 }
 
 /**
  * Get a specific version of a lead return
  * @param {Number} leadNo - The lead number
  * @param {Number} versionId - The version ID
+ * @param {String} caseNo - Optional case number for filtering
+ * @param {String} caseName - Optional case name for filtering
  * @returns {Object} The specific version snapshot
  */
-async function getVersion(leadNo, versionId) {
-    return await CompleteleadReturn.getVersion(leadNo, versionId);
+async function getVersion(leadNo, versionId, caseNo = null, caseName = null) {
+    return await CompleteleadReturn.getVersion(leadNo, versionId, caseNo, caseName);
 }
 
 /**
@@ -379,12 +444,14 @@ async function getVersion(leadNo, versionId) {
  * @param {Number} leadNo - The lead number
  * @param {Number} fromVersionId - The starting version ID
  * @param {Number} toVersionId - The ending version ID
+ * @param {String} caseNo - Optional case number for filtering
+ * @param {String} caseName - Optional case name for filtering
  * @returns {Object} Comparison details
  */
-async function compareVersions(leadNo, fromVersionId, toVersionId) {
+async function compareVersions(leadNo, fromVersionId, toVersionId, caseNo = null, caseName = null) {
     const [fromVersion, toVersion] = await Promise.all([
-        CompleteleadReturn.getVersion(leadNo, fromVersionId),
-        CompleteleadReturn.getVersion(leadNo, toVersionId)
+        CompleteleadReturn.getVersion(leadNo, fromVersionId, caseNo, caseName),
+        CompleteleadReturn.getVersion(leadNo, toVersionId, caseNo, caseName)
     ]);
 
     if (!fromVersion || !toVersion) {
@@ -466,10 +533,12 @@ async function compareVersions(leadNo, fromVersionId, toVersionId) {
  * @param {Number} leadNo - The lead number
  * @param {Number} versionId - The version ID to restore from
  * @param {String} restoredBy - Username of person restoring the version
+ * @param {String} caseNo - Optional case number for filtering
+ * @param {String} caseName - Optional case name for filtering
  * @returns {Object} The new snapshot created from the restored version
  */
-async function restoreVersion(leadNo, versionId, restoredBy) {
-    const versionToRestore = await CompleteleadReturn.getVersion(leadNo, versionId);
+async function restoreVersion(leadNo, versionId, restoredBy, caseNo = null, caseName = null) {
+    const versionToRestore = await CompleteleadReturn.getVersion(leadNo, versionId, caseNo, caseName);
 
     if (!versionToRestore) {
         throw new Error(`Version ${versionId} not found for lead ${leadNo}`);

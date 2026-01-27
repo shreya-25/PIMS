@@ -14,17 +14,21 @@ const { generateActivityLog } = require("../utils/versionDiffTracker");
  * @route   POST /api/leadreturn-versions/:leadNo/snapshot
  * @desc    Manually create a snapshot for a lead return
  * @access  Private
+ * @body    caseNo - Optional case number for filtering
+ * @body    caseName - Optional case name for filtering
  */
 router.post("/:leadNo/snapshot", async (req, res) => {
     try {
         const { leadNo } = req.params;
-        const { versionReason } = req.body;
+        const { versionReason, caseNo, caseName } = req.body;
         const username = req.user?.username || req.body.username || "System";
 
         const snapshot = await createSnapshot(
             parseInt(leadNo),
             username,
-            versionReason || "Manual Snapshot"
+            versionReason || "Manual Snapshot",
+            caseNo,
+            caseName
         );
 
         res.status(201).json({
@@ -45,11 +49,15 @@ router.post("/:leadNo/snapshot", async (req, res) => {
  * @route   GET /api/leadreturn-versions/:leadNo/current
  * @desc    Get the current version of a lead return
  * @access  Private
+ * @query   caseNo - Optional case number for filtering
+ * @query   caseName - Optional case name for filtering
  */
 router.get("/:leadNo/current", async (req, res) => {
     try {
         const { leadNo } = req.params;
-        const currentVersion = await getCurrentVersion(parseInt(leadNo));
+        const { caseNo, caseName } = req.query;
+
+        const currentVersion = await getCurrentVersion(parseInt(leadNo), caseNo, caseName);
 
         if (!currentVersion) {
             return res.status(404).json({
@@ -99,11 +107,15 @@ router.get("/:leadNo/all", async (req, res) => {
  * @route   GET /api/leadreturn-versions/:leadNo/version/:versionId
  * @desc    Get a specific version of a lead return
  * @access  Private
+ * @query   caseNo - Optional case number for filtering
+ * @query   caseName - Optional case name for filtering
  */
 router.get("/:leadNo/version/:versionId", async (req, res) => {
     try {
         const { leadNo, versionId } = req.params;
-        const version = await getVersion(parseInt(leadNo), parseInt(versionId));
+        const { caseNo, caseName } = req.query;
+
+        const version = await getVersion(parseInt(leadNo), parseInt(versionId), caseNo, caseName);
 
         if (!version) {
             return res.status(404).json({
@@ -129,14 +141,20 @@ router.get("/:leadNo/version/:versionId", async (req, res) => {
  * @route   GET /api/leadreturn-versions/:leadNo/compare/:fromVersion/:toVersion
  * @desc    Compare two versions of a lead return
  * @access  Private
+ * @query   caseNo - Optional case number for filtering
+ * @query   caseName - Optional case name for filtering
  */
 router.get("/:leadNo/compare/:fromVersion/:toVersion", async (req, res) => {
     try {
         const { leadNo, fromVersion, toVersion } = req.params;
+        const { caseNo, caseName } = req.query;
+
         const comparison = await compareVersions(
             parseInt(leadNo),
             parseInt(fromVersion),
-            parseInt(toVersion)
+            parseInt(toVersion),
+            caseNo,
+            caseName
         );
 
         res.json({
@@ -156,16 +174,21 @@ router.get("/:leadNo/compare/:fromVersion/:toVersion", async (req, res) => {
  * @route   POST /api/leadreturn-versions/:leadNo/restore/:versionId
  * @desc    Restore a specific version (creates a new version based on the old one)
  * @access  Private
+ * @query   caseNo - Optional case number for filtering
+ * @query   caseName - Optional case name for filtering
  */
 router.post("/:leadNo/restore/:versionId", async (req, res) => {
     try {
         const { leadNo, versionId } = req.params;
+        const { caseNo, caseName } = req.query;
         const username = req.user?.username || req.body.username || "System";
 
         const restoredSnapshot = await restoreVersion(
             parseInt(leadNo),
             parseInt(versionId),
-            username
+            username,
+            caseNo,
+            caseName
         );
 
         res.status(201).json({
@@ -186,14 +209,17 @@ router.post("/:leadNo/restore/:versionId", async (req, res) => {
  * @route   GET /api/leadreturn-versions/:leadNo/activity/:fromVersion/:toVersion
  * @desc    Get detailed activity log between two versions
  * @access  Private
+ * @query   caseNo - Optional case number for filtering
+ * @query   caseName - Optional case name for filtering
  */
 router.get("/:leadNo/activity/:fromVersion/:toVersion", async (req, res) => {
     try {
         const { leadNo, fromVersion, toVersion } = req.params;
+        const { caseNo, caseName } = req.query;
 
         const [fromVersionData, toVersionData] = await Promise.all([
-            getVersion(parseInt(leadNo), parseInt(fromVersion)),
-            getVersion(parseInt(leadNo), parseInt(toVersion))
+            getVersion(parseInt(leadNo), parseInt(fromVersion), caseNo, caseName),
+            getVersion(parseInt(leadNo), parseInt(toVersion), caseNo, caseName)
         ]);
 
         if (!fromVersionData || !toVersionData) {
@@ -250,24 +276,31 @@ router.get("/:leadNo/history", async (req, res) => {
             hasFilters: !!(caseNo || caseName)
         });
 
-        // Get all versions for this lead number
-        let versions = await getAllVersions(parseInt(leadNo));
-        console.log(`📊 Found ${versions.length} total versions for leadNo ${leadNo}`);
+        // Get all versions for this lead number filtered by case
+        // This ensures version history is specific to the lead within a case
+        const versions = await getAllVersions(parseInt(leadNo), caseNo, caseName);
+        console.log(`📊 Found ${versions.length} versions for leadNo ${leadNo}, caseNo: ${caseNo}, caseName: ${caseName}`);
 
-        // Filter by caseNo and/or caseName if provided
-        if (caseNo || caseName) {
-            const beforeFilter = versions.length;
-            versions = versions.filter(v => {
-                let matches = true;
-                if (caseNo && v.caseNo !== caseNo) {
-                    matches = false;
-                }
-                if (caseName && v.caseName !== caseName) {
-                    matches = false;
-                }
-                return matches;
+        // Debug: Show what we found
+        if (versions.length > 0) {
+            console.log('✅ Sample version data:', {
+                versionId: versions[0].versionId,
+                caseNo: versions[0].caseNo,
+                caseName: versions[0].caseName,
+                leadNo: versions[0].leadNo,
+                reason: versions[0].versionReason
             });
-            console.log(`🔍 After filtering: ${versions.length} versions (was ${beforeFilter})`);
+        } else {
+            console.log('⚠️ No versions found. Checking for any versions without case filter...');
+            const allVersionsForLead = await getAllVersions(parseInt(leadNo));
+            console.log(`Found ${allVersionsForLead.length} versions without case filter`);
+            if (allVersionsForLead.length > 0) {
+                console.log('❌ Case mismatch! Version has:', {
+                    caseNo: allVersionsForLead[0].caseNo,
+                    caseName: allVersionsForLead[0].caseName
+                });
+                console.log('But query requested:', { caseNo, caseName });
+            }
         }
 
         const history = versions.map(v => ({

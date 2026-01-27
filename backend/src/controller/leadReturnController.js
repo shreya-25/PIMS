@@ -54,9 +54,11 @@ const createLeadReturn = async (req, res) => {
             await createSnapshot(
                 leadNo,
                 assignedBy.assignee,
-                "Created"
+                "Created",
+                caseNo,
+                caseName
             );
-            console.log(`Initial snapshot created for lead ${leadNo}`);
+            console.log(`Initial snapshot created for lead ${leadNo} in case ${caseNo}`);
         } catch (snapshotErr) {
             console.error("Error creating initial snapshot:", snapshotErr.message);
             // Don't fail the request if snapshot creation fails
@@ -143,8 +145,8 @@ const updateLRStatusToPending = async (req, res) => {
       if (oldStatus && ["Returned", "Completed"].includes(oldStatus)) {
         try {
           const username = req.user?.name || req.user?.username || "System";
-          await createSnapshot(leadNo, username, "Reopened");
-          console.log(`Snapshot created for lead ${leadNo} - Reopened from ${oldStatus} to Pending`);
+          await createSnapshot(leadNo, username, "Reopened", caseNo, caseName);
+          console.log(`Snapshot created for lead ${leadNo} in case ${caseNo} - Reopened from ${oldStatus} to Pending`);
         } catch (snapshotErr) {
           console.error("Error creating snapshot:", snapshotErr.message);
           // Don't fail the request if snapshot creation fails

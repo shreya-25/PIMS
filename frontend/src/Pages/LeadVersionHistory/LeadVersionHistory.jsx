@@ -29,28 +29,27 @@ export const LeadVersionHistory = () => {
     const token = localStorage.getItem("token");
 
     try {
-      // Build params object only with available filters
+      // Build params object with case filters
       // Use selectedLead case info first, fallback to selectedCase if not available
       const params = {};
       const caseNo = selectedLead.caseNo || selectedCase?.caseNo;
       const caseName = selectedLead.caseName || selectedCase?.caseName;
 
-      // TEMPORARY: Disable filtering to test if ANY versions exist for this lead
-      // if (caseNo) {
-      //   params.caseNo = caseNo;
-      // }
-      // if (caseName) {
-      //   params.caseName = caseName;
-      // }
+      // IMPORTANT: Include case filters to ensure version history is specific to this lead+case
+      if (caseNo) {
+        params.caseNo = caseNo;
+      }
+      if (caseName) {
+        params.caseName = caseName;
+      }
 
-      console.log('⚠️ FILTERING DISABLED FOR TESTING - Fetching ALL versions for leadNo:', selectedLead.leadNo);
-      console.log('Would filter by:', {
+      console.log('🔍 DEBUG: selectedLead object:', selectedLead);
+      console.log('🔍 DEBUG: selectedCase object:', selectedCase);
+      console.log('📋 Fetching version history with params:', {
         leadNo: selectedLead.leadNo,
         caseNo: caseNo,
         caseName: caseName,
-        fromLead: { caseNo: selectedLead.caseNo, caseName: selectedLead.caseName },
-        fromCase: { caseNo: selectedCase?.caseNo, caseName: selectedCase?.caseName },
-        params
+        params: params
       });
 
       // Fetch version history filtered by leadNo, caseNo, and caseName
@@ -63,10 +62,9 @@ export const LeadVersionHistory = () => {
         }
       );
 
-      console.log('📥 Received version history response:', {
+      console.log('📥 Received version history:', {
         success: data.success,
-        count: data.count,
-        versionsLength: data.data?.length
+        count: data.count
       });
 
       if (data.success) {
@@ -84,6 +82,7 @@ export const LeadVersionHistory = () => {
                 `/api/leadreturn-versions/${selectedLead.leadNo}/activity/${previousVersion.versionId}/${currentVersion.versionId}`,
                 {
                   headers: { Authorization: `Bearer ${token}` },
+                  params
                 }
               );
 
@@ -102,6 +101,7 @@ export const LeadVersionHistory = () => {
                 `/api/leadreturn-versions/${selectedLead.leadNo}/version/${currentVersion.versionId}`,
                 {
                   headers: { Authorization: `Bearer ${token}` },
+                  params
                 }
               );
 
@@ -204,10 +204,18 @@ export const LeadVersionHistory = () => {
     setLoading(true);
 
     try {
+      // Build params with case filters
+      const params = {};
+      const caseNo = selectedLead.caseNo || selectedCase?.caseNo;
+      const caseName = selectedLead.caseName || selectedCase?.caseName;
+      if (caseNo) params.caseNo = caseNo;
+      if (caseName) params.caseName = caseName;
+
       const { data } = await api.get(
         `/api/leadreturn-versions/${selectedLead.leadNo}/version/${versionId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
+          params
         }
       );
 
@@ -224,6 +232,7 @@ export const LeadVersionHistory = () => {
               `/api/leadreturn-versions/${selectedLead.leadNo}/activity/${previousVersion.versionId}/${versionId}`,
               {
                 headers: { Authorization: `Bearer ${token}` },
+                params
               }
             );
 
@@ -256,11 +265,19 @@ export const LeadVersionHistory = () => {
     setLoading(true);
 
     try {
+      // Build params with case filters
+      const params = {};
+      const caseNo = selectedLead.caseNo || selectedCase?.caseNo;
+      const caseName = selectedLead.caseName || selectedCase?.caseName;
+      if (caseNo) params.caseNo = caseNo;
+      if (caseName) params.caseName = caseName;
+
       // Get comparison data
       const { data } = await api.get(
         `/api/leadreturn-versions/${selectedLead.leadNo}/compare/${compareFrom}/${compareTo}`,
         {
           headers: { Authorization: `Bearer ${token}` },
+          params
         }
       );
 
@@ -273,6 +290,7 @@ export const LeadVersionHistory = () => {
         `/api/leadreturn-versions/${selectedLead.leadNo}/activity/${compareFrom}/${compareTo}`,
         {
           headers: { Authorization: `Bearer ${token}` },
+          params
         }
       );
 
@@ -290,6 +308,8 @@ export const LeadVersionHistory = () => {
   const createManualSnapshot = async () => {
     const token = localStorage.getItem("token");
     const username = localStorage.getItem("username") || "User";
+    const caseNo = selectedLead.caseNo || selectedCase?.caseNo;
+    const caseName = selectedLead.caseName || selectedCase?.caseName;
 
     try {
       const { data } = await api.post(
@@ -297,6 +317,8 @@ export const LeadVersionHistory = () => {
         {
           username: username,
           versionReason: "Manual Snapshot",
+          caseNo: caseNo,
+          caseName: caseName,
         },
         {
           headers: { Authorization: `Bearer ${token}` },
