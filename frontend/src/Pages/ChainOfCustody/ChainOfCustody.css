@@ -59,7 +59,8 @@
 .chip-status.completed{ background:#ecfdf5; color:#065f46; border-color:#a7f3d0; font-size: 20px; }
 .chip-status.closed{ background:#fee2e2; color:#7f1d1d; border-color:#fecaca; font-size: 20px; }
 
-.elog-counters{ display:flex; gap:10px; margin:0 0 18px; flex-wrap:wrap; }
+.elog-counters{ display:flex; gap:10px; margin:0 0 18px; flex-wrap:wrap; align-items:center; }
+.elog-counters .version-history-btn{ margin-left:auto; }
 .counter{ padding:6px 10px; border-radius:999px; font-size:20px; border:1px solid #e5e7eb; background:#f8fafc; color:#334155; }
 .counter.ok{ background:#ecfdf5; color:#065f46; border-color:#a7f3d0; }
 .counter.bad{ background:#fee2e2; color:#7f1d1d; border-color:#fecaca; }

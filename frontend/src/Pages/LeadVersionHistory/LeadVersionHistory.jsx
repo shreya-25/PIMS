@@ -341,6 +341,37 @@ export const LeadVersionHistory = () => {
     return date.toLocaleString();
   };
 
+  const getEntityId = (details, entityType) => {
+    if (!details) return null;
+    const idFieldMap = {
+      'Enclosure': 'enclosureId',
+      'Picture': 'pictureId',
+      'Audio': 'audioId',
+      'Video': 'videoId',
+      'Evidence': 'evidenceId'
+    };
+    return details[idFieldMap[entityType]] || null;
+  };
+
+  const viewFile = async (entityType, entityId) => {
+    if (!entityType || !entityId) return;
+    const token = localStorage.getItem("token");
+    try {
+      const { data } = await api.get(`/api/leadreturn-versions/file-url`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { entityType, entityId }
+      });
+      if (data.success && data.signedUrl) {
+        window.open(data.signedUrl, "_blank");
+      }
+    } catch (err) {
+      console.error("Error getting file URL:", err);
+      alert("Failed to open file");
+    }
+  };
+
+  const FILE_ENTITY_TYPES = ['Enclosure', 'Picture', 'Audio', 'Video', 'Evidence'];
+
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case "Assigned":
@@ -508,14 +539,14 @@ export const LeadVersionHistory = () => {
         if (details.evidenceType) renderableFields.push({ label: 'Type', value: details.evidenceType });
         if (details.description) renderableFields.push({ label: 'Description', value: details.description });
         if (details.collectedBy) renderableFields.push({ label: 'Collected By', value: details.collectedBy });
+        if (details.originalName) renderableFields.push({ label: 'File', value: details.originalName, entityType, entityId: getEntityId(details, entityType) });
         break;
 
       case 'Enclosure':
       case 'Picture':
       case 'Audio':
       case 'Video':
-        if (details.originalName) renderableFields.push({ label: 'File', value: details.originalName });
-        if (details.filename) renderableFields.push({ label: 'Stored As', value: details.filename });
+        if (details.originalName) renderableFields.push({ label: 'File', value: details.originalName, entityType, entityId: getEntityId(details, entityType) });
         if (details.enclosureDescription) renderableFields.push({ label: 'Description', value: details.enclosureDescription });
         break;
 
@@ -681,7 +712,19 @@ export const LeadVersionHistory = () => {
                           </span>
                           <span className="activity-entity">{activity.entityType}</span>
                         </div>
-                        <div className="activity-description">{activity.description}</div>
+                        <div className="activity-description">
+                        {activity.description}
+                        {FILE_ENTITY_TYPES.includes(activity.entityType) && getEntityId(activity.details, activity.entityType) && (
+                          <span
+                            className="file-link"
+                            onClick={() => viewFile(activity.entityType, getEntityId(activity.details, activity.entityType))}
+                            title="Click to view file"
+                            style={{ marginLeft: '8px' }}
+                          >
+                            {activity.details.originalName || 'View File'}
+                          </span>
+                        )}
+                      </div>
                         {activity.field && (
                           <div className="activity-field-change">
                             <span className="field-name">Field: {activity.field}</span>
@@ -708,7 +751,17 @@ export const LeadVersionHistory = () => {
                                   {formattedFields.map((field, fieldIdx) => (
                                     <div key={fieldIdx} className="entity-field-row">
                                       <span className="field-label">{field.label}:</span>
-                                      <span className="field-value">{field.value}</span>
+                                      {field.entityId ? (
+                                        <span
+                                          className="field-value file-link"
+                                          onClick={() => viewFile(field.entityType, field.entityId)}
+                                          title="Click to view file"
+                                        >
+                                          {field.value}
+                                        </span>
+                                      ) : (
+                                        <span className="field-value">{field.value}</span>
+                                      )}
                                     </div>
                                   ))}
                                 </div>
@@ -821,7 +874,19 @@ export const LeadVersionHistory = () => {
                         </span>
                         <span className="activity-entity">{activity.entityType}</span>
                       </div>
-                      <div className="activity-description">{activity.description}</div>
+                      <div className="activity-description">
+                        {activity.description}
+                        {FILE_ENTITY_TYPES.includes(activity.entityType) && getEntityId(activity.details, activity.entityType) && (
+                          <span
+                            className="file-link"
+                            onClick={() => viewFile(activity.entityType, getEntityId(activity.details, activity.entityType))}
+                            title="Click to view file"
+                            style={{ marginLeft: '8px' }}
+                          >
+                            {activity.details.originalName || 'View File'}
+                          </span>
+                        )}
+                      </div>
                       {/* Show field changes for updated narratives */}
                       {activity.field && activity.entityType === 'Narrative' && activity.action === 'updated' && (
                         <div className="activity-field-change">
@@ -898,7 +963,19 @@ export const LeadVersionHistory = () => {
                             </span>
                             <span className="activity-entity">{activity.entityType}</span>
                           </div>
-                          <div className="activity-description">{activity.description}</div>
+                          <div className="activity-description">
+                        {activity.description}
+                        {FILE_ENTITY_TYPES.includes(activity.entityType) && getEntityId(activity.details, activity.entityType) && (
+                          <span
+                            className="file-link"
+                            onClick={() => viewFile(activity.entityType, getEntityId(activity.details, activity.entityType))}
+                            title="Click to view file"
+                            style={{ marginLeft: '8px' }}
+                          >
+                            {activity.details.originalName || 'View File'}
+                          </span>
+                        )}
+                      </div>
                           {/* Show field changes for updated narratives */}
                           {activity.field && activity.entityType === 'Narrative' && activity.action === 'updated' && (
                             <div className="activity-field-change">
@@ -1084,6 +1161,17 @@ export const LeadVersionHistory = () => {
                           {!['Narrative', 'Person', 'Vehicle'].includes(activity.entityType) && (
                             <div className="activity-content">
                               <div>{activity.description}</div>
+                              {FILE_ENTITY_TYPES.includes(activity.entityType) && getEntityId(activity.details, activity.entityType) && (
+                                <div style={{ marginTop: '4px' }}>
+                                  <span
+                                    className="file-link"
+                                    onClick={() => viewFile(activity.entityType, getEntityId(activity.details, activity.entityType))}
+                                    title="Click to view file"
+                                  >
+                                    {activity.details.originalName || 'View File'}
+                                  </span>
+                                </div>
+                              )}
                               {activity.field && (
                                 <div className="field-change">
                                   <strong>Field:</strong> {activity.field}

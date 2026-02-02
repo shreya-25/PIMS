@@ -339,7 +339,6 @@
 }
 
 /* Badges */
-.status-badge,
 .reason-badge {
   padding: 6px 12px;
   border-radius: 6px;
@@ -863,4 +862,14 @@
 .activity-item.activity-deleted .activity-entity-details {
   background-color: #f8d7da;
   border-left-color: #dc3545;
+}
+
+.file-link {
+  color: #1a73e8;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.file-link:hover {
+  color: #0d47a1;
 }

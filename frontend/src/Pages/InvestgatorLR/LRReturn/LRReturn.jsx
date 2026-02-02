@@ -13,7 +13,7 @@ import { AlertModal } from "../../../components/AlertModal/AlertModal";
 import { pickHigherStatus } from '../../../utils/status'
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
 import { ActivityLog } from '../../../components/ActivityLog/ActivityLog';
-import { VersionHistoryButton } from '../../../components/VersionHistoryButton/VersionHistoryButton';
+
 
 export const LRReturn = () => {
 
@@ -949,10 +949,6 @@ const handleAddOrUpdateReturn = async () => {
         {/* Center Section */}
         <div className="case-header">
           <h2 className="">NARRATIVE</h2>
-          <VersionHistoryButton
-            leadNo={effectiveLead?.leadNo}
-            className="small"
-          />
         </div>
 
         <div className = "LRI-content-section">

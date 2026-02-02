@@ -51,9 +51,10 @@ const createLeadReturn = async (req, res) => {
 
         // Create initial snapshot for the new lead return
         try {
+            const actor = req.user?.name || assignedBy.assignee || "unknown";
             await createSnapshot(
                 leadNo,
-                assignedBy.assignee,
+                actor,
                 "Created",
                 caseNo,
                 caseName

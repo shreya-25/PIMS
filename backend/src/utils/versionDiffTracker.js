@@ -537,6 +537,22 @@ function generateActivityLog(fromVersion, toVersion) {
         details: item.data
       });
     });
+
+    changes.updated.forEach(item => {
+      const skipFileFields = ['s3Key', 'filename', 'filePath'];
+      item.changes.filter(change => !skipFileFields.includes(change.field)).forEach(change => {
+        activities.push({
+          action: 'updated',
+          entityType: 'Picture',
+          entityId: item.id,
+          field: change.field,
+          description: `Updated picture ${item.label || 'Unknown'} - ${change.field}`,
+          oldValue: change.oldValue,
+          newValue: change.newValue,
+          details: item.newData
+        });
+      });
+    });
   }
 
   // Compare audio
@@ -565,6 +581,22 @@ function generateActivityLog(fromVersion, toVersion) {
         entityId: item.id,
         description: `Added audio: ${item.label}`,
         details: item.data
+      });
+    });
+
+    changes.updated.forEach(item => {
+      const skipFileFields = ['s3Key', 'filename', 'filePath'];
+      item.changes.filter(change => !skipFileFields.includes(change.field)).forEach(change => {
+        activities.push({
+          action: 'updated',
+          entityType: 'Audio',
+          entityId: item.id,
+          field: change.field,
+          description: `Updated audio ${item.label || 'Unknown'} - ${change.field}`,
+          oldValue: change.oldValue,
+          newValue: change.newValue,
+          details: item.newData
+        });
       });
     });
   }
@@ -597,6 +629,22 @@ function generateActivityLog(fromVersion, toVersion) {
         details: item.data
       });
     });
+
+    changes.updated.forEach(item => {
+      const skipFileFields = ['s3Key', 'filename', 'filePath'];
+      item.changes.filter(change => !skipFileFields.includes(change.field)).forEach(change => {
+        activities.push({
+          action: 'updated',
+          entityType: 'Video',
+          entityId: item.id,
+          field: change.field,
+          description: `Updated video ${item.label || 'Unknown'} - ${change.field}`,
+          oldValue: change.oldValue,
+          newValue: change.newValue,
+          details: item.newData
+        });
+      });
+    });
   }
 
   // Compare enclosures
@@ -625,6 +673,22 @@ function generateActivityLog(fromVersion, toVersion) {
         entityId: item.id,
         description: `Added enclosure: ${item.label}`,
         details: item.data
+      });
+    });
+
+    changes.updated.forEach(item => {
+      const skipFileFields = ['s3Key', 'filename', 'filePath'];
+      item.changes.filter(change => !skipFileFields.includes(change.field)).forEach(change => {
+        activities.push({
+          action: 'updated',
+          entityType: 'Enclosure',
+          entityId: item.id,
+          field: change.field,
+          description: `Updated enclosure ${item.label || 'Unknown'} - ${change.field}`,
+          oldValue: change.oldValue,
+          newValue: change.newValue,
+          details: item.newData
+        });
       });
     });
   }

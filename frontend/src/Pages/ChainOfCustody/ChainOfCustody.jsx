@@ -6,6 +6,7 @@ import { CaseContext } from "../CaseContext";
 import api from "../../api"; // adjust if your api path differs
 import { AlertModal } from "../../components/AlertModal/AlertModal";
 import './ChainOfCustody.css';
+import { VersionHistoryButton } from '../../components/VersionHistoryButton/VersionHistoryButton';
 
 
 export const ChainOfCustody = () => {
@@ -245,6 +246,7 @@ const tone = (t) =>
         <span className="counter ok">Accepted {acceptedAt.size}</span>
         <span className="counter bad">Declined {declinedAt.size}</span>
         <span className="counter base">Pending {pending.length}</span>
+        <VersionHistoryButton leadNo={selectedLead?.leadNo} className="small" />
       </div>
 
       {/* <div className="elog-counters extra">

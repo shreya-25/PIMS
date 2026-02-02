@@ -48,13 +48,25 @@
 }
 
 .version-history-btn.small {
-  padding: 6px 12px;
-  font-size: 12px;
+  padding: 6px 14px;
+  font-size: 18px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #312e81;
+  border: 1px solid #c7d2fe;
+  box-shadow: none;
+}
+
+.version-history-btn.small:hover {
+  background: #c7d2fe;
+  color: #1e1b4b;
+  transform: none;
+  box-shadow: none;
 }
 
 .version-history-btn.small .version-icon {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
 }
 
 .version-history-btn.icon-only {

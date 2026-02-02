@@ -9,6 +9,69 @@ const {
     restoreVersion
 } = require("../utils/leadReturnVersioning");
 const { generateActivityLog } = require("../utils/versionDiffTracker");
+const { getFileFromS3 } = require("../s3");
+const LREnclosure = require("../models/LREnclosure");
+const LRPicture = require("../models/LRPicture");
+const LRAudio = require("../models/LRAudio");
+const LRVideo = require("../models/LRVideo");
+const LREvidence = require("../models/LREvidence");
+
+const entityModelMap = {
+    'Enclosure': LREnclosure,
+    'Picture': LRPicture,
+    'Audio': LRAudio,
+    'Video': LRVideo,
+    'Evidence': LREvidence
+};
+
+/**
+ * @route   GET /api/leadreturn-versions/file-url
+ * @desc    Get a presigned URL for a file by looking up the current record
+ * @access  Private
+ * @query   entityType - The type of entity (Enclosure, Picture, Audio, Video, Evidence)
+ * @query   entityId - The MongoDB _id of the entity
+ */
+router.get("/file-url", async (req, res) => {
+    try {
+        const { entityType, entityId } = req.query;
+
+        if (!entityType || !entityId) {
+            return res.status(400).json({
+                success: false,
+                message: "entityType and entityId query parameters are required"
+            });
+        }
+
+        const Model = entityModelMap[entityType];
+        if (!Model) {
+            return res.status(400).json({
+                success: false,
+                message: `Unknown entity type: ${entityType}`
+            });
+        }
+
+        const record = await Model.findById(entityId);
+        if (!record || !record.s3Key) {
+            return res.status(404).json({
+                success: false,
+                message: "File not found"
+            });
+        }
+
+        const signedUrl = await getFileFromS3(record.s3Key);
+
+        res.json({
+            success: true,
+            signedUrl
+        });
+    } catch (error) {
+        console.error("Error generating file URL:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to generate file URL"
+        });
+    }
+});
 
 /**
  * @route   POST /api/leadreturn-versions/:leadNo/snapshot
