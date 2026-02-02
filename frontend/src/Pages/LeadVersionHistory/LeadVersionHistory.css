@@ -873,3 +873,20 @@
 .file-link:hover {
   color: #0d47a1;
 }
+
+.btn-print {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 13px;
+}
+
+.btn-print:hover {
+  background: #565e64;
+  transform: translateY(-2px);
+}

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import api from "../../api";
 import { CaseContext } from "../CaseContext";
 import "./LeadVersionHistory.css";
@@ -371,6 +371,76 @@ export const LeadVersionHistory = () => {
   };
 
   const FILE_ENTITY_TYPES = ['Enclosure', 'Picture', 'Audio', 'Video', 'Evidence'];
+
+  const versionCardRefs = useRef({});
+
+  const printVersionCard = (versionId) => {
+    const cardEl = versionCardRefs.current[versionId];
+    if (!cardEl) return;
+
+    const printWindow = window.open('', '_blank');
+    const caseNo = selectedLead.caseNo || selectedCase?.caseNo || 'N/A';
+    const caseName = selectedLead.caseName || selectedCase?.caseName || 'N/A';
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Version ${versionId} - Lead ${selectedLead.leadNo}</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; padding: 20px; color: #333; }
+            h2 { margin: 0 0 4px 0; }
+            .print-header { margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+            .print-header p { margin: 2px 0; color: #555; }
+            .file-link { color: inherit; text-decoration: none; cursor: default; pointer-events: none; }
+            .btn-view, .btn-print { display: none !important; }
+            .version-card { border: none !important; box-shadow: none !important; padding: 0 !important; }
+            .activity-badge { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+            .activity-badge.created { background: #d4edda; color: #155724; }
+            .activity-badge.updated { background: #fff3cd; color: #856404; }
+            .activity-badge.deleted { background: #f8d7da; color: #721c24; }
+            .status-badge { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+            .reason-badge { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+            .current-badge { background: #007bff; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; }
+            .count-item { display: inline-block; background: #f0f0f0; padding: 4px 12px; margin: 3px; border-radius: 4px; }
+            .count-label { color: #555; }
+            .count-value { font-weight: 600; color: #4a6cf7; margin-left: 6px; }
+            .info-row { margin: 4px 0; }
+            .info-row .label { font-weight: 600; margin-right: 6px; }
+            .activity-item { padding: 8px; margin: 6px 0; border-left: 3px solid #ddd; background: #fafafa; }
+            .activity-item.activity-created { border-left-color: #28a745; }
+            .activity-item.activity-updated { border-left-color: #ffc107; }
+            .activity-item.activity-deleted { border-left-color: #dc3545; }
+            .activity-description { margin: 4px 0; }
+            .activity-field-change { margin: 4px 0; padding: 4px 8px; background: #f5f5f5; border-radius: 4px; font-size: 13px; }
+            .field-name { font-weight: 600; }
+            .value-change { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+            .old-value, .new-value { padding: 2px 6px; border-radius: 3px; }
+            .old-value { background: #f8d7da; }
+            .new-value { background: #d4edda; }
+            .entity-field-row { margin: 2px 0; }
+            .field-label { font-weight: 600; margin-right: 4px; }
+            .narrative-text { white-space: pre-wrap; }
+            .details-section { margin: 10px 0; }
+            .details-section h6 { margin: 8px 0 4px; }
+            .narrative-item { margin: 6px 0; padding: 6px; background: #f9f9f9; border-radius: 4px; }
+            @media print { body { padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <div class="print-header">
+            <h2>Lead ${selectedLead.leadNo}: ${selectedLead.leadName?.toUpperCase() || ''}</h2>
+            <p>Case: ${caseNo} - ${caseName}</p>
+            <p>Version ${versionId} Snapshot</p>
+          </div>
+          ${cardEl.innerHTML}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  };
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
@@ -798,6 +868,7 @@ export const LeadVersionHistory = () => {
         {versions.map((version) => (
           <div
             key={version.versionId}
+            ref={(el) => { versionCardRefs.current[version.versionId] = el; }}
             className={`version-card ${
               version.isCurrentVersion ? "current-version" : ""
             } ${selectedVersion === version.versionId ? "selected" : ""}`}
@@ -814,12 +885,20 @@ export const LeadVersionHistory = () => {
                   {version.versionReason}
                 </span>
               </div>
-              <button
-                className="btn-view"
-                onClick={() => viewVersionDetails(version.versionId)}
-              >
-                {selectedVersion === version.versionId ? "Hide Details" : "View Details"}
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  className="btn-view"
+                  onClick={() => viewVersionDetails(version.versionId)}
+                >
+                  {selectedVersion === version.versionId ? "Hide Details" : "View Details"}
+                </button>
+                <button
+                  className="btn-print"
+                  onClick={() => printVersionCard(version.versionId)}
+                >
+                  Print
+                </button>
+              </div>
             </div>
 
             <div className="version-info">
