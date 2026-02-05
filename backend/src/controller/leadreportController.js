@@ -30,13 +30,13 @@ async function mergeWithAnotherPDF(pdfKitBuffer, otherPdfBuffer) {
 
 function startSection(doc, title, currentY) {
   const bottom = doc.page.height - doc.page.margins.bottom;
-  const titleH = 20; // rough height for the section header line
-  if (currentY + titleH > bottom) {
+  const minNeeded = 60; // need room for header + at least one row of content
+  if (currentY + minNeeded > bottom) {
     doc.addPage();
     currentY = doc.page.margins.top;
   }
   doc.font("Helvetica-Bold").fontSize(12).text(title, 50, currentY);
-  return currentY + 20;
+  return currentY + 18;
 }
 
 
@@ -386,10 +386,10 @@ doc
     align: "left",
   });
 
-return y + rowH + 20;
+return y + rowH + 10;
 
 
- 
+
    const subnumbers = lead.subNumber?.join(", ") || "N/A";
    doc.font("Helvetica").fontSize(12).text(subnumbers, x + 150 + padding, y + 5);
      // Second Row - Assigned Officers
@@ -406,7 +406,7 @@ return y + rowH + 20;
      const Assosubnumbers = lead.associatedSubNumbers?.join(", ") || "N/A";
      doc.font("Helvetica").fontSize(12).text(Assosubnumbers, x + 150 + padding, y + 5);
 
-  return y + rowHeight + 20;
+  return y + rowHeight + 10;
 }
 
 function drawTextBox(doc, x, y, width, title, content) {
@@ -473,7 +473,7 @@ function drawTextBox(doc, x, y, width, title, content) {
     first = false;
   }
 
-  return currY + 10;
+  return currY + 6;
 }
 
 
@@ -621,12 +621,7 @@ async function generateReport(req, res) {
 // start content after header
 let currentY = headerHeight + 20;
 
-    if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-      doc.addPage();
-      currentY = doc.page.margins.top;
-    }
-    doc.font("Helvetica-Bold").fontSize(12).text("Lead Details:", 50, currentY);
-    currentY += 20;
+    currentY = startSection(doc, "Lead Details:", currentY);
     // currentY = drawTable(doc, 50, currentY, ["Lead No.", "Origin", "Assigned Date", "Due Date", "Completed Date"], [{ "Lead No.": leadInstructions?.leadNo || 'N/A', "Origin": leadInstructions?.parentLeadNo || 'N/A', "Assigned Date": formatDate(leadInstructions?.assignedDate) || 'N/A', "Due Date": formatDate(leadInstructions?.dueDate) || 'N/A', "Completed Date": "Still to add in db" }], [90, 90, 120, 120, 92]) + 20;
     // currentY = drawTable(doc, 50, currentY, ["Sub No.", "Associated Sub Nos.", "Assigned Officers", "Assigned By"], [{ "Sub No.": leadInstructions?.subNumber || 'N/A', "Associated Sub Nos.": leadInstructions?.associatedSubNumbers || 'N/A', "Assigned Officers": leadInstructions?.assignedTo|| 'N/A', "Assigned By": leadInstructions?.assignedBy || 'N/A' }], [90, 170, 170, 82]) + 20;
     currentY = drawStructuredLeadDetails(doc, 50, currentY, leadInstruction);
@@ -636,16 +631,10 @@ let currentY = headerHeight + 20;
       //   doc.addPage();
       //   currentY = doc.page.margins.top;
       // }
-      doc.font("Helvetica-Bold").fontSize(12).text("Lead Log Summary", 50, currentY);
-      currentY += 20;
+      currentY = startSection(doc, "Lead Log Summary", currentY);
       currentY = drawTextBox(doc, 50, currentY, 512, "", leadInstruction?.description || 'N/A');
 
-      // if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-      //   doc.addPage();
-      //   currentY = doc.page.margins.top;
-      // }
-      doc.font("Helvetica-Bold").fontSize(12).text("Lead Instruction", 50, currentY);
-      currentY += 20;
+      currentY = startSection(doc, "Lead Instruction", currentY);
       currentY = drawTextBox(doc, 50, currentY, 512, "", leadInstruction?.summary || 'N/A');
 
     }
@@ -658,13 +647,17 @@ let currentY = headerHeight + 20;
       // doc.font("Helvetica-Bold").fontSize(12).text("Lead Return ID: 1", 50, currentY);
       // currentY += 20;
       // currentY = drawTextBox(doc, 50, currentY, 512, "", "Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos. Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.");
-      doc.font("Helvetica-Bold").fontSize(12).text("Lead Return Details", 50, currentY);
-  currentY += 20;
+      currentY = startSection(doc, "Lead Return Details", currentY);
 
   if (leadReturn?.length > 0) {
     leadReturn.forEach((entry, idx) => {
+      // Ensure narrative header + table fit on same page
+      if (currentY + 80 > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        currentY = doc.page.margins.top;
+      }
       doc.font("Helvetica-Bold").fontSize(11).text(`Narrative ID: ${entry.leadReturnId}`, 50, currentY);
-      currentY += 20;
+      currentY += 18;
 
       const dateEntered = formatDate(entry.enteredDate);
       const enteredBy = entry.enteredBy || "N/A";
@@ -677,7 +670,7 @@ let currentY = headerHeight + 20;
         ["Date Entered", "Entered By"],
         [{ "Date Entered": dateEntered, "Entered By": enteredBy }],
         [180, 332]
-      ) + 10;
+      ) + 6;
 
       currentY = drawTextBox(doc, 50, currentY, 512, "Narrative", leadText);
 
@@ -778,9 +771,9 @@ let currentY = headerHeight + 20;
 
     if (includeAll || leadPersons) {
       if (!Array.isArray(leadPersons) || leadPersons.length === 0) {
-        doc.font("Helvetica").fontSize(11)
-           .text("No person data available.", 50, currentY);
-        currentY += 20;
+        // doc.font("Helvetica").fontSize(11)
+        //    .text("No person data available.", 50, currentY);
+        // currentY += 20;
       } else {
         // Section header
         // doc.font("Helvetica-Bold").fontSize(12)
@@ -808,7 +801,7 @@ let currentY = headerHeight + 20;
           "Caution Type": 90, "Sex": 100,          "Race": 100,       "Ethnicity": 222,
           "Skin Tone": 90,     "Eye Color": 100,    "Glasses": 100,    "Hair Color": 222,
           "Height": 90,        "Weight": 100,       "Scar": 100,       "Tattoo": 222,
-          "Mark": 80,          "Additional Data": 432
+          "Mark": 90,          "Additional Data": 422
         };
     
         // Helper to pull the right field off your model
@@ -862,10 +855,14 @@ let currentY = headerHeight + 20;
     
         // Loop through each person object
         leadPersons.forEach((person, pIdx) => {
-          // Label each person if you like
+          // Ensure person label + first table fit on same page
+          if (currentY + 60 > doc.page.height - doc.page.margins.bottom) {
+            doc.addPage();
+            currentY = doc.page.margins.top;
+          }
           doc.font("Helvetica-Bold").fontSize(11)
              .text(`Person ${pIdx + 1}`, 50, currentY);
-          currentY += 15;
+          currentY += 20;
     
           // Now draw each mini-table
           personTables.forEach((headers) => {
@@ -885,9 +882,10 @@ let currentY = headerHeight + 20;
             const colWidths = headers.map(h => personWidths[h] || 100);
     
             // draw it
-            currentY = drawTable(doc, 50, currentY, headers, [row], colWidths)
-                     + 20;
+            currentY = drawTable(doc, 50, currentY, headers, [row], colWidths);
           });
+
+          currentY = currentY +5;
         });
       }
     }
@@ -908,14 +906,16 @@ let currentY = headerHeight + 20;
 
  if (includeAll || leadVehicles) {
   // Page-break check
-   currentY = startSection(doc, "Vehicle Details", currentY);
+  //  currentY = startSection(doc, "Vehicle Details", currentY);
 
   if (!Array.isArray(leadVehicles) || leadVehicles.length === 0) {
-    doc.font("Helvetica").fontSize(11)
-       .text("No vehicle data available.", 50, currentY);
-    currentY += 20;
+    // doc.font("Helvetica").fontSize(11)
+    //    .text("No vehicle data available.", 50, currentY);
+    // currentY += 20;
 
   } else {
+
+      currentY = startSection(doc, "Vehicle Details", currentY);
     // Define how to chunk vehicle fields into small tables
     const vehicleTables = [
       ["Date Entered", "Year", "Make", "Model"],
@@ -957,10 +957,14 @@ let currentY = headerHeight + 20;
 
     // Draw each vehicle
     leadVehicles.forEach((veh, idx) => {
-      // Label each vehicle
+      // Ensure vehicle label + first table fit on same page
+      if (currentY + 60 > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        currentY = doc.page.margins.top;
+      }
       doc.font("Helvetica-Bold").fontSize(11)
          .text(`Vehicle ${idx + 1}`, 50, currentY);
-      currentY += 15;
+      currentY += 20;
 
       // For each chunk of headers, draw a mini-table
       vehicleTables.forEach(headers => {
@@ -980,32 +984,28 @@ let currentY = headerHeight + 20;
         const colWidths = headers.map(h => vehicleWidths[h] || 100);
 
         // Draw the table
-        currentY = drawTable(doc, 50, currentY, headers, [row], colWidths) + 20;
+        currentY = drawTable(doc, 50, currentY, headers, [row], colWidths);
       });
+      
+          currentY = currentY +5;
     });
   }
 }
 
 
      if (includeAll || leadEnclosures) {
-      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage();
-        currentY = doc.page.margins.top;
-      }
-      doc
-        .font("Helvetica-Bold")
-        .fontSize(12)
-        .text("Enclosure Details", 50, currentY);
-      currentY += 20;
+      // currentY = startSection(doc, "Enclosure Details", currentY);
 
       if (!Array.isArray(leadEnclosures) || leadEnclosures.length === 0) {
-        doc
-          .font("Helvetica")
-          .fontSize(11)
-          .text("No enclosure data available.", 50, currentY);
-        currentY += 20;
+        // doc
+        //   .font("Helvetica")
+        //   .fontSize(11)
+        //   .text("No enclosure data available.", 50, currentY);
+        // currentY += 20;
       } else {
         // Draw the “table of summary rows” for each enclosure first:
+        currentY = startSection(doc, "Enclosure Details", currentY);
+
         const headers = ["Date Entered", "Type", "Description"];
         const widths = [90, 100, 322];
         const rows = leadEnclosures.map((e) => ({
@@ -1028,9 +1028,8 @@ let currentY = headerHeight + 20;
           doc.addPage();
           currentY = doc.page.margins.top;
         }
-        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 10;
 
-        // Now loop through each enclosure and embed its single filePath
         // Now loop through each enclosure and embed any image files from S3
 for (const enc of leadEnclosures) {
   const fnameLower = (enc.filename || "").toLowerCase();
@@ -1069,25 +1068,20 @@ for (const enc of leadEnclosures) {
   }
 }
 
-// Space after all enclosure images
-currentY += 20;
-
       }
     }
-    
+
     // ── Evidence Details ─────────────────────────────────────────
     if (includeAll || leadEvidence) {
-      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage(); currentY = doc.page.margins.top;
-      }
-      doc.font("Helvetica-Bold").fontSize(12).text("Evidence Details", 50, currentY);
-      currentY += 20;
+      // currentY = startSection(doc, "Evidence Details", currentY);
     
       if (!Array.isArray(leadEvidence) || leadEvidence.length === 0) {
-        doc.font("Helvetica").fontSize(11)
-           .text("No evidence data available.", 50, currentY);
-        currentY += 20;
+        // doc.font("Helvetica").fontSize(11)
+        //    .text("No evidence data available.", 50, currentY);
+        // currentY += 20;
       } else {
+           currentY = startSection(doc, "Evidence Details", currentY);
+
         const headers = ["Date Entered","Type","Collection Date","Disposed Date","Description"];
         const widths  = [80,80,90,90,172];
         const rows    = leadEvidence.map(ev => ({
@@ -1107,9 +1101,8 @@ currentY += 20;
           doc.addPage();
           currentY = doc.page.margins.top;
         }
-        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
-      
-         // Now loop through each enclosure and embed its single filePath
+        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 10;
+
         // Embed evidence images from S3
 for (const enc of leadEvidence) {
   const fnameLower = (enc.filename || "").toLowerCase();
@@ -1149,23 +1142,19 @@ for (const enc of leadEvidence) {
 }
 
 
-        // Space after all enclosure images
-        currentY += 20;
       }
     }
     // ── Picture Details ─────────────────────────────────────────
     if (includeAll || leadPictures) {
-      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage(); currentY = doc.page.margins.top;
-      }
-      doc.font("Helvetica-Bold").fontSize(12).text("Picture Details", 50, currentY);
-      currentY += 20;
+      // currentY = startSection(doc, "Picture Details", currentY);
     
       if (!Array.isArray(leadPictures) || leadPictures.length === 0) {
-        doc.font("Helvetica").fontSize(11)
-           .text("No picture data available.", 50, currentY);
-        currentY += 20;
+        // doc.font("Helvetica").fontSize(11)
+        //    .text("No picture data available.", 50, currentY);
+        // currentY += 20;
       } else {
+
+        currentY = startSection(doc, "Picture Details", currentY);
         const headers = ["Date Entered","Date Picture Taken","Description"];
         const widths  = [90,120, 302];
         const rows    = leadPictures.map(p => ({
@@ -1182,10 +1171,9 @@ for (const enc of leadEvidence) {
           doc.addPage();
           currentY = doc.page.margins.top;
         }
-        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 10;
 
-          // Now loop through each enclosure and embed its single filePath
-       // Embed picture images from S3
+        // Embed picture images from S3
 for (const enc of leadPictures) {
   const fnameLower = (enc.filename || "").toLowerCase();
   const isImage = /\.(jpe?g|png)$/.test(fnameLower);
@@ -1224,25 +1212,19 @@ for (const enc of leadPictures) {
 }
 
 
-        // Space after all enclosure images
-        currentY += 20;
       }
     }
-    
-    
+
     // ── Audio Details ────────────────────────────────────────────
     if (includeAll || leadAudio) {
-      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage(); currentY = doc.page.margins.top;
-      }
-      doc.font("Helvetica-Bold").fontSize(12).text("Audio Details", 50, currentY);
-      currentY += 20;
+      // currentY = startSection(doc, "Audio Details", currentY);
     
       if (!Array.isArray(leadAudio) || leadAudio.length === 0) {
-        doc.font("Helvetica").fontSize(11)
-           .text("No audio data available.", 50, currentY);
-        currentY += 20;
+        // doc.font("Helvetica").fontSize(11)
+        //    .text("No audio data available.", 50, currentY);
+        // currentY += 20;
       } else {
+        currentY = startSection(doc, "Audio Details", currentY);
         const headers = ["Date Entered","Date Audio Recorded","Description"];
         const widths  = [90,120, 302];
         const rows    = leadAudio.map(a => ({
@@ -1259,23 +1241,21 @@ for (const enc of leadPictures) {
           doc.addPage();
           currentY = doc.page.margins.top;
         }
-        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 10;
       }
     }
-    
+
     // ── Video Details ────────────────────────────────────────────
     if (includeAll || leadVideos) {
-      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage(); currentY = doc.page.margins.top;
-      }
-      doc.font("Helvetica-Bold").fontSize(12).text("Video Details", 50, currentY);
-      currentY += 20;
+      // currentY = startSection(doc, "Video Details", currentY);
     
       if (!Array.isArray(leadVideos) || leadVideos.length === 0) {
-        doc.font("Helvetica").fontSize(11)
-           .text("No video data available.", 50, currentY);
-        currentY += 20;
+        // doc.font("Helvetica").fontSize(11)
+        //    .text("No video data available.", 50, currentY);
+        // currentY += 20;
       } else {
+
+        currentY = startSection(doc, "Video Details", currentY);
         const headers = ["Date Entered","Date Video Recorded","Description"];
         const widths  = [90,120, 302];
         const rows    = leadVideos.map(v => ({
@@ -1292,23 +1272,21 @@ for (const enc of leadPictures) {
           doc.addPage();
           currentY = doc.page.margins.top;
         }
-        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 10;
       }
     }
-    
+
     // ── Lead Notes (Scratchpad) ─────────────────────────────────
     if (includeAll || leadScratchpad) {
-      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage(); currentY = doc.page.margins.top;
-      }
-      doc.font("Helvetica-Bold").fontSize(12).text("Lead Notes", 50, currentY);
-      currentY += 20;
+      // currentY = startSection(doc, "Lead Notes", currentY);
     
       if (!Array.isArray(leadScratchpad) || leadScratchpad.length === 0) {
-        doc.font("Helvetica").fontSize(11)
-           .text("No notes available.", 50, currentY);
-        currentY += 20;
+        // doc.font("Helvetica").fontSize(11)
+        //    .text("No notes available.", 50, currentY);
+        // currentY += 20;
       } else {
+
+         currentY = startSection(doc, "Lead Notes", currentY);
         const headers = ["Date Entered","Return Id","Description"];
         const widths  = [90,120, 302];
         const rows    = leadScratchpad.map(n => ({
@@ -1325,23 +1303,20 @@ for (const enc of leadPictures) {
           doc.addPage();
           currentY = doc.page.margins.top;
         }
-        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 10;
       }
     }
-    
+
     // ── Timeline Details ─────────────────────────────────────────
     if (includeAll || leadTimeline) {
-      if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-        doc.addPage(); currentY = doc.page.margins.top;
-      }
-      doc.font("Helvetica-Bold").fontSize(12).text("Timeline Details", 50, currentY);
-      currentY += 20;
+      // currentY = startSection(doc, "Timeline Details", currentY);
     
       if (!Array.isArray(leadTimeline) || leadTimeline.length === 0) {
-        doc.font("Helvetica").fontSize(11)
-           .text("No timeline data available.", 50, currentY);
-        currentY += 20;
+        // doc.font("Helvetica").fontSize(11)
+        //    .text("No timeline data available.", 50, currentY);
+        // currentY += 20;
       } else {
+        currentY = startSection(doc, "Timeline Details", currentY);
         const headers = ["Event Date","Time Range","Location","Flags","Description"];
         const widths  = [80,100,100, 80, 152];
         const rows    = leadTimeline.map(t => ({
@@ -1361,7 +1336,7 @@ for (const enc of leadPictures) {
           doc.addPage();
           currentY = doc.page.margins.top;
         }
-        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 20;
+        currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 10;
       }
     }
 

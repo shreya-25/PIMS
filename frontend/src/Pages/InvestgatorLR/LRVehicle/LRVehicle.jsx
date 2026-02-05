@@ -580,6 +580,29 @@ const goToViewLR = () => {
     return;
   }
 
+  // Check that at least one vehicle data field is filled
+  const dataFields = [
+    vehicleData.year,
+    vehicleData.make,
+    vehicleData.model,
+    vehicleData.plate,
+    vehicleData.category,
+    vehicleData.type,
+    vehicleData.vin,
+    vehicleData.primaryColor,
+    vehicleData.secondaryColor,
+    vehicleData.state,
+    vehicleData.information
+  ];
+  const hasAtLeastOneField = dataFields.some(
+    (val) => val != null && String(val).trim() !== ""
+  );
+  if (!hasAtLeastOneField) {
+    setAlertMessage("Please fill in at least one vehicle field before saving.");
+    setAlertOpen(true);
+    return;
+  }
+
     const token = localStorage.getItem("token");
     const payload = {
       leadNo:        selectedLead.leadNo,

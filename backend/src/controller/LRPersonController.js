@@ -1,6 +1,48 @@
 const LRPerson = require("../models/LRPerson");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 
+// Validation function to check if at least one meaningful field is filled
+const isPersonRecordValid = (data) => {
+    // Check name fields
+    if (data.firstName?.trim()) return true;
+    if (data.lastName?.trim()) return true;
+    if (data.alias?.trim()) return true;
+    if (data.businessName?.trim()) return true;
+
+    // Check person type
+    if (data.personType?.trim()) return true;
+
+    // Check address fields
+    const address = data.address || {};
+    if (address.street1?.trim()) return true;
+    if (address.street2?.trim()) return true;
+    if (address.building?.trim()) return true;
+    if (address.apartment?.trim()) return true;
+    if (address.city?.trim()) return true;
+    if (address.state?.trim()) return true;
+    if (address.zipCode?.trim()) return true;
+
+    // Check physical descriptors
+    if (data.sex?.trim()) return true;
+    if (data.race?.trim()) return true;
+    if (data.ethnicity?.trim()) return true;
+    if (data.skinTone?.trim()) return true;
+    if (data.eyeColor?.trim()) return true;
+    if (data.glasses?.trim()) return true;
+    if (data.hairColor?.trim()) return true;
+    if (data.tattoo?.trim()) return true;
+    if (data.scar?.trim()) return true;
+    if (data.mark?.trim()) return true;
+    if (data.height?.trim()) return true;
+    if (data.weight?.trim()) return true;
+
+    // Check contact info
+    if (data.cellNumber?.trim()) return true;
+    if (data.email?.trim()) return true;
+
+    return false;
+};
+
 // **Create a new LRPerson entry**
 const createLRPerson = async (req, res) => {
     try {
@@ -44,6 +86,13 @@ const createLRPerson = async (req, res) => {
             accessLevel,
             additionalData // Allows additional dynamic fields
         } = req.body;
+
+        // Validate that at least one meaningful field is filled
+        if (!isPersonRecordValid(req.body)) {
+            return res.status(400).json({
+                message: "Cannot save an empty record. Please fill in at least one field (name, alias, business name, person type, address, physical descriptor, or contact info)."
+            });
+        }
 
         // Validate accessLevel if provided
         if (accessLevel) {
@@ -186,6 +235,13 @@ const updateLRPerson = async (req, res) => {
         firstName
       } = req.params;
       const updateData = req.body;
+
+      // Validate that at least one meaningful field is filled
+      if (!isPersonRecordValid(updateData)) {
+        return res.status(400).json({
+          message: "Cannot save an empty record. Please fill in at least one field (name, alias, business name, person type, address, physical descriptor, or contact info)."
+        });
+      }
 
       // Validate accessLevel if it's being updated
       if (updateData.accessLevel) {
