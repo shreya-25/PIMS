@@ -195,9 +195,7 @@ const handleConfirmOfficers = () => {
     };
 
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(50);
-    const totalPages = 10; // Change based on your data
-    const totalEntries = 100;
+    const [pageSize, setPageSize] = useState(10);
 
     const signedInOfficer = localStorage.getItem("loggedInUser");
 
@@ -547,6 +545,7 @@ useEffect(() => {
 
     const handleTabClick = (tab) => {
           setActiveTab(tab);
+          setCurrentPage(1); // Reset pagination when switching tabs
   };
 
     const handleGenerateLead = () => {
@@ -1371,7 +1370,14 @@ const sortedPendingLeads = useMemo(() => {
   }
   return data;
 }, [leads.pendingLeads, pendingFilterConfig, pendingSortConfig]);
- 
+
+// Paginate the sorted pending leads
+const paginatedPendingLeads = useMemo(() => {
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  return sortedPendingLeads.slice(startIndex, endIndex);
+}, [sortedPendingLeads, currentPage, pageSize]);
+
 // ─── Pending Lead Returns filter/sort setup ───────────────────────────────
 
 // Columns + mapping
@@ -1466,6 +1472,13 @@ const sortedPendingLRs = useMemo(() => {
   }
   return data;
 }, [leads.pendingLeadReturns, pendingLRFilterConfig, pendingLRSortConfig]);
+
+// Paginate the sorted pending lead returns
+const paginatedPendingLRs = useMemo(() => {
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  return sortedPendingLRs.slice(startIndex, endIndex);
+}, [sortedPendingLRs, currentPage, pageSize]);
 
 const formatUser = (username) => {
   if (!username) return "—";
@@ -1602,6 +1615,30 @@ const sortedAllLeads = useMemo(() => {
   return data;
 }, [leads.allLeads, allFilterConfig, allSortConfig]);
 
+// Calculate total entries based on active tab
+const totalEntries = useMemo(() => {
+  switch (activeTab) {
+    case "pendingLeads":
+      return sortedPendingLeads.length;
+    case "pendingLeadReturns":
+      return sortedPendingLRs.length;
+    case "allLeads":
+    default:
+      return sortedAllLeads.length;
+  }
+}, [activeTab, sortedPendingLeads.length, sortedPendingLRs.length, sortedAllLeads.length]);
+
+// Paginate the sorted leads
+const paginatedLeads = useMemo(() => {
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  return sortedAllLeads.slice(startIndex, endIndex);
+}, [sortedAllLeads, currentPage, pageSize]);
+
+// Reset to page 1 when filters change
+React.useEffect(() => {
+  setCurrentPage(1);
+}, [allFilterConfig, allSortConfig, pendingFilterConfig, pendingSortConfig, pendingLRFilterConfig, pendingLRSortConfig]);
 
 const handleSortAll = columnKey => {
   setAllSortConfig(prev => ({
@@ -2492,8 +2529,8 @@ const toTitleCase = (s = "") =>
                </tr>
              </thead>
              <tbody>
-      {sortedPendingLeads.length > 0 ? (
-        sortedPendingLeads
+      {paginatedPendingLeads.length > 0 ? (
+        paginatedPendingLeads
           .filter(
             (lead) =>
               lead.description
@@ -2628,8 +2665,8 @@ const toTitleCase = (s = "") =>
                       </tr>
                     </thead>
                     <tbody>
-                {leads.pendingLeadReturns.length > 0 ? (
-                leads.pendingLeadReturns.map((lead) => (
+                {paginatedPendingLRs.length > 0 ? (
+                paginatedPendingLRs.map((lead) => (
                     <tr key={lead.id}>
                       <td>{lead.id}</td>
                       <td>{lead.description}</td>
@@ -2717,7 +2754,7 @@ const toTitleCase = (s = "") =>
                </tr>
              </thead>
              <tbody>
-          {sortedAllLeads.length>0 ? sortedAllLeads.map(lead=>(
+          {paginatedLeads.length>0 ? paginatedLeads.map(lead=>(
             <tr key={lead.id}>
               <td style={{ }}>{lead.id}</td>
               <td>{lead.description}</td>
@@ -2778,10 +2815,10 @@ const toTitleCase = (s = "") =>
 )}
 <Pagination
   currentPage={currentPage}
-  totalEntries={totalEntries}  // Automatically calculate total entries
-  onPageChange={setCurrentPage} // Update current page state
+  totalEntries={totalEntries}
+  onPageChange={setCurrentPage}
   pageSize={pageSize}
-  onPageSizeChange={setPageSize} // Update page size state
+  onPageSizeChange={setPageSize}
 />
                 </div> 
               </div>

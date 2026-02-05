@@ -200,6 +200,14 @@ export const LeadVersionHistory = () => {
   };
 
   const viewVersionDetails = async (versionId) => {
+    // Toggle off if clicking the same version (Hide Details)
+    if (selectedVersion === versionId) {
+      setSelectedVersion(null);
+      setVersionDetails(null);
+      setActivityLog([]);
+      return;
+    }
+
     const token = localStorage.getItem("token");
     setLoading(true);
 
@@ -373,73 +381,81 @@ export const LeadVersionHistory = () => {
   const FILE_ENTITY_TYPES = ['Enclosure', 'Picture', 'Audio', 'Video', 'Evidence'];
 
   const versionCardRefs = useRef({});
+  const [pdfLoading, setPdfLoading] = useState(null);
+  const [pdfPreview, setPdfPreview] = useState(null); // { url, versionId, blob }
 
-  const printVersionCard = (versionId) => {
-    const cardEl = versionCardRefs.current[versionId];
-    if (!cardEl) return;
+  const openPdfPreview = async (versionId) => {
+    const token = localStorage.getItem("token");
+    const caseNo = selectedLead.caseNo || selectedCase?.caseNo;
+    const caseName = selectedLead.caseName || selectedCase?.caseName;
 
-    const printWindow = window.open('', '_blank');
-    const caseNo = selectedLead.caseNo || selectedCase?.caseNo || 'N/A';
-    const caseName = selectedLead.caseName || selectedCase?.caseName || 'N/A';
+    setPdfLoading(versionId);
 
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Version ${versionId} - Lead ${selectedLead.leadNo}</title>
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; padding: 20px; color: #333; }
-            h2 { margin: 0 0 4px 0; }
-            .print-header { margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-            .print-header p { margin: 2px 0; color: #555; }
-            .file-link { color: inherit; text-decoration: none; cursor: default; pointer-events: none; }
-            .btn-view, .btn-print { display: none !important; }
-            .version-card { border: none !important; box-shadow: none !important; padding: 0 !important; }
-            .activity-badge { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
-            .activity-badge.created { background: #d4edda; color: #155724; }
-            .activity-badge.updated { background: #fff3cd; color: #856404; }
-            .activity-badge.deleted { background: #f8d7da; color: #721c24; }
-            .status-badge { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
-            .reason-badge { padding: 2px 8px; border-radius: 4px; font-size: 12px; }
-            .current-badge { background: #007bff; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; }
-            .count-item { display: inline-block; background: #f0f0f0; padding: 4px 12px; margin: 3px; border-radius: 4px; }
-            .count-label { color: #555; }
-            .count-value { font-weight: 600; color: #4a6cf7; margin-left: 6px; }
-            .info-row { margin: 4px 0; }
-            .info-row .label { font-weight: 600; margin-right: 6px; }
-            .activity-item { padding: 8px; margin: 6px 0; border-left: 3px solid #ddd; background: #fafafa; }
-            .activity-item.activity-created { border-left-color: #28a745; }
-            .activity-item.activity-updated { border-left-color: #ffc107; }
-            .activity-item.activity-deleted { border-left-color: #dc3545; }
-            .activity-description { margin: 4px 0; }
-            .activity-field-change { margin: 4px 0; padding: 4px 8px; background: #f5f5f5; border-radius: 4px; font-size: 13px; }
-            .field-name { font-weight: 600; }
-            .value-change { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-            .old-value, .new-value { padding: 2px 6px; border-radius: 3px; }
-            .old-value { background: #f8d7da; }
-            .new-value { background: #d4edda; }
-            .entity-field-row { margin: 2px 0; }
-            .field-label { font-weight: 600; margin-right: 4px; }
-            .narrative-text { white-space: pre-wrap; }
-            .details-section { margin: 10px 0; }
-            .details-section h6 { margin: 8px 0 4px; }
-            .narrative-item { margin: 6px 0; padding: 6px; background: #f9f9f9; border-radius: 4px; }
-            @media print { body { padding: 0; } }
-          </style>
-        </head>
-        <body>
-          <div class="print-header">
-            <h2>Lead ${selectedLead.leadNo}: ${selectedLead.leadName?.toUpperCase() || ''}</h2>
-            <p>Case: ${caseNo} - ${caseName}</p>
-            <p>Version ${versionId} Snapshot</p>
-          </div>
-          ${cardEl.innerHTML}
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.onload = () => {
-      printWindow.print();
-    };
+    try {
+      const response = await api.get(
+        `/api/leadreturn-versions/${selectedLead.leadNo}/version/${versionId}/pdf`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          params: {
+            caseNo,
+            caseName,
+            leadName: selectedLead.leadName
+          },
+          responseType: 'blob'
+        }
+      );
+
+      // Check if the response is actually a PDF or an error JSON
+      const contentType = response.headers['content-type'];
+      if (contentType && contentType.includes('application/json')) {
+        // Server returned an error as JSON
+        const errorText = await response.data.text();
+        const errorJson = JSON.parse(errorText);
+        throw new Error(errorJson.message || 'Failed to generate PDF');
+      }
+
+      // Create a blob URL for preview
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+
+      console.log('PDF blob created:', { size: blob.size, type: blob.type, url });
+
+      setPdfPreview({ url, versionId, blob });
+    } catch (err) {
+      console.error("Error loading PDF preview:", err);
+      // Handle blob error responses
+      if (err.response?.data instanceof Blob) {
+        try {
+          const errorText = await err.response.data.text();
+          const errorJson = JSON.parse(errorText);
+          alert(errorJson.message || "Failed to generate PDF");
+        } catch {
+          alert("Failed to generate PDF");
+        }
+      } else {
+        alert(err.message || "Failed to generate PDF");
+      }
+    } finally {
+      setPdfLoading(null);
+    }
+  };
+
+  const closePdfPreview = () => {
+    if (pdfPreview?.url) {
+      window.URL.revokeObjectURL(pdfPreview.url);
+    }
+    setPdfPreview(null);
+  };
+
+  const downloadPdfFromPreview = () => {
+    if (!pdfPreview) return;
+
+    const link = document.createElement('a');
+    link.href = pdfPreview.url;
+    link.download = `Lead_${selectedLead.leadNo}_Version_${pdfPreview.versionId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const getStatusBadgeClass = (status) => {
@@ -894,9 +910,10 @@ export const LeadVersionHistory = () => {
                 </button>
                 <button
                   className="btn-print"
-                  onClick={() => printVersionCard(version.versionId)}
+                  onClick={() => openPdfPreview(version.versionId)}
+                  disabled={pdfLoading === version.versionId}
                 >
-                  Print
+                  {pdfLoading === version.versionId ? "Generating..." : "Preview PDF"}
                 </button>
               </div>
             </div>
@@ -1331,6 +1348,44 @@ export const LeadVersionHistory = () => {
           </div>
         ))}
       </div>
+
+      {/* PDF Preview Modal */}
+      {pdfPreview && (
+        <div className="pdf-preview-modal-overlay" onClick={closePdfPreview}>
+          <div className="pdf-preview-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="pdf-preview-header">
+              <h3>PDF Preview - Version {pdfPreview.versionId}</h3>
+              <div className="pdf-preview-actions">
+                <button
+                  className="btn-open-tab"
+                  onClick={() => window.open(pdfPreview.url, '_blank')}
+                >
+                  Open in New Tab
+                </button>
+                <button className="btn-download" onClick={downloadPdfFromPreview}>
+                  Download PDF
+                </button>
+                <button className="btn-close" onClick={closePdfPreview}>
+                  Close
+                </button>
+              </div>
+            </div>
+            <div className="pdf-preview-content">
+              <object
+                data={pdfPreview.url}
+                type="application/pdf"
+                width="100%"
+                height="100%"
+              >
+                <div className="pdf-fallback">
+                  <p>Unable to display PDF preview in browser.</p>
+                  <p>Please use the buttons above to open in a new tab or download the PDF.</p>
+                </div>
+              </object>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

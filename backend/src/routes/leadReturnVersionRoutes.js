@@ -1,5 +1,8 @@
 const express = require("express");
 const router = express.Router();
+const PDFDocument = require("pdfkit");
+const path = require("path");
+const fs = require("fs");
 const {
     createSnapshot,
     getCurrentVersion,
@@ -399,6 +402,606 @@ router.get("/:leadNo/history", async (req, res) => {
         res.status(500).json({
             success: false,
             message: error.message
+        });
+    }
+});
+
+/**
+ * Helper function to format date for PDF
+ */
+const formatDateForPdf = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    const year = date.getFullYear().toString().slice(-2);
+    return `${month}/${day}/${year}`;
+};
+
+const formatDateTimePdf = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleString();
+};
+
+// Colors for the PDF
+const PDF_COLORS = {
+    primary: "#003366",      // Dark blue
+    created: "#28a745",      // Green
+    deleted: "#dc3545",      // Red
+    updated: "#fd7e14",      // Orange
+    headerBg: "#003366",
+    sectionBg: "#f8f9fa",
+    border: "#dee2e6",
+    text: "#212529",
+    muted: "#6c757d",
+    lightGreen: "#d4edda",
+    lightRed: "#f8d7da",
+    lightOrange: "#fff3cd"
+};
+
+/**
+ * Draw the header with logo and dark blue banner
+ */
+function drawVersionHeader(doc, leadNo, versionId, caseNo, caseName, leadName) {
+    const pageW = doc.page.width;
+    const padX = 16;
+    const padY = 10;
+
+    const logoW = 70, logoH = 70;
+    const logoX = padX;
+    const logoPath = path.join(__dirname, "../../../frontend/public/Materials/newpolicelogo.png");
+
+    const textX = logoX + logoW + 16;
+    const textW = pageW - textX - padX;
+
+    const caseLine = `Case: ${caseNo || 'N/A'} | ${caseName || 'N/A'}`;
+    const leadLine = `Lead: ${leadNo} | ${leadName || 'Version History Report'}`;
+
+    doc.font("Helvetica-Bold").fontSize(14);
+    const caseH = doc.heightOfString(caseLine, { width: textW });
+    doc.fontSize(12);
+    const leadH = doc.heightOfString(leadLine, { width: textW });
+    const textBlockH = caseH + 5 + leadH + 5 + 20;
+
+    const headerH = Math.max(logoH, textBlockH) + 2 * padY;
+
+    doc.rect(0, 0, pageW, headerH).fill(PDF_COLORS.headerBg);
+
+    if (fs.existsSync(logoPath)) {
+        doc.image(logoPath, logoX, padY, { width: logoW, height: logoH });
+    }
+
+    let y = padY + (headerH - 2 * padY - textBlockH) / 2;
+    doc.fillColor("white").font("Helvetica-Bold").fontSize(14)
+       .text(caseLine, textX, y, { width: textW, align: "center" });
+    y = doc.y + 5;
+    doc.fontSize(12)
+       .text(leadLine, textX, y, { width: textW, align: "center" });
+    y = doc.y + 8;
+    doc.fontSize(11).font("Helvetica")
+       .text(`VERSION ${versionId} - CHANGE REPORT`, textX, y, { width: textW, align: "center" });
+
+    doc.fillColor("black");
+    return headerH;
+}
+
+/**
+ * Draw section header with colored background
+ */
+function drawSectionHeader(doc, title, currentY, leftMargin = 50, pageWidth = 512) {
+    const bottom = doc.page.height - doc.page.margins.bottom;
+    if (currentY + 60 > bottom) {
+        doc.addPage();
+        currentY = doc.page.margins.top;
+    }
+
+    // Section background
+    doc.rect(leftMargin, currentY, pageWidth, 22).fill(PDF_COLORS.sectionBg);
+    doc.rect(leftMargin, currentY, pageWidth, 22).stroke(PDF_COLORS.border);
+
+    doc.font("Helvetica-Bold").fontSize(10).fillColor(PDF_COLORS.primary)
+       .text(title, leftMargin + 10, currentY + 6);
+    doc.font("Helvetica").fillColor("black");
+    return currentY + 28;
+}
+
+/**
+ * Draw a change badge (CREATED, UPDATED, DELETED)
+ */
+function drawChangeBadge(doc, action, x, y) {
+    const badges = {
+        created: { bg: PDF_COLORS.created, text: "CREATED", symbol: "+" },
+        updated: { bg: PDF_COLORS.updated, text: "UPDATED", symbol: "~" },
+        deleted: { bg: PDF_COLORS.deleted, text: "DELETED", symbol: "-" }
+    };
+
+    const badge = badges[action] || badges.updated;
+    const badgeWidth = 70;
+    const badgeHeight = 16;
+
+    doc.roundedRect(x, y, badgeWidth, badgeHeight, 3).fill(badge.bg);
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("white")
+       .text(`${badge.symbol} ${badge.text}`, x + 5, y + 4, { width: badgeWidth - 10, align: "center" });
+    doc.fillColor("black").font("Helvetica");
+
+    return badgeWidth;
+}
+
+/**
+ * Draw side-by-side comparison box for updated content
+ */
+function drawComparisonBox(doc, x, y, width, originalContent, updatedContent, fieldName) {
+    const padding = 8;
+    const halfWidth = (width - 15) / 2;
+    const bottomY = doc.page.height - doc.page.margins.bottom;
+    const topY = doc.page.margins.top;
+
+    // Measure content heights
+    doc.font("Helvetica").fontSize(8);
+    const origHeight = doc.heightOfString(originalContent || "(empty)", { width: halfWidth - 2 * padding });
+    const updHeight = doc.heightOfString(updatedContent || "(empty)", { width: halfWidth - 2 * padding });
+    const contentHeight = Math.max(origHeight, updHeight, 20);
+    const boxHeight = contentHeight + 35; // header + padding
+
+    // Page break if needed
+    if (y + boxHeight > bottomY) {
+        doc.addPage();
+        y = topY;
+    }
+
+    // Field name label
+    if (fieldName) {
+        doc.font("Helvetica-Bold").fontSize(8).fillColor(PDF_COLORS.muted)
+           .text(fieldName.toUpperCase(), x, y);
+        y += 12;
+    }
+
+    // Original box (left) - light red background
+    doc.rect(x, y, halfWidth, boxHeight).fillAndStroke(PDF_COLORS.lightRed, PDF_COLORS.border);
+    doc.font("Helvetica-Bold").fontSize(7).fillColor(PDF_COLORS.deleted)
+       .text("ORIGINAL", x + padding, y + 5);
+    doc.font("Helvetica").fontSize(8).fillColor(PDF_COLORS.text)
+       .text(originalContent || "(empty)", x + padding, y + 18, { width: halfWidth - 2 * padding });
+
+    // Arrow between boxes
+    const arrowX = x + halfWidth + 3;
+    doc.font("Helvetica-Bold").fontSize(12).fillColor(PDF_COLORS.muted)
+       .text("→", arrowX, y + boxHeight / 2 - 6);
+
+    // Updated box (right) - light green background
+    const rightX = x + halfWidth + 15;
+    doc.rect(rightX, y, halfWidth, boxHeight).fillAndStroke(PDF_COLORS.lightGreen, PDF_COLORS.border);
+    doc.font("Helvetica-Bold").fontSize(7).fillColor(PDF_COLORS.created)
+       .text("UPDATED", rightX + padding, y + 5);
+    doc.font("Helvetica").fontSize(8).fillColor(PDF_COLORS.text)
+       .text(updatedContent || "(empty)", rightX + padding, y + 18, { width: halfWidth - 2 * padding });
+
+    return y + boxHeight + 8;
+}
+
+/**
+ * Draw a single content box (for created or deleted items)
+ */
+function drawContentBox(doc, x, y, width, content, action, entityType) {
+    const padding = 8;
+    const bottomY = doc.page.height - doc.page.margins.bottom;
+    const topY = doc.page.margins.top;
+
+    doc.font("Helvetica").fontSize(8);
+    const contentHeight = doc.heightOfString(content || "(empty)", { width: width - 2 * padding });
+    const boxHeight = Math.max(contentHeight + 25, 40);
+
+    if (y + boxHeight > bottomY) {
+        doc.addPage();
+        y = topY;
+    }
+
+    const bgColor = action === "created" ? PDF_COLORS.lightGreen : PDF_COLORS.lightRed;
+    const borderColor = action === "created" ? PDF_COLORS.created : PDF_COLORS.deleted;
+
+    // Draw box with colored left border
+    doc.rect(x, y, width, boxHeight).fillAndStroke(bgColor, PDF_COLORS.border);
+    doc.rect(x, y, 4, boxHeight).fill(borderColor);
+
+    // Entity type label
+    doc.font("Helvetica-Bold").fontSize(8).fillColor(borderColor)
+       .text(entityType.toUpperCase(), x + padding + 4, y + 6);
+
+    // Content
+    doc.font("Helvetica").fontSize(8).fillColor(PDF_COLORS.text)
+       .text(content || "(empty)", x + padding + 4, y + 18, { width: width - 2 * padding - 4 });
+
+    return y + boxHeight + 6;
+}
+
+/**
+ * Draw version info block
+ */
+function drawVersionInfoBlock(doc, x, y, width, version) {
+    const height = 60;
+    const colWidth = width / 4;
+
+    // Background
+    doc.rect(x, y, width, height).fillAndStroke("#f8f9fa", PDF_COLORS.border);
+
+    // Labels and values
+    const items = [
+        { label: "Created", value: formatDateTimePdf(version.versionCreatedAt) },
+        { label: "Created By", value: version.versionCreatedBy || "N/A" },
+        { label: "Status", value: version.assignedTo?.lRStatus || "N/A" },
+        { label: "Reason", value: version.versionReason || "N/A" }
+    ];
+
+    items.forEach((item, i) => {
+        const itemX = x + (i * colWidth) + 10;
+        doc.font("Helvetica-Bold").fontSize(7).fillColor(PDF_COLORS.muted)
+           .text(item.label.toUpperCase(), itemX, y + 10, { width: colWidth - 20 });
+        doc.font("Helvetica").fontSize(9).fillColor(PDF_COLORS.text)
+           .text(item.value, itemX, y + 25, { width: colWidth - 20 });
+    });
+
+    return y + height + 15;
+}
+
+/**
+ * Draw snapshot summary (not as table)
+ */
+function drawSnapshotSummary(doc, x, y, width, version) {
+    const items = [
+        { label: "Results", count: version.leadReturnResults?.length || 0 },
+        { label: "Persons", count: version.persons?.length || 0 },
+        { label: "Vehicles", count: version.vehicles?.length || 0 },
+        { label: "Audios", count: version.audios?.length || 0 },
+        { label: "Videos", count: version.videos?.length || 0 },
+        { label: "Pictures", count: version.pictures?.length || 0 },
+        { label: "Enclosures", count: version.enclosures?.length || 0 },
+        { label: "Evidences", count: version.evidences?.length || 0 },
+        { label: "Scratchpads", count: version.scratchpads?.length || 0 },
+        { label: "Timelines", count: version.timelines?.length || 0 }
+    ];
+
+    const itemWidth = 55;
+    const itemHeight = 35;
+    const cols = Math.floor(width / itemWidth);
+
+    let currentX = x;
+    let currentY = y;
+
+    items.forEach((item, i) => {
+        if (i > 0 && i % cols === 0) {
+            currentX = x;
+            currentY += itemHeight + 5;
+        }
+
+        // Small card for each count
+        const hasItems = item.count > 0;
+        doc.rect(currentX, currentY, itemWidth - 5, itemHeight)
+           .fillAndStroke(hasItems ? "#e3f2fd" : "#f5f5f5", PDF_COLORS.border);
+
+        doc.font("Helvetica-Bold").fontSize(14)
+           .fillColor(hasItems ? PDF_COLORS.primary : PDF_COLORS.muted)
+           .text(item.count.toString(), currentX + 5, currentY + 5, { width: itemWidth - 15, align: "center" });
+
+        doc.font("Helvetica").fontSize(7).fillColor(PDF_COLORS.muted)
+           .text(item.label, currentX + 5, currentY + 22, { width: itemWidth - 15, align: "center" });
+
+        currentX += itemWidth;
+    });
+
+    const rows = Math.ceil(items.length / cols);
+    return currentY + itemHeight + 10;
+}
+
+/**
+ * @route   GET /api/leadreturn-versions/:leadNo/version/:versionId/pdf
+ * @desc    Generate and download PDF for a specific version using PDFKit
+ * @access  Private
+ * @query   caseNo - Optional case number for filtering
+ * @query   caseName - Optional case name for filtering
+ */
+router.get("/:leadNo/version/:versionId/pdf", async (req, res) => {
+    try {
+        const { leadNo, versionId } = req.params;
+        const { caseNo, caseName, leadName } = req.query;
+
+        console.log('📄 PDF Generation Request:', { leadNo, versionId, caseNo, caseName });
+
+        // Get the version data
+        const version = await getVersion(parseInt(leadNo), parseInt(versionId), caseNo, caseName);
+
+        if (!version) {
+            return res.status(404).json({
+                success: false,
+                message: "Version not found"
+            });
+        }
+
+        // Get all versions to find previous version for activity log
+        const allVersions = await getAllVersions(parseInt(leadNo), caseNo, caseName);
+        const currentIndex = allVersions.findIndex(v => v.versionId === parseInt(versionId));
+
+        let activityLog = [];
+        let previousVersionData = null;
+        if (currentIndex >= 0 && currentIndex < allVersions.length - 1) {
+            const previousVersion = allVersions[currentIndex + 1];
+            previousVersionData = await getVersion(parseInt(leadNo), previousVersion.versionId, caseNo, caseName);
+            if (previousVersionData) {
+                activityLog = generateActivityLog(previousVersionData, version);
+            }
+        }
+
+        // Create PDF document
+        const doc = new PDFDocument({
+            margin: 50,
+            size: 'LETTER',
+            bufferPages: true
+        });
+
+        // Set response headers
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="Lead_${leadNo}_Version_${versionId}.pdf"`);
+
+        // Pipe PDF to response
+        doc.pipe(res);
+
+        const leftMargin = 50;
+        const pageWidth = 512;
+
+        // Draw header with logo
+        const headerHeight = drawVersionHeader(doc, leadNo, versionId, caseNo || version.caseNo, caseName || version.caseName, leadName);
+        let currentY = headerHeight + 20;
+
+        // Version Info Block (not a table)
+        currentY = drawVersionInfoBlock(doc, leftMargin, currentY, pageWidth, version);
+
+        // Snapshot Summary (card-based, not a table)
+        currentY = drawSectionHeader(doc, "SNAPSHOT SUMMARY", currentY, leftMargin, pageWidth);
+        currentY = drawSnapshotSummary(doc, leftMargin, currentY, pageWidth, version);
+
+        // ============ CHANGES SECTION ============
+        if (activityLog && activityLog.length > 0) {
+            // Group activities by action type
+            const createdItems = activityLog.filter(a => a.action === 'created');
+            const updatedItems = activityLog.filter(a => a.action === 'updated');
+            const deletedItems = activityLog.filter(a => a.action === 'deleted');
+
+            currentY = drawSectionHeader(doc, `CHANGES IN THIS VERSION (${activityLog.length} total)`, currentY, leftMargin, pageWidth);
+
+            // Legend
+            const legendY = currentY;
+            drawChangeBadge(doc, "created", leftMargin, legendY);
+            drawChangeBadge(doc, "updated", leftMargin + 80, legendY);
+            drawChangeBadge(doc, "deleted", leftMargin + 160, legendY);
+            currentY = legendY + 25;
+
+            // === CREATED ITEMS ===
+            if (createdItems.length > 0) {
+                currentY = drawSectionHeader(doc, `CREATED (${createdItems.length})`, currentY, leftMargin, pageWidth);
+
+                for (const activity of createdItems) {
+                    const content = activity.description || `New ${activity.entityType} added`;
+                    currentY = drawContentBox(doc, leftMargin, currentY, pageWidth, content, "created", activity.entityType);
+                }
+            }
+
+            // === UPDATED ITEMS (Side by side comparison) ===
+            if (updatedItems.length > 0) {
+                currentY = drawSectionHeader(doc, `UPDATED (${updatedItems.length})`, currentY, leftMargin, pageWidth);
+
+                for (const activity of updatedItems) {
+                    if (activity.field && (activity.oldValue !== undefined || activity.newValue !== undefined)) {
+                        // Show side-by-side comparison
+                        currentY = drawComparisonBox(
+                            doc,
+                            leftMargin,
+                            currentY,
+                            pageWidth,
+                            activity.oldValue || "(empty)",
+                            activity.newValue || "(empty)",
+                            `${activity.entityType} - ${activity.field}`
+                        );
+                    } else {
+                        // Just show the description
+                        const bottomY = doc.page.height - doc.page.margins.bottom;
+                        if (currentY + 50 > bottomY) {
+                            doc.addPage();
+                            currentY = doc.page.margins.top;
+                        }
+
+                        doc.rect(leftMargin, currentY, pageWidth, 35)
+                           .fillAndStroke(PDF_COLORS.lightOrange, PDF_COLORS.border);
+                        doc.rect(leftMargin, currentY, 4, 35).fill(PDF_COLORS.updated);
+
+                        doc.font("Helvetica-Bold").fontSize(8).fillColor(PDF_COLORS.updated)
+                           .text(activity.entityType.toUpperCase(), leftMargin + 12, currentY + 6);
+                        doc.font("Helvetica").fontSize(8).fillColor(PDF_COLORS.text)
+                           .text(activity.description, leftMargin + 12, currentY + 18, { width: pageWidth - 24 });
+
+                        currentY += 42;
+                    }
+                }
+            }
+
+            // === DELETED ITEMS ===
+            if (deletedItems.length > 0) {
+                currentY = drawSectionHeader(doc, `DELETED (${deletedItems.length})`, currentY, leftMargin, pageWidth);
+
+                for (const activity of deletedItems) {
+                    const content = activity.description || `${activity.entityType} removed`;
+                    currentY = drawContentBox(doc, leftMargin, currentY, pageWidth, content, "deleted", activity.entityType);
+                }
+            }
+        } else {
+            // No changes - this is the first version or no comparison available
+            currentY = drawSectionHeader(doc, "VERSION CHANGES", currentY, leftMargin, pageWidth);
+
+            const bottomY = doc.page.height - doc.page.margins.bottom;
+            if (currentY + 40 > bottomY) {
+                doc.addPage();
+                currentY = doc.page.margins.top;
+            }
+
+            doc.rect(leftMargin, currentY, pageWidth, 35).fillAndStroke("#f0f0f0", PDF_COLORS.border);
+            doc.font("Helvetica").fontSize(9).fillColor(PDF_COLORS.muted)
+               .text(previousVersionData ? "No changes detected from previous version" : "This is the first version - no previous version to compare",
+                     leftMargin + 10, currentY + 12, { width: pageWidth - 20, align: "center" });
+            currentY += 45;
+        }
+
+        // ============ CURRENT CONTENT SECTION ============
+        // Only show this section if there's content to display
+        const hasContent = (version.leadReturnResults?.length > 0) ||
+                          (version.persons?.length > 0) ||
+                          (version.vehicles?.length > 0) ||
+                          (version.timelines?.length > 0);
+
+        if (hasContent) {
+            currentY = drawSectionHeader(doc, "CURRENT VERSION CONTENT", currentY, leftMargin, pageWidth);
+        }
+
+        // Narratives
+        if (version.leadReturnResults && version.leadReturnResults.length > 0) {
+            const bottomY = doc.page.height - doc.page.margins.bottom;
+            if (currentY + 30 > bottomY) {
+                doc.addPage();
+                currentY = doc.page.margins.top;
+            }
+
+            doc.font("Helvetica-Bold").fontSize(9).fillColor(PDF_COLORS.primary)
+               .text(`Narratives (${version.leadReturnResults.length})`, leftMargin, currentY);
+            currentY += 15;
+
+            version.leadReturnResults.forEach((result, idx) => {
+                if (currentY + 60 > bottomY) {
+                    doc.addPage();
+                    currentY = doc.page.margins.top;
+                }
+
+                // Narrative box
+                const narrativeText = result.leadReturnResult || 'N/A';
+                doc.font("Helvetica").fontSize(8);
+                const textHeight = doc.heightOfString(narrativeText, { width: pageWidth - 20 });
+                const boxHeight = Math.max(textHeight + 30, 50);
+
+                doc.rect(leftMargin, currentY, pageWidth, boxHeight).stroke(PDF_COLORS.border);
+
+                // Header row
+                doc.rect(leftMargin, currentY, pageWidth, 18).fill("#f8f9fa");
+                doc.font("Helvetica-Bold").fontSize(8).fillColor(PDF_COLORS.primary)
+                   .text(`#${result.leadReturnId || idx + 1}`, leftMargin + 8, currentY + 5);
+                doc.font("Helvetica").fontSize(7).fillColor(PDF_COLORS.muted)
+                   .text(`${formatDateForPdf(result.enteredDate)} | ${result.enteredBy || 'N/A'}`, leftMargin + 60, currentY + 5);
+
+                // Content
+                doc.font("Helvetica").fontSize(8).fillColor(PDF_COLORS.text)
+                   .text(narrativeText, leftMargin + 8, currentY + 22, { width: pageWidth - 16 });
+
+                currentY += boxHeight + 8;
+            });
+        }
+
+        // Persons summary
+        if (version.persons && version.persons.length > 0) {
+            const bottomY = doc.page.height - doc.page.margins.bottom;
+            if (currentY + 30 > bottomY) {
+                doc.addPage();
+                currentY = doc.page.margins.top;
+            }
+
+            doc.font("Helvetica-Bold").fontSize(9).fillColor(PDF_COLORS.primary)
+               .text(`Persons (${version.persons.length})`, leftMargin, currentY);
+            currentY += 15;
+
+            version.persons.forEach((person, idx) => {
+                if (currentY + 25 > bottomY) {
+                    doc.addPage();
+                    currentY = doc.page.margins.top;
+                }
+                doc.font("Helvetica").fontSize(8).fillColor(PDF_COLORS.text)
+                   .text(`• ${person.firstName || ''} ${person.lastName || ''} ${person.cellNumber ? '| ' + person.cellNumber : ''} ${person.personType ? '| ' + person.personType : ''}`, leftMargin + 5, currentY);
+                currentY += 14;
+            });
+            currentY += 10;
+        }
+
+        // Vehicles summary
+        if (version.vehicles && version.vehicles.length > 0) {
+            const bottomY = doc.page.height - doc.page.margins.bottom;
+            if (currentY + 30 > bottomY) {
+                doc.addPage();
+                currentY = doc.page.margins.top;
+            }
+
+            doc.font("Helvetica-Bold").fontSize(9).fillColor(PDF_COLORS.primary)
+               .text(`Vehicles (${version.vehicles.length})`, leftMargin, currentY);
+            currentY += 15;
+
+            version.vehicles.forEach((vehicle, idx) => {
+                if (currentY + 25 > bottomY) {
+                    doc.addPage();
+                    currentY = doc.page.margins.top;
+                }
+                doc.font("Helvetica").fontSize(8).fillColor(PDF_COLORS.text)
+                   .text(`• ${vehicle.year || ''} ${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.plate ? '| Plate: ' + vehicle.plate : ''} ${vehicle.vin ? '| VIN: ' + vehicle.vin : ''}`, leftMargin + 5, currentY);
+                currentY += 14;
+            });
+            currentY += 10;
+        }
+
+        // Timeline summary
+        if (version.timelines && version.timelines.length > 0) {
+            const bottomY = doc.page.height - doc.page.margins.bottom;
+            if (currentY + 30 > bottomY) {
+                doc.addPage();
+                currentY = doc.page.margins.top;
+            }
+
+            doc.font("Helvetica-Bold").fontSize(9).fillColor(PDF_COLORS.primary)
+               .text(`Timeline Events (${version.timelines.length})`, leftMargin, currentY);
+            currentY += 15;
+
+            version.timelines.forEach((event, idx) => {
+                if (currentY + 25 > bottomY) {
+                    doc.addPage();
+                    currentY = doc.page.margins.top;
+                }
+                doc.font("Helvetica").fontSize(8).fillColor(PDF_COLORS.muted)
+                   .text(formatDateForPdf(event.eventDate), leftMargin + 5, currentY, { continued: true, width: 60 });
+                doc.fillColor(PDF_COLORS.text)
+                   .text(` ${event.eventDescription || 'N/A'}`, { width: pageWidth - 70 });
+                currentY += 14;
+            });
+            currentY += 10;
+        }
+
+        // Footer on each page
+        const pages = doc.bufferedPageRange();
+        for (let i = 0; i < pages.count; i++) {
+            doc.switchToPage(i);
+
+            // Footer line
+            doc.strokeColor('#999999').lineWidth(0.5)
+               .moveTo(leftMargin, 730).lineTo(leftMargin + pageWidth, 730).stroke();
+
+            // Footer text - use explicit coordinates for each to avoid page creation
+            doc.fontSize(8).fillColor('#666666');
+            doc.text(`Generated: ${new Date().toLocaleString()}`, leftMargin, 740, { lineBreak: false });
+            doc.text(`Page ${i + 1} of ${pages.count}`, leftMargin + pageWidth - 80, 740, { lineBreak: false });
+            doc.text('PIMS - Lead Version History', leftMargin + 180, 740, { lineBreak: false });
+        }
+
+        // Finalize PDF
+        doc.end();
+
+        console.log('✅ PDF generated successfully');
+
+    } catch (error) {
+        console.error("❌ Error generating PDF:", error.message);
+        console.error("Stack trace:", error.stack);
+        res.status(500).json({
+            success: false,
+            message: error.message || "Failed to generate PDF"
         });
     }
 });

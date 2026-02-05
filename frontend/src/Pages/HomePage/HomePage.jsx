@@ -33,9 +33,7 @@ const [showAddCase, setShowAddCase] = useState(false);
 
  
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(50);
-    const totalPages = 10;
-    const totalEntries = 100;
+    const [pageSize, setPageSize] = useState(10);
     const [showCaseSelector, setShowCaseSelector] = useState(false);
     const [navigateTo, setNavigateTo] = useState(""); 
 
@@ -1051,6 +1049,20 @@ const sortAssignedColumn = (dataKey, direction) =>
     });
 }, [leads.assignedLeads, assignedFilterConfig, assignedSortConfig]);
 
+// Paginate the sorted assigned leads
+const paginatedLeads = useMemo(() => {
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  return sortedAssignedLeads.slice(startIndex, endIndex);
+}, [sortedAssignedLeads, currentPage, pageSize]);
+
+// Paginate the sorted cases
+const paginatedCases = useMemo(() => {
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  return sortedCases.slice(startIndex, endIndex);
+}, [sortedCases, currentPage, pageSize]);
+
 console.log("Sorted Assigned Leads", sortedAssignedLeads);
 
 
@@ -1166,7 +1178,25 @@ const sortedPendingReturns = useMemo(() => {
   return data;
 }, [leads.pendingLeadReturns, pendingFilterConfig, pendingSortConfig]);
 
+// Paginate the sorted pending lead returns
+const paginatedPendingReturns = useMemo(() => {
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  return sortedPendingReturns.slice(startIndex, endIndex);
+}, [sortedPendingReturns, currentPage, pageSize]);
 
+// Dynamic totalEntries based on active tab
+const totalEntries = useMemo(() => {
+  if (activeTab === "cases") return sortedCases.length;
+  if (activeTab === "assignedLeads") return sortedAssignedLeads.length;
+  if (activeTab === "pendingLeadReturns") return sortedPendingReturns.length;
+  return 0;
+}, [activeTab, sortedCases.length, sortedAssignedLeads.length, sortedPendingReturns.length]);
+
+// Reset to page 1 when filters or tab changes
+useEffect(() => {
+  setCurrentPage(1);
+}, [assignedFilterConfig, assignedSortConfig, activeTab, filterConfig, sortConfig, pendingFilterConfig, pendingSortConfig]);
 
 
   return (
@@ -1322,8 +1352,8 @@ const sortedPendingReturns = useMemo(() => {
                 </tr>
               </thead>
               <tbody>
-                {sortedCases.length > 0 ? (
-                  sortedCases.map(c => (
+                {paginatedCases.length > 0 ? (
+                  paginatedCases.map(c => (
                     <tr key={c.id}>
                       <td>{c.id}</td>
                       <td>{c.title}</td>
@@ -1419,8 +1449,8 @@ const sortedPendingReturns = useMemo(() => {
                 </tr>
               </thead>
               <tbody>
-                {sortedAssignedLeads.length > 0 ? (
-                  sortedAssignedLeads.map(lead => (
+                {paginatedLeads.length > 0 ? (
+                  paginatedLeads.map(lead => (
                     <tr key={lead.id}>
                       <td>{lead.id}</td>
                       <td>{lead.description}</td>
@@ -1449,14 +1479,7 @@ const sortedPendingReturns = useMemo(() => {
         </div>
       )}
 
-          {/* <Pagination
-            currentPage={currentPage}
-            totalEntries={totalEntries}
-            onPageChange={setCurrentPage}
-            pageSize={pageSize}
-            onPageSizeChange={setPageSize}
-          /> */}
-    
+
 
 
 
@@ -1587,8 +1610,8 @@ const sortedPendingReturns = useMemo(() => {
                 </tr>
               </thead>
               <tbody>
-                {leads.pendingLeadReturns.length > 0 ? (
-                leads.pendingLeadReturns.map((lead) => (
+                {paginatedPendingReturns.length > 0 ? (
+                paginatedPendingReturns.map((lead) => (
                     <tr key={lead.id}>
                       <td>{lead.id}</td>
                       <td>{lead.description}</td>
