@@ -581,6 +581,11 @@ const applyAssignedFilter = dk =>
     [dk]: tempAssignedSelections[dk]||[]
   }));
 
+const handleAssignedSort = (dk, dir) => {
+  setAssignedSortConfig({ key: dk, direction: dir });
+  setOpenAssignedFilter(null);
+};
+
 // compute distinct values for each column
 const distinctAssigned = useMemo(() => {
   const map = {
@@ -702,6 +707,11 @@ const applyPendingFilter = dataKey =>
     [dataKey]: tempPendingSelections[dataKey] || []
   }));
 
+const handlePendingSort = (dk, dir) => {
+  setPendingSortConfig({ key: dk, direction: dir });
+  setOpenPendingFilter(null);
+};
+
 // Compute distinct values
 const distinctPending = useMemo(() => {
   const map = {
@@ -809,6 +819,11 @@ const applyPendingLRFilter = dataKey =>
     [dataKey]: tempPendingLRSelections[dataKey] || []
   }));
 
+const handlePendingLRSort = (dk, dir) => {
+  setPendingLRSortConfig({ key: dk, direction: dir });
+  setOpenPendingLRFilter(null);
+};
+
 // Distinct values for each column
 const distinctPendingLR = useMemo(() => {
   const map = {
@@ -873,7 +888,7 @@ const allColWidths = {
 const popupAllRefs     = useRef({});
 const [openAllFilter,   setOpenAllFilter]   = useState(null);
 const [allFilterConfig, setAllFilterConfig] = useState({
-  id:'', description:'', leadStatus:'', assignedOfficers:''
+  id: [], description: [], leadStatus: [], assignedOfficers: []
 });
 const [allFilterSearch, setAllFilterSearch] = useState({});
 const [tempAllSelections, setTempAllSelections] = useState({});
@@ -944,15 +959,21 @@ const applyAllFilter = key =>
     [key]: tempAllSelections[key] || []
   }));
 
+const handleAllSort = (dk, dir) => {
+  setAllSortConfig({ key: dk, direction: dir });
+  setOpenAllFilter(null);
+};
+
 
 // Apply filters + sort
 const sortedAllLeads = useMemo(() => {
   let data = leads.allLeads.filter(lead =>
-    (!allFilterConfig.id           || String(lead.id)            === allFilterConfig.id)           &&
-    (!allFilterConfig.description  || lead.description           === allFilterConfig.description)  &&
-    (!allFilterConfig.leadStatus   || lead.leadStatus            === allFilterConfig.leadStatus)   &&
-    (!allFilterConfig.assignedOfficers ||
-       (lead.assignedOfficers || []).includes(allFilterConfig.assignedOfficers))
+    Object.entries(allFilterConfig).every(([key, sel]) => {
+      if (!sel || !sel.length) return true;
+      let cell = lead[key];
+      if (Array.isArray(cell)) return cell.some(v => sel.includes(v));
+      return sel.includes(String(cell));
+    })
   );
   const { key, direction } = allSortConfig;
   if (key) {
@@ -1324,6 +1345,7 @@ React.useEffect(() => {
                       searchValue={assignedFilterSearch[dataKey] || ""}
                       selections={tempAssignedSelections[dataKey] || []}
                       onSearch={handleAssignedFilterSearch}
+                      onSort={handleAssignedSort}
                       allChecked={assignedAllChecked}
                       onToggleAll={toggleAssignedSelectAll}
                       onToggleOne={handleAssignedCheckboxToggle}
@@ -1435,6 +1457,7 @@ React.useEffect(() => {
                       searchValue={pendingFilterSearch[dataKey] || ""}
                       selections={tempPendingSelections[dataKey] || []}
                       onSearch={handlePendingFilterSearch}
+                      onSort={handlePendingSort}
                       allChecked={pendingAllChecked}
                       onToggleAll={togglePendingSelectAll}
                       onToggleOne={handlePendingCheckboxToggle}
@@ -1524,6 +1547,7 @@ React.useEffect(() => {
                       searchValue={pendingLRFilterSearch[dataKey] || ''}
                       selections={tempPendingLRSelections[dataKey] || []}
                       onSearch={handlePendingLRFilterSearch}
+                      onSort={handlePendingLRSort}
                       allChecked={pendingLRAllChecked}
                       onToggleAll={togglePendingLRSelectAll}
                       onToggleOne={handlePendingLRCheckboxToggle}
@@ -1616,6 +1640,7 @@ React.useEffect(() => {
                       searchValue={allFilterSearch[dataKey] || ''}
                       selections={tempAllSelections[dataKey] || []}
                       onSearch={handleAllFilterSearch}
+                      onSort={handleAllSort}
                       allChecked={allAllChecked}
                       onToggleAll={toggleAllSelectAll}
                       onToggleOne={handleAllCheckboxToggle}

@@ -84,13 +84,35 @@ export default function Filter({
   const [pos, setPos] = useState({ top: 0, left: 0 });
 
   // When opening, compute absolute screen coords based on the anchor button
+  // and ensure popup stays within viewport bounds
   useLayoutEffect(() => {
     if (open && anchorRef?.current) {
       const rect = anchorRef.current.getBoundingClientRect();
-      setPos({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX
-      });
+      const popupWidth = 300; // 280px width + margins/padding
+      const popupHeight = 380; // max-height from CSS + some buffer
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      // Try to center popup below the anchor
+      let left = rect.left + (rect.width / 2) - (popupWidth / 2) + window.scrollX;
+      let top = rect.bottom + window.scrollY + 5; // 5px gap below anchor
+
+      // Check if popup would overflow right edge
+      if (left + popupWidth > viewportWidth + window.scrollX) {
+        left = viewportWidth - popupWidth + window.scrollX - 10;
+      }
+
+      // Check if popup would overflow left edge
+      if (left < window.scrollX + 10) {
+        left = window.scrollX + 10;
+      }
+
+      // Check if popup would overflow bottom edge
+      if (rect.bottom + popupHeight > viewportHeight) {
+        top = rect.top + window.scrollY - popupHeight - 5; // Position above with 5px gap
+      }
+
+      setPos({ top, left });
     }
   }, [open, anchorRef]);
 
@@ -101,10 +123,10 @@ export default function Filter({
       if (
         popupRef.current &&
         !popupRef.current.contains(e.target) &&
-        anchorRef.current &&
+        anchorRef?.current &&
         !anchorRef.current.contains(e.target)
       ) {
-        onCancel();
+        onCancel && onCancel();
       }
     }
 
@@ -126,8 +148,8 @@ export default function Filter({
       }}
     >
       <div className="fp-header">
-        <button className="fp-btn" onClick={() => onSort(dataKey, 'asc')}>A→Z</button>
-        <button className="fp-btn" onClick={() => onSort(dataKey, 'desc')}>Z→A</button>
+        <button className="fp-btn" onClick={() => onSort && onSort(dataKey, 'asc')}>A→Z</button>
+        <button className="fp-btn" onClick={() => onSort && onSort(dataKey, 'desc')}>Z→A</button>
       </div>
       <input
         className="fp-search"
@@ -144,8 +166,8 @@ export default function Filter({
           />
           (Select All)
         </label>
-        {distinctValues[dataKey]
-          .filter(v => v.toLowerCase().includes(searchValue.toLowerCase()))
+        {(distinctValues[dataKey] || [])
+          .filter(v => String(v).toLowerCase().includes((searchValue || '').toLowerCase()))
           .map(v => (
             <label key={v} className="fp-option">
               <input

@@ -1193,6 +1193,9 @@ const applyAssignedFilter = dk =>
     [dk]: tempAssignedSelections[dk]||[]
   }));
 
+const handleSortAssigned = (dk, dir) =>
+  setAssignedSortConfig({ key: dk, direction: dir });
+
 // compute distinct values for each column
 const distinctAssigned = useMemo(() => {
   const map = {
@@ -1435,6 +1438,9 @@ const applyPendingLRFilter = dataKey =>
     [dataKey]: tempPendingLRSelections[dataKey] || []
   }));
 
+const handleSortPendingLR = (dk, dir) =>
+  setPendingLRSortConfig({ key: dk, direction: dir });
+
 // Distinct values for each column
 const distinctPendingLR = useMemo(() => {
   const map = {
@@ -1515,7 +1521,7 @@ const filterButtonRefs = useRef({});
 const popupAllRefs     = useRef({});
 const [openAllFilter,   setOpenAllFilter]   = useState(null);
 const [allFilterConfig, setAllFilterConfig] = useState({
-  id:'', description:'', leadStatus:'', assignedOfficers:''
+  id: [], description: [], leadStatus: [], assignedOfficers: []
 });
 const [allFilterSearch, setAllFilterSearch] = useState({});
 const [tempAllSelections, setTempAllSelections] = useState({});
@@ -2369,6 +2375,7 @@ const toTitleCase = (s = "") =>
                                 searchValue={assignedFilterSearch[dataKey] || ""}
                                 selections={tempAssignedSelections[dataKey] || []}
                                 onSearch={handleAssignedFilterSearch}
+                                onSort={handleSortAssigned}
                                 allChecked={assignedAllChecked}
                                 onToggleAll={toggleAssignedSelectAll}
                                 onToggleOne={handleAssignedCheckboxToggle}
@@ -2646,6 +2653,7 @@ const toTitleCase = (s = "") =>
                                     searchValue={pendingLRFilterSearch[dataKey] || ''}
                                     selections={tempPendingLRSelections[dataKey] || []}
                                     onSearch={handlePendingLRFilterSearch}
+                                    onSort={handleSortPendingLR}
                                     allChecked={pendingLRAllChecked}
                                     onToggleAll={togglePendingLRSelectAll}
                                     onToggleOne={handlePendingLRCheckboxToggle}

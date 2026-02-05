@@ -3,49 +3,50 @@
   display: flex;
   flex-direction: column;
   position: absolute;
-  top: 100%; left: 0;
-  width: 280px;             /* a bit wider */
-  max-height: 360px;        /* a bit taller */
+  width: 280px;
+  max-height: 360px;
   background: #fff;
   border: 1px solid #ccc;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  display: flex;
-  flex-direction: column;
-  font-size: 20px;           /* larger overall text */
-  z-index: 3000;
-  margin: 10px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  font-size: 16px;
+  z-index: 9999;
   padding: 10px;
 }
 
-/* —— header row with full labels —— */
+/* —— header row with sort buttons —— */
 .fp-header {
   display: flex;
   justify-content: center;
   align-items: center;
   border-bottom: 1px solid #eee;
-  color: black;
+  padding-bottom: 8px;
+  margin-bottom: 4px;
 }
 .fp-header .fp-btn {
   flex: 1;
-  padding: 8px 12px;         /* more tap-area */
+  padding: 8px 12px;
   font-size: 14px;
   background: none;
   border: none;
-  /* text-align: left; */
   cursor: pointer;
-  color: black;
+  color: #333;
+  text-align: center;
+  border-radius: 4px;
 }
 .fp-header .fp-btn:hover {
-  background: #f5f5f5;
+  background: #f0f0f0;
 }
 
 /* —— search box —— */
 .fp-search {
-  /* margin: 8px;
-  padding: 8px; */
+  margin: 8px 0;
+  padding: 8px;
   font-size: 16px;
   border: 1px solid #ddd;
   border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* —— scrollable checklist —— */
@@ -53,8 +54,8 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: auto;
-  white-space: nowrap;
-  padding: 4px 4px;
+  padding: 4px 0;
+  max-height: 200px;
 }
 .fp-list::-webkit-scrollbar {
   width: 6px;
@@ -67,15 +68,22 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  padding: 6px 0;
+  padding: 6px 4px;
   font-size: 16px;
   gap: 10px;
+  cursor: pointer;
+  white-space: nowrap;
 }
-.fp-option input {
-  transform: scale(1.2);
-  min-height: 20px;
-  min-width: 20px;
+.fp-option:hover {
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+.fp-option input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
   margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 /* —— footer OK / Cancel —— */
@@ -83,21 +91,29 @@
   display: flex;
   justify-content: flex-end;
   border-top: 1px solid #eee;
-  padding: 8px 12px;
-  color:black;
+  padding: 8px 4px 4px 4px;
+  margin-top: 8px;
+  gap: 8px;
 }
 .fp-apply,
 .fp-cancel {
-  margin-left: 8px;
-  padding: 6px 14px;
+  padding: 6px 16px;
   font-size: 14px;
   border: 1px solid #ccc;
+  border-radius: 4px;
   background: #f9f9f9;
   cursor: pointer;
-    color:black;
-
+  color: black;
 }
 .fp-apply:hover,
 .fp-cancel:hover {
-  background: #ececec;
+  background: #e8e8e8;
+}
+.fp-apply {
+  background: #4a5568;
+  color: white;
+  border-color: #4a5568;
+}
+.fp-apply:hover {
+  background: #2d3748;
 }
