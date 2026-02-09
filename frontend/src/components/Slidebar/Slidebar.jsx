@@ -44,8 +44,12 @@ export const SlideBar = ({ onAddCase, onClose,  isOpen,
 
   const [managersQuery, setManagersQuery] = useState("");
 const [investigatorsQuery, setInvestigatorsQuery] = useState("");
+const [supervisorQuery, setSupervisorQuery] = useState("");
+const [supervisorOpen, setSupervisorOpen] = useState(false);
+const supervisorRef = useRef(null);
 const managersSearchRef = useRef(null);
 const investigatorsSearchRef = useRef(null);
+const supervisorSearchRef = useRef(null);
 
 const toDisplay = (u) =>
   `${u.firstName || ""} ${u.lastName || ""} (${u.username})`
@@ -58,6 +62,10 @@ const matches = (u, q) =>
 const filteredManagers = allUsers.filter((u) => matches(u, managersQuery));
 
 const filteredInvestigators = allUsers.filter((u) => matches(u, investigatorsQuery));
+
+const filteredSupervisors = allUsers
+  .filter((u) => u.role === "Detective Supervisor")
+  .filter((u) => matches(u, supervisorQuery));
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -141,6 +149,13 @@ useEffect(() => {
   }
 }, [investigatorsOpen]);
 
+useEffect(() => {
+  if (supervisorOpen) {
+    setSupervisorQuery("");
+    setTimeout(() => supervisorSearchRef.current?.focus(), 0);
+  }
+}, [supervisorOpen]);
+
 
 useEffect(() => {
   function handleClickOutside(e) {
@@ -152,10 +167,14 @@ useEffect(() => {
       setInvestigatorsOpen(false);
       setInvestigatorsQuery(""); // optional
     }
+    if (supervisorOpen && supervisorRef.current && !supervisorRef.current.contains(e.target)) {
+      setSupervisorOpen(false);
+      setSupervisorQuery("");
+    }
   }
   document.addEventListener("mousedown", handleClickOutside);
   return () => document.removeEventListener("mousedown", handleClickOutside);
-}, [managersOpen, investigatorsOpen]);
+}, [managersOpen, investigatorsOpen, supervisorOpen]);
 
   
 
@@ -406,26 +425,73 @@ setIsSidebarOpen(false);
               className="input-field"
             />
           </div>
-            { (
-           <div className="form-group">
-            <label>Detective Supervisor:</label>
-            <select
-              name="detectiveSupervisor"
-              value={caseDetails.detectiveSupervisor}
-              onChange={handleInputChange}
-              className="input-field"
-            >
-              <option value="">Select Supervisor</option>
-              {allUsers
-              .filter(u => u.role === "Detective Supervisor")
-              .map((u) => (
-                <option key={u.username} value={u.username}>
-                  {u.firstName} {u.lastName} ({u.username})
-                </option>
-              ))}
-            </select>
+          <div className="inv-select-group" ref={supervisorRef}>
+            <label htmlFor="ds-trigger">Detective Supervisor:</label>
+
+            <div className="inv-dropdown">
+              <button
+                id="ds-trigger"
+                type="button"
+                className="inv-input"
+                onClick={() => setSupervisorOpen((o) => !o)}
+                onKeyDown={(e) =>
+                  (e.key === "Enter" || e.key === " ") && setSupervisorOpen((o) => !o)
+                }
+                aria-haspopup="listbox"
+                aria-expanded={supervisorOpen}
+                title={caseDetails.detectiveSupervisor || "Select Supervisor"}
+              >
+                <span className="inv-input-label">
+                  {caseDetails.detectiveSupervisor
+                    ? toDisplay(
+                        allUsers.find((u) => u.username === caseDetails.detectiveSupervisor) || {
+                          username: caseDetails.detectiveSupervisor,
+                        }
+                      )
+                    : "Select Supervisor"}
+                </span>
+                <span className="inv-caret" aria-hidden />
+              </button>
+
+              {supervisorOpen && (
+                <div className="inv-options" role="listbox" onMouseDown={(e) => e.stopPropagation()}>
+                  <div className="inv-search-wrap">
+                    <input
+                      ref={supervisorSearchRef}
+                      type="text"
+                      className="inv-search"
+                      placeholder="Type to filter supervisors…"
+                      value={supervisorQuery}
+                      onChange={(e) => setSupervisorQuery(e.target.value)}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    />
+                  </div>
+
+                  <div className="inv-list">
+                    {filteredSupervisors.length ? (
+                      filteredSupervisors.map((u) => (
+                        <label
+                          key={u.username}
+                          className={`inv-item${caseDetails.detectiveSupervisor === u.username ? " selected" : ""}`}
+                          onClick={() => {
+                            setCaseDetails((cd) => ({
+                              ...cd,
+                              detectiveSupervisor: u.username,
+                            }));
+                            setSupervisorOpen(false);
+                          }}
+                        >
+                          <span className="inv-text">{toDisplay(u)}</span>
+                        </label>
+                      ))
+                    ) : (
+                      <div className="inv-empty">No matches</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-          )}
           
         {/* <div className="form-group" ref={managersRef}>
   <label>Case Managers:</label>

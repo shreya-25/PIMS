@@ -73,6 +73,10 @@ const invRef = useRef(null);
 const [isCaseSummaryOpen, setIsCaseSummaryOpen] = useState(true);
 const [isCaseTeamOpen, setIsCaseTeamOpen] = useState(true);
 
+const [dsSearch, setDsSearch] = useState("");
+const [cmSearch, setCmSearch] = useState("");
+const [invSearch, setInvSearch] = useState("");
+
 const upIcon = "/Materials/drop_up.png";
 const downIcon = "/Materials/drop_down.png";
 
@@ -81,12 +85,15 @@ const downIcon = "/Materials/drop_down.png";
   function handleClickOutside(e) {
     if (dsRef.current && !dsRef.current.contains(e.target)) {
       setDetectiveSupervisorDropdownOpen(false);
+      setDsSearch("");
     }
     if (cmRef.current && !cmRef.current.contains(e.target)) {
       setCaseManagersDropdownOpen(false);
+      setCmSearch("");
     }
     if (invRef.current && !invRef.current.contains(e.target)) {
       setInvestigatorsDropdownOpen(false);
+      setInvSearch("");
     }
   }
 
@@ -1959,7 +1966,21 @@ const toTitleCase = (s = "") =>
 
         {detectiveSupervisorDropdownOpen && (
           <div className="dropdown-options">
-            {allUsers.map(user => (
+            <input
+              type="text"
+              className="dropdown-search"
+              placeholder="Search officer..."
+              value={dsSearch}
+              onChange={(e) => setDsSearch(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              autoFocus
+            />
+            {allUsers
+              .filter(user => {
+                const term = dsSearch.toLowerCase();
+                return !term || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(term);
+              })
+              .map(user => (
               <div key={user.username} className="dropdown-item">
                 <input
                   type="radio"
@@ -2012,7 +2033,20 @@ const toTitleCase = (s = "") =>
                     </div>
                     {caseManagersDropdownOpen && (
                       <div className="dropdown-options">
+                        <input
+                          type="text"
+                          className="dropdown-search"
+                          placeholder="Search officer..."
+                          value={cmSearch}
+                          onChange={(e) => setCmSearch(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          autoFocus
+                        />
                         {allUsers
+                          .filter(user => {
+                            const term = cmSearch.toLowerCase();
+                            return !term || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(term);
+                          })
                           .map(user=>(
                             <div key={user.username} className="dropdown-item">
                               <input
@@ -2020,7 +2054,7 @@ const toTitleCase = (s = "") =>
                                 id={`cm-${user.username}`}
                                 value={user.username}
                                 checked={selectedCaseManagers.includes(user.username)}
-                          
+
                               onChange={(e) => {
           const next = e.target.checked
           ? [...selectedCaseManagers, user.username]
@@ -2073,7 +2107,21 @@ const toTitleCase = (s = "") =>
 
                       {investigatorsDropdownOpen && (
                         <div className="dropdown-options">
-                          {allUsers.map((user) => (
+                          <input
+                            type="text"
+                            className="dropdown-search"
+                            placeholder="Search officer..."
+                            value={invSearch}
+                            onChange={(e) => setInvSearch(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            autoFocus
+                          />
+                          {allUsers
+                            .filter(user => {
+                              const term = invSearch.toLowerCase();
+                              return !term || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(term);
+                            })
+                            .map((user) => (
                             <div key={user.username} className="dropdown-item">
                               <input
                                 type="checkbox"
