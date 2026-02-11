@@ -378,7 +378,156 @@ export const LeadVersionHistory = () => {
     }
   };
 
+  const getActivityEntityName = (activity) => {
+    if (!activity.details) return '';
+    switch (activity.entityType) {
+      case 'Person':
+        return [activity.details.firstName, activity.details.lastName].filter(Boolean).join(' ');
+      case 'Vehicle':
+        return [activity.details.year, activity.details.make, activity.details.model].filter(Boolean).join(' ');
+      case 'Narrative':
+        if (activity.details.leadReturnResult) {
+          const text = activity.details.leadReturnResult;
+          return text.length > 50 ? text.substring(0, 50) + '...' : text;
+        }
+        return '';
+      case 'Timeline Event':
+        if (activity.details.eventDescription) {
+          const text = activity.details.eventDescription;
+          return text.length > 50 ? text.substring(0, 50) + '...' : text;
+        }
+        return '';
+      default:
+        return activity.details.originalName || '';
+    }
+  };
+
   const FILE_ENTITY_TYPES = ['Enclosure', 'Picture', 'Audio', 'Video', 'Evidence'];
+  const FILE_CHANGE_FIELDS = ['isLink', 'originalName', 'link', 's3Key', 'filename'];
+
+  // Consolidate multiple file-related field changes (isLink, originalName, link) for the
+  // same entity into a single activity showing the link↔file type change side by side.
+  const consolidateFileActivities = (activities) => {
+    if (!activities || activities.length === 0) return activities;
+
+    const result = [];
+    const processedIndices = new Set();
+
+    for (let i = 0; i < activities.length; i++) {
+      if (processedIndices.has(i)) continue;
+
+      const activity = activities[i];
+
+      if (activity.action === 'updated' &&
+          FILE_ENTITY_TYPES.includes(activity.entityType) &&
+          activity.field &&
+          FILE_CHANGE_FIELDS.includes(activity.field)) {
+
+        // Gather all related field changes for the same entity
+        const relatedIndices = [i];
+        const fieldChanges = { [activity.field]: { oldValue: activity.oldValue, newValue: activity.newValue } };
+
+        for (let j = i + 1; j < activities.length; j++) {
+          if (processedIndices.has(j)) continue;
+          const other = activities[j];
+          if (other.action === 'updated' &&
+              other.entityType === activity.entityType &&
+              other.entityId === activity.entityId &&
+              other.field &&
+              FILE_CHANGE_FIELDS.includes(other.field)) {
+            relatedIndices.push(j);
+            fieldChanges[other.field] = { oldValue: other.oldValue, newValue: other.newValue };
+          }
+        }
+
+        // Only consolidate when isLink actually changed (link↔file switch)
+        if (fieldChanges.isLink) {
+          relatedIndices.forEach(idx => processedIndices.add(idx));
+
+          const details = activity.details;
+          const wasLink = fieldChanges.isLink.oldValue;
+          const isNowLink = fieldChanges.isLink.newValue;
+          const oldName = fieldChanges.originalName?.oldValue;
+          const newName = fieldChanges.originalName?.newValue || details?.originalName;
+          const oldLinkUrl = fieldChanges.link?.oldValue;
+          const newLinkUrl = fieldChanges.link?.newValue || details?.link;
+
+          result.push({
+            ...activity,
+            _consolidated: true,
+            description: `${activity.entityType} changed from ${wasLink ? 'Link' : 'File'} to ${isNowLink ? 'Link' : 'File'}`,
+            field: null,
+            _fileChange: {
+              oldType: wasLink ? 'Link' : 'File',
+              newType: isNowLink ? 'Link' : 'File',
+              oldDisplayName: wasLink ? (oldLinkUrl || oldName || 'N/A') : (oldName || 'N/A'),
+              newDisplayName: isNowLink ? (newLinkUrl || newName || 'N/A') : (newName || 'N/A'),
+              oldIsLink: wasLink,
+              newIsLink: isNowLink,
+              oldLink: oldLinkUrl,
+              newLink: newLinkUrl,
+              oldFileName: oldName,
+              newFileName: newName,
+            },
+          });
+          continue;
+        }
+      }
+
+      result.push(activity);
+    }
+
+    return result;
+  };
+
+  const renderFileTypeChange = (activity) => {
+    if (!activity._fileChange) return null;
+    const fc = activity._fileChange;
+    const entityId = getEntityId(activity.details, activity.entityType);
+
+    return (
+      <div className="activity-field-change">
+        <span className="field-name">File type changed</span>
+        <div className="value-change">
+          <div className="old-value">
+            <span className="label">OLD: {fc.oldType}</span>
+            {fc.oldIsLink ? (
+              <span className="value">
+                <a href={fc.oldLink} target="_blank" rel="noopener noreferrer" className="file-link">
+                  {fc.oldDisplayName}
+                </a>
+              </span>
+            ) : (
+              <span className="value">{fc.oldFileName || 'N/A'}</span>
+            )}
+          </div>
+          <span className="arrow">→</span>
+          <div className="new-value">
+            <span className="label">NEW: {fc.newType}</span>
+            {fc.newIsLink ? (
+              <span className="value">
+                <a href={fc.newLink} target="_blank" rel="noopener noreferrer" className="file-link">
+                  {fc.newDisplayName}
+                </a>
+              </span>
+            ) : entityId ? (
+              <span className="value">
+                <span
+                  className="file-link"
+                  onClick={() => viewFile(activity.entityType, entityId)}
+                  title="Click to view file"
+                >
+                  {fc.newFileName || 'N/A'}
+                </span>
+              </span>
+            ) : (
+              <span className="value">{fc.newFileName || 'N/A'}</span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const versionCardRefs = useRef({});
   const [pdfLoading, setPdfLoading] = useState(null);
@@ -633,7 +782,9 @@ export const LeadVersionHistory = () => {
       case 'Audio':
       case 'Video':
         if (details.originalName) renderableFields.push({ label: 'File', value: details.originalName, entityType, entityId: getEntityId(details, entityType) });
-        if (details.enclosureDescription) renderableFields.push({ label: 'Description', value: details.enclosureDescription });
+        // Check multiple possible description fields for different entity types
+        const desc = details.enclosureDescription || details.audioDescription || details.videoDescription || details.pictureDescription || details.description;
+        if (desc) renderableFields.push({ label: 'Description', value: desc });
         break;
 
       case 'Note':
@@ -788,7 +939,7 @@ export const LeadVersionHistory = () => {
                 <div className="activity-log-section">
                   <h5>Detailed Activity Log ({activityLog.length} changes)</h5>
                   <div className="activity-log-container">
-                    {activityLog.map((activity, idx) => (
+                    {consolidateFileActivities(activityLog).map((activity, idx) => (
                       <div key={idx} className={`activity-item activity-${activity.action}`}>
                         <div className="activity-header">
                           <span className={`activity-badge ${activity.action}`}>
@@ -797,10 +948,19 @@ export const LeadVersionHistory = () => {
                             {activity.action === 'deleted' && '🗑️ Deleted'}
                           </span>
                           <span className="activity-entity">{activity.entityType}</span>
+                          {/* {activity.action === 'created' && getActivityEntityName(activity) && (
+                            <span className="activity-entity-name">: {getActivityEntityName(activity)}</span>
+                          )} */}
+                          {comparisonResult?.toVersion && (
+                            <>
+                              <span className="activity-officer">by {comparisonResult.toVersion.versionCreatedBy}</span>
+                              <span className="activity-timestamp">{formatDate(comparisonResult.toVersion.versionCreatedAt)}</span>
+                            </>
+                          )}
                         </div>
                         <div className="activity-description">
                         {activity.description}
-                        {FILE_ENTITY_TYPES.includes(activity.entityType) && getEntityId(activity.details, activity.entityType) && (
+                        {!activity._consolidated && FILE_ENTITY_TYPES.includes(activity.entityType) && getEntityId(activity.details, activity.entityType) && (
                           <span
                             className="file-link"
                             onClick={() => viewFile(activity.entityType, getEntityId(activity.details, activity.entityType))}
@@ -811,6 +971,7 @@ export const LeadVersionHistory = () => {
                           </span>
                         )}
                       </div>
+                        {activity._consolidated && renderFileTypeChange(activity)}
                         {activity.field && (
                           <div className="activity-field-change">
                             <span className="field-name">Field: {activity.field}</span>
@@ -960,7 +1121,7 @@ export const LeadVersionHistory = () => {
               <div className="activity-log-section">
                 <h5>Changes in This Version ({versionActivityLogs[version.versionId].length} changes)</h5>
                 <div className="activity-log-container1">
-                  {versionActivityLogs[version.versionId].map((activity, idx) => (
+                  {consolidateFileActivities(versionActivityLogs[version.versionId]).map((activity, idx) => (
                     <div key={idx} className={`activity-item activity-${activity.action}`}>
                       <div className="activity-header">
                         <span className={`activity-badge ${activity.action}`}>
@@ -969,10 +1130,15 @@ export const LeadVersionHistory = () => {
                           {activity.action === 'deleted' && '🗑️ Deleted'}
                         </span>
                         <span className="activity-entity">{activity.entityType}</span>
+                        {/* {activity.action === 'created' && getActivityEntityName(activity) && (
+                          <span className="activity-entity-name">: {getActivityEntityName(activity)}</span>
+                        )} */}
+                        <span className="activity-officer">by {version.versionCreatedBy}</span>
+                        <span className="activity-timestamp">{formatDate(version.versionCreatedAt)}</span>
                       </div>
                       <div className="activity-description">
                         {activity.description}
-                        {FILE_ENTITY_TYPES.includes(activity.entityType) && getEntityId(activity.details, activity.entityType) && (
+                        {!activity._consolidated && FILE_ENTITY_TYPES.includes(activity.entityType) && getEntityId(activity.details, activity.entityType) && (
                           <span
                             className="file-link"
                             onClick={() => viewFile(activity.entityType, getEntityId(activity.details, activity.entityType))}
@@ -983,6 +1149,8 @@ export const LeadVersionHistory = () => {
                           </span>
                         )}
                       </div>
+                      {/* Show consolidated file type change */}
+                      {activity._consolidated && renderFileTypeChange(activity)}
                       {/* Show field changes for updated narratives */}
                       {activity.field && activity.entityType === 'Narrative' && activity.action === 'updated' && (
                         <div className="activity-field-change">
@@ -1027,7 +1195,17 @@ export const LeadVersionHistory = () => {
                                 {formattedFields.map((field, fieldIdx) => (
                                   <div key={fieldIdx} className="entity-field-row">
                                     <span className="field-label">{field.label}:</span>
-                                    <span className="field-value">{field.value}</span>
+                                    {field.entityId ? (
+                                      <span
+                                        className="field-value file-link"
+                                        onClick={() => viewFile(field.entityType, field.entityId)}
+                                        title="Click to view file"
+                                      >
+                                        {field.value}
+                                      </span>
+                                    ) : (
+                                      <span className="field-value">{field.value}</span>
+                                    )}
                                   </div>
                                 ))}
                               </div>
@@ -1049,7 +1227,7 @@ export const LeadVersionHistory = () => {
                   <div className="activity-log-section">
                     <h5>Changes in This Version ({activityLog.length} changes)</h5>
                     <div className="activity-log-container1">
-                      {activityLog.map((activity, idx) => (
+                      {consolidateFileActivities(activityLog).map((activity, idx) => (
                         <div key={idx} className={`activity-item activity-${activity.action}`}>
                           <div className="activity-header">
                             <span className={`activity-badge ${activity.action}`}>
@@ -1058,10 +1236,15 @@ export const LeadVersionHistory = () => {
                               {activity.action === 'deleted' && '🗑️ Deleted'}
                             </span>
                             <span className="activity-entity">{activity.entityType}</span>
+                            {activity.action === 'created' && getActivityEntityName(activity) && (
+                              <span className="activity-entity-name">: {getActivityEntityName(activity)}</span>
+                            )}
+                            <span className="activity-officer">by {version.versionCreatedBy}</span>
+                            <span className="activity-timestamp">{formatDate(version.versionCreatedAt)}</span>
                           </div>
                           <div className="activity-description">
                         {activity.description}
-                        {FILE_ENTITY_TYPES.includes(activity.entityType) && getEntityId(activity.details, activity.entityType) && (
+                        {!activity._consolidated && FILE_ENTITY_TYPES.includes(activity.entityType) && getEntityId(activity.details, activity.entityType) && (
                           <span
                             className="file-link"
                             onClick={() => viewFile(activity.entityType, getEntityId(activity.details, activity.entityType))}
@@ -1072,6 +1255,8 @@ export const LeadVersionHistory = () => {
                           </span>
                         )}
                       </div>
+                          {/* Show consolidated file type change */}
+                          {activity._consolidated && renderFileTypeChange(activity)}
                           {/* Show field changes for updated narratives */}
                           {activity.field && activity.entityType === 'Narrative' && activity.action === 'updated' && (
                             <div className="activity-field-change">
@@ -1116,7 +1301,17 @@ export const LeadVersionHistory = () => {
                                     {formattedFields.map((field, fieldIdx) => (
                                       <div key={fieldIdx} className="entity-field-row">
                                         <span className="field-label">{field.label}:</span>
-                                        <span className="field-value">{field.value}</span>
+                                        {field.entityId ? (
+                                          <span
+                                            className="field-value file-link"
+                                            onClick={() => viewFile(field.entityType, field.entityId)}
+                                            title="Click to view file"
+                                          >
+                                            {field.value}
+                                          </span>
+                                        ) : (
+                                          <span className="field-value">{field.value}</span>
+                                        )}
                                       </div>
                                     ))}
                                   </div>
@@ -1151,7 +1346,7 @@ export const LeadVersionHistory = () => {
                     </div>
                     <div className="activity-log-detailed">
                       {versionActivityLogs[version.versionId]?.length > 0 ? (
-                        versionActivityLogs[version.versionId].map((activity, idx) => (
+                        consolidateFileActivities(versionActivityLogs[version.versionId]).map((activity, idx) => (
                         <div key={idx} className={`activity-detail-item activity-${activity.action}`}>
                           <div className="activity-summary">
                             <span className={`activity-badge ${activity.action}`}>
@@ -1160,9 +1355,14 @@ export const LeadVersionHistory = () => {
                               {activity.action === 'deleted' && '🗑️ Deleted'}
                             </span>
                             <span className="activity-entity-type">{activity.entityType}</span>
+                            {activity.action === 'created' && getActivityEntityName(activity) && (
+                              <span className="activity-entity-name">: {getActivityEntityName(activity)}</span>
+                            )}
                             {activity.details?.leadReturnId && (
                               <span className="narrative-id">Narrative {activity.details.leadReturnId}</span>
                             )}
+                            <span className="activity-officer">by {version.versionCreatedBy}</span>
+                            <span className="activity-timestamp">{formatDate(version.versionCreatedAt)}</span>
                           </div>
 
                           {/* Show created narrative details */}
@@ -1253,8 +1453,11 @@ export const LeadVersionHistory = () => {
                             </div>
                           )}
 
+                          {/* Show consolidated file type change */}
+                          {activity._consolidated && renderFileTypeChange(activity)}
+
                           {/* Show other entity types */}
-                          {!['Narrative', 'Person', 'Vehicle'].includes(activity.entityType) && (
+                          {!activity._consolidated && !['Narrative', 'Person', 'Vehicle'].includes(activity.entityType) && (
                             <div className="activity-content">
                               <div>{activity.description}</div>
                               {FILE_ENTITY_TYPES.includes(activity.entityType) && getEntityId(activity.details, activity.entityType) && (

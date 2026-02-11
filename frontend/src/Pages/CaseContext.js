@@ -122,7 +122,7 @@ export const CaseProvider = ({ children }) => {
     const triggerRefresh = () => setRefreshKey(prev => prev + 1); // <- call this when a change happens
 
     const [leadInstructions, setLeadInstructions] = useState(null);
-    const [leadReturns, setLeadReturns] = useState(null);
+    const [leadReturns, setLeadReturns] = useState([]);
     const [leadPersons, setLeadPersons] = useState(null);
     const [leadVehicles, setLeadVehicles] = useState(null);
     const [leadEnclosures, setLeadEnclosures] = useState(null);

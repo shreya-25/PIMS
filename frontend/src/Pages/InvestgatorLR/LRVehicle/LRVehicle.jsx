@@ -627,10 +627,6 @@ const goToViewLR = () => {
           payload,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        // patch local arrays
-        const updatedRaw = [...rawVehicles];
-        updatedRaw[editIndex] = res.data;
-        setRawVehicles(updatedRaw);
       } else {
         // create new
         res = await api.post(
@@ -638,11 +634,44 @@ const goToViewLR = () => {
           payload,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setRawVehicles([res.data, ...rawVehicles]);
       }
 
-      // rebuild your display array
-      fetchVehicles();  // or you can do your existing map of setVehicles
+      // rebuild display array locally so the table updates immediately
+      const updatedRaw = editIndex !== null
+        ? rawVehicles.map((r, i) => (i === editIndex ? res.data : r))
+        : [res.data, ...rawVehicles];
+
+      const remapped = updatedRaw.map((v, i) => ({
+        rawIndex:    i,
+        returnId:    v.leadReturnId,
+        dateEntered: formatDate(v.enteredDate),
+        year:        v.year,
+        make:        v.make,
+        model:       v.model,
+        color:       v.primaryColor,
+        vin:         v.vin,
+        plate:       v.plate,
+        state:       v.state,
+        accessLevel: v.accessLevel ?? "Everyone",
+        enteredBy:   v.enteredBy
+      }));
+
+      let visible = remapped;
+      if (!isCaseManager) {
+        const currentUser = localStorage.getItem("loggedInUser")?.trim();
+        const leadAssignees = (leadData?.assignedTo || []).map(a => (typeof a === "string" ? a.trim() : String(a ?? "")));
+        visible = remapped.filter(r => {
+          if (r.accessLevel === "Everyone") return true;
+          if (r.accessLevel === "Case Manager and Assignees") {
+            return leadAssignees.some(a => a === currentUser);
+          }
+          return false;
+        });
+      }
+
+      setRawVehicles(updatedRaw);
+      setVehicles(visible);
+
       // exit edit mode
       setEditIndex(null);
       setVehicleData({
@@ -652,8 +681,6 @@ const goToViewLR = () => {
         leadReturnId:'', information:'', enteredDate: todayISO
       });
       setAuditLogRefresh(prev => prev + 1); // Trigger audit log refresh
-        setAlertMessage(editIndex!==null ? "Vehicle updated" : "Vehicle added");
-     setAlertOpen(true);
     } catch (err) {
       console.error(err);
 
@@ -705,7 +732,7 @@ const goToViewLR = () => {
       let visible = withAccess;
       if (!isCaseManager) {
         const currentUser = localStorage.getItem("loggedInUser")?.trim();
-        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+        const leadAssignees = (leadData?.assignedTo || []).map(a => (typeof a === "string" ? a.trim() : String(a ?? "")));
 
         visible = withAccess.filter(v => {
           if (v.accessLevel === "Everyone") return true;
@@ -787,7 +814,7 @@ const goToViewLR = () => {
       let visible = remapped;
       if (!isCaseManager) {
         const currentUser = localStorage.getItem("loggedInUser")?.trim();
-        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+        const leadAssignees = (leadData?.assignedTo || []).map(a => (typeof a === "string" ? a.trim() : String(a ?? "")));
 
         visible = remapped.filter(r => {
           if (r.accessLevel === "Everyone") return true;

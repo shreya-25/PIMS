@@ -565,7 +565,7 @@
 .activity-badge {
   padding: 4px 10px;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -590,7 +590,38 @@
 .activity-entity {
   font-weight: 600;
   color: #555;
-  font-size: 14px;
+  font-size: 15px;
+}
+
+.activity-entity-name {
+  font-weight: 500;
+  color: #333;
+  font-size: 15px;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-officer {
+  font-size: 15px;
+  color: #667eea;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.activity-timestamp {
+  font-size: 15px;
+  color: #888;
+  white-space: nowrap;
+}
+
+.activity-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
 }
 
 .activity-description {
@@ -845,12 +876,14 @@
   color: #495057;
   min-width: 120px;
   flex-shrink: 0;
+  font-size: 18px;
 }
 
 .entity-field-row .field-value {
   color: #212529;
   flex: 1;
   word-wrap: break-word;
+    font-size: 18px;
 }
 
 /* Color coding for created vs deleted */

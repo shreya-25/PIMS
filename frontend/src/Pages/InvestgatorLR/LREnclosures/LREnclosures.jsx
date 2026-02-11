@@ -328,6 +328,7 @@ useEffect(() => {
 };
 
 
+    const [uploading, setUploading] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const handleViewLeadReturn = async () => {
   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
@@ -500,7 +501,9 @@ const goToViewLR = () => {
     setAlertOpen(true);
     return;
   }
-  
+
+    setUploading(true);
+
     const fd = new FormData();
     if (!enclosureData.isLink && file) {
       fd.append("file", file);
@@ -540,7 +543,20 @@ const goToViewLR = () => {
             return data;
           }]
         });
-        // alert("Enclosure added");
+
+        // Immediately show the new enclosure in the table
+        setEnclosures(prev => [...prev, {
+          dateEntered: formatDate(new Date().toISOString()),
+          type: enclosureData.type,
+          enclosure: enclosureData.enclosure,
+          returnId: enclosureData.returnId,
+          originalName: file?.name || "",
+          link: enclosureData.isLink ? (enclosureData.link || "") : "",
+          filename: "",
+          signedUrl: "",
+          accessLevel: enclosureData.accessLevel || "Everyone",
+          enteredBy: localStorage.getItem("loggedInUser")
+        }]);
       } else {
         // UPDATE
         const { leadReturnId } = enclosureData;
@@ -550,7 +566,7 @@ const goToViewLR = () => {
                     `${selectedCase.caseNo}/` +
                     `${encodeURIComponent(selectedCase.caseName)}/` +
                     `${enclosureData.returnId}/`;
-  
+
         await api.put(url, fd, {
           headers: { Authorization: `Bearer ${token}` },
           transformRequest: [(data, headers) => {
@@ -558,11 +574,25 @@ const goToViewLR = () => {
             return data;
           }]
         });
-        // alert("Enclosure updated");
+
+        // Immediately reflect the edit in the table
+        setEnclosures(prev => prev.map((enc, i) =>
+          i === editIndex
+            ? {
+                ...enc,
+                type: enclosureData.type,
+                enclosure: enclosureData.enclosure,
+                returnId: enclosureData.returnId,
+                originalName: file ? file.name : enc.originalName,
+                link: enclosureData.isLink ? (enclosureData.link || "") : enc.link,
+                accessLevel: enclosureData.accessLevel || enc.accessLevel,
+              }
+            : enc
+        ));
       }
-  
-      // Refresh & reset form
-      await fetchEnclosures();
+
+      // Background refresh to get signed URLs and reconcile with server
+      fetchEnclosures().catch(() => {});
       setEnclosureData({ returnId: "", type: "", enclosure: "", isLink: false, link: "", originalName: "", filename: "", accessLevel: "Everyone" });
 
       setFile(null);
@@ -574,6 +604,8 @@ const goToViewLR = () => {
       console.error("Save error:", err.response || err);
        setAlertMessage("Save failed: " + (err.response?.data?.message || err.message));
                       setAlertOpen(true);
+    } finally {
+      setUploading(false);
     }
   };
   
@@ -1067,11 +1099,11 @@ const performDeleteEnclosure = async () => {
            {/* Action Buttons */}
           <div className="form-buttons">
               <button
-                disabled={selectedLead?.leadStatus==="In Review" || selectedLead?.leadStatus==="Completed" || isReadOnly}
+                disabled={uploading || selectedLead?.leadStatus==="In Review" || selectedLead?.leadStatus==="Completed" || isReadOnly}
                 onClick={handleSave}
                 className='save-btn1'
               >
-                {editIndex === null ? "Add Enclosure" : "Save Changes"}
+                {uploading ? "Saving..." : editIndex === null ? "Add Enclosure" : "Save Changes"}
               </button>
               {editIndex !== null && (
                 <button 
