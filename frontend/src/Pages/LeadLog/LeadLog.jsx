@@ -589,6 +589,7 @@ const formatDate = (dateString) => {
     return sortedFilteredLeads.slice(start, end);
   }, [sortedFilteredLeads, currentPage, pageSize]);
 
+  const [expandedDescriptions, setExpandedDescriptions] = useState({});
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
   const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
 
@@ -778,18 +779,52 @@ const formatDate = (dateString) => {
           {entry.description}
         </td> */}
          <td style={caseTeamStyles.td}>
-                {isInvestigator
-                  ? entry.description
-                  : (
-                    <span
-                      className="clickable-description"
-                      onClick={() => handleLeadClick(entry)}
-                      style={{ color: 'blue', cursor: 'pointer', textDecoration: 'underline' }}
-                    >
-                      {entry.description}
-                    </span>
-                  )
-                }
+                {(() => {
+                  const desc = entry.description || "";
+                  const isTruncated = desc.length > 100;
+                  const isExpanded = expandedDescriptions[entry.leadNo];
+                  const displayText = isTruncated && !isExpanded
+                    ? desc.slice(0, 100) + "..."
+                    : desc;
+
+                  return (
+                    <>
+                      {isInvestigator ? (
+                        <span>{displayText}</span>
+                      ) : (
+                        <span
+                          className="clickable-description"
+                          onClick={() => handleLeadClick(entry)}
+                          style={{ color: 'blue', cursor: 'pointer', textDecoration: 'underline' }}
+                        >
+                          {displayText}
+                        </span>
+                      )}
+                      {isTruncated && (
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedDescriptions(prev => ({
+                              ...prev,
+                              [entry.leadNo]: !prev[entry.leadNo]
+                            }));
+                          }}
+                          style={{
+                            color: '#0056b3',
+                            cursor: 'pointer',
+                            marginLeft: '4px',
+                            fontSize: '0.85em',
+                            fontWeight: '500',
+                            textDecoration: 'none',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {isExpanded ? "Show less" : "Read more"}
+                        </span>
+                      )}
+                    </>
+                  );
+                })()}
               </td>
                   <td style={caseTeamStyles.td}>{formatDate(entry.assignedDate)}</td>
                   <td style={caseTeamStyles.td}>{entry.leadStatus }</td>

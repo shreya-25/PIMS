@@ -1037,7 +1037,11 @@ useEffect(() => {
                   value={leadData.leadDescription}
                   onChange={(e) => handleInputChange('leadDescription', e.target.value)}
                   placeholder=""
+                  maxLength={100}
                 />
+                <small style={{ color: leadData.leadDescription.length >= 100 ? 'red' : '#888', fontSize: '0.8em' }}>
+                  {leadData.leadDescription.length}/100
+                </small>
               </td>
             </tr>
             <tr>
