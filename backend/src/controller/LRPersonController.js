@@ -1,5 +1,7 @@
 const LRPerson = require("../models/LRPerson");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
+const fs = require("fs");
+const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 
 // Validation function to check if at least one meaningful field is filled
 const isPersonRecordValid = (data) => {
@@ -194,7 +196,22 @@ const getLRPersonByDetails = async (req, res) => {
             return res.status(404).json({ message: "No records found." });
         }
 
-        res.status(200).json(lrPersons);
+        const personsWithPhotos = await Promise.all(
+            lrPersons.map(async (p) => {
+                const obj = p.toObject();
+                if (obj.photoS3Key) {
+                    try {
+                        obj.photoUrl = await getFileFromS3(obj.photoS3Key);
+                    } catch (e) {
+                        console.warn(`Failed to sign photo key ${obj.photoS3Key}:`, e?.message);
+                        obj.photoUrl = null;
+                    }
+                }
+                return obj;
+            })
+        );
+
+        res.status(200).json(personsWithPhotos);
     } catch (err) {
         console.error("Error fetching LRPerson records:", err.message);
         res.status(500).json({ message: "Something went wrong" });
@@ -219,7 +236,22 @@ const getLRPersonByDetailsandid = async (req, res) => {
             return res.status(404).json({ message: "No records found." });
         }
 
-        res.status(200).json(lrPersons);
+        const personsWithPhotos = await Promise.all(
+            lrPersons.map(async (p) => {
+                const obj = p.toObject();
+                if (obj.photoS3Key) {
+                    try {
+                        obj.photoUrl = await getFileFromS3(obj.photoS3Key);
+                    } catch (e) {
+                        console.warn(`Failed to sign photo key ${obj.photoS3Key}:`, e?.message);
+                        obj.photoUrl = null;
+                    }
+                }
+                return obj;
+            })
+        );
+
+        res.status(200).json(personsWithPhotos);
     } catch (err) {
         console.error("Error fetching LRPerson records:", err.message);
         res.status(500).json({ message: "Something went wrong" });
@@ -366,4 +398,127 @@ const updateLRPerson = async (req, res) => {
     }
   };
 
-module.exports = { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, deleteLRPerson };
+// Delete by MongoDB _id
+const deleteLRPersonById = async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const existingPerson = await LRPerson.findById(id);
+      if (!existingPerson) {
+        return res.status(404).json({ message: "Person not found." });
+      }
+
+      await LRPerson.findByIdAndDelete(id);
+
+      // Log the deletion in audit log
+      await createAuditLog({
+        caseNo: existingPerson.caseNo,
+        caseName: existingPerson.caseName,
+        leadNo: existingPerson.leadNo,
+        leadName: existingPerson.description,
+        entityType: "LRPerson",
+        entityId: `${existingPerson.firstName}_${existingPerson.leadReturnId}`,
+        action: "DELETE",
+        performedBy: {
+          username: req.user?.name || "Unknown",
+          role: req.user?.role || "Unknown"
+        },
+        oldValue: sanitizeForAudit(existingPerson.toObject()),
+        newValue: null,
+        metadata: {
+          ip: req.ip || req.connection?.remoteAddress,
+          userAgent: req.get('user-agent')
+        },
+        accessLevel: existingPerson.accessLevel || "Everyone"
+      });
+
+      res.status(200).json({ message: "Person deleted successfully." });
+    } catch (err) {
+      console.error("Error deleting person by id:", err);
+      res.status(500).json({ message: "Something went wrong." });
+    }
+  };
+
+// Upload or replace person photo
+const uploadPersonPhoto = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!req.file) {
+            return res.status(400).json({ message: "No photo file provided." });
+        }
+
+        const person = await LRPerson.findById(id);
+        if (!person) {
+            // Clean up temp file
+            if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+            return res.status(404).json({ message: "Person not found." });
+        }
+
+        // Delete old photo from S3 if exists
+        if (person.photoS3Key) {
+            try {
+                await deleteFromS3(person.photoS3Key);
+            } catch (e) {
+                console.warn("Failed to delete old photo from S3:", e?.message);
+            }
+        }
+
+        // Upload new photo to S3
+        const { key } = await uploadToS3({
+            filePath: req.file.path,
+            userId: req.user?.id || "anonymous",
+            mimetype: req.file.mimetype,
+        });
+
+        // Clean up temp file
+        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+
+        // Update person record
+        person.photoS3Key = key;
+        person.photoOriginalName = req.file.originalname;
+        person.photoFilename = req.file.filename;
+        await person.save();
+
+        // Return signed URL
+        const photoUrl = await getFileFromS3(key);
+
+        res.status(200).json({ message: "Photo uploaded successfully.", photoUrl, photoS3Key: key });
+    } catch (err) {
+        // Clean up temp file on error
+        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        console.error("Error uploading person photo:", err.message);
+        res.status(500).json({ message: "Something went wrong." });
+    }
+};
+
+// Delete person photo
+const deletePersonPhoto = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const person = await LRPerson.findById(id);
+        if (!person) {
+            return res.status(404).json({ message: "Person not found." });
+        }
+
+        if (!person.photoS3Key) {
+            return res.status(400).json({ message: "No photo to delete." });
+        }
+
+        // Delete from S3
+        await deleteFromS3(person.photoS3Key);
+
+        // Clear photo fields
+        person.photoS3Key = undefined;
+        person.photoOriginalName = undefined;
+        person.photoFilename = undefined;
+        await person.save();
+
+        res.status(200).json({ message: "Photo deleted successfully." });
+    } catch (err) {
+        console.error("Error deleting person photo:", err.message);
+        res.status(500).json({ message: "Something went wrong." });
+    }
+};
+
+module.exports = { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, deleteLRPerson, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto };

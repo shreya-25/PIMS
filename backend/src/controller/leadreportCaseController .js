@@ -729,7 +729,7 @@ return y + rowH + 20;
 /* ---------------------------------------
    The main generation function
 -----------------------------------------*/
-function generateCaseReport(req, res) {
+async function generateCaseReport(req, res) {
   const { user, reportTimestamp, leadsData, caseSummary, selectedReports,summaryMode } = req.body;
   const includeAll = selectedReports && selectedReports.FullReport;
 
@@ -810,7 +810,7 @@ function generateCaseReport(req, res) {
 
     // ---------- Iterate Over Leads ----------
     if (leadsData && leadsData.length > 0) {
-      leadsData.forEach((lead) => {
+      for (const lead of leadsData) {
         // Page check
         currentY = ensureSpace(doc, currentY, 60);
 
@@ -850,7 +850,7 @@ if (leadState) {
         // LEAD RETURNS
         if (includeAll) {
           if (lead.leadReturns && lead.leadReturns.length > 0) {
-            lead.leadReturns.forEach((lrRaw) => {
+            for (const lrRaw of lead.leadReturns) {
                const lr = normalizeLeadReturn(lrRaw);
               // small space check
               currentY = ensureSpace(doc, currentY, 100);
@@ -869,7 +869,19 @@ if (leadState) {
                 currentY = ensureSpace(doc, currentY, 60);
                 doc.font("Helvetica-Bold").fontSize(12).text("Person Details:", 50, currentY);
                 currentY += 20;
-                lr.persons.forEach((person) => {
+                for (const person of lr.persons) {
+                  // Person photo
+                  if (person.photoS3Key) {
+                    try {
+                      const imgBuf = await getObjectBuffer(person.photoS3Key);
+                      const photoSize = 60;
+                      currentY = ensureSpace(doc, currentY, photoSize + 10);
+                      doc.image(imgBuf, 50, currentY, { width: photoSize, height: photoSize, fit: [photoSize, photoSize] });
+                      currentY += photoSize + 8;
+                    } catch (e) {
+                      console.warn("Failed to embed person photo in case report:", e?.message);
+                    }
+                  }
                   const personTables = [
                     {
                       headers: ["Date Entered", "Name", "Phone #", "Address"],
@@ -1065,7 +1077,7 @@ if (leadState) {
 
                   //   }
                   // });
-                });
+                }
               }
 
               // 3) Vehicle Details
@@ -1208,7 +1220,7 @@ if (timeline && timeline.length > 0) {
   currentY = drawTable(doc, 50, currentY, headers, rows, [80, 100, 100, 80, 152]) + 20;
 }
 
-            });
+            }
           } else {
             // No lead returns
             // currentY = ensureSpace(doc, currentY, 50);
@@ -1224,7 +1236,7 @@ if (timeline && timeline.length > 0) {
             currentY = drawTextBox(doc, 50, currentY, 512, "", "No Lead Returns Available");
           }
         }
-      });
+      }
     } else {
       // No leads
       doc.text("No leads data available.", 50, currentY);

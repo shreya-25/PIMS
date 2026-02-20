@@ -495,15 +495,17 @@ function generateActivityLog(fromVersion, toVersion) {
     });
 
     changes.updated.forEach(item => {
-      item.changes.forEach(change => {
+      const skipFileFields = ['s3Key', 'filename', 'filePath'];
+      item.changes.filter(change => !skipFileFields.includes(change.field)).forEach(change => {
         activities.push({
           action: 'updated',
           entityType: 'Evidence',
           entityId: item.id,
           field: change.field,
-          description: `Updated evidence - ${change.field}`,
+          description: `Updated evidence ${item.label || 'Unknown'} - ${change.field}`,
           oldValue: change.oldValue,
-          newValue: change.newValue
+          newValue: change.newValue,
+          details: item.newData
         });
       });
     });

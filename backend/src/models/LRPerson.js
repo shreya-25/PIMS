@@ -66,6 +66,9 @@ const lrPersonSchema = new mongoose.Schema(
         tattoo: { type: String },
         mark: { type: String },
         additionalData: { type: Schema.Types.Mixed },
+        photoS3Key: { type: String },
+        photoOriginalName: { type: String },
+        photoFilename: { type: String },
         accessLevel: {
             type: String,
             enum: ["Everyone", "Case Manager", "Case Manager and Assignees"],

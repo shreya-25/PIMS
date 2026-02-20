@@ -466,7 +466,7 @@ useEffect(() => {
   } finally {
     justLoadedListRef.current = true;
   }
-}, [FORM_KEY, LIST_KEY, officerName]); // key changes when case/lead changes
+}, [FORM_KEY, LIST_KEY]); // key changes when case/lead changes
 
 /**
  * 2) SAVE the form whenever it changes (skip the first run after a load)
@@ -996,6 +996,12 @@ const handleAddOrUpdateReturn = async () => {
       </div>
       </div>
       </div>
+
+      {error && (
+        <div style={{ color: "red", textAlign: "center", margin: "10px 0", fontSize: "16px" }}>
+          {error}
+        </div>
+      )}
 
       <table className="leads-table">
         <thead>

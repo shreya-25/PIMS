@@ -405,9 +405,24 @@ export const LeadVersionHistory = () => {
   const FILE_ENTITY_TYPES = ['Enclosure', 'Picture', 'Audio', 'Video', 'Evidence'];
   const FILE_CHANGE_FIELDS = ['isLink', 'originalName', 'link', 's3Key', 'filename'];
 
-  // Consolidate multiple file-related field changes (isLink, originalName, link) for the
-  // same entity into a single activity showing the link↔file type change side by side.
-  const consolidateFileActivities = (activities) => {
+  // Get a stable string ID for matching activities that belong to the same entity
+  const getEntityMatchId = (activity) => {
+    if (activity.entityId) return String(activity.entityId);
+    // Fallback: try to get ID from details
+    const idFieldMap = {
+      'Enclosure': 'enclosureId', 'Picture': 'pictureId',
+      'Audio': 'audioId', 'Video': 'videoId', 'Evidence': 'evidenceId',
+      'Person': 'personId', 'Vehicle': 'vehicleId',
+      'Narrative': 'leadReturnId', 'Timeline Event': 'timelineId',
+    };
+    const idField = idFieldMap[activity.entityType];
+    if (idField && activity.details?.[idField]) return String(activity.details[idField]);
+    return null;
+  };
+
+  // Consolidate ALL field changes for the same updated entity into a single activity card.
+  // File-type fields (isLink, originalName, link) get a special file type comparison view.
+  const consolidateEntityActivities = (activities) => {
     if (!activities || activities.length === 0) return activities;
 
     const result = [];
@@ -418,46 +433,52 @@ export const LeadVersionHistory = () => {
 
       const activity = activities[i];
 
-      if (activity.action === 'updated' &&
-          FILE_ENTITY_TYPES.includes(activity.entityType) &&
-          activity.field &&
-          FILE_CHANGE_FIELDS.includes(activity.field)) {
-
-        // Gather all related field changes for the same entity
+      if (activity.action === 'updated' && activity.field) {
+        const activityMatchId = getEntityMatchId(activity);
         const relatedIndices = [i];
-        const fieldChanges = { [activity.field]: { oldValue: activity.oldValue, newValue: activity.newValue } };
+        const allFieldChanges = [{ field: activity.field, oldValue: activity.oldValue, newValue: activity.newValue }];
+        // Merge details from all related activities (some entity types like Evidence may not have details on every activity)
+        let mergedDetails = activity.details || null;
 
         for (let j = i + 1; j < activities.length; j++) {
           if (processedIndices.has(j)) continue;
           const other = activities[j];
           if (other.action === 'updated' &&
               other.entityType === activity.entityType &&
-              other.entityId === activity.entityId &&
               other.field &&
-              FILE_CHANGE_FIELDS.includes(other.field)) {
+              activityMatchId && activityMatchId === getEntityMatchId(other)) {
             relatedIndices.push(j);
-            fieldChanges[other.field] = { oldValue: other.oldValue, newValue: other.newValue };
+            allFieldChanges.push({ field: other.field, oldValue: other.oldValue, newValue: other.newValue });
+            if (!mergedDetails && other.details) mergedDetails = other.details;
           }
         }
 
-        // Only consolidate when isLink actually changed (link↔file switch)
-        if (fieldChanges.isLink) {
+        if (relatedIndices.length > 1) {
           relatedIndices.forEach(idx => processedIndices.add(idx));
 
-          const details = activity.details;
-          const wasLink = fieldChanges.isLink.oldValue;
-          const isNowLink = fieldChanges.isLink.newValue;
-          const oldName = fieldChanges.originalName?.oldValue;
-          const newName = fieldChanges.originalName?.newValue || details?.originalName;
-          const oldLinkUrl = fieldChanges.link?.oldValue;
-          const newLinkUrl = fieldChanges.link?.newValue || details?.link;
+          const isFileEntity = FILE_ENTITY_TYPES.includes(activity.entityType);
+          const fileFieldChanges = {};
+          const regularFieldChanges = [];
 
-          result.push({
-            ...activity,
-            _consolidated: true,
-            description: `${activity.entityType} changed from ${wasLink ? 'Link' : 'File'} to ${isNowLink ? 'Link' : 'File'}`,
-            field: null,
-            _fileChange: {
+          allFieldChanges.forEach(fc => {
+            if (isFileEntity && FILE_CHANGE_FIELDS.includes(fc.field)) {
+              fileFieldChanges[fc.field] = { oldValue: fc.oldValue, newValue: fc.newValue };
+            } else {
+              regularFieldChanges.push(fc);
+            }
+          });
+
+          let fileChangeInfo = null;
+          if (fileFieldChanges.isLink) {
+            const details = activity.details;
+            const wasLink = fileFieldChanges.isLink.oldValue;
+            const isNowLink = fileFieldChanges.isLink.newValue;
+            const oldName = fileFieldChanges.originalName?.oldValue;
+            const newName = fileFieldChanges.originalName?.newValue || details?.originalName;
+            const oldLinkUrl = fileFieldChanges.link?.oldValue;
+            const newLinkUrl = fileFieldChanges.link?.newValue || details?.link;
+
+            fileChangeInfo = {
               oldType: wasLink ? 'Link' : 'File',
               newType: isNowLink ? 'Link' : 'File',
               oldDisplayName: wasLink ? (oldLinkUrl || oldName || 'N/A') : (oldName || 'N/A'),
@@ -468,7 +489,22 @@ export const LeadVersionHistory = () => {
               newLink: newLinkUrl,
               oldFileName: oldName,
               newFileName: newName,
-            },
+            };
+          } else {
+            // No isLink change, treat file fields as regular changes
+            Object.entries(fileFieldChanges).forEach(([field, values]) => {
+              regularFieldChanges.push({ field, ...values });
+            });
+          }
+
+          result.push({
+            ...activity,
+            details: mergedDetails,
+            _consolidated: true,
+            description: `Updated ${activity.entityType}`,
+            field: null,
+            _fieldChanges: regularFieldChanges,
+            _fileChange: fileChangeInfo,
           });
           continue;
         }
@@ -480,51 +516,84 @@ export const LeadVersionHistory = () => {
     return result;
   };
 
-  const renderFileTypeChange = (activity) => {
-    if (!activity._fileChange) return null;
-    const fc = activity._fileChange;
+  const renderConsolidatedChanges = (activity) => {
+    if (!activity._consolidated) return null;
     const entityId = getEntityId(activity.details, activity.entityType);
 
     return (
-      <div className="activity-field-change">
-        <span className="field-name">File type changed</span>
-        <div className="value-change">
-          <div className="old-value">
-            <span className="label">OLD: {fc.oldType}</span>
-            {fc.oldIsLink ? (
-              <span className="value">
-                <a href={fc.oldLink} target="_blank" rel="noopener noreferrer" className="file-link">
-                  {fc.oldDisplayName}
-                </a>
-              </span>
-            ) : (
-              <span className="value">{fc.oldFileName || 'N/A'}</span>
-            )}
-          </div>
-          <span className="arrow">→</span>
-          <div className="new-value">
-            <span className="label">NEW: {fc.newType}</span>
-            {fc.newIsLink ? (
-              <span className="value">
-                <a href={fc.newLink} target="_blank" rel="noopener noreferrer" className="file-link">
-                  {fc.newDisplayName}
-                </a>
-              </span>
-            ) : entityId ? (
-              <span className="value">
-                <span
-                  className="file-link"
-                  onClick={() => viewFile(activity.entityType, entityId)}
-                  title="Click to view file"
-                >
-                  {fc.newFileName || 'N/A'}
+      <div className="consolidated-changes">
+        {/* Regular field changes */}
+        {activity._fieldChanges?.map((fc, idx) => (
+          <div key={idx} className="activity-field-change">
+            <span className="field-name">Field: {fc.field}</span>
+            <div className="value-change">
+              <div className="old-value">
+                <span className="label">
+                  {activity.entityType === 'Narrative' && fc.field === 'leadReturnResult' ? 'Previous Narrative:' : 'Old:'}
                 </span>
-              </span>
-            ) : (
-              <span className="value">{fc.newFileName || 'N/A'}</span>
-            )}
+                <span className={`value${activity.entityType === 'Narrative' && fc.field === 'leadReturnResult' ? ' narrative-text' : ''}`}>
+                  {formatValue(fc.oldValue, fc.field)}
+                </span>
+              </div>
+              <span className="arrow">→</span>
+              <div className="new-value">
+                <span className="label">
+                  {activity.entityType === 'Narrative' && fc.field === 'leadReturnResult' ? 'Updated Narrative:' : 'New:'}
+                </span>
+                <span className={`value${activity.entityType === 'Narrative' && fc.field === 'leadReturnResult' ? ' narrative-text' : ''}`}>
+                  {formatValue(fc.newValue, fc.field)}
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
+        ))}
+
+        {/* File type change */}
+        {activity._fileChange && (() => {
+          const fc = activity._fileChange;
+          return (
+            <div className="activity-field-change">
+              <span className="field-name">File type changed</span>
+              <div className="value-change">
+                <div className="old-value">
+                  <span className="label">OLD: {fc.oldType}</span>
+                  {fc.oldIsLink ? (
+                    <span className="value">
+                      <a href={fc.oldLink} target="_blank" rel="noopener noreferrer" className="file-link">
+                        {fc.oldDisplayName}
+                      </a>
+                    </span>
+                  ) : (
+                    <span className="value">{fc.oldFileName || 'N/A'}</span>
+                  )}
+                </div>
+                <span className="arrow">→</span>
+                <div className="new-value">
+                  <span className="label">NEW: {fc.newType}</span>
+                  {fc.newIsLink ? (
+                    <span className="value">
+                      <a href={fc.newLink} target="_blank" rel="noopener noreferrer" className="file-link">
+                        {fc.newDisplayName}
+                      </a>
+                    </span>
+                  ) : entityId ? (
+                    <span className="value">
+                      <span
+                        className="file-link"
+                        onClick={() => viewFile(activity.entityType, entityId)}
+                        title="Click to view file"
+                      >
+                        {fc.newFileName || 'N/A'}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="value">{fc.newFileName || 'N/A'}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     );
   };
@@ -939,7 +1008,7 @@ export const LeadVersionHistory = () => {
                 <div className="activity-log-section">
                   <h5>Detailed Activity Log ({activityLog.length} changes)</h5>
                   <div className="activity-log-container">
-                    {consolidateFileActivities(activityLog).map((activity, idx) => (
+                    {consolidateEntityActivities(activityLog).map((activity, idx) => (
                       <div key={idx} className={`activity-item activity-${activity.action}`}>
                         <div className="activity-header">
                           <span className={`activity-badge ${activity.action}`}>
@@ -971,7 +1040,7 @@ export const LeadVersionHistory = () => {
                           </span>
                         )}
                       </div>
-                        {activity._consolidated && renderFileTypeChange(activity)}
+                        {activity._consolidated && renderConsolidatedChanges(activity)}
                         {activity.field && (
                           <div className="activity-field-change">
                             <span className="field-name">Field: {activity.field}</span>
@@ -1121,7 +1190,7 @@ export const LeadVersionHistory = () => {
               <div className="activity-log-section">
                 <h5>Changes in This Version ({versionActivityLogs[version.versionId].length} changes)</h5>
                 <div className="activity-log-container1">
-                  {consolidateFileActivities(versionActivityLogs[version.versionId]).map((activity, idx) => (
+                  {consolidateEntityActivities(versionActivityLogs[version.versionId]).map((activity, idx) => (
                     <div key={idx} className={`activity-item activity-${activity.action}`}>
                       <div className="activity-header">
                         <span className={`activity-badge ${activity.action}`}>
@@ -1150,7 +1219,7 @@ export const LeadVersionHistory = () => {
                         )}
                       </div>
                       {/* Show consolidated file type change */}
-                      {activity._consolidated && renderFileTypeChange(activity)}
+                      {activity._consolidated && renderConsolidatedChanges(activity)}
                       {/* Show field changes for updated narratives */}
                       {activity.field && activity.entityType === 'Narrative' && activity.action === 'updated' && (
                         <div className="activity-field-change">
@@ -1227,7 +1296,7 @@ export const LeadVersionHistory = () => {
                   <div className="activity-log-section">
                     <h5>Changes in This Version ({activityLog.length} changes)</h5>
                     <div className="activity-log-container1">
-                      {consolidateFileActivities(activityLog).map((activity, idx) => (
+                      {consolidateEntityActivities(activityLog).map((activity, idx) => (
                         <div key={idx} className={`activity-item activity-${activity.action}`}>
                           <div className="activity-header">
                             <span className={`activity-badge ${activity.action}`}>
@@ -1256,7 +1325,7 @@ export const LeadVersionHistory = () => {
                         )}
                       </div>
                           {/* Show consolidated file type change */}
-                          {activity._consolidated && renderFileTypeChange(activity)}
+                          {activity._consolidated && renderConsolidatedChanges(activity)}
                           {/* Show field changes for updated narratives */}
                           {activity.field && activity.entityType === 'Narrative' && activity.action === 'updated' && (
                             <div className="activity-field-change">
@@ -1346,7 +1415,7 @@ export const LeadVersionHistory = () => {
                     </div>
                     <div className="activity-log-detailed">
                       {versionActivityLogs[version.versionId]?.length > 0 ? (
-                        consolidateFileActivities(versionActivityLogs[version.versionId]).map((activity, idx) => (
+                        consolidateEntityActivities(versionActivityLogs[version.versionId]).map((activity, idx) => (
                         <div key={idx} className={`activity-detail-item activity-${activity.action}`}>
                           <div className="activity-summary">
                             <span className={`activity-badge ${activity.action}`}>
@@ -1378,7 +1447,7 @@ export const LeadVersionHistory = () => {
                           )}
 
                           {/* Show updated narrative with before/after comparison */}
-                          {activity.action === 'updated' && activity.entityType === 'Narrative' && (
+                          {!activity._consolidated && activity.action === 'updated' && activity.entityType === 'Narrative' && (
                             <div className="activity-content">
                               <div className="narrative-comparison">
                                 <div className="previous-narrative">
@@ -1410,7 +1479,7 @@ export const LeadVersionHistory = () => {
                           )}
 
                           {/* Show person changes */}
-                          {activity.entityType === 'Person' && (
+                          {!activity._consolidated && activity.entityType === 'Person' && (
                             <div className="activity-content">
                               {activity.action === 'created' && (
                                 <div><strong>Added:</strong> {activity.details?.firstName} {activity.details?.lastName}</div>
@@ -1432,7 +1501,7 @@ export const LeadVersionHistory = () => {
                           )}
 
                           {/* Show vehicle changes */}
-                          {activity.entityType === 'Vehicle' && (
+                          {!activity._consolidated && activity.entityType === 'Vehicle' && (
                             <div className="activity-content">
                               {activity.action === 'created' && (
                                 <div><strong>Added:</strong> {activity.details?.year} {activity.details?.make} {activity.details?.model}</div>
@@ -1454,7 +1523,7 @@ export const LeadVersionHistory = () => {
                           )}
 
                           {/* Show consolidated file type change */}
-                          {activity._consolidated && renderFileTypeChange(activity)}
+                          {activity._consolidated && renderConsolidatedChanges(activity)}
 
                           {/* Show other entity types */}
                           {!activity._consolidated && !['Narrative', 'Person', 'Vehicle'].includes(activity.entityType) && (

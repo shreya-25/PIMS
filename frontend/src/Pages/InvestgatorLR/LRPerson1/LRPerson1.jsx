@@ -31,7 +31,26 @@ const [username, setUsername] = useState("");
   const handleChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
   };
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setPhotoFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+      setPhotoRemoved(false);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setPhotoRemoved(true);
+  };
+
   const { leadDetails, caseDetails, person } = location.state || {};
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(person?.photoUrl || null);
+  const [photoRemoved, setPhotoRemoved] = useState(false);
 const { selectedCase, selectedLead, leadInstructions, leadReturns } = useContext(CaseContext);
      const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
                 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
@@ -653,10 +672,36 @@ useEffect(() => {
     }
 
     console.log("Server response:", response.data);
+
+    // Handle photo upload/delete after person is saved
+    const personId = person?._id || response.data?._id;
+    if (personId) {
+      if (photoFile) {
+        const photoFormData = new FormData();
+        photoFormData.append("photo", photoFile);
+        try {
+          await api.post(`/api/lrperson/photo/${personId}`, photoFormData, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+        } catch (photoErr) {
+          console.error("Photo upload failed:", photoErr);
+        }
+      } else if (photoRemoved && person?.photoS3Key) {
+        try {
+          await api.delete(`/api/lrperson/photo/${personId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+        } catch (photoErr) {
+          console.error("Photo delete failed:", photoErr);
+        }
+      }
+    }
+
     sessionStorage.removeItem(FORM_KEY);
     sessionStorage.removeItem(MISC_KEY);
 
-    // alert(person ? "Updated successfully!" : "Created successfully!");
     setAlertMessage(person ? "Updated successfully!" : "Created successfully!");
     setAlertOpen(true);
 
@@ -1212,13 +1257,66 @@ useEffect(() => {
                   </tr>
                   <tr>
                     <td>Mark</td>
-                    {/* <td colSpan="7"> */}
                     <td><input type="text"  value={formData.mark}
                     onChange={(e) =>
                       handleChange("mark", e.target.value)
                     } /></td>
-      
+
                   </tr>
+
+                  {/* Person Photo */}
+                  <tr>
+                    <td>Person Photo</td>
+                    <td colSpan="3">
+                      {photoPreview ? (
+                        <div style={{ display: "inline-block", position: "relative" }}>
+                          <img
+                            src={photoPreview}
+                            alt="Person preview"
+                            style={{
+                              width: "120px",
+                              height: "120px",
+                              objectFit: "cover",
+                              borderRadius: "6px",
+                              border: "1px solid #ccc",
+                              display: "block",
+                            }}
+                          />
+                          <span
+                            onClick={handleRemovePhoto}
+                            title="Remove photo"
+                            style={{
+                              position: "absolute",
+                              top: "-8px",
+                              right: "-8px",
+                              width: "22px",
+                              height: "22px",
+                              borderRadius: "50%",
+                              background: "#d9534f",
+                              color: "#fff",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "14px",
+                              fontWeight: "bold",
+                              cursor: "pointer",
+                              lineHeight: 1,
+                              boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                            }}
+                          >
+                            &times;
+                          </span>
+                        </div>
+                      ) : (
+                        <input
+                          type="file"
+                          accept="image/png, image/jpeg, image/jpg, image/gif, image/webp"
+                          onChange={handlePhotoChange}
+                        />
+                      )}
+                    </td>
+                  </tr>
+
                   {/* Miscellaneous Section */}
                   <tr>
                     <td colSpan="4">

@@ -854,16 +854,40 @@ let currentY = headerHeight + 20;
         }
     
         // Loop through each person object
-        leadPersons.forEach((person, pIdx) => {
+        for (let pIdx = 0; pIdx < leadPersons.length; pIdx++) {
+          const person = leadPersons[pIdx];
           // Ensure person label + first table fit on same page
           if (currentY + 60 > doc.page.height - doc.page.margins.bottom) {
             doc.addPage();
             currentY = doc.page.margins.top;
           }
-          doc.font("Helvetica-Bold").fontSize(11)
-             .text(`Person ${pIdx + 1}`, 50, currentY);
-          currentY += 20;
-    
+
+          // Person photo + label side by side
+          const photoSize = 60;
+          let photoDrawn = false;
+          if (person.photoS3Key) {
+            try {
+              const imgBuf = await getObjectBuffer(person.photoS3Key);
+              // page-break check for photo + label
+              if (currentY + photoSize + 10 > doc.page.height - doc.page.margins.bottom) {
+                doc.addPage();
+                currentY = doc.page.margins.top;
+              }
+              doc.image(imgBuf, 50, currentY, { width: photoSize, height: photoSize, fit: [photoSize, photoSize] });
+              doc.font("Helvetica-Bold").fontSize(11)
+                 .text(`Person ${pIdx + 1}`, 50 + photoSize + 10, currentY + 20);
+              currentY += photoSize + 8;
+              photoDrawn = true;
+            } catch (e) {
+              console.warn(`Failed to embed photo for person ${pIdx + 1}:`, e?.message);
+            }
+          }
+          if (!photoDrawn) {
+            doc.font("Helvetica-Bold").fontSize(11)
+               .text(`Person ${pIdx + 1}`, 50, currentY);
+            currentY += 20;
+          }
+
           // Now draw each mini-table
           personTables.forEach((headers) => {
             // page-break check
@@ -871,22 +895,22 @@ let currentY = headerHeight + 20;
               doc.addPage();
               currentY = doc.page.margins.top;
             }
-    
+
             // build one row of data
             const row = {};
             headers.forEach(h => {
               row[h] = getPersonValue(person, h);
             });
-    
+
             // compute column widths
             const colWidths = headers.map(h => personWidths[h] || 100);
-    
+
             // draw it
             currentY = drawTable(doc, 50, currentY, headers, [row], colWidths);
           });
 
           currentY = currentY +5;
-        });
+        }
       }
     }
     

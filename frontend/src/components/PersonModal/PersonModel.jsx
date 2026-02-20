@@ -109,6 +109,23 @@ return (
       {!loading && !error && persons.length === 0 && <p>No records found.</p>}
 
       {!loading && !error && persons.map((person, idx) => {
+        // Show person photo if available
+        const photoSection = person.photoUrl ? (
+          <div style={{ textAlign: "center", marginBottom: "12px" }}>
+            <img
+              src={person.photoUrl}
+              alt={`${person.firstName || ""} ${person.lastName || ""}`}
+              style={{
+                maxWidth: "200px",
+                maxHeight: "200px",
+                borderRadius: "6px",
+                border: "1px solid #ccc",
+                objectFit: "cover",
+              }}
+            />
+          </div>
+        ) : null;
+
         // Define and format every possible field
         const fields = [
           ["Lead Number",       person.leadNo],
@@ -161,16 +178,19 @@ return (
         const filled = fields.filter(([, val]) => val != null && val !== '');
 
         return (
-          <table key={idx} className="person-details-table">
-            <tbody>
-              {filled.map(([label, value], i) => (
-                <tr key={i}>
-                  <td className="label">{label}</td>
-                  <td className="value">{String(value)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div key={idx}>
+            {photoSection}
+            <table className="person-details-table">
+              <tbody>
+                {filled.map(([label, value], i) => (
+                  <tr key={i}>
+                    <td className="label">{label}</td>
+                    <td className="value">{String(value)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         );
       })}
     </div>

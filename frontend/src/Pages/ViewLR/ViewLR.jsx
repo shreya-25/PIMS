@@ -22,7 +22,7 @@ function PersonSheet({ person, onClose }) {
 
   // flatten useful pairs to render
   const fields = Object.entries(person)
-    .filter(([k]) => !["_id", "__v", "files"].includes(k));
+    .filter(([k]) => !["_id", "__v", "files", "photoS3Key", "photoOriginalName", "photoFilename", "photoUrl"].includes(k));
 
   return (
     <>
@@ -37,6 +37,21 @@ function PersonSheet({ person, onClose }) {
         </div>
 
         <div className={styles.sheetBody}>
+          {person.photoUrl && (
+            <div style={{ textAlign: "center", marginBottom: "12px" }}>
+              <img
+                src={person.photoUrl}
+                alt={`${person.firstName || ""} ${person.lastName || ""}`}
+                style={{
+                  width: "120px",
+                  height: "120px",
+                  objectFit: "cover",
+                  borderRadius: "50%",
+                  border: "2px solid #ccc",
+                }}
+              />
+            </div>
+          )}
           <div className={styles.kvGrid}>
             {fields.map(([key, val]) => (
               <div key={key} className={styles.kvRow}>

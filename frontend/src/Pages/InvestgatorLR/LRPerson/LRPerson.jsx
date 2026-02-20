@@ -190,41 +190,28 @@ const performDeletePerson = async () => {
   if (visibleIdx == null) return;
 
   try {
-    // 1) Resolve the raw record that matches the visible row
     const vis = persons[visibleIdx];
-    // Prefer rawIndex if you added it to your mapped rows
-    let rawIndex = vis?.rawIndex;
 
-    // Fallback: find by composite keys if rawIndex is not present
-    if (rawIndex == null) {
-      rawIndex = rawPersons.findIndex(r =>
-        r.leadReturnId === vis.leadReturnId &&
-        (`${r.firstName} ${r.lastName}`).trim() === (vis.name || "").trim()
-      );
-    }
-
+    // Use _id to reliably find the raw record
+    const rawIndex = rawPersons.findIndex(r => r._id === vis._id);
     if (rawIndex < 0) {
       throw new Error("Couldn't resolve the selected person in the raw list.");
     }
 
     const p = rawPersons[rawIndex];
 
-    // 2) Build an encoded URL (prevents 404 when names have spaces/special chars)
-    const url =
-      `/api/lrperson/${encodeURIComponent(String(selectedLead.leadNo))}` +
-      `/${encodeURIComponent(String(selectedCase.caseNo))}` +
-      `/${encodeURIComponent(String(p.leadReturnId))}` +
-      `/${encodeURIComponent(String(p.firstName))}` ;
-      
+    // Delete by MongoDB _id for reliability
     const token = localStorage.getItem("token");
-    await api.delete(url, { headers: { Authorization: `Bearer ${token}` } });
+    await api.delete(`/api/lrperson/id/${p._id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
-    // 3) Remove from raw, then remap & refilter visible rows
+    // Remove from raw, then remap & refilter visible rows
     const newRaw = rawPersons.filter((_, i) => i !== rawIndex);
     setRawPersons(newRaw);
 
-    const remapped = newRaw.map((pp, i) => ({
-      rawIndex:    i, // keep this so future edits/deletes are exact
+    const remapped = newRaw.map((pp) => ({
+      _id:         pp._id,
       returnId:    pp.leadReturnId,
       dateEntered: new Date(pp.enteredDate).toLocaleDateString(),
       name:        `${pp.firstName} ${pp.lastName}`,
@@ -233,9 +220,8 @@ const performDeletePerson = async () => {
                    `${pp.address.street1}, ${pp.address.city || ""}, ${pp.address.state || ""}`,
       leadReturnId: pp.leadReturnId,
       accessLevel:  pp.accessLevel || "Everyone",
-      firstName:    pp.firstName,
-      lastName:     pp.lastName,
       enteredBy:    pp.enteredBy,
+      photoUrl:     pp.photoUrl || null,
     }));
 
     // Filter based on role and access level
@@ -255,7 +241,7 @@ const performDeletePerson = async () => {
     }
 
     setPersons(newVisible);
-    setAuditLogRefresh(prev => prev + 1); // Trigger audit log refresh
+    setAuditLogRefresh(prev => prev + 1);
   } catch (err) {
     console.error("Delete failed", err);
     setAlertMessage("Failed to delete person.");
@@ -476,6 +462,7 @@ const goToViewLR = () => {
   
       // Map response to desired format
       const mappedPersons = res.data.map((person) => ({
+        _id: person._id,
         returnId: person.leadReturnId,
         dateEntered: new Date(person.enteredDate).toLocaleDateString(),
         name: `${person.firstName} ${person.lastName}`,
@@ -485,7 +472,8 @@ const goToViewLR = () => {
           `${person.address.street1}, ${person.address.city || ""}, ${person.address.state || ""}`,
         leadReturnId: person.leadReturnId,
         accessLevel: person.accessLevel || "Everyone",
-        enteredBy: person.enteredBy
+        enteredBy: person.enteredBy,
+        photoUrl: person.photoUrl || null
       }));
 
       const withAccess = mappedPersons.map(r => ({
@@ -522,7 +510,13 @@ const goToViewLR = () => {
 
   // Edit: send the raw object to LRPerson1
 const handleEditPerson = (idx) => {
-  const person = rawPersons[idx];
+  const vis = persons[idx];
+  const person = rawPersons.find(r => r._id === vis._id);
+  if (!person) {
+    setAlertMessage("Could not find person record to edit.");
+    setAlertOpen(true);
+    return;
+  }
   navigate("/LRPerson1", {
     state: {
       caseDetails,
@@ -532,66 +526,48 @@ const handleEditPerson = (idx) => {
   });
 };
 
-// Delete: call your DELETE endpoint by composite key
-const handleDeletePerson = async (idx) => {
-  if (!window.confirm("Delete this person?")) return;
-  const p = rawPersons[idx];
-  try {
-    const token = localStorage.getItem("token");
-    await api.delete(
-      `/api/lrperson/${selectedLead.leadNo}/${selectedCase.caseNo}/${p.leadReturnId}/${p.firstName}/${p.lastName}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    // remove from both raw and display
-    const newRaw = rawPersons.filter((_, i) => i !== idx);
-    setRawPersons(newRaw);
-    setPersons(newRaw.map(person => ({
-      returnId:   person.leadReturnId,
-      dateEntered:new Date(person.enteredDate).toLocaleDateString(),
-      name:       `${person.firstName} ${person.lastName}`,
-      phoneNo:    person.cellNumber || "N/A",
-      address:    `${person.address?.street1 || ""}, ${person.address?.city || ""}`,
-      access:     person.access ?? "Everyone"
-    })));
-  } catch (err) {
-    console.error("Delete failed", err);
-     setAlertMessage("Failed to delete person.");
-     setAlertOpen(true);
-  }
-};
   
 
   const isCaseManager = 
     selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
 
   const handleAccessChange = async (idx, newAccess) => {
-  const p     = rawPersons[idx];
+  const vis   = persons[idx];
+  const rawIdx = rawPersons.findIndex(r => r._id === vis._id);
+  if (rawIdx < 0) {
+    setAlertMessage("Could not find person record.");
+    setAlertOpen(true);
+    return;
+  }
+  const p     = rawPersons[rawIdx];
   const token = localStorage.getItem("token");
 
   try {
     // 1) Persist to server
     const { data: updatedDoc } = await api.put(
       `/api/lrperson/${selectedLead.leadNo}/${selectedCase.caseNo}/` +
-        `${p.leadReturnId}/${p.firstName}/${p.lastName}`,
+        `${p.leadReturnId}/${p.firstName}`,
       { accessLevel: newAccess },
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
     // 2) Swap it into rawPersons
     const newRaw = rawPersons.map((r, i) =>
-      i === idx ? updatedDoc : r
+      i === rawIdx ? updatedDoc : r
     );
     setRawPersons(newRaw);
 
     // 3) Remap to your UI shape
     const remapped = newRaw.map(p => ({
+      _id:          p._id,
       returnId:    p.leadReturnId,
       dateEntered: new Date(p.enteredDate).toLocaleDateString(),
       name:         `${p.firstName} ${p.lastName}`,
       phoneNo:      p.cellNumber || "N/A",
       address:      `${p.address?.street1 || ""}, ${p.address?.city || ""}`,
       accessLevel:  p.accessLevel || "Everyone",
-      enteredBy:    p.enteredBy
+      enteredBy:    p.enteredBy,
+      photoUrl:     p.photoUrl || null
     }));
 
     // 4) Filter again for non-CMs
