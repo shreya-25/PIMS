@@ -53,6 +53,7 @@ const caseSchema = new mongoose.Schema(
 
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },
+    deletedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
 
     archivedAt: { type: Date, default: null },
   },

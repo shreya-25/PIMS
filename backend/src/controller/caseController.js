@@ -1,6 +1,18 @@
 const mongoose = require("mongoose");
 const Case = require("../models/case");
 const User = require("../models/userModel");
+const Lead = require("../models/lead");
+const LeadReturn = require("../models/leadreturn");
+const LeadReturnResult = require("../models/leadReturnResult");
+const LRPerson = require("../models/LRPerson");
+const LRVehicle = require("../models/LRVehicle");
+const LRTimeline = require("../models/LRTimeline");
+const LREvidence = require("../models/LREvidence");
+const LRPicture = require("../models/LRPicture");
+const LRAudio = require("../models/LRAudio");
+const LRVideo = require("../models/LRVideo");
+const LREnclosure = require("../models/LREnclosure");
+const LRScratchpad = require("../models/LRScratchpad");
 
 // Helper: look up a single user by username, return the doc or null
 async function findUserByUsername(username) {
@@ -204,18 +216,64 @@ exports.updateCase = async (req, res) => {
   }
 };
 
-// Delete a case
+// Delete a case (soft delete — cascades to leads, lead returns, lead return results, and LR* tables)
 exports.deleteCase = async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    const caseId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(caseId)) {
       return res.status(400).json({ message: "Invalid case ID format" });
     }
 
-    const deletedCase = await Case.findByIdAndDelete(req.params.id);
-    if (!deletedCase) {
+    const caseDoc = await Case.findById(caseId);
+    if (!caseDoc || caseDoc.isDeleted) {
       return res.status(404).json({ message: "Case not found" });
     }
-    res.status(200).json({ message: "Case deleted successfully" });
+
+    const now = new Date();
+    const deletedByUserId = req.user?.userId || null;
+
+    // Step 1 — Soft delete the case
+    await Case.findByIdAndUpdate(caseId, {
+      isDeleted: true,
+      deletedAt: now,
+      deletedByUserId,
+    });
+
+    // Match by caseId OR caseNo (for older records missing caseId)
+    const childFilter = {
+      $or: [{ caseId }, { caseNo: caseDoc.caseNo }],
+      isDeleted: { $ne: true },
+    };
+    const deleteFields = {
+      isDeleted: true,
+      deletedAt: now,
+      deletedByUserId,
+      deletedBy: req.user?.username || "system",
+    };
+
+    // Step 2 — Soft delete all leads in this case
+    await Lead.updateMany(childFilter, {
+      ...deleteFields,
+      deletedReason: "Parent case deleted",
+      leadStatus: "Deleted",
+    });
+
+    // Step 3 — Soft delete all lead returns in this case
+    await LeadReturn.updateMany(childFilter, deleteFields);
+
+    // Step 4 — Soft delete lead return results in this case
+    await LeadReturnResult.updateMany(childFilter, deleteFields);
+
+    // Step 5 — Soft delete all LR* tables linked to this case
+    const lrModels = [
+      LRPerson, LRVehicle, LRTimeline, LREvidence,
+      LRPicture, LRAudio, LRVideo, LREnclosure, LRScratchpad,
+    ];
+    await Promise.all(
+      lrModels.map((Model) => Model.updateMany(childFilter, deleteFields))
+    );
+
+    res.status(200).json({ message: "Case and all related records soft-deleted successfully" });
   } catch (err) {
     console.error("Error deleting case:", err);
     res.status(500).json({ message: "Error deleting case", error: err.message });

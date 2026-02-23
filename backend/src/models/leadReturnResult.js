@@ -6,7 +6,7 @@ const leadReturnResultsSchema = new mongoose.Schema(
         // ── Stable ObjectId refs (populated when available) ──────
         caseId:            { type: mongoose.Schema.Types.ObjectId, ref: "Case", default: null },
         leadId:            { type: mongoose.Schema.Types.ObjectId, ref: "Lead", default: null },
-        leadReturnObjectId:{ type: mongoose.Schema.Types.ObjectId, ref: "LeadReturn", required: true },
+        leadReturnObjectId:{ type: mongoose.Schema.Types.ObjectId, ref: "LeadReturn", default: null },
         enteredByUserId:   { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
 
         // ── Existing fields ───────────────────────────────────────

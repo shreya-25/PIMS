@@ -2,6 +2,17 @@ const Lead = require("../models/lead");
 const User = require("../models/userModel");
 const mongoose = require("mongoose");
 const { createSnapshot } = require("../utils/leadReturnVersioning");
+const LeadReturn = require("../models/leadreturn");
+const LeadReturnResult = require("../models/leadReturnResult");
+const LRPerson = require("../models/LRPerson");
+const LRVehicle = require("../models/LRVehicle");
+const LRTimeline = require("../models/LRTimeline");
+const LREvidence = require("../models/LREvidence");
+const LRPicture = require("../models/LRPicture");
+const LRAudio = require("../models/LRAudio");
+const LRVideo = require("../models/LRVideo");
+const LREnclosure = require("../models/LREnclosure");
+const LRScratchpad = require("../models/LRScratchpad");
 
 // Helper: resolve a username string to a User ObjectId
 async function resolveUserId(username) {
@@ -504,6 +515,36 @@ const deleteLead = async (req, res) => {
     });
 
     await lead.save();
+
+    // Cascade soft delete to all child records
+    const now = new Date();
+    const deleteFields = {
+      isDeleted: true,
+      deletedAt: now,
+      deletedByUserId: actorUserId,
+      deletedBy: actor,
+    };
+    // Match by leadId OR by leadNo+caseNo (for older records missing leadId)
+    const childFilter = {
+      $or: [
+        { leadId: lead._id },
+        { leadNo: lead.leadNo, caseNo: lead.caseNo },
+      ],
+      isDeleted: { $ne: true },
+    };
+
+    // Soft delete lead returns
+    await LeadReturn.updateMany(childFilter, deleteFields);
+
+    // Soft delete lead return results
+    await LeadReturnResult.updateMany(childFilter, deleteFields);
+
+    // Soft delete all LR* tables
+    await Promise.all(
+      [LRPerson, LRVehicle, LRTimeline, LREvidence, LRPicture, LRAudio, LRVideo, LREnclosure, LRScratchpad]
+        .map((Model) => Model.updateMany(childFilter, deleteFields))
+    );
+
     return res.status(200).json({ message: "Lead marked as deleted.", lead });
   } catch (err) {
     console.error("Error soft-deleting lead:", err);
@@ -813,7 +854,7 @@ const updateLead = async (req, res) => {
     const lead = await Lead.findOneAndUpdate(
       { leadNo: Number(leadNo), description, caseNo, caseName },
       updateDoc,
-      { new: true, runValidators: true }
+      { new: true }
     );
 
     return res.status(200).json(lead);

@@ -7,7 +7,7 @@ const lrEvidenceSchema = new mongoose.Schema(
         // ── Stable ObjectId refs ──────────────────────────────────
         caseId:            { type: Schema.Types.ObjectId, ref: "Case", default: null },
         leadId:            { type: Schema.Types.ObjectId, ref: "Lead", default: null },
-        leadReturnObjectId:{ type: Schema.Types.ObjectId, ref: "LeadReturn", required: true },
+        leadReturnObjectId:{ type: Schema.Types.ObjectId, ref: "LeadReturn", default: null },
         enteredByUserId:   { type: Schema.Types.ObjectId, ref: "User", default: null },
 
         // ── Existing fields ───────────────────────────────────────

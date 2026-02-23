@@ -1838,20 +1838,7 @@ const submitDeleteWithReason = async (reason) => {
     const encLeadName = encodeURIComponent(lead.leadName || lead.description);
     const encCaseName = encodeURIComponent(kase.caseName);
 
-    // 1) Append reason into the lead.comment before deletion
-    const stamp = new Date().toLocaleString();
-    const by = localStorage.getItem("loggedInUser") || "Unknown";
-    const existingComment = (leadData?.comment || "").trim();
-    const reasonBlock =
-      `[DELETED ${stamp} by ${by}]\nReason: ${reason}${existingComment ? `\n\n${existingComment}` : ""}`;
-
-    await api.put(
-      `/api/lead/update/${lead.leadNo}/${encLeadName}/${kase.caseNo}/${encCaseName}`,
-      { ...leadData, comment: reasonBlock },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    // 2) Delete the lead
+    // Delete the lead (backend appends deletion reason to comments automatically)
     await api.delete(
       `/api/lead/${lead.leadNo}/${encLeadName}/${kase.caseNo}/${encCaseName}`,
       { headers: { Authorization: `Bearer ${token}` },

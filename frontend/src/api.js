@@ -188,6 +188,11 @@ api.interceptors.response.use(
     return res;
   },
   (error) => {
+    // Suppress aborted/cancelled requests (e.g. navigation unmounts)
+    if (error?.code === "ERR_CANCELED" || error?.name === "CanceledError") {
+      return Promise.reject(error);
+    }
+
     const cfg = error?.config || {};
     const res = error?.response;
 

@@ -8,7 +8,7 @@ const User = require("../models/userModel");
  * Returns { caseId, leadId, leadReturnObjectId, enteredByUserId, assignedByUserId, assignedToUserIds }
  * Any field that can't be resolved is set to null (won't block saves if schema allows it).
  */
-async function resolveLeadReturnRefs({ caseNo, caseName, leadNo, enteredBy, assignedByUsername, assignedToUsernames }) {
+async function resolveLeadReturnRefs({ caseNo, caseName, leadNo, leadReturnId, enteredBy, assignedByUsername, assignedToUsernames }) {
     const results = {
         caseId: null,
         leadId: null,
@@ -20,10 +20,11 @@ async function resolveLeadReturnRefs({ caseNo, caseName, leadNo, enteredBy, assi
 
     try {
         // Resolve in parallel where possible
+        const notDeleted = { isDeleted: { $ne: true } };
         const [caseDoc, leadDoc, leadReturnDoc, enteredByUser] = await Promise.all([
-            caseNo ? Case.findOne({ caseNo }).select("_id").lean() : null,
-            (caseNo && leadNo != null) ? Lead.findOne({ caseNo, leadNo: Number(leadNo) }).select("_id").lean() : null,
-            (caseNo && leadNo != null) ? LeadReturn.findOne({ caseNo, leadNo: Number(leadNo) }).select("_id").lean() : null,
+            caseNo ? Case.findOne({ caseNo, ...notDeleted }).select("_id").lean() : null,
+            (caseNo && leadNo != null) ? Lead.findOne({ caseNo, leadNo: Number(leadNo), ...notDeleted }).select("_id").lean() : null,
+            (caseNo && leadNo != null) ? LeadReturn.findOne({ caseNo, leadNo: Number(leadNo), ...notDeleted }).select("_id").lean() : null,
             enteredBy ? User.findOne({ username: enteredBy.toLowerCase() }).select("_id").lean() : null,
         ]);
 
