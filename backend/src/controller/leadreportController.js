@@ -58,7 +58,7 @@ function startSection(doc, title, currentY) {
     doc.addPage();
     currentY = doc.page.margins.top;
   }
-  doc.font("Helvetica-Bold").fontSize(12).text(title, 50, currentY);
+  doc.font("Helvetica-Bold").fontSize(11).text(title, 50, currentY);
   return currentY + 18;
 }
 
@@ -103,6 +103,107 @@ function formatOfficerList(arr) {
   return deduped.join(", ");
 }
 
+// front table 
+function drawLeadWorksheetTwoColTable(doc, x, y, leadInstruction) {
+  const padX = 8;
+  const padY = 3;
+  const headerBg = "#f5f5f5";
+  const borderColor = "#CCCCCC";
+
+  const headerFont = "Helvetica-Bold";
+  const bodyFont = "Helvetica";
+  const headerFS = 11;
+  const bodyFS = 11;
+
+  doc.lineGap(0);
+
+  const tableW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  const col1W = Math.round(tableW * 0.58);
+  const col2W = tableW - col1W;
+
+  const rows = [
+    { left: "Lead Worksheet", right: `Lead #: ${leadInstruction?.leadNo || "N/A"}`, isHeader: true },
+    { left: "Character of Case: Missing Person/Homicide", right: `Case Number: ${leadInstruction?.caseNo || "N/A"}` },
+    { left: `Lead Received by: ${leadInstruction?.receivedBy || ""}`, right: `Date Assigned: ${formatDate(leadInstruction?.assignedDate) || ""}` },
+    { left: `Lead Assigned to: ${formatOfficerList(leadInstruction?.assignedTo) || ""}`, right: `Date Submitted: ${formatDate(leadInstruction?.submittedDate) || ""}` },
+    { left: `Lead Assigned by: ${formatOfficer(leadInstruction?.assignedBy) || leadInstruction?.assignedBy || ""}`, right: `Source: ${leadInstruction?.parentLeadNo ? leadInstruction.parentLeadNo.join(", ") : ""}` },
+  ];
+
+  const minRowH = 20; // ✅ key fix (use 28–32)
+  const pageBottom = doc.page.height - doc.page.margins.bottom;
+  const pageTop = doc.page.margins.top;
+
+  function measure(text, width, font, size) {
+    doc.font(font).fontSize(size);
+    return doc.heightOfString(text || "", {
+      width,
+      align: "left",
+      lineBreak: true,
+    });
+  }
+
+  function centerY(currY, rowH, textH) {
+    // true centering, then clamp so it never touches borders
+    const ideal = currY + (rowH - textH) / 2;
+    const minY = currY + padY;
+    const maxY = currY + rowH - padY - textH;
+    // tiny visual nudge down (baseline compensation)
+    const nudged = ideal + 0.5;
+    return Math.max(minY, Math.min(nudged, maxY));
+  }
+
+  // whole-table fit check (rough)
+  if (y + rows.length * minRowH > pageBottom) {
+    doc.addPage();
+    y = pageTop;
+  }
+
+  let currY = y;
+
+  for (const r of rows) {
+    const font = r.isHeader ? headerFont : bodyFont;
+    const fs = r.isHeader ? headerFS : bodyFS;
+
+    const leftBoxW = col1W - 2 * padX;
+    const rightBoxW = col2W - 2 * padX;
+
+    const leftH = measure(r.left, leftBoxW, font, fs);
+    const rightH = measure(r.right, rightBoxW, font, fs);
+
+    const rowH = Math.max(minRowH, leftH + 2 * padY, rightH + 2 * padY);
+
+    if (currY + rowH > pageBottom) {
+      doc.addPage();
+      currY = pageTop;
+    }
+
+    if (r.isHeader) {
+      doc.save();
+      doc.fillColor(headerBg).rect(x, currY, col1W + col2W, rowH).fill();
+      doc.restore();
+    }
+
+    doc.save();
+    doc.lineWidth(0.8).strokeColor(borderColor);
+    doc.rect(x, currY, col1W, rowH).stroke();
+    doc.rect(x + col1W, currY, col2W, rowH).stroke();
+    doc.restore();
+
+    doc.font(font).fontSize(fs).fillColor("black");
+    const leftY = centerY(currY, rowH, leftH);
+    doc.text(r.left || "", x + padX, leftY, { width: leftBoxW, align: "left", lineBreak: true });
+
+    doc.font(font).fontSize(fs).fillColor("black");
+    const rightY = centerY(currY, rowH, rightH);
+    doc.text(r.right || "", x + col1W + padX, rightY, { width: rightBoxW, align: "left", lineBreak: true });
+
+    currY += rowH;
+  }
+
+  return currY + 8;
+}
+
+//Photo Attachment
 async function addPersonPhotoPage(doc, person, personIndex) {
   if (!person?.photoS3Key) return;
 
@@ -749,10 +850,12 @@ async function generateReport(req, res) {
 // start content after header
 let currentY = headerHeight + 20;
 
-    currentY = startSection(doc, "Lead Details:", currentY);
+    // currentY = startSection(doc, "Lead Details:", currentY);
+
+    currentY = drawLeadWorksheetTwoColTable(doc, 50, currentY, leadInstruction);
     // currentY = drawTable(doc, 50, currentY, ["Lead No.", "Origin", "Assigned Date", "Due Date", "Completed Date"], [{ "Lead No.": leadInstructions?.leadNo || 'N/A', "Origin": leadInstructions?.parentLeadNo || 'N/A', "Assigned Date": formatDate(leadInstructions?.assignedDate) || 'N/A', "Due Date": formatDate(leadInstructions?.dueDate) || 'N/A', "Completed Date": "Still to add in db" }], [90, 90, 120, 120, 92]) + 20;
     // currentY = drawTable(doc, 50, currentY, ["Sub No.", "Associated Sub Nos.", "Assigned Officers", "Assigned By"], [{ "Sub No.": leadInstructions?.subNumber || 'N/A', "Associated Sub Nos.": leadInstructions?.associatedSubNumbers || 'N/A', "Assigned Officers": leadInstructions?.assignedTo|| 'N/A', "Assigned By": leadInstructions?.assignedBy || 'N/A' }], [90, 170, 170, 82]) + 20;
-    currentY = drawStructuredLeadDetails(doc, 50, currentY, leadInstruction);
+    // currentY = drawStructuredLeadDetails(doc, 50, currentY, leadInstruction);
 
     if (includeAll || leadInstruction) {
       // if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
@@ -775,7 +878,7 @@ let currentY = headerHeight + 20;
       // doc.font("Helvetica-Bold").fontSize(12).text("Lead Return ID: 1", 50, currentY);
       // currentY += 20;
       // currentY = drawTextBox(doc, 50, currentY, 512, "", "Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos. Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.");
-      currentY = startSection(doc, "Lead Return Details", currentY);
+      currentY = startSection(doc, "Lead Results", currentY);
 
   if (leadReturn?.length > 0) {
     leadReturn.forEach((entry, idx) => {
