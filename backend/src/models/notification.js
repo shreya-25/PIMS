@@ -40,4 +40,9 @@ const NotificationSchema = new mongoose.Schema({
   time:   { type: Date, default: Date.now }
 });
 
+// Indexes for notification queries
+NotificationSchema.index({ "assignedTo.username": 1, caseStatus: 1 });
+NotificationSchema.index({ caseNo: 1 });
+NotificationSchema.index({ time: -1 });
+
 module.exports = mongoose.model("Notification", NotificationSchema);

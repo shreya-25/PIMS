@@ -1,70 +1,66 @@
-// models/LRVideo.js
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
+const { LR_ACCESS_LEVELS } = require("./leadreturn");
 
 const lrVideoSchema = new mongoose.Schema(
   {
-    leadNo: { type: Number, required: true },
-    description: { type: String, required: true },
+    // ── Stable ObjectId refs ──────────────────────────────────
+    caseId:            { type: Schema.Types.ObjectId, ref: "Case", default: null },
+    leadId:            { type: Schema.Types.ObjectId, ref: "Lead", default: null },
+    leadReturnObjectId:{ type: Schema.Types.ObjectId, ref: "LeadReturn", default: null },
+    enteredByUserId:   { type: Schema.Types.ObjectId, ref: "User", default: null },
 
-    assignedTo: {
-      assignees: [{ type: String }],
-      lRStatus: {
-        type: String,
-        enum: ["Assigned", "Pending", "Approved", "Returned", "Completed", "Submitted"],
-        default: "Assigned",
-      },
-    },
-
-    assignedBy: {
-      assignee: { type: String },
-      lRStatus: {
-        type: String,
-        enum: ["Assigned", "Pending"],
-        default: "Assigned",
-      },
-    },
-
-    enteredBy: { type: String, required: true },
-    caseName: { type: String, required: true },
-    caseNo: { type: String, required: true },
-
-    leadReturnId: { type: String, required: true },
-    enteredDate: { type: Date, required: true },
+    // ── Existing fields ───────────────────────────────────────
+    leadNo:            { type: Number, required: true },
+    description:       { type: String, required: true },  // lead description snapshot
+    enteredBy:         { type: String, required: true },   // username snapshot
+    caseName:          { type: String, required: true },   // snapshot
+    caseNo:            { type: String, required: true },   // snapshot
+    leadReturnId:      { type: String, required: true },
+    enteredDate:       { type: Date, required: true },
     dateVideoRecorded: { type: Date, required: true },
-
-    videoDescription: { type: String },
+    videoDescription:  { type: String },
 
     // Storage fields (all optional)
-    filePath: { type: String, default: null },
-    s3Key: { type: String, default: null },         // ← no longer conditionally required
+    filePath:     { type: String, default: null },
+    s3Key:        { type: String, default: null },
     originalName: { type: String, default: null },
-    filename: { type: String, default: null },
+    filename:     { type: String, default: null },
 
     isLink: { type: Boolean, default: false },
     link: {
       type: String,
       default: null,
-      // require a link only when isLink is true
       required: function () {
         return this.isLink === true;
       },
     },
 
-    // Access control for videos
     accessLevel: {
       type: String,
-      enum: ["Case Manager Only", "Case Manager and Assignees", "Everyone"],
+      enum: LR_ACCESS_LEVELS,
       default: "Everyone",
     },
+
     // Reference to complete lead return version
     completeLeadReturnId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "CompleteleadReturn",
-      index: true
-    }
+    },
+
+    // Soft-delete
+    isDeleted:  { type: Boolean, default: false },
+    deletedAt:  { type: Date, default: null },
+    deletedBy:  { type: String, default: null },
   },
   { timestamps: true }
 );
+
+lrVideoSchema.index({ leadReturnObjectId: 1, createdAt: -1 });
+lrVideoSchema.index({ caseId: 1, leadNo: 1 });
+
+lrVideoSchema.query.notDeleted = function () {
+    return this.where({ isDeleted: { $ne: true } });
+};
 
 module.exports = mongoose.model("LRVideo", lrVideoSchema, "LRVideos");

@@ -1,5 +1,6 @@
 const LeadReturn = require("../models/leadreturn");
 const { createSnapshot } = require("../utils/leadReturnVersioning");
+const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 const {
     logLeadCreation,
     logStatusChange,
@@ -34,6 +35,16 @@ const createLeadReturn = async (req, res) => {
             return res.status(400).json({ message: "Invalid assignedTo format. It should have 'assignees' (array) and 'lRStatus'." });
         }
 
+        // Resolve ObjectId refs
+        const refs = await resolveLeadReturnRefs({
+            caseNo,
+            caseName,
+            leadNo,
+            enteredBy: assignedBy.assignee,
+            assignedByUsername: assignedBy.assignee,
+            assignedToUsernames: assignedTo.assignees,
+        });
+
         const newLeadReturn = new LeadReturn({
             leadNo,
             description,
@@ -45,13 +56,18 @@ const createLeadReturn = async (req, res) => {
             assignedTo,
             assignedBy,
             accessLevel,
+            // ObjectId refs
+            caseId: refs.caseId,
+            leadId: refs.leadId,
+            assignedByUserId: refs.assignedByUserId,
+            assignedToUserIds: refs.assignedToUserIds,
         });
 
         await newLeadReturn.save();
 
         // Create initial snapshot for the new lead return
         try {
-            const actor = req.user?.name || assignedBy.assignee || "unknown";
+            const actor = req.user?.username || assignedBy.assignee || "unknown";
             await createSnapshot(
                 leadNo,
                 actor,
@@ -62,7 +78,6 @@ const createLeadReturn = async (req, res) => {
             console.log(`Initial snapshot created for lead ${leadNo} in case ${caseNo}`);
         } catch (snapshotErr) {
             console.error("Error creating initial snapshot:", snapshotErr.message);
-            // Don't fail the request if snapshot creation fails
         }
 
         // Log lead creation in audit log
@@ -88,15 +103,14 @@ const createLeadReturn = async (req, res) => {
 // Get lead return status by officer's name (AssignedTo or AssignedBy)
 const getLeadsReturnByOfficer = async (req, res) => {
     try {
-        const officerName = req.user.name; // Extract officer's name from the authenticated request
+        const officerName = req.user.username;
 
-        // Fetch leads where assignedTo contains the officer's name OR assignedBy matches the officer's name
         const leads = await LeadReturn.find({
             $or: [
-                { "assignedTo.assignee": officerName }, 
+                { "assignedTo.assignees": officerName },
                 { "assignedBy.assignee": officerName }
             ]
-        });
+        }).lean();
 
         res.status(200).json(leads);
     } catch (err) {
@@ -113,7 +127,6 @@ const updateLRStatusToPending = async (req, res) => {
         return res.status(400).json({ message: "All fields are required." });
       }
 
-      // Get old status before update
       const existingDoc = await LeadReturn.findOne({
         leadNo,
         description,
@@ -124,17 +137,8 @@ const updateLRStatusToPending = async (req, res) => {
       const oldStatus = existingDoc?.assignedTo?.lRStatus;
 
       const updatedDoc = await LeadReturn.findOneAndUpdate(
-        {
-          leadNo,
-          description,
-          caseName,
-          caseNo,
-        },
-        {
-          $set: {
-            "assignedTo.lRStatus": "Pending",
-          },
-        },
+        { leadNo, description, caseName, caseNo },
+        { $set: { "assignedTo.lRStatus": "Pending" } },
         { new: true }
       );
 
@@ -145,16 +149,15 @@ const updateLRStatusToPending = async (req, res) => {
       // Create snapshot if status changed from Returned or Completed (reopened)
       if (oldStatus && ["Returned", "Completed"].includes(oldStatus)) {
         try {
-          const username = req.user?.name || req.user?.username || "System";
+          const username = req.user?.username || "System";
           await createSnapshot(leadNo, username, "Reopened", caseNo, caseName);
           console.log(`Snapshot created for lead ${leadNo} in case ${caseNo} - Reopened from ${oldStatus} to Pending`);
         } catch (snapshotErr) {
           console.error("Error creating snapshot:", snapshotErr.message);
-          // Don't fail the request if snapshot creation fails
         }
       }
 
-      // Log status change in audit log
+      // Log status change
       try {
         const performedBy = extractUserInfo(req);
         const metadata = extractMetadata(req, { reasonForChange: "Status updated to Pending" });
@@ -178,17 +181,24 @@ const updateLRStatusToSubmitted = async (req, res) => {
         return res.status(400).json({ message: "All fields are required." });
       }
 
-      // Check if lead return exists
       let leadReturn = await LeadReturn.findOne({
-        leadNo,
-        description,
-        caseName,
-        caseNo,
+        leadNo, description, caseName, caseNo,
       });
 
       if (!leadReturn) {
         // Create lead return WITHOUT creating a "Created" snapshot
         console.log(`Lead return not found for lead ${leadNo}, creating it now...`);
+
+        // Resolve refs for the new record
+        const refs = await resolveLeadReturnRefs({
+            caseNo,
+            caseName,
+            leadNo,
+            enteredBy: assignedBy?.assignee,
+            assignedByUsername: assignedBy?.assignee,
+            assignedToUsernames: assignedTo?.assignees,
+        });
+
         leadReturn = new LeadReturn({
           leadNo,
           description,
@@ -197,15 +207,14 @@ const updateLRStatusToSubmitted = async (req, res) => {
           returnedDate: null,
           caseName,
           caseNo,
-          assignedTo: assignedTo || {
-            assignees: [],
-            lRStatus: "Submitted"
-          },
-          assignedBy: assignedBy || {
-            assignee: "Unknown",
-            lRStatus: "Pending"
-          },
+          assignedTo: assignedTo || { assignees: [], lRStatus: "Submitted" },
+          assignedBy: assignedBy || { assignee: "Unknown", lRStatus: "Pending" },
           accessLevel: accessLevel || "Everyone",
+          // ObjectId refs
+          caseId: refs.caseId,
+          leadId: refs.leadId,
+          assignedByUserId: refs.assignedByUserId,
+          assignedToUserIds: refs.assignedToUserIds,
         });
 
         await leadReturn.save();
@@ -217,7 +226,7 @@ const updateLRStatusToSubmitted = async (req, res) => {
         await leadReturn.save();
       }
 
-      // Log status change in audit log
+      // Log status change
       try {
         const performedBy = extractUserInfo(req);
         const metadata = extractMetadata(req, { reasonForChange: "Status updated to Submitted" });

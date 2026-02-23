@@ -3,12 +3,13 @@ const LeadReturn = require("../models/leadreturn");
 const LRPerson = require("../models/LRPerson");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const { createSnapshot } = require("../utils/leadReturnVersioning");
+const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 
-// Helpers to convert between A…Z strings and numbers
+// Helpers to convert between A...Z strings and numbers
 function alphabetToNumber(str) {
   let result = 0;
   for (let i = 0; i < str.length; i++) {
-    result = result * 26 + (str.charCodeAt(i) - 64); // 'A'→1, 'B'→2, …
+    result = result * 26 + (str.charCodeAt(i) - 64);
   }
   return result;
 }
@@ -28,8 +29,6 @@ const createLeadReturnResult = async (req, res) => {
     const {
       leadNo,
       description,
-      assignedTo,
-      assignedBy,
       enteredDate,
       enteredBy,
       caseName,
@@ -38,35 +37,15 @@ const createLeadReturnResult = async (req, res) => {
       accessLevel,
     } = req.body;
 
-    // 1) validate payload shapes
-    if (
-      !assignedBy ||
-      typeof assignedBy !== "object" ||
-      !assignedBy.assignee ||
-      !assignedBy.lRStatus
-    ) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Invalid assignedBy format. It should have 'assignee' and 'lRStatus'.",
-        });
-    }
-    if (
-      !assignedTo ||
-      !Array.isArray(assignedTo.assignees) ||
-      assignedTo.assignees.length === 0 ||
-      !assignedTo.lRStatus
-    ) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Invalid assignedTo format. It should have 'assignees' (array) and 'lRStatus'.",
-        });
-    }
+    // Resolve ObjectId refs
+    const refs = await resolveLeadReturnRefs({
+      caseNo,
+      caseName,
+      leadNo,
+      enteredBy,
+    });
 
-    // 2) fetch existing returns for this exact lead+case
+    // Fetch existing returns for this exact lead+case
     const existing = await LeadReturnResult.find({
       leadNo,
       description,
@@ -74,23 +53,17 @@ const createLeadReturnResult = async (req, res) => {
       caseName,
     }).select("leadReturnId");
 
-    // 3) compute highest numeric ID so far
+    // Compute highest numeric ID so far
     const maxNum = existing.reduce((max, doc) => {
-      const val = doc.leadReturnId
-        ? alphabetToNumber(doc.leadReturnId)
-        : 0;
+      const val = doc.leadReturnId ? alphabetToNumber(doc.leadReturnId) : 0;
       return Math.max(max, val);
     }, 0);
 
-    // 4) bump by one and turn back into letters
     const newId = numberToAlphabet(maxNum + 1);
 
-    // 5) build & save
     const newLeadReturnResult = new LeadReturnResult({
       leadNo,
       description,
-      assignedTo,
-      assignedBy,
       enteredDate,
       enteredBy,
       caseName,
@@ -98,6 +71,11 @@ const createLeadReturnResult = async (req, res) => {
       leadReturnId: newId,
       leadReturnResult,
       accessLevel,
+      // ObjectId refs
+      caseId: refs.caseId,
+      leadId: refs.leadId,
+      leadReturnObjectId: refs.leadReturnObjectId,
+      enteredByUserId: refs.enteredByUserId,
     });
 
     await newLeadReturnResult.save();
@@ -136,7 +114,6 @@ const createLeadReturnResult = async (req, res) => {
       console.log(`Snapshot created after creating narrative ${newId} for lead ${leadNo} in case ${caseNo}`);
     } catch (snapshotErr) {
       console.error("Error creating snapshot after narrative creation:", snapshotErr.message);
-      // Don't fail the request if snapshot creation fails
     }
 
     return res.status(201).json(newLeadReturnResult);
@@ -149,15 +126,31 @@ const createLeadReturnResult = async (req, res) => {
 // Get all lead return results assigned to or assigned by an officer
 const getLeadReturnResultsByOfficer = async (req, res) => {
     try {
-        const officerName = req.user.name; // Extract officer's name from the authenticated request
+        const officerName = req.user.username;
 
-        // Fetch lead return results where assignedTo contains the officer's name OR assignedBy matches the officer's name
-        const leadReturnResults = await LeadReturnResult.find({
+        // Query through LeadReturn to find leads assigned to/by this officer,
+        // then get the results for those leads
+        const leadReturns = await LeadReturn.find({
             $or: [
-                { "assignedTo.assignees": officerName }, 
+                { "assignedTo.assignees": officerName },
                 { "assignedBy.assignee": officerName }
             ]
-        });
+        }).select("leadNo caseNo").lean();
+
+        if (leadReturns.length === 0) {
+            return res.status(200).json([]);
+        }
+
+        // Build query conditions for each lead return
+        const conditions = leadReturns.map(lr => ({
+            leadNo: lr.leadNo,
+            caseNo: lr.caseNo
+        }));
+
+        const leadReturnResults = await LeadReturnResult.find({
+            $or: conditions,
+            isDeleted: { $ne: true }
+        }).lean();
 
         res.status(200).json(leadReturnResults);
     } catch (err) {
@@ -171,14 +164,14 @@ const getLeadReturnResultByLeadNoandLeadName = async (req, res) => {
         const { leadNo, leadName, caseNo, caseName } = req.params;
 
         const query = {
-            leadNo: Number(leadNo), // Ensure number type
+            leadNo: Number(leadNo),
             description: leadName,
             caseNo: caseNo,
             caseName: caseName,
-            isDeleted: { $ne: true } // Exclude soft-deleted records
+            isDeleted: { $ne: true }
         };
 
-        const leadReturns = await LeadReturnResult.find(query);
+        const leadReturns = await LeadReturnResult.find(query).lean();
         res.status(200).json(leadReturns);
     } catch (err) {
         console.error("Error fetching lead return results by case and lead:", err.message);
@@ -192,20 +185,14 @@ const updateLeadReturnResult = async (req, res) => {
         const { leadNo, caseNo, leadReturnId } = req.params;
         const updateData = req.body;
 
-        console.log(`📝 Updating lead return result: leadNo=${leadNo}, caseNo=${caseNo}, leadReturnId=${leadReturnId}`);
-        console.log(`📦 Update data:`, updateData);
-
         // Validate accessLevel if it's being updated
         if (updateData.accessLevel) {
-            const validAccessLevels = ["Everyone", "Case Manager", "Case Manager and Assignees"];
-            console.log(`🔍 Validating accessLevel: "${updateData.accessLevel}"`);
+            const validAccessLevels = ["Everyone", "Case Manager and Assignees", "Case Manager Only"];
             if (!validAccessLevels.includes(updateData.accessLevel)) {
-                console.log(`❌ Invalid accessLevel: "${updateData.accessLevel}"`);
                 return res.status(400).json({
                     message: `Invalid accessLevel. Must be one of: ${validAccessLevels.join(', ')}`
                 });
             }
-            console.log(`✅ accessLevel validation passed`);
         }
 
         // First, get the old value before updating
@@ -224,7 +211,7 @@ const updateLeadReturnResult = async (req, res) => {
             {
                 ...updateData,
                 lastModifiedDate: new Date(),
-                lastModifiedBy: req.user?.name || "Unknown"
+                lastModifiedBy: req.user?.username || "Unknown"
             },
             { new: true, runValidators: true }
         );
@@ -239,7 +226,7 @@ const updateLeadReturnResult = async (req, res) => {
             entityId: leadReturnId,
             action: "UPDATE",
             performedBy: {
-                username: req.user?.name || "Unknown",
+                username: req.user?.username || "Unknown",
                 role: req.user?.role || "Unknown"
             },
             oldValue: sanitizeForAudit(oldResult.toObject()),
@@ -254,19 +241,16 @@ const updateLeadReturnResult = async (req, res) => {
 
         // Create a snapshot after updating the narrative
         try {
-            console.log(`🔄 Creating snapshot for lead ${leadNo} after updating narrative ${leadReturnId}`);
             const snapshot = await createSnapshot(
                 Number(leadNo),
-                req.user?.name || "Unknown",
+                req.user?.username || "Unknown",
                 "Manual Snapshot",
                 caseNo,
                 oldResult.caseName
             );
-            console.log(`✅ Snapshot ${snapshot.versionId} created after updating narrative ${leadReturnId} for lead ${leadNo} in case ${caseNo}`);
-            console.log(`📊 Snapshot contains ${snapshot.leadReturnResults?.length || 0} narratives`);
+            console.log(`Snapshot ${snapshot.versionId} created after updating narrative ${leadReturnId} for lead ${leadNo} in case ${caseNo}`);
         } catch (snapshotErr) {
-            console.error("❌ Error creating snapshot after narrative update:", snapshotErr.message);
-            // Don't fail the request if snapshot creation fails
+            console.error("Error creating snapshot after narrative update:", snapshotErr.message);
         }
 
         res.status(200).json(updatedResult);
@@ -281,7 +265,6 @@ const deleteLeadReturnResult = async (req, res) => {
     try {
         const { leadNo, caseNo, leadReturnId } = req.params;
 
-        // Get the record before soft-deleting
         const existingResult = await LeadReturnResult.findOne({
             leadNo: Number(leadNo),
             caseNo,
@@ -298,7 +281,7 @@ const deleteLeadReturnResult = async (req, res) => {
             {
                 isDeleted: true,
                 deletedAt: new Date(),
-                deletedBy: req.user?.name || "Unknown"
+                deletedBy: req.user?.username || "Unknown"
             },
             { new: true }
         );
@@ -313,7 +296,7 @@ const deleteLeadReturnResult = async (req, res) => {
             entityId: leadReturnId,
             action: "DELETE",
             performedBy: {
-                username: req.user?.name || "Unknown",
+                username: req.user?.username || "Unknown",
                 role: req.user?.role || "Unknown"
             },
             oldValue: sanitizeForAudit(existingResult.toObject()),
@@ -330,7 +313,7 @@ const deleteLeadReturnResult = async (req, res) => {
         try {
             await createSnapshot(
                 Number(leadNo),
-                req.user?.name || "Unknown",
+                req.user?.username || "Unknown",
                 "Manual Snapshot",
                 caseNo,
                 existingResult.caseName
@@ -338,7 +321,6 @@ const deleteLeadReturnResult = async (req, res) => {
             console.log(`Snapshot created after deleting narrative ${leadReturnId} for lead ${leadNo} in case ${caseNo}`);
         } catch (snapshotErr) {
             console.error("Error creating snapshot after narrative deletion:", snapshotErr.message);
-            // Don't fail the request if snapshot creation fails
         }
 
         res.status(200).json({ message: "Lead return result deleted successfully.", data: deletedResult });
@@ -348,82 +330,8 @@ const deleteLeadReturnResult = async (req, res) => {
     }
 };
 
-// const searchCasesAndLeadsByKeyword = async (req, res) => {
-//   try {
-//     const { keyword, officerName } = req.query;
-
-//     if (!keyword || !keyword.trim()) {
-//       return res.status(400).json({ message: "Keyword is required." });
-//     }
-
-//     console.log("🔍 searchCasesAndLeadsByKeyword – keyword:", keyword);
-
-//     const regex = new RegExp(keyword.trim(), "i"); 
-
-//     const leadReturns = await LeadReturn.find({
-//       $or: [
-//         { description: regex },
-//         { caseName: regex },
-//         { caseNo: regex },
-//       ],
-//     });
-
-
-//     const leadReturnResults = await LeadReturnResult.find({
-//       $or: [
-//         { description: regex },
-//         { leadReturnResult: regex },
-//         { caseName: regex },
-//         { caseNo: regex },
-//       ],
-//     });
-
-//     const flatResults = [];
-
-//     for (const lr of leadReturns) {
-//       flatResults.push({
-//         caseNo: lr.caseNo,
-//         caseName: lr.caseName,
-//         leadNo: lr.leadNo,
-//         description: lr.description,
-//         source: "LeadReturn",
-//         fullLeadReturn: lr,
-//       });
-//     }
-
-//     for (const lrr of leadReturnResults) {
-//       flatResults.push({
-//         caseNo: lrr.caseNo,
-//         caseName: lrr.caseName,
-//         leadNo: lrr.leadNo,
-//         description: lrr.description,
-//         source: "LeadReturnResult",
-//         fullLeadReturn: lrr,
-//       });
-//     }
-
-//     const dedupMap = new Map();
-//     for (const item of flatResults) {
-//       const key = `${item.caseNo || ""}::${item.leadNo || ""}::${
-//         item.description || ""
-//       }`;
-//       if (!dedupMap.has(key)) {
-//         dedupMap.set(key, item);
-//       }
-//     }
-
-//     const deduped = Array.from(dedupMap.values());
-//     console.log("✅ searchCasesAndLeadsByKeyword – results count:", deduped.length);
-
-//     return res.status(200).json(deduped);
-//   } catch (err) {
-//     console.error("Error searching cases and leads by keyword:", err);
-//     return res.status(500).json({ message: "Something went wrong" });
-//   }
-// };
-
 // GET /api/leadReturnResult?keyword=...&officerName=...
- const searchCasesAndLeadsByKeyword = async (req, res) => {
+const searchCasesAndLeadsByKeyword = async (req, res) => {
   try {
     const { keyword, officerName } = req.query;
 
@@ -433,7 +341,7 @@ const deleteLeadReturnResult = async (req, res) => {
 
     const regex = new RegExp(keyword, "i");
 
-    // 1) Base text search condition
+    // Base text search condition
     const textMatch = {
       $or: [
         { description: regex },
@@ -443,7 +351,6 @@ const deleteLeadReturnResult = async (req, res) => {
       ],
     };
 
-    // 2) Build query properly - combine text search with officer filter using $and
     let leadReturnQuery = textMatch;
     let leadReturnResultQuery = textMatch;
 
@@ -455,22 +362,17 @@ const deleteLeadReturnResult = async (req, res) => {
         ],
       };
 
-      leadReturnQuery = {
-        $and: [textMatch, officerCondition],
-      };
-
-      leadReturnResultQuery = {
-        $and: [textMatch, officerCondition],
-      };
+      leadReturnQuery = { $and: [textMatch, officerCondition] };
+      leadReturnResultQuery = textMatch; // LeadReturnResult no longer has assignedTo/By
     }
 
-    // 2a) LeadReturn documents
-    const leadReturns = await LeadReturn.find(leadReturnQuery);
+    // LeadReturn documents
+    const leadReturns = await LeadReturn.find(leadReturnQuery).lean();
 
-    // 2b) LeadReturnResult documents
-    const leadReturnResults = await LeadReturnResult.find(leadReturnResultQuery);
+    // LeadReturnResult documents
+    const leadReturnResults = await LeadReturnResult.find(leadReturnResultQuery).lean();
 
-    // 2c) Search LRPerson by firstName or lastName (no officer filter for person searches)
+    // Search LRPerson by firstName or lastName
     const personTextMatch = {
       $or: [
         { firstName: regex },
@@ -478,21 +380,11 @@ const deleteLeadReturnResult = async (req, res) => {
         { alias: regex },
       ],
     };
+    const lrPersons = await LRPerson.find(personTextMatch).lean();
 
-    const lrPersons = await LRPerson.find(personTextMatch);
-
-    console.log(`📊 Search Results Summary:`);
-    console.log(`   - LeadReturn: ${leadReturns.length}`);
-    console.log(`   - LeadReturnResult: ${leadReturnResults.length}`);
-    console.log(`   - LRPerson: ${lrPersons.length}`);
-    if (lrPersons.length > 0) {
-      console.log(`   - Found persons:`, lrPersons.map(p => `${p.firstName} ${p.lastName}`));
-    }
-
-    // 3) Build a FLAT list of unified lead entries
+    // Build a FLAT list of unified lead entries
     const flatResults = [];
 
-    // from LeadReturn
     for (const lr of leadReturns) {
       flatResults.push({
         caseNo: lr.caseNo,
@@ -504,7 +396,6 @@ const deleteLeadReturnResult = async (req, res) => {
       });
     }
 
-    // from LeadReturnResult
     for (const lrr of leadReturnResults) {
       flatResults.push({
         caseNo: lrr.caseNo,
@@ -516,7 +407,6 @@ const deleteLeadReturnResult = async (req, res) => {
       });
     }
 
-    // from LRPerson - add the associated lead info
     for (const person of lrPersons) {
       flatResults.push({
         caseNo: person.caseNo,
@@ -529,23 +419,16 @@ const deleteLeadReturnResult = async (req, res) => {
       });
     }
 
-    // 4) Optional: de-duplicate by caseNo + leadNo + description
+    // De-duplicate by caseNo + leadNo + description
     const dedupMap = new Map();
     for (const item of flatResults) {
-      const key = `${item.caseNo || ""}::${item.leadNo || ""}::${
-        item.description || ""
-      }`;
+      const key = `${item.caseNo || ""}::${item.leadNo || ""}::${item.description || ""}`;
       if (!dedupMap.has(key)) {
         dedupMap.set(key, item);
       }
     }
 
     const deduped = Array.from(dedupMap.values());
-    console.log(
-      "✅ searchCasesAndLeadsByKeyword – results count:",
-      deduped.length
-    );
-
     return res.status(200).json(deduped);
   } catch (err) {
     console.error("Error searching cases and leads by keyword:", err);
@@ -553,9 +436,5 @@ const deleteLeadReturnResult = async (req, res) => {
   }
 };
 
-
-
-
-// module.exports = { createLeadReturnResult, getLeadReturnResultsByOfficer, getLeadReturnResultByLeadNoandLeadName };
 module.exports = { createLeadReturnResult, getLeadReturnResultsByOfficer, getLeadReturnResultByLeadNoandLeadName, updateLeadReturnResult,
     deleteLeadReturnResult, searchCasesAndLeadsByKeyword };

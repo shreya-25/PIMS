@@ -1,50 +1,59 @@
 const mongoose = require("mongoose");
+const { LR_ACCESS_LEVELS } = require("./leadreturn");
 
 const leadReturnResultsSchema = new mongoose.Schema(
     {
-        leadNo: { type: Number, required: true },
-        description: { type: String, required: true },
-        assignedTo: {
-            assignees: [{ type: String, required: true }],
-            lRStatus: {
-                type: String,
-                enum: ["Assigned", "Pending", "Approved", "Returned", "Completed", "Submitted"],
-                default: "Assigned"
-            }
-        },
-        assignedBy: {
-            assignee: { type: String, required: true },
-            lRStatus: {
-                type: String,
-                enum: ["Assigned", "Pending"],
-                default: "Assigned"
-            }
-        },
-        enteredDate:  { type: Date },
-        enteredBy: { type: String, required: true},
-        lastModifiedDate: { type: Date },
-        lastModifiedBy: { type: String },
-        caseName: { type: String, required: true},
-        caseNo: { type: String , required: true},
-        leadReturnId: { type: String , required: true},
-        leadReturnResult: { type: String, required: true},
+        // ── Stable ObjectId refs (populated when available) ──────
+        caseId:            { type: mongoose.Schema.Types.ObjectId, ref: "Case", default: null },
+        leadId:            { type: mongoose.Schema.Types.ObjectId, ref: "Lead", default: null },
+        leadReturnObjectId:{ type: mongoose.Schema.Types.ObjectId, ref: "LeadReturn", default: null },
+        enteredByUserId:   { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+
+        // ── Existing fields ───────────────────────────────────────
+        leadNo:            { type: Number, required: true },
+        description:       { type: String, required: true },  // lead description snapshot
+
+        enteredDate:       { type: Date },
+        enteredBy:         { type: String, required: true },   // username snapshot
+        lastModifiedDate:  { type: Date },
+        lastModifiedBy:    { type: String },
+
+        // Snapshots (display only)
+        caseName:          { type: String, required: true },
+        caseNo:            { type: String, required: true },
+
+        // The alphabetic return identifier (A, B, C...)
+        leadReturnId:      { type: String, required: true },
+        // The actual narrative text
+        leadReturnResult:  { type: String, required: true },
+
         accessLevel: {
             type: String,
-            enum: ["Everyone", "Case Manager", "Case Manager and Assignees"],
+            enum: LR_ACCESS_LEVELS,
             default: "Everyone"
-          },
+        },
+
         // Soft delete fields
-        isDeleted: { type: Boolean, default: false },
-        deletedAt: { type: Date },
-        deletedBy: { type: String },
+        isDeleted:  { type: Boolean, default: false },
+        deletedAt:  { type: Date },
+        deletedBy:  { type: String },
+
         // Reference to complete lead return version
         completeLeadReturnId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "CompleteleadReturn",
-            index: true
         }
     },
     { timestamps: true }
 );
+
+// ── Indexes ────────────────────────────────────────────────────
+leadReturnResultsSchema.index({ leadReturnObjectId: 1, leadReturnId: 1 });
+leadReturnResultsSchema.index({ caseId: 1, leadNo: 1 });
+leadReturnResultsSchema.index({ leadNo: 1, caseNo: 1, isDeleted: 1 });
+
+leadReturnResultsSchema.query.notDeleted = function () {
+    return this.where({ isDeleted: { $ne: true } });
+};
 
 module.exports = mongoose.model("LeadReturnResult", leadReturnResultsSchema, "LeadReturnResults");

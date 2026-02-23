@@ -1,11 +1,24 @@
 const Lead = require("../models/lead");
+const User = require("../models/userModel");
 const mongoose = require("mongoose");
 const { createSnapshot } = require("../utils/leadReturnVersioning");
 
+// Helper: resolve a username string to a User ObjectId
+async function resolveUserId(username) {
+  if (!username) return null;
+  const user = await User.findOne({ username: username.toLowerCase().trim() });
+  return user ? user._id : null;
+}
 
-// lead.controller.js (or wherever your createLead function is defined)
+// Helper: resolve an array of usernames to ObjectIds
+async function resolveUserIds(usernames) {
+  if (!usernames || !usernames.length) return [];
+  const users = await User.find({ username: { $in: usernames.map(u => u.toLowerCase().trim()) } });
+  const map = {};
+  users.forEach(u => { map[u.username] = u._id; });
+  return usernames.map(u => map[u.toLowerCase().trim()] || null).filter(Boolean);
+}
 
-// Put near the top of the file
 const computeAggregateStatus = (assignedTo = []) => {
   const list = (assignedTo || []).map(a => a?.status || "pending");
   if (!list.length) return "Assigned";
@@ -44,7 +57,7 @@ const createLead = async (req, res) => {
       primaryInvestigator,
     } = req.body;
 
-     const missing = [];
+    const missing = [];
     if (!caseId)      missing.push('Case ID');
     if (!caseName)    missing.push('Case Name');
     if (!caseNo)      missing.push('Case Number');
@@ -57,15 +70,38 @@ const createLead = async (req, res) => {
       });
     }
 
-    const actor = req.user?.name || assignedBy;
+    const actor = req.user?.username || assignedBy;
+    const actorUserId = req.user?.userId ? new mongoose.Types.ObjectId(req.user.userId) : await resolveUserId(actor);
 
-    const assignedTo = assignedToInput.map(item =>
-      typeof item === 'string'
-        ? { username: item, status: 'pending' }
-        : { username: item.username, status: item.status || 'pending' }
-    );
+    // Build assignedTo with userId lookups
+    const assignedToUsernames = assignedToInput.map(item =>
+      typeof item === 'string' ? item : item.username
+    ).filter(Boolean);
 
-   let savedLead = null;
+    const usernameToIdMap = {};
+    if (assignedToUsernames.length) {
+      const users = await User.find({ username: { $in: assignedToUsernames.map(u => u.toLowerCase().trim()) } });
+      users.forEach(u => { usernameToIdMap[u.username] = u._id; });
+    }
+
+    const assignedTo = assignedToInput.map(item => {
+      const username = typeof item === 'string' ? item : item.username;
+      return {
+        username,
+        userId: usernameToIdMap[username?.toLowerCase?.()?.trim()] || null,
+        status: (typeof item === 'object' ? item.status : null) || 'pending',
+      };
+    });
+
+    // Resolve primaryInvestigator userId
+    const primaryInvestigatorUserId = primaryInvestigator
+      ? (usernameToIdMap[primaryInvestigator.toLowerCase().trim()] || await resolveUserId(primaryInvestigator))
+      : null;
+
+    // Resolve toUserIds for event
+    const toUserIds = assignedTo.map(a => a.userId).filter(Boolean);
+
+    let savedLead = null;
     while (!savedLead) {
       const last = await Lead.findOne({ caseNo, caseName }).sort({ leadNo: -1 }).limit(1);
       const nextLeadNo = last ? last.leadNo + 1 : 1;
@@ -74,8 +110,11 @@ const createLead = async (req, res) => {
         const initialEvent = {
           type: "assigned",
           by: actor,
+          byUserId: actorUserId,
           to: assignedTo.map(x => x.username),
+          toUserIds,
           primaryInvestigator: primaryInvestigator || null,
+          primaryInvestigatorUserId: primaryInvestigatorUserId || null,
           statusAfter: "Assigned",
           at: assignedDate ? new Date(assignedDate) : new Date()
         };
@@ -90,7 +129,8 @@ const createLead = async (req, res) => {
           assignedDate,
           completedDate,
           assignedTo,
-          assignedBy,
+          assignedBy: actor,
+          assignedByUserId: actorUserId,
           summary,
           description,
           leadStatus: leadStatus || "Assigned",
@@ -103,7 +143,8 @@ const createLead = async (req, res) => {
           approvedDate,
           returnedDate,
           primaryInvestigator,
-          events: [initialEvent]   // 👈 add the first event
+          primaryInvestigatorUserId,
+          events: [initialEvent]
         }).save();
 
         return res.status(201).json(savedLead);
@@ -117,15 +158,12 @@ const createLead = async (req, res) => {
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
-  
+
 
 const getLeadsByOfficer = async (req, res) => {
     try {
-        const officerName = req.user.name; // Extract officer's name from the authenticated request
-
-        // Fetch leads where assignedBy matches the officer's name
-        const leads = await Lead.find({ assignedBy: officerName });
-
+        const officerName = req.user.username;
+        const leads = await Lead.find({ assignedBy: officerName }).select("-events").lean();
         res.status(200).json(leads);
     } catch (err) {
         console.error("Error fetching leads:", err.message);
@@ -135,13 +173,10 @@ const getLeadsByOfficer = async (req, res) => {
 
 const getLeadsForAssignedToOfficer = async (req, res) => {
   try {
-    const officerName = req.user.name; 
-
-    // find any lead where assignedTo array contains an object with this username
-    const leads = await Lead.find({ 
-      'assignedTo.username': officerName 
-    });
-
+    const officerName = req.user.username;
+    const leads = await Lead.find({
+      'assignedTo.username': officerName
+    }).select("-events").lean();
     res.status(200).json(leads);
   } catch (err) {
     console.error("Error fetching leads for officer:", err);
@@ -151,31 +186,25 @@ const getLeadsForAssignedToOfficer = async (req, res) => {
 
 const getAssignedLeadsForOfficer = async (req, res) => {
   try {
-    const officerName = req.user.name; 
-
-    // Query: assignedTo.username must match, and leadStatus === "Assigned"
+    const officerName = req.user.username;
     const leads = await Lead.find({
       "assignedTo.username": officerName,
       leadStatus: "Assigned"
-    });
-
+    }).select("-events").lean();
     return res.status(200).json(leads);
   } catch (err) {
-    console.error("Error fetching only‐assigned leads:", err);
+    console.error("Error fetching only-assigned leads:", err);
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
 
 const getLRForCM = async (req, res) => {
   try {
-    const officerName = req.user.name; 
-
-    // Query: assignedTo.username must match, and leadStatus === "Assigned"
+    const officerName = req.user.username;
     const leads = await Lead.find({
       "assignedBy": officerName,
       leadStatus: "In Review"
-    });
-
+    }).select("-events").lean();
     return res.status(200).json(leads);
   } catch (err) {
     console.error("Error fetching lead returns for review:", err);
@@ -187,10 +216,8 @@ const getLRForCM = async (req, res) => {
 
 const getLeadsByCase = async (req, res) => {
     try {
-      const { caseNo, caseName } = req.params; 
-      // Alternatively, you could use req.query if you prefer /case?caseNo=123&caseName=XYZ
-      
-      const leads = await Lead.find({ caseNo, caseName });
+      const { caseNo, caseName } = req.params;
+      const leads = await Lead.find({ caseNo, caseName }).select("-events").lean();
       res.status(200).json(leads);
     } catch (err) {
       console.error("Error fetching leads by case:", err.message);
@@ -200,41 +227,30 @@ const getLeadsByCase = async (req, res) => {
 
   const getLeadsByLeadNoandLeadName = async (req, res) => {
     try {
-
         const { leadNo, leadName, caseNo, caseName } = req.params;
-
-        const query = { 
-            leadNo: leadNo, 
-            description: leadName,  
-            caseNo: caseNo, 
+        const query = {
+            leadNo: leadNo,
+            description: leadName,
+            caseNo: caseNo,
             caseName: caseName
         };
-
-        const leads = await Lead.find(query);
-
-   
-
+        const leads = await Lead.find(query).lean();
         res.status(200).json(leads);
     } catch (err) {
         console.error("Error fetching leads by case:", err.message);
         res.status(500).json({ message: "Something went wrong" });
     }
 };
+
 const getLeadsforHierarchy = async (req, res) => {
   try {
-
       const { leadNo, caseNo, caseName } = req.params;
-
-      const query = { 
-          leadNo: leadNo, 
-          caseNo: caseNo, 
+      const query = {
+          leadNo: leadNo,
+          caseNo: caseNo,
           caseName: caseName
       };
-
-      const leads = await Lead.find(query);
-
- 
-
+      const leads = await Lead.find(query).select("-events").lean();
       res.status(200).json(leads);
   } catch (err) {
       console.error("Error fetching leads by case:", err.message);
@@ -245,10 +261,8 @@ const getLeadsforHierarchy = async (req, res) => {
 const getAssociatedSubNumbers = async (req, res) => {
   try {
     const { caseNo, caseName } = req.params;
-
-    const leads = await Lead.find({ caseNo, caseName });
+    const leads = await Lead.find({ caseNo, caseName }).select("subNumber").lean();
     const uniqueSubNumbers = [...new Set(leads.flatMap(lead => lead.subNumber || []))];
-
     res.status(200).json({ associatedSubNumbers: uniqueSubNumbers });
   } catch (err) {
     console.error("Error fetching subnumbers:", err.message);
@@ -273,7 +287,6 @@ const updateLeadStatus = async (req, res) => {
       return res.status(404).json({ message: "Lead not found" });
     }
 
-    // Set leadStatus as "pending" by default
     lead.leadStatus = "Accepted";
     await lead.save();
 
@@ -300,7 +313,6 @@ exports.updateLeadLRStatus = async (req, res) => {
       return res.status(404).json({ message: "Lead not found" });
     }
 
-    // Assuming the `assignedBy` field exists and has `lRStatus`
     lead.assignedBy.lRStatus = lRStatus;
 
     await lead.save();
@@ -345,47 +357,35 @@ const updateLRStatusToPending = async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 };
-const searchLeadsByKeyword = async (req, res) => {
-  console.log("Inside searchLeadsByKeyword");
-  try {
-    // Expect these query parameters from the client.
-    const { caseNo, caseName, keyword, field } = req.query;
-    console.log("Received query:", caseNo, caseName, keyword, field);
 
-    // Validate required fields.
+const searchLeadsByKeyword = async (req, res) => {
+  try {
+    const { caseNo, caseName, keyword, field } = req.query;
+
     if (!caseNo || !caseName) {
       return res.status(400).json({ message: "caseNo and caseName are required." });
     }
-    
-    // Use the provided keyword or default to an empty string.
+
     const searchKeyword = keyword || "";
-    
-    // Build the common part of the query using case info.
+
     const baseQuery = {
       caseNo,
       caseName: { $regex: new RegExp(`^${caseName}$`, "i") }
     };
 
     let query;
-    // If the client provided a specific 'field' parameter,
-    // build the query accordingly.
     if (field) {
       switch (field) {
         case "Lead Number":
-          // For lead number, expect an exact match.
           query = { ...baseQuery, leadNo: searchKeyword };
           break;
         case "Priority":
-          // Use a regex to perform a case‑insensitive search on priority.
           query = { ...baseQuery, priority: { $regex: new RegExp(searchKeyword, "i") } };
           break;
         case "Due Date":
-          // For due date, you might choose regex (for partial matches) or exact match.
-          // Here, we use regex. Adjust the logic if you need proper date comparisons.
           query = { ...baseQuery, dueDate: { $regex: new RegExp(searchKeyword, "i") } };
           break;
         case "Remaining Days":
-          // For numeric fields, convert the keyword to a number.
           const numericKeyword = Number(searchKeyword);
           if (isNaN(numericKeyword)) {
             return res.status(400).json({ message: "Invalid value for Remaining Days." });
@@ -393,7 +393,6 @@ const searchLeadsByKeyword = async (req, res) => {
           query = { ...baseQuery, remainingDays: numericKeyword };
           break;
         default:
-          // If an unsupported field is provided, fall back to default search.
           query = {
             ...baseQuery,
             $or: [
@@ -403,9 +402,6 @@ const searchLeadsByKeyword = async (req, res) => {
           };
       }
     } else {
-      // Without a 'field' parameter, default behavior:
-      // - If keyword matches the lead number pattern, search by leadNo.
-      // - Else search the description and summary fields.
       if (searchKeyword.match(/^Lead\d+$/i)) {
         query = { ...baseQuery, leadNo: searchKeyword };
       } else {
@@ -418,9 +414,8 @@ const searchLeadsByKeyword = async (req, res) => {
         };
       }
     }
-    
-    // Execute the query.
-    const leads = await Lead.find(query);
+
+    const leads = await Lead.find(query).select("-events").lean();
     res.status(200).json(leads);
   } catch (err) {
     console.error("Error searching leads:", err.message);
@@ -428,12 +423,10 @@ const searchLeadsByKeyword = async (req, res) => {
   }
 };
 
-// controller/leadController.js
 const HarddeleteLead = async (req, res) => {
   const { leadNo, leadName, caseNo, caseName } = req.params;
 
   try {
-    // Guard: only Case Manager or Detective Supervisor
     const role = req.user?.role || "";
     const allowed = /^(case\s*manager|detective\s*supervisor)$/i.test(role);
     if (!allowed) {
@@ -442,7 +435,6 @@ const HarddeleteLead = async (req, res) => {
         .json({ message: "Unauthorized: Only Case Managers or Detective Supervisors can delete a lead." });
     }
 
-    // Build filter (adjust 'description' if your schema field differs)
     const filter = {
       leadNo: Number(leadNo),
       description: leadName,
@@ -450,13 +442,11 @@ const HarddeleteLead = async (req, res) => {
       caseName,
     };
 
-    // Ensure it exists (optional but gives nicer 404)
     const existing = await Lead.findOne(filter);
     if (!existing) {
       return res.status(404).json({ message: "Lead not found." });
     }
 
-    // Delete the lead (Lead-only)
     await Lead.deleteOne({ _id: existing._id });
 
     return res.status(200).json({ message: "Lead deleted successfully." });
@@ -466,7 +456,6 @@ const HarddeleteLead = async (req, res) => {
   }
 };
 
-// PUT /api/lead/:leadNo/:leadName/:caseNo/:caseName/soft-delete
 const deleteLead = async (req, res) => {
   const { leadNo, leadName, caseNo, caseName } = req.params;
   const { reason } = req.body;
@@ -488,26 +477,28 @@ const deleteLead = async (req, res) => {
     });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
-    const actor = req.user?.name || "unknown";
+    const actor = req.user?.username || "unknown";
+    const actorUserId = req.user?.userId ? new mongoose.Types.ObjectId(req.user.userId) : null;
 
-    // mark deleted + keep audit trail
     lead.isDeleted     = true;
     lead.deletedAt     = new Date();
     lead.deletedBy     = actor;
+    lead.deletedByUserId = actorUserId;
     lead.deletedReason = reason;
 
-    // optionally keep previous comment; do not overwrite
     lead.comment = [lead.comment, `[DELETED ${new Date().toLocaleString()} by ${actor}] Reason: ${reason}`]
       .filter(Boolean).join("\n\n");
 
-    // update visible status + add an event for Chain of Custody
     lead.leadStatus = "Deleted";
     lead.events.push({
       type: "cm-deleted",
       by: actor,
+      byUserId: actorUserId,
       to: (lead.assignedTo || []).map(a => a.username),
+      toUserIds: (lead.assignedTo || []).map(a => a.userId).filter(Boolean),
       reason,
       primaryInvestigator: lead.primaryInvestigator || null,
+      primaryInvestigatorUserId: lead.primaryInvestigatorUserId || null,
       statusAfter: "Deleted",
       at: new Date()
     });
@@ -532,30 +523,32 @@ const setLeadStatusToInReview = async (req, res) => {
     const lead = await Lead.findOne({ leadNo, description, caseName, caseNo });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
-    const actor = req.user?.name || "unknown";
+    const actor = req.user?.username || "unknown";
+    const actorUserId = req.user?.userId ? new mongoose.Types.ObjectId(req.user.userId) : null;
 
     lead.leadStatus   = "In Review";
     lead.submittedDate = submittedDate ? new Date(submittedDate) : new Date();
     lead.submittedBy   = actor;
+    lead.submittedByUserId = actorUserId;
 
     lead.events.push({
       type: "pi-submitted",
       by: actor,
-      to: [],                // (optional) who is affected
+      byUserId: actorUserId,
+      to: [],
+      toUserIds: [],
       primaryInvestigator: lead.primaryInvestigator || null,
+      primaryInvestigatorUserId: lead.primaryInvestigatorUserId || null,
       statusAfter: "In Review",
       at: new Date()
     });
 
     await lead.save();
 
-    // Create snapshot for "Submitted" status
     try {
       await createSnapshot(leadNo, actor, "Submitted", lead.caseNo, lead.caseName);
-      console.log(`Snapshot created for lead ${leadNo} in case ${lead.caseNo} - Submitted`);
     } catch (snapshotErr) {
       console.error("Error creating snapshot:", snapshotErr.message);
-      // Don't fail the request if snapshot creation fails
     }
 
     return res.status(200).json({ message: "Lead status set to 'In Review'.", lead });
@@ -576,7 +569,8 @@ const setLeadStatusToComplete = async (req, res) => {
     const lead = await Lead.findOne({ leadNo, description, caseName, caseNo });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
-    const actor = req.user?.name || "unknown";
+    const actor = req.user?.username || "unknown";
+    const actorUserId = req.user?.userId ? new mongoose.Types.ObjectId(req.user.userId) : null;
 
     lead.leadStatus   = "Completed";
     lead.approvedDate = approvedDate ? new Date(approvedDate) : new Date();
@@ -584,21 +578,21 @@ const setLeadStatusToComplete = async (req, res) => {
     lead.events.push({
       type: "cm-approved",
       by: actor,
+      byUserId: actorUserId,
       to: (lead.assignedTo || []).map(a => a.username),
+      toUserIds: (lead.assignedTo || []).map(a => a.userId).filter(Boolean),
       primaryInvestigator: lead.primaryInvestigator || null,
+      primaryInvestigatorUserId: lead.primaryInvestigatorUserId || null,
       statusAfter: "Completed",
       at: new Date()
     });
 
     await lead.save();
 
-    // Create snapshot for "Approved" status
     try {
       await createSnapshot(leadNo, actor, "Approved", caseNo, caseName);
-      console.log(`Snapshot created for lead ${leadNo} in case ${caseNo} - Approved`);
     } catch (snapshotErr) {
       console.error("Error creating snapshot:", snapshotErr.message);
-      // Don't fail the request if snapshot creation fails
     }
 
     return res.status(200).json({ message: "Lead status set to 'Completed'.", lead });
@@ -630,12 +624,9 @@ const setLeadStatusToPending = async (req, res) => {
     lead.leadStatus = "Accepted";
     await lead.save();
 
-    console.log(`✅ [DEBUG] Lead ${leadNo} status set to 'Completed' for case ${caseName} (${caseNo})`);
-
-
-    return res.status(200).json({ message: "Lead status set to 'Completed'.", lead });
+    return res.status(200).json({ message: "Lead status set to 'Accepted'.", lead });
   } catch (err) {
-    console.error("Error updating lead status to 'Completed':", err.message);
+    console.error("Error updating lead status:", err.message);
     return res.status(500).json({ message: "Something went wrong while updating status." });
   }
 };
@@ -650,7 +641,8 @@ const setLeadStatusToReturned = async (req, res) => {
     const lead = await Lead.findOne({ leadNo, description, caseName, caseNo });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
-    const actor = req.user?.name || "unknown";
+    const actor = req.user?.username || "unknown";
+    const actorUserId = req.user?.userId ? new mongoose.Types.ObjectId(req.user.userId) : null;
 
     lead.leadStatus   = "Returned";
     lead.returnedDate = new Date();
@@ -658,22 +650,22 @@ const setLeadStatusToReturned = async (req, res) => {
     lead.events.push({
       type: "cm-returned",
       by: actor,
+      byUserId: actorUserId,
       to: (lead.assignedTo || []).map(a => a.username),
+      toUserIds: (lead.assignedTo || []).map(a => a.userId).filter(Boolean),
       reason: reason || "",
       primaryInvestigator: lead.primaryInvestigator || null,
+      primaryInvestigatorUserId: lead.primaryInvestigatorUserId || null,
       statusAfter: "Returned",
       at: new Date()
     });
 
     await lead.save();
 
-    // Create snapshot for "Returned" status
     try {
       await createSnapshot(leadNo, actor, "Returned", caseNo, caseName);
-      console.log(`Snapshot created for lead ${leadNo} in case ${caseNo} - Returned`);
     } catch (snapshotErr) {
       console.error("Error creating snapshot:", snapshotErr.message);
-      // Don't fail the request if snapshot creation fails
     }
 
     return res.status(200).json({ message: "Lead status set to 'Returned'.", lead });
@@ -694,7 +686,8 @@ const setLeadStatusToReopened = async (req, res) => {
     const lead = await Lead.findOne({ leadNo, description, caseName, caseNo });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
-    const actor = req.user?.name || "unknown";
+    const actor = req.user?.username || "unknown";
+    const actorUserId = req.user?.userId ? new mongoose.Types.ObjectId(req.user.userId) : null;
 
     lead.leadStatus   = "Reopened";
     lead.reopenedDate = new Date();
@@ -702,21 +695,21 @@ const setLeadStatusToReopened = async (req, res) => {
     lead.events.push({
       type: "cm-reopened",
       by: actor,
+      byUserId: actorUserId,
       to: (lead.assignedTo || []).map(a => a.username),
+      toUserIds: (lead.assignedTo || []).map(a => a.userId).filter(Boolean),
       primaryInvestigator: lead.primaryInvestigator || null,
+      primaryInvestigatorUserId: lead.primaryInvestigatorUserId || null,
       statusAfter: "Reopened",
       at: new Date()
     });
 
     await lead.save();
 
-    // Create snapshot for "Reopened" status
     try {
       await createSnapshot(leadNo, actor, "Reopened", caseNo, caseName);
-      console.log(`Snapshot created for lead ${leadNo} in case ${caseNo} - Reopened`);
     } catch (snapshotErr) {
       console.error("Error creating snapshot:", snapshotErr.message);
-      // Don't fail the request if snapshot creation fails
     }
 
     return res.status(200).json({ message: "Lead status set to 'Reopened'.", lead });
@@ -727,56 +720,6 @@ const setLeadStatusToReopened = async (req, res) => {
 };
 
 
-// const updateLead = async (req, res) => {
-//   try {
-//     const { leadNo, description, caseNo, caseName } = req.params;
-//     const incoming = req.body;
-
-//     const prev = await Lead.findOne({ leadNo: Number(leadNo), description, caseNo, caseName });
-//     if (!prev) return res.status(404).json({ message: "Lead not found" });
-
-
-//     const prevSet = new Set((prev.assignedTo || []).map(a => a.username));
-//     const nextSet = new Set((incoming.assignedTo || []).map(a => a.username));
-//     const added = [...nextSet].filter(u => !prevSet.has(u));
-//     const removed = [...prevSet].filter(u => !nextSet.has(u));
-
-//     const actor = req.user?.name || incoming.assignedBy || prev.assignedBy;
-//     const eventsToPush = [];
-
-//     added.forEach(u => eventsToPush.push({
-//       type: "reassigned-added",
-//       by: actor,
-//       to: [u],
-//       primaryInvestigator: (incoming.primaryInvestigator ?? prev.primaryInvestigator) || null,
-//       statusAfter: incoming.leadStatus || prev.leadStatus || "Assigned",
-//       at: new Date()
-//     }));
-//     removed.forEach(u => eventsToPush.push({
-//       type: "reassigned-removed",
-//       by: actor,
-//       to: [u],
-//       primaryInvestigator: (incoming.primaryInvestigator ?? prev.primaryInvestigator) || null,
-//       statusAfter: incoming.leadStatus || prev.leadStatus || "Assigned",
-//       at: new Date()
-//     }));
-
-//     const lead = await Lead.findOneAndUpdate(
-//       { leadNo: Number(leadNo), description, caseNo, caseName },
-//       {
-//         $set: incoming,
-//         ...(eventsToPush.length ? { $push: { events: { $each: eventsToPush } } } : {})
-//       },
-//       { new: true }
-//     );
-
-//     return res.status(200).json(lead);
-//   } catch (err) {
-//     console.error("Error updating lead:", err);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// };
-
 const updateLead = async (req, res) => {
   try {
     const { leadNo, description, caseNo, caseName } = req.params;
@@ -785,69 +728,82 @@ const updateLead = async (req, res) => {
     const prev = await Lead.findOne({ leadNo: Number(leadNo), description, caseNo, caseName });
     if (!prev) return res.status(404).json({ message: "Lead not found" });
 
-    // ✅ Do NOT allow client to overwrite events directly
     const { events: _ignoreEvents, ...incomingNoEvents } = incoming;
 
-    // normalize assignedTo
-    const normalizeAssignedTo = (arr) =>
-      (Array.isArray(arr) ? arr : []).map(x =>
+    // normalize assignedTo with userId lookup
+    const normalizeAssignedTo = async (arr) => {
+      const items = (Array.isArray(arr) ? arr : []).map(x =>
         typeof x === "string"
           ? { username: x, status: "pending" }
-          : { username: x?.username, status: x?.status || "pending" }
+          : { username: x?.username, userId: x?.userId, status: x?.status || "pending" }
       ).filter(a => a.username);
 
-    const nextAssignedTo = normalizeAssignedTo(incomingNoEvents.assignedTo ?? prev.assignedTo);
+      // Resolve missing userIds
+      const needLookup = items.filter(a => !a.userId).map(a => a.username);
+      if (needLookup.length) {
+        const users = await User.find({ username: { $in: needLookup.map(u => u.toLowerCase().trim()) } });
+        const map = {};
+        users.forEach(u => { map[u.username] = u._id; });
+        items.forEach(a => {
+          if (!a.userId) a.userId = map[a.username?.toLowerCase?.()?.trim()] || null;
+        });
+      }
+      return items;
+    };
 
-    // diff for event log
+    const nextAssignedTo = await normalizeAssignedTo(incomingNoEvents.assignedTo ?? prev.assignedTo);
+
     const prevSet = new Set((prev.assignedTo || []).map(a => a.username));
     const nextSet = new Set(nextAssignedTo.map(a => a.username));
     const added   = [...nextSet].filter(u => !prevSet.has(u));
     const removed = [...prevSet].filter(u => !nextSet.has(u));
 
-    const actor = req.user?.name || incomingNoEvents.assignedBy || prev.assignedBy;
+    const actor = req.user?.username || incomingNoEvents.assignedBy || prev.assignedBy;
+    const actorUserId = req.user?.userId ? new mongoose.Types.ObjectId(req.user.userId) : null;
 
-    const computeAggregateStatus = (assignedTo = []) => {
-      const list = (assignedTo || []).map(a => a?.status || "pending");
-      if (!list.length) return "Assigned";
-      const allAccepted = list.every(s => s === "accepted");
-      const allDeclined = list.every(s => s === "declined");
-      if (allAccepted) return "Accepted";
-      if (allDeclined) return "Rejected";
-      if (list.includes("declined")) return "To Reassign";
-      return "Assigned";
-    };
     const statusAfter = computeAggregateStatus(nextAssignedTo);
+
+    // Build userId map for events
+    const userIdMap = {};
+    nextAssignedTo.forEach(a => { if (a.userId) userIdMap[a.username] = a.userId; });
+    (prev.assignedTo || []).forEach(a => { if (a.userId) userIdMap[a.username] = a.userId; });
 
     const eventsToPush = [
       ...added.map(u => ({
         type: "reassigned-added",
         by: actor,
+        byUserId: actorUserId,
         to: [u],
+        toUserIds: userIdMap[u] ? [userIdMap[u]] : [],
         primaryInvestigator: incomingNoEvents.primaryInvestigator ?? prev.primaryInvestigator ?? null,
+        primaryInvestigatorUserId: prev.primaryInvestigatorUserId || null,
         statusAfter,
         at: new Date()
       })),
       ...removed.map(u => ({
         type: "reassigned-removed",
         by: actor,
+        byUserId: actorUserId,
         to: [u],
+        toUserIds: userIdMap[u] ? [userIdMap[u]] : [],
         primaryInvestigator: incomingNoEvents.primaryInvestigator ?? prev.primaryInvestigator ?? null,
+        primaryInvestigatorUserId: prev.primaryInvestigatorUserId || null,
         statusAfter,
         at: new Date()
       }))
     ];
 
-    // ensure PI is either in list or null
     const candidatePI = incomingNoEvents.primaryInvestigator ?? prev.primaryInvestigator ?? null;
     const nextPI = candidatePI && nextSet.has(candidatePI) ? candidatePI : null;
+    const nextPIUserId = nextPI ? (userIdMap[nextPI] || null) : null;
 
-    // ✅ Build update doc WITHOUT touching `events` in $set
     const updateDoc = {
       $set: {
         ...incomingNoEvents,
         assignedTo: nextAssignedTo,
         leadStatus: incomingNoEvents.leadStatus || statusAfter,
-        primaryInvestigator: nextPI
+        primaryInvestigator: nextPI,
+        primaryInvestigatorUserId: nextPIUserId,
       }
     };
     if (eventsToPush.length) {
@@ -868,47 +824,6 @@ const updateLead = async (req, res) => {
 };
 
 
-
-/**
- * PUT /api/lead/:leadNo/:description/:caseNo/:caseName/assignedTo
- * body: { officerUsername, status }
- */
-// const updateAssignedToStatus = async (req, res) => {
-//   try {
-//     const { leadNo, description, caseNo, caseName } = req.params;
-//     const { officerUsername, status } = req.body;
-
-//     if (!officerUsername || !status) {
-//       return res.status(400).json({ message: "Need officerUsername and status" });
-//     }
-
-//     // positional operator to update only the matching array element
-//     const lead = await Lead.findOneAndUpdate(
-//       {
-//         leadNo: Number(leadNo),
-//         description,
-//         caseNo,
-//         caseName,
-//         'assignedTo.username': officerUsername
-//       },
-//       {
-//         $set: { 'assignedTo.$.status': status }
-//       },
-//       { new: true }
-//     );
-
-//     if (!lead) {
-//       return res.status(404).json({ message: "Lead or officer not found" });
-//     }
-
-//     res.status(200).json({ message: "Officer status updated", lead });
-//   } catch (err) {
-//     console.error("Error updating officer status:", err);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// };
-
-// body: { officerUsername, status, reason? }
 const updateAssignedToStatus = async (req, res) => {
   try {
     const { leadNo, description, caseNo, caseName } = req.params;
@@ -918,7 +833,6 @@ const updateAssignedToStatus = async (req, res) => {
       return res.status(400).json({ message: "Need officerUsername and status" });
     }
 
-    // Update the one array element
     const lead = await Lead.findOneAndUpdate(
       {
         leadNo: Number(leadNo),
@@ -932,16 +846,20 @@ const updateAssignedToStatus = async (req, res) => {
     );
     if (!lead) return res.status(404).json({ message: "Lead or officer not found" });
 
-    // Recompute aggregate status
     const statusAfter = computeAggregateStatus(lead.assignedTo);
 
-    // Append event + update leadStatus
+    const actor = req.user?.username || officerUsername;
+    const actorUserId = req.user?.userId ? new mongoose.Types.ObjectId(req.user.userId) : null;
+
     lead.events.push({
       type: status === "accepted" ? "accepted" : "declined",
-      by: req.user?.name || officerUsername,
+      by: actor,
+      byUserId: actorUserId,
       to: [officerUsername],
+      toUserIds: actorUserId ? [actorUserId] : [],
       reason: status === "declined" ? (reason || "") : undefined,
       primaryInvestigator: lead.primaryInvestigator || null,
+      primaryInvestigatorUserId: lead.primaryInvestigatorUserId || null,
       statusAfter,
       at: new Date()
     });
@@ -956,38 +874,6 @@ const updateAssignedToStatus = async (req, res) => {
 };
 
 
-// const removeAssignedOfficer = async (req, res) => {
-//   try {
-//     const { leadNo, description, caseNo, caseName, username } = req.params;
-
-//     // Find & pull the matching username out of assignedTo
-//     const lead = await Lead.findOneAndUpdate(
-//       {
-//         leadNo: Number(leadNo),
-//         description,
-//         caseNo,
-//         caseName
-//       },
-//       {
-//         $pull: { assignedTo: { username } }
-//       },
-//       { new: true }  // return the updated document
-//     );
-
-//     if (!lead) {
-//       return res.status(404).json({ message: "Lead not found" });
-//     }
-
-//     res.status(200).json({
-//       message: `Officer '${username}' removed from assignedTo`,
-//       lead
-//     });
-//   } catch (err) {
-//     console.error("Error removing assigned officer:", err);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// };
-
 const removeAssignedOfficer = async (req, res) => {
   try {
     const { leadNo, description, caseNo, caseName, username } = req.params;
@@ -999,14 +885,19 @@ const removeAssignedOfficer = async (req, res) => {
     );
     if (!lead) return res.status(404).json({ message: "Lead not found" });
 
-    // Recompute aggregate status after removal
     const statusAfter = computeAggregateStatus(lead.assignedTo);
+
+    const actor = req.user?.username || lead.assignedBy;
+    const actorUserId = req.user?.userId ? new mongoose.Types.ObjectId(req.user.userId) : null;
 
     lead.events.push({
       type: "reassigned-removed",
-      by: req.user?.name || lead.assignedBy,
+      by: actor,
+      byUserId: actorUserId,
       to: [username],
+      toUserIds: await resolveUserIds([username]),
       primaryInvestigator: lead.primaryInvestigator || null,
+      primaryInvestigatorUserId: lead.primaryInvestigatorUserId || null,
       statusAfter,
       at: new Date()
     });
@@ -1024,15 +915,10 @@ const removeAssignedOfficer = async (req, res) => {
 };
 
 
-/**
- * GET /api/lead/status/:leadNo/:leadName/:caseNo/:caseName
- * Returns only the leadStatus string for the matching Lead document.
- */
 const getLeadStatus = async (req, res) => {
   try {
     const { leadNo, leadName, caseNo, caseName } = req.params;
 
-    // find the single lead document
     const lead = await Lead.findOne({
       leadNo:   Number(leadNo),
       description: leadName,
@@ -1044,7 +930,6 @@ const getLeadStatus = async (req, res) => {
       return res.status(404).json({ message: "Lead not found" });
     }
 
-    // return only the status
     res.status(200).json({ leadStatus: lead.leadStatus });
   } catch (err) {
     console.error("Error fetching lead status:", err);
@@ -1052,11 +937,6 @@ const getLeadStatus = async (req, res) => {
   }
 };
 
-// at the bottom of controllers/lead.controller.js
-/**
- * PUT /api/lead/status/close
- * body: { leadNo, description, caseNo, caseName, reason }
- */
 const setLeadStatusToClosed = async (req, res) => {
   try {
     const { leadNo, description, caseNo, caseName, reason } = req.body;
@@ -1067,18 +947,22 @@ const setLeadStatusToClosed = async (req, res) => {
     const lead = await Lead.findOne({ leadNo: Number(leadNo), description, caseNo, caseName });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
-    const actor = req.user?.name || "unknown";
+    const actor = req.user?.username || "unknown";
+    const actorUserId = req.user?.userId ? new mongoose.Types.ObjectId(req.user.userId) : null;
 
     lead.leadStatus = "Closed";
     lead.closedDate = new Date();
-    lead.comment    = reason; // or move to a dedicated `closeReason` field
+    lead.comment    = reason;
 
     lead.events.push({
       type: "cm-closed",
       by: actor,
+      byUserId: actorUserId,
       to: (lead.assignedTo || []).map(a => a.username),
+      toUserIds: (lead.assignedTo || []).map(a => a.userId).filter(Boolean),
       reason,
       primaryInvestigator: lead.primaryInvestigator || null,
+      primaryInvestigatorUserId: lead.primaryInvestigatorUserId || null,
       statusAfter: "Closed",
       at: new Date()
     });
@@ -1093,12 +977,6 @@ const setLeadStatusToClosed = async (req, res) => {
 
 
 
-module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword , setLeadStatusToInReview, 
+module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword , setLeadStatusToInReview,
   setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM, getLeadStatus, setLeadStatusToClosed,  deleteLead, setLeadStatusToReturned, setLeadStatusToReopened
 };
-
-
-
-
-
-

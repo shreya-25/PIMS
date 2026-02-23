@@ -1,7 +1,7 @@
-// controllers/lraudio.controller.js
 const LRAudio = require("../models/LRAudio");
 const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
+const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 
 const toBool = (v) => v === true || v === "true" || v === "1";
 
@@ -12,7 +12,6 @@ const createLRAudio = async (req, res) => {
     let filePath = null, originalName = null, filename = null, s3Key = null;
     let link = isLink ? (req.body.link || "").trim() || null : null;
 
-    // Only upload if a file was actually sent
     if (!isLink && req.file) {
       filePath = req.file.path;
       originalName = req.file.originalname;
@@ -27,14 +26,20 @@ const createLRAudio = async (req, res) => {
       s3Key = key;
 
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      filePath = null; // no need to store local path after upload
+      filePath = null;
     }
+
+    // Resolve ObjectId refs
+    const refs = await resolveLeadReturnRefs({
+      caseNo: req.body.caseNo,
+      caseName: req.body.caseName,
+      leadNo: req.body.leadNo,
+      enteredBy: req.body.enteredBy,
+    });
 
     const newLRAudio = new LRAudio({
       leadNo: req.body.leadNo,
       description: req.body.description,
-      assignedTo: req.body.assignedTo ? JSON.parse(req.body.assignedTo) : {},
-      assignedBy: req.body.assignedBy ? JSON.parse(req.body.assignedBy) : {},
       enteredBy: req.body.enteredBy,
       caseName: req.body.caseName,
       caseNo: req.body.caseNo,
@@ -43,13 +48,12 @@ const createLRAudio = async (req, res) => {
       dateAudioRecorded: req.body.dateAudioRecorded,
       audioDescription: req.body.audioDescription,
       accessLevel: req.body.accessLevel || "Everyone",
-
-      isLink,
-      link,
-      originalName,
-      filename,
-      s3Key,
-      filePath, // null after upload (kept for compatibility)
+      isLink, link, originalName, filename, s3Key, filePath,
+      // ObjectId refs
+      caseId: refs.caseId,
+      leadId: refs.leadId,
+      leadReturnObjectId: refs.leadReturnObjectId,
+      enteredByUserId: refs.enteredByUserId,
     });
 
     await newLRAudio.save();
@@ -64,14 +68,7 @@ const createLRAudio = async (req, res) => {
 const getLRAudioByDetails = async (req, res) => {
   try {
     const { leadNo, leadName, caseNo, caseName } = req.params;
-
-    const query = {
-      leadNo: Number(leadNo),
-      description: leadName,
-      caseNo,
-      caseName,
-    };
-
+    const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName };
     const lrAudios = await LRAudio.find(query);
     if (lrAudios.length === 0) return res.status(404).json({ message: "No Audios found." });
 
@@ -81,7 +78,6 @@ const getLRAudioByDetails = async (req, res) => {
         return { ...a.toObject(), signedUrl };
       })
     );
-
     res.status(200).json(withUrls);
   } catch (err) {
     console.error("Error fetching lrAudios records:", err);
@@ -89,39 +85,27 @@ const getLRAudioByDetails = async (req, res) => {
   }
 };
 
-// UPDATE (link/file toggles supported; file optional)
+// UPDATE
 const updateLRAudio = async (req, res) => {
   try {
     const { id } = req.params;
     const audio = await LRAudio.findById(id);
     if (!audio) return res.status(404).json({ message: "Audio not found" });
 
-    // Core fields
     if (typeof req.body.audioDescription !== "undefined") audio.audioDescription = req.body.audioDescription;
     if (typeof req.body.dateAudioRecorded !== "undefined") audio.dateAudioRecorded = req.body.dateAudioRecorded;
     if (typeof req.body.leadReturnId !== "undefined") audio.leadReturnId = req.body.leadReturnId;
     if (typeof req.body.accessLevel !== "undefined") audio.accessLevel = req.body.accessLevel;
 
-    // Link/file mode
-    if (typeof req.body.isLink !== "undefined") {
-      audio.isLink = toBool(req.body.isLink);
-    }
+    if (typeof req.body.isLink !== "undefined") audio.isLink = toBool(req.body.isLink);
 
     if (audio.isLink) {
-      // Link mode: update link and (optionally) keep existing S3 file, or you can delete it:
       audio.link = (req.body.link || "").trim() || null;
-      // If you want to drop previously uploaded file when switching to link, uncomment:
-      // if (audio.s3Key) { await deleteFromS3(audio.s3Key); audio.s3Key = null; audio.filename = null; audio.originalName = null; }
     } else {
-      audio.link = null; // not in link mode
-      // Replace file only if a new file was uploaded
+      audio.link = null;
       if (req.file) {
         if (audio.s3Key) await deleteFromS3(audio.s3Key);
-        const { key } = await uploadToS3({
-          filePath: req.file.path,
-          userId: audio.caseNo,
-          mimetype: req.file.mimetype,
-        });
+        const { key } = await uploadToS3({ filePath: req.file.path, userId: audio.caseNo, mimetype: req.file.mimetype });
         if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         audio.s3Key = key;
         audio.originalName = req.file.originalname;

@@ -1,54 +1,58 @@
-// models/LRAudio.js
 const mongoose = require("mongoose");
+const { LR_ACCESS_LEVELS } = require("./leadreturn");
 
 const lrAudioSchema = new mongoose.Schema(
   {
-    leadNo: { type: Number, required: true },
-    description: { type: String, required: true },
+    // ── Stable ObjectId refs ──────────────────────────────────
+    caseId:            { type: mongoose.Schema.Types.ObjectId, ref: "Case", default: null },
+    leadId:            { type: mongoose.Schema.Types.ObjectId, ref: "Lead", default: null },
+    leadReturnObjectId:{ type: mongoose.Schema.Types.ObjectId, ref: "LeadReturn", default: null },
+    enteredByUserId:   { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
 
-    assignedTo: {
-      assignees: [{ type: String }],
-      lRStatus: {
-        type: String,
-        enum: ["Assigned", "Pending", "Approved", "Returned", "Completed", "Submitted"],
-        default: "Assigned",
-      },
-    },
-    assignedBy: {
-      assignee: { type: String },
-      lRStatus: { type: String, enum: ["Assigned", "Pending"], default: "Assigned" },
-    },
-
-    enteredBy: { type: String, required: true },
-    caseName: { type: String, required: true },
-    caseNo:   { type: String, required: true },
-
+    // ── Existing fields ───────────────────────────────────────
+    leadNo:            { type: Number, required: true },
+    description:       { type: String, required: true },  // lead description snapshot
+    enteredBy:         { type: String, required: true },   // username snapshot
+    caseName:          { type: String, required: true },   // snapshot
+    caseNo:            { type: String, required: true },   // snapshot
     leadReturnId:      { type: String, required: true },
     enteredDate:       { type: Date,   required: true },
     dateAudioRecorded: { type: Date,   required: true },
     audioDescription:  { type: String, required: true },
 
-    // Storage (all optional to allow metadata-only records)
+    // Storage (all optional)
     isLink:       { type: Boolean, default: false },
     link:         { type: String,  default: null },
-    s3Key:        { type: String,  default: null }, // ← no required
+    s3Key:        { type: String,  default: null },
     originalName: { type: String,  default: null },
     filename:     { type: String,  default: null },
     filePath:     { type: String,  default: null },
 
     accessLevel: {
       type: String,
-      enum: ["Case Manager Only", "Case Manager and Assignees", "Everyone"],
+      enum: LR_ACCESS_LEVELS,
       default: "Everyone",
     },
+
     // Reference to complete lead return version
     completeLeadReturnId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "CompleteleadReturn",
-      index: true
-    }
+    },
+
+    // Soft-delete
+    isDeleted:  { type: Boolean, default: false },
+    deletedAt:  { type: Date, default: null },
+    deletedBy:  { type: String, default: null },
   },
   { timestamps: true }
 );
+
+lrAudioSchema.index({ leadReturnObjectId: 1, createdAt: -1 });
+lrAudioSchema.index({ caseId: 1, leadNo: 1 });
+
+lrAudioSchema.query.notDeleted = function () {
+    return this.where({ isDeleted: { $ne: true } });
+};
 
 module.exports = mongoose.model("LRAudio", lrAudioSchema, "LRAudios");

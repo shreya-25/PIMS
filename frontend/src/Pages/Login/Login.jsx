@@ -25,7 +25,7 @@ export function Login() {
         });
 
         // Extract required data from response
-        const { token, name, role } = response.data;
+        const { token, userId, username: name, role } = response.data;
 
         // Debug logs
         console.log("Login successful!");
@@ -42,6 +42,7 @@ export function Login() {
 
         // Save token and user details to localStorage
         localStorage.setItem("token", token);
+        localStorage.setItem("userId", userId);
         localStorage.setItem("loggedInUser", name);  // Trim to avoid space issues
         // localStorage.setItem("role", role);
 

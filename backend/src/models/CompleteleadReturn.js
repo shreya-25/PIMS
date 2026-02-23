@@ -1,9 +1,15 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
+const { LR_ACCESS_LEVELS } = require("./leadreturn");
 
 const completeLeadReturnSchema = new mongoose.Schema(
     {
-        // Version control fields
+        // ── Stable ObjectId refs ──────────────────────────────────
+        leadReturnId: { type: Schema.Types.ObjectId, ref: "LeadReturn" },
+        caseId:       { type: Schema.Types.ObjectId, ref: "Case" },
+        leadId:       { type: Schema.Types.ObjectId, ref: "Lead" },
+
+        // ── Version control fields ────────────────────────────────
         versionId: {
             type: Number,
             required: true,
@@ -12,7 +18,6 @@ const completeLeadReturnSchema = new mongoose.Schema(
         isCurrentVersion: {
             type: Boolean,
             default: true,
-            index: true
         },
         parentVersionId: {
             type: Schema.Types.ObjectId,
@@ -33,8 +38,8 @@ const completeLeadReturnSchema = new mongoose.Schema(
             required: true
         },
 
-        // Core Lead Return Info (from leadreturn.js)
-        leadNo: { type: Number, required: true, index: true },
+        // Core Lead Return Info (snapshots from leadreturn.js)
+        leadNo: { type: Number, required: true },
         assignedTo: {
             assignees: [{ type: String, required: true }],
             lRStatus: {
@@ -59,7 +64,7 @@ const completeLeadReturnSchema = new mongoose.Schema(
         caseNo: { type: String, required: true },
         accessLevel: {
             type: String,
-            enum: ["Only Case Manager", "Everyone"],
+            enum: LR_ACCESS_LEVELS,
             default: "Everyone"
         },
 
@@ -265,7 +270,6 @@ const completeLeadReturnSchema = new mongoose.Schema(
     },
     {
         timestamps: true,
-        // Index for efficient version queries (removed old leadNo+versionId index - now using leadNo+caseNo+versionId)
         index: [
             { leadNo: 1, isCurrentVersion: 1 },
             { parentVersionId: 1 }
@@ -274,54 +278,36 @@ const completeLeadReturnSchema = new mongoose.Schema(
 );
 
 // Compound index to ensure unique version numbers per lead + case combination
-// This allows different cases to have their own Lead 1 with separate version histories
 completeLeadReturnSchema.index({ leadNo: 1, caseNo: 1, versionId: 1 }, { unique: true });
 
 // Index to quickly find current version for a lead in a specific case
 completeLeadReturnSchema.index({ leadNo: 1, caseNo: 1, isCurrentVersion: 1 });
 
+// ObjectId-based indexes
+completeLeadReturnSchema.index({ leadReturnId: 1, isCurrentVersion: 1 });
+completeLeadReturnSchema.index({ caseId: 1, leadNo: 1, versionId: -1 });
+
 // Static method to get the latest version for a lead (with optional case filtering)
 completeLeadReturnSchema.statics.getCurrentVersion = async function(leadNo, caseNo = null, caseName = null) {
     const query = { leadNo, isCurrentVersion: true };
-
-    // Add case filters if provided to ensure version history is case-specific
-    if (caseNo) {
-        query.caseNo = caseNo;
-    }
-    if (caseName) {
-        query.caseName = caseName;
-    }
-
+    if (caseNo) query.caseNo = caseNo;
+    if (caseName) query.caseName = caseName;
     return this.findOne(query).sort({ versionId: -1 }).lean();
 };
 
 // Static method to get all versions for a lead (with optional case filtering)
 completeLeadReturnSchema.statics.getAllVersions = async function(leadNo, caseNo = null, caseName = null) {
     const query = { leadNo };
-
-    // Add case filters if provided to ensure version history is case-specific
-    if (caseNo) {
-        query.caseNo = caseNo;
-    }
-    if (caseName) {
-        query.caseName = caseName;
-    }
-
+    if (caseNo) query.caseNo = caseNo;
+    if (caseName) query.caseName = caseName;
     return this.find(query).sort({ versionId: -1 }).lean();
 };
 
 // Static method to get a specific version (with optional case filtering)
 completeLeadReturnSchema.statics.getVersion = async function(leadNo, versionId, caseNo = null, caseName = null) {
     const query = { leadNo, versionId };
-
-    // Add case filters if provided to ensure version history is case-specific
-    if (caseNo) {
-        query.caseNo = caseNo;
-    }
-    if (caseName) {
-        query.caseName = caseName;
-    }
-
+    if (caseNo) query.caseNo = caseNo;
+    if (caseName) query.caseName = caseName;
     return this.findOne(query).lean();
 };
 
