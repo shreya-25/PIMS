@@ -58,7 +58,7 @@ const createLRPicture = async (req, res) => {
 const getLRPictureByDetails = async (req, res) => {
   try {
     const { leadNo, leadName, caseNo, caseName } = req.params;
-    const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName };
+    const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
     const lrPictures = await LRPicture.find(query);
 
     if (!lrPictures || lrPictures.length === 0) return res.status(200).json([]);
@@ -86,6 +86,7 @@ const updateLRPicture = async (req, res) => {
 
     const pic = await LRPicture.findOne({
       leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId, pictureDescription: oldDesc,
+      isDeleted: { $ne: true },
     });
     if (!pic) return res.status(404).json({ message: "Picture not found" });
 
@@ -116,14 +117,17 @@ const deleteLRPicture = async (req, res) => {
   try {
     const { leadNo, leadName, caseNo, caseName, leadReturnId, pictureDescription } = req.params;
 
-    const pic = await LRPicture.findOneAndDelete({
+    const pic = await LRPicture.findOne({
       leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId, pictureDescription,
+      isDeleted: { $ne: true }
     });
     if (!pic) return res.status(404).json({ message: "Picture not found" });
-    if (pic.s3Key) {
-      const deleted = await deleteFromS3(pic.s3Key);
-      if (!deleted) console.warn(`Failed to delete file from S3: ${pic.s3Key}`);
-    }
+
+    pic.isDeleted = true;
+    pic.deletedAt = new Date();
+    pic.deletedBy = req.user?.name || "Unknown";
+    await pic.save();
+
     return res.json({ message: "Picture deleted successfully" });
   } catch (err) {
     console.error("Error deleting LRPicture:", err);

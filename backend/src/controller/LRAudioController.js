@@ -68,7 +68,7 @@ const createLRAudio = async (req, res) => {
 const getLRAudioByDetails = async (req, res) => {
   try {
     const { leadNo, leadName, caseNo, caseName } = req.params;
-    const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName };
+    const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
     const lrAudios = await LRAudio.find(query);
     if (lrAudios.length === 0) return res.status(404).json({ message: "No Audios found." });
 
@@ -89,7 +89,7 @@ const getLRAudioByDetails = async (req, res) => {
 const updateLRAudio = async (req, res) => {
   try {
     const { id } = req.params;
-    const audio = await LRAudio.findById(id);
+    const audio = await LRAudio.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!audio) return res.status(404).json({ message: "Audio not found" });
 
     if (typeof req.body.audioDescription !== "undefined") audio.audioDescription = req.body.audioDescription;
@@ -125,9 +125,14 @@ const updateLRAudio = async (req, res) => {
 const deleteLRAudio = async (req, res) => {
   try {
     const { id } = req.params;
-    const audio = await LRAudio.findByIdAndDelete(id);
+    const audio = await LRAudio.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!audio) return res.status(404).json({ message: "Audio not found" });
-    if (audio.s3Key) await deleteFromS3(audio.s3Key);
+
+    audio.isDeleted = true;
+    audio.deletedAt = new Date();
+    audio.deletedBy = req.user?.name || "Unknown";
+    await audio.save();
+
     res.status(200).json({ message: "Audio deleted" });
   } catch (err) {
     console.error("Error deleting LRAudio:", err);

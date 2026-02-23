@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
-const { LR_ACCESS_LEVELS } = require("./leadreturn");
+const { LR_ACCESS_LEVELS } = require("../constants/accessLevels");
 
 const lrScratchpadSchema = new mongoose.Schema(
     {
@@ -35,9 +35,10 @@ const lrScratchpadSchema = new mongoose.Schema(
         },
 
         // Soft-delete
-        isDeleted:  { type: Boolean, default: false },
-        deletedAt:  { type: Date, default: null },
-        deletedBy:  { type: String, default: null },
+        isDeleted:       { type: Boolean, default: false },
+        deletedAt:       { type: Date, default: null },
+        deletedBy:       { type: String, default: null },
+        deletedByUserId: { type: Schema.Types.ObjectId, ref: "User", default: null },
     },
     { timestamps: true }
 );

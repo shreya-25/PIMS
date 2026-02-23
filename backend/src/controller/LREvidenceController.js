@@ -64,7 +64,7 @@ const createLREvidence = async (req, res) => {
 const getLREvidenceByDetails = async (req, res) => {
     try {
         const { leadNo, leadName, caseNo, caseName } = req.params;
-        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName };
+        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
         const lrEvidences = await LREvidence.find(query);
 
         if (lrEvidences.length === 0) {
@@ -89,7 +89,8 @@ const updateLREvidence = async (req, res) => {
     const { leadNo, leadName, caseNo, caseName, leadReturnId, evidenceDescription: oldDesc } = req.params;
 
     const ev = await LREvidence.findOne({
-      leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId, evidenceDescription: oldDesc
+      leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId, evidenceDescription: oldDesc,
+      isDeleted: { $ne: true }
     });
     if (!ev) return res.status(404).json({ message: "Evidence not found" });
 
@@ -134,11 +135,17 @@ const deleteLREvidence = async (req, res) => {
     try {
       const { leadNo, leadName, caseNo, caseName, leadReturnId, evidenceDescription } = req.params;
 
-      const ev = await LREvidence.findOneAndDelete({
-        leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId, evidenceDescription
+      const ev = await LREvidence.findOne({
+        leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId, evidenceDescription,
+        isDeleted: { $ne: true }
       });
       if (!ev) return res.status(404).json({ message: "Evidence not found" });
-      if (ev.s3Key) { try { await deleteFromS3(ev.s3Key); } catch (fsErr) { console.warn("Could not delete file from S3:", fsErr); } }
+
+      ev.isDeleted = true;
+      ev.deletedAt = new Date();
+      ev.deletedBy = req.user?.name || "Unknown";
+      await ev.save();
+
       return res.json({ message: "Evidence deleted successfully" });
     } catch (err) {
       console.error("Error deleting LREvidence:", err);

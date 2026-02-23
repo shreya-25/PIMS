@@ -1,19 +1,18 @@
 const mongoose = require("mongoose");
-
-// Standardized access-level enum used across ALL LR* tables
-const LR_ACCESS_LEVELS = ["Everyone", "Case Manager and Assignees", "Case Manager Only"];
+const { LR_ACCESS_LEVELS } = require("../constants/accessLevels");
 
 const leadReturnSchema = new mongoose.Schema(
     {
         // ── Stable ObjectId refs ──────────────────────────────────
-        caseId:  { type: mongoose.Schema.Types.ObjectId, ref: "Case", default: null },
-        leadId:  { type: mongoose.Schema.Types.ObjectId, ref: "Lead", default: null },
+        caseId:  { type: mongoose.Schema.Types.ObjectId, ref: "Case", required: true },
+        leadId:  { type: mongoose.Schema.Types.ObjectId, ref: "Lead", required: true },
 
-        assignedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+        assignedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
         assignedToUserIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 
         // ── Existing fields (kept as-is) ──────────────────────────
         leadNo: { type: Number, required: true },
+        returnNo: { type: Number, required: true },
 
         assignedTo: {
             assignees: [{ type: String, required: true }], // username snapshots
@@ -59,14 +58,16 @@ const leadReturnSchema = new mongoose.Schema(
         },
 
         // Soft-delete
-        isDeleted:  { type: Boolean, default: false },
-        deletedAt:  { type: Date, default: null },
-        deletedBy:  { type: String, default: null },
+        isDeleted:       { type: Boolean, default: false },
+        deletedAt:       { type: Date, default: null },
+        deletedBy:       { type: String, default: null },
+        deletedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
     },
     { timestamps: true }
 );
 
 // ── Indexes ────────────────────────────────────────────────────
+leadReturnSchema.index({ leadId: 1, returnNo: 1 }, { unique: true });
 leadReturnSchema.index({ caseId: 1, leadNo: 1 });
 leadReturnSchema.index({ caseNo: 1, leadNo: 1 }, { unique: true });
 leadReturnSchema.index({ assignedToUserIds: 1 });
@@ -77,4 +78,3 @@ leadReturnSchema.query.notDeleted = function () {
 };
 
 module.exports = mongoose.model("LeadReturn", leadReturnSchema, "LeadReturns");
-module.exports.LR_ACCESS_LEVELS = LR_ACCESS_LEVELS;

@@ -67,7 +67,7 @@ const createLRVideo = async (req, res) => {
 const getLRVideoByDetails = async (req, res) => {
   try {
     const { leadNo, leadName, caseNo, caseName } = req.params;
-    const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName };
+    const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
     const lrVideos = await LRVideo.find(query);
 
     const withUrls = await Promise.all(
@@ -86,7 +86,7 @@ const getLRVideoByDetails = async (req, res) => {
 const updateLRVideo = async (req, res) => {
   try {
     const { id } = req.params;
-    const video = await LRVideo.findById(id);
+    const video = await LRVideo.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!video) return res.status(404).json({ message: "Video not found" });
 
     const wantsLink = req.body.isLink === true || req.body.isLink === "true" || req.body.isLink === 1 || req.body.isLink === "1";
@@ -127,9 +127,14 @@ const updateLRVideo = async (req, res) => {
 const deleteLRVideo = async (req, res) => {
   try {
     const { id } = req.params;
-    const video = await LRVideo.findByIdAndDelete(id);
+    const video = await LRVideo.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!video) return res.status(404).json({ message: "Video not found" });
-    if (video.s3Key) await deleteFromS3(video.s3Key);
+
+    video.isDeleted = true;
+    video.deletedAt = new Date();
+    video.deletedBy = req.user?.name || "Unknown";
+    await video.save();
+
     res.json({ message: "Video deleted" });
   } catch (err) {
     console.error("Error deleting LRVideo:", err);

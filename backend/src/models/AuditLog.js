@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { LR_ACCESS_LEVELS } = require("./leadreturn");
+const { LR_ACCESS_LEVELS } = require("../constants/accessLevels");
 
 const auditLogSchema = new mongoose.Schema(
   {

@@ -1,12 +1,12 @@
 const mongoose = require("mongoose");
-const { LR_ACCESS_LEVELS } = require("./leadreturn");
+const { LR_ACCESS_LEVELS } = require("../constants/accessLevels");
 
 const leadReturnResultsSchema = new mongoose.Schema(
     {
         // ── Stable ObjectId refs (populated when available) ──────
         caseId:            { type: mongoose.Schema.Types.ObjectId, ref: "Case", default: null },
         leadId:            { type: mongoose.Schema.Types.ObjectId, ref: "Lead", default: null },
-        leadReturnObjectId:{ type: mongoose.Schema.Types.ObjectId, ref: "LeadReturn", default: null },
+        leadReturnObjectId:{ type: mongoose.Schema.Types.ObjectId, ref: "LeadReturn", required: true },
         enteredByUserId:   { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
 
         // ── Existing fields ───────────────────────────────────────
@@ -34,9 +34,10 @@ const leadReturnResultsSchema = new mongoose.Schema(
         },
 
         // Soft delete fields
-        isDeleted:  { type: Boolean, default: false },
-        deletedAt:  { type: Date },
-        deletedBy:  { type: String },
+        isDeleted:       { type: Boolean, default: false },
+        deletedAt:       { type: Date },
+        deletedBy:       { type: String },
+        deletedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
 
         // Reference to complete lead return version
         completeLeadReturnId: {

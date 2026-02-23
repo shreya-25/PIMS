@@ -1,13 +1,13 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
-const { LR_ACCESS_LEVELS } = require("./leadreturn");
+const { LR_ACCESS_LEVELS } = require("../constants/accessLevels");
 
 const lrEvidenceSchema = new mongoose.Schema(
     {
         // ── Stable ObjectId refs ──────────────────────────────────
         caseId:            { type: Schema.Types.ObjectId, ref: "Case", default: null },
         leadId:            { type: Schema.Types.ObjectId, ref: "Lead", default: null },
-        leadReturnObjectId:{ type: Schema.Types.ObjectId, ref: "LeadReturn", default: null },
+        leadReturnObjectId:{ type: Schema.Types.ObjectId, ref: "LeadReturn", required: true },
         enteredByUserId:   { type: Schema.Types.ObjectId, ref: "User", default: null },
 
         // ── Existing fields ───────────────────────────────────────
@@ -58,9 +58,10 @@ const lrEvidenceSchema = new mongoose.Schema(
         },
 
         // Soft-delete
-        isDeleted:  { type: Boolean, default: false },
-        deletedAt:  { type: Date, default: null },
-        deletedBy:  { type: String, default: null },
+        isDeleted:       { type: Boolean, default: false },
+        deletedAt:       { type: Date, default: null },
+        deletedBy:       { type: String, default: null },
+        deletedByUserId: { type: Schema.Types.ObjectId, ref: "User", default: null },
     },
     { timestamps: true }
 );

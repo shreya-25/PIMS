@@ -1,12 +1,12 @@
 const mongoose = require("mongoose");
-const { LR_ACCESS_LEVELS } = require("./leadreturn");
+const { LR_ACCESS_LEVELS } = require("../constants/accessLevels");
 
 const lrAudioSchema = new mongoose.Schema(
   {
     // ── Stable ObjectId refs ──────────────────────────────────
     caseId:            { type: mongoose.Schema.Types.ObjectId, ref: "Case", default: null },
     leadId:            { type: mongoose.Schema.Types.ObjectId, ref: "Lead", default: null },
-    leadReturnObjectId:{ type: mongoose.Schema.Types.ObjectId, ref: "LeadReturn", default: null },
+    leadReturnObjectId:{ type: mongoose.Schema.Types.ObjectId, ref: "LeadReturn", required: true },
     enteredByUserId:   { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
 
     // ── Existing fields ───────────────────────────────────────
@@ -41,9 +41,10 @@ const lrAudioSchema = new mongoose.Schema(
     },
 
     // Soft-delete
-    isDeleted:  { type: Boolean, default: false },
-    deletedAt:  { type: Date, default: null },
-    deletedBy:  { type: String, default: null },
+    isDeleted:       { type: Boolean, default: false },
+    deletedAt:       { type: Date, default: null },
+    deletedBy:       { type: String, default: null },
+    deletedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   },
   { timestamps: true }
 );
