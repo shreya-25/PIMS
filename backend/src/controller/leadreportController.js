@@ -103,7 +103,112 @@ function formatOfficerList(arr) {
   return deduped.join(", ");
 }
 
+async function addPersonPhotoPage(doc, person, personIndex) {
+  if (!person?.photoS3Key) return;
 
+  try {
+    const rawBuf = await getObjectBuffer(person.photoS3Key);
+    const imgBuf = await toPdfSafeBuffer(rawBuf);
+
+    // Get image size (sharp supports jpeg/png/webp)
+    const meta = await sharp(imgBuf).metadata();
+    const imgW = meta.width || 600;
+    const imgH = meta.height || 800;
+
+    // Page settings
+    const margin = 36; // 0.5 inch
+    const maxPageW = 612; // LETTER width in points
+    const maxPageH = 792; // LETTER height in points
+
+    // Option A (Recommended): Keep LETTER page, scale image to fit
+    doc.addPage({ size: "LETTER", margin });
+
+    // Title
+    doc.font("Helvetica-Bold").fontSize(14).text(`Person ${personIndex + 1} Photo`, { align: "center" });
+    doc.moveDown(0.5);
+
+    const availableW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const availableH = doc.page.height - doc.y - doc.page.margins.bottom;
+
+    // Fit image to available area
+    doc.image(imgBuf, doc.page.margins.left, doc.y, {
+      fit: [availableW, availableH],
+      align: "center",
+      valign: "center",
+    });
+
+    // Optional caption
+    doc.moveDown(0.5);
+    if (person.firstName || person.lastName) {
+      const name = `${person.firstName || ""} ${person.lastName || ""}`.trim();
+      doc.font("Helvetica").fontSize(10).fillColor("#555").text(name, { align: "center" });
+      doc.fillColor("black");
+    }
+
+    // Option B (If you truly want page size = image size):
+    // Uncomment this if you want the page to match the image dimensions.
+    // Note: Very large images can produce huge pages.
+    /*
+    const pageW = Math.min(imgW + margin * 2, 2000); // hard cap to avoid gigantic pages
+    const pageH = Math.min(imgH + margin * 2, 2000);
+    doc.addPage({ size: [pageW, pageH], margin });
+
+    doc.font("Helvetica-Bold").fontSize(14).text(`Person ${personIndex + 1} Photo`, { align: "center" });
+    doc.moveDown(0.5);
+
+    const aw = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const ah = doc.page.height - doc.y - doc.page.margins.bottom;
+
+    doc.image(imgBuf, doc.page.margins.left, doc.y, {
+      fit: [aw, ah],
+      align: "center",
+      valign: "center",
+    });
+    */
+  } catch (e) {
+    console.warn(`Failed to add person photo page for person ${personIndex + 1}:`, e?.message);
+  }
+}
+
+async function appendPersonPhotoPagesAtEnd(doc, persons = []) {
+  if (!Array.isArray(persons) || persons.length === 0) return;
+
+  for (let i = 0; i < persons.length; i++) {
+    const p = persons[i];
+    if (!p?.photoS3Key) continue;
+
+    try {
+      const rawBuf = await getObjectBuffer(p.photoS3Key);
+      const imgBuf = await toPdfSafeBuffer(rawBuf);
+
+      // New page per photo (clean)
+      doc.addPage({ size: "LETTER", margin: 50 });
+
+      const name =
+        `${p.lastName || ""}, ${p.firstName || ""}`.replace(/^,\s*$/, "").trim() ||
+        p.name ||
+        `Person ${i + 1}`;
+
+      doc.font("Helvetica-Bold").fontSize(12).text(`Person ${i + 1}: ${name}`, { align: "left" });
+      doc.moveDown(0.5);
+
+      const x = doc.page.margins.left;
+      const y = doc.y;
+      const w = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+      const h = doc.page.height - y - doc.page.margins.bottom;
+
+      // Fit image nicely within page
+      doc.image(imgBuf, x, y, {
+        fit: [w, h],
+        align: "center",
+        valign: "center",
+      });
+
+    } catch (e) {
+      console.warn(`Photo append failed for person ${i + 1}:`, e?.message);
+    }
+  }
+}
 
 // function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
 //   const minRowHeight = 20;
@@ -879,38 +984,52 @@ let currentY = headerHeight + 20;
         // Loop through each person object
         for (let pIdx = 0; pIdx < leadPersons.length; pIdx++) {
           const person = leadPersons[pIdx];
-          // Ensure person label + first table fit on same page
+              // Ensure person label + first table fit on same page
+          // if (currentY + 60 > doc.page.height - doc.page.margins.bottom) {
+          //   doc.addPage();
+          //   currentY = doc.page.margins.top;
+          // }
+
+          // Add PERSON PHOTO ON ITS OWN PAGE
+          // await addPersonPhotoPage(doc, person, pIdx);
+
+          // Then continue the normal tables on the next page/flow:
           if (currentY + 60 > doc.page.height - doc.page.margins.bottom) {
             doc.addPage();
             currentY = doc.page.margins.top;
           }
 
+          doc.font("Helvetica-Bold").fontSize(11)
+            .text(`Person ${pIdx + 1}`, 50, currentY);
+          currentY += 20;
+
           // Person photo + label side by side
-          const photoSize = 60;
-          let photoDrawn = false;
-          if (person.photoS3Key) {
-            try {
-              const rawBuf = await getObjectBuffer(person.photoS3Key);
-              const imgBuf = await toPdfSafeBuffer(rawBuf);
-              // page-break check for photo + label
-              if (currentY + photoSize + 10 > doc.page.height - doc.page.margins.bottom) {
-                doc.addPage();
-                currentY = doc.page.margins.top;
-              }
-              doc.image(imgBuf, 50, currentY, { width: photoSize, height: photoSize, fit: [photoSize, photoSize] });
-              doc.font("Helvetica-Bold").fontSize(11)
-                 .text(`Person ${pIdx + 1}`, 50 + photoSize + 10, currentY + 20);
-              currentY += photoSize + 8;
-              photoDrawn = true;
-            } catch (e) {
-              console.warn(`Failed to embed photo for person ${pIdx + 1}:`, e?.message);
-            }
-          }
-          if (!photoDrawn) {
-            doc.font("Helvetica-Bold").fontSize(11)
-               .text(`Person ${pIdx + 1}`, 50, currentY);
-            currentY += 20;
-          }
+
+          // const photoSize = 60;
+          // let photoDrawn = false;
+          // if (person.photoS3Key) {
+          //   try {
+          //     const rawBuf = await getObjectBuffer(person.photoS3Key);
+          //     const imgBuf = await toPdfSafeBuffer(rawBuf);
+          //     // page-break check for photo + label
+          //     if (currentY + photoSize + 10 > doc.page.height - doc.page.margins.bottom) {
+          //       doc.addPage();
+          //       currentY = doc.page.margins.top;
+          //     }
+          //     doc.image(imgBuf, 50, currentY, { width: photoSize, height: photoSize, fit: [photoSize, photoSize] });
+          //     doc.font("Helvetica-Bold").fontSize(11)
+          //        .text(`Person ${pIdx + 1}`, 50 + photoSize + 10, currentY + 20);
+          //     currentY += photoSize + 8;
+          //     photoDrawn = true;
+          //   } catch (e) {
+          //     console.warn(`Failed to embed photo for person ${pIdx + 1}:`, e?.message);
+          //   }
+          // }
+          // if (!photoDrawn) {
+          //   doc.font("Helvetica-Bold").fontSize(11)
+          //      .text(`Person ${pIdx + 1}`, 50, currentY);
+          //   currentY += 20;
+          // }
 
           // Now draw each mini-table
           personTables.forEach((headers) => {
@@ -1390,7 +1509,7 @@ for (const enc of leadPictures) {
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 10;
       }
     }
-
+    await appendPersonPhotoPagesAtEnd(doc, leadPersons);
     doc.end();
   } catch (error) {
     console.error("Error generating PDF:", error);
