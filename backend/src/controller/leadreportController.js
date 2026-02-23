@@ -2,7 +2,30 @@ const PDFDocument = require("pdfkit");
 const { PDFDocument: PDFLibDocument } = require("pdf-lib");
 const path = require("path");
 const fs = require("fs");
+const sharp = require("sharp");
+const heicConvert = require("heic-convert");
 const { getObjectBuffer } = require("../s3");
+
+async function toPdfSafeBuffer(buf) {
+  if (!buf || buf.length < 12) return buf;
+  if (buf[0] === 0xFF && buf[1] === 0xD8) return buf;
+  if (buf[0] === 0x89 && buf.slice(1, 4).toString() === "PNG") return buf;
+  if (buf.toString("ascii", 4, 8) === "ftyp") {
+    const brand = buf.toString("ascii", 8, 12);
+    if (["heic", "heix", "hevc", "mif1"].includes(brand)) {
+      const jpegBuf = await heicConvert({ buffer: buf, format: "JPEG", quality: 0.8 });
+      return Buffer.from(jpegBuf);
+    }
+  }
+  if (buf.slice(0, 4).toString() === "RIFF" && buf.slice(8, 12).toString() === "WEBP") {
+    return sharp(buf).png().toBuffer();
+  }
+  try {
+    return await sharp(buf).png().toBuffer();
+  } catch {
+    return buf;
+  }
+}
 
 // Helper: merges your PDFKit doc with an external PDF
 // async function mergeWithAnotherPDF(pdfKitBuffer, otherPdfPath) {
@@ -867,7 +890,8 @@ let currentY = headerHeight + 20;
           let photoDrawn = false;
           if (person.photoS3Key) {
             try {
-              const imgBuf = await getObjectBuffer(person.photoS3Key);
+              const rawBuf = await getObjectBuffer(person.photoS3Key);
+              const imgBuf = await toPdfSafeBuffer(rawBuf);
               // page-break check for photo + label
               if (currentY + photoSize + 10 > doc.page.height - doc.page.margins.bottom) {
                 doc.addPage();
@@ -1069,7 +1093,8 @@ for (const enc of leadEnclosures) {
   }
 
   try {
-    const imgBuf = await getObjectBuffer(enc.s3Key); // S3 -> Buffer
+    const rawEncBuf = await getObjectBuffer(enc.s3Key);
+    const imgBuf = await toPdfSafeBuffer(rawEncBuf);
 
     const imageMaxHeight = 300;
     if (currentY + imageMaxHeight > doc.page.height - doc.page.margins.bottom) {
@@ -1142,7 +1167,8 @@ for (const enc of leadEvidence) {
   }
 
   try {
-    const imgBuf = await getObjectBuffer(enc.s3Key);
+    const rawEncBuf = await getObjectBuffer(enc.s3Key);
+    const imgBuf = await toPdfSafeBuffer(rawEncBuf);
 
     const imageMaxHeight = 300;
     if (currentY + imageMaxHeight > doc.page.height - doc.page.margins.bottom) {
@@ -1212,7 +1238,8 @@ for (const enc of leadPictures) {
   }
 
   try {
-    const imgBuf = await getObjectBuffer(enc.s3Key);
+    const rawEncBuf = await getObjectBuffer(enc.s3Key);
+    const imgBuf = await toPdfSafeBuffer(rawEncBuf);
 
     const imageMaxHeight = 300;
     if (currentY + imageMaxHeight > doc.page.height - doc.page.margins.bottom) {

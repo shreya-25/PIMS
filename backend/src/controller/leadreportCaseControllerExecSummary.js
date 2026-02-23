@@ -1708,6 +1708,7 @@ const path = require('path');
 const fs = require('fs');
 const PDFDocument = require("pdfkit");
 const { PDFDocument: PDFLibDocument } = require("pdf-lib");
+const { fetchCaseLeadsData } = require("../utils/caseDataFetcher");
 
 /* ==============================
    PDF Drawing Helper Functions
@@ -2315,32 +2316,55 @@ async function mergeWithWordFileAtStart(pdfKitBuffer, wordPdfPath) {
 
 // Note: The function is now declared as async.
 async function generateCaseReportwithExecSummary(req, res) {
-  // const { user, reportTimestamp, leadsData, caseSummary, selectedReports } = req.body;
-
-    // 2) Pull the raw leadsData out of the body
     const {
       user,
       reportTimestamp,
       leadsData: leadsDataRaw,
       caseSummary,
-      selectedReports
+      selectedReports: selectedReportsRaw,
+      // New: server-side data fetching params
+      caseNo: caseNoParam,
+      caseName: caseNameParam,
+      reportScope,
+      subsetRange: subsetRangeRaw,
+      leadNos: leadNosRaw,
     } = req.body;
-  
-    // 3) If it’s a string, parse it back into an array
-    let leadsData = leadsDataRaw;
-    if (typeof leadsData === "string") {
+
+    // Parse stringified JSON fields (multipart sends strings)
+    const selectedReports = typeof selectedReportsRaw === "string"
+      ? JSON.parse(selectedReportsRaw) : selectedReportsRaw;
+    const subsetRange = typeof subsetRangeRaw === "string"
+      ? JSON.parse(subsetRangeRaw) : subsetRangeRaw;
+    const leadNos = typeof leadNosRaw === "string"
+      ? JSON.parse(leadNosRaw) : leadNosRaw;
+
+    // Parse leadsData if provided as string (multipart form)
+    let leadsData;
+    if (typeof leadsDataRaw === "string" && leadsDataRaw.length > 0) {
+      try { leadsData = JSON.parse(leadsDataRaw); } catch (err) { /* ignore */ }
+    }
+    if (Array.isArray(leadsDataRaw)) leadsData = leadsDataRaw;
+
+    // If no leadsData provided, fetch server-side
+    if (!Array.isArray(leadsData) || leadsData.length === 0) {
+      if (!caseNoParam) {
+        return res.status(400).json({ error: "caseNo or leadsData is required" });
+      }
       try {
-        leadsData = JSON.parse(leadsData);
-      } catch (err) {
-        return res.status(400).json({ error: "Invalid JSON for leadsData" });
+        leadsData = await fetchCaseLeadsData(caseNoParam, caseNameParam, {
+          reportScope,
+          subsetRange,
+          leadNos,
+        });
+      } catch (fetchErr) {
+        console.error("Error fetching case data for exec summary report:", fetchErr);
+        return res.status(500).json({ error: "Failed to fetch case data" });
       }
     }
-  
-    // 4) Guard: now it really must be an array
-    if (!Array.isArray(leadsData)) {
-      return res.status(400).json({ error: "leadsData must be an array" });
-    }
 
+    if (!Array.isArray(leadsData) || leadsData.length === 0) {
+      return res.status(404).json({ error: "No leads found for this case" });
+    }
 
     const includeAll = selectedReports && selectedReports.FullReport;
   // 1) Make sure a file was uploaded

@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const Grid = require("gridfs-stream");
 
+mongoose.set("strictQuery", false);
+
 let gfs; // Global GridFS instance
 
 const dbConnect = async () => {

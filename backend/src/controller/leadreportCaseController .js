@@ -1,7 +1,38 @@
 const PDFDocument = require("pdfkit");
 const path = require("path");
 const fs = require("fs");
+const sharp = require("sharp");
+const heicConvert = require("heic-convert");
 const { getObjectBuffer } = require("../s3");
+const { fetchCaseLeadsData } = require("../utils/caseDataFetcher");
+
+// Convert image buffer to a format PDFKit understands (PNG or JPEG).
+// Handles HEIC (iPhone), WebP, and other formats; passes PNG/JPEG as-is.
+async function toPdfSafeBuffer(buf) {
+  if (!buf || buf.length < 12) return buf;
+  // JPEG — pass through
+  if (buf[0] === 0xFF && buf[1] === 0xD8) return buf;
+  // PNG — pass through
+  if (buf[0] === 0x89 && buf.slice(1, 4).toString() === "PNG") return buf;
+  // HEIC/HEIF — use heic-convert (sharp lacks HEIC support on Windows)
+  if (buf.toString("ascii", 4, 8) === "ftyp") {
+    const brand = buf.toString("ascii", 8, 12);
+    if (["heic", "heix", "hevc", "mif1"].includes(brand)) {
+      const jpegBuf = await heicConvert({ buffer: buf, format: "JPEG", quality: 0.8 });
+      return Buffer.from(jpegBuf);
+    }
+  }
+  // WebP and other formats — use sharp to convert to PNG
+  if (buf.slice(0, 4).toString() === "RIFF" && buf.slice(8, 12).toString() === "WEBP") {
+    return sharp(buf).png().toBuffer();
+  }
+  // Unknown format — try sharp as a last resort
+  try {
+    return await sharp(buf).png().toBuffer();
+  } catch {
+    return buf; // give PDFKit the raw buffer; it will throw if unsupported
+  }
+}
 
 // Small section header that respects page breaks
 function startSection(doc, title, currentY) {
@@ -173,13 +204,13 @@ function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
 
 // Reuse your drawTextBox (you already have a robust version). If not, keep your newest one.
 
-// Embed any image files (JPEG/PNG) in a list of items that carry { filename, s3Key }
+// Embed any image files in a list of items that carry { filename, s3Key }
 async function embedImagesFromS3List(doc, items, currentY, labelGetter = (x) => x.filename) {
   if (!Array.isArray(items) || items.length === 0) return currentY;
 
   for (const item of items) {
     const fnameLower = (item?.filename || "").toLowerCase();
-    const isImage = /\.(jpe?g|png)$/i.test(fnameLower);
+    const isImage = /\.(jpe?g|png|heic|heif|webp)$/i.test(fnameLower);
     if (!isImage) continue;
 
     if (!item?.s3Key) {
@@ -191,7 +222,8 @@ async function embedImagesFromS3List(doc, items, currentY, labelGetter = (x) => 
     }
 
     try {
-      const buf = await getObjectBuffer(item.s3Key);
+      const rawBuf = await getObjectBuffer(item.s3Key);
+      const buf = await toPdfSafeBuffer(rawBuf);
       const maxH = 300;
       const bottom = doc.page.height - doc.page.margins.bottom;
       if (currentY + maxH > bottom) {
@@ -730,11 +762,48 @@ return y + rowH + 20;
    The main generation function
 -----------------------------------------*/
 async function generateCaseReport(req, res) {
-  const { user, reportTimestamp, leadsData, caseSummary, selectedReports,summaryMode } = req.body;
+  const {
+    user,
+    reportTimestamp,
+    caseSummary,
+    selectedReports,
+    summaryMode,
+    leadsData: leadsDataFromBody,
+    // New: server-side data fetching params
+    caseNo: caseNoParam,
+    caseName: caseNameParam,
+    reportScope,
+    subsetRange,
+    leadNos,
+  } = req.body;
+
   const includeAll = selectedReports && selectedReports.FullReport;
 
-   const caseNo   =  leadsData?.[0]?.caseNo   || "";
-  const caseName = leadsData?.[0]?.caseName || "";
+  // Server-side fetch: if no leadsData in body, fetch from DB
+  let leadsData;
+  if (Array.isArray(leadsDataFromBody) && leadsDataFromBody.length > 0) {
+    leadsData = leadsDataFromBody;
+  } else if (caseNoParam) {
+    try {
+      leadsData = await fetchCaseLeadsData(caseNoParam, caseNameParam, {
+        reportScope,
+        subsetRange,
+        leadNos,
+      });
+    } catch (fetchErr) {
+      console.error("Error fetching case data for report:", fetchErr);
+      return res.status(500).json({ error: "Failed to fetch case data" });
+    }
+  } else {
+    return res.status(400).json({ error: "caseNo or leadsData is required" });
+  }
+
+  if (!leadsData || leadsData.length === 0) {
+    return res.status(404).json({ error: "No leads found for this case" });
+  }
+
+  const caseNo   = caseNoParam || leadsData?.[0]?.caseNo   || "";
+  const caseName = caseNameParam || leadsData?.[0]?.caseName || "";
 
 
   try {
@@ -873,7 +942,8 @@ if (leadState) {
                   // Person photo
                   if (person.photoS3Key) {
                     try {
-                      const imgBuf = await getObjectBuffer(person.photoS3Key);
+                      const rawBuf = await getObjectBuffer(person.photoS3Key);
+                      const imgBuf = await toPdfSafeBuffer(rawBuf);
                       const photoSize = 60;
                       currentY = ensureSpace(doc, currentY, photoSize + 10);
                       doc.image(imgBuf, 50, currentY, { width: photoSize, height: photoSize, fit: [photoSize, photoSize] });

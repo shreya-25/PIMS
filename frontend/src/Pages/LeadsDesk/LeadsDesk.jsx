@@ -664,17 +664,16 @@ const handleShowLeadsInRange = () => {
   const handleRunReport = async () => {
     const token = localStorage.getItem("token");
     try {
-      // Build payload. You may adjust the payload structure as required by your backend.
       const payload = {
-        user: "Officer 916", // Or get from auth context
+        user: "Officer 916",
         reportTimestamp: new Date().toLocaleString(),
-        // For a full report, pass the entire leadsData and caseSummary.
-        leadsData,
+        caseNo: selectedCase.caseNo,
+        caseName: selectedCase.caseName,
         caseSummary: typedSummary,
-        // Here, you could also include selectedReports if you want sections toggled.
         selectedReports: { FullReport: true },
+        summaryMode: "none",
+        reportScope: "all",
       };
-      // Call your backend endpoint (adjust the URL if needed)
       const response = await api.post(
         "/api/report/generateCase",
         payload,
@@ -683,10 +682,9 @@ const handleShowLeadsInRange = () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          responseType: "blob", // Expect a PDF blob back
+          responseType: "blob",
         }
       );
-      // Create a blob URL and open in a new tab
       const file = new Blob([response.data], { type: "application/pdf" });
       const fileURL = URL.createObjectURL(file);
       window.open(fileURL, "_blank");
@@ -701,29 +699,18 @@ const handleShowLeadsInRange = () => {
   return s ? Number.parseInt(s, 10) : NaN;
 };
 
-  // Helper: compute which leads to include based on scope
-const computeLeadsForReport = () => {
-  if (reportScope === "all") return leadsData;
-  if (reportScope === "visible")
-    return hierarchyLeadsData.length > 0 ? hierarchyLeadsData : leadsData; // if nothing filtered, fall back to all
-  // 'selected'
-   if (reportScope === "selected") {
+  // Helper: compute report params for server-side filtering
+const computeReportParams = () => {
+  if (reportScope === "all" || reportScope === "visible") {
+    return { reportScope: "all" };
+  }
+  if (reportScope === "selected") {
     const min = toNum(subsetRange.start);
     const max = toNum(subsetRange.end);
-
-    // invalid or inverted range -> nothing selected
-    if (!Number.isFinite(min) || !Number.isFinite(max) || min > max) return [];
-
-    // filter from the full set (choose visible via the "visible" radio instead)
-    return leadsData.filter((l) => {
-      const n = toNum(l.leadNo);
-      return Number.isFinite(n) && n >= min && n <= max;
-    });
+    if (!Number.isFinite(min) || !Number.isFinite(max) || min > max) return null;
+    return { reportScope: "selected", subsetRange: { start: min, end: max } };
   }
-  if (selectedForReport.size === 0) return []; // empty subset -> let backend handle or warn
-  const selected = new Set([...selectedForReport].map(String));
-  const all = hierarchyLeadsData.length > 0 ? hierarchyLeadsData : leadsData;
-  return all.filter((l) => selected.has(String(l.leadNo)));
+  return { reportScope: "all" };
 };
 
 const [summaryMode, setSummaryMode] = useState('none'); // 'none' | 'type' | 'file'
@@ -749,24 +736,24 @@ useEffect(() => {
    // New function to run the report and merge it with an uploaded executive summary document
    const handleRunReportWithSummary = async () => {
     const token = localStorage.getItem("token");
-    const leadsForReport = computeLeadsForReport();
-if (reportScope === "selected" && leadsForReport.length === 0) {
-  alert("No leads selected for the subset.");
-  return;
-}
+    const reportParams = computeReportParams();
+    if (reportScope === "selected" && !reportParams) {
+      alert("No leads selected for the subset.");
+      return;
+    }
+
     if (useWebpageSummary) {
       try {
-        // Build payload. You may adjust the payload structure as required by your backend.
         const payload = {
-          user: "Officer 916", // Or get from auth context
+          user: "Officer 916",
           reportTimestamp: new Date().toLocaleString(),
-          // For a full report, pass the entire leadsData and caseSummary.
-           leadsData: leadsForReport,
+          caseNo: selectedCase.caseNo,
+          caseName: selectedCase.caseName,
           caseSummary: typedSummary,
-          // Here, you could also include selectedReports if you want sections toggled.
           selectedReports: { FullReport: true },
+          summaryMode,
+          ...reportParams,
         };
-        // Call your backend endpoint (adjust the URL if needed)
         const response = await api.post(
           "/api/report/generateCase",
           payload,
@@ -775,10 +762,9 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
-            responseType: "blob", // Expect a PDF blob back
+            responseType: "blob",
           }
         );
-        // Create a blob URL and open in a new tab
         const file = new Blob([response.data], { type: "application/pdf" });
         const fileURL = URL.createObjectURL(file);
         window.open(fileURL, "_blank");
@@ -793,17 +779,21 @@ if (reportScope === "selected" && leadsForReport.length === 0) {
       const formData = new FormData();
       formData.append("user", "Officer 916");
       formData.append("reportTimestamp", new Date().toLocaleString());
-      formData.append("leadsData", JSON.stringify(leadsData));
+      formData.append("caseNo", selectedCase.caseNo);
+      formData.append("caseName", selectedCase.caseName);
       formData.append("selectedReports", JSON.stringify({ FullReport: true }));
+      formData.append("reportScope", reportParams?.reportScope || "all");
+      if (reportParams?.subsetRange) {
+        formData.append("subsetRange", JSON.stringify(reportParams.subsetRange));
+      }
       formData.append("execSummaryFile", execSummaryFile);
-  
-      const response = await axios.post(
-        "http://localhost:5000/api/report/generateCaseExecSummary",
+
+      const response = await api.post(
+        "/api/report/generateCaseExecSummary",
         formData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            // "Content-Type": "multipart/form-data",
           },
           responseType: "blob",
         }
