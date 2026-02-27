@@ -162,16 +162,16 @@ router.put("/:id/reject", verifyToken, async (req, res) => {
     }
   });
 
-  // GET all subnumbers for a given case by its ID
-router.get("/:id/subNumbers", async (req, res) => {
+  // GET all subcategories for a given case by its ID
+router.get("/:id/subCategories", async (req, res) => {
     try {
       const caseDoc = await Case.findById(req.params.id);
       if (!caseDoc) {
         return res.status(404).json({ message: "Case not found" });
       }
-      res.status(200).json({ subNumbers: caseDoc.subNumbers });
+      res.status(200).json({ subCategories: caseDoc.subCategories });
     } catch (err) {
-      res.status(500).json({ message: "Error fetching subnumbers" });
+      res.status(500).json({ message: "Error fetching subcategories" });
     }
   });
 

@@ -166,7 +166,7 @@ export const CMPerson = () => {
     leadNumber: '16',
     leadOrigin: '7',
     incidentNumber: 'C000006',
-    subNumber: 'C0000045',
+    subCategory: 'C0000045',
     assignedDate: '09/29/24',
     leadSummary: 'Interview Mr. John',
     assignedBy: 'Officer 5',

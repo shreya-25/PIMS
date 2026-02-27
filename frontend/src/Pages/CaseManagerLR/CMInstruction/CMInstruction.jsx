@@ -43,8 +43,8 @@ export const CMInstruction = () => {
     leadNumber: '',
     parentLeadNo: '',
     incidentNo: '',
-    subNumber: '',
-    associatedSubNumbers: [],
+    subCategory: '',
+    associatedSubCategories: [],
     assignedDate: '',
     dueDate: '',
     summary: '',
@@ -56,11 +56,11 @@ export const CMInstruction = () => {
   });
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const [availableSubNumbers, setAvailableSubNumbers] = useState([
+  const [availableSubCategories, setAvailableSubCategories] = useState([
       "SUB-000001", "SUB-000002", "SUB-000003", "SUB-000004", "SUB-000005"
-    ]); // Static List of Subnumbers
+    ]); // Static List of Subcategories
     
-    const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]); // Selected Subnumbers
+    const [associatedSubCategories, setAssociatedSubCategories] = useState([]); // Selected Subcategories
     const [subDropdownOpen, setSubDropdownOpen] = useState(false);
 
     const [assignedOfficers, setAssignedOfficers] = useState([]);
@@ -81,8 +81,8 @@ export const CMInstruction = () => {
   };
 
     useEffect(() => {
-      if (leadData.associatedSubNumbers) {
-        setAssociatedSubNumbers(leadData.associatedSubNumbers);
+      if (leadData.associatedSubCategories) {
+        setAssociatedSubCategories(leadData.associatedSubCategories);
       }
     }, [leadData]);
 
@@ -313,13 +313,13 @@ export const CMInstruction = () => {
                 </td>
               </tr>
               <tr>
-                <td>Subnumber:</td>
+                <td>Subcategory:</td>
                 <td>
                   <input
                     type="text"
                     className="input-field"
-                    value={leadData.subNumber}
-                    onChange={(e) => handleInputChange('subNumber', e.target.value)}
+                    value={leadData.subCategory}
+                    onChange={(e) => handleInputChange('subCategory', e.target.value)}
                     placeholder=""
                   />
                 </td>
@@ -347,7 +347,7 @@ export const CMInstruction = () => {
 
         <th style={{ width: "10%" }}>Lead No.</th>
           <th style={{ width: "10%" }}>Case No.</th>
-          {/* <th style={{ width: "10%" }}>Subnumber</th> */}
+          {/* <th style={{ width: "10%" }}>Subcategory</th> */}
           <th style={{ width: "10%" }}>Assigned By</th>
           <th style={{ width: "8%" }}>Assigned Date</th>
       </tr>
@@ -356,7 +356,7 @@ export const CMInstruction = () => {
       <tr>
       <td>{selectedLead.leadNo} </td>
         <td>{leadData.caseNo}</td>
-        {/* <td>{leadData.subNumber}</td> */}
+        {/* <td>{leadData.subCategory}</td> */}
         <td> {leadData.assignedBy} </td>
         <td>{formatDate(leadData.assignedDate)} </td>
 
@@ -419,48 +419,48 @@ export const CMInstruction = () => {
               </tr>
               
 <tr>
-                  <td className="info-label">Subnumber:</td>
+                  <td className="info-label">Subcategory:</td>
                   <td>
                     <input
                       type="text"
                       className="input-field"
-                      value={leadData.subNumber}
-                      onChange={(e) => handleInputChange('subNumber', e.target.value)}
+                      value={leadData.subCategory}
+                      onChange={(e) => handleInputChange('subCategory', e.target.value)}
                       placeholder="NA"
                     />
                   </td>
                 </tr>
               <tr>
-  <td className="info-label">Associated Subnumbers:</td>
+  <td className="info-label">Associated Subcategories:</td>
   <td>
     <div className="custom-dropdown">
       <div
         className="dropdown-header"
         onClick={() => setSubDropdownOpen(!subDropdownOpen)}
       >
-        {associatedSubNumbers.length > 0
-          ? associatedSubNumbers.join(", ")
+        {associatedSubCategories.length > 0
+          ? associatedSubCategories.join(", ")
           : "NA"}
         <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
       </div>
       {subDropdownOpen && (
         <div className="dropdown-options">
-          {availableSubNumbers.map((subNum) => (
+          {availableSubCategories.map((subNum) => (
             <div key={subNum} className="dropdown-item">
               <input
                 type="checkbox"
                 id={subNum}
                 value={subNum}
-                checked={associatedSubNumbers.includes(subNum)}
+                checked={associatedSubCategories.includes(subNum)}
                 onChange={(e) => {
                   const updatedSubs = e.target.checked
-                    ? [...associatedSubNumbers, e.target.value]
-                    : associatedSubNumbers.filter((num) => num !== e.target.value);
+                    ? [...associatedSubCategories, e.target.value]
+                    : associatedSubCategories.filter((num) => num !== e.target.value);
 
-                  setAssociatedSubNumbers(updatedSubs); // Update dropdown selection
+                  setAssociatedSubCategories(updatedSubs); // Update dropdown selection
                   setLeadData((prevData) => ({
                     ...prevData,
-                    associatedSubNumbers: updatedSubs, // Update leadData
+                    associatedSubCategories: updatedSubs, // Update leadData
                   }));
                 }}
               />

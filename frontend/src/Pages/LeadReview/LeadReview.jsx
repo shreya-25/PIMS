@@ -33,8 +33,8 @@ export const LeadReview = () => {
   const signedInOfficer = localStorage.getItem("loggedInUser");
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
-  const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]);
-  const [caseSubNumbers, setCaseSubNumbers] = useState([]); 
+  const [associatedSubCategories, setAssociatedSubCategories] = useState([]);
+  const [caseSubCategories, setCaseSubCategories] = useState([]); 
   const [aoOpen, setAoOpen] = useState(false);
   const [aoQuery, setAoQuery] = useState("");
   const NO_NUMBER = new Set(["Lead Reopened", "Lead Closed"]);
@@ -1016,8 +1016,8 @@ const declineLead = async (leadNo, description, reason = "") => {
     leadNumber: '',
     parentLeadNo: '',
     incidentNo: '',
-    subNumber: '',
-    associatedSubNumbers: [],
+    subCategory: '',
+    associatedSubCategories: [],
     assignedDate: '',
     dueDate: '',
     summary: '',
@@ -1148,38 +1148,38 @@ console.log("SL, SC", selectedLead, selectedCase);
 const currentStatusIndex = statusToIndex[leadData.leadStatus] ?? 0;
 const [assignedOfficers, setAssignedOfficers] = useState([]);
 
-const [subnumsLoading, setSubnumsLoading] = useState(false);
+const [subcatsLoading, setSubnumsLoading] = useState(false);
 
 useEffect(() => {
-  const fetchCaseSubNumbers = async () => {
+  const fetchCaseSubCategories = async () => {
     if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
     try {
       setSubnumsLoading(true);
       const token = localStorage.getItem("token");
       // use the route your backend exposes; adjust if different
       const { data } = await api.get(
-        `/api/cases/${selectedCase.caseNo}/subNumbers`,
+        `/api/cases/${selectedCase.caseNo}/subCategories`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       // normalize + dedupe
-      const subs = Array.from(new Set(data?.subNumbers || []));
-      setCaseSubNumbers(subs);
+      const subs = Array.from(new Set(data?.subCategories || []));
+      setCaseSubCategories(subs);
     } catch (e) {
-      console.error("Failed to fetch case subnumbers:", e);
-      setCaseSubNumbers([]); // show "No subnumbers" in UI
+      console.error("Failed to fetch case subcategories:", e);
+      setCaseSubCategories([]); // show "No subcategories" in UI
     } finally {
       setSubnumsLoading(false);
     }
   };
-  fetchCaseSubNumbers();
+  fetchCaseSubCategories();
 }, [selectedCase?.caseNo, selectedCase?.caseName]);
 
 // keep UI selection in sync when lead loads
 useEffect(() => {
-  if (Array.isArray(leadData?.associatedSubNumbers)) {
-    setAssociatedSubNumbers(leadData.associatedSubNumbers);
+  if (Array.isArray(leadData?.associatedSubCategories)) {
+    setAssociatedSubCategories(leadData.associatedSubCategories);
   }
-}, [leadData?.associatedSubNumbers]);
+}, [leadData?.associatedSubCategories]);
 
 // tiny helper to autosave field
 const saveField = async (partial) => {
@@ -1327,8 +1327,8 @@ const isEditableByCaseManager = field => {
     "parentLeadNo",        // Lead Origin
     "assignedTo",          // Assigned Officers
     "dueDate",             // Due Date
-    "subNumber",           // Subnumber
-    "associatedSubNumbers", // Associated Subnumbers
+    "subCategory",           // Subcategory
+    "associatedSubCategories", // Associated Subcategories
     "primaryOfficer",      
   ];
   return selectedCase?.role === "Case Manager" && editableFields.includes(field);
@@ -2528,23 +2528,23 @@ const assignmentHoverText = React.useMemo(() => {
                   </td>
                 </tr>
                 <tr>
-                  <td className="info-label">Subnumber</td>
+                  <td className="info-label">Subcategory</td>
                   <td>
                     <input
                       type="text"
                       className="input-field"
-                      value={leadData.subNumber}
+                      value={leadData.subCategory}
                     placeholder=""
-                     onChange={(e) => handleInputChange('subNumber', e.target.value)}
-  readOnly={!isEditableByCaseManager("subNumber")}
+                     onChange={(e) => handleInputChange('subCategory', e.target.value)}
+  readOnly={!isEditableByCaseManager("subCategory")}
                     />
                   </td>
                 </tr>
 
                 <tr>
-  {/* <td className="info-label" style={{ width: "25%" }}>Associated Subnumbers</td>
+  {/* <td className="info-label" style={{ width: "25%" }}>Associated Subcategories</td>
   <td>
-    {!isEditableByCaseManager("associatedSubNumbers") ? (
+    {!isEditableByCaseManager("associatedSubCategories") ? (
       <div className="dropdown-header"   style={{
           padding: "8px 10px",
           minHeight: "25px",
@@ -2552,8 +2552,8 @@ const assignmentHoverText = React.useMemo(() => {
           borderRadius: "4px",
          
         }}>
-        {associatedSubNumbers.length > 0
-          ? associatedSubNumbers.join(", ")
+        {associatedSubCategories.length > 0
+          ? associatedSubCategories.join(", ")
           : ""}
       </div>
     ) : (
@@ -2562,29 +2562,29 @@ const assignmentHoverText = React.useMemo(() => {
           className="dropdown-header"
           onClick={() => setSubDropdownOpen(!subDropdownOpen)}
         >
-          {associatedSubNumbers.length > 0
-            ? associatedSubNumbers.join(", ")
-            : "Select Subnumbers"}
+          {associatedSubCategories.length > 0
+            ? associatedSubCategories.join(", ")
+            : "Select Subcategories"}
           <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
         </div>
         {subDropdownOpen && (
           <div className="dropdown-options">
-            {availableSubNumbers.map((subNum) => (
+            {availableSubCategories.map((subNum) => (
               <div key={subNum} className="dropdown-item">
                 <input
                   type="checkbox"
                   id={subNum}
                   value={subNum}
-                  checked={associatedSubNumbers.includes(subNum)}
+                  checked={associatedSubCategories.includes(subNum)}
                   onChange={(e) => {
                     const updatedSubs = e.target.checked
-                      ? [...associatedSubNumbers, e.target.value]
-                      : associatedSubNumbers.filter((num) => num !== e.target.value);
+                      ? [...associatedSubCategories, e.target.value]
+                      : associatedSubCategories.filter((num) => num !== e.target.value);
 
-                    setAssociatedSubNumbers(updatedSubs);
+                    setAssociatedSubCategories(updatedSubs);
                     setLeadData((prevData) => ({
                       ...prevData,
-                      associatedSubNumbers: updatedSubs,
+                      associatedSubCategories: updatedSubs,
                     }));
                   }}
                 />
@@ -2596,49 +2596,49 @@ const assignmentHoverText = React.useMemo(() => {
       </div>
     )}
   </td> */}
-  <td className="info-label" style={{ width: "25%" }}>Associated Subnumbers</td>
+  <td className="info-label" style={{ width: "25%" }}>Associated Subcategories</td>
 <td>
-  {!isEditableByCaseManager("associatedSubNumbers") ? (
+  {!isEditableByCaseManager("associatedSubCategories") ? (
     <div
       className="dropdown-header"
       style={{ padding: "8px 10px", minHeight: "25px", border: "1px solid #ccc", borderRadius: "4px" }}
     >
-      {associatedSubNumbers.length > 0 ? associatedSubNumbers.join(", ") : ""}
+      {associatedSubCategories.length > 0 ? associatedSubCategories.join(", ") : ""}
     </div>
   ) : (
     <div className="custom-dropdown">
       <div className="dropdown-header" onClick={() => setSubDropdownOpen(!subDropdownOpen)}>
-        {associatedSubNumbers.length > 0 ? associatedSubNumbers.join(", ") : "Select Subnumbers"}
+        {associatedSubCategories.length > 0 ? associatedSubCategories.join(", ") : "Select Subcategories"}
         <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
       </div>
 
       {subDropdownOpen && (
         <div className="dropdown-options">
-          {subnumsLoading && <div className="dropdown-item">Loading…</div>}
+          {subcatsLoading && <div className="dropdown-item">Loading…</div>}
 
-          {!subnumsLoading && caseSubNumbers.length === 0 && (
-            <div className="dropdown-item">No subnumbers for this case</div>
+          {!subcatsLoading && caseSubCategories.length === 0 && (
+            <div className="dropdown-item">No subcategories for this case</div>
           )}
 
-          {!subnumsLoading &&
-            caseSubNumbers.length > 0 &&
-            caseSubNumbers.map((subNum) => (
+          {!subcatsLoading &&
+            caseSubCategories.length > 0 &&
+            caseSubCategories.map((subNum) => (
               <div key={subNum} className="dropdown-item">
                 <input
                   type="checkbox"
                   id={`assoc-${subNum}`}
                   value={subNum}
-                  checked={associatedSubNumbers.includes(subNum)}
+                  checked={associatedSubCategories.includes(subNum)}
                   onChange={(e) => {
                     const updated =
                       e.target.checked
-                        ? [...associatedSubNumbers, subNum]
-                        : associatedSubNumbers.filter((n) => n !== subNum);
+                        ? [...associatedSubCategories, subNum]
+                        : associatedSubCategories.filter((n) => n !== subNum);
 
                     // update UI immediately
-                    setAssociatedSubNumbers(updated);
+                    setAssociatedSubCategories(updated);
                     // persist to lead + autosave
-                    saveField({ associatedSubNumbers: updated });
+                    saveField({ associatedSubCategories: updated });
                   }}
                 />
                 <label htmlFor={`assoc-${subNum}`}>{subNum}</label>

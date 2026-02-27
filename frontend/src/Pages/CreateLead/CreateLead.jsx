@@ -71,8 +71,8 @@ useEffect(() => {
     leadNumber: '',
     leadOrigin: '',
     incidentNumber: '',
-    subNumber: '',
-    associatedSubNumbers: [],
+    subCategory: '',
+    associatedSubCategories: [],
     assignedDate: '',
     dueDate: '',
     leadSummary: '',
@@ -110,11 +110,11 @@ const filteredOfficers = React.useMemo(() => {
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const [availableSubNumbers, setAvailableSubNumbers] = useState([
+  const [availableSubCategories, setAvailableSubCategories] = useState([
     "SUB-000001", "SUB-000002", "SUB-000003", "SUB-000004", "SUB-000005"
-  ]); // Static List of Subnumbers
+  ]); // Static List of Subcategories
   
-  const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]); // Selected Subnumbers
+  const [associatedSubCategories, setAssociatedSubCategories] = useState([]); // Selected Subcategories
   const [subDropdownOpen, setSubDropdownOpen] = useState(false);
 
   const getFormattedDate = () => {
@@ -355,7 +355,7 @@ useEffect(() => {
 //     .map((v) => parseInt(v.trim(), 10))
 //     .filter((n) => !isNaN(n));
 
-//   const subNumbersArray = leadData.subNumber
+//   const subCategoriesArray = leadData.subCategory
 //     .split(',')
 //     .map((v) => v.trim())
 //     .filter((s) => s);
@@ -369,8 +369,8 @@ useEffect(() => {
 //         caseNo:              selectedCase.caseNo,
 //         parentLeadNo:        originNumbers,
 //         incidentNo:          leadData.incidentNumber,
-//         subNumber:           subNumbersArray,
-//         associatedSubNumbers: leadData.associatedSubNumbers,
+//         subCategory:           subCategoriesArray,
+//         associatedSubCategories: leadData.associatedSubCategories,
 //         dueDate:             leadData.dueDate,
 //         assignedDate:        leadData.assignedDate,
 //         assignedTo:          leadData.assignedOfficer,
@@ -529,7 +529,7 @@ const handleGenerateLead = async () => {
     .map((v) => parseInt(String(v).trim(), 10))
     .filter((n) => !isNaN(n));
 
-  const subNumbersArray = (leadData.subNumber || "")
+  const subCategoriesArray = (leadData.subCategory || "")
     .split(",")
     .map((v) => String(v).trim())
     .filter((s) => s);
@@ -576,8 +576,8 @@ const orderedAssignees = hasAssignees
         caseNo:               selectedCase.caseNo,
         parentLeadNo:         originNumbers,
         incidentNo:           leadData.incidentNumber,
-        subNumber:            subNumbersArray,
-        associatedSubNumbers: leadData.associatedSubNumbers,
+        subCategory:            subCategoriesArray,
+        associatedSubCategories: leadData.associatedSubCategories,
         dueDate:              leadData.dueDate,
         assignedDate:         leadData.assignedDate,
 
@@ -749,26 +749,26 @@ const assignedOfficerUsernames = React.useMemo(
 
 
 const defaultCaseSummary = "";
-const [availableCaseSubNumbers, setAvailableCaseSubNumbers] = useState([]); // To store subnumbers fetched for the case
+const [availableCaseSubCategories, setAvailableCaseSubCategories] = useState([]); // To store subcategories fetched for the case
 
- // etch all subnumbers for this case
+ // etch all subcategories for this case
  useEffect(() => {
-  const fetchCaseSubNumbers = async () => {
+  const fetchCaseSubCategories = async () => {
     try {
       if (caseDetails && caseDetails.id) {
         const token = localStorage.getItem("token");
         const response = await api.get(
-          `/api/cases/${caseDetails.id}/subNumbers`,
+          `/api/cases/${caseDetails.id}/subCategories`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setAvailableCaseSubNumbers(response.data.subNumbers);
+        setAvailableCaseSubCategories(response.data.subCategories);
       }
     } catch (error) {
-      console.error("Error fetching case subnumbers:", error);
+      console.error("Error fetching case subcategories:", error);
     }
   };
 
-  fetchCaseSubNumbers();
+  fetchCaseSubCategories();
 }, [caseDetails]);
 
 
@@ -838,7 +838,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
   };
 
 useEffect(() => {
-  const fetchAssociatedSubNumbers = async () => {
+  const fetchAssociatedSubCategories = async () => {
     try {
       // Ensure we have valid case identifiers
       const caseNo = selectedCase?.caseNo || caseDetails?.caseNo;
@@ -849,21 +849,21 @@ useEffect(() => {
 
       const token = localStorage.getItem("token");
       const response = await api.get(
-        `/api/lead/associatedSubNumbers/${caseNo }/${encodeURIComponent(caseName)}`,
+        `/api/lead/associatedSubCategories/${caseNo }/${encodeURIComponent(caseName)}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log("Fetched Associated Subnumbers:", response.data);
+      console.log("Fetched Associated Subcategories:", response.data);
 
       // Adjust if API returns differently
-      const subs = response.data.associatedSubNumbers || response.data.subNumbers || [];
-      setAvailableSubNumbers(subs);
+      const subs = response.data.associatedSubCategories || response.data.subCategories || [];
+      setAvailableSubCategories(subs);
     } catch (error) {
-      console.error("Error fetching associated subnumbers:", error);
+      console.error("Error fetching associated subcategories:", error);
     }
   };
 
-  fetchAssociatedSubNumbers();
+  fetchAssociatedSubCategories();
 }, [selectedCase, caseDetails]);
 
   
@@ -1077,29 +1077,29 @@ useEffect(() => {
                 </td>
               </tr>
                 <tr>
-                  <td>Subnumber</td>
+                  <td>Subcategory</td>
                   <td>
                     {/* <input
                       type="text"
                       className="input-field"
-                      value={leadData.subNumber}
+                      value={leadData.subCategory}
                       onChange={(e) => {
                         const values = e.target.value.split(',').map(val => val.trim()).filter(Boolean);
-                        handleInputChange('subNumber', values); // Pass array to state
+                        handleInputChange('subCategory', values); // Pass array to state
                       }}
-                      placeholder="Enter Subnumber"
+                      placeholder="Enter Subcategory"
                     /> */}
                     <input
                       type="text"
                       className="input-field"
-                      value={leadData.subNumber}
-                      onChange={(e) => handleInputChange('subNumber', e.target.value)}
+                      value={leadData.subCategory}
+                      onChange={(e) => handleInputChange('subCategory', e.target.value)}
                       placeholder="e.g. SUB-000001, SUB-000002"
                     />
                   </td>
                 </tr>
             <tr>
-  <td>Associated Subnumbers</td>
+  <td>Associated Subcategories</td>
   <td>
     <div className="custom-dropdown-cl" ref={dropdownRef}>
       <div
@@ -1107,37 +1107,37 @@ useEffect(() => {
         ref={dropdownRef}
         onClick={() => setSubDropdownOpen(!subDropdownOpen)}
       >
-        {associatedSubNumbers.length > 0
-          ? associatedSubNumbers.join(", ")
-          : "Select Subnumbers"}
+        {associatedSubCategories.length > 0
+          ? associatedSubCategories.join(", ")
+          : "Select Subcategories"}
         <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
       </div>
       {subDropdownOpen && (
         <div className="dropdown-options">
-          {availableSubNumbers.length > 0 ? (
-          availableSubNumbers.map((subNum) => (
+          {availableSubCategories.length > 0 ? (
+          availableSubCategories.map((subNum) => (
             <div key={subNum} className="dropdown-item">
               <input
                 type="checkbox"
                 id={subNum}
                 value={subNum}
-                checked={associatedSubNumbers.includes(subNum)}
+                checked={associatedSubCategories.includes(subNum)}
                 onChange={(e) => {
-                  const updatedSubNumbers = e.target.checked
-                    ? [...associatedSubNumbers, e.target.value]
-                    : associatedSubNumbers.filter((num) => num !== e.target.value);
-                  setAssociatedSubNumbers(updatedSubNumbers);
+                  const updatedSubCategories = e.target.checked
+                    ? [...associatedSubCategories, e.target.value]
+                    : associatedSubCategories.filter((num) => num !== e.target.value);
+                  setAssociatedSubCategories(updatedSubCategories);
 
                   setLeadData((prevData) => ({
                     ...prevData,
-                    associatedSubNumbers: updatedSubNumbers, // ✅ Add this
+                    associatedSubCategories: updatedSubCategories, // ✅ Add this
                   }));
                 }}
               />
               <label htmlFor={subNum}>{subNum}</label>
             </div>
           )) ) : (
-  <div className="dropdown-itemno-option">No subnumber added</div>
+  <div className="dropdown-itemno-option">No subcategory added</div>
 )}
         </div>
       )}

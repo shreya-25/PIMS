@@ -18,7 +18,7 @@ const caseSchema = new mongoose.Schema(
       default: "ONGOING",
     },
 
-    subNumbers: {
+    subCategories: {
       type: [String],
       default: [],
     },

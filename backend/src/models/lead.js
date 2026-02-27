@@ -67,8 +67,8 @@ const leadSchema = new mongoose.Schema(
     parentLeadNo: { type: [Number], default: [] },
 
     incidentNo: { type: String, default: null },
-    subNumber: { type: [String], default: [] },
-    associatedSubNumbers: { type: [String], default: [] },
+    subCategory: { type: [String], default: [] },
+    associatedSubCategories: { type: [String], default: [] },
 
     assignedDate: { type: Date, required: true },
     completedDate: { type: Date, default: null },

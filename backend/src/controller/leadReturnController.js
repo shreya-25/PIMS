@@ -45,8 +45,13 @@ const createLeadReturn = async (req, res) => {
             assignedToUsernames: assignedTo.assignees,
         });
 
+        // Auto-generate returnNo (count of existing returns for this lead + 1)
+        const existingCount = await LeadReturn.countDocuments({ leadNo, caseNo });
+        const returnNo = existingCount + 1;
+
         const newLeadReturn = new LeadReturn({
             leadNo,
+            returnNo,
             description,
             submittedDate,
             approvedDate,
@@ -199,8 +204,13 @@ const updateLRStatusToSubmitted = async (req, res) => {
             assignedToUsernames: assignedTo?.assignees,
         });
 
+        // Auto-generate returnNo (count of existing returns for this lead + 1)
+        const existingCount = await LeadReturn.countDocuments({ leadNo, caseNo });
+        const returnNo = existingCount + 1;
+
         leadReturn = new LeadReturn({
           leadNo,
+          returnNo,
           description,
           submittedDate: submittedDate || new Date(),
           approvedDate: null,

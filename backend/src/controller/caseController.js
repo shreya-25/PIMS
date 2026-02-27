@@ -103,10 +103,7 @@ exports.getAllCases = async (req, res) => {
       .populate("createdByUserId", "username firstName lastName displayName")
       .lean();
 
-    if (!cases || cases.length === 0) {
-      return res.status(404).json({ message: "No cases found" });
-    }
-    res.status(200).json(cases);
+    res.status(200).json(cases || []);
   } catch (err) {
     console.error("Error fetching cases:", err);
     res.status(500).json({ message: "Error fetching cases", error: err.message });
@@ -385,7 +382,7 @@ exports.addOfficerToCase = async (req, res) => {
   }
 };
 
-// Update case officers (replace investigator list)
+// Update case officers (replace the full team by role)
 exports.updateCaseOfficers = async (req, res) => {
   try {
     const { caseNo, caseName } = req.params;
@@ -400,17 +397,28 @@ exports.updateCaseOfficers = async (req, res) => {
       return res.status(404).json({ message: "Case not found" });
     }
 
-    // Resolve each officer to a userId
+    // Resolve each officer to a userId, respecting their role
+    let caseManagerId = caseDoc.caseManagerUserId;
+    let detectiveSupervisorId = caseDoc.detectiveSupervisorUserId;
     const investigatorIds = [];
+
     for (const off of officers) {
       const name = off.name || off.username || off;
       if (typeof name !== "string") continue;
       const user = await findUserByUsername(name);
-      if (user) {
+      if (!user) continue;
+
+      if (off.role === "Case Manager") {
+        caseManagerId = user._id;
+      } else if (off.role === "Detective Supervisor") {
+        detectiveSupervisorId = user._id;
+      } else if (off.role === "Investigator") {
         investigatorIds.push(user._id);
       }
     }
 
+    caseDoc.caseManagerUserId = caseManagerId;
+    caseDoc.detectiveSupervisorUserId = detectiveSupervisorId;
     caseDoc.investigatorUserIds = investigatorIds;
     await caseDoc.save();
 

@@ -244,8 +244,8 @@ const attachFiles = async (items, idFieldName, filesEndpoint) => {
     leadNumber: '',
     parentLeadNo: '',
     incidentNo: '',
-    subNumber: '',
-    associatedSubNumbers: [],
+    subCategory: '',
+    associatedSubCategories: [],
     assignedDate: '',
     dueDate: '',
     summary: '',
@@ -255,8 +255,8 @@ const attachFiles = async (items, idFieldName, filesEndpoint) => {
     assignedOfficer: []
   });
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [availableSubNumbers, setAvailableSubNumbers] = useState([]);
-  const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]); // Selected Subnumbers
+  const [availableSubCategories, setAvailableSubCategories] = useState([]);
+  const [associatedSubCategories, setAssociatedSubCategories] = useState([]); // Selected Subcategories
   const [subDropdownOpen, setSubDropdownOpen] = useState(false);
   const handleInputChange = (field, value) => {
     setLeadData({ ...leadData, [field]: value });
@@ -715,24 +715,24 @@ console.log("isReadOnly", isReadOnly);
               </tr>
 
              <tr>
-  <td>Subnumber:</td>
+  <td>Subcategory:</td>
   <td>
     <input
       type="text"
       className="input-field"
-      value={leadData.subNumber || ""}
+      value={leadData.subCategory || ""}
       readOnly
     />
   </td>
 </tr>
 <tr>
-  <td>Associated Subnumbers:</td>
+  <td>Associated Subcategories:</td>
   <td>
     <input
       type="text"
       className="input-field"
-      value={Array.isArray(leadData.associatedSubNumbers)
-        ? leadData.associatedSubNumbers.join(", ")
+      value={Array.isArray(leadData.associatedSubCategories)
+        ? leadData.associatedSubCategories.join(", ")
         : ""}
       readOnly
     />

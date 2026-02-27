@@ -48,8 +48,8 @@ const createLead = async (req, res) => {
       caseId,
       parentLeadNo = [],
       incidentNo,
-      subNumber = [],
-      associatedSubNumbers = [],
+      subCategory = [],
+      associatedSubCategories = [],
       assignedDate,
       completedDate,
       assignedTo: assignedToInput = [],
@@ -135,8 +135,8 @@ const createLead = async (req, res) => {
           leadNo: nextLeadNo,
           parentLeadNo,
           incidentNo,
-          subNumber,
-          associatedSubNumbers,
+          subCategory,
+          associatedSubCategories,
           assignedDate,
           completedDate,
           assignedTo,
@@ -269,14 +269,14 @@ const getLeadsforHierarchy = async (req, res) => {
   }
 };
 
-const getAssociatedSubNumbers = async (req, res) => {
+const getAssociatedSubCategories = async (req, res) => {
   try {
     const { caseNo, caseName } = req.params;
-    const leads = await Lead.find({ caseNo, caseName }).select("subNumber").lean();
-    const uniqueSubNumbers = [...new Set(leads.flatMap(lead => lead.subNumber || []))];
-    res.status(200).json({ associatedSubNumbers: uniqueSubNumbers });
+    const leads = await Lead.find({ caseNo, caseName }).select("subCategory").lean();
+    const uniqueSubCategories = [...new Set(leads.flatMap(lead => lead.subCategory || []))];
+    res.status(200).json({ associatedSubCategories: uniqueSubCategories });
   } catch (err) {
-    console.error("Error fetching subnumbers:", err.message);
+    console.error("Error fetching subcategories:", err.message);
     res.status(500).json({ message: "Something went wrong" });
   }
 };
@@ -1018,6 +1018,6 @@ const setLeadStatusToClosed = async (req, res) => {
 
 
 
-module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, updateLRStatusToPending, searchLeadsByKeyword , setLeadStatusToInReview,
+module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubCategories, updateLRStatusToPending, searchLeadsByKeyword , setLeadStatusToInReview,
   setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM, getLeadStatus, setLeadStatusToClosed,  deleteLead, setLeadStatusToReturned, setLeadStatusToReopened
 };

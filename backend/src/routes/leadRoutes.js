@@ -1,5 +1,5 @@
 const express = require("express");
-const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy, updateLeadStatus, getAssociatedSubNumbers, searchLeadsByKeyword, setLeadStatusToInReview,
+const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy, updateLeadStatus, getAssociatedSubCategories, searchLeadsByKeyword, setLeadStatusToInReview,
   updateLead, removeAssignedOfficer, getAssignedLeadsForOfficer, deleteLead,setLeadStatusToReturned,setLeadStatusToReopened,
   setLeadStatusToComplete, setLeadStatusToPending, updateAssignedToStatus, getLRForCM, getLeadStatus,setLeadStatusToClosed
  } = require("../controller/leadController");
@@ -47,7 +47,7 @@ router.put(
 router.put('/:leadNo/:leadName/:caseNo/:caseName', verifyToken, updateLeadStatus);
 
 
-router.get('/associatedSubNumbers/:caseNo/:caseName', getAssociatedSubNumbers);
+router.get('/associatedSubCategories/:caseNo/:caseName', getAssociatedSubCategories);
 
 router.get("/search", verifyToken, searchLeadsByKeyword);
 

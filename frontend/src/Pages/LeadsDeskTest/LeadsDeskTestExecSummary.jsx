@@ -474,7 +474,8 @@ const [availableFlags, setAvailableFlags] = useState([]);
 const getDeletedReason = (lead) => lead?.deletedReason || "";
 const isDeletedStatus = (s) => String(s ?? "").trim().toLowerCase() === "deleted";
 
-const [selectedFlags, setSelectedFlags] = useState([]); 
+const [selectedFlags, setSelectedFlags] = useState([]);
+const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
 // Range just for the "selected subset" flow
 const [subsetRange, setSubsetRange] = useState({ start: "", end: "" });
@@ -1233,6 +1234,18 @@ useEffect(() => {
   }
 }, [summaryMode]);
 
+const openPdfBlob = (blobData) => {
+  const url = URL.createObjectURL(new Blob([blobData], { type: "application/pdf" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+};
+
 const handleRunReportWithSummary = async (explicitLeads = null) => {
   const token = localStorage.getItem("token");
 
@@ -1245,6 +1258,8 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
     alert("No leads selected to include.");
     return;
   }
+
+  setIsGeneratingReport(true);
 
   // IMPORTANT: whatever you call your selector for report type:
   // e.g., reportTypeId: "All" | "WithoutSummary" | etc.
@@ -1275,9 +1290,8 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
         responseType: "blob",
       });
 
-      const file = new Blob([response.data], { type: "application/pdf" });
-      const fileURL = URL.createObjectURL(file);
-      window.open(fileURL, "_blank");
+      openPdfBlob(response.data);
+      setIsGeneratingReport(false);
       return;
     }
 
@@ -1300,9 +1314,8 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
         }
       );
 
-      const fileBlob = new Blob([response.data], { type: "application/pdf" });
-      const fileURL = URL.createObjectURL(fileBlob);
-      window.open(fileURL, "_blank");
+      openPdfBlob(response.data);
+      setIsGeneratingReport(false);
       return;
     }
 
@@ -1325,13 +1338,13 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
         responseType: "blob",
       });
 
-      const file = new Blob([response.data], { type: "application/pdf" });
-      const fileURL = URL.createObjectURL(file);
-      window.open(fileURL, "_blank");
+      openPdfBlob(response.data);
+      setIsGeneratingReport(false);
     }
   } catch (error) {
     console.error("Failed to generate report", error);
     alert("Error generating PDF");
+    setIsGeneratingReport(false);
   }
 };
 
@@ -2133,10 +2146,11 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
         </div>
       )}
 
-      <div style={{margin:'8px 0 0'}}>
+      <div style={{margin:'8px 0 0', display:'flex', alignItems:'center', gap:12}}>
         <button
           type="button"
           className="btn btn-primary"
+          disabled={isGeneratingReport}
           onClick={() => {
             setReportScope('all');
             handleRunReportWithSummary();
@@ -2144,6 +2158,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
         >
           Run report
         </button>
+        {isGeneratingReport && <span style={{fontSize:14,color:'#555',fontStyle:'italic'}}>Generating report...</span>}
       </div>
     </>
   )}
@@ -2211,10 +2226,11 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
     // Directly pass this one lead to the report generator
     handleRunReportWithSummary([lead]);
   }}
-  disabled={!selectedSingleLeadNo}
+  disabled={!selectedSingleLeadNo || isGeneratingReport}
 >
   Run report
 </button>
+{isGeneratingReport && <span style={{fontSize:14,color:'#555',fontStyle:'italic',marginLeft:12}}>Generating report...</span>}
 
     </div>
   </>
@@ -2266,7 +2282,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
       Pick one or more flags. The report will include leads with at least one of the selected flags on a timeline entry.
     </p>
 
-    <div style={{ marginTop: 10 }}>
+    <div style={{ marginTop: 10, display:'flex', alignItems:'center', gap:12 }}>
       <button
         type="button"
         className="btn btn-primary"
@@ -2278,10 +2294,11 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
           }
           handleRunReportWithSummary(flaggedLeads);
         }}
-        disabled={!selectedFlags.length}
+        disabled={!selectedFlags.length || isGeneratingReport}
       >
         Run report
       </button>
+      {isGeneratingReport && <span style={{fontSize:14,color:'#555',fontStyle:'italic'}}>Generating report...</span>}
     </div>
   </>
 )}
@@ -2295,7 +2312,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
       Generate report in hierarchical order of <strong>timeline</strong> (oldest to newest).
     </p>
 
-    <div style={{ marginTop: 8 }}>
+    <div style={{ marginTop: 8, display:'flex', alignItems:'center', gap:12 }}>
       <button
         type="button"
         className="btn btn-primary"
@@ -2304,10 +2321,11 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
           setReportScope('visible');
           handleRunReportWithSummary(timelineOrderedLeads);
         }}
-        disabled={!timelineOrderedLeads.length}
+        disabled={!timelineOrderedLeads.length || isGeneratingReport}
       >
         Run report (ascending timeline)
       </button>
+      {isGeneratingReport && <span style={{fontSize:14,color:'#555',fontStyle:'italic'}}>Generating report...</span>}
       {!timelineOrderedLeads.length && (
         <div style={{ marginTop: 6, fontSize: 13, opacity: 0.8 }}>
           No timeline-linked leads found yet for this case.
@@ -2365,10 +2383,11 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
       </p>
     </div>
 
-    <div style={{ marginTop: 8 }}>
+    <div style={{ marginTop: 8, display:'flex', alignItems:'center', gap:12 }}>
   <button
     type="button"
     className="btn btn-primary"
+    disabled={isGeneratingReport}
     onClick={() => {
       // Use the currently visible hierarchy results
       setReportScope('visible'); // or a custom scope if you prefer
@@ -2377,6 +2396,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
   >
     Run report
   </button>
+  {isGeneratingReport && <span style={{fontSize:14,color:'#555',fontStyle:'italic'}}>Generating report...</span>}
 </div>
 </>
 )}
@@ -2430,10 +2450,11 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
         </div>
         </>
 
-      <div style={{ marginTop: 8 }}>
+      <div style={{ marginTop: 8, display:'flex', alignItems:'center', gap:12 }}>
         <button
           type="button"
           className="btn btn-primary"
+          disabled={isGeneratingReport}
           onClick={() => {
             setReportScope('visible'); // use the currently visible filtered leads
             handleRunReportWithSummary(hierarchyLeadsData);
@@ -2441,6 +2462,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
         >
           Run report
         </button>
+        {isGeneratingReport && <span style={{fontSize:14,color:'#555',fontStyle:'italic'}}>Generating report...</span>}
       </div>
     </>
   )}
