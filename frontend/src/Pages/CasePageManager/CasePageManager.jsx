@@ -156,7 +156,7 @@ const handleConfirmOfficers = () => {
 
     useEffect(() => {
         if (team.investigators && Array.isArray(team.investigators)) {
-          setSelectedInvestigators(team.investigators);
+          setSelectedInvestigators([...new Set(team.investigators)]);
         }
         if (team.caseManagers && Array.isArray(team.caseManagers)) {
           setSelectedCaseManagers(team.caseManagers);
@@ -1989,8 +1989,7 @@ const toTitleCase = (s = "") =>
                   value={user.username}
                   checked={selectedDetectiveSupervisor === user.username}
                   onChange={() => {
-                    // const selected = user.username;
-                    const selected = `${user.firstName} ${user.lastName} (${user.username})`;
+                    const selected = user.username;
                     setSelectedDetectiveSupervisor(selected);
                     saveInvestigators(selectedInvestigators, selectedCaseManagers, selected);
                   }}

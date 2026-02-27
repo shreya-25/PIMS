@@ -24,11 +24,12 @@ const caseSchema = new mongoose.Schema(
     },
 
     // Membership (stable references)
-    caseManagerUserId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    caseManagerUserIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
 
     investigatorUserIds: [
       {
@@ -62,7 +63,7 @@ const caseSchema = new mongoose.Schema(
 
 // Compound indexes (cover all common query patterns)
 caseSchema.index({ isDeleted: 1, status: 1, updatedAt: -1 });
-caseSchema.index({ caseManagerUserId: 1, status: 1 });
+caseSchema.index({ caseManagerUserIds: 1, status: 1 });
 
 caseSchema.query.notDeleted = function () {
   return this.where({ isDeleted: { $ne: true } });

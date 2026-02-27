@@ -19,12 +19,12 @@ async function getUserRoleForCase({ caseNo, caseName, username }) {
   if (!user) return null;
 
   const doc = await Case.findOne({ caseNo, isDeleted: { $ne: true } })
-    .select("caseManagerUserId detectiveSupervisorUserId investigatorUserIds")
+    .select("caseManagerUserIds detectiveSupervisorUserId investigatorUserIds")
     .lean();
   if (!doc) return null;
 
   const uid = user._id.toString();
-  if (doc.caseManagerUserId?.toString() === uid) return "Case Manager";
+  if ((doc.caseManagerUserIds || []).some(id => id?.toString() === uid)) return "Case Manager";
   if (doc.detectiveSupervisorUserId?.toString() === uid) return "Detective Supervisor";
   if ((doc.investigatorUserIds || []).some(id => id?.toString() === uid)) return "Investigator";
   return null;

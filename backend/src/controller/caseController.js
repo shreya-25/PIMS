@@ -18,7 +18,7 @@ const LRScratchpad = require("../models/LRScratchpad");
 async function findUserByUsername(username) {
   if (!username) return null;
   const name = typeof username === "string" ? username : username.username || username.name;
-  return User.findOne({ username: name.toLowerCase().trim() });
+  return User.findOne({ username: name.trim() });
 }
 
 // Create a new case
@@ -55,10 +55,12 @@ exports.createCase = async (req, res) => {
     }
 
     // --- resolve usernames to ObjectIds ---
-    const managerUsername = managers[0].username || managers[0].name || managers[0];
-    const managerUser = await findUserByUsername(managerUsername);
-    if (!managerUser) {
-      return res.status(400).json({ message: `Case Manager '${managerUsername}' not found.` });
+    const managerUsers = [];
+    for (const m of managers) {
+      const uname = m.username || m.name || m;
+      const u = await findUserByUsername(uname);
+      if (!u) return res.status(400).json({ message: `Case Manager '${uname}' not found.` });
+      managerUsers.push(u);
     }
 
     const dsUsername = typeof detectiveSupervisor === "string"
@@ -78,7 +80,7 @@ exports.createCase = async (req, res) => {
       caseNo,
       caseName,
       status: "ONGOING",
-      caseManagerUserId: managerUser._id,
+      caseManagerUserIds: managerUsers.map(u => u._id),
       detectiveSupervisorUserId: dsUser._id,
       investigatorUserIds: investigatorUsers.map(u => u._id),
       createdByUserId: req.user.userId,
@@ -97,7 +99,7 @@ exports.createCase = async (req, res) => {
 exports.getAllCases = async (req, res) => {
   try {
     const cases = await Case.find({ isDeleted: { $ne: true } })
-      .populate("caseManagerUserId", "username firstName lastName displayName")
+      .populate("caseManagerUserIds", "username firstName lastName displayName")
       .populate("detectiveSupervisorUserId", "username firstName lastName displayName")
       .populate("investigatorUserIds", "username firstName lastName displayName")
       .populate("createdByUserId", "username firstName lastName displayName")
@@ -118,7 +120,7 @@ exports.getCaseById = async (req, res) => {
     }
 
     const caseData = await Case.findById(req.params.id)
-      .populate("caseManagerUserId", "username firstName lastName displayName")
+      .populate("caseManagerUserIds", "username firstName lastName displayName")
       .populate("detectiveSupervisorUserId", "username firstName lastName displayName")
       .populate("investigatorUserIds", "username firstName lastName displayName")
       .lean();
@@ -150,12 +152,12 @@ exports.getCasesByOfficer = async (req, res) => {
       isDeleted: { $ne: true },
       status: "ONGOING",
       $or: [
-        { caseManagerUserId: user._id },
+        { caseManagerUserIds: user._id },
         { detectiveSupervisorUserId: user._id },
         { investigatorUserIds: user._id },
       ],
     })
-      .populate("caseManagerUserId", "username firstName lastName displayName role")
+      .populate("caseManagerUserIds", "username firstName lastName displayName role")
       .populate("detectiveSupervisorUserId", "username firstName lastName displayName role")
       .populate("investigatorUserIds", "username firstName lastName displayName role")
       .lean();
@@ -167,7 +169,7 @@ exports.getCasesByOfficer = async (req, res) => {
     // Format response to include the officer's role per case
     const formattedCases = cases.map((c) => {
       let role = "Unknown";
-      if (c.caseManagerUserId && c.caseManagerUserId._id.equals(user._id)) {
+      if ((c.caseManagerUserIds || []).some(cm => cm._id.equals(user._id))) {
         role = "Case Manager";
       } else if (c.detectiveSupervisorUserId && c.detectiveSupervisorUserId._id.equals(user._id)) {
         role = "Detective Supervisor";
@@ -318,7 +320,7 @@ exports.rejectCase = async (req, res) => {
       return res.status(500).json({ message: "Admin user not found in system" });
     }
 
-    existingCase.caseManagerUserId = adminUser._id;
+    existingCase.caseManagerUserIds = [adminUser._id];
     const updatedCase = await existingCase.save();
 
     return res.status(200).json({ message: "Case rejected.", data: updatedCase });
@@ -337,7 +339,7 @@ exports.getCaseTeam = async (req, res) => {
     }
 
     const c = await Case.findOne({ caseNo })
-      .populate("caseManagerUserId", "username firstName lastName displayName")
+      .populate("caseManagerUserIds", "username firstName lastName displayName")
       .populate("detectiveSupervisorUserId", "username firstName lastName displayName")
       .populate("investigatorUserIds", "username firstName lastName displayName")
       .lean();
@@ -347,8 +349,8 @@ exports.getCaseTeam = async (req, res) => {
     }
 
     const detectiveSupervisor = c.detectiveSupervisorUserId?.username || "";
-    const caseManagers = c.caseManagerUserId ? [c.caseManagerUserId.username] : [];
-    const investigators = (c.investigatorUserIds || []).map(u => u.username);
+    const caseManagers = (c.caseManagerUserIds || []).map(u => u.username);
+    const investigators = [...new Set((c.investigatorUserIds || []).map(u => u.username))];
 
     return res.json({ detectiveSupervisor, caseManagers, investigators });
   } catch (err) {
@@ -385,20 +387,20 @@ exports.addOfficerToCase = async (req, res) => {
 // Update case officers (replace the full team by role)
 exports.updateCaseOfficers = async (req, res) => {
   try {
-    const { caseNo, caseName } = req.params;
+    const { caseNo } = req.params;
     const { officers } = req.body;
 
-    if (!caseNo || !caseName || !Array.isArray(officers)) {
-      return res.status(400).json({ message: "caseNo, caseName and an array of officers are required" });
+    if (!caseNo || !Array.isArray(officers)) {
+      return res.status(400).json({ message: "caseNo and an array of officers are required" });
     }
 
-    const caseDoc = await Case.findOne({ caseNo, caseName });
+    const caseDoc = await Case.findOne({ caseNo });
     if (!caseDoc) {
       return res.status(404).json({ message: "Case not found" });
     }
 
     // Resolve each officer to a userId, respecting their role
-    let caseManagerId = caseDoc.caseManagerUserId;
+    const caseManagerIds = [];
     let detectiveSupervisorId = caseDoc.detectiveSupervisorUserId;
     const investigatorIds = [];
 
@@ -409,7 +411,7 @@ exports.updateCaseOfficers = async (req, res) => {
       if (!user) continue;
 
       if (off.role === "Case Manager") {
-        caseManagerId = user._id;
+        caseManagerIds.push(user._id);
       } else if (off.role === "Detective Supervisor") {
         detectiveSupervisorId = user._id;
       } else if (off.role === "Investigator") {
@@ -417,9 +419,9 @@ exports.updateCaseOfficers = async (req, res) => {
       }
     }
 
-    caseDoc.caseManagerUserId = caseManagerId;
+    caseDoc.caseManagerUserIds = [...new Map(caseManagerIds.map(id => [id.toString(), id])).values()];
     caseDoc.detectiveSupervisorUserId = detectiveSupervisorId;
-    caseDoc.investigatorUserIds = investigatorIds;
+    caseDoc.investigatorUserIds = [...new Map(investigatorIds.map(id => [id.toString(), id])).values()];
     await caseDoc.save();
 
     return res.status(200).json({ message: "Assigned officers updated successfully", data: caseDoc });

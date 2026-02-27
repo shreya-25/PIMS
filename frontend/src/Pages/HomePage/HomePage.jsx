@@ -68,9 +68,10 @@ const [showAddCase, setShowAddCase] = useState(false);
   ) {
     role = "Detective Supervisor";
   } else if (
-    c.caseManagerUserId &&
-    (c.caseManagerUserId.username?.toLowerCase() === name ||
-     c.caseManagerUserId.displayName?.toLowerCase() === name)
+    Array.isArray(c.caseManagerUserIds) &&
+    c.caseManagerUserIds.some(
+      u => u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name
+    )
   ) {
     role = "Case Manager";
   } else if (
@@ -143,9 +144,10 @@ const [showAddCase, setShowAddCase] = useState(false);
     const isDS = c.detectiveSupervisorUserId &&
       (c.detectiveSupervisorUserId.username?.toLowerCase() === name ||
        c.detectiveSupervisorUserId.displayName?.toLowerCase() === name);
-    const isCM = c.caseManagerUserId &&
-      (c.caseManagerUserId.username?.toLowerCase() === name ||
-       c.caseManagerUserId.displayName?.toLowerCase() === name);
+    const isCM = Array.isArray(c.caseManagerUserIds) &&
+      c.caseManagerUserIds.some(
+        u => u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name
+      );
     const isInv = Array.isArray(c.investigatorUserIds) &&
       c.investigatorUserIds.some(
         u => u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name
