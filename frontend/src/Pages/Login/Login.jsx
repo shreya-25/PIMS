@@ -84,6 +84,7 @@ export function Login() {
             {/* </Link> */}
           </div>
           <h1 className="main_heading">PIMS</h1>
+          <p className="sub_heading">Police Investigation Management System</p>
         </div>
         <div className="form-container">
           <form className="login-form" onSubmit={handleLogin}>
