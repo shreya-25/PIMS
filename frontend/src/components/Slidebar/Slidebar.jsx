@@ -688,16 +688,12 @@ setIsSidebarOpen(false);
           : "Select Officers"
       }
     >
+      <span className="inv-input-label">
         {caseDetails.investigators.length
-      ? caseDetails.investigators.join(", ")
-      : <span className="inv-selected-none">None selected</span>}
-
-      {/* <span className="inv-input-label">
-        {caseDetails.investigators.length
-          ? caseDetails.investigators.join(", ") 
-          : "Select Officers"}
+          ? caseDetails.investigators.join(", ")
+          : "Select Investigators"}
       </span>
-      <span className="inv-caret" aria-hidden /> */}
+      <span className="inv-caret" aria-hidden />
     </button>
 
     {investigatorsOpen && (

@@ -2069,6 +2069,51 @@ function formatDate(dateString) {
   return `${month}/${day}/${year}`;
 }
 
+function drawMetaBar(doc, x, y, width, entry) {
+  const rowH = 20;
+  const padding = 5;
+  const bg = "#ffffff";
+  const border = "#ccc";
+
+  const idVal  = `${entry.leadReturnId ?? "N/A"}`;
+  const byVal  = `${entry.enteredBy ?? "N/A"}`;
+  const dtVal  = `${formatDate(entry.enteredDate) || "N/A"}`;
+
+  const colW1 = Math.round(width * 0.33);
+  const colW2 = Math.round(width * 0.34);
+  const colW3 = width - colW1 - colW2;
+
+  const bottom = doc.page.height - doc.page.margins.bottom;
+  if (y + rowH > bottom) {
+    doc.addPage();
+    y = doc.page.margins.top;
+  }
+
+  // Draw cells
+  let cx = x;
+  [colW1, colW2, colW3].forEach((w) => {
+    doc.rect(cx, y, w, rowH).fillAndStroke(bg, border);
+    cx += w;
+  });
+
+  const baseY = y + 5;
+
+  function drawLabelValue(cellX, cellW, label, value) {
+    const maxW = cellW - 2 * padding;
+    doc.fillColor("#000").font("Helvetica-Bold").fontSize(11);
+    doc.text(label, cellX + padding, baseY, { continued: true });
+    doc.font("Helvetica").fontSize(11);
+    doc.text(` ${value}`, { width: maxW, ellipsis: true });
+  }
+
+  drawLabelValue(x, colW1, "Narrative ID:", idVal);
+  drawLabelValue(x + colW1, colW2, "Entered By:", byVal);
+  drawLabelValue(x + colW1 + colW2, colW3, "Entered Date:", dtVal);
+
+  doc.fillColor("black");
+  return y + rowH + 10;
+}
+
 function drawStructuredLeadDetails(doc, x, y, lead, characterOfCase) {
   const colWidths = [130, 130, 130, 122];
   const rowHeight = 20;
@@ -2480,8 +2525,7 @@ async function generateCaseReportwithExecSummary(req, res) {
           if (lead.leadReturns && lead.leadReturns.length > 0) {
             lead.leadReturns.forEach((lr) => {
               currentY = ensureSpace(doc, currentY, 100);
-              doc.font("Helvetica-Bold").fontSize(11).text(`Lead Return ID: ${lr.leadReturnId}`, 50, currentY);
-              currentY += 20;
+              currentY = drawMetaBar(doc, 50, currentY, 512, lr);
               currentY = drawTextBox(doc, 50, currentY, 512, "", lr.leadReturnResult || "") + 20;
 
               // PERSON DETAILS within each return.
