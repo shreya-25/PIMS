@@ -1300,6 +1300,8 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
       const formData = new FormData();
       formData.append("user", localStorage.getItem("loggedInUser") || "Officer 916");
       formData.append("reportTimestamp", new Date().toLocaleString());
+      formData.append("caseNo", selectedCase.caseNo);
+      formData.append("caseName", selectedCase.caseName);
       formData.append("leadsData", JSON.stringify(leadsForReport));
       formData.append("selectedReports", JSON.stringify({ FullReport: true }));
       formData.append("execSummaryFile", execSummaryFile);

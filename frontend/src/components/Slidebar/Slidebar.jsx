@@ -22,6 +22,7 @@ export const SlideBar = ({ onAddCase, onClose,  isOpen,
     investigators: [], // Store selected investigators
     summary: "",
     executiveCaseSummary:"",
+    characterOfCase: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -217,8 +218,9 @@ useEffect(() => {
       role: "",
       caseSummary: caseDetails.summary,
       executiveCaseSummary: caseDetails.executiveCaseSummary,
+      characterOfCase: caseDetails.characterOfCase,
       managers: caseDetails.managers.map(username => ({ username })),
-      detectiveSupervisor, 
+      detectiveSupervisor,
       selectedOfficers: investigators.map(name => ({ name })),
     };
   
@@ -298,6 +300,7 @@ setCaseDetails({
   investigators: [],
   summary: "",
   executiveCaseSummary: "",
+  characterOfCase: "",
   status: "Ongoing",
 });
 setIsSidebarOpen(false);
@@ -406,7 +409,7 @@ setIsSidebarOpen(false);
           </button>
           <h3>Add Case</h3>
           <div className="form-group">
-            <label>Case Number:</label>
+            <label>Case Number</label>
             <input
               type="text"
               name="number"
@@ -416,7 +419,7 @@ setIsSidebarOpen(false);
             />
           </div>
           <div className="form-group">
-            <label>Case Name:</label>
+            <label>Case Name</label>
             <input
               type="text"
               name="title"
@@ -425,8 +428,19 @@ setIsSidebarOpen(false);
               className="input-field"
             />
           </div>
+               <div className="form-group">
+            <label>Character of Case</label>
+            <input
+              type="text"
+              name="characterOfCase"
+              value={caseDetails.characterOfCase}
+              onChange={handleInputChange}
+              className="input-field"
+              placeholder=""
+            />
+          </div>
           <div className="inv-select-group" ref={supervisorRef}>
-            <label htmlFor="ds-trigger">Detective Supervisor:</label>
+            <label htmlFor="ds-trigger">Detective Supervisor</label>
 
             <div className="inv-dropdown">
               <button
@@ -539,7 +553,7 @@ setIsSidebarOpen(false);
 </div> */}
 
 <div className="inv-select-group" ref={managersRef}>
-  <label htmlFor="cm-trigger">Case Managers:</label>
+  <label htmlFor="cm-trigger">Case Managers</label>
 
   <div className="inv-dropdown">
     {/* Trigger shows selected usernames (or placeholder) */}
@@ -657,7 +671,7 @@ setIsSidebarOpen(false);
             </div>
           </div> */}
 <div className="inv-select-group" ref={investigatorsRef}>
-  <label htmlFor="inv-trigger">Investigators Assigned:</label>
+  <label htmlFor="inv-trigger">Investigators Assigned</label>
 
   <div className="inv-dropdown" aria-live="polite">
     <button
@@ -733,15 +747,8 @@ setIsSidebarOpen(false);
   </div>
 </div>
 
-
-
-
-
-         
-         
-         
           <div className="form-group">
-            <label>Summary:</label>
+            <label>Summary</label>
             <textarea
               name="summary"
               value={caseDetails.summary}

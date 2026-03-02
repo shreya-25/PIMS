@@ -126,6 +126,9 @@ router.put("/update-officer-status", verifyToken, async (req, res) => {
 });
 
 
+// Update characterOfCase for a case by caseNo
+router.put("/:caseNo/character", verifyToken, caseController.updateCharacterOfCase);
+
 // Get a specific case by ID (Authenticated)
 router.get("/:id", verifyToken, async (req, res) => {
     try {

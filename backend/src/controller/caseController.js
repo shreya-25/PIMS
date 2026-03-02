@@ -30,6 +30,7 @@ exports.createCase = async (req, res) => {
       selectedOfficers = [],
       managers = [],
       detectiveSupervisor,
+      characterOfCase = "",
     } = req.body;
 
     // --- validate required fields ---
@@ -80,6 +81,7 @@ exports.createCase = async (req, res) => {
       caseNo,
       caseName,
       status: "ONGOING",
+      characterOfCase,
       caseManagerUserIds: managerUsers.map(u => u._id),
       detectiveSupervisorUserId: dsUser._id,
       investigatorUserIds: investigatorUsers.map(u => u._id),
@@ -482,6 +484,33 @@ exports.getCaseSummary = async (req, res) => {
     return res.status(200).json({ caseNo: caseDoc.caseNo, caseSummary: "" });
   } catch (err) {
     console.error("Error fetching case summary:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Update characterOfCase for a case
+exports.updateCharacterOfCase = async (req, res) => {
+  try {
+    const { caseNo } = req.params;
+    const { characterOfCase } = req.body;
+
+    if (characterOfCase === undefined) {
+      return res.status(400).json({ message: "characterOfCase is required" });
+    }
+
+    const updated = await Case.findOneAndUpdate(
+      { caseNo },
+      { characterOfCase },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Case not found" });
+    }
+
+    return res.status(200).json({ message: "Character of case updated", data: updated });
+  } catch (err) {
+    console.error("Error updating character of case:", err);
     return res.status(500).json({ message: "Server error", error: err.message });
   }
 };

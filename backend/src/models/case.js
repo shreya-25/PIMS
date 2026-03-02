@@ -57,6 +57,8 @@ const caseSchema = new mongoose.Schema(
     deletedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
 
     archivedAt: { type: Date, default: null },
+
+    characterOfCase: { type: String, default: "" },
   },
   { timestamps: true }
 );

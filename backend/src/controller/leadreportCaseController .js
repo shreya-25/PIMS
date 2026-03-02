@@ -5,6 +5,7 @@ const sharp = require("sharp");
 const heicConvert = require("heic-convert");
 const { getObjectBuffer } = require("../s3");
 const { fetchCaseLeadsData } = require("../utils/caseDataFetcher");
+const Case = require("../models/case");
 
 // Convert image buffer to a format PDFKit understands (PNG or JPEG).
 // Handles HEIC (iPhone), WebP, and other formats; passes PNG/JPEG as-is.
@@ -574,100 +575,72 @@ function measureTableHeight(table) {
 // }
 
 function drawTextBox(doc, x, y, width, title, content) {
-  const padding   = 5;
-  const fontSize  = 10;
-  const bodyFont  = "Helvetica";
-  const titleFont = "Helvetica-Bold";
-  const topMargin = doc.page.margins.top;
-  const bottomY   = doc.page.height - doc.page.margins.bottom;
+  const pad = 0, fs = 10; // border/bleed not needed now
+  const bodyFont = "Helvetica", titleFont = "Helvetica-Bold";
+  const innerW = width - 2 * pad;
 
-  // prepare your wrapped lines
-  doc.font(bodyFont).fontSize(fontSize);
-  const words = content.split(/\s+/);
+  const topY    = doc.page.margins.top;
+  const bottomY = doc.page.height - doc.page.margins.bottom;
+
+  const text = ((content ?? "") + "").replace(/\s+/g, " ").trim();
+
+  // Pre-wrap to lines so we can page-split cleanly
+  doc.font(bodyFont).fontSize(fs);
+  const lineH = doc.currentLineHeight();
+  const words = text ? text.split(" ") : [];
   const lines = [];
   let line = "";
-  for (let w of words) {
-    const test = line ? line + " " + w : w;
-    if (doc.widthOfString(test) > width - 2 * padding) {
-      lines.push(line);
-      line = w;
-    } else {
-      line = test;
-    }
+  for (const w of words) {
+    const cand = line ? line + " " + w : w;
+    if (doc.widthOfString(cand) <= innerW) line = cand;
+    else { if (line) lines.push(line); line = w; }
   }
   if (line) lines.push(line);
 
-  // iterate chunks that fit each page
-  let idx = 0, currY = y, first = true;
-  while (idx < lines.length) {
-    // 1) decide how many lines fit
-    let fit = 0;
-    // walk forward until we exceed the bottom margin
-    while (idx + fit < lines.length) {
-      // measure title on first chunk
-      const titleH   = first && title
-                       ? doc.heightOfString(title, { width: width - 2*padding })
-                       : 0;
-      // measure these lines as a single block
-      const block    = lines.slice(idx, idx + fit + 1).join("\n");
-      const textH    = doc.heightOfString(block, { width: width - 2*padding });
-      const boxH     = titleH + textH + 2 * padding;
-      if (currY + boxH > bottomY) break;
-      fit++;
-    }
-    // if none fit, force at least one to avoid infinite loop
-    if (fit === 0) fit = 1;
+  // Title height (measured once)
+  const titleH = title
+    ? (doc.font(titleFont).fontSize(fs), doc.heightOfString(title, { width: innerW }))
+    : 0;
+  doc.font(bodyFont).fontSize(fs);
 
-    // 2) compute exact heights
-    const chunkLines = lines.slice(idx, idx + fit);
-    const titleH     = first && title
-                       ? doc.heightOfString(title, { width: width - 2*padding })
-                       : 0;
-    const textBlock  = chunkLines.join("\n");
-    const textH      = doc.heightOfString(textBlock, { width: width - 2*padding });
-    const boxH       = titleH + textH + 2 * padding;
+  let i = 0, currY = y, first = true;
 
-    // 3) draw the box
-    doc.save()
-       .lineWidth(1)
-       .strokeColor("#999999")
-       .rect(x, currY, width, boxH)
-       .stroke()
-       .restore();
+  while (i < lines.length || (first && title && !lines.length)) {
+    // we still need a minimum space check so text doesn’t clip at bottom
+    const minNeededH = (first ? titleH : 0) + lineH + 2 * pad;
+    if (currY + minNeededH > bottomY) { doc.addPage(); currY = topY; }
 
-    // 4) draw the title + text
-    let textY = currY + padding;
+    const available = bottomY - currY - 2 * pad - (first ? titleH : 0);
+    const canLines  = Math.max(1, Math.floor(available / lineH));
+    const end       = Math.min(lines.length, i + canLines);
+
+    // --- draw text only (no border) ---
+    let textY = currY + pad;
+
     if (first && title) {
-      doc.font(titleFont)
-         .fontSize(fontSize)
-         .text(title, x + padding, textY, { width: width - 2*padding });
-      textY += titleH;
+      doc.font(titleFont).fontSize(fs).text(title, x + pad, textY, { width: innerW });
+      textY = doc.y; // after title
+      doc.font(bodyFont).fontSize(fs);
     }
-    doc.font(bodyFont)
-       .fontSize(fontSize)
-       .text(textBlock, x + padding, textY, {
-         width: width - 2 * padding,
-         align: "justify"
-       });
 
-    // advance
-    idx   += fit;
-    first  = false;
-    currY += boxH;
+    const block = lines.slice(i, end).join("\n");
+    doc.text(block, x + pad, textY, { width: innerW, align: "justify" });
 
-    // if there’s more, new page
-    if (idx < lines.length) {
-      doc.addPage();
-      currY = topMargin;
-    }
+    // advance currY based on how much text was actually written
+    const usedTextH = doc.y - textY;
+    const sectionH = (first ? titleH : 0) + usedTextH + 2 * pad;
+
+    currY = currY + sectionH;
+    i = end;
+    first = false;
   }
 
-  return currY + padding;
+  return currY + 6;
 }
 /* ---------------------------------------
    Your "structured" lead detail drawing
 -----------------------------------------*/
-function drawStructuredLeadDetails(doc, x, y, lead) {
+function drawStructuredLeadDetails(doc, x, y, lead, characterOfCase) {
   const colWidths = [130, 130, 130, 122];
   const rowHeight = 20;
   const padding = 5;
@@ -703,22 +676,48 @@ function drawStructuredLeadDetails(doc, x, y, lead) {
     currX += colWidths[i];
   }
 
-  // Second Row - Assigned Officers
- // Second Row - Assigned Officers (dynamic height + wrapping)
-y += rowHeight;
+  y += rowHeight;
 
-const tableWidth   = colWidths.reduce((a, b) => a + b, 0);
-const labelWidth   = 130; // keep same visual as your header row
-const valueWidth   = tableWidth - labelWidth;
-const labelHeight  = 20;  // min box height
+  const tableWidth  = colWidths.reduce((a, b) => a + b, 0);
+  const labelWidth  = 130;
+  const valueWidth  = tableWidth - labelWidth;
+  const labelHeight = 20;
+  const paddingX    = 5;
+  const paddingY    = 5;
 
-// Build the officers text from objects/strings
-const officersText = formatOfficerList(lead.assignedTo);
+  // Character of Case row
+  const charText = characterOfCase || "N/A";
+  doc.font("Helvetica").fontSize(10);
+  const charTextHeight = doc.heightOfString(charText, { width: valueWidth - 2 * paddingX });
+  const charRowH = Math.max(labelHeight, charTextHeight + 2 * paddingY);
+
+  if (y + charRowH > doc.page.height - doc.page.margins.bottom) {
+    doc.addPage();
+    y = doc.page.margins.top;
+  }
+
+  doc.rect(x, y, labelWidth, charRowH).fillAndStroke("#f5f5f5", "#ccc");
+  doc.font("Helvetica-Bold").fontSize(11).fillColor("#000")
+    .text("Character of Case:", x + paddingX, y + paddingY, {
+      width: labelWidth - 2 * paddingX,
+      align: "left",
+    });
+
+  doc.strokeColor("#999999");
+  doc.rect(x + labelWidth, y, valueWidth, charRowH).stroke();
+  doc.font("Helvetica").fontSize(10).fillColor("#000")
+    .text(charText, x + labelWidth + paddingX, y + paddingY, {
+      width: valueWidth - 2 * paddingX,
+      align: "left",
+    });
+
+  y += charRowH;
+
+  // Assigned Officers row
+  const officersText = formatOfficerList(lead.assignedTo);
 
 // Measure the wrapped text height for the value cell
-doc.font("Helvetica").fontSize(10); // slightly smaller to fit better
-const paddingX     = 5;
-const paddingY     = 5;
+doc.font("Helvetica").fontSize(10);
 const textHeight   = doc.heightOfString(officersText, {
   width: valueWidth - 2 * paddingX,
   align: "left",
@@ -805,6 +804,12 @@ async function generateCaseReport(req, res) {
   const caseNo   = caseNoParam || leadsData?.[0]?.caseNo   || "";
   const caseName = caseNameParam || leadsData?.[0]?.caseName || "";
 
+  let characterOfCase = "";
+  if (caseNo) {
+    const caseDoc = await Case.findOne({ caseNo }).select("characterOfCase").lean();
+    characterOfCase = caseDoc?.characterOfCase || "";
+  }
+
 
   try {
     // Create doc
@@ -889,7 +894,7 @@ async function generateCaseReport(req, res) {
 
         // structured details
         // currentY = ensureSpace(doc, currentY, 60);
-        currentY = drawStructuredLeadDetails(doc, 50, currentY, lead);
+        currentY = drawStructuredLeadDetails(doc, 50, currentY, lead, characterOfCase);
 
         const { state: leadState, reason: leadReason } = getLeadClosureInfo(lead);
 if (leadState) {
