@@ -42,6 +42,54 @@ async function toPdfSafeBuffer(buf) {
 //   return Buffer.from(mergedPdfBytes);
 // }
 
+function drawMetaBar(doc, x, y, width, entry) {
+  const rowH = 20;
+  const padding = 5;
+  const bg = "#ffffff";
+  const border = "#ccc";
+
+  const idVal  = `${entry.leadReturnId ?? "N/A"}`;
+  const byVal  = `${entry.enteredBy ?? "N/A"}`;
+  const dtVal  = `${formatDate(entry.enteredDate) || "N/A"}`;
+
+  const colW1 = Math.round(width * 0.33);
+  const colW2 = Math.round(width * 0.34);
+  const colW3 = width - colW1 - colW2;
+
+  const bottom = doc.page.height - doc.page.margins.bottom;
+  if (y + rowH > bottom) {
+    doc.addPage();
+    y = doc.page.margins.top;
+  }
+
+  // Draw cells
+  let cx = x;
+  [colW1, colW2, colW3].forEach((w) => {
+    doc.rect(cx, y, w, rowH).fillAndStroke(bg, border);
+    cx += w;
+  });
+
+  const baseY = y + 5; // same baseline you used
+
+  // Helper: label bold, value normal
+  function drawLabelValue(cellX, cellW, label, value) {
+    const maxW = cellW - 2 * padding;
+
+    doc.fillColor("#000").font("Helvetica-Bold").fontSize(11);
+    doc.text(label, cellX + padding, baseY, { continued: true });
+
+    doc.font("Helvetica").fontSize(11);
+    doc.text(` ${value}`, { width: maxW, ellipsis: true }); // continues on same line
+  }
+
+  drawLabelValue(x, colW1, "Narrative ID:", idVal);
+  drawLabelValue(x + colW1, colW2, "Entered By:", byVal);
+  drawLabelValue(x + colW1 + colW2, colW3, "Entered Date:", dtVal);
+
+  doc.fillColor("black");
+  return y + rowH + 10;
+}
+
 async function mergeWithAnotherPDF(pdfKitBuffer, otherPdfBuffer) {
   const mainDoc = await PDFLibDocument.load(pdfKitBuffer);
   const otherDoc = await PDFLibDocument.load(otherPdfBuffer);
@@ -638,8 +686,75 @@ return y + rowH + 10;
   return y + rowHeight + 10;
 }
 
+// function drawTextBox(doc, x, y, width, title, content) {
+//   const pad = 6, fs = 10, bleed = 2;      // <- small extra to avoid clipping
+//   const bodyFont = "Helvetica", titleFont = "Helvetica-Bold";
+//   const innerW = width - 2 * pad;
+
+//   const topY    = doc.page.margins.top;
+//   const bottomY = doc.page.height - doc.page.margins.bottom;
+
+//   const text = ((content ?? "") + "").replace(/\s+/g, " ").trim();
+
+//   // Pre-wrap to lines so we can page-split cleanly
+//   doc.font(bodyFont).fontSize(fs);
+//   const lineH = doc.currentLineHeight();
+//   const words = text ? text.split(" ") : [];
+//   const lines = [];
+//   let line = "";
+//   for (const w of words) {
+//     const cand = line ? line + " " + w : w;
+//     if (doc.widthOfString(cand) <= innerW) line = cand;
+//     else { if (line) lines.push(line); line = w; }
+//   }
+//   if (line) lines.push(line);
+
+//   // Title height (measured once)
+//   const titleH = title
+//     ? (doc.font(titleFont).fontSize(fs), doc.heightOfString(title, { width: innerW }))
+//     : 0;
+//   doc.font(bodyFont).fontSize(fs);
+
+//   let i = 0, currY = y, first = true;
+
+//   while (i < lines.length || (first && title && !lines.length)) {
+//     const minBoxH = (first ? titleH : 0) + lineH + 2 * pad;
+//     if (currY + minBoxH > bottomY) { doc.addPage(); currY = topY; }
+
+//     const available = bottomY - currY - 2 * pad - (first ? titleH : 0);
+//     const canLines  = Math.max(1, Math.floor(available / lineH));
+//     const end       = Math.min(lines.length, i + canLines);
+
+//     // --- draw text first ---
+//     const boxTop = currY;
+//     let textY = currY + pad;
+
+//     if (first && title) {
+//       doc.font(titleFont).fontSize(fs).text(title, x + pad, textY, { width: innerW });
+//       textY = doc.y;                 // after title
+//       doc.font(bodyFont).fontSize(fs);
+//     }
+
+//     const block = lines.slice(i, end).join("\n");
+//     doc.text(block, x + pad, textY, { width: innerW, align: "justify" });
+
+//     // measure exact used height and then stroke the box
+//     const usedTextH = doc.y - textY;
+//     const boxH = (first ? titleH : 0) + usedTextH + 2 * pad + bleed;
+
+//     doc.save().lineWidth(1).strokeColor("#999999")
+//        .rect(x, boxTop, width, boxH).stroke().restore();
+
+//     currY = boxTop + boxH;
+//     i = end;
+//     first = false;
+//   }
+
+//   return currY + 6;
+// }
+
 function drawTextBox(doc, x, y, width, title, content) {
-  const pad = 6, fs = 10, bleed = 2;      // <- small extra to avoid clipping
+  const pad = 0, fs = 10; // border/bleed not needed now
   const bodyFont = "Helvetica", titleFont = "Helvetica-Bold";
   const innerW = width - 2 * pad;
 
@@ -670,34 +785,31 @@ function drawTextBox(doc, x, y, width, title, content) {
   let i = 0, currY = y, first = true;
 
   while (i < lines.length || (first && title && !lines.length)) {
-    const minBoxH = (first ? titleH : 0) + lineH + 2 * pad;
-    if (currY + minBoxH > bottomY) { doc.addPage(); currY = topY; }
+    // we still need a minimum space check so text doesn't clip at bottom
+    const minNeededH = (first ? titleH : 0) + lineH + 2 * pad;
+    if (currY + minNeededH > bottomY) { doc.addPage(); currY = topY; }
 
     const available = bottomY - currY - 2 * pad - (first ? titleH : 0);
     const canLines  = Math.max(1, Math.floor(available / lineH));
     const end       = Math.min(lines.length, i + canLines);
 
-    // --- draw text first ---
-    const boxTop = currY;
+    // --- draw text only (no border) ---
     let textY = currY + pad;
 
     if (first && title) {
       doc.font(titleFont).fontSize(fs).text(title, x + pad, textY, { width: innerW });
-      textY = doc.y;                 // after title
+      textY = doc.y; // after title
       doc.font(bodyFont).fontSize(fs);
     }
 
     const block = lines.slice(i, end).join("\n");
     doc.text(block, x + pad, textY, { width: innerW, align: "justify" });
 
-    // measure exact used height and then stroke the box
+    // advance currY based on how much text was actually written
     const usedTextH = doc.y - textY;
-    const boxH = (first ? titleH : 0) + usedTextH + 2 * pad + bleed;
+    const sectionH = (first ? titleH : 0) + usedTextH + 2 * pad;
 
-    doc.save().lineWidth(1).strokeColor("#999999")
-       .rect(x, boxTop, width, boxH).stroke().restore();
-
-    currY = boxTop + boxH;
+    currY = currY + sectionH;
     i = end;
     first = false;
   }
@@ -852,10 +964,11 @@ let currentY = headerHeight + 20;
 
     // currentY = startSection(doc, "Lead Details:", currentY);
 
-    currentY = drawLeadWorksheetTwoColTable(doc, 50, currentY, leadInstruction);
+    // currentY = drawLeadWorksheetTwoColTable(doc, 50, currentY, leadInstruction);
     // currentY = drawTable(doc, 50, currentY, ["Lead No.", "Origin", "Assigned Date", "Due Date", "Completed Date"], [{ "Lead No.": leadInstructions?.leadNo || 'N/A', "Origin": leadInstructions?.parentLeadNo || 'N/A', "Assigned Date": formatDate(leadInstructions?.assignedDate) || 'N/A', "Due Date": formatDate(leadInstructions?.dueDate) || 'N/A', "Completed Date": "Still to add in db" }], [90, 90, 120, 120, 92]) + 20;
     // currentY = drawTable(doc, 50, currentY, ["Sub No.", "Associated Sub Nos.", "Assigned Officers", "Assigned By"], [{ "Sub No.": leadInstructions?.subNumber || 'N/A', "Associated Sub Nos.": leadInstructions?.associatedSubNumbers || 'N/A', "Assigned Officers": leadInstructions?.assignedTo|| 'N/A', "Assigned By": leadInstructions?.assignedBy || 'N/A' }], [90, 170, 170, 82]) + 20;
-    // currentY = drawStructuredLeadDetails(doc, 50, currentY, leadInstruction);
+
+    currentY = drawStructuredLeadDetails(doc, 50, currentY, leadInstruction);
 
     if (includeAll || leadInstruction) {
       // if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
@@ -887,23 +1000,34 @@ let currentY = headerHeight + 20;
         doc.addPage();
         currentY = doc.page.margins.top;
       }
-      doc.font("Helvetica-Bold").fontSize(11).text(`Narrative ID: ${entry.leadReturnId}`, 50, currentY);
-      currentY += 18;
+      // doc.font("Helvetica-Bold").fontSize(11).text(`Narrative ID: ${entry.leadReturnId}`, 50, currentY);
+      // currentY += 18;
 
       const dateEntered = formatDate(entry.enteredDate);
       const enteredBy = entry.enteredBy || "N/A";
       const leadText = entry.leadReturnResult || "N/A";
 
-      currentY = drawTable(
-        doc,
-        50,
-        currentY,
-        ["Date Entered", "Entered By"],
-        [{ "Date Entered": dateEntered, "Entered By": enteredBy }],
-        [180, 332]
-      ) + 6;
+      // currentY = drawTable(
+      //   doc,
+      //   50,
+      //   currentY,
+      //   ["Date Entered", "Entered By"],
+      //   [{ "Date Entered": dateEntered, "Entered By": enteredBy }],
+      //   [180, 332]
+      // ) + 6;
+      
+      // doc.font("Helvetica-Bold").fontSize(11)
+      // .text(
+      //   `Narrative ID: ${entry.leadReturnId} | Officer: ${enteredBy} | Date: ${dateEntered}`,
+      //   50,
+      //   currentY,
+      //   { width: 512 }
+      // );
+      currentY = drawMetaBar(doc, 50, currentY, 512, entry);
 
-      currentY = drawTextBox(doc, 50, currentY, 512, "Narrative", leadText);
+      currentY = doc.y + 10;
+
+      currentY = drawTextBox(doc, 50, currentY, 512,"", leadText);
 
       // if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
       //   doc.addPage();
