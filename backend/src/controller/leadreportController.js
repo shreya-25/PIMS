@@ -921,7 +921,16 @@ async function generateReport(req, res) {
         ).map(e => e.s3Key)
       : [];
 
-       for (const key of [...enclosurePdfKeys, ...evidencePdfKeys]) {
+        // collect picture PDFs
+       const picturePdfKeys = Array.isArray(leadPictures)
+      ? leadPictures.filter(e =>
+          e?.s3Key &&
+          typeof e?.filename === "string" &&
+          e.filename.toLowerCase().endsWith(".pdf")
+        ).map(e => e.s3Key)
+      : [];
+
+       for (const key of [...enclosurePdfKeys, ...evidencePdfKeys, ...picturePdfKeys]) {
       try {
         const otherPdf = await getObjectBuffer(key);
         pdfBuffer = await mergeWithAnotherPDF(pdfBuffer, otherPdf);
@@ -1427,7 +1436,7 @@ let currentY = headerHeight + 20;
         // Now loop through each enclosure and embed any image files from S3
 for (const enc of leadEnclosures) {
   const fnameLower = (enc.filename || "").toLowerCase();
-  const isImage = /\.(jpe?g|png)$/.test(fnameLower);
+  const isImage = /\.(jpe?g|png|webp|heic|heif|gif|tiff?)$/.test(fnameLower);
   if (!isImage) continue;
 
   if (!enc.s3Key) {
@@ -1501,7 +1510,7 @@ for (const enc of leadEnclosures) {
         // Embed evidence images from S3
 for (const enc of leadEvidence) {
   const fnameLower = (enc.filename || "").toLowerCase();
-  const isImage = /\.(jpe?g|png)$/.test(fnameLower);
+  const isImage = /\.(jpe?g|png|webp|heic|heif|gif|tiff?)$/.test(fnameLower);
   if (!isImage) continue;
 
   if (!enc.s3Key) {
@@ -1572,7 +1581,7 @@ for (const enc of leadEvidence) {
         // Embed picture images from S3
 for (const enc of leadPictures) {
   const fnameLower = (enc.filename || "").toLowerCase();
-  const isImage = /\.(jpe?g|png)$/.test(fnameLower);
+  const isImage = /\.(jpe?g|png|webp|heic|heif|gif|tiff?)$/.test(fnameLower);
   if (!isImage) continue;
 
   if (!enc.s3Key) {

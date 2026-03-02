@@ -1,4 +1,5 @@
 const PDFDocument = require("pdfkit");
+const { PDFDocument: PDFLibDocument } = require("pdf-lib");
 const path = require("path");
 const fs = require("fs");
 const sharp = require("sharp");
@@ -6,6 +7,14 @@ const heicConvert = require("heic-convert");
 const { getObjectBuffer } = require("../s3");
 const { fetchCaseLeadsData } = require("../utils/caseDataFetcher");
 const Case = require("../models/case");
+
+async function mergeWithAnotherPDF(mainBuffer, otherPdfBuffer) {
+  const mainDoc  = await PDFLibDocument.load(mainBuffer);
+  const otherDoc = await PDFLibDocument.load(otherPdfBuffer);
+  const copied   = await mainDoc.copyPages(otherDoc, otherDoc.getPageIndices());
+  copied.forEach(p => mainDoc.addPage(p));
+  return Buffer.from(await mainDoc.save());
+}
 
 // Convert image buffer to a format PDFKit understands (PNG or JPEG).
 // Handles HEIC (iPhone), WebP, and other formats; passes PNG/JPEG as-is.
@@ -48,6 +57,8 @@ function startSection(doc, title, currentY) {
 }
 
 const LR_ALIASES = {
+  persons:    ["persons", "leadPersons", "people", "lrPersons"],
+  vehicles:   ["vehicles", "leadVehicles", "cars", "lrVehicles"],
   enclosures: ["enclosures", "leadEnclosures", "attachments"],
   evidence:   ["evidence", "leadEvidence", "items"],
   pictures:   ["pictures", "leadPictures", "images", "photos"],
@@ -68,6 +79,8 @@ function pickFirstArray(obj, keys) {
 function normalizeLeadReturn(lr) {
   return {
     ...lr,
+    persons:    pickFirstArray(lr, LR_ALIASES.persons),
+    vehicles:   pickFirstArray(lr, LR_ALIASES.vehicles),
     enclosures: pickFirstArray(lr, LR_ALIASES.enclosures),
     evidence:   pickFirstArray(lr, LR_ALIASES.evidence),
     pictures:   pickFirstArray(lr, LR_ALIASES.pictures),
@@ -247,6 +260,60 @@ async function embedImagesFromS3List(doc, items, currentY, labelGetter = (x) => 
   }
 
   return currentY + 10;
+}
+
+// Embed attachments (links, images, or non-image file notes) for enclosures/evidence/pictures/audio/video
+async function embedAttachments(doc, items, currentY, fileLabel = "File") {
+  if (!Array.isArray(items) || items.length === 0) return currentY;
+
+  for (const item of items) {
+    // Handle external links
+    if (item.isLink && item.link) {
+      currentY = ensureSpace(doc, currentY, 30);
+      doc.font("Helvetica-Bold").fontSize(10).fillColor("#000")
+         .text(`${fileLabel} Link: `, 50, currentY, { continued: true });
+      doc.font("Helvetica").fontSize(10).fillColor("#003399")
+         .text(item.link, { width: 400 });
+      doc.fillColor("#000");
+      currentY = doc.y + 8;
+      continue;
+    }
+
+    if (!item.s3Key) continue;
+
+    const fname = (item.originalName || item.filename || "").toLowerCase();
+    const isImage = /\.(jpe?g|png|heic|heif|webp)$/i.test(fname);
+
+    if (isImage) {
+      try {
+        const rawBuf = await getObjectBuffer(item.s3Key);
+        const buf = await toPdfSafeBuffer(rawBuf);
+        const maxH = 300;
+        currentY = ensureSpace(doc, currentY, maxH + 30);
+        doc.image(buf, 50, currentY, { fit: [300, 300] });
+        currentY += 310;
+        doc.font("Helvetica").fontSize(9).fillColor("#555")
+           .text(item.originalName || item.filename || "Image", 50, currentY, { width: 300 });
+        doc.fillColor("#000");
+        currentY += 20;
+      } catch (e) {
+        currentY = ensureSpace(doc, currentY, 20);
+        doc.font("Helvetica-Oblique").fontSize(10).fillColor("red")
+           .text(`(Could not load image: ${item.originalName || item.filename || "Unknown"})`, 50, currentY);
+        doc.fillColor("#000");
+        currentY += 18;
+      }
+    } else {
+      // Non-image file — list filename
+      currentY = ensureSpace(doc, currentY, 25);
+      doc.font("Helvetica").fontSize(10).fillColor("#555")
+         .text(`Attached ${fileLabel}: ${item.originalName || item.filename || "Document"}`, 50, currentY);
+      doc.fillColor("#000");
+      currentY += 18;
+    }
+  }
+
+  return currentY;
 }
 
 
@@ -834,10 +901,16 @@ async function generateCaseReport(req, res) {
     }
 
 
-    // Pipe the PDF into the response
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "inline; filename=report.pdf");
-    doc.pipe(res);
+    // Collect into buffer so we can merge PDF attachments afterwards
+    const pdfChunks = [];
+    doc.on("data", (chunk) => pdfChunks.push(chunk));
+    const docEndPromise = new Promise((resolve, reject) => {
+      doc.on("end",   resolve);
+      doc.on("error", reject);
+    });
+
+    // Track PDF-file attachments discovered during rendering
+    const pdfAttachments = [];
 
     // -- Header Section --
     const headerHeight = 80;
@@ -1045,6 +1118,16 @@ if (leadState) {
                         "Weight": person.weight != null ? person.weight.toString() : "N/A",
                       },
                     },
+                    {
+                      headers: ["Alias", "Suffix", "Scar / Tattoo / Mark"],
+                      widths: [170, 170, 172],
+                      row: {
+                        "Alias": person.alias || "N/A",
+                        "Suffix": person.suffix || "N/A",
+                        "Scar / Tattoo / Mark": [person.scar, person.tattoo, person.mark]
+                          .filter(Boolean).join("; ") || "N/A",
+                      },
+                    },
                   ];
                   // const personTables = [
                   //   ["Date Entered", "Name", "Phone #", "Address"],
@@ -1161,19 +1244,50 @@ if (leadState) {
                 doc.font("Helvetica-Bold").fontSize(12).text("Vehicle Details:", 50, currentY);
                 currentY += 20;
 
-                const vehicleHeaders = ["Date Entered", "Make", "Model", "Plate", "State"];
-                const vehicleRows = lr.vehicles.map((vehicle) => ({
-                  "Date Entered": formatDate(vehicle.enteredDate),
-                  "Make": vehicle.make || "N/A",
-                  "Model": vehicle.model || "N/A",
-                  "Plate": vehicle.plate || "N/A",
-                  "State": vehicle.state || "N/A",
-                }));
-                // If you want 5 columns the same width, do e.g. [102, 102, 102, 102, 104]
-                currentY = ensureSpace(doc, currentY, 60);
-                currentY = drawTable(doc, 50, currentY, vehicleHeaders, vehicleRows, [
-                  102, 102, 102, 102, 104,
-                ]) + 20;
+                for (const vehicle of lr.vehicles) {
+                  const vehicleTables = [
+                    {
+                      headers: ["Date Entered", "Year", "Make", "Model", "Plate", "State"],
+                      widths: [86, 85, 85, 85, 85, 86],
+                      row: {
+                        "Date Entered": formatDate(vehicle.enteredDate),
+                        "Year":  vehicle.year  || "N/A",
+                        "Make":  vehicle.make  || "N/A",
+                        "Model": vehicle.model || "N/A",
+                        "Plate": vehicle.plate || "N/A",
+                        "State": vehicle.state || "N/A",
+                      },
+                    },
+                    {
+                      headers: ["VIN", "Category", "Type", "Primary Color", "Secondary Color"],
+                      widths: [103, 102, 102, 102, 103],
+                      row: {
+                        "VIN":             vehicle.vin             || "N/A",
+                        "Category":        vehicle.category        || "N/A",
+                        "Type":            vehicle.type            || "N/A",
+                        "Primary Color":   vehicle.primaryColor    || "N/A",
+                        "Secondary Color": vehicle.secondaryColor  || "N/A",
+                      },
+                    },
+                  ];
+
+                  if (vehicle.information || vehicle.additionalData) {
+                    vehicleTables.push({
+                      headers: ["Additional Information"],
+                      widths: [512],
+                      row: {
+                        "Additional Information": vehicle.information || vehicle.additionalData || "N/A",
+                      },
+                    });
+                  }
+
+                  vehicleTables.forEach((tbl) => {
+                    const rowH = measureRowHeight(doc, tbl.row, tbl.headers, tbl.widths);
+                    currentY = ensureSpace(doc, currentY, rowH + 20);
+                    currentY = drawTableWithRowSplitting(doc, 50, currentY, tbl.headers, [tbl.row], tbl.widths) + 8;
+                  });
+                  currentY += 12;
+                }
               }
               // 3b) Enclosure Details
 if (lr.enclosures && lr.enclosures.length > 0) {
@@ -1181,14 +1295,26 @@ if (lr.enclosures && lr.enclosures.length > 0) {
   doc.font("Helvetica-Bold").fontSize(12).text("Enclosure Details:", 50, currentY);
   currentY += 20;
 
-  const headers = ["Date Entered", "Type", "Description"];
-  const rows = lr.enclosures.map((e) => ({
+  const encHeaders = ["Date Entered", "Type", "Description", "File / Link"];
+  const encRows = lr.enclosures.map((e) => ({
     "Date Entered": formatDate(e.enteredDate),
     "Type": e.type || "N/A",
     "Description": e.enclosureDescription || "N/A",
+    "File / Link": e.isLink ? (e.link || "Link") : (e.originalName || e.filename || "N/A"),
   }));
   currentY = ensureSpace(doc, currentY, 60);
-  currentY = drawTable(doc, 50, currentY, headers, rows, [90, 100, 322]) + 20;
+  currentY = drawTable(doc, 50, currentY, encHeaders, encRows, [80, 80, 222, 130]) + 10;
+
+  // Embed images / list documents / show links
+  currentY = await embedAttachments(doc, lr.enclosures, currentY, "Enclosure");
+
+  // Queue PDF files for end-of-report merging
+  for (const enc of lr.enclosures) {
+    if (!enc.isLink && enc.s3Key && /\.pdf$/i.test(enc.originalName || enc.filename || "")) {
+      pdfAttachments.push({ s3Key: enc.s3Key, filename: enc.originalName || enc.filename || "enclosure.pdf" });
+    }
+  }
+  currentY += 10;
 }
 
 // 3c) Evidence Details
@@ -1197,16 +1323,28 @@ if (lr.evidence && lr.evidence.length > 0) {
   doc.font("Helvetica-Bold").fontSize(12).text("Evidence Details:", 50, currentY);
   currentY += 20;
 
-  const headers = ["Date Entered", "Type", "Collection Date", "Disposed Date", "Description"];
-  const rows = lr.evidence.map((ev) => ({
+  const evHeaders = ["Date Entered", "Type", "Disposed Date", "Description", "File / Link"];
+  const evRows = lr.evidence.map((ev) => ({
     "Date Entered":    formatDate(ev.enteredDate),
     "Type":            ev.type || "N/A",
-    "Collection Date": formatDate(ev.collectionDate),
+    // "Collection Date": formatDate(ev.collectionDate),
     "Disposed Date":   formatDate(ev.disposedDate),
     "Description":     ev.evidenceDescription || "N/A",
+    "File / Link":     ev.isLink ? (ev.link || "Link") : (ev.originalName || ev.filename || "N/A"),
   }));
   currentY = ensureSpace(doc, currentY, 60);
-  currentY = drawTable(doc, 50, currentY, headers, rows, [80, 80, 90, 90, 172]) + 20;
+  currentY = drawTable(doc, 50, currentY, evHeaders, evRows, [107, 65, 113, 127, 100]) + 10;
+
+  // Embed images / list documents / show links
+  currentY = await embedAttachments(doc, lr.evidence, currentY, "Evidence");
+
+  // Queue PDF files for end-of-report merging
+  for (const ev of lr.evidence) {
+    if (!ev.isLink && ev.s3Key && /\.pdf$/i.test(ev.originalName || ev.filename || "")) {
+      pdfAttachments.push({ s3Key: ev.s3Key, filename: ev.originalName || ev.filename || "evidence.pdf" });
+    }
+  }
+  currentY += 10;
 }
 
 // 3d) Picture Details
@@ -1215,14 +1353,19 @@ if (lr.pictures && lr.pictures.length > 0) {
   doc.font("Helvetica-Bold").fontSize(12).text("Picture Details:", 50, currentY);
   currentY += 20;
 
-  const headers = ["Date Entered", "Date Picture Taken", "Description"];
-  const rows = lr.pictures.map((p) => ({
+  const picHeaders = ["Date Entered", "Date Picture Taken", "Description", "File / Link"];
+  const picRows = lr.pictures.map((p) => ({
     "Date Entered":       formatDate(p.enteredDate),
     "Date Picture Taken": formatDate(p.datePictureTaken),
     "Description":        p.pictureDescription || "N/A",
+    "File / Link":        p.isLink ? (p.link || "Link") : (p.originalName || p.filename || "N/A"),
   }));
   currentY = ensureSpace(doc, currentY, 60);
-  currentY = drawTable(doc, 50, currentY, headers, rows, [90, 120, 302]) + 20;
+  currentY = drawTable(doc, 50, currentY, picHeaders, picRows, [80, 110, 192, 130]) + 10;
+
+  // Embed actual images from S3
+  currentY = await embedAttachments(doc, lr.pictures, currentY, "Picture");
+  currentY += 10;
 }
 
 // 3e) Audio Details
@@ -1231,14 +1374,15 @@ if (lr.audio && lr.audio.length > 0) {
   doc.font("Helvetica-Bold").fontSize(12).text("Audio Details:", 50, currentY);
   currentY += 20;
 
-  const headers = ["Date Entered", "Date Audio Recorded", "Description"];
-  const rows = lr.audio.map((a) => ({
-    "Date Entered":         formatDate(a.enteredDate),
-    "Date Audio Recorded":  formatDate(a.dateAudioRecorded),
-    "Description":          a.audioDescription || "N/A",
+  const audioHeaders = ["Date Entered", "Date Recorded", "Description", "File / Link"];
+  const audioRows = lr.audio.map((a) => ({
+    "Date Entered":        formatDate(a.enteredDate),
+    "Date Audio Recorded": formatDate(a.dateAudioRecorded),
+    "Description":         a.audioDescription || "N/A",
+    "File / Link":         a.isLink ? (a.link || "Link") : (a.originalName || a.filename || "N/A"),
   }));
   currentY = ensureSpace(doc, currentY, 60);
-  currentY = drawTable(doc, 50, currentY, headers, rows, [90, 120, 302]) + 20;
+  currentY = drawTable(doc, 50, currentY, audioHeaders, audioRows, [80, 110, 192, 130]) + 20;
 }
 
 // 3f) Video Details
@@ -1247,14 +1391,15 @@ if (lr.videos && lr.videos.length > 0) {
   doc.font("Helvetica-Bold").fontSize(12).text("Video Details:", 50, currentY);
   currentY += 20;
 
-  const headers = ["Date Entered", "Date Video Recorded", "Description"];
-  const rows = lr.videos.map((v) => ({
-    "Date Entered":         formatDate(v.enteredDate),
-    "Date Video Recorded":  formatDate(v.dateVideoRecorded),
-    "Description":          v.videoDescription || "N/A",
+  const vidHeaders = ["Date Entered", "Date Video Recorded", "Description", "File / Link"];
+  const vidRows = lr.videos.map((v) => ({
+    "Date Entered":        formatDate(v.enteredDate),
+    "Date Video Recorded": formatDate(v.dateVideoRecorded),
+    "Description":         v.videoDescription || "N/A",
+    "File / Link":         v.isLink ? (v.link || "Link") : (v.originalName || v.filename || "N/A"),
   }));
   currentY = ensureSpace(doc, currentY, 60);
-  currentY = drawTable(doc, 50, currentY, headers, rows, [90, 120, 302]) + 20;
+  currentY = drawTable(doc, 50, currentY, vidHeaders, vidRows, [80, 110, 192, 130]) + 20;
 }
 
 // 3g) Lead Notes (Scratchpad)
@@ -1317,17 +1462,30 @@ if (timeline && timeline.length > 0) {
       doc.text("No leads data available.", 50, currentY);
     }
 
-    // End the PDF
+    // Finalise the PDFKit document
     doc.end();
-    // Note: This is the ONLY place we call doc.end().
-    // Don’t call it again, or call doc.* after this line!
+    await docEndPromise;
+
+    // Merge any queued PDF attachments (enclosures / evidence)
+    let finalBuffer = Buffer.concat(pdfChunks);
+    for (const att of pdfAttachments) {
+      try {
+        const attBuf = await getObjectBuffer(att.s3Key);
+        finalBuffer = await mergeWithAnotherPDF(finalBuffer, attBuf);
+      } catch (e) {
+        console.warn(`Failed to merge PDF attachment "${att.filename}":`, e?.message);
+      }
+    }
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "inline; filename=report.pdf");
+    res.end(finalBuffer);
+
   } catch (error) {
     console.error("Error generating PDF:", error);
-    // In an error scenario, you generally do NOT want to continue writing
-    // to doc, because that can also cause "write after end" if doc.end() was
-    // already triggered. You might want to handle it like this:
-    // doc.end(); // optionally end if you started writing
-    res.status(500).json({ error: "Failed to generate PDF" });
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Failed to generate PDF" });
+    }
   }
 }
 
