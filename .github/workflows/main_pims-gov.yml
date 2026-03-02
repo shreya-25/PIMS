@@ -71,12 +71,13 @@ jobs:
         with:
           name: node-app
       
-      - name: Login to Azure
+      - name: Login to Azure (Gov)
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_776D4A404612405FA43530C786552E4D }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_6A5694313C9D4F17AD53C24823A0573A }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_7DE62DC4FC5B427FA77D3FF83AC7451F }}
+          environment: AzureUSGovernment
 
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
