@@ -51,6 +51,8 @@ const allowedOrigins = [
   /\.netlify\.app$/,                                  // any Netlify preview or prod
   /\.herokuapp\.com$/ ,                                // any Heroku app
   "https://pims-gqf3eyfxapgsa2fd.canadacentral-01.azurewebsites.net", 
+   "https://pims-gov-d3chdxemcfffb0ca.canadacentral-01.azurewebsites.net",
+  "https://pims-gov.azurewebsites.net", // if you also use the short default
 ];
 
 app.use(cors({
