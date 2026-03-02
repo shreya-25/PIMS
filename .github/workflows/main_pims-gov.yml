@@ -82,7 +82,7 @@ jobs:
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
         with:
-          app-name: 'pims'
+          app-name: 'pims-gov'
           slot-name: 'Production'
           package: .
           
