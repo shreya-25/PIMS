@@ -19,10 +19,9 @@ import { LeadHierarchy1 } from './Pages/LeadHierarchy/LeadHierarchy1';
 import { CaseScratchpad } from './Pages/CaseScratchpad/CaseScratchpad';
 import { LeadReturn } from './Pages/LeadReturn/LeadReturn';
 import { LRInstruction } from './Pages/InvestgatorLR/LRInstruction/LRInstruction';
-import { LRReturn } from './Pages/InvestgatorLR/LRReturn/LRReturn';
+import { LRResult } from './Pages/InvestgatorLR/LRResult/LRResult';
 import { LRPerson } from './Pages/InvestgatorLR/LRPerson/LRPerson';
 import { LRPerson1 } from './Pages/InvestgatorLR/LRPerson1/LRPerson1';
-import { LRPerson2 } from './Pages/InvestgatorLR/LRPerson2/LRPerson2';
 import { LRVehicle } from './Pages/InvestgatorLR/LRVehicle/LRVehicle';
 import { LREnclosures } from './Pages/InvestgatorLR/LREnclosures/LREnclosures';
 import { LREvidence } from './Pages/InvestgatorLR/LREvidence/LREvidence';
@@ -119,10 +118,9 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/CaseScratchpad" element={<ProtectedLayout> <CaseScratchpad /> </ProtectedLayout>} />
         <Route path="/LeadReturn" element={<ProtectedLayout> <LeadReturn /> </ProtectedLayout>} />
         <Route path="/LRInstruction" element={<ProtectedLayout> <LRInstruction /> </ProtectedLayout>} />
-        <Route path="/LRReturn" element={<ProtectedLayout> <LRReturn /> </ProtectedLayout>} />
+        <Route path="/LRReturn" element={<ProtectedLayout> <LRResult /> </ProtectedLayout>} />
         <Route path="/LRPerson" element={<ProtectedLayout> <LRPerson /> </ProtectedLayout>} />
         <Route path="/LRPerson1" element={<ProtectedLayout> <LRPerson1 /> </ProtectedLayout>} />
-        <Route path="/LRPerson2" element={<ProtectedLayout>  <LRPerson2 />  </ProtectedLayout>} />
         <Route path="/LRVehicle" element={<ProtectedLayout> <LRVehicle /> </ProtectedLayout>} />
         <Route path="/LREnclosures" element={<ProtectedLayout> <LREnclosures /> </ProtectedLayout> } />
         <Route path="/LREvidence" element={<ProtectedLayout> <LREvidence /> </ProtectedLayout> } />

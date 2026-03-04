@@ -77,9 +77,43 @@ button:disabled {
   background-color: #8b0000;
 }
 
-.person-page-content
-{
-  min-height: 90vh;
+/* ===== Page wrapper ===== */
+.person-page {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.person-page-content {
+  height: 100%;
+}
+
+/* ===== Main layout: sidebar + right column ===== */
+.LRI_Content {
+  display: flex;
+  margin-left: 20%;
+  width: 80%;
+  height: calc(100vh - 110px);
+  margin-top: 110px;
+  overflow: hidden;
+}
+
+/* ===== Right column ===== */
+.left-contentLI {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ===== Scrollable content section ===== */
+.LRI-content-section {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 /* View Person Button */

@@ -1,7 +1,6 @@
-import './LRVehicle.css';
+import styles from './LRVehicle.module.css';
 import React, { useContext, useState, useEffect, useRef } from "react";
 import Navbar from '../../../components/Navbar/Navbar';
-import FootBar from '../../../components/FootBar/FootBar';
 import VehicleModal from "../../../components/VehicleModal/VehicleModal";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
@@ -17,7 +16,7 @@ import { ActivityLog } from '../../../components/ActivityLog/ActivityLog';
 
 
 export const LRVehicle = () => {
- 
+
   const navigate = useNavigate(); // Initialize useNavigate hook
   const FORM_KEY = "LRVehicle:form";
   const LIST_KEY = "LRVehicle:list";
@@ -61,7 +60,7 @@ export const LRVehicle = () => {
   { key: "leadReturnId", label: "Narrative Id" },
   { key: "enteredDate",  label: "Entered Date" },
 ];
-  
+
 function findMissingFields(obj) {
   const isEmpty = (v) => {
     if (v == null) return true;
@@ -83,7 +82,7 @@ useEffect(() => {
 }, [rawVehicles]);
 
 
-    
+
     useEffect(() => {
        const loggedInUser = localStorage.getItem("loggedInUser");
        if (loggedInUser) {
@@ -106,7 +105,7 @@ useEffect(() => {
 
        const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
                 const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
-              
+
                 const onShowCaseSelector = (route) => {
                   navigate(route, { state: { caseDetails } });
               };
@@ -119,7 +118,7 @@ const alphabetToNumber = (str) => {
   return n;
 };
 
-// Confirm delete modal (add these)
+// Confirm delete modal
 const [confirmOpen, setConfirmOpen] = useState(false);
 const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
 
@@ -163,7 +162,7 @@ const performDeleteVehicle = async () => {
     setRawVehicles(newRaw);
 
     const remapped = newRaw.map((v, i) => ({
-      rawIndex:    i, // keep this so future edits/deletes are exact
+      rawIndex:    i,
       returnId:    v.leadReturnId,
       dateEntered: formatDate(v.enteredDate),
       year:        v.year,
@@ -189,12 +188,12 @@ const performDeleteVehicle = async () => {
           const isAssignedToLead = leadAssignees.some(a => a === currentUser);
           return isAssignedToLead;
         }
-        return false; // "Case Manager" only - hide from investigators
+        return false;
       });
     }
 
     setVehicles(newVisible);
-    setAuditLogRefresh(prev => prev + 1); // Trigger audit log refresh
+    setAuditLogRefresh(prev => prev + 1);
 
   } catch (e) {
     console.error(e);
@@ -207,7 +206,7 @@ const performDeleteVehicle = async () => {
 };
 
 
-    
+
 
   const [vehicles, setVehicles] = useState([
   ]);
@@ -219,7 +218,7 @@ const performDeleteVehicle = async () => {
         leadReturnId: "",
         leadsDeskCode: "",
       });
-      
+
 const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
 
 // Fallback to location.state if context is not available
@@ -237,7 +236,6 @@ useEffect(() => {
       const encLead = encodeURIComponent(selectedLead.leadName);
       const encCase = encodeURIComponent(selectedCase.caseName);
 
-      // Same endpoint you use elsewhere to list Lead Returns
       const resp = await api.get(
         `/api/leadReturnResult/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
         { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
@@ -247,7 +245,6 @@ useEffect(() => {
       ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
       setNarrativeIds(ids);
 
-      // If creating a new vehicle (not editing) and no selection yet, default to the latest ID
       setVehicleData(v =>
         (editIndex === null && !v.leadReturnId)
           ? { ...v, leadReturnId: ids.at(-1) || "" , enteredDate: v.enteredDate || todayISO}
@@ -256,7 +253,6 @@ useEffect(() => {
     } catch (e) {
       if (!ac.signal.aborted) {
         console.error("Failed to fetch Narrative IDs:", e);
-        // optional: show a toast/modal if you like
       }
     }
   })();
@@ -307,7 +303,7 @@ useEffect(() => {
     leadName: selectedLead.leadName,
   });
 
-        
+
  const openVehicleModal = (leadNo, leadName, caseNo, caseName, leadReturnId, leadsDeskCode) => {
       setVehicleModalData({
         leadNo,
@@ -317,7 +313,7 @@ useEffect(() => {
         leadReturnId,
         leadsDeskCode,
       });
-      setShowVehicleModal(true); // Ensure this state exists
+      setShowVehicleModal(true);
     };
 
     const closeVehicleModal = () => {
@@ -335,7 +331,6 @@ useEffect(() => {
 
     const handleEditVehicle = (idx) => {
       const vis = vehicles[idx];
-      // Prefer rawIndex if available, otherwise find by composite keys
       let rawIdx = vis?.rawIndex;
       if (rawIdx == null) {
         rawIdx = rawVehicles.findIndex(r =>
@@ -350,10 +345,9 @@ useEffect(() => {
 
       const v = rawVehicles[rawIdx];
       setEditIndex(rawIdx);
-      // pre-fill your form fields from the raw document
       setVehicleData({
         leadReturnId:  v.leadReturnId,
-        enteredDate:   v.enteredDate.slice(0,10), // YYYY-MM-DD
+        enteredDate:   v.enteredDate.slice(0,10),
         vin:           v.vin,
         year:          v.year,
         make:          v.make,
@@ -367,13 +361,13 @@ useEffect(() => {
         information:   v.information
       });
     };
-    
+
   const handleChange = (field, value) => {
     setVehicleData({ ...vehicleData, [field]: value });
   };
 
   const handleNavigation = (route) => {
-    navigate(route); // Navigate to the respective page
+    navigate(route);
   };
 
   useEffect(() => {
@@ -432,7 +426,6 @@ useEffect(() => {
     const encLead = encodeURIComponent(leadName);
     const encCase = encodeURIComponent(caseName);
 
-    // fetch everything we need for the report (same endpoints you use on LRFinish)
     const [
       instrRes,
       returnsRes,
@@ -459,7 +452,6 @@ useEffect(() => {
       api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
     ]);
 
-    // add files where applicable (note the plural file endpoints)
     const enclosuresWithFiles = await attachFiles(enclosuresRes.data, "_id", "/api/lrenclosures/files");
     const evidenceWithFiles   = await attachFiles(evidenceRes.data,   "_id", "/api/lrevidences/files");
     const picturesWithFiles   = await attachFiles(picturesRes.data,   "pictureId", "/api/lrpictures/files");
@@ -473,7 +465,6 @@ useEffect(() => {
     const leadScratchpad   = scratchpadRes.data || [];
     const leadTimeline     = timelineRes.data || [];
 
-    // make all sections true (Full Report)
     const selectedReports = {
       FullReport: true,
       leadInstruction: true,
@@ -492,8 +483,6 @@ useEffect(() => {
     const body = {
       user: localStorage.getItem("loggedInUser") || "",
       reportTimestamp: new Date().toISOString(),
-
-      // sections (values are the fetched arrays/objects)
       leadInstruction: leadInstructions,
       leadReturn:      leadReturns,
       leadPersons,
@@ -505,8 +494,6 @@ useEffect(() => {
       leadVideos:      videosWithFiles,
       leadScratchpad,
       leadTimeline,
-
-      // also send these two, since your backend expects them
       selectedReports,
       leadInstructions,
       leadReturns,
@@ -541,32 +528,28 @@ useEffect(() => {
 };
 
   const signedInOfficer = localStorage.getItem("loggedInUser");
- // who is primary for this lead?
-const primaryUsername =
-  leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
+  const primaryUsername = leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
 
-// am I the primary investigator on this lead?
-const isPrimaryInvestigator =
-  selectedCase?.role === "Investigator" &&
-  !!signedInOfficer &&
-  signedInOfficer === primaryUsername;
+  const isPrimaryInvestigator =
+    selectedCase?.role === "Investigator" &&
+    !!signedInOfficer &&
+    signedInOfficer === primaryUsername;
 
-// primary goes to the interactive ViewLR page
-const goToViewLR = () => {
-  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+  const goToViewLR = () => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
-  if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-    setAlertMessage("Please select a case and lead first.");
-    setAlertOpen(true);
-    return;
-  }
+    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
+      setAlertMessage("Please select a case and lead first.");
+      setAlertOpen(true);
+      return;
+    }
 
-  navigate("/viewLR", {
-    state: { caseDetails: kase, leadDetails: lead }
-  });
-};
-  
+    navigate("/viewLR", {
+      state: { caseDetails: kase, leadDetails: lead }
+    });
+  };
+
 
 
   const handleSaveVehicle = async () => {
@@ -580,7 +563,6 @@ const goToViewLR = () => {
     return;
   }
 
-  // Check that at least one vehicle data field is filled
   const dataFields = [
     vehicleData.year,
     vehicleData.make,
@@ -618,9 +600,7 @@ const goToViewLR = () => {
     try {
       let res;
       if (editIndex !== null) {
-        // update existing
         const old = rawVehicles[editIndex];
-        // Use VIN or fallback to empty string (encode empty as '-EMPTY-')
         const vinParam = old.vin ? encodeURIComponent(old.vin) : encodeURIComponent('-EMPTY-');
         res = await api.put(
           `/api/lrvehicle/${selectedLead.leadNo}/${selectedCase.caseNo}/${encodeURIComponent(old.leadReturnId)}/${vinParam}`,
@@ -628,7 +608,6 @@ const goToViewLR = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
-        // create new
         res = await api.post(
           "/api/lrvehicle/lrvehicle",
           payload,
@@ -636,7 +615,6 @@ const goToViewLR = () => {
         );
       }
 
-      // rebuild display array locally so the table updates immediately
       const updatedRaw = editIndex !== null
         ? rawVehicles.map((r, i) => (i === editIndex ? res.data : r))
         : [res.data, ...rawVehicles];
@@ -672,7 +650,6 @@ const goToViewLR = () => {
       setRawVehicles(updatedRaw);
       setVehicles(visible);
 
-      // exit edit mode
       setEditIndex(null);
       setVehicleData({
         year: '', make: '', model: '', plate: '',
@@ -680,15 +657,14 @@ const goToViewLR = () => {
         primaryColor:'', secondaryColor:'', state:'',
         leadReturnId:'', information:'', enteredDate: todayISO
       });
-      setAuditLogRefresh(prev => prev + 1); // Trigger audit log refresh
+      setAuditLogRefresh(prev => prev + 1);
     } catch (err) {
       console.error(err);
-
-        setAlertMessage("Save failed: " + (err.response?.data?.message || err.message));
-     setAlertOpen(true);
+      setAlertMessage("Save failed: " + (err.response?.data?.message || err.message));
+      setAlertOpen(true);
     }
   };
-  
+
 
   const fetchVehicles = async () => {
     const token = localStorage.getItem("token");
@@ -709,7 +685,7 @@ const goToViewLR = () => {
 
       setRawVehicles(res.data);
       const mapped = res.data.map((vehicle, i) => ({
-        rawIndex: i, // keep this so future edits/deletes are exact
+        rawIndex: i,
         returnId: vehicle.leadReturnId,
         dateEntered: formatDate(vehicle.enteredDate),
         year: vehicle.year,
@@ -728,7 +704,6 @@ const goToViewLR = () => {
         accessLevel: r.accessLevel ?? "Everyone"
       }));
 
-      // Filter based on role and access level
       let visible = withAccess;
       if (!isCaseManager) {
         const currentUser = localStorage.getItem("loggedInUser")?.trim();
@@ -740,23 +715,21 @@ const goToViewLR = () => {
             const isAssignedToLead = leadAssignees.some(a => a === currentUser);
             return isAssignedToLead;
           }
-          return false; // "Case Manager" only - hide from investigators
+          return false;
         });
       }
 
       setVehicles(visible);
-
       setError("");
     } catch (err) {
       console.error("Error fetching vehicle records:", err);
       setError("Failed to fetch vehicles.");
     }
   };
-  
+
   const handleAccessChange = async (idx, newAccess) => {
     const vis = vehicles[idx];
 
-    // Prefer rawIndex if available, otherwise find by composite keys
     let rawIdx = vis?.rawIndex;
     if (rawIdx == null) {
       rawIdx = rawVehicles.findIndex(r =>
@@ -772,8 +745,6 @@ const goToViewLR = () => {
     }
 
     const v = rawVehicles[rawIdx];
-
-    // Use VIN or fallback to empty string (encode empty as '-EMPTY-')
     const vinParam = v.vin ? encodeURIComponent(v.vin) : encodeURIComponent('-EMPTY-');
 
     const token = localStorage.getItem("token");
@@ -781,22 +752,19 @@ const goToViewLR = () => {
           `${encodeURIComponent(v.leadReturnId)}/${vinParam}`;
 
     try {
-      // 1) Persist to server
       const { data: updatedDoc } = await api.put(
         url,
         { accessLevel: newAccess },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // 2) Swap it into rawVehicles
       const newRaw = rawVehicles.map((r, i) =>
         i === rawIdx ? updatedDoc : r
       );
       setRawVehicles(newRaw);
 
-      // 3) Remap to UI shape
       const remapped = newRaw.map((v, i) => ({
-        rawIndex: i, // keep this so future edits/deletes are exact
+        rawIndex: i,
         returnId: v.leadReturnId,
         dateEntered: formatDate(v.enteredDate),
         year: v.year,
@@ -810,7 +778,6 @@ const goToViewLR = () => {
         enteredBy: v.enteredBy
       }));
 
-      // 4) Filter again for non-CMs
       let visible = remapped;
       if (!isCaseManager) {
         const currentUser = localStorage.getItem("loggedInUser")?.trim();
@@ -822,7 +789,7 @@ const goToViewLR = () => {
             const isAssignedToLead = leadAssignees.some(a => a === currentUser);
             return isAssignedToLead;
           }
-          return false; // "Case Manager" only - hide from investigators
+          return false;
         });
       }
 
@@ -834,46 +801,9 @@ const goToViewLR = () => {
       setAlertOpen(true);
     }
   };
-  
-  const handleDeleteVehicle = async (idx) => {
-    if (!window.confirm("Delete this vehicle?")) return;
-    const v = rawVehicles[idx];
-    try {
-      const token = localStorage.getItem("token");
-      await api.delete(
-        `/api/lrvehicle/${selectedLead.leadNo}/${selectedCase.caseNo}/${v.leadReturnId}/${v.vin}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      // 1) remove from rawVehicles
-      const newRaw = rawVehicles.filter((_, i) => i !== idx);
-      setRawVehicles(newRaw);
-  
-      // 2) rebuild your display array in vehicles
-      const newDisplay = newRaw.map(vehicle => ({
-        returnId:   vehicle.leadReturnId,
-        dateEntered: formatDate(vehicle.enteredDate),
-        year:        vehicle.year,
-        make:        vehicle.make,
-        model:       vehicle.model,
-        color:       vehicle.primaryColor,
-        vin:         vehicle.vin,
-        plate:       vehicle.plate,
-        state:       vehicle.state,
-        accessLevel: vehicle.accessLevel ?? "Everyone",
-        enteredBy:   vehicle.enteredBy
-      }));
-      setVehicles(newDisplay);
-      setAuditLogRefresh(prev => prev + 1);
-    } catch (e) {
-      console.error(e);
-       setAlertMessage("Failed to delete");
-     setAlertOpen(true);
-    }
-  };
-  
 
-  
-    const isCaseManager = 
+
+  const isCaseManager =
     selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
 
   if (!selectedCase && !caseDetails) {
@@ -882,498 +812,438 @@ const goToViewLR = () => {
 
 
   return (
-    // <div className="lrvehicle-container">
-    <div className="person-page">
-        <div className="person-page-content">
-      {/* Navbar */}
+    <div key={`${effectiveCase?.caseNo}-${effectiveLead?.leadNo}`} className={styles.personPage}>
+
       <Navbar />
+
       <AlertModal
-                    isOpen={alertOpen}
-                    title="Notification"
-                    message={alertMessage}
-                    onConfirm={() => setAlertOpen(false)}
-                    onClose={()   => setAlertOpen(false)}
-                  />
-      
-  <AlertModal
-  isOpen={confirmOpen}
-  title="Confirm Deletion"
-  message="Are you sure you want to delete this record?"
-  onConfirm={performDeleteVehicle}
-  onClose={() => { setConfirmOpen(false); setPendingDeleteIndex(null); }}
-/>
+        isOpen={alertOpen}
+        title="Notification"
+        message={alertMessage}
+        onConfirm={() => setAlertOpen(false)}
+        onClose={() => setAlertOpen(false)}
+      />
 
+      <AlertModal
+        isOpen={confirmOpen}
+        title="Confirm Deletion"
+        message="Are you sure you want to delete this record?"
+        onConfirm={performDeleteVehicle}
+        onClose={() => { setConfirmOpen(false); setPendingDeleteIndex(null); }}
+      />
 
+      <VehicleModal
+        isOpen={showVehicleModal}
+        onClose={closeVehicleModal}
+        leadNo={vehicleModalData.leadNo}
+        leadName={vehicleModalData.leadName}
+        caseNo={vehicleModalData.caseNo}
+        caseName={vehicleModalData.caseName}
+        leadReturnId={vehicleModalData.leadReturnId}
+      />
 
+      <div className={styles.LRIContent}>
 
+        <SideBar activePage="LeadReview" />
 
-       <div className="LRI_Content">
-       
-<SideBar  activePage="LeadReview" />
+        <div className={styles.leftContentLI}>
 
-                <div className="left-contentLI">
+          {/* Top nav bar */}
+          <div className={styles.topMenuNav}>
+            <div className={styles.menuItems}>
+              <span className={styles.menuItem} onClick={() => {
+                const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                if (lead && kase) {
+                  navigate("/LeadReview", { state: { caseDetails: kase, leadDetails: lead } });
+                }
+              }}>Lead Information</span>
 
-                           <div className="top-menu1" >
-      <div className="menu-items" >
-        <span className="menu-item " onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>Add Lead Return</span>
 
-                  if (lead && kase) {
-                    navigate("/LeadReview", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } }} > Lead Information</span>
-                   <span className="menu-item active" >Add Lead Return</span>
-                    {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
-           <span
-              className="menu-item"
-              onClick={handleViewLeadReturn}
-              title={isGenerating ? "Preparing report…" : "View Lead Return"}
-              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-            >
-              Manage Lead Return
-            </span>
+              {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
+                <span
+                  className={styles.menuItem}
+                  onClick={handleViewLeadReturn}
+                  title={isGenerating ? "Preparing report…" : "View Lead Return"}
+                  style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
+                >
+                  Manage Lead Return
+                </span>
               )}
 
-            {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
-    Submit Lead Return
-  </span>
-)}
-  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
-   Review Lead Return
-  </span>
-)}
+              {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
+                <span className={styles.menuItem} onClick={goToViewLR}>
+                  Submit Lead Return
+                </span>
+              )}
+              {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
+                <span className={styles.menuItem} onClick={goToViewLR}>
+                  Review Lead Return
+                </span>
+              )}
 
+              <span className={styles.menuItem} onClick={() => {
+                const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                if (lead && kase) {
+                  navigate("/ChainOfCustody", { state: { caseDetails: kase, leadDetails: lead } });
+                } else {
+                  setAlertMessage("Please select a case and lead first.");
+                  setAlertOpen(true);
+                }
+              }}>Lead Chain of Custody</span>
+            </div>
+          </div>
 
-                   <span className="menu-item" onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+          {/* Section tabs bar */}
+          <div className={styles.topMenuSections}>
+            <div className={styles.menuItems} style={{ fontSize: '19px' }}>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
+                Instructions
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
+                Narrative
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')}>
+                Person
+              </span>
+              <span className={`${styles.menuItem} ${styles.menuItemActive}`} style={{ fontWeight: '600' }} onClick={() => handleNavigation('/LRVehicle')}>
+                Vehicles
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LREnclosures')}>
+                Enclosures
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LREvidence')}>
+                Evidence
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRPictures')}>
+                Pictures
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRAudio')}>
+                Audio
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRVideo')}>
+                Videos
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRScratchpad')}>
+                Notes
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRTimeline')}>
+                Timeline
+              </span>
+            </div>
+          </div>
 
-                  if (lead && kase) {
-                    navigate("/ChainOfCustody", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } else {
-                      setAlertMessage("Please select a case and lead first.");
-                      setAlertOpen(true);
-                  }
-                }}>Lead Chain of Custody</span>
-          
+          {/* Breadcrumb bar */}
+          <div className={styles.caseandleadinfo}>
+            <h5 className={styles.sideTitle}>
+              <div className={styles.ldHead}>
+                <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+                <span className={styles.sep}>{" >> "}</span>
+                <Link
+                  to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+                  state={{ caseDetails: selectedCase }}
+                  className={styles.crumb}
+                >
+                  Case: {selectedCase.caseNo || ""}
+                </Link>
+                <span className={styles.sep}>{" >> "}</span>
+                <Link
+                  to={"/LeadReview"}
+                  state={{ leadDetails: selectedLead }}
+                  className={styles.crumb}
+                >
+                  Lead: {selectedLead.leadNo || ""}
+                </Link>
+                <span className={styles.sep}>{" >> "}</span>
+                <span className={styles.crumbCurrent} aria-current="page">Lead Vehicles</span>
+              </div>
+            </h5>
+            <h5 className={styles.sideTitle}>
+              {selectedLead?.leadNo ? ` Lead Status:  ${status}` : ` ${leadStatus}`}
+            </h5>
+          </div>
+
+          {/* Page heading */}
+          <div className={styles.caseHeader}>
+            <h2>VEHICLE INFORMATION</h2>
+          </div>
+
+          {/* Main scrollable content */}
+          <div className={styles.lriContentSection}>
+            <div className={styles.contentSubsection}>
+
+              {/* Vehicle Entry Section */}
+              <div className={styles.sectionBlock}>
+                <div className={styles.sectionHeading}>Vehicle Entry</div>
+                <div className={styles.LREnteringContentBox}>
+
+                  <div className={styles.contentToAddFirstRow}>
+                    <div className={styles.formRow4}>
+                      <label>Narrative Id*</label>
+                      <select
+                        value={vehicleData.leadReturnId}
+                        onChange={(e) => handleChange('leadReturnId', e.target.value)}
+                      >
+                        <option value="">Select Id</option>
+                        {narrativeIds.map(id => (
+                          <option key={id} value={id}>{id}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className={styles.formRow4}>
+                      <label>Entered Date*</label>
+                      <input
+                        type="date"
+                        value={vehicleData.enteredDate || todayISO}
+                        onChange={(e) => handleChange('enteredDate', e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.formRow4}>
+                      <label>Model</label>
+                      <input
+                        type="text"
+                        value={vehicleData.model}
+                        onChange={(e) => handleChange('model', e.target.value)}
+                      />
+                    </div>
                   </div>
-      
-       </div>
-                <div className="top-menu1">
-       <div className="menu-items" style={{ fontSize: '19px' }}>
-       
-        <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Narrative
-          </span>
-          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className="menu-item active" style={{fontWeight: '600' }}  onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRScratchpad')}>
-            Notes
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          {/* <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span> */}
-         </div> </div>
 
-                {/* <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case:{selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
-          <h5 className="side-title">
-  {selectedLead?.leadNo
-    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
-    : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
-</h5>
-
-          </div> */}
-            <div className="caseandleadinfo">
-          <h5 className = "side-title"> 
-             <div className="ld-head">
-                                        <Link to="/HomePage" className="crumb">PIMS Home</Link>
-                                        <span className="sep">{" >> "}</span>
-                                        <Link
-                                          to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
-                                          state={{ caseDetails: selectedCase }}
-                                          className="crumb"
-                                        >
-                                          Case: {selectedCase.caseNo || ""}
-                                        </Link>
-                                        <span className="sep">{" >> "}</span>
-                                        <Link
-                                          to={"/LeadReview"}
-                                          state={{ leadDetails: selectedLead }}
-                                          className="crumb"
-                                        >
-                                          Lead: {selectedLead.leadNo || ""}
-                                        </Link>
-                                        <span className="sep">{" >> "}</span>
-                                        <span className="crumb-current" aria-current="page">Lead Vehicles</span>
-                                      </div>
-             </h5>
-          <h5 className="side-title">
-  {selectedLead?.leadNo
-        ? ` Lead Status:  ${status}`
-    : ` ${leadStatus}`}
-</h5>
-
-          </div>
-
-                <div className="case-header">
-          <h2 className="">VEHICLE INFORMATION</h2>
-        </div>
-
-        <div className = "LRI-content-section">
-
-<div className = "content-subsection">
-
-        {/* Vehicle Form */}
-        <div className = "timeline-form-sec">
-            <div className = "LR-EnteringContentBox">
-        <div className="vehicle-form">
-          <div className="form-row4">
-          <label>Narrative Id*</label>
-             <select
-   value={vehicleData.leadReturnId}
-   onChange={(e) => handleChange('leadReturnId', e.target.value)}
- >
-   <option value="">Select Id</option>
-   {narrativeIds.map(id => (
-     <option key={id} value={id}>{id}</option>
-   ))}
- </select>
-            <label>Entered Date*</label>
-            <input
-              type="date"
-              value={vehicleData.enteredDate || todayISO}
-              onChange={(e) => handleChange('enteredDate', e.target.value)}
-            />
-            <label>Model</label>
-            <input
-              type="text"
-              value={vehicleData.model}
-              onChange={(e) => handleChange('model', e.target.value)}
-            />
-          </div>
-          {/* <label>Color:</label>
-            <input
-              type="text"
-              value={vehicleData.color}
-              onChange={(e) => handleChange('color', e.target.value)}
-            /> */}
-          
-          <div className="form-row4">
-            <label>Plate</label>
-            <input
-              type="text"
-              value={vehicleData.plate}
-              onChange={(e) => handleChange('plate', e.target.value)}
-            />
-            <label>Category</label>
-            <input
-              type="text"
-              value={vehicleData.category}
-              onChange={(e) => handleChange('category', e.target.value)}
-            />
-            <label>Type</label>
-            <input
-              type="text"
-              value={vehicleData.type}
-              onChange={(e) => handleChange('type', e.target.value)}
-            />
-          </div>
-          <div className="form-row4">
-            <label>VIN</label>
-            <input
-              type="text"
-              value={vehicleData.vin}
-              onChange={(e) => handleChange('vin', e.target.value)}
-            />
-             <label>Year</label>
-            <input
-              type="text"
-              value={vehicleData.year}
-              onChange={(e) => handleChange('year', e.target.value)}
-            />
-            <label>Make</label>
-            <input
-              type="text"
-              value={vehicleData.make}
-              onChange={(e) => handleChange('make', e.target.value)}
-            />
-           
-          </div>
-          <div className="form-row4">
-          <label>State</label>
-            <input
-              type="text"
-              value={vehicleData.state}
-              onChange={(e) => handleChange('state', e.target.value)}
-            />
-             <label>Main Color</label>
-            <input
-              type="text"
-              value={vehicleData.primaryColor}
-              onChange={(e) => handleChange('primaryColor', e.target.value)}
-            />
-            <label>Second Color</label>
-            <input
-              type="text"
-              value={vehicleData.secondaryColor}
-              onChange={(e) => handleChange('secondaryColor', e.target.value)}
-            />
-           
-          </div>
-        </div>
-        <div className="vehicle-form">
-          <div className="form-row1">
-            <label>Information</label>
-            <textarea
-              value={vehicleData.information}
-              onChange={(e) => handleChange('information', e.target.value)}
-            ></textarea>
-          </div>
-          {/* <div className="form-row1">
-            <label>Date Entered *</label>
-            <input
-                  type="date"
-                  value={vehicleData.dateEntered}
-                  className="input-large"
-                  onChange={(e) => handleChange("dateEntered", e.target.value)}
-                />
-          </div> */}
-          </div>
-        </div>
-        {/* Buttons */}
-        <div className="form-buttons">
-        {/* <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
-         className="save-btn1" onClick={handleAddVehicle}>
-            Add Vehicle
-          </button> */}
-          <button
-  disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly || selectedLead?.leadStatus === "Closed" || isReadOnly }
-  className="save-btn1"
-  onClick={handleSaveVehicle}
->
-  {editIndex !== null ? "Update Vehicle" : "Add Vehicle"}
-</button>
-
-{editIndex !== null && (
-  <button
-    className="cancel-btn"
-    onClick={() => {
-      setEditIndex(null);
-      // reset form
-      setVehicleData({
-        year: '', make: '', model: '', plate: '',
-        category: '', type: '', color:'', vin: '',
-        primaryColor:'', secondaryColor:'', state:'',
-        leadReturnId:'', information:''
-      });
-    }}
-  >
-    Cancel
-  </button>
-)}
-          {/* <button className="back-btn">Back</button>
-          <button className="next-btn">Next</button>
-          <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button> */}
-          </div>
-        </div>
-
-             {/* Vehicle Table */}
-        <table className="leads-table">
-          <thead>
-            <tr>
-              <th style={{ width: "13%" }}>Date Entered</th>
-              <th style={{ width: "12%" }}>Narrative Id</th>
-              {/* <th style={{ width: "10%" }}>Make</th> */}
-              <th style={{ width: "10%" }}>Model</th>
-              <th style={{ width: "10%" }}>Color</th>
-              {/* <th>State</th> */}
-              <th style={{ width: "9%" }}>More</th>
-              <th style={{ width: "14%" }}>Actions</th>
-              {isCaseManager && (
-              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
-            )}
-            </tr>
-          </thead>
-          <tbody>
-    {vehicles.length > 0 ? vehicles.map((vehicle, index) => {
-      const canModify = vehicle.enteredBy?.trim() === signedInOfficer?.trim();
-      const disableActions =
-        selectedLead?.leadStatus === "In Review" ||
-        selectedLead?.leadStatus === "Completed" ||
-        selectedLead?.leadStatus === "Closed" ||
-        isReadOnly ||
-        !canModify;
-
-      return (
-      <tr key={index}>
-        <td>{vehicle.dateEntered}</td>
-        <td>{vehicle.returnId}</td>
-        {/* <td>{vehicle.make}</td> */}
-        <td>{vehicle.model}</td>
-        <td style={{ textAlign: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ width: '60px', display: 'inline-block' }}>{vehicle.color}</span>
-          <div
-            style={{
-              width: '18px',
-              height: '18px',
-              backgroundColor: vehicle.color,
-              marginLeft: '15px',
-              border: '1px solid #000',
-            }}
-          ></div>
-        </div>
-      </td>
-
-        {/* <td>{vehicle.state}</td> */}
-        <td> <button className="view-person-btn" onClick={() => openVehicleModal(
-                      selectedLead.leadNo,
-                      selectedLead.leadName,
-                      selectedCase.caseNo,
-                      selectedCase.caseName,
-                      vehicle.returnId
-
-                    )}>View</button></td>
-                    <VehicleModal
-    isOpen={showVehicleModal}
-    onClose={closeVehicleModal}
-    leadNo={vehicleModalData.leadNo}
-    leadName={vehicleModalData.leadName}
-    caseNo={vehicleModalData.caseNo}
-    caseName={vehicleModalData.caseName}
-    leadReturnId={vehicleModalData.leadReturnId}
-  />
-  <td>
-                  <div classname = "lr-table-btn">
-                  <button
-                    onClick={() => handleEditVehicle(index)}
-                    disabled={disableActions}
-                  >
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
-                  alt="Edit Icon"
-                  className="edit-icon"
-                />
-                  </button>
-                  <button
-                    onClick={() => requestDeleteVehicle(index)}
-                    disabled={disableActions}
-                  >
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
-                  alt="Delete Icon"
-                  className="edit-icon"
-                />
-                  </button>
+                  <div className={styles.contentToAddFirstRow}>
+                    <div className={styles.formRow4}>
+                      <label>Plate</label>
+                      <input
+                        type="text"
+                        value={vehicleData.plate}
+                        onChange={(e) => handleChange('plate', e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.formRow4}>
+                      <label>Category</label>
+                      <input
+                        type="text"
+                        value={vehicleData.category}
+                        onChange={(e) => handleChange('category', e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.formRow4}>
+                      <label>Type</label>
+                      <input
+                        type="text"
+                        value={vehicleData.type}
+                        onChange={(e) => handleChange('type', e.target.value)}
+                      />
+                    </div>
                   </div>
-                </td>
-                {isCaseManager && (
-          <td>
-            <select
-              value={vehicle.accessLevel}
-              onChange={e => handleAccessChange(index, e.target.value)}
-            >
-              <option value="Everyone">All</option>
-              <option value="Case Manager">Case Manager</option>
-              <option value="Case Manager and Assignees">Assignees</option>
-            </select>
-          </td>
-        )}
-      </tr>
-      );
-    }) : (
-        <tr>
-          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
-            No Vehicle Data Available
-          </td>
-        </tr>
-      )}
-  </tbody>
-        </table>
 
-           {/* {selectedLead?.leadStatus !== "Completed" && !isCaseManager && (
-  <div className="form-buttons-finish">
-    <h4> Click here to submit the lead</h4>
-    <button
-      disabled={selectedLead?.leadStatus === "In Review"}
-      className="save-btn1"
-      onClick={handleSubmitReport}
-    >
-      Submit
-    </button>
-  </div>
-)} */}
+                  <div className={styles.contentToAddFirstRow}>
+                    <div className={styles.formRow4}>
+                      <label>VIN</label>
+                      <input
+                        type="text"
+                        value={vehicleData.vin}
+                        onChange={(e) => handleChange('vin', e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.formRow4}>
+                      <label>Year</label>
+                      <input
+                        type="text"
+                        value={vehicleData.year}
+                        onChange={(e) => handleChange('year', e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.formRow4}>
+                      <label>Make</label>
+                      <input
+                        type="text"
+                        value={vehicleData.make}
+                        onChange={(e) => handleChange('make', e.target.value)}
+                      />
+                    </div>
+                  </div>
 
-        {/* Activity Log Component */}
-        {/* <ActivityLog
-          caseNo={effectiveCase?.caseNo}
-          leadNo={effectiveLead?.leadNo}
-          entityType="LRVehicle"
-          refreshTrigger={auditLogRefresh}
-        /> */}
+                  <div className={styles.contentToAddFirstRow}>
+                    <div className={styles.formRow4}>
+                      <label>State</label>
+                      <input
+                        type="text"
+                        value={vehicleData.state}
+                        onChange={(e) => handleChange('state', e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.formRow4}>
+                      <label>Primary Color</label>
+                      <input
+                        type="text"
+                        value={vehicleData.primaryColor}
+                        onChange={(e) => handleChange('primaryColor', e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.formRow4}>
+                      <label>Secondary Color</label>
+                      <input
+                        type="text"
+                        value={vehicleData.secondaryColor}
+                        onChange={(e) => handleChange('secondaryColor', e.target.value)}
+                      />
+                    </div>
+                  </div>
 
-        {/* <Comment tag= "Vehicle"/> */}
+                  <h4 className={styles.returnFormH4}>Information</h4>
+                  <div className={styles.returnForm}>
+                    <textarea
+                      value={vehicleData.information}
+                      onChange={(e) => handleChange('information', e.target.value)}
+                      placeholder="Enter vehicle information"
+                    />
+                  </div>
 
-</div>
-</div>
+                  <div className={styles.formButtonsReturn}>
+                    <button
+                      disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || selectedLead?.leadStatus === "Closed" || isReadOnly}
+                      className={styles.saveBtn1}
+                      onClick={handleSaveVehicle}
+                    >
+                      {editIndex !== null ? "Update Vehicle" : "Add Vehicle"}
+                    </button>
+                    {editIndex !== null && (
+                      <button
+                        className={styles.cancelBtn}
+                        onClick={() => {
+                          setEditIndex(null);
+                          setVehicleData({
+                            year: '', make: '', model: '', plate: '',
+                            category: '', type: '', color: '', vin: '',
+                            primaryColor: '', secondaryColor: '', state: '',
+                            leadReturnId: '', information: '', enteredDate: todayISO
+                          });
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
 
-        {/* Buttons */}
-        {/* <div className="form-buttons">
-        <button className="add-btnvh" onClick={handleAddVehicle}>
-            Add Vehicle
-          </button>
-          <button className="back-btn">Back</button>
-          <button className="next-btn">Next</button>
-          <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button>
-        </div> */}
-  
-      <FootBar
-        onPrevious={() => navigate(-1)} // Takes user to the last visited page
-        onNext={() => navigate("/LREnclosures")} // Takes user to CM Return page
-      />
-    </div>
-    </div>
-    </div>
+                </div>
+              </div>
+
+              {error && (
+                <div style={{ color: "red", textAlign: "center", margin: "10px 0", fontSize: "16px" }}>
+                  {error}
+                </div>
+              )}
+
+              {/* Vehicle Records Section */}
+              <div className={styles.sectionBlock}>
+                <div className={styles.sectionHeading}>Vehicle Records</div>
+                <table className={styles.leadsTable}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: "13%" }}>Date Entered</th>
+                      <th style={{ width: "12%" }}>Narrative Id</th>
+                      <th style={{ width: "10%" }}>Model</th>
+                      <th style={{ width: "10%" }}>Color</th>
+                      <th style={{ width: "9%" }}>More</th>
+                      <th style={{ width: "14%" }}>Actions</th>
+                      {isCaseManager && (
+                        <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vehicles.length > 0 ? vehicles.map((vehicle, index) => {
+                      const canModify = vehicle.enteredBy?.trim() === signedInOfficer?.trim();
+                      const disableActions =
+                        selectedLead?.leadStatus === "In Review" ||
+                        selectedLead?.leadStatus === "Completed" ||
+                        selectedLead?.leadStatus === "Closed" ||
+                        isReadOnly ||
+                        !canModify;
+
+                      return (
+                        <tr key={index}>
+                          <td>{vehicle.dateEntered}</td>
+                          <td>{vehicle.returnId}</td>
+                          <td>{vehicle.model}</td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <span style={{ width: '60px', display: 'inline-block' }}>{vehicle.color}</span>
+                              <div
+                                style={{
+                                  width: '18px',
+                                  height: '18px',
+                                  backgroundColor: vehicle.color,
+                                  marginLeft: '15px',
+                                  border: '1px solid #000',
+                                }}
+                              />
+                            </div>
+                          </td>
+                          <td>
+                            <button
+                              className={styles.viewPersonBtn}
+                              onClick={() => openVehicleModal(
+                                selectedLead.leadNo,
+                                selectedLead.leadName,
+                                selectedCase.caseNo,
+                                selectedCase.caseName,
+                                vehicle.returnId
+                              )}
+                            >
+                              View
+                            </button>
+                          </td>
+                          <td>
+                            <div className={styles.lrTableBtn}>
+                              <button onClick={() => handleEditVehicle(index)} disabled={disableActions}>
+                                <img
+                                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                                  alt="Edit Icon"
+                                  className={styles.editIcon}
+                                />
+                              </button>
+                              <button onClick={() => requestDeleteVehicle(index)} disabled={disableActions}>
+                                <img
+                                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                                  alt="Delete Icon"
+                                  className={styles.editIcon}
+                                />
+                              </button>
+                            </div>
+                          </td>
+                          {isCaseManager && (
+                            <td>
+                              <select
+                                value={vehicle.accessLevel}
+                                onChange={e => handleAccessChange(index, e.target.value)}
+                                className={styles.accessDropdown}
+                              >
+                                <option value="Everyone">All</option>
+                                <option value="Case Manager">Case Manager</option>
+                                <option value="Case Manager and Assignees">Assignees</option>
+                              </select>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    }) : (
+                      <tr>
+                        <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: 'center' }}>
+                          No Vehicle Data Available
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 };

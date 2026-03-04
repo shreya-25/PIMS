@@ -1,9 +1,8 @@
 import React, { useContext, useState, useEffect} from 'react';
 
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import FootBar from '../../../components/FootBar/FootBar';
 import Navbar from '../../../components/Navbar/Navbar';
-import './LRPerson1.css';
+import styles from './LRPerson1.module.css';
 import { CaseContext } from "../../CaseContext";
 import api, { BASE_URL } from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
@@ -724,7 +723,7 @@ useEffect(() => {
   
   
   return (
-    <div className="person-page">
+    <div className={styles.personPage}>
       {/* Navbar at the top */}
       <Navbar />
 
@@ -764,14 +763,14 @@ useEffect(() => {
        </div> */}
 
 
-       <div className="LRI_Content">
+       <div className={styles.LRIContent}>
     
                   <SideBar  activePage="LeadReview" />
-                <div className="left-contentLI">
+                <div className={styles.leftContentLI}>
 
-                           <div className="top-menu1" >
-      <div className="menu-items" >
-        <span className="menu-item " onClick={() => {
+                           <div className={styles.topMenuNav} >
+      <div className={styles.menuItems} >
+        <span className={styles.menuItem} onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
@@ -783,11 +782,11 @@ useEffect(() => {
                       }
                     });
                   } }} > Lead Information</span>
-                   <span className="menu-item active" >Add Lead Return</span>
+                   <span className={`${styles.menuItem} ${styles.menuItemActive}`} >Add Lead Return</span>
 
                           {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
            <span
-              className="menu-item"
+              className={styles.menuItem}
               onClick={handleViewLeadReturn}
               title={isGenerating ? "Preparing report…" : "View Lead Return"}
               style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
@@ -797,17 +796,17 @@ useEffect(() => {
               )}
               
             {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
+  <span className={styles.menuItem} onClick={goToViewLR}>
     Submit Lead Return
   </span>
 )}
   {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
+  <span className={styles.menuItem} onClick={goToViewLR}>
    Review Lead Return
   </span>
 )}
 
-                   <span className="menu-item" onClick={() => {
+                   <span className={styles.menuItem} onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
@@ -867,43 +866,43 @@ useEffect(() => {
          </div> */}
        </div>
 
-                <div className="top-menu1">
-       <div className="menu-items" style={{ fontSize: '19px' }}>
-       
-        <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
+                <div className={styles.topMenuSections}>
+       <div className={styles.menuItems} style={{ fontSize: '19px' }}>
+
+        <span className={styles.menuItem} style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
             Instructions
           </span>
-          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
+          <span className={styles.menuItem} style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
             Narrative
           </span>
-          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
+          <span className={styles.menuItem} style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
           </span>
-           <span className="menu-item active" style={{fontWeight: '600' }} onClick={() => handleNavigation('/LRPerson1')} >
+           <span className={`${styles.menuItem} ${styles.menuItemActive}`} style={{fontWeight: '600' }} onClick={() => handleNavigation('/LRPerson1')} >
             Add Person
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
             Vehicles
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREnclosures')} >
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREnclosures')} >
             Enclosures
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREvidence')} >
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREvidence')} >
             Evidence
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRPictures')} >
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRPictures')} >
             Pictures
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRAudio')} >
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRAudio')} >
             Audio
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
             Videos
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRScratchpad')}>
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRScratchpad')}>
             Notes
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
             Timeline
           </span>
           {/* <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
@@ -911,13 +910,12 @@ useEffect(() => {
           </span> */}
          </div> </div>
    
-                <div className = "LRI-content-section">
+                <div className={styles.lriContentSection}>
 
-<div className = "content-subsection">
+<div className={styles.contentSubsection}>
 
      {/* Main Content */}
-     {/* <div className="form-container1"> */}
-        <table className="person-table2">
+        <table className={styles.personTable2}>
           <tbody>
             <tr>
               <td>Date Entered *</td>
@@ -925,14 +923,14 @@ useEffect(() => {
                 <input
                   type="date"
                   value={formData.dateEntered}
-                  className="input-large"
+                  className={styles.inputLarge}
                   onChange={(e) => handleChange("dateEntered", e.target.value)}
                 />
               </td>
               <td>Narrative Id *</td>
               <td>
                  {/* <select
-                  className="input-large"
+                  className={styles.inputLarge}
                   value={formData.leadReturnId}
                   onChange={(e) => handleChange("leadReturnId", e.target.value)}
                 >
@@ -943,7 +941,7 @@ useEffect(() => {
                 </select> */}
 
     <select
-      className="input-large"
+      className={styles.inputLarge}
       value={formData.leadReturnId}
       onChange={(e) => handleChange("leadReturnId", e.target.value)}
     >
@@ -1321,7 +1319,7 @@ useEffect(() => {
                   <tr>
                     <td colSpan="4">
                       <h4>Miscellaneous Information</h4>
-                      <table className="misc-table">
+                      <table className={styles.miscTable}>
                         <thead>
                           <tr>
                             <th>Category</th>
@@ -1351,7 +1349,7 @@ useEffect(() => {
                           ))}
                         </tbody>
                       </table>
-                      <button type="button" className ="save-btn1" onClick={addNewRow}>
+                      <button type="button" className={styles.saveBtn1} onClick={addNewRow}>
                         + Add Category / Value
                       </button>
                     </td>
@@ -1362,19 +1360,15 @@ useEffect(() => {
         
 
         {/* Buttons */}
-        <div className="form-buttons">
+        <div className={styles.formButtons}>
        
-          <button className="save-btn1" onClick={handleSave}>Save</button>
+          <button className={styles.saveBtn1} onClick={handleSave}>Save</button>
           {/* <button className="cancel-btn">Cancel</button> */}
         </div>
       {/* </div> */}
         
       </div>
       </div>
-      <FootBar
-        onPrevious={() => navigate(-1)} // Takes user to the last visited page
-        onNext={() => navigate("/LRVehicle")} // Takes user to CM Return page
-      />
     </div>
     </div>
     </div>
