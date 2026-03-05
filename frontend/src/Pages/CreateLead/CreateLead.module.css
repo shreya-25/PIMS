@@ -19,6 +19,8 @@
   margin-top: 110px;
   overflow: hidden;
   display: flex;           /* row direction – mirrors LRIContent */
+  padding-left: 20px;
+  box-sizing: border-box;
 }
 
 /* ===== Scrollable column ===== */

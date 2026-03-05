@@ -17,6 +17,8 @@
   height: calc(100vh - 110px);
   margin-top: 110px;
   overflow: hidden;
+  padding-left: 20px;
+  box-sizing: border-box;
 }
 
 .leftContentLI {
@@ -45,6 +47,8 @@
   justify-content: center;
   border-bottom: 2px solid #e8eaf0;
   box-shadow: 0 2px 6px rgba(41, 41, 139, 0.08);
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .topMenuSections {
@@ -61,6 +65,8 @@
   justify-content: center;
   border-bottom: 2px solid #e8eaf0;
   box-shadow: 0 2px 6px rgba(41, 41, 139, 0.08);
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .menuItems {

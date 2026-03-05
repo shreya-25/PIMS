@@ -19,6 +19,8 @@
   height: calc(100vh - 110px);
   margin-top: 110px;
   overflow: hidden;
+  padding-left: 20px;
+  box-sizing: border-box;
 }
 
 /* ===== Scrollable left column ===== */

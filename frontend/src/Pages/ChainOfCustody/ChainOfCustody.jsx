@@ -414,13 +414,13 @@ const tone = (t) =>
 };
 
   return (
-    <div className="admin-container">
+    <div className={styles.adminContainer}>
       <Navbar />
 
-      <div className="main-container">
+      <div className={styles.mainContainer}>
         <SideBar activePage="LeadReview" />
 
-        <div className="left-content">
+        <div className={styles.leftContent}>
           <div className={styles.topMenuNav}>
             <div className={styles.menuItems}>
               <span
