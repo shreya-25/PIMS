@@ -5,8 +5,8 @@ import Searchbar from '../../components/Searchbar/Searchbar';
 import Button from '../../components/Button/Button';
 import Filter from "../../components/Filter/Filter";
 import Sort from "../../components/Sort/Sort";
-import './LeadReview.css';
-import { useLocation, useNavigate } from 'react-router-dom';
+import styles from './LeadReview.module.css';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import api from "../../api"; // adjust the path as needed
@@ -124,58 +124,79 @@ const displayUserAO = (uname) => {
   return u ? `${u.firstName} ${u.lastName} (${u.username})` : uname;
 };
 
+const DELETE_REASON_CHIPS = [
+  "Duplicate lead",
+  "Created in error",
+  "No longer relevant",
+  "Merged with another lead",
+  "Case closed",
+];
+
 const DeleteReasonModal = memo(function DeleteReasonModal({ open, onCancel, onSubmit }) {
   const [text, setText] = useState("");
 
-  // reset field each time the modal opens
   useEffect(() => {
     if (open) setText("");
   }, [open]);
 
   if (!open) return null;
 
+  const canSubmit = (text || "").trim().length >= 3;
+
   const body = (
-    <div className="elog-backdrop" onClick={onCancel}>
-      <div className="elog-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="elog-header">
-          <h3>Delete Lead</h3>
-          <button className="elog-close" onClick={onCancel} aria-label="Close">✕</button>
+    <div className={styles.modalBackdrop} onClick={onCancel}>
+      <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className={styles.modalHeader}>
+          <h3 className={styles.modalTitle}>Delete Lead</h3>
+          <button onClick={onCancel} aria-label="Close" className={styles.modalClose}>✕</button>
         </div>
 
-        <section className="elog-block">
-          <div className="elog-title">Please provide a reason (required)</div>
+        {/* Body */}
+        <div className={styles.modalBody}>
+          <div className={styles.modalSubtitle}>Please provide a reason for deletion</div>
 
+          {/* Preset chips */}
+          <div className={styles.chipGroup}>
+            {DELETE_REASON_CHIPS.map((chip) => {
+              const active = text === chip;
+              return (
+                <button
+                  key={chip}
+                  onClick={() => setText(active ? "" : chip)}
+                  className={`${styles.chip} ${active ? styles.chipActive : ""}`}
+                >
+                  {chip}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Free-text */}
           <textarea
-            className="input-field"
-            placeholder="Add a brief reason for deleting this lead…"
+            className={styles.modalTextarea}
+            placeholder="Type a brief reason for deleting this lead (required)…"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            style={{ minHeight: 120 }}
           />
 
-          <div className="elog-actions" style={{ display: "flex", gap: 12, marginTop: 12, justifyContent: "flex-end" }}>
-            <button className="save-btn1" onClick={onCancel} style={{ background: "#ccc", color: "#000" }}>
-              Cancel
-            </button>
+          {/* Actions */}
+          <div className={styles.modalActions}>
+            <button onClick={onCancel} className={styles.modalCancelBtn}>Cancel</button>
             <button
-              className="save-btn1"
-              onClick={() => {
-                const reason = (text || "").trim();
-                if (reason.length < 3) return; // you already show an alert outside if needed
-                onSubmit(reason);
-              }}
-              style={{ background: "#e74c3c" }}
-              title="Delete lead with reason"
+              onClick={() => { const reason = text.trim(); if (reason.length < 3) return; onSubmit(reason); }}
+              disabled={!canSubmit}
+              className={`${styles.modalDeleteBtn} ${!canSubmit ? styles.modalDeleteBtnDisabled : ""}`}
             >
-              Delete
+              Delete Lead
             </button>
           </div>
-        </section>
+        </div>
       </div>
     </div>
   );
 
-  // Render in a portal to avoid parent layout/styles causing extra work
   const root = document.getElementById("modal-root") || document.body;
   return createPortal(body, root);
 });
@@ -375,7 +396,7 @@ const computeLeadStatus = (assigned, primaryUser) => {
 //     setLeadData(prev => ({
 //     ...prev,
 //     ...processedLeadData,
-//     assignedTo: processedAssignedTo,        // <— important
+//     assignedTo: processedAssignedTo,        // <�" important
 //     primaryOfficer: effectivePrimary || "",
 //     }));
 //     setOriginalAssigned(processedAssignedTo.map(x => x.username));
@@ -483,7 +504,7 @@ const computeLeadStatus = (assigned, primaryUser) => {
 
 //           {/* Textarea */}
 //           <textarea
-//             className="input-field"
+//             className={styles.inputField}
 //             placeholder="Type a brief, professional reason (required)…"
 //             value={declineReason}
 //             onChange={(e) => setDeclineReason(e.target.value)}
@@ -498,7 +519,7 @@ const computeLeadStatus = (assigned, primaryUser) => {
 //               className="save-btn1"
 //               onClick={() => {
 //                 const reason = (declineReason || "").trim();
-//                 if (reason.length < 5) return setAlertMessage("Please provide a few words explaining why you’re declining.");
+//                 if (reason.length < 5) return setAlertMessage("Please provide a few words explaining why you're declining.");
 //                 onSubmit(reason);
 //               }}
 //               style={{ background: "#e74c3c" }}
@@ -600,7 +621,7 @@ const DeclineReasonModal = ({ open, onCancel, onSubmit, presetReasons }) => {
           {/* Textarea */}
           <textarea
             ref={textareaRef}
-            className="input-field"
+            className={styles.inputField}
             placeholder="Type a brief, professional reason (required)…"
             value={localReason}
             onChange={(e) => setLocalReason(e.target.value)}
@@ -646,7 +667,7 @@ const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = 
     const token = localStorage.getItem("token");
     setLoading(true);
 
-    // 🔧 ALWAYS work with usernames (strings)
+    // �"� ALWAYS work with usernames (strings)
     const updatedUsernames = (Array.isArray(updatedOfficers) ? updatedOfficers : [])
   .map(toUsername)
   .filter(Boolean);
@@ -778,7 +799,7 @@ const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = 
 
 //     setAlertMessage(newStatus === "Accepted"
 //       ? "All officers accepted. Lead status is 'Accepted'."
-//       : "You accepted. Waiting on others — status stays 'Assigned'."
+//       : "You accepted. Waiting on others �" status stays 'Assigned'."
 //     );
 //     setAlertOpen(true);
 //   } catch (error) {
@@ -827,7 +848,7 @@ const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = 
 
 
 
-// who’s still "active" = not declined (pending or accepted)
+// who's still "active" = not declined (pending or accepted)
 const nonDeclinedUsernames = (assigned) =>
   normalizeAssignedTo(assigned)
     .filter(a => a.status !== "declined")
@@ -864,14 +885,14 @@ const autoPromotePrimaryIfSingleActive = async (leadObj) => {
   const active = nonDeclinedUsernames(leadObj.assignedTo);
   const current = leadObj.primaryInvestigator || leadObj.primaryOfficer || "";
 
-  // If exactly one active remains and it's not already primary → promote it.
+  // If exactly one active remains and it's not already primary �' promote it.
   if (active.length === 1 && active[0] !== current) {
     try {
       await persistPrimary(leadObj, active[0]);
       setAlertMessage(`Primary Investigator set to ${active[0]} automatically.`);
       setAlertOpen(true);
     } catch (e) {
-      // Don’t block the flow if the server denies — just log it.
+      // Don't block the flow if the server denies �" just log it.
       console.error("Auto-promote primary failed:", e);
     }
   }
@@ -929,7 +950,7 @@ const acceptLead = async (leadNo, description) => {
     const primary = lead.primaryInvestigator || lead.primaryOfficer;
     const meIsPrimary = signedInOfficer === primary;
 
-    // If I'm primary → force overall status to Accepted
+    // If I'm primary �' force overall status to Accepted
     if (meIsPrimary && lead.leadStatus !== "Accepted") {
       const headers = { headers: { Authorization: `Bearer ${token}` } };
       const updated = {
@@ -1078,7 +1099,7 @@ console.log("SL, SC", selectedLead, selectedCase);
     //             typeof item === "string" ? item : item.username
     //           )
     //         );
-    //       // and initialize your “assignedOfficers” checkboxes to match:
+    //       // and initialize your "assignedOfficers" checkboxes to match:
     //         setAssignedOfficers(
     //           response.data[0].assignedTo.map(item =>
     //             typeof item === "string" ? item : item.username
@@ -1144,7 +1165,7 @@ console.log("SL, SC", selectedLead, selectedCase);
   //           }
   //         }, [leadData.assignedTo]);
 
-    // fall back to 0 (“Lead Created”) if you get an unexpected value
+    // fall back to 0 ("Lead Created") if you get an unexpected value
 const currentStatusIndex = statusToIndex[leadData.leadStatus] ?? 0;
 const [assignedOfficers, setAssignedOfficers] = useState([]);
 
@@ -1370,6 +1391,7 @@ useEffect(() => {
 
 // show/hide the events modal
 const [eventsModalOpen, setEventsModalOpen] = useState(false);
+const [officerTooltipPos, setOfficerTooltipPos] = useState(null);
 
 // sort once for stable timeline
 const eventsSorted = React.useMemo(
@@ -1389,7 +1411,7 @@ const describeEvent = (ev) => {
   switch (ev.type) {
     case "assigned":            return `Assigned ${to}${pi}`;
     case "accepted":            return `${to} accepted`;
-    case "declined":            return `${to} declined${ev.reason ? ` — Reason: ${ev.reason}` : ""}`;
+    case "declined":            return `${to} declined${ev.reason ? ` �" Reason: ${ev.reason}` : ""}`;
     case "reassigned-added":    return `Added ${to}${pi}`;
     case "reassigned-removed":  return `Removed ${to}${pi}`;
     default:                    return ev.type;
@@ -1398,7 +1420,7 @@ const describeEvent = (ev) => {
 // === helpers (keep your fmtDT) ==============================================
 const nameOf = (uname) => {
   const u = allUsers.find((x) => x.username === uname);
-  return u ? `${u.firstName} ${u.lastName} (${u.username})` : uname || "—";
+  return u ? `${u.firstName} ${u.lastName} (${u.username})` : uname;
 };
 
 const plural = (arr, s, p) => (arr && arr.length === 1 ? s : p);
@@ -1447,7 +1469,7 @@ const LeadEventsModal = ({ open, onClose, events }) => {
   // who accepted/declined (first timestamp per officer)
   const { acceptedAt, declinedAt, declinedReason } = buildDecisionMaps(evs);
 
-  // compute the current assigned set (initial + adds − removes)
+  // compute the current assigned set (initial + adds �' removes)
   const assignedSet = (() => {
     const s = new Set(firstAssigned?.to || []);
     // process chronologically
@@ -1468,7 +1490,7 @@ const LeadEventsModal = ({ open, onClose, events }) => {
 
   // message per event (short & professional)
   const msg = (ev) => {
-    const people = (ev.to || []).map(nameOf).join(", ") || "—";
+    const people = (ev.to || []).map(nameOf).join(", ") || "";
     switch (ev.type) {
       case "assigned":
         return `Assigned to ${people}` +
@@ -1483,7 +1505,7 @@ const LeadEventsModal = ({ open, onClose, events }) => {
       case "reassigned-removed":
         return `Removed ${people}`;
       default:
-        return ev.type || "—";
+        return ev.type || "";
     }
   };
 
@@ -1508,7 +1530,7 @@ const LeadEventsModal = ({ open, onClose, events }) => {
       <div className="elog-modal" onClick={(e) => e.stopPropagation()}>
         <div className="elog-header">
           <h3>Assignment Log</h3>
-          <div className="elog-chip">{lastStatus || "—"}</div>
+          <div className="elog-chip">{lastStatus || ""}</div>
           <button className="elog-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
@@ -1779,7 +1801,7 @@ const confirmWithModal = (message, title = "Confirm") =>
 //     return;
 //   }
 //   const ok = await confirmWithModal(
-//     `This will permanently delete Lead #${lead.leadNo} — “${lead.leadName || lead.description}”.\n\nAre you sure?`,
+//     `This will permanently delete Lead #${lead.leadNo} �" "${lead.leadName || lead.description}".\n\nAre you sure?`,
 //     "Delete Lead"
 //   );
 //   if (!ok) return;
@@ -1875,14 +1897,14 @@ const assignmentHoverText = React.useMemo(() => {
 
   // one line per officer
   return list
-    .map(({ username, status }) => `${icon(status)} ${display(username)} — ${status}`)
+    .map(({ username, status }) => `${icon(status)} ${display(username)} �" ${status}`)
     .join("\n");
 }, [leadData?.assignedTo, allUsers]);
 
 
 
   return (
-    <div className="lead-review-page">
+    <div className={styles.personPage}>
       {/* Navbar */}
       <Navbar />
        <AlertModal
@@ -1949,154 +1971,87 @@ const assignmentHoverText = React.useMemo(() => {
 
 
       {/* Main Container */}
-      <div className="lead-review-container1">
-
+      <div className={styles.LRIContent}>
 
        <SideBar  activePage="LeadReview" />
-     
+
         {/* Content Area */}
-        <div
-  className={`lead-main-content ${
-    canWorkOnReturn
-      ? "has-menu"
-      : showDecisionBlock
-      ? "decision-only"
-      : ""
-  }`}
->
+        <div className={`${styles.leftContentLI} ${canWorkOnReturn ? styles.hasMenu : ""}`}>
 
           {/* Page Header */}
 
             {canWorkOnReturn && (
-                   <div className="top-menu1">
-        <div className="menu-items">
-        <span className="menu-item active" > Lead Information</span>
-          <span className="menu-item " onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+              <div className={styles.topMenuNav}>
+                <div className={styles.menuItems}>
+                  <span className={`${styles.menuItem} ${styles.menuItemActive}`}>Lead Information</span>
 
-                  if (lead && kase) {
-                    navigate("/LRInstruction", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } else {
-                    // alert("Please select a case and lead first.");
-                     setAlertMessage("Please select a case and lead first.");
-                     setAlertOpen(true);
-                  }
-                }}>Add Lead Return</span>
+                  <span className={styles.menuItem} onClick={() => {
+                    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                    if (lead && kase) {
+                      navigate("/LRInstruction", { state: { caseDetails: kase, leadDetails: lead } });
+                    } else {
+                      setAlertMessage("Please select a case and lead first.");
+                      setAlertOpen(true);
+                    }
+                  }}>Add Lead Return</span>
 
-           {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
-           <span
-              className="menu-item"
-              onClick={handleViewLeadReturn}
-              title={isGenerating ? "Preparing report…" : "View Lead Return"}
-              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-            >
-              Manage Lead Return
-            </span>
-              )}
+                  {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
+                    <span
+                      className={styles.menuItem}
+                      onClick={handleViewLeadReturn}
+                      title={isGenerating ? "Preparing report…" : "View Lead Return"}
+                      style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
+                    >
+                      Manage Lead Return
+                    </span>
+                  )}
 
-            {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
-    Submit Lead Return
-  </span>
-)}
+                  {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
+                    <span className={styles.menuItem} onClick={goToViewLR}>Submit Lead Return</span>
+                  )}
 
-  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
-   Review Lead Return
-  </span>
-)}
+                  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
+                    <span className={styles.menuItem} onClick={goToViewLR}>Review Lead Return</span>
+                  )}
 
-
-          
-
-
-             
-          <span className="menu-item" onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/ChainOfCustody", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } else {
-                    // alert("Please select a case and lead first.");
-                     setAlertMessage("Please select a case and lead first.");
-                     setAlertOpen(true);
-                  }
-                }}>Lead Chain of Custody</span>
-          
-        </div>
-            </div>
+                  <span className={styles.menuItem} onClick={() => {
+                    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                    if (lead && kase) {
+                      navigate("/ChainOfCustody", { state: { caseDetails: kase, leadDetails: lead } });
+                    } else {
+                      setAlertMessage("Please select a case and lead first.");
+                      setAlertOpen(true);
+                    }
+                  }}>Lead Chain of Custody</span>
+                </div>
+              </div>
             )}
 
-        <div className="main-leadreview-cont">
+        {/* Info bar: breadcrumb + status */}
+        <div className={styles.caseandleadinfo}>
+          <h5 className={styles.sideTitle}>
+            <div className={styles.ldHead}>
+              <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+              <span className={styles.sep}>{" >> "}</span>
+              <Link to={getCasePageRoute()} state={{ caseDetails: selectedCase }} className={styles.crumb}>
+                Case: {selectedCase?.caseNo || ""}
+              </Link>
+              <span className={styles.sep}>{" >> "}</span>
+              <span className={styles.crumbCurrent} aria-current="page">
+                Lead: {selectedLead?.leadNo || ""}
+              </span>
+            </div>
+          </h5>
+          <h5 className={styles.sideTitle}>
+            {leadData.leadStatus ? `Lead Status: ${leadData.leadStatus}` : ""}
+          </h5>
+        </div>
 
-        <div className="case-header-leadReview">
-          <div className="cp-head-leadReview">
-            {
-              // <h2> {selectedLead?.leadNo ? `Lead: ${selectedLead.leadName?.toTitleCase(selectedLead.leadName)}` : "LEAD DETAILS"} </h2>
-              <h2>
-  {selectedLead?.leadNo
-    ? `Lead: ${toTitleCase(selectedLead?.leadName || "")}`
-    : "LEAD DETAILS"}
-</h2>
+        {/* Scrollable content */}
+        <div className={styles.lriContentSection}>
 
-            }
-          </div>
-
-                 <div className="add-lead-section">
-  <div className="add-lead-btn1">
-    {(selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor") && (
-      <button
-        className="cp-add-lead-btn"
-        onClick={handleDeleteLead}
-        style={{ cursor: 'pointer', width: '100%' }}
-        title="Delete this lead"
-      >
-        Delete Lead
-      </button>
-    )}
-  </div>
-</div>
-
-
-                  {/* {(leadData.leadStatus !== "Accepted" || selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
-                   <div  className="add-lead-section-lr">
-                <button className="cp-add-lead-btn"  
-                onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/viewLR", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } else {
-                    // alert("Please select a case and lead first.");
-                     setAlertMessage("Please select a case and lead first.");
-                     setAlertOpen(true);
-                  }
-                }}
-                style={{ cursor: 'pointer', width: '100%' }} >
-                    View Lead Return
-                </button>
-                </div>
-                  )} */}
-                </div>
-               
 {/* {showDecisionBlock && (
     <div
     className="accept-reject-section"
@@ -2160,196 +2115,88 @@ const assignmentHoverText = React.useMemo(() => {
 
 
           {/* Additional Lead Details (Bottom Table) */}
-          <div className="form_and_tracker">
-          <div className="form-section">
-            <table className="details-table">
-              <tbody>
-                <tr>
-                  <td className="info-label">Case Number</td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={leadData.caseNo}
-                      onChange={(e) => handleInputChange('caseNo', e.target.value)}
-                      // readOnly={isInvestigator}
-                       readOnly={true}
-                    />
-                  </td>
-                </tr>
-                <tr>
-                  <td className="info-label">Case Name</td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={leadData.caseName}
-                      onChange={(e) => handleInputChange('caseName', e.target.value)}
-                      // readOnly={isInvestigator}
-                       readOnly={true}
-                    />
-                  </td>
-                </tr>
-                <tr>
-                  <td className="info-label">Assigned Date</td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={formatDate(leadData.assignedDate)}
-                      onChange={(e) => handleInputChange('assignedDate', e.target.value)}
-                      placeholder="MM/DD/YY"
-                       readOnly={true}
-                    />
-                  </td>
-                </tr>
+          <div className={styles.formAndTracker}>
+          <div className={styles.formCard}>
 
-                <tr>
-                  <td className="info-label" style={{ width: "500px" }}>Lead Log Summary</td>
-                  <td>
-                    <textarea
-                      className="input-field"
-                      value={leadData.description}
-                      onChange={(e) => handleInputChange('description', e.target.value)}
-                      placeholder=""
-                      // readOnly={isInvestigator}
-                       readOnly={true}
-                    ></textarea>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="info-label">Lead Instruction</td>
-                  <td>
-                    <textarea
-                      className="input-field"
-                      value={leadData.summary}
-                      onChange={(e) => handleInputChange('summary', e.target.value)}
-                      placeholder=""
-                      // readOnly={isInvestigator}
-                       readOnly={true}
-                    ></textarea>
-                  </td>
-                </tr>
-
-                <tr>
-                  <td className="info-label">Lead Origin</td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={leadData.parentLeadNo}
-                      // onChange={(e) => handleInputChange('parentLeadNo', e.target.value)}
-                      placeholder="NA"
-                      readOnly={!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")}
-      onChange={async (e) => {
-        const value = e.target.value;
-        setLeadData((prev) => ({ ...prev, parentLeadNo: value }));
-
-        // Auto-save if Case Manager or Detective Supervisor
-        if (selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") {
-          await handleSave(assignedOfficers, { ...leadData, parentLeadNo: value });
-        }
-      }}
-                    />
-                  </td>
-                </tr>
-
-{/* <tr>
-  <td className="info-label">Assigned Officers</td>
-  <td>
-    {isInvestigator ? (
-      <div className="dropdown-header">
-        {assignedOfficers.join(", ")}
-      </div>
-    ) : (
-      <div ref = {assOff}
-      className="custom-dropdown1">
-        <div
-          className="dropdown-header"
-          onClick={() => setDropdownOpen(!dropdownOpen)}
-        >
-          {assignedOfficers.length >0
-            ? assignedOfficers
-                .map(u => {
-                  const usr = allUsers.find(x => x.username === u);
-                  return usr
-                    ? `${usr.username}`
-                    : u;
-                })
-                .join(", ")
-            : "Select Officers"}
-          <span className="dropdown-icon">
-            {dropdownOpen ? "▲" : "▼"}
-          </span>
-        </div>
-        {dropdownOpen && (
-          <div className="dropdown-options">
-            
-            {allUsers
-            .filter(u => !declinedSet.has(u.username))
-            .map(user => (
-              <div key={user.username} className="dropdown-item">
-                <input
-                  type="checkbox"
-                  id={user.username}
-                  value={user.username}
-                  checked={assignedOfficers.includes(user.username)}
-                  disabled={!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")}
-
-             
-                  onChange={async e => {
-                    if (!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")) return;
-
-                    const next = e.target.checked
-                      ? [...assignedOfficers, user.username]
-                      : assignedOfficers.filter(u => u !== user.username);
-
-                    const nextPrimary = next.includes(leadData.primaryOfficer) ? leadData.primaryOfficer : (next[0] || "");
-
-                    setAssignedOfficers(next);
-                    setLeadData(prev => ({
-                      ...prev,
-                      assignedTo: next,
-                      primaryOfficer: nextPrimary,
-                      leadStatus: next.length > 0 ? "Assigned" : prev.leadStatus
-                    }));
-
-                    try {
-                      await handleSave(
-                        next,
-                        { ...leadData, primaryOfficer: nextPrimary, ...(next.length > 0 ? { leadStatus: "Assigned" } : {}) }
-                      );
-                    } catch (err) {
-                      console.error("Error during auto-save:", err);
-                      setAlertMessage("An error occurred while updating assigned officers. Please try again.");
-                      setAlertOpen(true);
-                    }
-                  }}
-                />
-                <label htmlFor={user.username}>
-                  {user.firstName} {user.lastName} ({user.username})
-                </label>
+            {/* Card header – CoC style */}
+            <div className={styles.cardHeader}>
+              <div className={styles.cardHeaderLeft}>
+                <h1 className={styles.cardTitle}>
+                  {selectedLead?.leadNo
+                    ? `Lead #${selectedLead.leadNo}: ${toTitleCase(selectedLead?.leadName || "")}`
+                    : "LEAD DETAILS"}
+                </h1>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-    )}
-  </td>
-</tr> */}
+              {(selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor") && (
+                <button className={styles.deleteBtn} onClick={handleDeleteLead} title="Delete this lead">
+                  <span className={styles.deleteBtnIcon}>🗑</span>
+                  Delete Lead
+                </button>
+              )}
+            </div>
 
-<tr>
-  <td className="info-label">Assigned Officers</td>
-  <td>
-    {isInvestigator ? (
-      <div className="dropdown-header">
+            {/* Summary strip – non-editable key fields */}
+            <div className={styles.summaryTableWrap}>
+              <table className={styles.summaryTable}>
+                <thead>
+                  <tr>
+                    <th>Assigned By</th>
+                    <th>Assigned Date</th>
+                    <th>Case Name</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>{leadData.assignedBy ?? "—"}</td>
+                    <td>{formatDate(leadData.assignedDate) || "—"}</td>
+                    <td>{leadData.caseName ?? "—"}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className={styles.formGrid}>
+              <div className={`${styles.formRow} ${styles.formRowHighlight}`}>
+                <div className={styles.fieldGroup}>
+                  <span className={styles.fieldLabel}>Lead Instruction</span>
+                  <div className={styles.leadInstructionText}>{leadData.summary || '—'}</div>
+                </div>
+              </div>
+              <div className={`${styles.formRow} ${styles.formRowEditable}`}>
+                <div className={`${styles.fieldGroup} ${styles.fieldGroupBorder}`}>
+                  <span className={`${styles.fieldLabel} ${styles.fieldLabelEditable}`}>Lead Origin</span>
+                  <input type="text" className={styles.inputField} value={leadData.parentLeadNo} placeholder="NA"
+                    readOnly={!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")}
+                    onChange={async (e) => {
+                      const value = e.target.value;
+                      setLeadData((prev) => ({ ...prev, parentLeadNo: value }));
+                      if (selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") {
+                        await handleSave(assignedOfficers, { ...leadData, parentLeadNo: value });
+                      }
+                    }}
+                  />
+                </div>
+                <div className={styles.fieldGroup}>
+                  <span className={`${styles.fieldLabel} ${styles.fieldLabelEditable}`}>Due Date</span>
+                  <input type="date" className={styles.inputField} value={dueDateISO}
+                    onChange={e => { const newIso = new Date(e.target.value).toISOString(); setLeadData({ ...leadData, dueDate: newIso }); }}
+                    readOnly={!isEditableByCaseManager("dueDate")}
+                  />
+                </div>
+              </div>
+
+              <div className={`${styles.formRow} ${styles.formRowEditable}`}>
+                <div className={styles.fieldGroup}>
+                  <span className={`${styles.fieldLabel} ${styles.fieldLabelEditable}`}>Assigned Officers</span>
+                  {isInvestigator ? (
+      <div className={styles.inputDisplay} style={{ cursor: "default" }}>
         {assignedOfficers.map(displayUserAO).join(", ")}
       </div>
     ) : (
       <div id="assigned-officers-wrap" className="inv-dropdown">
         <button
           type="button"
-          className="inv-input"
+          className={styles.inputDisplay}
           onClick={() => setAoOpen(o => !o)}
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setAoOpen(o => !o)}
           aria-haspopup="listbox"
@@ -2452,208 +2299,78 @@ const assignmentHoverText = React.useMemo(() => {
         )}
       </div>
     )}
-  </td>
-</tr>
-
-
-<tr>
-  <td className="info-label">Primary Investigator *</td>
-  <td>
-    <select
-      className="input-field"
-      value={leadData.primaryOfficer}
-      disabled={
-        !(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") ||
-        assignedOfficers.length === 0
-      }
-      onChange={async (e) => {
-        const nextPrimary = e.target.value;
-        setLeadData(prev => ({ ...prev, primaryOfficer: nextPrimary }));
-
-        try {
-          await handleSave(assignedOfficers, { ...leadData, primaryOfficer: nextPrimary }); // ✅ autosave
-        } catch (err) {
-          console.error("Auto-save failed", err);
-          setAlertMessage("Failed to save Primary Investigator. Please try again.");
-          setAlertOpen(true);
-        }
-      }}
-    >
-      <option value="" disabled>
-        {assignedOfficers.length ? 'Select Primary' : 'Assign officers first'}
-      </option>
-
-      {assignedOfficers.map(uName => {
-        const user = allUsers.find(u => u.username === uName);
-        const label = user ? `${user.firstName} ${user.lastName} (${user.username})` : uName;
-        return <option key={uName} value={uName}>{label}</option>;
-      })}
-    </select>
-  </td>
-</tr>
-
-
-
-
-                <tr>
-                  <td className="info-label">Assigned By</td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={leadData.assignedBy}
-                      onChange={(e) => handleInputChange('assignedBy', e.target.value)}
-                      placeholder=""
-                      readOnly={true}
-                    />
-                  </td>
-                </tr>
-
-                {/* Another example date field */}
-                <tr>
-                  <td className="info-label">Due Date</td>
-                  <td>
-                    <input
-                          type="date"
-                          className="input-field"
-                          value={dueDateISO}
-                          onChange={e => {
-                            // e.target.value is “YYYY-MM-DD”
-                            const newIso = new Date(e.target.value).toISOString();
-                            // now update your leadData however you persist it:
-                            setLeadData({ ...leadData, dueDate: newIso });
-                          }}
-                          readOnly={!isEditableByCaseManager("dueDate")}
-                        />
-                  </td>
-                </tr>
-                <tr>
-                  <td className="info-label">Subcategory</td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={leadData.subCategory}
-                    placeholder=""
-                     onChange={(e) => handleInputChange('subCategory', e.target.value)}
-  readOnly={!isEditableByCaseManager("subCategory")}
-                    />
-                  </td>
-                </tr>
-
-                <tr>
-  {/* <td className="info-label" style={{ width: "25%" }}>Associated Subcategories</td>
-  <td>
-    {!isEditableByCaseManager("associatedSubCategories") ? (
-      <div className="dropdown-header"   style={{
-          padding: "8px 10px",
-          minHeight: "25px",
-          border: "1px solid #ccc",
-          borderRadius: "4px",
-         
-        }}>
-        {associatedSubCategories.length > 0
-          ? associatedSubCategories.join(", ")
-          : ""}
-      </div>
-    ) : (
-      <div className="custom-dropdown">
-        <div
-          className="dropdown-header"
-          onClick={() => setSubDropdownOpen(!subDropdownOpen)}
-        >
-          {associatedSubCategories.length > 0
-            ? associatedSubCategories.join(", ")
-            : "Select Subcategories"}
-          <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
-        </div>
-        {subDropdownOpen && (
-          <div className="dropdown-options">
-            {availableSubCategories.map((subNum) => (
-              <div key={subNum} className="dropdown-item">
-                <input
-                  type="checkbox"
-                  id={subNum}
-                  value={subNum}
-                  checked={associatedSubCategories.includes(subNum)}
-                  onChange={(e) => {
-                    const updatedSubs = e.target.checked
-                      ? [...associatedSubCategories, e.target.value]
-                      : associatedSubCategories.filter((num) => num !== e.target.value);
-
-                    setAssociatedSubCategories(updatedSubs);
-                    setLeadData((prevData) => ({
-                      ...prevData,
-                      associatedSubCategories: updatedSubs,
-                    }));
-                  }}
-                />
-                <label htmlFor={subNum}>{subNum}</label>
+                </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-    )}
-  </td> */}
-  <td className="info-label" style={{ width: "25%" }}>Associated Subcategories</td>
-<td>
-  {!isEditableByCaseManager("associatedSubCategories") ? (
-    <div
-      className="dropdown-header"
-      style={{ padding: "8px 10px", minHeight: "25px", border: "1px solid #ccc", borderRadius: "4px" }}
-    >
-      {associatedSubCategories.length > 0 ? associatedSubCategories.join(", ") : ""}
-    </div>
-  ) : (
-    <div className="custom-dropdown">
-      <div className="dropdown-header" onClick={() => setSubDropdownOpen(!subDropdownOpen)}>
-        {associatedSubCategories.length > 0 ? associatedSubCategories.join(", ") : "Select Subcategories"}
-        <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
-      </div>
-
-      {subDropdownOpen && (
-        <div className="dropdown-options">
-          {subcatsLoading && <div className="dropdown-item">Loading…</div>}
-
-          {!subcatsLoading && caseSubCategories.length === 0 && (
-            <div className="dropdown-item">No subcategories for this case</div>
-          )}
-
-          {!subcatsLoading &&
-            caseSubCategories.length > 0 &&
-            caseSubCategories.map((subNum) => (
-              <div key={subNum} className="dropdown-item">
-                <input
-                  type="checkbox"
-                  id={`assoc-${subNum}`}
-                  value={subNum}
-                  checked={associatedSubCategories.includes(subNum)}
-                  onChange={(e) => {
-                    const updated =
-                      e.target.checked
-                        ? [...associatedSubCategories, subNum]
-                        : associatedSubCategories.filter((n) => n !== subNum);
-
-                    // update UI immediately
-                    setAssociatedSubCategories(updated);
-                    // persist to lead + autosave
-                    saveField({ associatedSubCategories: updated });
-                  }}
-                />
-                <label htmlFor={`assoc-${subNum}`}>{subNum}</label>
+              <div className={styles.formRow}>
+                <div className={styles.fieldGroup}>
+                  <span className={styles.fieldLabel}>Primary Investigator *</span>
+                  <select
+                    className={styles.inputField}
+                    value={leadData.primaryOfficer}
+                    disabled={!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") || assignedOfficers.length === 0}
+                    onChange={async (e) => {
+                      const nextPrimary = e.target.value;
+                      setLeadData(prev => ({ ...prev, primaryOfficer: nextPrimary }));
+                      try {
+                        await handleSave(assignedOfficers, { ...leadData, primaryOfficer: nextPrimary });
+                      } catch (err) {
+                        console.error("Auto-save failed", err);
+                        setAlertMessage("Failed to save Primary Investigator. Please try again.");
+                        setAlertOpen(true);
+                      }
+                    }}
+                  >
+                    <option value="" disabled>{assignedOfficers.length ? 'Select Primary' : 'Assign officers first'}</option>
+                    {assignedOfficers.map(uName => {
+                      const user = allUsers.find(u => u.username === uName);
+                      const label = user ? `${user.firstName} ${user.lastName} (${user.username})` : uName;
+                      return <option key={uName} value={uName}>{label}</option>;
+                    })}
+                  </select>
+                </div>
               </div>
-            ))}
-        </div>
-      )}
-    </div>
-  )}
-</td>
-
-</tr>
-
-              </tbody>
-            </table>
+              <div className={styles.formRow}>
+                <div className={styles.fieldGroup}>
+                  <span className={styles.fieldLabel}>Subcategory</span>
+                  <input type="text" className={styles.inputField} value={leadData.subCategory} placeholder="" onChange={(e) => handleInputChange('subCategory', e.target.value)} readOnly={!isEditableByCaseManager("subCategory")} />
+                </div>
+              </div>
+              <div className={`${styles.formRow} ${styles.formRowEditable}`}>
+                <div className={styles.fieldGroup}>
+                  <span className={`${styles.fieldLabel} ${styles.fieldLabelEditable}`}>Associated Subcategories</span>
+                  {!isEditableByCaseManager("associatedSubCategories") ? (
+                    <div className={styles.inputDisplay} style={{ cursor: "default" }}>
+                      {associatedSubCategories.length > 0 ? associatedSubCategories.join(", ") : ""}
+                    </div>
+                  ) : (
+                    <div className="custom-dropdown">
+                      <div className={styles.inputDisplay} onClick={() => setSubDropdownOpen(!subDropdownOpen)}>
+                        {associatedSubCategories.length > 0 ? associatedSubCategories.join(", ") : "Select Subcategories"}
+                        <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
+                      </div>
+                      {subDropdownOpen && (
+                        <div className="dropdown-options">
+                          {subcatsLoading && <div className="dropdown-item">Loading…</div>}
+                          {!subcatsLoading && caseSubCategories.length === 0 && (<div className="dropdown-item">No subcategories for this case</div>)}
+                          {!subcatsLoading && caseSubCategories.length > 0 && caseSubCategories.map((subNum) => (
+                            <div key={subNum} className="dropdown-item">
+                              <input type="checkbox" id={`assoc-${subNum}`} value={subNum} checked={associatedSubCategories.includes(subNum)}
+                                onChange={(e) => {
+                                  const updated = e.target.checked ? [...associatedSubCategories, subNum] : associatedSubCategories.filter((n) => n !== subNum);
+                                  setAssociatedSubCategories(updated);
+                                  saveField({ associatedSubCategories: updated });
+                                }}
+                              />
+                              <label htmlFor={`assoc-${subNum}`}>{subNum}</label>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
              {/* {!isInvestigator && (
   <div className="update-lead-btn">
     <button className="save-btn1" onClick={handleSave}>
@@ -2695,46 +2412,119 @@ const assignmentHoverText = React.useMemo(() => {
             )} */}
 
             {canWorkOnReturn && (
- <div className="lead-tracker-container">
-  {statuses.map((status, idx) => {
-    const hideNumber = status === "Lead Reopened" || status === "Lead Closed";
-    const isAcceptedStep = status === "Lead Accepted";
-    const tip = isAcceptedStep ? assignmentHoverText : undefined;
+  <div className={styles.trackerContainer}>
+    <div className={styles.trackerTitle}>Lead Progress</div>
+    {statuses.map((status, idx) => {
+      const hideNumber = NO_NUMBER.has(status);
+      const isAcceptedStep = status === "Lead Accepted";
+      const isCompleted = idx < currentStatusIndex;
+      const isHighlighted = idx === currentStatusIndex;
+      const isLast = idx === statuses.length - 1;
+      const isClickable = status === "Lead Return Submitted" || status === "Lead Created";
 
-    return (
-      <div
-        key={idx}
-        className="lead-tracker-row"
-        onClick={() => {
-          if (status === "Lead Return Submitted") handleNavigation("/LRInstruction");
-          if (status === "Lead Created") setEventsModalOpen(true);
-        }}
-        style={{ cursor: status === "Lead Return Submitted" ? "pointer" : "default" }}
-      >
-        {/* Circle */}
-        <div className={`status-circle ${idx <= currentStatusIndex ? "active" : ""}`}>
-          {!hideNumber && <span className="status-number">{idx + 1}</span>}
+      const circleClass = [
+        styles.statusCircle,
+        isCompleted ? styles.statusCircleCompleted : "",
+        isHighlighted ? styles.statusCircleActive : "",
+      ].join(" ");
+
+      const connectorClass = [
+        styles.statusConnectorH,
+        isCompleted ? styles.statusConnectorHCompleted : "",
+        isHighlighted ? styles.statusConnectorHActive : "",
+      ].join(" ");
+
+      const boxClass = [
+        styles.statusBox,
+        isCompleted ? styles.statusBoxCompleted : "",
+        isHighlighted ? styles.statusBoxActive : "",
+        isClickable ? styles.statusBoxClickable : "",
+      ].join(" ");
+
+      const assignedList = isAcceptedStep ? normalizeAssignedTo(leadData?.assignedTo) : [];
+
+      return (
+        <div key={idx} className={styles.trackerItem}>
+          {/* Circle */}
+          <div className={circleClass}>
+            {!hideNumber && (
+              <span className={`${styles.statusNumber} ${(isCompleted || isHighlighted) ? styles.statusNumberActive : ""}`}>
+                {idx + 1}
+              </span>
+            )}
+          </div>
+
+          {/* Horizontal dash */}
+          <div className={connectorClass} />
+
+          {/* Label box – with hover tooltip for Lead Accepted */}
+          {isAcceptedStep && assignedList.length > 0 ? (
+            <div
+              className={boxClass}
+              onMouseEnter={e => {
+                const r = e.currentTarget.getBoundingClientRect();
+                const tooltipWidth = 240;
+                const left = Math.max(8, r.right - tooltipWidth);
+                setOfficerTooltipPos({ top: r.bottom + 6, left });
+              }}
+              onMouseLeave={() => setOfficerTooltipPos(null)}
+            >
+              {status}
+            </div>
+          ) : (
+            <div
+              className={boxClass}
+              onClick={() => {
+                if (status === "Lead Return Submitted") handleNavigation("/LRInstruction");
+                if (status === "Lead Created") setEventsModalOpen(true);
+              }}
+            >
+              {status}
+            </div>
+          )}
         </div>
-
-        {/* Line */}
-        {idx < statuses.length && (
-          <div className={`status-line ${idx < currentStatusIndex ? "active" : ""}`} />
-        )}
-
-        {/* ✅ Tooltip ONLY on Lead Accepted */}
-        <div
-          className={`status-text-box ${idx === currentStatusIndex ? "highlighted" : ""} ${isAcceptedStep ? "has-tip" : ""}`}
-          {...(isAcceptedStep ? { "data-tip": tip } : {})}
-        >
-          {status}
-        </div>
-      </div>
-    );
-  })}
-</div>
-
+      );
+    })}
+  </div>
 )}
 
+{officerTooltipPos && (() => {
+  const list = normalizeAssignedTo(leadData?.assignedTo);
+  if (!list.length) return null;
+  return createPortal(
+    <div
+      style={{
+        position: "fixed",
+        top: officerTooltipPos.top,
+        left: officerTooltipPos.left,
+        zIndex: 9999,
+        background: "#ffffff",
+        border: "1px solid #e0e0e0",
+        borderRadius: 8,
+        boxShadow: "0 4px 20px rgba(41,41,139,0.15)",
+        padding: "12px 14px",
+        minWidth: 220,
+        fontFamily: "Arial, sans-serif",
+        pointerEvents: "none",
+      }}
+    >
+      <div className={styles.officerTooltipTitle}>Assigned Officers</div>
+      {list.map(({ username, status: os }) => (
+        <div key={username} className={styles.officerItem} style={{ marginTop: 6 }}>
+          <span className={
+            os === "accepted" ? styles.officerIconAccepted :
+            os === "declined" ? styles.officerIconDeclined :
+            styles.officerIconPending
+          }>
+            {os === "accepted" ? "✓" : os === "declined" ? "✕" : "•"}
+          </span>
+          {displayUserAO(username)}
+        </div>
+      ))}
+    </div>,
+    document.getElementById("modal-root") || document.body
+  );
+})()}
 
             <LeadEventsModal
   open={eventsModalOpen}

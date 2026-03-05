@@ -43,7 +43,6 @@ import { AdminSP } from './Pages/Admin/AdminSP';
 import { AdminDB } from './Pages/Admin/AdminDB';
 import { AdminDashboard } from './Pages/Admin/Dashboard/AdminDashboard';
 import { OfficerManagement } from './Pages/OfficerManagement/OfficerManagement';
-import { LeadInfo } from './Pages/LeadInfo/LeadInfo';
 import { CaseInformation } from './Pages/CaseInformation/CaseInformation';
 import {LeadReview} from './Pages/LeadReview/LeadReview';
 import { LeadsDesk } from './Pages/LeadsDesk/LeadsDesk';
@@ -125,7 +124,6 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/AdminSP" element={<ProtectedLayout> <AdminSP />  </ProtectedLayout>} />
         <Route path="/AdminDB" element={<ProtectedLayout> <AdminDB /> </ProtectedLayout>} />
         <Route path="/OfficerManagement" element={<ProtectedLayout>  <OfficerManagement />  </ProtectedLayout>} />
-        <Route path="/LeadInfo" element={<ProtectedLayout>  <LeadInfo />  </ProtectedLayout>} />
         <Route path="/ViewLR" element={<ProtectedLayout> <ViewLR /> </ProtectedLayout>} />
         <Route path="/AdminDashboard" element={<ProtectedLayout> <AdminDashboard /> </ProtectedLayout>} />
         <Route path="/CaseInformation" element={<ProtectedLayout>  <CaseInformation /> </ProtectedLayout> } />
