@@ -548,15 +548,15 @@ const DeclineReasonModal = ({ open, onCancel, onSubmit, presetReasons }) => {
   if (!open) return null;
   
   return (
-    <div className="elog-backdrop" onClick={onCancel}>
-      <div className="elog-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="elog-header">
+    <div className={styles.elogBackdrop} onClick={onCancel}>
+      <div className={styles.elogModal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.elogHeader}>
           <h3>Reject Lead</h3>
-          <button className="elog-close" onClick={onCancel} aria-label="Close">✕</button>
+          <button className={styles.elogClose} onClick={onCancel} aria-label="Close">✕</button>
         </div>
 
-        <section className="elog-block">
-          <div className="elog-title">Please provide a reason</div>
+        <section className={styles.elogBlock}>
+          <div className={styles.elogTitle}>Please provide a reason</div>
 
           {/* Quick chips */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
@@ -564,7 +564,7 @@ const DeclineReasonModal = ({ open, onCancel, onSubmit, presetReasons }) => {
               <button
                 key={r}
                 type="button"
-                className="elog-chip"
+                className={styles.elogChip}
                 onClick={() => {
                   const textarea = textareaRef.current;
                   if (!textarea) {
@@ -629,12 +629,12 @@ const DeclineReasonModal = ({ open, onCancel, onSubmit, presetReasons }) => {
             autoFocus
           />
 
-          <div className="elog-actions" style={{ display: "flex", gap: 12, marginTop: 12, justifyContent: "flex-end" }}>
-            <button className="save-btn1" onClick={onCancel} style={{ background: "#ccc", color: "#000" }}>
+          <div className={styles.elogActions}>
+            <button className={styles.saveBtn1} onClick={onCancel} style={{ background: "#ccc", color: "#000" }}>
               Cancel
             </button>
             <button
-              className="save-btn1"
+              className={styles.saveBtn1}
               onClick={() => {
                 const trimmedReason = localReason.trim();
                 if (trimmedReason.length < 5) {
@@ -1525,38 +1525,45 @@ const LeadEventsModal = ({ open, onClose, events }) => {
   // sorted stream for the timeline
   const stream = [...evs].sort((a,b) => new Date(a.at) - new Date(b.at));
 
+  const toneStyle = {
+    ok:    styles.elogToneOk,
+    bad:   styles.elogToneBad,
+    info:  styles.elogToneInfo,
+    muted: styles.elogToneMuted,
+    base:  styles.elogToneBase,
+  };
+
   return (
-    <div className="elog-backdrop" onClick={onClose}>
-      <div className="elog-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="elog-header">
+    <div className={styles.elogBackdrop} onClick={onClose}>
+      <div className={styles.elogModal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.elogHeader}>
           <h3>Assignment Log</h3>
-          <div className="elog-chip">{lastStatus || ""}</div>
-          <button className="elog-close" onClick={onClose} aria-label="Close">✕</button>
+          <div className={styles.elogChip}>{lastStatus || ""}</div>
+          <button className={styles.elogClose} onClick={onClose} aria-label="Close">✕</button>
         </div>
 
         {/* SUMMARY */}
-        <section className="elog-block">
-
-          <div className="elog-counters">
-            <span className="elog-counter ok">Accepted {acceptedAt.size}</span>
-            <span className="elog-counter bad">Declined {declinedAt.size}</span>
-            <span className="elog-counter base">Pending {pending.length}</span>
+        <section className={styles.elogBlock}>
+          <div className={styles.elogCounters}>
+            <span className={`${styles.elogCounter} ${styles.elogCounterOk}`}>Accepted {acceptedAt.size}</span>
+            <span className={`${styles.elogCounter} ${styles.elogCounterBad}`}>Declined {declinedAt.size}</span>
+            <span className={`${styles.elogCounter} ${styles.elogCounterBase}`}>Pending {pending.length}</span>
           </div>
         </section>
 
         {/* TIMELINE */}
-        <section className="elog-block">
-          <div className="elog-title"></div>
+        <section className={styles.elogBlock}>
+          <div className={styles.elogTitle}></div>
           {stream.length === 0 ? (
-            <div className="elog-muted">No activity yet.</div>
+            <div className={styles.elogMuted}>No activity yet.</div>
           ) : (
-            <ul className="elog-list">
+            <ul className={styles.elogList}>
               {stream.map((ev, i) => (
-                <li key={i} className={`elog-item ${toneFor(ev.type)}`}>
-                  <div className="elog-pin">{iconFor(ev.type)}</div>
-                  <div className="elog-body">
-                    <div className="elog-line">{msg(ev)}</div>
-                    <div className="elog-meta">
+                <li key={i} className={`${styles.elogItem} ${toneStyle[toneFor(ev.type)] || styles.elogToneBase}`}>
+                  <div className={styles.elogPin}>{iconFor(ev.type)}</div>
+                  <div className={styles.elogBody}>
+                    <div className={styles.elogLine}>{msg(ev)}</div>
+                    <div className={styles.elogMeta}>
                       by <b>{nameOf(ev.by)}</b> • {fmtDT(ev.at)}
                     </div>
                   </div>
@@ -2086,14 +2093,14 @@ const assignmentHoverText = React.useMemo(() => {
 )} */}
 
 {showDecisionBlock && (
-  <div className="accept-reject-section">
-    <div className = "acceptance-head">
-    <h3 className="decision-title">Do you want to Accept / Reject this lead?</h3>
+  <div className={styles.acceptRejectSection}>
+    <div className={styles.acceptanceHead}>
+    <h3 className={styles.decisionTitle}>Do you want to Accept / Reject this lead?</h3>
     </div>
 
-    <div className="decision-actions">
+    <div className={styles.decisionActions}>
       <button
-        className="btn-accept"
+        className={styles.btnAccept}
         onClick={() =>
           acceptLead(leadData.leadNo, leadData.description)
         }
@@ -2102,7 +2109,7 @@ const assignmentHoverText = React.useMemo(() => {
       </button>
 
       <button
-        className="btn-reject"
+        className={styles.btnReject}
         onClick={() => setDeclineOpen(true)}
       >
         Reject
@@ -2193,7 +2200,7 @@ const assignmentHoverText = React.useMemo(() => {
         {assignedOfficers.map(displayUserAO).join(", ")}
       </div>
     ) : (
-      <div id="assigned-officers-wrap" className="inv-dropdown">
+      <div id="assigned-officers-wrap" className={styles.invDropdown}>
         <button
           type="button"
           className={styles.inputDisplay}
@@ -2208,20 +2215,20 @@ const assignmentHoverText = React.useMemo(() => {
               : "Select Officers"
           }
         >
-          <span className="inv-input-label">
+          <span className={styles.invInputLabel}>
             {assignedOfficers.length
               ? assignedOfficers.map(displayUserAO).join(", ")
               : "Select Officers"}
           </span>
-          <span className="inv-caret" aria-hidden />
+          <span className={styles.invCaret} aria-hidden />
         </button>
 
         {aoOpen && (
-          <div className="inv-options" role="listbox" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="inv-search-wrap">
+          <div className={styles.invOptions} role="listbox" onMouseDown={(e) => e.stopPropagation()}>
+            <div className={styles.invSearchWrap}>
               <input
                 type="text"
-                className="inv-search"
+                className={styles.invSearch}
                 placeholder="Type to filter officers…"
                 value={aoQuery}
                 onChange={(e) => setAoQuery(e.target.value)}
@@ -2229,12 +2236,12 @@ const assignmentHoverText = React.useMemo(() => {
               />
             </div>
 
-            <div className="inv-list">
+            <div className={styles.invList}>
               {filteredUsersAO.length ? (
                 filteredUsersAO.map((user) => {
                   const checked = assignedOfficers.includes(user.username);
                   return (
-                    <label key={user.username} className="inv-item">
+                    <label key={user.username} className={styles.invItem}>
                       <input
                         type="checkbox"
                         value={user.username}
@@ -2285,14 +2292,14 @@ const assignmentHoverText = React.useMemo(() => {
 
                       
                       />
-                      <span className="inv-text">
+                      <span className={styles.invText}>
                         {user.firstName} {user.lastName} ({user.username})
                       </span>
                     </label>
                   );
                 })
               ) : (
-                <div className="inv-empty">No matches</div>
+                <div className={styles.invEmpty}>No matches</div>
               )}
             </div>
           </div>
@@ -2343,17 +2350,17 @@ const assignmentHoverText = React.useMemo(() => {
                       {associatedSubCategories.length > 0 ? associatedSubCategories.join(", ") : ""}
                     </div>
                   ) : (
-                    <div className="custom-dropdown">
+                    <div className={styles.customDropdown}>
                       <div className={styles.inputDisplay} onClick={() => setSubDropdownOpen(!subDropdownOpen)}>
                         {associatedSubCategories.length > 0 ? associatedSubCategories.join(", ") : "Select Subcategories"}
-                        <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
+                        <span className={styles.dropdownIcon}>{subDropdownOpen ? "▲" : "▼"}</span>
                       </div>
                       {subDropdownOpen && (
-                        <div className="dropdown-options">
-                          {subcatsLoading && <div className="dropdown-item">Loading…</div>}
-                          {!subcatsLoading && caseSubCategories.length === 0 && (<div className="dropdown-item">No subcategories for this case</div>)}
+                        <div className={styles.dropdownOptions}>
+                          {subcatsLoading && <div className={styles.dropdownItem}>Loading…</div>}
+                          {!subcatsLoading && caseSubCategories.length === 0 && (<div className={styles.dropdownItem}>No subcategories for this case</div>)}
                           {!subcatsLoading && caseSubCategories.length > 0 && caseSubCategories.map((subNum) => (
-                            <div key={subNum} className="dropdown-item">
+                            <div key={subNum} className={styles.dropdownItem}>
                               <input type="checkbox" id={`assoc-${subNum}`} value={subNum} checked={associatedSubCategories.includes(subNum)}
                                 onChange={(e) => {
                                   const updated = e.target.checked ? [...associatedSubCategories, subNum] : associatedSubCategories.filter((n) => n !== subNum);
