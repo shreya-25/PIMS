@@ -15,9 +15,7 @@ import {CasePageManager} from './Pages/CasePageManager/CasePageManager';
 import {Investigator} from './Pages/Investigator/Investigator';
 import {CreateLead} from './Pages/CreateLead/CreateLead';
 import { LeadLog } from './Pages/LeadLog/LeadLog';
-import { LeadHierarchy1 } from './Pages/LeadHierarchy/LeadHierarchy1';
 import { CaseScratchpad } from './Pages/CaseScratchpad/CaseScratchpad';
-import { LeadReturn } from './Pages/LeadReturn/LeadReturn';
 import { LRInstruction } from './Pages/InvestgatorLR/LRInstruction/LRInstruction';
 import { LRResult } from './Pages/InvestgatorLR/LRResult/LRResult';
 import { LRPerson } from './Pages/InvestgatorLR/LRPerson/LRPerson';
@@ -30,7 +28,6 @@ import { LRAudio } from './Pages/InvestgatorLR/LRAudio/LRAudio';
 import { LRVideo } from './Pages/InvestgatorLR/LRVideo/LRVideo';
 import { LRScratchpad } from './Pages/InvestgatorLR/LRScratchpad/LRScratchpad';
 import { LRTimeline } from './Pages/InvestgatorLR/LRTimeline/LRTimeline';
-import { LRFinish } from './Pages/InvestgatorLR/LRFinish/LRFinish';
 import { FlaggedLead } from './Pages/FlaggedLead/FlaggedLead';
 import { SearchLead } from './Pages/SearchLead/SearchLead';
 import { ViewTimeline } from './Pages/ViewTimeline/ViewTimeline';
@@ -42,8 +39,6 @@ import { AdminSC } from './Pages/Admin/AdminSC';
 import { AdminSP } from './Pages/Admin/AdminSP';
 import { AdminDB } from './Pages/Admin/AdminDB';
 import { AdminDashboard } from './Pages/Admin/Dashboard/AdminDashboard';
-import { OfficerManagement } from './Pages/OfficerManagement/OfficerManagement';
-import { CaseInformation } from './Pages/CaseInformation/CaseInformation';
 import {LeadReview} from './Pages/LeadReview/LeadReview';
 import { LeadsDesk } from './Pages/LeadsDesk/LeadsDesk';
 import { LeadsDeskTest } from './Pages/LeadsDeskTest/LeadsDeskTest';
@@ -54,9 +49,6 @@ import { GlobalErrorProvider } from './GlobalErrorProvider';
 import { DocumentReview } from './Pages/DocumentReview/DocumentReview';
 import { ClosedCase } from './Pages/ClosedCase/ClosedCase';
 import { LeadVersionHistory } from './Pages/LeadVersionHistory/LeadVersionHistory';
-
-// import { Report} from './Pages/Report/Report'
-// import {ReportWrapper} from './Pages/Report/ReportWrapper'
 import { LeadsDeskTestExecSummary} from './Pages/LeadsDeskTest/LeadsDeskTestExecSummary';
 import ProtectedLayout from './protectedLayout';
 
@@ -99,9 +91,7 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/CreateLead" element={<ProtectedLayout> <CreateLead /> </ProtectedLayout>} />
         <Route path="/leadlog" element={<ProtectedLayout> <LeadLog /> </ProtectedLayout>} />
         <Route path="/FlaggedLead" element={<ProtectedLayout> <FlaggedLead /> </ProtectedLayout>} />
-        <Route path="/LeadHierarchy1" element={<LeadHierarchy1 />} />
         <Route path="/CaseScratchpad" element={<ProtectedLayout> <CaseScratchpad /> </ProtectedLayout>} />
-        <Route path="/LeadReturn" element={<ProtectedLayout> <LeadReturn /> </ProtectedLayout>} />
         <Route path="/LRInstruction" element={<ProtectedLayout> <LRInstruction /> </ProtectedLayout>} />
         <Route path="/LRReturn" element={<ProtectedLayout> <LRResult /> </ProtectedLayout>} />
         <Route path="/LRPerson" element={<ProtectedLayout> <LRPerson /> </ProtectedLayout>} />
@@ -112,7 +102,6 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/LRPictures" element={<ProtectedLayout>  <LRPictures /> </ProtectedLayout> } />
         <Route path="/LRAudio" element={<ProtectedLayout> <LRAudio /> </ProtectedLayout> } />
         <Route path="/LRVideo" element={<ProtectedLayout> <LRVideo /> </ProtectedLayout> } />
-        <Route path="/LRFinish" element={<ProtectedLayout> <LRFinish /> </ProtectedLayout> } />
         <Route path="/LRScratchpad" element={<ProtectedLayout>  <LRScratchpad /> </ProtectedLayout> } />
         <Route path="/SearchLead" element={<ProtectedLayout>   <SearchLead /> </ProtectedLayout>} />
         <Route path="/LRTimeline" element={<ProtectedLayout><LRTimeline /> </ProtectedLayout>} />
@@ -123,10 +112,8 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/AdminSC" element={<ProtectedLayout>  <AdminSC />  </ProtectedLayout>} />
         <Route path="/AdminSP" element={<ProtectedLayout> <AdminSP />  </ProtectedLayout>} />
         <Route path="/AdminDB" element={<ProtectedLayout> <AdminDB /> </ProtectedLayout>} />
-        <Route path="/OfficerManagement" element={<ProtectedLayout>  <OfficerManagement />  </ProtectedLayout>} />
         <Route path="/ViewLR" element={<ProtectedLayout> <ViewLR /> </ProtectedLayout>} />
         <Route path="/AdminDashboard" element={<ProtectedLayout> <AdminDashboard /> </ProtectedLayout>} />
-        <Route path="/CaseInformation" element={<ProtectedLayout>  <CaseInformation /> </ProtectedLayout> } />
         <Route path="/LeadReview" element = {<ProtectedLayout> <LeadReview /> </ProtectedLayout> } />
         <Route path="/LeadsDesk" element= {<ProtectedLayout>  <LeadsDesk /> </ProtectedLayout> } />
         <Route path="/LeadsDeskTest" element= {<ProtectedLayout>  <LeadsDeskTest /> </ProtectedLayout> } />
@@ -137,8 +124,6 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/DocumentReview" element={<ProtectedLayout><DocumentReview /></ProtectedLayout>} />
         <Route path="/ClosedCase" element={<ProtectedLayout><ClosedCase /></ProtectedLayout>} />
         <Route path="/LeadVersionHistory" element={<ProtectedLayout><LeadVersionHistory /></ProtectedLayout>} />
-
-        {/* <Route path ="/Report" element= {<Report />} /> */}
       </Routes>
 
            <AlertModal
