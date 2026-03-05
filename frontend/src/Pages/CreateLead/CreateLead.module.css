@@ -1,0 +1,473 @@
+/* ============================================================
+   CreateLead – CSS Module
+   Primary accent: #29298b (app navy)
+   ============================================================ */
+
+/* ===== Page wrapper ===== */
+.page {
+  height: 100vh;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+  background-color: #f4f6f9;
+}
+
+/* ===== Main content area (right of fixed 20% sidebar) ===== */
+.mainContainer {
+  margin-left: 20%;
+  width: 80%;
+  height: calc(100vh - 110px);
+  margin-top: 110px;
+  overflow: hidden;
+  display: flex;           /* row direction – mirrors LRIContent */
+}
+
+/* ===== Scrollable column ===== */
+.leftContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;            /* resolves against mainContainer's explicit height */
+  overflow: hidden;
+}
+
+/* ===== Page heading ===== */
+.caseHeader {
+  width: 100%;
+  padding: 16px 24px;
+  box-sizing: border-box;
+  text-align: center;
+  background: #ffffff;
+  border-bottom: 1px solid #e8eaf0;
+  flex-shrink: 0;
+}
+
+.caseHeader h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a2e;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* ===== Main scrollable content ===== */
+.lriContentSection {
+  display: block;
+  width: 100%;
+  padding: 16px 24px;
+  box-sizing: border-box;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ===== Summary strip (Lead No. / Case No. table) ===== */
+.leadsTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid #dde1e9;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  margin-bottom: 16px;
+}
+
+.leadsTable th {
+  background-color: #4040a8;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #3535a0;
+  border-right: 1px solid #3535a0;
+}
+
+.leadsTable th:last-child {
+  border-right: none;
+}
+
+.leadsTable td {
+  padding: 12px 16px;
+  font-size: 18px;
+  color: #333;
+  background-color: #fff;
+  vertical-align: middle;
+  border-right: 1px solid #dde1e9;
+}
+
+.leadsTable td:last-child {
+  border-right: none;
+}
+
+.leadsTable tbody tr:hover td {
+  background-color: #f7f8ff;
+}
+
+/* ===== Form card ===== */
+.bottomContent {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(41, 41, 139, 0.10);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+/* ===== Details form table ===== */
+.detailsTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.detailsTable tr {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.detailsTable tr:last-child {
+  border-bottom: none;
+}
+
+.detailsTable td {
+  padding: 12px 16px;
+  font-size: 18px;
+  vertical-align: middle;
+  color: #555;
+}
+
+.detailsTable td:first-child {
+  width: 28%;
+  font-weight: 600;
+  color: #666;
+  background-color: #f8f9fc;
+  border-right: 1px solid #f0f0f0;
+}
+
+/* ===== Inline label cell (for side-by-side rows) ===== */
+.labelCell {
+  font-weight: 600;
+  color: #666;
+  background-color: #f8f9fc;
+  border-left: 1px solid #f0f0f0;
+  border-right: 1px solid #f0f0f0;
+  padding: 12px 16px;
+  font-size: 18px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* ===== Inputs / selects – grey background (LRReturn style) ===== */
+.inputField {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 18px;
+  color: #555;
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.18s;
+  font-family: inherit;
+}
+
+.inputField:focus {
+  border-color: #888;
+  background-color: #efefef;
+}
+
+.inputField:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Auto-populated / read-only fields get white background to distinguish from editable grey */
+.inputField:read-only,
+.inputField[readonly] {
+  background-color: #ffffff;
+  color: #444;
+  cursor: default;
+  border-color: #e8e8e8;
+}
+
+/* Select elements – grey with custom caret */
+select.inputField {
+  background-color: #f5f5f5;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b7280'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+  cursor: pointer;
+}
+
+select.inputField:focus {
+  border-color: #888;
+  background-color: #efefef;
+}
+
+select.inputField:disabled {
+  background-color: #f0f0f0;
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ===== Textarea ===== */
+.textareaField {
+  width: 100%;
+  min-height: 100px;
+  padding: 8px 10px;
+  font-size: 18px;
+  font-family: inherit;
+  color: #555;
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  box-sizing: border-box;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.18s;
+}
+
+.textareaField:focus {
+  border-color: #888;
+  background-color: #efefef;
+}
+
+/* ===== Associated subcategories custom dropdown ===== */
+.customDropdown {
+  position: relative;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 18px;
+  background-color: #f5f5f5;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.dropdownHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 18px;
+  color: #555;
+}
+
+.dropdownIcon {
+  font-size: 12px;
+  color: #666;
+  margin-left: 6px;
+}
+
+.dropdownOptions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+  max-height: 180px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10);
+  z-index: 200;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.dropdownItem:hover {
+  background-color: #f0f0f0;
+}
+
+.dropdownItem input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin-right: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.dropdownItem label {
+  font-size: 16px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.dropdownItemNoOption {
+  font-size: 16px;
+  font-weight: 300;
+  padding: 10px 12px;
+  color: #888;
+}
+
+/* ===== Assign Officers dropdown ===== */
+.invDropdown {
+  position: relative;
+  width: 100%;
+  font-size: 18px;
+}
+
+.invInput {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 34px 8px 10px;
+  font-size: 18px;
+  color: #555;
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s;
+  font-family: inherit;
+}
+
+.invInput:hover {
+  border-color: #aaa;
+}
+
+.invInput:focus,
+.invInput:focus-visible {
+  outline: none;
+  border-color: #29298b;
+}
+
+.invInputLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  font-size: 18px;
+  font-weight: 400;
+  color: #555;
+}
+
+.invCaret {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid #6b7280;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.invOptions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10);
+  z-index: 200;
+  max-height: 260px;
+  display: flex;
+  flex-direction: column;
+}
+
+.invSearchWrap {
+  padding: 8px;
+  border-bottom: 1px solid #f0f0f0;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.invSearch {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+  outline: none;
+  font-family: inherit;
+}
+
+.invSearch:focus {
+  border-color: #29298b;
+}
+
+.invList {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.invItem {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.invItem:hover {
+  background-color: #f0f0f0;
+}
+
+.invItem input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin-right: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.invText {
+  font-size: 16px;
+}
+
+.invEmpty {
+  padding: 12px;
+  font-size: 16px;
+  color: #888;
+  text-align: center;
+}
+
+/* ===== Action button row ===== */
+.btnSec {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 8px 0 4px;
+  flex-shrink: 0;
+}
+
+.nextBtn {
+  padding: 10px 36px;
+  font-size: 20px;
+  font-weight: 600;
+  background-color: #1a73e8;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: 0.2px;
+  transition: background-color 0.18s ease;
+}
+
+.nextBtn:hover {
+  background-color: #1558b0;
+}

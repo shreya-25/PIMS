@@ -18,7 +18,7 @@ import html2canvas from "html2canvas";
 import api from "../../api"; // adjust the path as needed
 
 
-import "./LeadsDeskExecSummary.css";
+import styles from "./GenerateReport.module.css";
 
 // ---------- Helper to format dates as MM/DD/YY ----------
 const formatDate = (dateString) => {
@@ -200,21 +200,21 @@ const buckets = groupSectionsByReturn({
 function CollapsibleSection({ title, defaultOpen = true, rightSlot = null, children }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="collapsible">
+    <section className={styles.collapsible}>
       <header
-        className="collapsible__header"
+        className={styles['collapsible__header']}
         onClick={() => setOpen(o => !o)}
         role="button"
         aria-expanded={open}
         tabIndex={0}
         onKeyDown={(e) => (e.key === "Enter" || e.key === " " ? setOpen(o => !o) : null)}
       >
-        <div className="collapsible__title">
-          <span className="chev">{open ? "▾" : "▸"}</span> {title}
+        <div className={styles['collapsible__title']}>
+          <span className={styles.chev}>{open ? "▾" : "▸"}</span> {title}
         </div>
         {rightSlot ? <div onClick={(e) => e.stopPropagation()}>{rightSlot}</div> : null}
       </header>
-      {open && <div className="collapsible__body">{children}</div>}
+      {open && <div className={styles['collapsible__body']}>{children}</div>}
     </section>
   );
 }
@@ -276,59 +276,59 @@ function FlagPicker({
   
 
   return (
-    <div className="fp-root">
+    <div className={styles['fp-root']}>
       <button
         type="button"
         ref={btnRef}
-        className={`fp-btn ${disabled ? "fp-btn--disabled" : ""}`}
+        className={`${styles['fp-btn']} ${disabled ? styles['fp-btn--disabled'] : ''}`}
         onClick={() => !disabled && setOpen(o => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
         disabled={disabled}
         title={selected.length ? selected.join(", ") : placeholder}
       >
-        <div className="fp-btn-content">
-          {selected.length === 0 && <span className="fp-placeholder">{placeholder}</span>}
+        <div className={styles['fp-btn-content']}>
+          {selected.length === 0 && <span className={styles['fp-placeholder']}>{placeholder}</span>}
           {selected.length > 0 && (
-            <div className="fp-chips">
+            <div className={styles['fp-chips']}>
               {selected.slice(0, 3).map(f => (
-                <span key={f} className="fp-chip" onClick={(e) => { e.stopPropagation(); }}>
+                <span key={f} className={styles['fp-chip']} onClick={(e) => { e.stopPropagation(); }}>
                   {f}
                 </span>
               ))}
-              {selected.length > 3 && <span className="fp-chip fp-chip--more">+{selected.length - 3}</span>}
+              {selected.length > 3 && <span className={`${styles['fp-chip']} ${styles['fp-chip--more']}`}>+{selected.length - 3}</span>}
             </div>
           )}
-          <span className="fp-caret" aria-hidden>▾</span>
+          <span className={styles['fp-caret']} aria-hidden>▾</span>
         </div>
       </button>
 
       {open && (
-        <div className="fp-panel" ref={panelRef} role="listbox" aria-multiselectable={multiple}>
-          <div className="fp-toprow">
+        <div className={styles['fp-panel']} ref={panelRef} role="listbox" aria-multiselectable={multiple}>
+          <div className={styles['fp-toprow']}>
             <input
-              className="fp-search"
+              className={styles['fp-search']}
               placeholder="Search flags…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               autoFocus
             />
-            <div className="fp-actions">
+            <div className={styles['fp-actions']}>
               {multiple && (
-                <button type="button" className="btn btn-secondary fp-small" onClick={selectAll} disabled={!filtered.length}>
+                <button type="button" className={`${styles.btn} ${styles['btn-secondary']} ${styles['fp-small']}`} onClick={selectAll} disabled={!filtered.length}>
                   Select all
                 </button>
               )}
-              <button type="button" className="btn btn-secondary fp-small" onClick={clearAll} disabled={!selected.length}>
+              <button type="button" className={`${styles.btn} ${styles['btn-secondary']} ${styles['fp-small']}`} onClick={clearAll} disabled={!selected.length}>
                 Clear
               </button>
             </div>
           </div>
 
-          <div className="fp-list" tabIndex={-1}>
+          <div className={styles['fp-list']} tabIndex={-1}>
             {filtered.length ? (
               filtered.map(f => (
-                <label key={f} className="fp-item">
+                <label key={f} className={styles['fp-item']}>
                   {multiple ? (
                     <input
                       type="checkbox"
@@ -343,11 +343,11 @@ function FlagPicker({
                       onChange={() => toggle(f)}
                     />
                   )}
-                  <span className="fp-item-text">{f}</span>
+                  <span className={styles['fp-item-text']}>{f}</span>
                 </label>
               ))
             ) : (
-              <div className="fp-empty">No flags found</div>
+              <div className={styles['fp-empty']}>No flags found</div>
             )}
           </div>
         </div>
@@ -435,7 +435,7 @@ const fetchLeadHierarchyFullDetails = async (leadNo, caseNo, caseName, token, ch
   return allChains;
 };
 
-export const LeadsDeskTestExecSummary = () => {
+export const GenerateReport = () => {
   // useEffect(() => {
   //   document.body.style.overflow = "hidden";
   //   return () => {
@@ -1378,10 +1378,10 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
            "");
 
     return (
-      <div key={leadIndex} className={`lead-section ${isDeleted ? "is-deleted" : ""}`} onClick={(e) => handleLeadCardClick(e, lead)} >
-        <div className="leads-container">
+      <div key={leadIndex} className={`${styles['lead-section']} ${isDeleted ? styles['is-deleted'] : ''}`} onClick={(e) => handleLeadCardClick(e, lead)} >
+        <div className={styles['leads-container']}>
           {/* Lead header */}
-          <table className="lead-details-table">
+          <table className={styles['lead-details-table']}>
             <colgroup>
               <col style={{ width: "15%" }} />
               <col style={{ width: "7%" }} />
@@ -1394,24 +1394,24 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
             </colgroup>
             <tbody>
               <tr>
-                <td className="label-cell">Lead Number</td>
-                <td className="input-cell"><input type="text" value={lead.leadNo} readOnly /></td>
-                <td className="label-cell">Lead Origin</td>
-                <td className="input-cell">
+                <td className={styles['label-cell']}>Lead Number</td>
+                <td className={styles['input-cell']}><input type="text" value={lead.leadNo} readOnly /></td>
+                <td className={styles['label-cell']}>Lead Origin</td>
+                <td className={styles['input-cell']}>
                   <input
                     type="text"
                     value={Array.isArray(lead.parentLeadNo) ? lead.parentLeadNo.join(", ") : (lead.parentLeadNo || "")}
                     readOnly
                   />
                 </td>
-                <td className="label-cell">Assigned Date</td>
-                <td className="input-cell"><input type="text" value={formatDate(lead.assignedDate)} readOnly /></td>
-                <td className="label-cell">Completed Date</td>
-                <td className="input-cell"><input type="text" value={formatDate(lead.completedDate)} readOnly /></td>
+                <td className={styles['label-cell']}>Assigned Date</td>
+                <td className={styles['input-cell']}><input type="text" value={formatDate(lead.assignedDate)} readOnly /></td>
+                <td className={styles['label-cell']}>Completed Date</td>
+                <td className={styles['input-cell']}><input type="text" value={formatDate(lead.completedDate)} readOnly /></td>
               </tr>
               <tr>
-                <td className="label-cell">Assigned Officers</td>
-                <td className="input-cell" colSpan={7}>
+                <td className={styles['label-cell']}>Assigned Officers</td>
+                <td className={styles['input-cell']} colSpan={7}>
                   <input
                     type="text"
                     value={
@@ -1427,25 +1427,25 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
           </table>
 
           {/* Instruction + deleted reason */}
-          <table className="leads-table">
+          <table className={styles['leads-table']}>
             <tbody>
-              <tr className="table-first-row">
-                <td style={{ textAlign: "center", fontSize: "18px" }} className="input-cell">Lead Instruction</td>
+              <tr className={styles['table-first-row']}>
+                <td style={{ textAlign: "center", fontSize: "18px" }} className={styles['input-cell']}>Lead Instruction</td>
                 <td>
                   <input
                     type="text"
                     value={lead.description || ""}
-                    className="instruction-input"
+                    className={styles['instruction-input']}
                     readOnly
                   />
                 </td>
               </tr>
 
               {isDeleted && (
-                <tr className="deleted-row">
-                  <td style={{ textAlign: "center", fontSize: "18px" }} className="label-cell">Deleted Reason</td>
+                <tr className={styles['deleted-row']}>
+                  <td style={{ textAlign: "center", fontSize: "18px" }} className={styles['label-cell']}>Deleted Reason</td>
                   <td>
-                    <input type="text" value={deletedReason || "N/A"} readOnly className="instruction-input" />
+                    <input type="text" value={deletedReason || "N/A"} readOnly className={styles['instruction-input']} />
                   </td>
                 </tr>
               )}
@@ -1461,7 +1461,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                       </td>
                       <td>
                         <textarea
-                          className="lead-return-input"
+                          className={styles['lead-return-input']}
                           value={returnItem.leadReturnResult || ""}
                           readOnly
                           style={{
@@ -1515,9 +1515,9 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                     {Array.isArray(returnItem.persons) && returnItem.persons.length > 0 && (
                       <tr>
                         <td colSpan={2}>
-                          <div className="person-section">
-                            <h3 className="title-ld">Person Details</h3>
-                            <table className="lead-table2" style={{ width: "100%", tableLayout: "fixed" }}>
+                          <div className={styles['person-section']}>
+                            <h3 className={styles['title-ld']}>Person Details</h3>
+                            <table className={styles['lead-table2']} style={{ width: "100%", tableLayout: "fixed" }}>
                               <thead>
                                 <tr>
                                   <th>Date Entered</th>
@@ -1540,7 +1540,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                                     </td>
                                     <td>
                                       <button
-                                        className="download-btn"
+                                        className={styles['download-btn']}
                                         onClick={() =>
                                           openPersonModal(
                                             lead.leadNo,
@@ -1578,9 +1578,9 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                     {Array.isArray(returnItem.vehicles) && returnItem.vehicles.length > 0 && (
                       <tr>
                         <td colSpan={2}>
-                          <div className="person-section">
-                            <h3 className="title-ld">Vehicles Details</h3>
-                            <table className="lead-table2" style={{ width: "100%", tableLayout: "fixed" }}>
+                          <div className={styles['person-section']}>
+                            <h3 className={styles['title-ld']}>Vehicles Details</h3>
+                            <table className={styles['lead-table2']} style={{ width: "100%", tableLayout: "fixed" }}>
                               <thead>
                                 <tr>
                                   <th>Date Entered</th>
@@ -1616,7 +1616,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                                     <td>{_fmt(vehicle.state)}</td>
                                     <td>
                                       <button
-                                        className="download-btn"
+                                        className={styles['download-btn']}
                                         onClick={() =>
                                           openVehicleModal(
                                             lead.leadNo,
@@ -1655,9 +1655,9 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                     {Array.isArray(returnItem.enclosures) && returnItem.enclosures.length > 0 && (
                       <tr>
                         <td colSpan={2}>
-                          <div className="person-section">
-                            <h3 className="title-ld">Enclosures</h3>
-                            <table className="lead-table2" style={{ width: "100%", tableLayout: "fixed" }}>
+                          <div className={styles['person-section']}>
+                            <h3 className={styles['title-ld']}>Enclosures</h3>
+                            <table className={styles['lead-table2']} style={{ width: "100%", tableLayout: "fixed" }}>
                               <thead>
                                 <tr>
                                   <th>Date</th>
@@ -1689,7 +1689,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                                       <td>{_fmt(enc?.accessLevel || enc?.access)}</td>
                                       <td>
                                         {href && (
-                                          <button className="download-btn" onClick={() => _openNew(href)}>Open</button>
+                                          <button className={styles['download-btn']} onClick={() => _openNew(href)}>Open</button>
                                         )}
                                       </td>
                                     </tr>
@@ -1706,9 +1706,9 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                     {Array.isArray(returnItem.evidence) && returnItem.evidence.length > 0 && (
                       <tr>
                         <td colSpan={2}>
-                          <div className="person-section">
-                            <h3 className="title-ld">Evidence</h3>
-                            <table className="lead-table2" style={{ width: "100%", tableLayout: "fixed" }}>
+                          <div className={styles['person-section']}>
+                            <h3 className={styles['title-ld']}>Evidence</h3>
+                            <table className={styles['lead-table2']} style={{ width: "100%", tableLayout: "fixed" }}>
                               <thead>
                                 <tr>
                                   <th>Date</th>
@@ -1741,8 +1741,8 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                     {/* {Array.isArray(returnItem.pictures) && returnItem.pictures.length > 0 && (
                       <tr>
                         <td colSpan={2}>
-                          <div className="person-section">
-                            <h3 className="title-ld">Pictures</h3>
+                          <div className={styles['person-section']}>
+                            <h3 className={styles['title-ld']}>Pictures</h3>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
                               {returnItem.pictures.map((pic, pi) => {
                                 const url = pic?.url || pic?.fileUrl;
@@ -1778,9 +1778,9 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                     {Array.isArray(returnItem.audio) && returnItem.audio.length > 0 && (
                       <tr>
                         <td colSpan={2}>
-                          <div className="person-section">
-                            <h3 className="title-ld">Audio</h3>
-                            <table className="lead-table2" style={{ width: "100%" }}>
+                          <div className={styles['person-section']}>
+                            <h3 className={styles['title-ld']}>Audio</h3>
+                            <table className={styles['lead-table2']} style={{ width: "100%" }}>
                               <thead>
                                 <tr>
                                   <th>Date</th>
@@ -1812,9 +1812,9 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                     {Array.isArray(returnItem.videos) && returnItem.videos.length > 0 && (
                       <tr>
                         <td colSpan={2}>
-                          <div className="person-section">
-                            <h3 className="title-ld">Videos</h3>
-                            <table className="lead-table2" style={{ width: "100%" }}>
+                          <div className={styles['person-section']}>
+                            <h3 className={styles['title-ld']}>Videos</h3>
+                            <table className={styles['lead-table2']} style={{ width: "100%" }}>
                               <thead>
                                 <tr>
                                   <th>Date</th>
@@ -1853,9 +1853,9 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                     {Array.isArray(returnItem.scratchpad) && returnItem.scratchpad.length > 0 && (
                       <tr>
                         <td colSpan={2}>
-                          <div className="person-section">
-                            <h3 className="title-ld">Notes</h3>
-                            <table className="lead-table2" style={{ width: "100%", tableLayout: "fixed" }}>
+                          <div className={styles['person-section']}>
+                            <h3 className={styles['title-ld']}>Notes</h3>
+                            <table className={styles['lead-table2']} style={{ width: "100%", tableLayout: "fixed" }}>
                               <thead>
                                 <tr>
                                   <th>Date</th>
@@ -1882,9 +1882,9 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
                     {Array.isArray(returnItem.timeline) && returnItem.timeline.length > 0 && (
                       <tr>
                         <td colSpan={2}>
-                          <div className="person-section">
-                            <h3 className="title-ld">Timeline</h3>
-                            <table className="lead-table2" style={{ width: "100%", tableLayout: "fixed" }}>
+                          <div className={styles['person-section']}>
+                            <h3 className={styles['title-ld']}>Timeline</h3>
+                            <table className={styles['lead-table2']} style={{ width: "100%", tableLayout: "fixed" }}>
                               <thead>
                                 <tr>
                                   <th>Start</th>
@@ -1940,28 +1940,11 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
 };
 
   return (
-    <div ref={pdfRef} className="lead-desk-page">
+    <div ref={pdfRef} className={styles['lead-desk-page']}>
       <Navbar />
 
-      <div className="main-content-ld-ExecSummary">
-        {/* <div className="sideitem">
-          <ul className="sidebar-list">
-            <li className="sidebar-item">Case Information</li>
-            <li className="sidebar-item" onClick={() => navigate("/CasePageManager")}>Case Page</li>
-            <li className="sidebar-item" onClick={() => navigate("/CreateLead")}>New Lead</li>
-            <li className="sidebar-item" onClick={() => navigate("/SearchLead")}>Search Lead</li>
-            <li className="sidebar-item">View Lead Return</li>
-            <li className="sidebar-item" onClick={() => navigate("/ViewHierarchy")}>View Lead Chain of Custody</li>
-            <li className="sidebar-item" onClick={() => navigate("/LeadLog")}>View Lead Log</li>
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>View/Add Case Notes</li>
-            <li className="sidebar-item" onClick={() => navigate("/FlaggedLead")}>View Flagged Leads</li>
-            <li className="sidebar-item" onClick={() => navigate("/ViewTimeline")}>View Timeline Entries</li>
-            <li className="sidebar-item active" onClick={() => navigate("/LeadsDesk")}>View Leads Desk</li>
-            <li className="sidebar-item" onClick={() => navigate("/HomePage")}>Go to Home Page</li>
-          </ul>
-        </div> */}
-
-        <div className="right-sec">
+      <div className={styles['main-content-ld-ExecSummary']}>
+        <div className={styles['right-sec']}>
 
         {/* <div className="caseandleadinfo"> 
           <h5 className = "side-title">  Case {selectedCase.caseNo || ""}: {selectedCase.caseName || "Unknown Case"} </h5> 
@@ -1969,18 +1952,18 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
 
           </div> */}
 
-             <div className="ld-head">
-            <Link to="/HomePage" className="crumb">PIMS Home</Link>
-            <span className="sep">{" >> "}</span>
+             <div className={styles['ld-head']}>
+            <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+            <span className={styles.sep}>{" >> "}</span>
             <Link
               to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
               state={{ caseDetails: selectedCase }}
-              className="crumb"
+              className={styles.crumb}
             >
               Case Page: {selectedCase.caseNo || ""}: {selectedCase.caseName || "Unknown Case"}
             </Link>
-            <span className="sep">{" >> "}</span>
-            <span className="crumb-current" aria-current="page">Generate Report</span>
+            <span className={styles.sep}>{" >> "}</span>
+            <span className={styles['crumb-current']} aria-current="page">Generate Report</span>
           </div>
 
           {/* <div className="header-ld-exec"> */}
@@ -2018,95 +2001,88 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
          </div>
        </div> */}
 
-       <div className="down-content"> 
+       <div className={styles['down-content']}>
           {reportType === 'all' && summaryMode === 'type' && (
-        <div className="exec-summary-sec">
-          <h3>Executive Summary</h3>
-
-<textarea
-  className="summary-input"
-  placeholder="Type here..."
-  value={typedSummary}
-  onChange={e => setTypedSummary(e.target.value)}
-  disabled={!useWebpageSummary}
-  style={{ opacity: useWebpageSummary ? 1 : 0.5 }}
-/>
-
-        </div>
+            <div className={styles['exec-summary-sec']}>
+              <h3 style={{ marginTop: 0 }}>Executive Summary</h3>
+              <textarea
+                className={styles['summary-input']}
+                placeholder="Type here..."
+                value={typedSummary}
+                onChange={e => setTypedSummary(e.target.value)}
+              />
+            </div>
           )}
-
-
-        {/* <div className="left-content-execSummary"> */}
-        <div className="left-content-execSummary">
+        <div className={styles['left-content-execSummary']}>
 
         {/* <div className="case-header">
             <h2>LEADS DESK</h2>
           </div>
-          <div className="center-section-ld">
+          <div className={styles['center-section-ld']}>
             <h1>
               CASE: {selectedCase.caseNo || "N/A"} | {selectedCase.caseName.toUpperCase() || "Unknown Case"}
             </h1>
           </div> */}
 
-          <div className="bottom-sec-ldExecSummary" id="main-content">
+          <div className={styles['bottom-sec-ldExecSummary']} id="main-content">
           
 <CollapsibleSection title="Generate Report" defaultOpen={true}>
 
   {/* Single straight-line checkbox row */}
-  <div className="reportTargetRow" style={{display:'flex',gap:20,alignItems:'center',flexWrap:'wrap'}}>
-    <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:2, fontSize: '20px'}}>
+  <div className="reportTargetRow" style={{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
+    <label className={styles.summaryOption1}>
       <input
         type="checkbox"
         checked={reportType === 'all'}
         onChange={() => setReportType(reportType === 'all' ? null : 'all')}
       />
-      <span className="summaryOptionText1">All leads</span>
+      <span className={styles.summaryOptionText1}>All leads</span>
     </label>
 
-    <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:2}}>
+    <label className={styles.summaryOption1}>
       <input
         type="checkbox"
         checked={reportType === 'single'}
         onChange={() => setReportType(reportType === 'single' ? null : 'single')}
       />
-      <span className="summaryOptionText1">Single lead</span>
+      <span className={styles.summaryOptionText1}>Single lead</span>
     </label>
 
-     <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:2}}>
+     <label className={styles.summaryOption1}>
       <input
         type="checkbox"
         checked={reportType === 'selected'}
         onChange={() => setReportType(reportType === 'selected' ? null : 'selected')}
       />
-      <span className="summaryOptionText1">Selected leads</span>
+      <span className={styles.summaryOptionText1}>Selected leads</span>
     </label>
 
     
 
-    <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:2}}>
+    <label className={styles.summaryOption1}>
       <input
         type="checkbox"
         checked={reportType === 'hierarchy'}
         onChange={() => setReportType(reportType === 'hierarchy' ? null : 'hierarchy')}
       />
-      <span className="summaryOptionText1">Lead hierarchy</span>
+      <span className={styles.summaryOptionText1}>Lead hierarchy</span>
     </label>
 
-    <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:2}}>
+    <label className={styles.summaryOption1}>
       <input
         type="checkbox"
         checked={reportType === 'timeline'}
         onChange={() => setReportType(reportType === 'timeline' ? null : 'timeline')}
       />
-      <span className="summaryOptionText1">Timeline leads</span>
+      <span className={styles.summaryOptionText1}>Timeline leads</span>
     </label>
-     <label className="summaryOption1" style={{display:'inline-flex',alignItems:'center',gap:2}}>
+     <label className={styles.summaryOption1}>
       <input
         type="checkbox"
         checked={reportType === 'flagged'}
         onChange={() => setReportType(reportType === 'flagged' ? null : 'flagged')}
       />
-      <span className="summaryOptionText1">Flagged leads</span>
+      <span className={styles.summaryOptionText1}>Flagged leads</span>
     </label>
   </div>
 
@@ -2114,8 +2090,8 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
   {reportType === 'all' && (
     <>
       {/* Summary input mode */}
-      <div className="summaryModeRow1">
-        <label className="summaryOption2">
+      <div className={styles.summaryModeRow1}>
+        <label className={styles.summaryOption2}>
           <input
             type="radio"
             name="summary-mode"
@@ -2123,10 +2099,10 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
             checked={summaryMode === 'type'}
             onChange={() => handleSummaryMode('type')}
           />
-          <span className="summaryOptionText2">Type summary manually</span>
+          <span className={styles.summaryOptionText2}>Type summary manually</span>
         </label>
 
-        <label className="summaryOption2">
+        <label className={styles.summaryOption2}>
           <input
             type="radio"
             name="summary-mode"
@@ -2134,7 +2110,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
             checked={summaryMode === 'file'}
             onChange={() => handleSummaryMode('file')}
           />
-          <span className="summaryOptionText2">Attach executive report</span>
+          <span className={styles.summaryOptionText2}>Attach executive report</span>
         </label>
       </div>
 
@@ -2151,7 +2127,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
       <div style={{margin:'8px 0 0', display:'flex', alignItems:'center', gap:12}}>
         <button
           type="button"
-          className="btn btn-primary"
+          className={`${styles.btn} ${styles['btn-primary']}`}
           disabled={isGeneratingReport}
           onClick={() => {
             setReportScope('all');
@@ -2168,26 +2144,26 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
 
 {reportType === 'single' && (
   <>
-    <div className="range-filter">
-      <div className="range-filter__label">Select Lead</div>
-      <div className="range-filter__row">
+    <div className={styles['range-filter']}>
+      <div className={styles['range-filter__label']}>Select Lead</div>
+      <div className={styles['range-filter__row']}>
         <input
           id="single-lead"
           type="number"
           inputMode="numeric"
           pattern="[0-9]*"
-          className="range-filter__input"
+          className={styles['range-filter__input']}
           placeholder="Lead #"
           value={selectStartLead1}
           onChange={(e) => setSelectStartLead1(e.target.value)}
           aria-label="Lead number"
         />
-        <div className="range-filter__actions">
-          <button className="btn btn-primary" onClick={handleShowSingleLead}>
+        <div className={styles['range-filter__actions']}>
+          <button className={`${styles.btn} ${styles['btn-primary']}`} onClick={handleShowSingleLead}>
             Apply
           </button>
           <button
-            className="btn btn-secondary"
+            className={`${styles.btn} ${styles['btn-secondary']}`}
             onClick={() => {
               setSelectStartLead1("");
               setHierarchyLeadsData([]);
@@ -2199,7 +2175,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
           </button>
         </div>
       </div>
-      <p className="range-filter__hint">
+      <p className={styles['range-filter__hint']}>
         Type a lead number (e.g., 1234) and click Apply, or click a card below to select it.
       </p>
     </div>
@@ -2207,7 +2183,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
     <div style={{ marginTop: 8 }}>
       {/* <button
         type="button"
-        className="btn btn-primary"
+        className={`${styles.btn} ${styles['btn-primary']}`}
         onClick={() => {
           setReportScope('single');    
           handleRunReportWithSummary();
@@ -2218,7 +2194,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
       </button> */}
       <button
   type="button"
-  className="btn btn-primary"
+  className={`${styles.btn} ${styles['btn-primary']}`}
   onClick={() => {
     const lead = getSingleLeadForReport();
     if (!lead) {
@@ -2240,11 +2216,11 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
 
 {reportType === 'flagged' && (
   <>
-    <div className="range-filter" style={{ marginTop: "8px", marginBottom: "8px" }}>
-      <div className="range-filter__label" id="flag-select-label" style={{ fontSize: "18px" }}>Choose flag(s)</div>
+    <div className={styles['range-filter']} style={{ marginTop: "8px", marginBottom: "8px" }}>
+      <div className={styles['range-filter__label']} id="flag-select-label" style={{ fontSize: "18px" }}>Choose flag(s)</div>
 
       {/* Allow multiple toggle */}
-      <label className="summaryOption1" style={{ marginLeft: 8, fontSize: "18px" }}>
+      <label className={styles.summaryOption1} style={{ marginLeft: 8, fontSize: "18px" }}>
         <input
           type="checkbox"
           checked={isMultiFlag}
@@ -2256,11 +2232,11 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
             }
           }}
         />
-        <span className="summaryOptionText1">Allow multiple</span>
+        <span className={styles.summaryOptionText1}>Allow multiple</span>
       </label>
     </div>
 
-    <div className="fp-row">
+    <div className={styles['fp-row']}>
       <FlagPicker
         flags={availableFlags}
         selected={selectedFlags}
@@ -2272,7 +2248,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
 
       <button
         type="button"
-        className="btn btn-secondary"
+        className={`${styles.btn} ${styles['btn-secondary']}`}
         onClick={() => setSelectedFlags([])}
         disabled={!selectedFlags.length}
       >
@@ -2280,14 +2256,14 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
       </button>
     </div>
 
-    <p className="hierarchy-filter__hint" style={{ marginTop: 6 }}>
+    <p className={styles['hierarchy-filter__hint']} style={{ marginTop: 6 }}>
       Pick one or more flags. The report will include leads with at least one of the selected flags on a timeline entry.
     </p>
 
     <div style={{ marginTop: 10, display:'flex', alignItems:'center', gap:12 }}>
       <button
         type="button"
-        className="btn btn-primary"
+        className={`${styles.btn} ${styles['btn-primary']}`}
         onClick={() => {
           const flaggedLeads = getLeadsForSelectedFlags();
           if (!flaggedLeads.length) {
@@ -2310,14 +2286,14 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
 
 {reportType === 'timeline' && (
   <>
-    <p className="hierarchy-filter__hint" style={{ marginTop: 8 }}>
+    <p className={styles['hierarchy-filter__hint']} style={{ marginTop: 8 }}>
       Generate report in hierarchical order of <strong>timeline</strong> (oldest to newest).
     </p>
 
     <div style={{ marginTop: 8, display:'flex', alignItems:'center', gap:12 }}>
       <button
         type="button"
-        className="btn btn-primary"
+        className={`${styles.btn} ${styles['btn-primary']}`}
         onClick={() => {
           // use the timeline-ordered list; keep scope as 'visible' for your backend payload builder
           setReportScope('visible');
@@ -2340,11 +2316,11 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
 
 
   {reportType === 'hierarchy' && (<>
-    <div className="hierarchy-filter">
-      <div className="hierarchy-filter__label">Lead chain lookup</div>
+    <div className={styles['hierarchy-filter']}>
+      <div className={styles['hierarchy-filter__label']}>Lead chain lookup</div>
 
       <form
-        className="hierarchy-filter__row"
+        className={styles['hierarchy-filter__row']}
         onSubmit={(e) => {
           e.preventDefault();
           handleShowHierarchy();
@@ -2355,24 +2331,24 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
           type="number"
           inputMode="numeric"
           pattern="[0-9]*"
-          className="hierarchy-filter__input"
+          className={styles['hierarchy-filter__input']}
           placeholder="Lead # (e.g., 1234)"
           value={hierarchyLeadInput}
           onChange={(e) => setHierarchyLeadInput(e.target.value)}
           aria-label="Lead number"
         />
 
-        <div className="hierarchy-filter__actions">
+        <div className={styles['hierarchy-filter__actions']}>
           <button
             type="submit"
-            className="btn btn-primary"
+            className={`${styles.btn} ${styles['btn-primary']}`}
             // disabled={!String(hierarchyLeadInput).trim()}
           >
             Show Hierarchy
           </button>
           <button
             type="button"
-            className="btn btn-secondary"
+            className={`${styles.btn} ${styles['btn-secondary']}`}
             onClick={handleShowAllLeads}
           >
             Clear
@@ -2380,7 +2356,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
         </div>
       </form>
 
-      <p className="hierarchy-filter__hint">
+      <p className={styles['hierarchy-filter__hint']}>
         Enter a lead number to view its parent/child chain of custody.
       </p>
     </div>
@@ -2388,7 +2364,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
     <div style={{ marginTop: 8, display:'flex', alignItems:'center', gap:12 }}>
   <button
     type="button"
-    className="btn btn-primary"
+    className={`${styles.btn} ${styles['btn-primary']}`}
     disabled={isGeneratingReport}
     onClick={() => {
       // Use the currently visible hierarchy results
@@ -2406,47 +2382,47 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
  {reportType === 'selected' && (
     <>
       <>
-        <div className="range-filter">
-          <div className="range-filter__label"> Lead range</div>
+        <div className={styles['range-filter']}>
+          <div className={styles['range-filter__label']}> Lead range</div>
 
-          <div className="range-filter__row">
+          <div className={styles['range-filter__row']}>
             <input
               id="lead-range-from"
               type="number"
               inputMode="numeric"
               pattern="[0-9]*"
-              className="range-filter__input"
+              className={styles['range-filter__input']}
               placeholder="From lead #"
               value={selectStartLead1}
               onChange={(e) => setSelectStartLead1(e.target.value)}
               aria-label="From lead number"
             />
 
-            <span className="range-filter__sep">—</span>
+            <span className={styles['range-filter__sep']}>—</span>
 
             <input
               id="lead-range-to"
               type="number"
               inputMode="numeric"
               pattern="[0-9]*"
-              className="range-filter__input"
+              className={styles['range-filter__input']}
               placeholder="To lead #"
               value={selectEndLead2}
               onChange={(e) => setSelectEndLead2(e.target.value)}
               aria-label="To lead number"
             />
 
-            <div className="range-filter__actions">
-              <button className="btn btn-primary" onClick={handleShowLeadsInRange}>
+            <div className={styles['range-filter__actions']}>
+              <button className={`${styles.btn} ${styles['btn-primary']}`} onClick={handleShowLeadsInRange}>
                 Apply
               </button>
-              <button className="btn btn-secondary" onClick={handleShowAllLeads}>
+              <button className={`${styles.btn} ${styles['btn-secondary']}`} onClick={handleShowAllLeads}>
                 Clear
               </button>
             </div>
           </div>
 
-          <p className="range-filter__hint">
+          <p className={styles['range-filter__hint']}>
             Enter a lead number range (e.g., 1200 — 1250) and click Apply.
           </p>
         </div>
@@ -2455,7 +2431,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
       <div style={{ marginTop: 8, display:'flex', alignItems:'center', gap:12 }}>
         <button
           type="button"
-          className="btn btn-primary"
+          className={`${styles.btn} ${styles['btn-primary']}`}
           disabled={isGeneratingReport}
           onClick={() => {
             setReportScope('visible'); // use the currently visible filtered leads
@@ -2483,15 +2459,15 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
 
 
 
-              <div className="search-lead-portion">
-            <div className="search-lead-head">
-            <label className="input-label1">Search Lead</label>
+              <div className={styles['search-lead-portion']}>
+            <div className={styles['search-lead-head']}>
+            <label className={styles['input-label1']}>Search Lead</label>
             </div>
-            <div className="search_and_hierarchy_container">
-              <div className="search-bar">
-                <div className="search-container1">
+            <div className={styles.search_and_hierarchy_container}>
+              <div className={styles['search-bar']}>
+                <div className={styles['search-container1']}>
                   <i className="fa-solid fa-magnifying-glass"></i>
-                  <input type="text" className="search-input1" placeholder="Search Lead" 
+                  <input type="text" className={styles['search-input1']} placeholder="Search Lead"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={(e) => {
@@ -2504,7 +2480,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
               </div>
               </div>
               </div> 
-               <div className="p-6">
+               <div className={styles['p-6']}>
                   <Pagination
                     currentPage={currentPage}
                     totalEntries={totalEntries}
@@ -2527,7 +2503,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
 <div style={{ marginTop: "10px" }}>
       {visibleChainsCount < hierarchyChains.length && (
         <button
-          className="show-more-chains-btn"
+          className={styles['show-more-chains-btn']}
           onClick={() => setVisibleChainsCount(prev => prev + 5)}
           style={{ marginRight: "10px", color: "grey", backgroundColor:"whitesmoke" }}
         >
@@ -2536,7 +2512,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
       )}
       {visibleChainsCount > 2 && (
         <button
-          className="show-more-chains-btn"
+          className={styles['show-more-chains-btn']}
           onClick={() => setVisibleChainsCount(2)}
         >
           Load Less Chains
@@ -2552,7 +2528,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
   <div style={{ marginTop: "10px", textAlign: "left" }}>
     {visibleChainsCount < hierarchyChains.length && (
       <button
-        className="show-more-chains-btn"
+        className={styles['show-more-chains-btn']}
         onClick={() => setVisibleChainsCount(prev => prev + 5)}
         style={{
           marginLeft: "-20px",
@@ -2567,7 +2543,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
     )}
     {visibleChainsCount > 2 && (
       <button
-        className="show-more-chains-btn"
+        className={styles['show-more-chains-btn']}
         onClick={() => setVisibleChainsCount(2)}
         style={{
           // marginRight: "10px",
@@ -2590,7 +2566,7 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
             ) : (
               <>
                 {renderLeads(leadsData)}
-                {/* <div className="p-6">
+                {/* <div className={styles['p-6']}>
                   <Pagination
                     currentPage={currentPage}
                     totalEntries={totalEntries}
@@ -2620,17 +2596,17 @@ const handleRunReportWithSummary = async (explicitLeads = null) => {
 const MediaModal = ({ isOpen, onClose, media }) => {
   if (!isOpen || !media) return null;
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className={styles['modal-overlay']} onClick={onClose}>
+      <div className={styles['modal-content']} onClick={(e) => e.stopPropagation()}>
         {["jpg", "jpeg", "png"].includes(media.type.toLowerCase()) ? (
-          <img src={media.url} alt="Preview" className="modal-media-full" />
+          <img src={media.url} alt="Preview" className={styles['modal-media-full']} />
         ) : ["mp4", "webm", "ogg"].includes(media.type.toLowerCase()) ? (
-          <video controls className="modal-media-full">
+          <video controls className={styles['modal-media-full']}>
             <source src={media.url} type={`video/${media.type.toLowerCase()}`} />
             Your browser does not support the video tag.
           </video>
         ) : null}
-        <button className="close-btn" onClick={onClose}>
+        <button className={styles['close-btn']} onClick={onClose}>
           ✕
         </button>
       </div>

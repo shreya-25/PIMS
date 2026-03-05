@@ -18,7 +18,7 @@ import html2canvas from "html2canvas";
 import api from "../../api"; // adjust the path as needed
 
 
-import "./LeadsDesk.css";
+import styles from "./LeadsDesk.module.css";
 
 // ---------- Helper to format dates as MM/DD/YY ----------
 const formatDate = (dateString) => {
@@ -34,21 +34,21 @@ const formatDate = (dateString) => {
 function CollapsibleSection({ title, defaultOpen = true, rightSlot = null, children }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="collapsible">
+    <section className={styles.collapsible}>
       <header
-        className="collapsible__header"
+        className={styles["collapsible__header"]}
         onClick={() => setOpen(o => !o)}
         role="button"
         aria-expanded={open}
         tabIndex={0}
         onKeyDown={(e) => (e.key === "Enter" || e.key === " " ? setOpen(o => !o) : null)}
       >
-        <div className="collapsible__title">
-          <span className="chev">{open ? "▾" : "▸"}</span> {title}
+        <div className={styles["collapsible__title"]}>
+          <span className={styles.chev}>{open ? "▾" : "▸"}</span> {title}
         </div>
         {rightSlot ? <div onClick={(e) => e.stopPropagation()}>{rightSlot}</div> : null}
       </header>
-      {open && <div className="collapsible__body">{children}</div>}
+      {open && <div className={styles["collapsible__body"]}>{children}</div>}
     </section>
   );
 }
@@ -328,7 +328,6 @@ const toggleLeadForReport = (leadNo) => {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
-  const totalEntries = 100;
 
   // Case summary
   const defaultCaseSummary =
@@ -546,6 +545,9 @@ const toggleLeadForReport = (leadNo) => {
     };
     fetchLeadsReturnsAndPersons();
   }, [selectedCase]);
+
+  // Reset to page 1 whenever the displayed data changes
+  useEffect(() => { setCurrentPage(1); }, [leadsData, hierarchyLeadsData]);
 
   const [selectStartLead1, setSelectStartLead1] = useState("");
 const [selectEndLead2, setSelectEndLead2] = useState("");
@@ -836,7 +838,7 @@ useEffect(() => {
     return (
       <div
         key={leadIndex}
-        className={`lead-section ${isDeleted ? "is-deleted" : ""}`}
+        className={`${styles["lead-section"]} ${isDeleted ? styles["is-deleted"] : ""}`}
       >
         {/* <div className="lead-section-head" style={{ marginBottom: 8 }}>
           <label style={{ display:"inline-flex", alignItems:"center", gap:8 }}>
@@ -848,8 +850,8 @@ useEffect(() => {
             <span className="summaryOptionText">Include this lead in subset</span>
           </label>
         </div> */}
-        <div className="leads-container">
-          <table className="lead-details-table">
+        <div className={styles["leads-container"]}>
+          <table className={styles["lead-details-table"]}>
             <colgroup>
               <col style={{ width: "15%" }} />
               <col style={{ width: "7%" }} />
@@ -862,8 +864,8 @@ useEffect(() => {
             </colgroup>
             <tbody>
               <tr>
-                <td className="label-cell">Lead Number</td>
-                <td className="input-cell">
+                <td className={styles["label-cell"]}>Lead Number</td>
+                <td className={styles["input-cell"]}>
                   <span
                     onClick={() => handleLeadClick(lead)}
                     style={{
@@ -876,26 +878,26 @@ useEffect(() => {
                     {lead.leadNo}
                   </span>
                 </td>
-                <td className="label-cell">Lead Origin</td>
-                <td className="input-cell">
+                <td className={styles["label-cell"]}>Lead Origin</td>
+                <td className={styles["input-cell"]}>
                   <input
                     type="text"
                     value={lead.parentLeadNo ? lead.parentLeadNo.join(", ") : ""}
                     readOnly
                   />
                 </td>
-                <td className="label-cell">Assigned Date</td>
-                <td className="input-cell">
+                <td className={styles["label-cell"]}>Assigned Date</td>
+                <td className={styles["input-cell"]}>
                   <input type="text" value={formatDate(lead.assignedDate)} readOnly />
                 </td>
-                <td className="label-cell">Approved Date</td>
-                <td className="input-cell">
+                <td className={styles["label-cell"]}>Approved Date</td>
+                <td className={styles["input-cell"]}>
                   <input type="text" value={formatDate(lead.approvedDate)} readOnly />
                 </td>
               </tr>
               <tr>
-                <td className="label-cell">Assigned Officers</td>
-                <td className="input-cell" colSpan={7}>
+                <td className={styles["label-cell"]}>Assigned Officers</td>
+                <td className={styles["input-cell"]} colSpan={7}>
                   <input
                     type="text"
                     value={
@@ -910,13 +912,13 @@ useEffect(() => {
             </tbody>
           </table>
 
-          <table className="leads-table">
+          <table className={styles["leads-table"]}>
             <tbody>
               {/* Lead Instruction */}
-              <tr className="table-first-row">
+              <tr className={styles["table-first-row"]}>
                 <td
                   style={{ textAlign: "center", fontSize: "18px" }}
-                  className="input-cell"
+                  className={styles["input-cell"]}
                 >
                   Lead Instruction
                 </td>
@@ -924,7 +926,7 @@ useEffect(() => {
                   <input
                     type="text"
                     value={lead.description || ""}
-                    className="instruction-input"
+                    className={styles["instruction-input"]}
                     readOnly
                   />
                 </td>
@@ -932,14 +934,14 @@ useEffect(() => {
 
               {/* NEW: Deleted Reason (only when deleted) */}
               {isDeleted && (
-                <tr className="deleted-row">
-                  <td      style={{ textAlign: "center", fontSize: "18px" }} className="label-cell">Deleted Reason</td>
+                <tr className={styles["deleted-row"]}>
+                  <td      style={{ textAlign: "center", fontSize: "18px" }} className={styles["label-cell"]}>Deleted Reason</td>
                   <td>
                     <input
                       type="text"
                       value={deletedReason || "N/A"}
                       readOnly
-                      className="instruction-input"
+                      className={styles["instruction-input"]}
                     />
                   </td>
                 </tr>
@@ -954,7 +956,7 @@ useEffect(() => {
                       </td>
                       <td>
                         <textarea
-                          className="lead-return-input"
+                          className={styles["lead-return-input"]}
                           value={returnItem.leadReturnResult || ""}
                           readOnly
                           style={{
@@ -977,13 +979,13 @@ useEffect(() => {
                     </tr>
 
                     {/* Persons */}
+                    {returnItem.persons && returnItem.persons.length > 0 && (
                     <tr>
                       <td colSpan={2}>
-                        {returnItem.persons && returnItem.persons.length > 0 && (
-                          <div className="person-section">
-                            <h3 className="title-ld">Person Details</h3>
+                        <div className={styles["person-section"]}>
+                            <h3 className={styles["title-ld"]}>Person Details</h3>
                             <table
-                              className="lead-table2"
+                              className={styles["lead-table2"]}
                               style={{ width: "100%", tableLayout: "fixed" }}
                             >
                               <thead>
@@ -1021,7 +1023,7 @@ useEffect(() => {
                                     </td>
                                     <td>
                                       <button
-                                        className="download-btn"
+                                        className={styles["download-btn"]}
                                         onClick={() =>
                                           openPersonModal(
                                             lead.leadNo,
@@ -1040,10 +1042,7 @@ useEffect(() => {
                               </tbody>
                             </table>
                           </div>
-                        )}
                       </td>
-
-                      {/* Keep your modal placement as-is */}
                       <PersonModal
                         isOpen={showPersonModal}
                         onClose={closePersonModal}
@@ -1054,15 +1053,16 @@ useEffect(() => {
                         leadReturnId={personModalData.leadReturnId}
                       />
                     </tr>
+                    )}
 
                     {/* Vehicles */}
+                    {returnItem.vehicles && returnItem.vehicles.length > 0 && (
                     <tr>
                       <td colSpan={2}>
-                        {returnItem.vehicles && returnItem.vehicles.length > 0 && (
-                          <div className="person-section">
-                            <h3 className="title-ld">Vehicles Details</h3>
+                        <div className={styles["person-section"]}>
+                            <h3 className={styles["title-ld"]}>Vehicles Details</h3>
                             <table
-                              className="lead-table2"
+                              className={styles["lead-table2"]}
                               style={{ width: "100%", tableLayout: "fixed" }}
                             >
                               <thead>
@@ -1102,7 +1102,7 @@ useEffect(() => {
                                     <td>{vehicle.state}</td>
                                     <td>
                                       <button
-                                        className="download-btn"
+                                        className={styles["download-btn"]}
                                         onClick={() =>
                                           openVehicleModal(
                                             lead.leadNo,
@@ -1122,10 +1122,7 @@ useEffect(() => {
                               </tbody>
                             </table>
                           </div>
-                        )}
                       </td>
-
-                      {/* Keep your modal placement as-is */}
                       <VehicleModal
                         isOpen={showVehicleModal}
                         onClose={closeVehicleModal}
@@ -1137,18 +1134,12 @@ useEffect(() => {
                         leadsDeskCode={vehicleModalData.leadsDeskCode}
                       />
                     </tr>
-
-                    {/* Media (kept commented out / unchanged) */}
-                    <tr>
-                      <td colSpan={2}>
-                        {/* your Uploaded Files table (if you enable it later) */}
-                      </td>
-                      <MediaModal
-                        isOpen={showMediaModal}
-                        onClose={closeMediaModal}
-                        media={selectedMedia}
-                      />
-                    </tr>
+                    )}
+                    <MediaModal
+                      isOpen={showMediaModal}
+                      onClose={closeMediaModal}
+                      media={selectedMedia}
+                    />
                   </React.Fragment>
                 ))
               ) : (
@@ -1167,11 +1158,15 @@ useEffect(() => {
 };
 
 
+  const activeLeads = hierarchyLeadsData.length > 0 ? hierarchyLeadsData : leadsData;
+  const totalEntries = activeLeads.length;
+  const pagedLeads = activeLeads.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
-    <div ref={pdfRef} className="lead-desk-page">
+    <div ref={pdfRef} className={styles["lead-desk-page"]}>
       <Navbar />
 
-      <div className="main-content-ld-ExecSummary">
+      <div className={styles["main-content-ld-ExecSummary"]}>
         {/* <div className="sideitem">
           <ul className="sidebar-list">
             <li className="sidebar-item">Case Information</li>
@@ -1189,20 +1184,20 @@ useEffect(() => {
           </ul>
         </div> */}
 
-        <div className="right-sec">
+        <div className={styles["right-sec"]}>
 
-         <div className="ld-head">
-  <Link to="/HomePage" className="crumb">PIMS Home</Link>
-  <span className="sep">{" >> "}</span>
+         <div className={styles["ld-head"]}>
+  <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+  <span className={styles.sep}>{" >> "}</span>
   <Link
     to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
     state={{ caseDetails: selectedCase }}
-    className="crumb"
+    className={styles.crumb}
   >
     Case Page: {selectedCase.caseNo || ""} - {selectedCase.caseName || "Unknown Case"}
   </Link>
-  <span className="sep">{" >> "}</span>
-  <span className="crumb-current" aria-current="page">Leads Desk</span>
+  <span className={styles.sep}>{" >> "}</span>
+  <span className={styles["crumb-current"]} aria-current="page">Leads Desk</span>
 </div>
 
           {/* <div className="header-ld-exec"> */}
@@ -1240,13 +1235,13 @@ useEffect(() => {
          </div>
        </div> */}
 
-       <div className="down-content"> 
+       <div className={styles["down-content"]}>
           {summaryMode === 'type' && (
-        <div className="exec-summary-sec">
+        <div className={styles["exec-summary-sec"]}>
           <h3>Executive Summary</h3>
 
 <textarea
-  className="summary-input"
+  className={styles["summary-input"]}
   placeholder="Type here..."
   value={typedSummary}
   onChange={e => setTypedSummary(e.target.value)}
@@ -1259,7 +1254,7 @@ useEffect(() => {
 
 
         {/* <div className="left-content-execSummary"> */}
-        <div className="ld-content-bottom">
+        <div className={styles["ld-content-bottom"]}>
 
         {/* <div className="case-header">
             <h2>LEADS DESK</h2>
@@ -1270,11 +1265,11 @@ useEffect(() => {
             </h1>
           </div> */}
 
-          <div className="bottom-sec-ldExecSummary" id="main-content">
+          <div className={styles["bottom-sec-ldExecSummary"]} id="main-content">
             <CollapsibleSection title="Case Summary" defaultOpen={true}>
-            <div className="case-summary-ld">
+            <div className={styles["case-summary-ld"]}>
               <textarea
-                className="textarea-field-ld"
+                className={styles["textarea-field-ld"]}
                 style={{ fontFamily: "inherit", fontSize: "18px" }}
                 value={caseSummary}
                 onChange={handleCaseSummaryChange}
@@ -1287,57 +1282,56 @@ useEffect(() => {
               {/* <CaseHeaderSection /> */}
 
 <CollapsibleSection title="Select Leads to View (Range)" defaultOpen={true}>
-  <div className="range-filter">
-    <div className="range-filter__label"> Lead range</div>
+  <div className={styles["range-filter"]}>
+    <div className={styles["range-filter__label"]}> Lead range</div>
 
-    <div className="range-filter__row">
+    <div className={styles["range-filter__row"]}>
       <input
         id="lead-range-from"
         type="number"
         inputMode="numeric"
         pattern="[0-9]*"
-        className="range-filter__input"
+        className={styles["range-filter__input"]}
         placeholder="From lead #"
         value={selectStartLead1}
         onChange={(e) => setSelectStartLead1(e.target.value)}
         aria-label="From lead number"
       />
 
-      <span className="range-filter__sep">—</span>
+      <span className={styles["range-filter__sep"]}>—</span>
 
       <input
         id="lead-range-to"
         type="number"
         inputMode="numeric"
         pattern="[0-9]*"
-        className="range-filter__input"
+        className={styles["range-filter__input"]}
         placeholder="To lead #"
         value={selectEndLead2}
         onChange={(e) => setSelectEndLead2(e.target.value)}
         aria-label="To lead number"
       />
 
-      <div className="range-filter__actions">
-        <button className="btn btn-primary" onClick={handleShowLeadsInRange}>
+      <div className={styles["range-filter__actions"]}>
+        <button className={`${styles.btn} ${styles["btn-primary"]}`} onClick={handleShowLeadsInRange}>
           Apply
         </button>
-        <button className="btn btn-secondary" onClick={handleShowAllLeads}>
+        <button className={`${styles.btn} ${styles["btn-secondary"]}`} onClick={handleShowAllLeads}>
           Clear
         </button>
+        <p className={styles["range-filter__hint"]}>Enter a lead number range (e.g., 1200 — 1250) and click Apply.</p>
       </div>
     </div>
-
-    <p className="range-filter__hint">Enter a lead number range (e.g., 1200 — 1250) and click Apply.</p>
   </div>
 </CollapsibleSection>
 
 
 <CollapsibleSection title="View Lead Hierarchy" defaultOpen={true}>
-  <div className="hierarchy-filter">
-    <div className="hierarchy-filter__label">Lead chain lookup</div>
+  <div className={styles["hierarchy-filter"]}>
+    <div className={styles["hierarchy-filter__label"]}>Lead chain lookup</div>
 
     <form
-      className="hierarchy-filter__row"
+      className={styles["hierarchy-filter__row"]}
       onSubmit={(e) => {
         e.preventDefault();
         handleShowHierarchy();
@@ -1348,34 +1342,33 @@ useEffect(() => {
         type="number"
         inputMode="numeric"
         pattern="[0-9]*"
-        className="hierarchy-filter__input"
+        className={styles["hierarchy-filter__input"]}
         placeholder="Lead # (e.g., 1234)"
         value={hierarchyLeadInput}
         onChange={(e) => setHierarchyLeadInput(e.target.value)}
         aria-label="Lead number"
       />
 
-      <div className="hierarchy-filter__actions">
+      <div className={styles["hierarchy-filter__actions"]}>
         <button
           type="submit"
-          className="btn btn-primary"
+          className={`${styles.btn} ${styles["btn-primary"]}`}
           // disabled={!String(hierarchyLeadInput).trim()}
         >
           Show Hierarchy
         </button>
         <button
           type="button"
-          className="btn btn-secondary"
+          className={`${styles.btn} ${styles["btn-secondary"]}`}
           onClick={handleShowAllLeads}
         >
           Clear
         </button>
+        <p className={styles["hierarchy-filter__hint"]}>
+          Enter a lead number to view its parent/child chain of custody.
+        </p>
       </div>
     </form>
-
-    <p className="hierarchy-filter__hint">
-      Enter a lead number to view its parent/child chain of custody.
-    </p>
   </div>
 </CollapsibleSection>
 
@@ -1476,15 +1469,15 @@ useEffect(() => {
 </CollapsibleSection> */}
 
 
-              <div className="search-lead-portion">
-            <div className="search-lead-head">
-            <label className="input-label1">Search Lead</label>
+              <div className={styles["search-lead-portion"]}>
+            <div className={styles["search-lead-head"]}>
+            <label className={styles["input-label1"]}>Search Lead</label>
             </div>
-            <div className="search_and_hierarchy_container">
-              <div className="search-bar">
-                <div className="search-container1">
+            <div className={styles["search_and_hierarchy_container"]}>
+              <div className={styles["search-bar"]}>
+                <div className={styles["search-container1"]}>
                   <i className="fa-solid fa-magnifying-glass"></i>
-                  <input type="text" className="search-input1" placeholder="Search Lead" 
+                  <input type="text" className={styles["search-input1"]} placeholder="Search Lead"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={(e) => {
@@ -1496,14 +1489,14 @@ useEffect(() => {
                 </div>
               </div>
               </div>
-              </div> 
-               <div className="p-6">
+              </div>
+               <div className={styles["p-6"]}>
                   <Pagination
                     currentPage={currentPage}
                     totalEntries={totalEntries}
                     onPageChange={setCurrentPage}
                     pageSize={pageSize}
-                    onPageSizeChange={setPageSize}
+                    onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
                   />
                 </div>
 
@@ -1545,7 +1538,7 @@ useEffect(() => {
   <div style={{ marginTop: "10px", textAlign: "left" }}>
     {visibleChainsCount < hierarchyChains.length && (
       <button
-        className="show-more-chains-btn"
+        className={styles["show-more-chains-btn"]}
         onClick={() => setVisibleChainsCount(prev => prev + 5)}
         style={{
           marginLeft: "-20px",
@@ -1560,7 +1553,7 @@ useEffect(() => {
     )}
     {visibleChainsCount > 2 && (
       <button
-        className="show-more-chains-btn"
+        className={styles["show-more-chains-btn"]}
         onClick={() => setVisibleChainsCount(2)}
         style={{
           // marginRight: "10px",
@@ -1578,11 +1571,11 @@ useEffect(() => {
 </div>
 
 
-                {renderLeads(hierarchyLeadsData)}
+                {renderLeads(pagedLeads)}
               </>
             ) : (
               <>
-                {renderLeads(leadsData)}
+                {renderLeads(pagedLeads)}
                 {/* <div className="p-6">
                   <Pagination
                     currentPage={currentPage}
@@ -1613,17 +1606,17 @@ useEffect(() => {
 const MediaModal = ({ isOpen, onClose, media }) => {
   if (!isOpen || !media) return null;
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className={styles["modal-overlay"]} onClick={onClose}>
+      <div className={styles["modal-content"]} onClick={(e) => e.stopPropagation()}>
         {["jpg", "jpeg", "png"].includes(media.type.toLowerCase()) ? (
-          <img src={media.url} alt="Preview" className="modal-media-full" />
+          <img src={media.url} alt="Preview" className={styles["modal-media-full"]} />
         ) : ["mp4", "webm", "ogg"].includes(media.type.toLowerCase()) ? (
-          <video controls className="modal-media-full">
+          <video controls className={styles["modal-media-full"]}>
             <source src={media.url} type={`video/${media.type.toLowerCase()}`} />
             Your browser does not support the video tag.
           </video>
         ) : null}
-        <button className="close-btn" onClick={onClose}>
+        <button className={styles["close-btn"]} onClick={onClose}>
           ✕
         </button>
       </div>

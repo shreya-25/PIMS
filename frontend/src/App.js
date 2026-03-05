@@ -41,15 +41,13 @@ import { AdminDB } from './Pages/Admin/AdminDB';
 import { AdminDashboard } from './Pages/Admin/Dashboard/AdminDashboard';
 import {LeadReview} from './Pages/LeadReview/LeadReview';
 import { LeadsDesk } from './Pages/LeadsDesk/LeadsDesk';
-import { LeadsDeskTest } from './Pages/LeadsDeskTest/LeadsDeskTest';
-import { LeadsDeskContent } from './Pages/LeadsDeskContent/LeadsDeskContent';
 import { ChainOfCustody } from './Pages/ChainOfCustody/ChainOfCustody';
 import { Chatbot } from './Pages/Admin/Chatbot';
 import { GlobalErrorProvider } from './GlobalErrorProvider';
 import { DocumentReview } from './Pages/DocumentReview/DocumentReview';
 import { ClosedCase } from './Pages/ClosedCase/ClosedCase';
 import { LeadVersionHistory } from './Pages/LeadVersionHistory/LeadVersionHistory';
-import { LeadsDeskTestExecSummary} from './Pages/LeadsDeskTest/LeadsDeskTestExecSummary';
+import { GenerateReport } from './Pages/GenerateReport/GenerateReport';
 import ProtectedLayout from './protectedLayout';
 
 
@@ -116,9 +114,8 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/AdminDashboard" element={<ProtectedLayout> <AdminDashboard /> </ProtectedLayout>} />
         <Route path="/LeadReview" element = {<ProtectedLayout> <LeadReview /> </ProtectedLayout> } />
         <Route path="/LeadsDesk" element= {<ProtectedLayout>  <LeadsDesk /> </ProtectedLayout> } />
-        <Route path="/LeadsDeskTest" element= {<ProtectedLayout>  <LeadsDeskTest /> </ProtectedLayout> } />
-        <Route path="/LeadsDeskTestExecSummary" element= {<ProtectedLayout>  <LeadsDeskTestExecSummary /> </ProtectedLayout> } />
-        <Route path="/LeadsDeskContent" element= {<ProtectedLayout>  <LeadsDeskContent /> </ProtectedLayout> } />
+        <Route path="/LeadsDeskTestExecSummary" element= {<ProtectedLayout>  <GenerateReport /> </ProtectedLayout> } />
+        <Route path="/GenerateReport" element= {<ProtectedLayout>  <GenerateReport /> </ProtectedLayout> } />
         <Route path="/ChainOfCustody" element= {<ProtectedLayout>  <ChainOfCustody /> </ProtectedLayout> } />
         <Route path="/Chatbot" element= {<ProtectedLayout>  <Chatbot /> </ProtectedLayout> } />
         <Route path="/DocumentReview" element={<ProtectedLayout><DocumentReview /></ProtectedLayout>} />

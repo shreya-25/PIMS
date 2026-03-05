@@ -379,9 +379,9 @@ export const SideBar = ({
         </li>
 
         <li
-          className={`sidebar-item ${activePage === "LeadsDeskTestExecSummary" ? "active" : ""}`}
+          className={`sidebar-item ${activePage === "GenerateReport" ? "active" : ""}`}
           style={{ paddingLeft: 30 }}
-          onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } })}
+          onClick={() => navigate("/GenerateReport", { state: { caseDetails } })}
         >
           <img src={printIcon} className="sidebar-icon" alt="" />
           <span>Generate Report</span>

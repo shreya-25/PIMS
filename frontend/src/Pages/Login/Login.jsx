@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../Login.css';
+import styles from './Login.module.css';
 import axios from "axios";
 import { Link, useNavigate } from 'react-router-dom';
 import api from "../../api"; // adjust the path as needed
@@ -74,20 +74,21 @@ export function Login() {
 
 
   return (
-    <div className="background">
-      <img src={`${process.env.PUBLIC_URL}/Materials/forensic.jpg`} alt="Forensic Background" className="bg-image" />
-      <div className="overlay">
-        <div className="img-container">
-          <div className="logo">
+    <div className={styles.background}>
+      <img src={`${process.env.PUBLIC_URL}/Materials/forensic.jpg`} alt="Forensic Background" className={styles.bgImage} />
+      <div className={styles.overlay}>
+        <div className={styles.mainBox}>
+        <div className={styles.imgContainer}>
+          <div className={styles.logo}>
             {/* <Link to="/LoginAdmin"> */}
               <img src={`${process.env.PUBLIC_URL}/Materials/newpolicelogo.png`} alt="Endicott Police Logo" />
             {/* </Link> */}
           </div>
-          <h1 className="main_heading">PIMS</h1>
-          <p className="sub_heading">Police Investigation Management System</p>
+          <h1 className={styles.mainHeading}>PIMS</h1>
+          <p className={styles.subHeading}>Police Investigation Management System</p>
         </div>
-        <div className="form-container">
-          <form className="login-form" onSubmit={handleLogin}>
+        <div className={styles.formContainer}>
+          <form className={styles.loginForm} onSubmit={handleLogin}>
             <input
               type="text"
               placeholder="Username"
@@ -102,23 +103,24 @@ export function Login() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            {errorMessage && <p className="error-message">{errorMessage}</p>}
-            <button type="submit" className="register">Login</button>
-            <div className="forgot-pass">
+            {errorMessage && <p className={styles.errorMessage}>{errorMessage}</p>}
+            <button type="submit" className={styles.register}>Login</button>
+            <div className={styles.forgotPass}>
               <a href="#">Forgot password?</a>
             </div>
-            <div className="divider">
+            <div className={styles.divider}>
               <span>or</span>
             </div>
-            <button 
+            <button
             type="button"
-            className="google-signup">
+            className={styles.googleSignup}>
                 Login with Email
               </button>
             {/* <p>
               Don't have an account? <Link to="/register">Sign up</Link>
             </p> */}
           </form>
+        </div>
         </div>
       </div>
     </div>

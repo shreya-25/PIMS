@@ -518,6 +518,7 @@ useEffect(() => {
 
         const allLeads = filteredLeadsArray
           .map(mapLead)
+          .filter(lead => lead.id != null && !isNaN(lead.id))
           .sort((a, b) => Number(b.id) - Number(a.id));
   
         console.log("✅ Assigned Leads:", assignedLeads);
@@ -2810,7 +2811,7 @@ const toTitleCase = (s = "") =>
              </thead>
              <tbody>
           {paginatedLeads.length>0 ? paginatedLeads.map(lead=>(
-            <tr key={lead.id}>
+            <tr key={lead.id} style={{ backgroundColor: "#fff" }}>
               <td style={{ }}>{lead.id}</td>
               <td>{lead.description}</td>
               <td style={{ 
