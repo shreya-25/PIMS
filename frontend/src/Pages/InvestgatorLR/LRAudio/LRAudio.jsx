@@ -1,6 +1,5 @@
 import Navbar from '../../../components/Navbar/Navbar';
-import "./LRAudio.css"; // Custom CSS file for Audio styling
-import FootBar from '../../../components/FootBar/FootBar';
+import styles from './LRAudio.module.css';
 import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
@@ -514,7 +513,7 @@ const goToViewLR = () => {
   }],
 });
 
-    // 4️⃣ On success, append to your state and/or re‐fetch
+    // 4️⃣ On success, append to your state and/or re-fetch
     await fetchAudioFiles();
 
     // 5️⃣ Reset form state
@@ -768,7 +767,7 @@ const handleUpdateAudio = async () => {
   fd.append("audioDescription", audioData.description);
   fd.append("accessLevel", "Everyone");
 
-  // 2️⃣ Indicate link‐mode or file‐mode
+  // 2️⃣ Indicate link-mode or file-mode
   fd.append("isLink", audioData.isLink);
   if (audioData.isLink) {
     fd.append("link", audioData.link.trim());
@@ -834,7 +833,7 @@ sessionStorage.removeItem(formKey);
                       
 
   return (
-    <div className="lraudio-container">
+    <div className={styles.personPage}>
       {/* Navbar */}
       <Navbar />
        <AlertModal
@@ -874,7 +873,7 @@ sessionStorage.removeItem(formKey);
       </div> */}
       
 
-      <div className="LRI_Content">
+      <div className={styles.LRIContent}>
       {/* <div className="sideitem">
        <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
 
@@ -936,11 +935,11 @@ Case Page
                 </div> */}
                
                 <SideBar  activePage="LeadReview" />
-                <div className="left-contentLI">
+                <div className={styles.leftContentLI}>
 
-                    <div className="top-menu1">
-      <div className="menu-items" >
-        <span className="menu-item " onClick={() => {
+                    <div className={styles.topMenuNav}>
+      <div className={styles.menuItems} >
+        <span className={styles.menuItem} onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
@@ -952,11 +951,11 @@ Case Page
                       }
                     });
                   } }} > Lead Information</span>
-                   <span className="menu-item active" >Add Lead Return</span>
+                   <span className={`${styles.menuItem} ${styles.menuItemActive}`} >Add Lead Return</span>
 
                        {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
            <span
-              className="menu-item"
+              className={styles.menuItem}
               onClick={handleViewLeadReturn}
               title={isGenerating ? "Preparing report…" : "View Lead Return"}
               style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
@@ -965,19 +964,19 @@ Case Page
             </span>
               )}
 
-              
+
             {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
+  <span className={styles.menuItem} onClick={goToViewLR}>
     Submit Lead Return
   </span>
 )}
   {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
+  <span className={styles.menuItem} onClick={goToViewLR}>
    Review Lead Return
   </span>
 )}
 
-                   <span className="menu-item" onClick={() => {
+                   <span className={styles.menuItem} onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
@@ -1035,43 +1034,43 @@ Case Page
           </span>
          </div> */}
        </div>
-                <div className="top-menu1" >
-       <div className="menu-items" style={{ fontSize: '19px' }}>
-       
-        <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
+                <div className={styles.topMenuSections} >
+       <div className={styles.menuItems} style={{ fontSize: '19px' }}>
+
+        <span className={styles.menuItem} style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
             Instructions
           </span>
-          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
+          <span className={styles.menuItem} style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
             Narrative
           </span>
-          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
+          <span className={styles.menuItem} style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
           </span>
-          <span className="menu-item " style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
             Vehicles
           </span>
-          <span className="menu-item " style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREnclosures')} >
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREnclosures')} >
             Enclosures
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREvidence')} >
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREvidence')} >
             Evidence
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRPictures')} >
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRPictures')} >
             Pictures
           </span>
-          <span className="menu-item active" style={{fontWeight: '600' }}  onClick={() => handleNavigation('/LRAudio')} >
+          <span className={`${styles.menuItem} ${styles.menuItemActive}`} style={{fontWeight: '600' }}  onClick={() => handleNavigation('/LRAudio')} >
             Audio
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
             Videos
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRScratchpad')}>
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRScratchpad')}>
             Notes
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
             Timeline
           </span>
-          {/* <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
+          {/* <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
             Finish
           </span> */}
          </div> </div>
@@ -1086,31 +1085,31 @@ Case Page
 
 
           </div> */}
-               <div className="caseandleadinfo">
-          <h5 className = "side-title"> 
-            <div className="ld-head">
-                                       <Link to="/HomePage" className="crumb">PIMS Home</Link>
-                                       <span className="sep">{" >> "}</span>
+               <div className={styles.caseandleadinfo}>
+          <h5 className={styles.sideTitle}>
+            <div className={styles.ldHead}>
+                                       <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+                                       <span className={styles.sep}>{" >> "}</span>
                                        <Link
                                          to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
                                          state={{ caseDetails: selectedCase }}
-                                         className="crumb"
+                                         className={styles.crumb}
                                        >
                                          Case: {selectedCase.caseNo || ""}
                                        </Link>
-                                       <span className="sep">{" >> "}</span>
+                                       <span className={styles.sep}>{" >> "}</span>
                                        <Link
                                          to={"/LeadReview"}
                                          state={{ leadDetails: selectedLead }}
-                                         className="crumb"
+                                         className={styles.crumb}
                                        >
                                          Lead: {selectedLead.leadNo || ""}
                                        </Link>
-                                       <span className="sep">{" >> "}</span>
-                                       <span className="crumb-current" aria-current="page">Lead Audio</span>
+                                       <span className={styles.sep}>{" >> "}</span>
+                                       <span className={styles.crumbCurrent} aria-current="page">Lead Audio</span>
                                      </div>
              </h5>
-          <h5 className="side-title">
+          <h5 className={styles.sideTitle}>
   {selectedLead?.leadNo
         ? ` Lead Status:  ${status}`
     : ` ${leadStatus}`}
@@ -1118,123 +1117,116 @@ Case Page
 
           </div>
 
-        <div className="case-header">
-          <h2 className="">AUDIO INFORMATION</h2>
+        <div className={styles.caseHeader}>
+          <h2>AUDIO INFORMATION</h2>
         </div>
 
-        <div className = "LRI-content-section">
+        <div className={styles.lriContentSection}>
 
-<div className = "content-subsection">
+<div className={styles.contentSubsection}>
 
         {/* Audio Form */}
-        <div className = "timeline-form-sec">
-        <div className="audio-form">
-          <div className="form-row-audio">
-            <label className="evidence-head">Date Audio Recorded*</label>
-            <input
-              type="date"
-              value={audioData.dateAudioRecorded}
-              className="evidence-head"
-              onChange={(e) => handleInputChange("dateAudioRecorded", e.target.value)}
-            />
+        <div className={styles.sectionBlock}>
+        <div className={styles.enclosureForm}>
+          <div className={styles.formRowPair}>
+            <div className={styles.formRowEvidence}>
+              <label>Narrative Id*</label>
+              <select
+                value={audioData.leadReturnId}
+                onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
+              >
+                <option value="">Select Id</option>
+                {audioData.leadReturnId &&
+                  !narrativeIds.includes(normalizeId(audioData.leadReturnId)) && (
+                    <option value={audioData.leadReturnId}>
+                      {audioData.leadReturnId}
+                    </option>
+                  )
+                }
+                {narrativeIds.map(id => (
+                  <option key={id} value={id}>{id}</option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.formRowEvidence}>
+              <label>Date Audio Recorded*</label>
+              <input
+                type="date"
+                value={audioData.dateAudioRecorded}
+                onChange={(e) => handleInputChange("dateAudioRecorded", e.target.value)}
+              />
+            </div>
           </div>
-          <div className="form-row-audio">
-            <label className="evidence-head">Narrative Id*</label>
-            <select
-              value={audioData.leadReturnId}
-              className="evidence-head"
-              onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
-            >
-              <option value="">Select Id</option>
-
-              {/* keep current value visible even if it's not in the latest API list (e.g., old record) */}
-              {audioData.leadReturnId &&
-                !narrativeIds.includes(normalizeId(audioData.leadReturnId)) && (
-                  <option value={audioData.leadReturnId}>
-                    {audioData.leadReturnId}
-                  </option>
-                )
-              }
-
-              {narrativeIds.map(id => (
-                <option key={id} value={id}>{id}</option>
-              ))}
-            </select>
-
-          </div>
-          <div className="form-row-audio">
-            <label className="evidence-head">Description*</label>
+          <div className={styles.formRowEvidence}>
+            <label>Description*</label>
             <textarea
               value={audioData.description}
-              className="evidence-head"
               onChange={(e) => handleInputChange("description", e.target.value)}
             ></textarea>
           </div>
-          <div className="form-row-audio">
-  <label>Upload Type</label>
-  <select
-    value={audioData.isLink ? "link" : "file"}
-    onChange={e =>
-      setAudioData(prev => ({
-        ...prev,
-        isLink: e.target.value === "link",
-        link: ""    // clear the link field whenever you flip back to “file”‐mode
-      }))
-    }
-  >
-    <option value="file">File</option>
-    <option value="link">Link</option>
-  </select>
-</div>
-        {/* If not link‐mode, show file input */}
-{!audioData.isLink ? (
-  <div className="form-row-audio">
-    <label>{isEditing ? "Replace Audio (optional)" : "Upload Audio*"}</label>
-    <input
-      type="file"
-      accept="audio/*"
-      ref={fileInputRef}                  
-
-      onChange={handleFileChange}
-    />
-    {/* If editing and the entry already had a filename, show it: */}
-    {isEditing && audioData.filename && (
-      <div className="current-filename">
-        Current File: {audioData.filename}
-      </div>
-    )}
-  </div>
-) : (
-  /* Otherwise, link‐mode: */
-  <div className="form-row-audio">
-    <label>Paste Link*:</label>
-    <input
-      type="text"
-      placeholder="https://..."
-      value={audioData.link}
-      onChange={e =>
-        setAudioData(prev => ({ ...prev, link: e.target.value }))
-      }
-    />
-  </div>
-)}
+          <div className={styles.formRowPair}>
+            <div className={styles.formRowEvidence}>
+              <label>Upload Type</label>
+              <select
+                value={audioData.isLink ? "link" : "file"}
+                onChange={e =>
+                  setAudioData(prev => ({
+                    ...prev,
+                    isLink: e.target.value === "link",
+                    link: ""
+                  }))
+                }
+              >
+                <option value="file">File</option>
+                <option value="link">Link</option>
+              </select>
+            </div>
+            {!audioData.isLink ? (
+              <div className={styles.formRowEvidence}>
+                <label>{isEditing ? "Replace Audio (optional)" : "Upload Audio*"}</label>
+                <input
+                  type="file"
+                  accept="audio/*"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                />
+                {isEditing && audioData.filename && (
+                  <div className={styles.currentFilename}>
+                    Current File: {audioData.filename}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className={styles.formRowEvidence}>
+                <label>Paste Link*:</label>
+                <input
+                  type="text"
+                  placeholder="https://..."
+                  value={audioData.link}
+                  onChange={e =>
+                    setAudioData(prev => ({ ...prev, link: e.target.value }))
+                  }
+                />
+              </div>
+            )}
+          </div>
 
         </div>
-        <div className="form-buttons-audio">
+        <div className={styles.formButtonsReturn}>
         {/* <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
 
-          className="save-btn1" onClick={handleAddAudio}>Add Audio</button> */}
+          className={styles.saveBtn1} onClick={handleAddAudio}>Add Audio</button> */}
 
   <button
   disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly || isSubmitting}
    onClick={ isEditing ? handleUpdateAudio : handleAddAudio }
-    className="save-btn1"
+    className={styles.saveBtn1}
  >
    {isSubmitting ? (isEditing ? "Updating..." : "Adding...") : (isEditing ? "Update Audio" : "Add Audio")}
   </button>
   {isEditing && (
     <button
-     className="save-btn1"
+     className={styles.saveBtn1}
      disabled={isSubmitting}
      onClick={() => {
         setEditingId(null);
@@ -1246,11 +1238,10 @@ Case Page
   )}
          </div>
          {/* Uploaded Audio Preview */}
-        <div className="uploaded-audio">
-          {/* <h4 className="evidence-head">Uploaded Audio</h4> */}
-          <div className="audio-gallery">
+        <div className={styles.uploadedAudio}>
+          <div className={styles.audioGallery}>
             {audioFiles.map((audio, index) => (
-              <div key={index} className="audio-card">
+              <div key={index} className={styles.audioCard}>
                 <audio controls>
                   <source src={audio.audioSrc} type="audio/mp3" />
                   Your browser does not support the audio element.
@@ -1263,7 +1254,7 @@ Case Page
         </div>
 
            {/* Audio Files Table */}
-           <table className="leads-table">
+           <table className={styles.leadsTable}>
           <thead>
             <tr>
               <th style={{ width: "14%" }}>Date Entered</th>
@@ -1285,11 +1276,11 @@ Case Page
                 {/* <td>{audio.dateAudioRecorded}</td> */}
                  <td>
   {audio.isLink ? (
-    <a href={audio.link} target="_blank" rel="noopener noreferrer" className="link-button">
+    <a href={audio.link} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
       {audio.link}
     </a>
   ) : audio.signedUrl ? (
-    <a href={audio.signedUrl} target="_blank" rel="noopener noreferrer" className="link-button">
+    <a href={audio.signedUrl} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
       {audio.originalName || "Download"}
     </a>
   ) : (
@@ -1299,13 +1290,13 @@ Case Page
 
                 <td>{audio.description}</td>
                 <td>
-                  <div classname = "lr-table-btn">
+                  <div className={styles.lrTableBtn}>
                   <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
 
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
-                  className="edit-icon"
+                  className={styles.editIcon}
                   onClick={() => handleEditAudio(index)}
                 />
                   </button>
@@ -1314,7 +1305,7 @@ Case Page
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
-                  className="edit-icon"
+                  className={styles.editIcon}
                   onClick={() => requestDeleteAudio(index)}
                 />
                   </button>
@@ -1323,6 +1314,7 @@ Case Page
                 {isCaseManager && (
           <td>
             <select
+              className={styles.accessDropdown}
               value={audio.accessLevel}
               onChange={e => handleAccessChange(index, e.target.value)}
             >
@@ -1371,10 +1363,6 @@ Case Page
           <button className="cancel-btn">Cancel</button>
         </div> */}
       
-      <FootBar
-        onPrevious={() => navigate(-1)} // Takes user to the last visited page
-        onNext={() => navigate("/LRVideo")} // Takes user to CM Return page
-      />
     </div>
     </div>
     </div>

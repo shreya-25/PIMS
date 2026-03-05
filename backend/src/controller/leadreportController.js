@@ -2,7 +2,30 @@ const PDFDocument = require("pdfkit");
 const { PDFDocument: PDFLibDocument } = require("pdf-lib");
 const path = require("path");
 const fs = require("fs");
+const sharp = require("sharp");
+const heicConvert = require("heic-convert");
 const { getObjectBuffer } = require("../s3");
+
+async function toPdfSafeBuffer(buf) {
+  if (!buf || buf.length < 12) return buf;
+  if (buf[0] === 0xFF && buf[1] === 0xD8) return buf;
+  if (buf[0] === 0x89 && buf.slice(1, 4).toString() === "PNG") return buf;
+  if (buf.toString("ascii", 4, 8) === "ftyp") {
+    const brand = buf.toString("ascii", 8, 12);
+    if (["heic", "heix", "hevc", "mif1"].includes(brand)) {
+      const jpegBuf = await heicConvert({ buffer: buf, format: "JPEG", quality: 0.8 });
+      return Buffer.from(jpegBuf);
+    }
+  }
+  if (buf.slice(0, 4).toString() === "RIFF" && buf.slice(8, 12).toString() === "WEBP") {
+    return sharp(buf).png().toBuffer();
+  }
+  try {
+    return await sharp(buf).png().toBuffer();
+  } catch {
+    return buf;
+  }
+}
 
 // Helper: merges your PDFKit doc with an external PDF
 // async function mergeWithAnotherPDF(pdfKitBuffer, otherPdfPath) {
@@ -18,6 +41,54 @@ const { getObjectBuffer } = require("../s3");
 //   const mergedPdfBytes = await mainDoc.save();
 //   return Buffer.from(mergedPdfBytes);
 // }
+
+function drawMetaBar(doc, x, y, width, entry) {
+  const rowH = 20;
+  const padding = 5;
+  const bg = "#ffffff";
+  const border = "#ccc";
+
+  const idVal  = `${entry.leadReturnId ?? "N/A"}`;
+  const byVal  = `${entry.enteredBy ?? "N/A"}`;
+  const dtVal  = `${formatDate(entry.enteredDate) || "N/A"}`;
+
+  const colW1 = Math.round(width * 0.33);
+  const colW2 = Math.round(width * 0.34);
+  const colW3 = width - colW1 - colW2;
+
+  const bottom = doc.page.height - doc.page.margins.bottom;
+  if (y + rowH > bottom) {
+    doc.addPage();
+    y = doc.page.margins.top;
+  }
+
+  // Draw cells
+  let cx = x;
+  [colW1, colW2, colW3].forEach((w) => {
+    doc.rect(cx, y, w, rowH).fillAndStroke(bg, border);
+    cx += w;
+  });
+
+  const baseY = y + 5; // same baseline you used
+
+  // Helper: label bold, value normal
+  function drawLabelValue(cellX, cellW, label, value) {
+    const maxW = cellW - 2 * padding;
+
+    doc.fillColor("#000").font("Helvetica-Bold").fontSize(11);
+    doc.text(label, cellX + padding, baseY, { continued: true });
+
+    doc.font("Helvetica").fontSize(11);
+    doc.text(` ${value}`, { width: maxW, ellipsis: true }); // continues on same line
+  }
+
+  drawLabelValue(x, colW1, "Narrative ID:", idVal);
+  drawLabelValue(x + colW1, colW2, "Entered By:", byVal);
+  drawLabelValue(x + colW1 + colW2, colW3, "Entered Date:", dtVal);
+
+  doc.fillColor("black");
+  return y + rowH + 10;
+}
 
 async function mergeWithAnotherPDF(pdfKitBuffer, otherPdfBuffer) {
   const mainDoc = await PDFLibDocument.load(pdfKitBuffer);
@@ -35,7 +106,7 @@ function startSection(doc, title, currentY) {
     doc.addPage();
     currentY = doc.page.margins.top;
   }
-  doc.font("Helvetica-Bold").fontSize(12).text(title, 50, currentY);
+  doc.font("Helvetica-Bold").fontSize(11).text(title, 50, currentY);
   return currentY + 18;
 }
 
@@ -80,7 +151,213 @@ function formatOfficerList(arr) {
   return deduped.join(", ");
 }
 
+// front table 
+function drawLeadWorksheetTwoColTable(doc, x, y, leadInstruction) {
+  const padX = 8;
+  const padY = 3;
+  const headerBg = "#f5f5f5";
+  const borderColor = "#CCCCCC";
 
+  const headerFont = "Helvetica-Bold";
+  const bodyFont = "Helvetica";
+  const headerFS = 11;
+  const bodyFS = 11;
+
+  doc.lineGap(0);
+
+  const tableW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  const col1W = Math.round(tableW * 0.58);
+  const col2W = tableW - col1W;
+
+  const rows = [
+    { left: "Lead Worksheet", right: `Lead #: ${leadInstruction?.leadNo || "N/A"}`, isHeader: true },
+    { left: "Character of Case: Missing Person/Homicide", right: `Case Number: ${leadInstruction?.caseNo || "N/A"}` },
+    { left: `Lead Received by: ${leadInstruction?.receivedBy || ""}`, right: `Date Assigned: ${formatDate(leadInstruction?.assignedDate) || ""}` },
+    { left: `Lead Assigned to: ${formatOfficerList(leadInstruction?.assignedTo) || ""}`, right: `Date Submitted: ${formatDate(leadInstruction?.submittedDate) || ""}` },
+    { left: `Lead Assigned by: ${formatOfficer(leadInstruction?.assignedBy) || leadInstruction?.assignedBy || ""}`, right: `Source: ${leadInstruction?.parentLeadNo ? leadInstruction.parentLeadNo.join(", ") : ""}` },
+  ];
+
+  const minRowH = 20; // ✅ key fix (use 28–32)
+  const pageBottom = doc.page.height - doc.page.margins.bottom;
+  const pageTop = doc.page.margins.top;
+
+  function measure(text, width, font, size) {
+    doc.font(font).fontSize(size);
+    return doc.heightOfString(text || "", {
+      width,
+      align: "left",
+      lineBreak: true,
+    });
+  }
+
+  function centerY(currY, rowH, textH) {
+    // true centering, then clamp so it never touches borders
+    const ideal = currY + (rowH - textH) / 2;
+    const minY = currY + padY;
+    const maxY = currY + rowH - padY - textH;
+    // tiny visual nudge down (baseline compensation)
+    const nudged = ideal + 0.5;
+    return Math.max(minY, Math.min(nudged, maxY));
+  }
+
+  // whole-table fit check (rough)
+  if (y + rows.length * minRowH > pageBottom) {
+    doc.addPage();
+    y = pageTop;
+  }
+
+  let currY = y;
+
+  for (const r of rows) {
+    const font = r.isHeader ? headerFont : bodyFont;
+    const fs = r.isHeader ? headerFS : bodyFS;
+
+    const leftBoxW = col1W - 2 * padX;
+    const rightBoxW = col2W - 2 * padX;
+
+    const leftH = measure(r.left, leftBoxW, font, fs);
+    const rightH = measure(r.right, rightBoxW, font, fs);
+
+    const rowH = Math.max(minRowH, leftH + 2 * padY, rightH + 2 * padY);
+
+    if (currY + rowH > pageBottom) {
+      doc.addPage();
+      currY = pageTop;
+    }
+
+    if (r.isHeader) {
+      doc.save();
+      doc.fillColor(headerBg).rect(x, currY, col1W + col2W, rowH).fill();
+      doc.restore();
+    }
+
+    doc.save();
+    doc.lineWidth(0.8).strokeColor(borderColor);
+    doc.rect(x, currY, col1W, rowH).stroke();
+    doc.rect(x + col1W, currY, col2W, rowH).stroke();
+    doc.restore();
+
+    doc.font(font).fontSize(fs).fillColor("black");
+    const leftY = centerY(currY, rowH, leftH);
+    doc.text(r.left || "", x + padX, leftY, { width: leftBoxW, align: "left", lineBreak: true });
+
+    doc.font(font).fontSize(fs).fillColor("black");
+    const rightY = centerY(currY, rowH, rightH);
+    doc.text(r.right || "", x + col1W + padX, rightY, { width: rightBoxW, align: "left", lineBreak: true });
+
+    currY += rowH;
+  }
+
+  return currY + 8;
+}
+
+//Photo Attachment
+async function addPersonPhotoPage(doc, person, personIndex) {
+  if (!person?.photoS3Key) return;
+
+  try {
+    const rawBuf = await getObjectBuffer(person.photoS3Key);
+    const imgBuf = await toPdfSafeBuffer(rawBuf);
+
+    // Get image size (sharp supports jpeg/png/webp)
+    const meta = await sharp(imgBuf).metadata();
+    const imgW = meta.width || 600;
+    const imgH = meta.height || 800;
+
+    // Page settings
+    const margin = 36; // 0.5 inch
+    const maxPageW = 612; // LETTER width in points
+    const maxPageH = 792; // LETTER height in points
+
+    // Option A (Recommended): Keep LETTER page, scale image to fit
+    doc.addPage({ size: "LETTER", margin });
+
+    // Title
+    doc.font("Helvetica-Bold").fontSize(14).text(`Person ${personIndex + 1} Photo`, { align: "center" });
+    doc.moveDown(0.5);
+
+    const availableW = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const availableH = doc.page.height - doc.y - doc.page.margins.bottom;
+
+    // Fit image to available area
+    doc.image(imgBuf, doc.page.margins.left, doc.y, {
+      fit: [availableW, availableH],
+      align: "center",
+      valign: "center",
+    });
+
+    // Optional caption
+    doc.moveDown(0.5);
+    if (person.firstName || person.lastName) {
+      const name = `${person.firstName || ""} ${person.lastName || ""}`.trim();
+      doc.font("Helvetica").fontSize(10).fillColor("#555").text(name, { align: "center" });
+      doc.fillColor("black");
+    }
+
+    // Option B (If you truly want page size = image size):
+    // Uncomment this if you want the page to match the image dimensions.
+    // Note: Very large images can produce huge pages.
+    /*
+    const pageW = Math.min(imgW + margin * 2, 2000); // hard cap to avoid gigantic pages
+    const pageH = Math.min(imgH + margin * 2, 2000);
+    doc.addPage({ size: [pageW, pageH], margin });
+
+    doc.font("Helvetica-Bold").fontSize(14).text(`Person ${personIndex + 1} Photo`, { align: "center" });
+    doc.moveDown(0.5);
+
+    const aw = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const ah = doc.page.height - doc.y - doc.page.margins.bottom;
+
+    doc.image(imgBuf, doc.page.margins.left, doc.y, {
+      fit: [aw, ah],
+      align: "center",
+      valign: "center",
+    });
+    */
+  } catch (e) {
+    console.warn(`Failed to add person photo page for person ${personIndex + 1}:`, e?.message);
+  }
+}
+
+async function appendPersonPhotoPagesAtEnd(doc, persons = []) {
+  if (!Array.isArray(persons) || persons.length === 0) return;
+
+  for (let i = 0; i < persons.length; i++) {
+    const p = persons[i];
+    if (!p?.photoS3Key) continue;
+
+    try {
+      const rawBuf = await getObjectBuffer(p.photoS3Key);
+      const imgBuf = await toPdfSafeBuffer(rawBuf);
+
+      // New page per photo (clean)
+      doc.addPage({ size: "LETTER", margin: 50 });
+
+      const name =
+        `${p.lastName || ""}, ${p.firstName || ""}`.replace(/^,\s*$/, "").trim() ||
+        p.name ||
+        `Person ${i + 1}`;
+
+      doc.font("Helvetica-Bold").fontSize(12).text(`Person ${i + 1}: ${name}`, { align: "left" });
+      doc.moveDown(0.5);
+
+      const x = doc.page.margins.left;
+      const y = doc.y;
+      const w = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+      const h = doc.page.height - y - doc.page.margins.bottom;
+
+      // Fit image nicely within page
+      doc.image(imgBuf, x, y, {
+        fit: [w, h],
+        align: "center",
+        valign: "center",
+      });
+
+    } catch (e) {
+      console.warn(`Photo append failed for person ${i + 1}:`, e?.message);
+    }
+  }
+}
 
 // function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
 //   const minRowHeight = 20;
@@ -409,8 +686,75 @@ return y + rowH + 10;
   return y + rowHeight + 10;
 }
 
+// function drawTextBox(doc, x, y, width, title, content) {
+//   const pad = 6, fs = 10, bleed = 2;      // <- small extra to avoid clipping
+//   const bodyFont = "Helvetica", titleFont = "Helvetica-Bold";
+//   const innerW = width - 2 * pad;
+
+//   const topY    = doc.page.margins.top;
+//   const bottomY = doc.page.height - doc.page.margins.bottom;
+
+//   const text = ((content ?? "") + "").replace(/\s+/g, " ").trim();
+
+//   // Pre-wrap to lines so we can page-split cleanly
+//   doc.font(bodyFont).fontSize(fs);
+//   const lineH = doc.currentLineHeight();
+//   const words = text ? text.split(" ") : [];
+//   const lines = [];
+//   let line = "";
+//   for (const w of words) {
+//     const cand = line ? line + " " + w : w;
+//     if (doc.widthOfString(cand) <= innerW) line = cand;
+//     else { if (line) lines.push(line); line = w; }
+//   }
+//   if (line) lines.push(line);
+
+//   // Title height (measured once)
+//   const titleH = title
+//     ? (doc.font(titleFont).fontSize(fs), doc.heightOfString(title, { width: innerW }))
+//     : 0;
+//   doc.font(bodyFont).fontSize(fs);
+
+//   let i = 0, currY = y, first = true;
+
+//   while (i < lines.length || (first && title && !lines.length)) {
+//     const minBoxH = (first ? titleH : 0) + lineH + 2 * pad;
+//     if (currY + minBoxH > bottomY) { doc.addPage(); currY = topY; }
+
+//     const available = bottomY - currY - 2 * pad - (first ? titleH : 0);
+//     const canLines  = Math.max(1, Math.floor(available / lineH));
+//     const end       = Math.min(lines.length, i + canLines);
+
+//     // --- draw text first ---
+//     const boxTop = currY;
+//     let textY = currY + pad;
+
+//     if (first && title) {
+//       doc.font(titleFont).fontSize(fs).text(title, x + pad, textY, { width: innerW });
+//       textY = doc.y;                 // after title
+//       doc.font(bodyFont).fontSize(fs);
+//     }
+
+//     const block = lines.slice(i, end).join("\n");
+//     doc.text(block, x + pad, textY, { width: innerW, align: "justify" });
+
+//     // measure exact used height and then stroke the box
+//     const usedTextH = doc.y - textY;
+//     const boxH = (first ? titleH : 0) + usedTextH + 2 * pad + bleed;
+
+//     doc.save().lineWidth(1).strokeColor("#999999")
+//        .rect(x, boxTop, width, boxH).stroke().restore();
+
+//     currY = boxTop + boxH;
+//     i = end;
+//     first = false;
+//   }
+
+//   return currY + 6;
+// }
+
 function drawTextBox(doc, x, y, width, title, content) {
-  const pad = 6, fs = 10, bleed = 2;      // <- small extra to avoid clipping
+  const pad = 0, fs = 10; // border/bleed not needed now
   const bodyFont = "Helvetica", titleFont = "Helvetica-Bold";
   const innerW = width - 2 * pad;
 
@@ -441,34 +785,31 @@ function drawTextBox(doc, x, y, width, title, content) {
   let i = 0, currY = y, first = true;
 
   while (i < lines.length || (first && title && !lines.length)) {
-    const minBoxH = (first ? titleH : 0) + lineH + 2 * pad;
-    if (currY + minBoxH > bottomY) { doc.addPage(); currY = topY; }
+    // we still need a minimum space check so text doesn't clip at bottom
+    const minNeededH = (first ? titleH : 0) + lineH + 2 * pad;
+    if (currY + minNeededH > bottomY) { doc.addPage(); currY = topY; }
 
     const available = bottomY - currY - 2 * pad - (first ? titleH : 0);
     const canLines  = Math.max(1, Math.floor(available / lineH));
     const end       = Math.min(lines.length, i + canLines);
 
-    // --- draw text first ---
-    const boxTop = currY;
+    // --- draw text only (no border) ---
     let textY = currY + pad;
 
     if (first && title) {
       doc.font(titleFont).fontSize(fs).text(title, x + pad, textY, { width: innerW });
-      textY = doc.y;                 // after title
+      textY = doc.y; // after title
       doc.font(bodyFont).fontSize(fs);
     }
 
     const block = lines.slice(i, end).join("\n");
     doc.text(block, x + pad, textY, { width: innerW, align: "justify" });
 
-    // measure exact used height and then stroke the box
+    // advance currY based on how much text was actually written
     const usedTextH = doc.y - textY;
-    const boxH = (first ? titleH : 0) + usedTextH + 2 * pad + bleed;
+    const sectionH = (first ? titleH : 0) + usedTextH + 2 * pad;
 
-    doc.save().lineWidth(1).strokeColor("#999999")
-       .rect(x, boxTop, width, boxH).stroke().restore();
-
-    currY = boxTop + boxH;
+    currY = currY + sectionH;
     i = end;
     first = false;
   }
@@ -580,7 +921,16 @@ async function generateReport(req, res) {
         ).map(e => e.s3Key)
       : [];
 
-       for (const key of [...enclosurePdfKeys, ...evidencePdfKeys]) {
+        // collect picture PDFs
+       const picturePdfKeys = Array.isArray(leadPictures)
+      ? leadPictures.filter(e =>
+          e?.s3Key &&
+          typeof e?.filename === "string" &&
+          e.filename.toLowerCase().endsWith(".pdf")
+        ).map(e => e.s3Key)
+      : [];
+
+       for (const key of [...enclosurePdfKeys, ...evidencePdfKeys, ...picturePdfKeys]) {
       try {
         const otherPdf = await getObjectBuffer(key);
         pdfBuffer = await mergeWithAnotherPDF(pdfBuffer, otherPdf);
@@ -621,9 +971,12 @@ async function generateReport(req, res) {
 // start content after header
 let currentY = headerHeight + 20;
 
-    currentY = startSection(doc, "Lead Details:", currentY);
+    // currentY = startSection(doc, "Lead Details:", currentY);
+
+    // currentY = drawLeadWorksheetTwoColTable(doc, 50, currentY, leadInstruction);
     // currentY = drawTable(doc, 50, currentY, ["Lead No.", "Origin", "Assigned Date", "Due Date", "Completed Date"], [{ "Lead No.": leadInstructions?.leadNo || 'N/A', "Origin": leadInstructions?.parentLeadNo || 'N/A', "Assigned Date": formatDate(leadInstructions?.assignedDate) || 'N/A', "Due Date": formatDate(leadInstructions?.dueDate) || 'N/A', "Completed Date": "Still to add in db" }], [90, 90, 120, 120, 92]) + 20;
     // currentY = drawTable(doc, 50, currentY, ["Sub No.", "Associated Sub Nos.", "Assigned Officers", "Assigned By"], [{ "Sub No.": leadInstructions?.subNumber || 'N/A', "Associated Sub Nos.": leadInstructions?.associatedSubNumbers || 'N/A', "Assigned Officers": leadInstructions?.assignedTo|| 'N/A', "Assigned By": leadInstructions?.assignedBy || 'N/A' }], [90, 170, 170, 82]) + 20;
+
     currentY = drawStructuredLeadDetails(doc, 50, currentY, leadInstruction);
 
     if (includeAll || leadInstruction) {
@@ -647,7 +1000,7 @@ let currentY = headerHeight + 20;
       // doc.font("Helvetica-Bold").fontSize(12).text("Lead Return ID: 1", 50, currentY);
       // currentY += 20;
       // currentY = drawTextBox(doc, 50, currentY, 512, "", "Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos. Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.");
-      currentY = startSection(doc, "Lead Return Details", currentY);
+      currentY = startSection(doc, "Lead Results", currentY);
 
   if (leadReturn?.length > 0) {
     leadReturn.forEach((entry, idx) => {
@@ -656,23 +1009,34 @@ let currentY = headerHeight + 20;
         doc.addPage();
         currentY = doc.page.margins.top;
       }
-      doc.font("Helvetica-Bold").fontSize(11).text(`Narrative ID: ${entry.leadReturnId}`, 50, currentY);
-      currentY += 18;
+      // doc.font("Helvetica-Bold").fontSize(11).text(`Narrative ID: ${entry.leadReturnId}`, 50, currentY);
+      // currentY += 18;
 
       const dateEntered = formatDate(entry.enteredDate);
       const enteredBy = entry.enteredBy || "N/A";
       const leadText = entry.leadReturnResult || "N/A";
 
-      currentY = drawTable(
-        doc,
-        50,
-        currentY,
-        ["Date Entered", "Entered By"],
-        [{ "Date Entered": dateEntered, "Entered By": enteredBy }],
-        [180, 332]
-      ) + 6;
+      // currentY = drawTable(
+      //   doc,
+      //   50,
+      //   currentY,
+      //   ["Date Entered", "Entered By"],
+      //   [{ "Date Entered": dateEntered, "Entered By": enteredBy }],
+      //   [180, 332]
+      // ) + 6;
+      
+      // doc.font("Helvetica-Bold").fontSize(11)
+      // .text(
+      //   `Narrative ID: ${entry.leadReturnId} | Officer: ${enteredBy} | Date: ${dateEntered}`,
+      //   50,
+      //   currentY,
+      //   { width: 512 }
+      // );
+      currentY = drawMetaBar(doc, 50, currentY, 512, entry);
 
-      currentY = drawTextBox(doc, 50, currentY, 512, "Narrative", leadText);
+      currentY = doc.y + 10;
+
+      currentY = drawTextBox(doc, 50, currentY, 512,"", leadText);
 
       // if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
       //   doc.addPage();
@@ -856,37 +1220,52 @@ let currentY = headerHeight + 20;
         // Loop through each person object
         for (let pIdx = 0; pIdx < leadPersons.length; pIdx++) {
           const person = leadPersons[pIdx];
-          // Ensure person label + first table fit on same page
+              // Ensure person label + first table fit on same page
+          // if (currentY + 60 > doc.page.height - doc.page.margins.bottom) {
+          //   doc.addPage();
+          //   currentY = doc.page.margins.top;
+          // }
+
+          // Add PERSON PHOTO ON ITS OWN PAGE
+          // await addPersonPhotoPage(doc, person, pIdx);
+
+          // Then continue the normal tables on the next page/flow:
           if (currentY + 60 > doc.page.height - doc.page.margins.bottom) {
             doc.addPage();
             currentY = doc.page.margins.top;
           }
 
+          doc.font("Helvetica-Bold").fontSize(11)
+            .text(`Person ${pIdx + 1}`, 50, currentY);
+          currentY += 20;
+
           // Person photo + label side by side
-          const photoSize = 60;
-          let photoDrawn = false;
-          if (person.photoS3Key) {
-            try {
-              const imgBuf = await getObjectBuffer(person.photoS3Key);
-              // page-break check for photo + label
-              if (currentY + photoSize + 10 > doc.page.height - doc.page.margins.bottom) {
-                doc.addPage();
-                currentY = doc.page.margins.top;
-              }
-              doc.image(imgBuf, 50, currentY, { width: photoSize, height: photoSize, fit: [photoSize, photoSize] });
-              doc.font("Helvetica-Bold").fontSize(11)
-                 .text(`Person ${pIdx + 1}`, 50 + photoSize + 10, currentY + 20);
-              currentY += photoSize + 8;
-              photoDrawn = true;
-            } catch (e) {
-              console.warn(`Failed to embed photo for person ${pIdx + 1}:`, e?.message);
-            }
-          }
-          if (!photoDrawn) {
-            doc.font("Helvetica-Bold").fontSize(11)
-               .text(`Person ${pIdx + 1}`, 50, currentY);
-            currentY += 20;
-          }
+
+          // const photoSize = 60;
+          // let photoDrawn = false;
+          // if (person.photoS3Key) {
+          //   try {
+          //     const rawBuf = await getObjectBuffer(person.photoS3Key);
+          //     const imgBuf = await toPdfSafeBuffer(rawBuf);
+          //     // page-break check for photo + label
+          //     if (currentY + photoSize + 10 > doc.page.height - doc.page.margins.bottom) {
+          //       doc.addPage();
+          //       currentY = doc.page.margins.top;
+          //     }
+          //     doc.image(imgBuf, 50, currentY, { width: photoSize, height: photoSize, fit: [photoSize, photoSize] });
+          //     doc.font("Helvetica-Bold").fontSize(11)
+          //        .text(`Person ${pIdx + 1}`, 50 + photoSize + 10, currentY + 20);
+          //     currentY += photoSize + 8;
+          //     photoDrawn = true;
+          //   } catch (e) {
+          //     console.warn(`Failed to embed photo for person ${pIdx + 1}:`, e?.message);
+          //   }
+          // }
+          // if (!photoDrawn) {
+          //   doc.font("Helvetica-Bold").fontSize(11)
+          //      .text(`Person ${pIdx + 1}`, 50, currentY);
+          //   currentY += 20;
+          // }
 
           // Now draw each mini-table
           personTables.forEach((headers) => {
@@ -1057,7 +1436,7 @@ let currentY = headerHeight + 20;
         // Now loop through each enclosure and embed any image files from S3
 for (const enc of leadEnclosures) {
   const fnameLower = (enc.filename || "").toLowerCase();
-  const isImage = /\.(jpe?g|png)$/.test(fnameLower);
+  const isImage = /\.(jpe?g|png|webp|heic|heif|gif|tiff?)$/.test(fnameLower);
   if (!isImage) continue;
 
   if (!enc.s3Key) {
@@ -1069,7 +1448,8 @@ for (const enc of leadEnclosures) {
   }
 
   try {
-    const imgBuf = await getObjectBuffer(enc.s3Key); // S3 -> Buffer
+    const rawEncBuf = await getObjectBuffer(enc.s3Key);
+    const imgBuf = await toPdfSafeBuffer(rawEncBuf);
 
     const imageMaxHeight = 300;
     if (currentY + imageMaxHeight > doc.page.height - doc.page.margins.bottom) {
@@ -1130,7 +1510,7 @@ for (const enc of leadEnclosures) {
         // Embed evidence images from S3
 for (const enc of leadEvidence) {
   const fnameLower = (enc.filename || "").toLowerCase();
-  const isImage = /\.(jpe?g|png)$/.test(fnameLower);
+  const isImage = /\.(jpe?g|png|webp|heic|heif|gif|tiff?)$/.test(fnameLower);
   if (!isImage) continue;
 
   if (!enc.s3Key) {
@@ -1142,7 +1522,8 @@ for (const enc of leadEvidence) {
   }
 
   try {
-    const imgBuf = await getObjectBuffer(enc.s3Key);
+    const rawEncBuf = await getObjectBuffer(enc.s3Key);
+    const imgBuf = await toPdfSafeBuffer(rawEncBuf);
 
     const imageMaxHeight = 300;
     if (currentY + imageMaxHeight > doc.page.height - doc.page.margins.bottom) {
@@ -1200,7 +1581,7 @@ for (const enc of leadEvidence) {
         // Embed picture images from S3
 for (const enc of leadPictures) {
   const fnameLower = (enc.filename || "").toLowerCase();
-  const isImage = /\.(jpe?g|png)$/.test(fnameLower);
+  const isImage = /\.(jpe?g|png|webp|heic|heif|gif|tiff?)$/.test(fnameLower);
   if (!isImage) continue;
 
   if (!enc.s3Key) {
@@ -1212,7 +1593,8 @@ for (const enc of leadPictures) {
   }
 
   try {
-    const imgBuf = await getObjectBuffer(enc.s3Key);
+    const rawEncBuf = await getObjectBuffer(enc.s3Key);
+    const imgBuf = await toPdfSafeBuffer(rawEncBuf);
 
     const imageMaxHeight = 300;
     if (currentY + imageMaxHeight > doc.page.height - doc.page.margins.bottom) {
@@ -1363,7 +1745,7 @@ for (const enc of leadPictures) {
         currentY = drawTable(doc, 50, currentY, headers, rows, widths) + 10;
       }
     }
-
+    await appendPersonPhotoPagesAtEnd(doc, leadPersons);
     doc.end();
   } catch (error) {
     console.error("Error generating PDF:", error);

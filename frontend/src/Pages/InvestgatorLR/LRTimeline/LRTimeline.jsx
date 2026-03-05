@@ -2,8 +2,7 @@ import React, { useContext, useState, useEffect, useMemo} from 'react';
 import { useLocation, useNavigate, Link } from "react-router-dom";
 
 import Navbar from '../../../components/Navbar/Navbar';
-import './LRTimeline.css';
-import FootBar from '../../../components/FootBar/FootBar';
+import styles from './LRTimeline.module.css';
 import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
@@ -59,26 +58,6 @@ const alphabetToNumber = (str = "") => {
   return n;
 };
 
-const handleNext = () => {
-  const role = selectedCase?.role || "";
-
-  // Case Manager / Detective Supervisor → Manage Lead Return (PDF flow)
-  if (role === "Case Manager" || role === "Detective Supervisor") {
-    if (!isGenerating) handleViewLeadReturn(); // prevent double click during generation
-    return;
-  }
-
-  // Investigators (both primary and non-primary) → ViewLR (submit/review)
-  if (role === "Investigator") {
-    goToViewLR();
-    return;
-  }
-
-  // Fallback: just go to LeadReview if role is unknown
-  navigate("/LeadReview", {
-    state: { caseDetails: selectedCase, leadDetails: selectedLead },
-  });
-};
 
 const [confirmOpen, setConfirmOpen] = useState(false);
 const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
@@ -818,7 +797,7 @@ const { status, isReadOnly } = useLeadStatus({
   });
 
   return (
-    <div className="lrvideos-container">
+    <div className={styles.timelinePage}>
       <Navbar />
       <AlertModal
         isOpen={alertOpen}
@@ -857,7 +836,7 @@ const { status, isReadOnly } = useLeadStatus({
         </div>
       </div> */}
 
-      <div className="LRI_Content">
+      <div className={styles.LRIContent}>
       {/* <div className="sideitem">
        <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
 
@@ -917,11 +896,11 @@ Case Page
 
                 </div> */}
                  <SideBar  activePage="LeadReview" />
-                <div className="left-contentLI">
+                <div className={styles.leftContentLI}>
 
-                       <div className="top-menu1">
-      <div className="menu-items" >
-        <span className="menu-item " onClick={() => {
+                       <div className={styles.topMenuNav}>
+      <div className={styles.menuItems}>
+        <span className={styles.menuItem} onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
@@ -933,10 +912,10 @@ Case Page
                       }
                     });
                   } }} > Lead Information</span>
-                   <span className="menu-item active" >Add Lead Return</span>
+                   <span className={`${styles.menuItem} ${styles.menuItemActive}`}>Add Lead Return</span>
                     {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
            <span
-              className="menu-item"
+              className={styles.menuItem}
               onClick={handleViewLeadReturn}
               title={isGenerating ? "Preparing report…" : "View Lead Return"}
               style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
@@ -946,17 +925,17 @@ Case Page
               )}
 
             {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
+  <span className={styles.menuItem} onClick={goToViewLR}>
     Submit Lead Return
   </span>
 )}
   {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
+  <span className={styles.menuItem} onClick={goToViewLR}>
    Review Lead Return
   </span>
 )}
 
-                   <span className="menu-item" onClick={() => {
+                   <span className={styles.menuItem} onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
@@ -972,7 +951,7 @@ Case Page
                       setAlertOpen(true);
                   }
                 }}>Lead Chain of Custody</span>
-          
+
                   </div>
         {/* <div className="menu-items">
       
@@ -1014,46 +993,43 @@ Case Page
           </span>
          </div> */}
        </div>
-                <div className="top-menu1">
-       <div className="menu-items" style={{ fontSize: '19px' }}>
-       
-        <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
+                <div className={styles.topMenuSections}>
+       <div className={styles.menuItems} style={{ fontSize: '19px' }}>
+        <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LRInstruction')}>
             Instructions
           </span>
-          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
+          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LRReturn')}>
             Narrative
           </span>
-          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
+          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LRPerson')}>
             Person
           </span>
-          <span className="menu-item " style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
+          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LRVehicle')}>
             Vehicles
           </span>
-          <span className="menu-item " style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREnclosures')} >
+          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LREnclosures')}>
             Enclosures
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREvidence')} >
+          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LREvidence')}>
             Evidence
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRPictures')} >
+          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LRPictures')}>
             Pictures
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRAudio')} >
+          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LRAudio')}>
             Audio
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
+          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LRVideo')}>
             Videos
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRScratchpad')}>
+          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LRScratchpad')}>
             Notes
           </span>
-          <span className="menu-item active" style={{fontWeight: '600' }}  onClick={() => handleNavigation('/LRTimeline')}>
+          <span className={`${styles.menuItem} ${styles.menuItemActive}`} style={{fontWeight: '600'}} onClick={() => handleNavigation('/LRTimeline')}>
             Timeline
           </span>
-          {/* <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span> */}
-         </div> </div>
+         </div>
+        </div>
                 {/* <div className="caseandleadinfo">
           <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
           <h5 className="side-title">
@@ -1066,213 +1042,243 @@ Case Page
 
           </div> */}
 
-               <div className="caseandleadinfo">
-          <h5 className = "side-title"> 
-            <div className="ld-head">
-                                       <Link to="/HomePage" className="crumb">PIMS Home</Link>
-                                       <span className="sep">{" >> "}</span>
-                                       <Link
-                                         to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
-                                         state={{ caseDetails: selectedCase }}
-                                         className="crumb"
-                                       >
-                                         Case: {selectedCase.caseNo || ""}
-                                       </Link>
-                                       <span className="sep">{" >> "}</span>
-                                       <Link
-                                         to={"/LeadReview"}
-                                         state={{ leadDetails: selectedLead }}
-                                         className="crumb"
-                                       >
-                                         Lead: {selectedLead.leadNo || ""}
-                                       </Link>
-                                       <span className="sep">{" >> "}</span>
-                                       <span className="crumb-current" aria-current="page">Lead Timeline</span>
-                                     </div>
-             </h5>
-          <h5 className="side-title">
-  {selectedLead?.leadNo
-        ? ` Lead Status:  ${status}`
-    : ` ${leadStatus}`}
-</h5>
-
-          </div>
-
-        <div className="case-header">
-          <h2 className="">TIMELINE INFORMATION</h2>
-        </div>
-        <div className = "LRI-content-section">
-
-<div className = "content-subsection">
-
-        <div className="timeline-form-sec">
-             <h3>Add/Edit Entry</h3>
-        
-          <div className="timeline-form">
-            <label>Narrative Id *</label>
-           <select
-  value={newEntry.leadReturnId}
-  onChange={(e) => handleInputChange('leadReturnId', e.target.value)}
->
-  <option value="">Select Id</option>
-
-  {/* Keep current value visible even if it's not in the latest API list (editing/legacy) */}
-  {newEntry.leadReturnId &&
-    !narrativeIds.includes(normalizeId(newEntry.leadReturnId)) && (
-      <option value={newEntry.leadReturnId}>{newEntry.leadReturnId}</option>
-    )
-  }
-
-  {narrativeIds.map(id => (
-    <option key={id} value={id}>{id}</option>
-  ))}
-</select>
-             <label> Event Start Date</label>
-            <input
-              type="date"
-              value={newEntry.eventStartDate}
-              onChange={(e) => handleInputChange('eventStartDate', e.target.value)}
-            />
-            <label> Event End Date</label>
-            <input
-              type="date"
-              value={newEntry.eventEndDate}
-              onChange={(e) => handleInputChange('eventEndDate', e.target.value)}
-            />
-            <label>Start Time</label>
-            <input
-              type="time"
-              value={newEntry.startTime}
-              onChange={(e) => handleInputChange('startTime', e.target.value)}
-            />
-            <label>End Time</label>
-            <input
-              type="time"
-              value={newEntry.endTime}
-              onChange={(e) => handleInputChange('endTime', e.target.value)}
-            />
-            <label>Location</label>
-            <input
-              type="text"
-              value={newEntry.location}
-              onChange={(e) => handleInputChange('location', e.target.value)}
-            />
-            <label>Description *</label>
-            <textarea
-              rows="3"
-              value={newEntry.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-            ></textarea>
-
-            <label>Assign Flag</label>
-            <select value={newEntry.flag} onChange={(e) => handleInputChange('flag', e.target.value)}>
-              <option value="">Select Flag</option>
-              {timelineFlags.map((flag, index) => (
-                <option key={index} value={flag}>{flag}</option>
-              ))}
-            </select>
-
-            <div className="add-flag">
-              <input
-                type="text"
-                placeholder="Create new flag"
-                value={newFlag}
-                onChange={(e) => setNewFlag(e.target.value)}
-              />
-              <button className="customer-btn" onClick={handleAddFlag}>Add Flag</button>
+               <div className={styles.caseandleadinfo}>
+          <h5 className={styles.sideTitle}>
+            <div className={styles.ldHead}>
+              <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+              <span className={styles.sep}>{" >> "}</span>
+              <Link
+                to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+                state={{ caseDetails: selectedCase }}
+                className={styles.crumb}
+              >
+                Case: {selectedCase.caseNo || ""}
+              </Link>
+              <span className={styles.sep}>{" >> "}</span>
+              <Link
+                to={"/LeadReview"}
+                state={{ leadDetails: selectedLead }}
+                className={styles.crumb}
+              >
+                Lead: {selectedLead.leadNo || ""}
+              </Link>
+              <span className={styles.sep}>{" >> "}</span>
+              <span className={styles.crumbCurrent} aria-current="page">Lead Timeline</span>
             </div>
+          </h5>
+          <h5 className={styles.sideTitle}>
+            {selectedLead?.leadNo ? ` Lead Status:  ${status}` : ` ${leadStatus}`}
+          </h5>
+        </div>
 
-            <button
-                disabled={selectedLead?.leadStatus==="In Review"||selectedLead?.leadStatus==="Completed" || isReadOnly}
-                className="customer-btn"
-                onClick={handleSubmit}>
-                {editingIndex===null ? "Add Entry" : "Update Entry"}
+        <div className={styles.caseHeader}>
+          <h2>TIMELINE INFORMATION</h2>
+        </div>
+        <div className={styles.lriContentSection}>
+
+<div className={styles.contentSubsection}>
+
+        <div className={styles.sectionBlock}>
+          <div className={styles.sectionHeading}>Add/Edit Entry</div>
+          <div className={styles.LREnteringContentBox}>
+            <div className={styles.timelineForm}>
+              {/* Row 1: Narrative Id + Location */}
+              <div className={styles.formRowPair}>
+                <div className={styles.formRow}>
+                  <label>Narrative Id *</label>
+                  <select
+                    value={newEntry.leadReturnId}
+                    onChange={(e) => handleInputChange('leadReturnId', e.target.value)}
+                  >
+                    <option value="">Select Id</option>
+                    {newEntry.leadReturnId &&
+                      !narrativeIds.includes(normalizeId(newEntry.leadReturnId)) && (
+                        <option value={newEntry.leadReturnId}>{newEntry.leadReturnId}</option>
+                      )
+                    }
+                    {narrativeIds.map(id => (
+                      <option key={id} value={id}>{id}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.formRow}>
+                  <label>Location</label>
+                  <input
+                    type="text"
+                    value={newEntry.location}
+                    onChange={(e) => handleInputChange('location', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Event Start Date + Event End Date */}
+              <div className={styles.formRowPair}>
+                <div className={styles.formRow}>
+                  <label>Event Start Date</label>
+                  <input
+                    type="date"
+                    value={newEntry.eventStartDate}
+                    onChange={(e) => handleInputChange('eventStartDate', e.target.value)}
+                  />
+                </div>
+                <div className={styles.formRow}>
+                  <label>Event End Date</label>
+                  <input
+                    type="date"
+                    value={newEntry.eventEndDate}
+                    onChange={(e) => handleInputChange('eventEndDate', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Start Time + End Time */}
+              <div className={styles.formRowPair}>
+                <div className={styles.formRow}>
+                  <label>Start Time</label>
+                  <input
+                    type="time"
+                    value={newEntry.startTime}
+                    onChange={(e) => handleInputChange('startTime', e.target.value)}
+                  />
+                </div>
+                <div className={styles.formRow}>
+                  <label>End Time</label>
+                  <input
+                    type="time"
+                    value={newEntry.endTime}
+                    onChange={(e) => handleInputChange('endTime', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Row 4: Description */}
+              <div className={styles.formRow}>
+                <label>Description *</label>
+                <textarea
+                  rows="3"
+                  value={newEntry.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                />
+              </div>
+
+              {/* Row 5: Assign Flag + Create New Flag */}
+              <div className={styles.formRowPair}>
+                <div className={styles.formRow}>
+                  <label>Assign Flag</label>
+                  <select value={newEntry.flag} onChange={(e) => handleInputChange('flag', e.target.value)}>
+                    <option value="">Select Flag</option>
+                    {timelineFlags.map((flag, index) => (
+                      <option key={index} value={flag}>{flag}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.formRow}>
+                  <label>Create New Flag</label>
+                  <div className={styles.addFlag}>
+                    <input
+                      type="text"
+                      placeholder="Enter new flag name"
+                      value={newFlag}
+                      onChange={(e) => setNewFlag(e.target.value)}
+                    />
+                    <button className={styles.saveBtn1} onClick={handleAddFlag}>Add</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className={styles.formButtonsReturn}>
+              <button
+                disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
+                className={styles.saveBtn1}
+                onClick={handleSubmit}
+              >
+                {editingIndex === null ? "Add Entry" : "Update Entry"}
               </button>
-              {editingIndex!==null && (
+              {editingIndex !== null && (
                 <button
-                  className="customer-btn"
-                  onClick={()=>{
+                  className={styles.saveBtn1}
+                  onClick={() => {
                     setEditingIndex(null);
                     setNewEntry(getDefaultEntry());
-                  }}>
+                  }}
+                >
                   Cancel
                 </button>
               )}
+            </div>
           </div>
         </div>
 
-          <table  className="leads-table">
-            <thead>
-              <tr>
-                <th style={{ width: "10%" }} >Event Date</th>
-                <th style={{ width: "12%" }}> Narrative Id </th>
-                <th style={{ width: "17%" }}>Event Time Range</th>
-                <th style={{ width: "15%" }}>Event Location</th>
-                <th style={{ width: "11%" }}>Description</th>
-                <th style={{ width: "11%" }}>Actions</th>
-                {isCaseManager && (
-              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
-            )}
-              </tr>
-            </thead>
-            <tbody>
-              {timelineEntries.length > 0 ? (
-                timelineEntries.map((entry, index) => (
-                  <tr key={index}>
-                    <td>{entry.date}</td>
-                    <td>{entry.leadReturnId}</td>
-                    <td>{entry.timeRange}</td>
-                    <td>{entry.location}</td>
-                    <td>{entry.description}</td>
-                    {/* <td>
-                      <button className="btn-edit" onClick={() => handleEditEntry(index)}>Edit</button>
-                      <button className="btn-delete" onClick={() => handleDeleteEntry(index)}>Delete</button>
-                    </td> */}
-                    <td>
-                  <div classname = "lr-table-btn">
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
-                  alt="Edit Icon"
-                  className="edit-icon"
-                  onClick={() => handleEdit(index)}
-                />
-                  </button>
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
-                  alt="Delete Icon"
-                  className="edit-icon"
-                  onClick={() => requestDelete(index)}
-                />
-                  </button>
-                  </div>
-                </td>
-
-                {isCaseManager && (
-          <td>
-            <select
-              value={entry.accessLevel || "Everyone"}
-              onChange={e => handleAccessChange(index, e.target.value)}
-            >
-              <option value="Everyone">All</option>
-              <option value="Case Manager">Case Manager</option>
-              <option value="Case Manager and Assignees">Assignees</option>
-            </select>
-          </td>
-        )}
-      </tr>
-       ))) : (
-        <tr>
-          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
-            No Timeline Entry Available
-          </td>
-        </tr>
-      )}
-            </tbody>
-          </table>
+          <div className={styles.sectionBlock}>
+            <div className={styles.sectionHeading}>Timeline History</div>
+            <table className={styles.leadsTable}>
+              <thead>
+                <tr>
+                  <th style={{ width: "10%" }}>Event Date</th>
+                  <th style={{ width: "12%" }}>Narrative Id</th>
+                  <th style={{ width: "17%" }}>Event Time Range</th>
+                  <th style={{ width: "15%" }}>Event Location</th>
+                  <th style={{ width: "11%" }}>Description</th>
+                  <th style={{ width: "11%" }}>Actions</th>
+                  {isCaseManager && (
+                    <th style={{ width: "15%" }}>Access</th>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {timelineEntries.length > 0 ? (
+                  timelineEntries.map((entry, index) => (
+                    <tr key={index}>
+                      <td>{entry.date}</td>
+                      <td>{entry.leadReturnId}</td>
+                      <td>{entry.timeRange}</td>
+                      <td>{entry.location}</td>
+                      <td>{entry.description}</td>
+                      <td>
+                        <div className={styles.lrTableBtn}>
+                          <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
+                            <img
+                              src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                              alt="Edit Icon"
+                              className={styles.editIcon}
+                              onClick={() => handleEdit(index)}
+                            />
+                          </button>
+                          <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
+                            <img
+                              src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                              alt="Delete Icon"
+                              className={styles.editIcon}
+                              onClick={() => requestDelete(index)}
+                            />
+                          </button>
+                        </div>
+                      </td>
+                      {isCaseManager && (
+                        <td>
+                          <select
+                            value={entry.accessLevel || "Everyone"}
+                            onChange={e => handleAccessChange(index, e.target.value)}
+                            className={styles.accessDropdown}
+                          >
+                            <option value="Everyone">All</option>
+                            <option value="Case Manager">Case Manager</option>
+                            <option value="Case Manager and Assignees">Assignees</option>
+                          </select>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: 'center' }}>
+                      No Timeline Entry Available
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
 
                   {/* {selectedLead?.leadStatus !== "Completed" && !isCaseManager && (
   <div className="form-buttons-finish">
@@ -1295,11 +1301,6 @@ Case Page
           <button className="next-btn" onClick={() => handleNavigation("/LRFinish")}>Next</button>
           <button className="cancel-btn">Cancel</button>
         </div> */}
-      <FootBar
-        onPrevious={() => navigate(-1)} // Takes user to the last visited page
-        onNext={handleNext} 
-      />
-       
     </div>
     </div>
     </div>

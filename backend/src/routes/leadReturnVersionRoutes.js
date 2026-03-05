@@ -8,6 +8,7 @@ const {
     getCurrentVersion,
     getAllVersions,
     getVersion,
+    getVersionPopulated,
     compareVersions,
     restoreVersion
 } = require("../utils/leadReturnVersioning");
@@ -284,8 +285,8 @@ router.get("/:leadNo/activity/:fromVersion/:toVersion", async (req, res) => {
         const { caseNo, caseName } = req.query;
 
         const [fromVersionData, toVersionData] = await Promise.all([
-            getVersion(parseInt(leadNo), parseInt(fromVersion), caseNo, caseName),
-            getVersion(parseInt(leadNo), parseInt(toVersion), caseNo, caseName)
+            getVersionPopulated(parseInt(leadNo), parseInt(fromVersion), caseNo, caseName),
+            getVersionPopulated(parseInt(leadNo), parseInt(toVersion), caseNo, caseName)
         ]);
 
         if (!fromVersionData || !toVersionData) {
@@ -379,16 +380,16 @@ router.get("/:leadNo/history", async (req, res) => {
             caseNo: v.caseNo,
             caseName: v.caseName,
             itemCounts: {
-                results: v.leadReturnResults?.length || 0,
-                audios: v.audios?.length || 0,
-                videos: v.videos?.length || 0,
-                pictures: v.pictures?.length || 0,
-                enclosures: v.enclosures?.length || 0,
-                evidences: v.evidences?.length || 0,
-                persons: v.persons?.length || 0,
-                vehicles: v.vehicles?.length || 0,
-                scratchpads: v.scratchpads?.length || 0,
-                timelines: v.timelines?.length || 0
+                results: v.leadReturnResultIds?.length || 0,
+                audios: v.audioIds?.length || 0,
+                videos: v.videoIds?.length || 0,
+                pictures: v.pictureIds?.length || 0,
+                enclosures: v.enclosureIds?.length || 0,
+                evidences: v.evidenceIds?.length || 0,
+                persons: v.personIds?.length || 0,
+                vehicles: v.vehicleIds?.length || 0,
+                scratchpads: v.scratchpadIds?.length || 0,
+                timelines: v.timelineIds?.length || 0
             }
         }));
 
@@ -649,16 +650,16 @@ function drawVersionInfoBlock(doc, x, y, width, version) {
  */
 function drawSnapshotSummary(doc, x, y, width, version) {
     const items = [
-        { label: "Results", count: version.leadReturnResults?.length || 0 },
-        { label: "Persons", count: version.persons?.length || 0 },
-        { label: "Vehicles", count: version.vehicles?.length || 0 },
-        { label: "Audios", count: version.audios?.length || 0 },
-        { label: "Videos", count: version.videos?.length || 0 },
-        { label: "Pictures", count: version.pictures?.length || 0 },
-        { label: "Enclosures", count: version.enclosures?.length || 0 },
-        { label: "Evidences", count: version.evidences?.length || 0 },
-        { label: "Scratchpads", count: version.scratchpads?.length || 0 },
-        { label: "Timelines", count: version.timelines?.length || 0 }
+        { label: "Results", count: version.leadReturnResultIds?.length || 0 },
+        { label: "Persons", count: version.personIds?.length || 0 },
+        { label: "Vehicles", count: version.vehicleIds?.length || 0 },
+        { label: "Audios", count: version.audioIds?.length || 0 },
+        { label: "Videos", count: version.videoIds?.length || 0 },
+        { label: "Pictures", count: version.pictureIds?.length || 0 },
+        { label: "Enclosures", count: version.enclosureIds?.length || 0 },
+        { label: "Evidences", count: version.evidenceIds?.length || 0 },
+        { label: "Scratchpads", count: version.scratchpadIds?.length || 0 },
+        { label: "Timelines", count: version.timelineIds?.length || 0 }
     ];
 
     const itemWidth = 55;
@@ -707,8 +708,8 @@ router.get("/:leadNo/version/:versionId/pdf", async (req, res) => {
 
         console.log('📄 PDF Generation Request:', { leadNo, versionId, caseNo, caseName });
 
-        // Get the version data
-        const version = await getVersion(parseInt(leadNo), parseInt(versionId), caseNo, caseName);
+        // Get the version data (populated for PDF rendering)
+        const version = await getVersionPopulated(parseInt(leadNo), parseInt(versionId), caseNo, caseName);
 
         if (!version) {
             return res.status(404).json({
@@ -725,9 +726,10 @@ router.get("/:leadNo/version/:versionId/pdf", async (req, res) => {
         let previousVersionData = null;
         if (currentIndex >= 0 && currentIndex < allVersions.length - 1) {
             const previousVersion = allVersions[currentIndex + 1];
-            previousVersionData = await getVersion(parseInt(leadNo), previousVersion.versionId, caseNo, caseName);
+            previousVersionData = await getVersionPopulated(parseInt(leadNo), previousVersion.versionId, caseNo, caseName);
             if (previousVersionData) {
-                activityLog = generateActivityLog(previousVersionData, version);
+                const versionPopulated = await getVersionPopulated(parseInt(leadNo), parseInt(versionId), caseNo, caseName);
+                activityLog = generateActivityLog(previousVersionData, versionPopulated || version);
             }
         }
 
@@ -851,17 +853,17 @@ router.get("/:leadNo/version/:versionId/pdf", async (req, res) => {
 
         // ============ CURRENT CONTENT SECTION ============
         // Only show this section if there's content to display
-        const hasContent = (version.leadReturnResults?.length > 0) ||
-                          (version.persons?.length > 0) ||
-                          (version.vehicles?.length > 0) ||
-                          (version.timelines?.length > 0);
+        const hasContent = (version.leadReturnResultIds?.length > 0) ||
+                          (version.personIds?.length > 0) ||
+                          (version.vehicleIds?.length > 0) ||
+                          (version.timelineIds?.length > 0);
 
         if (hasContent) {
             currentY = drawSectionHeader(doc, "CURRENT VERSION CONTENT", currentY, leftMargin, pageWidth);
         }
 
         // Narratives
-        if (version.leadReturnResults && version.leadReturnResults.length > 0) {
+        if (version.leadReturnResultIds && version.leadReturnResultIds.length > 0) {
             const bottomY = doc.page.height - doc.page.margins.bottom;
             if (currentY + 30 > bottomY) {
                 doc.addPage();
@@ -869,10 +871,10 @@ router.get("/:leadNo/version/:versionId/pdf", async (req, res) => {
             }
 
             doc.font("Helvetica-Bold").fontSize(9).fillColor(PDF_COLORS.primary)
-               .text(`Narratives (${version.leadReturnResults.length})`, leftMargin, currentY);
+               .text(`Narratives (${version.leadReturnResultIds.length})`, leftMargin, currentY);
             currentY += 15;
 
-            version.leadReturnResults.forEach((result, idx) => {
+            version.leadReturnResultIds.forEach((result, idx) => {
                 if (currentY + 60 > bottomY) {
                     doc.addPage();
                     currentY = doc.page.margins.top;
@@ -902,7 +904,7 @@ router.get("/:leadNo/version/:versionId/pdf", async (req, res) => {
         }
 
         // Persons summary
-        if (version.persons && version.persons.length > 0) {
+        if (version.personIds && version.personIds.length > 0) {
             const bottomY = doc.page.height - doc.page.margins.bottom;
             if (currentY + 30 > bottomY) {
                 doc.addPage();
@@ -910,10 +912,10 @@ router.get("/:leadNo/version/:versionId/pdf", async (req, res) => {
             }
 
             doc.font("Helvetica-Bold").fontSize(9).fillColor(PDF_COLORS.primary)
-               .text(`Persons (${version.persons.length})`, leftMargin, currentY);
+               .text(`Persons (${version.personIds.length})`, leftMargin, currentY);
             currentY += 15;
 
-            version.persons.forEach((person, idx) => {
+            version.personIds.forEach((person, idx) => {
                 if (currentY + 25 > bottomY) {
                     doc.addPage();
                     currentY = doc.page.margins.top;
@@ -926,7 +928,7 @@ router.get("/:leadNo/version/:versionId/pdf", async (req, res) => {
         }
 
         // Vehicles summary
-        if (version.vehicles && version.vehicles.length > 0) {
+        if (version.vehicleIds && version.vehicleIds.length > 0) {
             const bottomY = doc.page.height - doc.page.margins.bottom;
             if (currentY + 30 > bottomY) {
                 doc.addPage();
@@ -934,10 +936,10 @@ router.get("/:leadNo/version/:versionId/pdf", async (req, res) => {
             }
 
             doc.font("Helvetica-Bold").fontSize(9).fillColor(PDF_COLORS.primary)
-               .text(`Vehicles (${version.vehicles.length})`, leftMargin, currentY);
+               .text(`Vehicles (${version.vehicleIds.length})`, leftMargin, currentY);
             currentY += 15;
 
-            version.vehicles.forEach((vehicle, idx) => {
+            version.vehicleIds.forEach((vehicle, idx) => {
                 if (currentY + 25 > bottomY) {
                     doc.addPage();
                     currentY = doc.page.margins.top;
@@ -950,7 +952,7 @@ router.get("/:leadNo/version/:versionId/pdf", async (req, res) => {
         }
 
         // Timeline summary
-        if (version.timelines && version.timelines.length > 0) {
+        if (version.timelineIds && version.timelineIds.length > 0) {
             const bottomY = doc.page.height - doc.page.margins.bottom;
             if (currentY + 30 > bottomY) {
                 doc.addPage();
@@ -958,10 +960,10 @@ router.get("/:leadNo/version/:versionId/pdf", async (req, res) => {
             }
 
             doc.font("Helvetica-Bold").fontSize(9).fillColor(PDF_COLORS.primary)
-               .text(`Timeline Events (${version.timelines.length})`, leftMargin, currentY);
+               .text(`Timeline Events (${version.timelineIds.length})`, leftMargin, currentY);
             currentY += 15;
 
-            version.timelines.forEach((event, idx) => {
+            version.timelineIds.forEach((event, idx) => {
                 if (currentY + 25 > bottomY) {
                     doc.addPage();
                     currentY = doc.page.margins.top;

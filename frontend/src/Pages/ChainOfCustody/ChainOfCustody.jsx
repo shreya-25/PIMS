@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { CaseContext } from "../CaseContext";
 import api from "../../api"; // adjust if your api path differs
 import { AlertModal } from "../../components/AlertModal/AlertModal";
-import './ChainOfCustody.css';
+import styles from './ChainOfCustody.module.css';
 import { VersionHistoryButton } from '../../components/VersionHistoryButton/VersionHistoryButton';
 
 
@@ -231,44 +231,44 @@ const tone = (t) =>
 // const piSubmitted= evs.filter(e => e.type === "pi-submitted").length;
 
   return (
-    <div className="elog card">
-      <div className="elog-header">
+    <div className={`${styles.elog} ${styles.card}`}>
+      <div className={styles['elog-header']}>
        <h3>
   {selectedLead?.leadNo
     ? `Lead: ${toTitleCase(selectedLead?.leadName || "")}`
     : "LEAD DETAILS"}
 </h3>
 
-        <div className={`chip chip-status ${statusClass}`}>{status || "—"}</div>
+        <div className={`${styles.chip} ${styles['chip-status']} ${styles[statusClass] || ''}`}>{status || "—"}</div>
       </div>
 
-      <div className="elog-counters">
-        <span className="counter ok">Accepted {acceptedAt.size}</span>
-        <span className="counter bad">Declined {declinedAt.size}</span>
-        <span className="counter base">Pending {pending.length}</span>
+      <div className={styles['elog-counters']}>
+        <span className={`${styles.counter} ${styles.ok}`}>Accepted {acceptedAt.size}</span>
+        <span className={`${styles.counter} ${styles.bad}`}>Declined {declinedAt.size}</span>
+        <span className={`${styles.counter} ${styles.base}`}>Pending {pending.length}</span>
         <VersionHistoryButton leadNo={selectedLead?.leadNo} className="small" />
       </div>
 
-      {/* <div className="elog-counters extra">
-  <span className="counter base">PI submitted {piSubmitted}</span>
-  <span className="counter ok">CM approved {cmApproved}</span>
-  <span className="counter warn">CM returned {cmReturned}</span>
-  <span className="counter muted">CM closed {cmClosed}</span>
-  <span className="counter info">CM reopened {cmReopened}</span>
+      {/* <div className={`${styles['elog-counters']} ${styles.extra}`}>
+  <span className={`${styles.counter} ${styles.base}`}>PI submitted {piSubmitted}</span>
+  <span className={`${styles.counter} ${styles.ok}`}>CM approved {cmApproved}</span>
+  <span className={`${styles.counter} ${styles.warn}`}>CM returned {cmReturned}</span>
+  <span className={`${styles.counter} ${styles.muted}`}>CM closed {cmClosed}</span>
+  <span className={`${styles.counter} ${styles.info}`}>CM reopened {cmReopened}</span>
 </div> */}
 
- <div className="elog-scroll">
+ <div className={styles['elog-scroll']}>
 
       {stream.length === 0 ? (
-        <div className="muted">No activity yet.</div>
+        <div className={styles.muted}>No activity yet.</div>
       ) : (
-        <ul className="elog-list">
+        <ul className={styles['elog-list']}>
           {stream.map((ev, i) => (
-            <li key={i} className={`elog-item ${tone(ev.type)}`}>
-              <div className="pin">{icon(ev.type)}</div>
-              <div className="body">
-                <div className="line">{msg(ev)}</div>
-                <div className="meta">
+            <li key={i} className={`${styles['elog-item']} ${styles[tone(ev.type)]}`}>
+              <div className={styles.pin}>{icon(ev.type)}</div>
+              <div className={styles.body}>
+                <div className={styles.line}>{msg(ev)}</div>
+                <div className={styles.meta}>
                   by <b>{nameOf(ev.by)}</b> • {fmtDT(ev.at)}
                 </div>
               </div>
@@ -414,17 +414,17 @@ const tone = (t) =>
 };
 
   return (
-    <div className="admin-container">
+    <div className={styles.adminContainer}>
       <Navbar />
 
-      <div className="main-container">
+      <div className={styles.mainContainer}>
         <SideBar activePage="LeadReview" />
 
-        <div className="left-content">
-          <div className="top-menu1">
-            <div className="menu-items">
+        <div className={styles.leftContent}>
+          <div className={styles.topMenuNav}>
+            <div className={styles.menuItems}>
               <span
-                className="menu-item"
+                className={styles.menuItem}
                 onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
@@ -437,7 +437,7 @@ const tone = (t) =>
               </span>
 
               <span
-                className="menu-item"
+                className={styles.menuItem}
                 onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
@@ -452,7 +452,7 @@ const tone = (t) =>
               </span>
                {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
            <span
-              className="menu-item"
+              className={styles.menuItem}
               onClick={handleViewLeadReturn}
               title={isGenerating ? "Preparing report…" : "View Lead Return"}
               style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
@@ -461,20 +461,20 @@ const tone = (t) =>
             </span>
               )}
              {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
+  <span className={styles.menuItem} onClick={goToViewLR}>
     Submit Lead Return
   </span>
 )}
 
   {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
+  <span className={styles.menuItem} onClick={goToViewLR}>
    Review Lead Return
   </span>
 )}
 
 
               <span
-                className="menu-item active"
+                className={`${styles.menuItem} ${styles.menuItemActive}`}
                 onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;

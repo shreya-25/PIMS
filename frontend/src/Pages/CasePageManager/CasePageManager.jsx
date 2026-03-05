@@ -5,7 +5,7 @@ import Filter from "../../components/Filter/Filter";
 import Sort from "../../components/Sort/Sort";
 import Button from '../../components/Button/Button';
 import {SideBar } from "../../components/Sidebar/Sidebar";
-import './CasePageManager.css'; // Custom CSS file for styling
+import styles from './CasePageManager.module.css';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
@@ -15,10 +15,6 @@ import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
 import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
 import api, { BASE_URL } from "../../api";
 import usePresence from "../../hooks/usePresence";
-
-
-
-
 
 export const CasePageManager = () => {
 
@@ -40,10 +36,10 @@ export const CasePageManager = () => {
     const [caseManagersDropdownOpen, setCaseManagersDropdownOpen] = useState(false);
     const [detectiveSupervisorDropdownOpen, setDetectiveSupervisorDropdownOpen] = useState(false);
     const [loading, setLoading] = useState(false);
-     const [alertOpen, setAlertOpen] = useState(false);
-      const [alertMessage, setAlertMessage] = useState("");
-      const [confirmOfficersOpen, setConfirmOfficersOpen] = useState(false);
-      const RIGHT_ALIGN_COL = "Lead No.";
+    const [alertOpen, setAlertOpen] = useState(false);
+    const [alertMessage, setAlertMessage] = useState("");
+    const [confirmOfficersOpen, setConfirmOfficersOpen] = useState(false);
+    const RIGHT_ALIGN_COL = "Lead No.";
 
     const [showFilter, setShowFilter] = useState(false);
     const [showSort, setShowSort] = useState(false);
@@ -156,7 +152,7 @@ const handleConfirmOfficers = () => {
 
     useEffect(() => {
         if (team.investigators && Array.isArray(team.investigators)) {
-          setSelectedInvestigators(team.investigators);
+          setSelectedInvestigators([...new Set(team.investigators)]);
         }
         if (team.caseManagers && Array.isArray(team.caseManagers)) {
           setSelectedCaseManagers(team.caseManagers);
@@ -518,6 +514,7 @@ useEffect(() => {
 
         const allLeads = filteredLeadsArray
           .map(mapLead)
+          .filter(lead => lead.id != null && !isNaN(lead.id))
           .sort((a, b) => Number(b.id) - Number(a.id));
   
         console.log("✅ Assigned Leads:", assignedLeads);
@@ -1672,7 +1669,7 @@ const toTitleCase = (s = "") =>
 
 
     return (
-        <div className="case-page-manager">
+        <div className={styles['case-page-manager']}>
             {/* Navbar */}
             <Navbar />
               <AlertModal
@@ -1716,7 +1713,7 @@ const toTitleCase = (s = "") =>
 
 
             {/* Main Container */}
-            <div className="main-container">
+            <div className={styles['main-container']}>
 
               <SideBar
                 activePage="CasePageManager"
@@ -1725,7 +1722,7 @@ const toTitleCase = (s = "") =>
                 setActiveTab={setActiveTab}
               />
 
-              <div className="left-content">
+              <div className={styles['left-content']}>
 
                 {/* <div className = "side-titleLeft">
                   <p> PIMS &gt; Cases
@@ -1741,8 +1738,8 @@ const toTitleCase = (s = "") =>
 
           </div> */}
                 {/* Display Case Number and Name */}
-                <div className="case-header-cp">
-                  <div className="cp-head">
+                <div className={styles['case-header-cp']}>
+                  <div className={styles['cp-head']}>
                 {
                     <h2> Case: {selectedCase?.caseName ? toTitleCase(selectedCase.caseName) : "Unknown Case"}</h2>
 
@@ -1826,17 +1823,17 @@ const toTitleCase = (s = "") =>
   </div>
 </div> */}
 
-<section className="collapsible-section">
+<section className={styles['collapsible-section']}>
   <button
     type="button"
-    className="collapse-header"
+    className={styles['collapse-header']}
     onClick={() => setIsCaseSummaryOpen(o => !o)}
     aria-expanded={isCaseSummaryOpen}
   >
-    <span className="collapse-title">Case Summary</span>
-    <span className=""> 
+    <span className={styles['collapse-title']}>Case Summary</span>
+    <span>
       <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-      className="icon-image"
+      className={styles['icon-image']}
        /></span>
   </button>
 
@@ -1866,19 +1863,19 @@ const toTitleCase = (s = "") =>
   )}
 </section>
 
-<section className="collapsible-section">
+<section className={styles['collapsible-section']}>
   <button
     type="button"
-    className="collapse-header"
+    className={styles['collapse-header']}
     onClick={() => setIsCaseTeamOpen(o => !o)}
     aria-expanded={isCaseTeamOpen}
   >
-  <span className="collapse-title">Case Team</span>
-  <span className=""> <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className="icon-image"/></span>
-  </button>           
+  <span className={styles['collapse-title']}>Case Team</span>
+  <span><img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className={styles['icon-image']}/></span>
+  </button>
   {isCaseTeamOpen && (
-    <div className="case-team">
-      <table className=" ct-fixed" style={caseTeamStyles.table}>
+    <div className={styles['case-team']}>
+      <table style={caseTeamStyles.table}>
         <colgroup>
           <col style={{ width: 220 }} />   
           <col style={{ height: "200px" }} />
@@ -1942,33 +1939,33 @@ const toTitleCase = (s = "") =>
 
           <tr>
   <td style={caseTeamStyles.td}>Detective Supervisor</td>
-  <td className="name-cell" style={caseTeamStyles.td}>
+  <td className={styles['name-cell']} style={caseTeamStyles.td}>
     {selectedCase.role === "Detective Supervisor" ? (
-      <div ref={dsRef} className="custom-dropdown">
+      <div ref={dsRef} className={styles['custom-dropdown']}>
         <div
-          className="dropdown-head"
+          className={styles['dropdown-head']}
           onClick={() => setDetectiveSupervisorDropdownOpen(prev => !prev)}
         >
-          <span className="dh-text">
+          <span className={styles['dh-text']}>
             {selectedDetectiveSupervisor
               ? displayName(selectedDetectiveSupervisor)
               : "Select Detective Supervisor"}
           </span>
 
-          <span className="dropdown-icon" aria-hidden="true">
+          <span className={styles['dropdown-icon']} aria-hidden="true">
             <img
               src={detectiveSupervisorDropdownOpen ? downIcon : upIcon}
-              className="caret-icon"
+              className={styles['caret-icon']}
               alt=""
             />
           </span>
         </div>
 
         {detectiveSupervisorDropdownOpen && (
-          <div className="dropdown-options">
+          <div className={styles['dropdown-options']}>
             <input
               type="text"
-              className="dropdown-search"
+              className={styles['dropdown-search']}
               placeholder="Search officer..."
               value={dsSearch}
               onChange={(e) => setDsSearch(e.target.value)}
@@ -1981,7 +1978,7 @@ const toTitleCase = (s = "") =>
                 return !term || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(term);
               })
               .map(user => (
-              <div key={user.username} className="dropdown-item">
+              <div key={user.username} className={styles['dropdown-item']}>
                 <input
                   type="radio"
                   name="detectiveSupervisor"
@@ -1989,8 +1986,7 @@ const toTitleCase = (s = "") =>
                   value={user.username}
                   checked={selectedDetectiveSupervisor === user.username}
                   onChange={() => {
-                    // const selected = user.username;
-                    const selected = `${user.firstName} ${user.lastName} (${user.username})`;
+                    const selected = user.username;
                     setSelectedDetectiveSupervisor(selected);
                     saveInvestigators(selectedInvestigators, selectedCaseManagers, selected);
                   }}
@@ -2011,31 +2007,30 @@ const toTitleCase = (s = "") =>
 
           <tr>
               <td style={caseTeamStyles.td}>Case Manager{team.caseManagers.length>1 ? "s" : ""}</td>
-              <td className="name-cell" style={caseTeamStyles.td}>
+              <td className={styles['name-cell']} style={caseTeamStyles.td}>
                 {(selectedCase.role==="Case Manager" || selectedCase.role==="Detective Supervisor") ? (
-                  <div ref={cmRef}
-                  className="custom-dropdown">
+                  <div ref={cmRef} className={styles['custom-dropdown']}>
                     <div
-                      className="dropdown-head"
+                      className={styles['dropdown-head']}
                       onClick={() => setCaseManagersDropdownOpen(prev => !prev)}
-                    >          
+                    >
                         {selectedCaseManagers.length > 0
           ? displayNames(selectedCaseManagers)
           : "Select Case Manager(s)"}
-                      <span className="dropdown-icon">
+                      <span className={styles['dropdown-icon']}>
                          <img
     src={caseManagersDropdownOpen ? downIcon : upIcon}
-    className="caret-icon"
+    className={styles['caret-icon']}
     alt=""
     aria-hidden="true"
   />
                       </span>
                     </div>
                     {caseManagersDropdownOpen && (
-                      <div className="dropdown-options">
+                      <div className={styles['dropdown-options']}>
                         <input
                           type="text"
-                          className="dropdown-search"
+                          className={styles['dropdown-search']}
                           placeholder="Search officer..."
                           value={cmSearch}
                           onChange={(e) => setCmSearch(e.target.value)}
@@ -2048,7 +2043,7 @@ const toTitleCase = (s = "") =>
                             return !term || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(term);
                           })
                           .map(user=>(
-                            <div key={user.username} className="dropdown-item">
+                            <div key={user.username} className={styles['dropdown-item']}>
                               <input
                                 type="checkbox"
                                 id={`cm-${user.username}`}
@@ -2079,37 +2074,35 @@ const toTitleCase = (s = "") =>
               </td>
           </tr>
           <tr>
-              <td className="name-cell" style={caseTeamStyles.td}> Investigator{team.investigators.length > 1 ? "s" : ""}</td>
+              <td className={styles['name-cell']} style={caseTeamStyles.td}> Investigator{team.investigators.length > 1 ? "s" : ""}</td>
               <td style={caseTeamStyles.td}>
                 {(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") ? (
-                    <div ref={invRef}
-                      className="custom-dropdown">
+                    <div ref={invRef} className={styles['custom-dropdown']}>
                       <div
-                        className="dropdown-head"
+                        className={styles['dropdown-head']}
                         onClick={() => setInvestigatorsDropdownOpen(!investigatorsDropdownOpen)}
                       >
-                       <span className="dh-text">
+                       <span className={styles['dh-text']}>
                           {selectedInvestigators.length
                             ? displayNames(selectedInvestigators)
                             : "Select Investigators"}
                         </span>
 
-                      <span className="dropdown-icon"> 
+                      <span className={styles['dropdown-icon']}>
                          <img
     src={investigatorsDropdownOpen ? downIcon : upIcon}
-    className="caret-icon"
+    className={styles['caret-icon']}
     alt=""
     aria-hidden="true"
   />
-                        
                          </span>
                       </div>
 
                       {investigatorsDropdownOpen && (
-                        <div className="dropdown-options">
+                        <div className={styles['dropdown-options']}>
                           <input
                             type="text"
-                            className="dropdown-search"
+                            className={styles['dropdown-search']}
                             placeholder="Search officer..."
                             value={invSearch}
                             onChange={(e) => setInvSearch(e.target.value)}
@@ -2122,7 +2115,7 @@ const toTitleCase = (s = "") =>
                               return !term || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(term);
                             })
                             .map((user) => (
-                            <div key={user.username} className="dropdown-item">
+                            <div key={user.username} className={styles['dropdown-item']}>
                               <input
                                 type="checkbox"
                                 id={`inv-${user.username}`}
@@ -2138,7 +2131,7 @@ const toTitleCase = (s = "") =>
       }}
 
                               />
-                            
+
                               <label htmlFor={`inv-${user.username}`}>
                                 {user.firstName} {user.lastName} ({user.username})
                               </label>
@@ -2350,9 +2343,9 @@ const toTitleCase = (s = "") =>
 </section> */}
 
              
-                <div className="stats-bar">
+                <div className={styles['stats-bar']}>
                           <span
-                            className={`hoverable ${activeTab === "allLeads" ? "active" : ""}`}
+                            className={`${styles.hoverable} ${activeTab === "allLeads" ? styles.active : ""}`}
                             onClick={() => handleTabClick("allLeads")}
                         >
                             All Leads: {leads.allLeads.length}
@@ -2370,25 +2363,25 @@ const toTitleCase = (s = "") =>
                             Accepted Leads: {leads.pendingLeads.length}
                           </span> */}
                            <span
-                            className={`hoverable ${activeTab === "pendingLeads" ? "active" : ""}`}
+                            className={`${styles.hoverable} ${activeTab === "pendingLeads" ? styles.active : ""}`}
                             onClick={() => handleTabClick("pendingLeads")}
                           >
                             Leads To Reassign: {leads.pendingLeads.length}
                           </span>
                         <span
-                            className={`hoverable ${activeTab === "pendingLeadReturns" ? "active" : ""}`}
+                            className={`${styles.hoverable} ${activeTab === "pendingLeadReturns" ? styles.active : ""}`}
                             onClick={() => handleTabClick("pendingLeadReturns")}
                         >
                             Lead Returns for Review: {leads.pendingLeadReturns.length}
                         </span>
-                    
+
                 </div>
 
-                <div className="content-section">
+                <div className={styles['content-section']}>
                     {activeTab === "assignedLeads" && (
 
-<div className="table-scroll-container">
-    <table className="leads-table" style={{ minWidth: "1000px" }}>
+<div className={styles['table-scroll-container']}>
+    <table className={styles['leads-table']} style={{ minWidth: "1000px" }}>
       <thead>
         <tr>
             {assignedColumns.map(col => {
@@ -2396,10 +2389,10 @@ const toTitleCase = (s = "") =>
                       return (
                         <th
                           key={col}
-                          className="column-header1"
+                          className={styles['column-header1']}
                           style={{ width: assignedColWidths[col] }}
                         >
-                          <div className="header-title">
+                          <div className={styles['header-title']}>
                             {col}
                             <span ref={el => (popupAssignedRefs.current[dataKey] = el)}>
                               {/* Filter button */}
@@ -2412,7 +2405,7 @@ const toTitleCase = (s = "") =>
                               >
                                 <img
                                   src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-                                  className="icon-image"
+                                  className={styles['icon-image']}
                                 />
                               </button>
                               <Filter
@@ -2492,7 +2485,7 @@ const toTitleCase = (s = "") =>
 
               <td style={{ width: "9%", textAlign: "center" }}>
                 <button
-                  className="view-btn1"
+                  className={styles['view-btn1']}
                   onClick={()=>handleLeadClick(lead)}
                   // onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.summary} } )}
                 >
@@ -2500,7 +2493,7 @@ const toTitleCase = (s = "") =>
                 </button>
                 {lead.assignedOfficers?.includes(signedInOfficer) && (
   <button
-    className="accept-btn"
+    className={styles['accept-btn']}
     onClick={() => openConfirm(lead)}
     // onClick={() => {
     //   if (window.confirm(`Do you want to accept this lead?`)) {
@@ -2532,8 +2525,8 @@ const toTitleCase = (s = "") =>
           
 {activeTab === "pendingLeads" && (
 
-<div className="table-scroll-container">
-<table className="leads-table" style={{ minWidth: "1000px" }}>
+<div className={styles['table-scroll-container']}>
+<table className={styles['leads-table']} style={{ minWidth: "1000px" }}>
       <thead>
         <tr>
                  {pendingColumns.map(col => {
@@ -2541,10 +2534,10 @@ const toTitleCase = (s = "") =>
                    return (
                      <th
                        key={col}
-                       className="column-header1"
+                       className={styles['column-header1']}
                        style={{ width: pendingColWidths[col], position: 'relative' }}
                      >
-                       <div className="header-title">
+                       <div className={styles['header-title']}>
                          {col}
                          <span ref={el => (popupPendingRefs.current[dataKey] = el)}>
                            {/* FILTER */}
@@ -2555,7 +2548,7 @@ const toTitleCase = (s = "") =>
                            }>
                              <img
                                src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-                               className="icon-image"
+                               className={styles['icon-image']}
                              />
                            </button>
                            <Filter
@@ -2638,7 +2631,7 @@ const toTitleCase = (s = "") =>
 
               <td style={{ width: "9%", textAlign: "center" }}>
                 <button
-                  className="view-btn1"
+                  className={styles['view-btn1']}
                   onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.summary} } )}
                 >
                   Manage
@@ -2660,8 +2653,8 @@ const toTitleCase = (s = "") =>
 
 
 {activeTab === "pendingLeadReturns" && (
-<div className="table-scroll-container">
-<table className="leads-table" style={{ minWidth: "1000px" }}>
+<div className={styles['table-scroll-container']}>
+<table className={styles['leads-table']} style={{ minWidth: "1000px" }}>
 
     <colgroup>
       <col style={{ width: "6%" }} />     {/* Lead No. */}
@@ -2676,10 +2669,10 @@ const toTitleCase = (s = "") =>
                           return (
                             <th
                               key={col}
-                              className="column-header1"
+                              className={styles['column-header1']}
                               style={{ width: pendingLRColWidths[col] , position: 'relative'}}
                             >
-                              <div className="header-title">
+                              <div className={styles['header-title']}>
                                 {col}
                                 <span ref={el => (popupPendingLRRefs.current[dataKey] = el)}>
                                   {/* FILTER */}
@@ -2690,7 +2683,7 @@ const toTitleCase = (s = "") =>
                                   }>
                                     <img
                                       src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-                                      className="icon-image"
+                                      className={styles['icon-image']}
                                     />
                                   </button>
                                   <Filter
@@ -2729,7 +2722,7 @@ const toTitleCase = (s = "") =>
                        <td>{lead.caseName}</td>
                       <td style={{ width: "11%", textAlign: "center" }}>
                         <button
-                              className="continue-btn"
+                              className={styles['continue-btn']}
                               onClick={() => {
                                 handleLRClick(lead)
                               }}
@@ -2751,9 +2744,9 @@ const toTitleCase = (s = "") =>
             </div>
 )}  
 {activeTab === "allLeads" && (
-  <div className="all-leads">
-    <div className="table-scroll-container">
-      <table className="leads-table" style={{ minWidth: "1000px" }}>
+  <div className={styles['all-leads']}>
+    <div className={styles['table-scroll-container']}>
+      <table className={styles['leads-table']} style={{ minWidth: "1000px" }}>
         <thead>
                <tr>
                  {allColumns.map(col => {
@@ -2761,12 +2754,10 @@ const toTitleCase = (s = "") =>
                    return (
                      <th
                        key={col}
-                       className="column-header1"
+                       className={styles['column-header1']}
                        style={{ width: allColWidths[col], position: 'relative' , textAlign: col === RIGHT_ALIGN_COL ? "right" : undefined }}
                      >
-                       <div className="header-title"
-                          //  style={col === "Lead No." ? { justifyContent: "flex-end" } : undefined}
->
+                       <div className={styles['header-title']}>
                          {col}
                          <span ref={el => (popupAllRefs.current[dataKey] = el)}>
                            {/* FILTER button */}
@@ -2779,7 +2770,7 @@ const toTitleCase = (s = "") =>
                            >
                              <img
                                src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-                               className="icon-image"
+                               className={styles['icon-image']}
                              />
                            </button>
                            <Filter
@@ -2811,7 +2802,7 @@ const toTitleCase = (s = "") =>
              </thead>
              <tbody>
           {paginatedLeads.length>0 ? paginatedLeads.map(lead=>(
-            <tr key={lead.id}>
+            <tr key={lead.id} style={{ backgroundColor: "#fff" }}>
               <td style={{ }}>{lead.id}</td>
               <td>{lead.description}</td>
               <td style={{ 
@@ -2843,7 +2834,7 @@ const toTitleCase = (s = "") =>
 
             <td style={{ width: "9%", textAlign: "center" }}>
   <button
-    className="view-btn1"
+    className={styles['view-btn1']}
     onClick={() => !isDeletedStatus(lead.leadStatus) && handleLeadClick(lead)}
     disabled={isDeletedStatus(lead.leadStatus)}
     style={{

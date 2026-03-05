@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import axios from "axios";
 import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 import Navbar from '../../components/Navbar/Navbar'; // Import your Navbar component
-import './CreateLead.css'; // Create this CSS file for styling
+import styles from './CreateLead.module.css';
 import { CaseContext } from "../CaseContext";
 import api from "../../api";
 import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
@@ -71,8 +71,8 @@ useEffect(() => {
     leadNumber: '',
     leadOrigin: '',
     incidentNumber: '',
-    subNumber: '',
-    associatedSubNumbers: [],
+    subCategory: '',
+    associatedSubCategories: [],
     assignedDate: '',
     dueDate: '',
     leadSummary: '',
@@ -110,11 +110,11 @@ const filteredOfficers = React.useMemo(() => {
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const [availableSubNumbers, setAvailableSubNumbers] = useState([
+  const [availableSubCategories, setAvailableSubCategories] = useState([
     "SUB-000001", "SUB-000002", "SUB-000003", "SUB-000004", "SUB-000005"
-  ]); // Static List of Subnumbers
+  ]); // Static List of Subcategories
   
-  const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]); // Selected Subnumbers
+  const [associatedSubCategories, setAssociatedSubCategories] = useState([]); // Selected Subcategories
   const [subDropdownOpen, setSubDropdownOpen] = useState(false);
 
   const getFormattedDate = () => {
@@ -355,7 +355,7 @@ useEffect(() => {
 //     .map((v) => parseInt(v.trim(), 10))
 //     .filter((n) => !isNaN(n));
 
-//   const subNumbersArray = leadData.subNumber
+//   const subCategoriesArray = leadData.subCategory
 //     .split(',')
 //     .map((v) => v.trim())
 //     .filter((s) => s);
@@ -369,8 +369,8 @@ useEffect(() => {
 //         caseNo:              selectedCase.caseNo,
 //         parentLeadNo:        originNumbers,
 //         incidentNo:          leadData.incidentNumber,
-//         subNumber:           subNumbersArray,
-//         associatedSubNumbers: leadData.associatedSubNumbers,
+//         subCategory:           subCategoriesArray,
+//         associatedSubCategories: leadData.associatedSubCategories,
 //         dueDate:             leadData.dueDate,
 //         assignedDate:        leadData.assignedDate,
 //         assignedTo:          leadData.assignedOfficer,
@@ -529,7 +529,7 @@ const handleGenerateLead = async () => {
     .map((v) => parseInt(String(v).trim(), 10))
     .filter((n) => !isNaN(n));
 
-  const subNumbersArray = (leadData.subNumber || "")
+  const subCategoriesArray = (leadData.subCategory || "")
     .split(",")
     .map((v) => String(v).trim())
     .filter((s) => s);
@@ -576,8 +576,8 @@ const orderedAssignees = hasAssignees
         caseNo:               selectedCase.caseNo,
         parentLeadNo:         originNumbers,
         incidentNo:           leadData.incidentNumber,
-        subNumber:            subNumbersArray,
-        associatedSubNumbers: leadData.associatedSubNumbers,
+        subCategory:            subCategoriesArray,
+        associatedSubCategories: leadData.associatedSubCategories,
         dueDate:              leadData.dueDate,
         assignedDate:         leadData.assignedDate,
 
@@ -749,26 +749,26 @@ const assignedOfficerUsernames = React.useMemo(
 
 
 const defaultCaseSummary = "";
-const [availableCaseSubNumbers, setAvailableCaseSubNumbers] = useState([]); // To store subnumbers fetched for the case
+const [availableCaseSubCategories, setAvailableCaseSubCategories] = useState([]); // To store subcategories fetched for the case
 
- // etch all subnumbers for this case
+ // etch all subcategories for this case
  useEffect(() => {
-  const fetchCaseSubNumbers = async () => {
+  const fetchCaseSubCategories = async () => {
     try {
       if (caseDetails && caseDetails.id) {
         const token = localStorage.getItem("token");
         const response = await api.get(
-          `/api/cases/${caseDetails.id}/subNumbers`,
+          `/api/cases/${caseDetails.id}/subCategories`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setAvailableCaseSubNumbers(response.data.subNumbers);
+        setAvailableCaseSubCategories(response.data.subCategories);
       }
     } catch (error) {
-      console.error("Error fetching case subnumbers:", error);
+      console.error("Error fetching case subcategories:", error);
     }
   };
 
-  fetchCaseSubNumbers();
+  fetchCaseSubCategories();
 }, [caseDetails]);
 
 
@@ -838,7 +838,7 @@ const [caseSummary, setCaseSummary] = useState('' ||  defaultCaseSummary);
   };
 
 useEffect(() => {
-  const fetchAssociatedSubNumbers = async () => {
+  const fetchAssociatedSubCategories = async () => {
     try {
       // Ensure we have valid case identifiers
       const caseNo = selectedCase?.caseNo || caseDetails?.caseNo;
@@ -849,21 +849,21 @@ useEffect(() => {
 
       const token = localStorage.getItem("token");
       const response = await api.get(
-        `/api/lead/associatedSubNumbers/${caseNo }/${encodeURIComponent(caseName)}`,
+        `/api/lead/associatedSubCategories/${caseNo }/${encodeURIComponent(caseName)}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log("Fetched Associated Subnumbers:", response.data);
+      console.log("Fetched Associated Subcategories:", response.data);
 
       // Adjust if API returns differently
-      const subs = response.data.associatedSubNumbers || response.data.subNumbers || [];
-      setAvailableSubNumbers(subs);
+      const subs = response.data.associatedSubCategories || response.data.subCategories || [];
+      setAvailableSubCategories(subs);
     } catch (error) {
-      console.error("Error fetching associated subnumbers:", error);
+      console.error("Error fetching associated subcategories:", error);
     }
   };
 
-  fetchAssociatedSubNumbers();
+  fetchAssociatedSubCategories();
 }, [selectedCase, caseDetails]);
 
   
@@ -890,7 +890,7 @@ useEffect(() => {
 
 
   return (
-    <div className="lead-instructions-page">
+    <div className={styles.page}>
       {/* Navbar at the top */}
       <Navbar />
        <AlertModal
@@ -905,7 +905,7 @@ useEffect(() => {
 />
       
 
-      <div className="main-container">
+      <div className={styles.mainContainer}>
        {/* <div className="sideitem">
        <ul className="sidebar-list">
                   
@@ -978,19 +978,19 @@ useEffect(() => {
                 </div> */}
                 <SideBar activePage = "CreateLead" />
 
-                <div className="left-content">
+                <div className={styles.leftContent}>
                 {/* <h5 className = "side-titleLeft">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5> */}
 
 
         {/* Center Section */}
-        <div className="case-header">
+        <div className={styles.caseHeader}>
           <h2 >CREATE LEAD</h2>
           </div>
 
 
         {/* Right Section */}
-        <div className="LRI-content-section">
-        <table className="leads-table">
+        <div className={styles.lriContentSection}>
+        <table className={styles.leadsTable}>
     <thead>
       <tr>
 
@@ -1013,27 +1013,27 @@ useEffect(() => {
 
 
       {/* Bottom Content */}
-      <div className="bottom-content-cl">
-        <table className="details-table">
+      <div className={styles.bottomContent}>
+        <table className={styles.detailsTable}>
           <tbody>
             <tr>
               <td>Case Name</td>
-              <td>
+              <td colSpan={3}>
                 <input
                   type="text"
-                  className="input-field"
+                  className={styles.inputField}
                   value={selectedCase.caseName}
-                  onChange={(e) => handleInputChange('caseName', e.target.value)} // Update 'caseName' in leadData
+                  readOnly
                   placeholder=""
     />
               </td>
             </tr>
             <tr>
               <td>Lead Log Summary *</td>
-              <td>
+              <td colSpan={3}>
                 <input
                   type="text"
-                  className="input-field"
+                  className={styles.inputField}
                   value={leadData.leadDescription}
                   onChange={(e) => handleInputChange('leadDescription', e.target.value)}
                   placeholder=""
@@ -1046,9 +1046,9 @@ useEffect(() => {
             </tr>
             <tr>
               <td> Lead Instruction *</td>
-              <td>
+              <td colSpan={3}>
                 <textarea
-                  className="textarea-field-cl"
+                  className={styles.textareaField}
                   value={leadData.leadSummary}
                   onChange={(e) => handleInputChange('leadSummary', e.target.value)}
                   placeholder=""
@@ -1058,135 +1058,100 @@ useEffect(() => {
             <tr>
                 <td>Lead Origin</td>
                 <td>
-                  {/* <input
-                    type="text"
-                    className="input-field"
-                    value={leadData.leadOrigin || leadOrigin}
-                    onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
-                    placeholder=""
-                  /> */}
                   <input
                     type="text"
-                    className="input-field"
+                    className={styles.inputField}
                     value={leadData.leadOrigin}
                     onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
                     placeholder="e.g. 1, 2, 3"
                   />
-                  
-
+                </td>
+                <td className={styles.labelCell}>Due Date</td>
+                <td>
+                  <input
+                    type="date"
+                    className={styles.inputField}
+                    value={leadData.dueDate}
+                    onChange={(e) => handleInputChange('dueDate', e.target.value)}
+                  />
                 </td>
               </tr>
                 <tr>
-                  <td>Subnumber</td>
-                  <td>
-                    {/* <input
-                      type="text"
-                      className="input-field"
-                      value={leadData.subNumber}
-                      onChange={(e) => {
-                        const values = e.target.value.split(',').map(val => val.trim()).filter(Boolean);
-                        handleInputChange('subNumber', values); // Pass array to state
-                      }}
-                      placeholder="Enter Subnumber"
-                    /> */}
+                  <td>Subcategory</td>
+                  <td colSpan={3}>
                     <input
                       type="text"
-                      className="input-field"
-                      value={leadData.subNumber}
-                      onChange={(e) => handleInputChange('subNumber', e.target.value)}
+                      className={styles.inputField}
+                      value={leadData.subCategory}
+                      onChange={(e) => handleInputChange('subCategory', e.target.value)}
                       placeholder="e.g. SUB-000001, SUB-000002"
                     />
                   </td>
                 </tr>
             <tr>
-  <td>Associated Subnumbers</td>
-  <td>
-    <div className="custom-dropdown-cl" ref={dropdownRef}>
+  <td>Associated Subcategories</td>
+  <td colSpan={3}>
+    <div className={styles.customDropdown} ref={dropdownRef}>
       <div
-        className="dropdown-header-cl"
+        className={styles.dropdownHeader}
         ref={dropdownRef}
         onClick={() => setSubDropdownOpen(!subDropdownOpen)}
       >
-        {associatedSubNumbers.length > 0
-          ? associatedSubNumbers.join(", ")
-          : "Select Subnumbers"}
-        <span className="dropdown-icon">{subDropdownOpen ? "▲" : "▼"}</span>
+        {associatedSubCategories.length > 0
+          ? associatedSubCategories.join(", ")
+          : "Select Subcategories"}
+        <span className={styles.dropdownIcon}>{subDropdownOpen ? "▲" : "▼"}</span>
       </div>
       {subDropdownOpen && (
-        <div className="dropdown-options">
-          {availableSubNumbers.length > 0 ? (
-          availableSubNumbers.map((subNum) => (
-            <div key={subNum} className="dropdown-item">
+        <div className={styles.dropdownOptions}>
+          {availableSubCategories.length > 0 ? (
+          availableSubCategories.map((subNum) => (
+            <div key={subNum} className={styles.dropdownItem}>
               <input
                 type="checkbox"
                 id={subNum}
                 value={subNum}
-                checked={associatedSubNumbers.includes(subNum)}
+                checked={associatedSubCategories.includes(subNum)}
                 onChange={(e) => {
-                  const updatedSubNumbers = e.target.checked
-                    ? [...associatedSubNumbers, e.target.value]
-                    : associatedSubNumbers.filter((num) => num !== e.target.value);
-                  setAssociatedSubNumbers(updatedSubNumbers);
+                  const updatedSubCategories = e.target.checked
+                    ? [...associatedSubCategories, e.target.value]
+                    : associatedSubCategories.filter((num) => num !== e.target.value);
+                  setAssociatedSubCategories(updatedSubCategories);
 
                   setLeadData((prevData) => ({
                     ...prevData,
-                    associatedSubNumbers: updatedSubNumbers, // ✅ Add this
+                    associatedSubCategories: updatedSubCategories, // ✅ Add this
                   }));
                 }}
               />
               <label htmlFor={subNum}>{subNum}</label>
             </div>
           )) ) : (
-  <div className="dropdown-itemno-option">No subnumber added</div>
+  <div className={styles.dropdownItemNoOption}>No subcategory added</div>
 )}
         </div>
       )}
     </div>
   </td>
 </tr>
-<tr>
-  <td>Due Date </td>
-  <td>
-    <input
-      type="date"
-      className="input-field"
-      value={leadData.dueDate}
-      onChange={(e) => handleInputChange('dueDate', e.target.value)}
-      // placeholder="MM/DD/YY"
-      style={{
-        appearance: 'none',
-        WebkitAppearance: 'none',
-        MozAppearance: 'none',
-        border: '1px solid #ccc',
-        padding: '8px',
-        color: '#333',
-        borderRadius: '4px',
-        fontSize: '20px',
-        backgroundColor: 'white',
-      }}
-    />
-  </td>
-</tr>
-
-
           {/* <tr>
             <td>Priority:</td>
               <td>
-              <div className="custom-dropdown-cl">
+              <div className={styles.customDropdown}>
                     <div
-                      className="dropdown-header-cl"
+                      className={styles.dropdownHeader}
                       onClick={() => setDropdownOpen(!dropdownOpen)}
                     >
                       {leadData.assignedOfficer.length > 0
                         ? leadData.assignedOfficer.join(', ')
                         : 'Select Priority'}
-                      <span className="dropdown-icon">{dropdownOpen ? '▲' : '▼'}</span>
+                      <span className={styles.dropdownIcon}>{dropdownOpen ? '▲' : '▼'}</span>
                     </div>
                     {dropdownOpen && (
-                      <div className="dropdown-options">
+                      <div className={styles.dropdownOptions}>
                         {['High', 'Medium', 'Low'].map((priority) => {
                           return (
-                            <div key={officer} className="dropdown-item">
+                            <div key={officer} className={styles.dropdownItem}>
                               <input
                                 type="checkbox"
                               />
@@ -1203,11 +1168,11 @@ useEffect(() => {
             <tr>
 
   <td>Assign Officers </td>
-{/* <td>
+{/* <td colSpan={3}>
 
-<div className="custom-dropdown-cl" ref={dropdownRef}>
+<div className={styles.customDropdown} ref={dropdownRef}>
   <div
-    className="dropdown-header-cl"
+    className={styles.dropdownHeader}
     onClick={() => setDropdownOpen(!dropdownOpen)}
   >
     {leadData.assignedOfficer.length > 0
@@ -1221,14 +1186,14 @@ useEffect(() => {
           })
           .join(", ")
       : "Select Officers"}
-    <span className="dropdown-icon">{dropdownOpen ? "▲" : "▼"}</span>
+    <span className={styles.dropdownIcon}>{dropdownOpen ? "▲" : "▼"}</span>
   </div>
 
   {dropdownOpen && (
-    <div className="dropdown-options">
+    <div className={styles.dropdownOptions}>
       {usernames.length > 0 ? (
         usernames.map((user) => (
-          <div key={user.username} className="dropdown-item">
+          <div key={user.username} className={styles.dropdownItem}>
             <input
               type="checkbox"
               id={user.username}
@@ -1253,18 +1218,18 @@ useEffect(() => {
           </div>
         ))
       ) : (
-        <div className="dropdown-item">No officers found</div>
+        <div className={styles.dropdownItem}>No officers found</div>
       )}
     </div>
   )}
 </div>
 </td> */}
-<td>
-  <div id="assign-officers-wrap" className="inv-dropdown">
+<td colSpan={3}>
+  <div id="assign-officers-wrap" className={styles.invDropdown}>
     {/* Trigger shows selected officer names (or placeholder) */}
     <button
       type="button"
-      className="inv-input"
+      className={styles.invInput}
       onClick={() => setOfficersOpen((o) => !o)}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setOfficersOpen((o) => !o)}
       aria-haspopup="listbox"
@@ -1275,21 +1240,21 @@ useEffect(() => {
           : "Select Officers"
       }
     >
-      <span className="inv-input-label">
+      <span className={styles.invInputLabel}>
         {assignedOfficerUsernames.length
           ? assignedOfficerUsernames.map(displayUser).join(", ")
           : "Select Officers"}
       </span>
-      <span className="inv-caret" aria-hidden />
+      <span className={styles.invCaret} aria-hidden />
     </button>
 
     {officersOpen && (
-      <div className="inv-options" role="listbox" onMouseDown={(e) => e.stopPropagation()}>
+      <div className={styles.invOptions} role="listbox" onMouseDown={(e) => e.stopPropagation()}>
         {/* Sticky search */}
-        <div className="inv-search-wrap">
+        <div className={styles.invSearchWrap}>
           <input
             type="text"
-            className="inv-search"
+            className={styles.invSearch}
             placeholder="Type to filter officers…"
             value={officersQuery}
             onChange={(e) => setOfficersQuery(e.target.value)}
@@ -1298,12 +1263,12 @@ useEffect(() => {
         </div>
 
         {/* List */}
-        <div className="inv-list">
+        <div className={styles.invList}>
           {filteredOfficers.length ? (
             filteredOfficers.map((user) => {
               const checked = assignedOfficerUsernames.includes(user.username);
               return (
-                <label key={user.username} className="inv-item">
+                <label key={user.username} className={styles.invItem}>
                   <input
                     type="checkbox"
                     value={user.username}
@@ -1329,14 +1294,14 @@ useEffect(() => {
                       }));
                     }}
                   />
-                  <span className="inv-text">
+                  <span className={styles.invText}>
                     {user.firstName} {user.lastName} ({user.username})
                   </span>
                 </label>
               );
             })
           ) : (
-            <div className="inv-empty">No matches</div>
+            <div className={styles.invEmpty}>No matches</div>
           )}
         </div>
       </div>
@@ -1349,7 +1314,7 @@ useEffect(() => {
   <td>Primary Investigator *</td>
   <td>
     <select
-      className="input-field"
+      className={styles.inputField}
       value={leadData.primaryOfficer}
       onChange={(e) => handleInputChange('primaryOfficer', e.target.value)}
       disabled={assignedOfficerUsernames.length === 0}
@@ -1357,7 +1322,6 @@ useEffect(() => {
       <option value="" disabled>
         {assignedOfficerUsernames.length ? 'Select Primary' : 'Select officers first'}
       </option>
-
       {assignedOfficerUsernames.map((uName) => {
         const user = usernames.find((u) => u.username === uName);
         const label = user ? `${user.firstName} ${user.lastName} (${user.username})` : uName;
@@ -1367,14 +1331,10 @@ useEffect(() => {
       })}
     </select>
   </td>
-</tr>
-
-
-<tr>
-  <td>Access</td>
+  <td className={styles.labelCell}>Access</td>
   <td>
     <select
-      className="input-field"
+      className={styles.inputField}
       value={leadData.accessLevel}
       onChange={(e) => handleInputChange("accessLevel", e.target.value)}
     >
@@ -1389,12 +1349,12 @@ useEffect(() => {
 
 
       {/* Action Buttons */}
-      <div className="btn-sec-cl">
-        <button className="next-btncl" onClick={handleGenerateLead}>
+      <div className={styles.btnSec}>
+        <button className={styles.nextBtn} onClick={handleGenerateLead}>
           Create Lead
         </button>
-        {/* <button className="next-btncl">Download</button>
-        <button className="next-btncl">Print</button> */}
+        {/* <button className={styles.nextBtn}>Download</button>
+        <button className={styles.nextBtn}>Print</button> */}
       </div>
     </div>
     </div>

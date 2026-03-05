@@ -1,7 +1,48 @@
 const PDFDocument = require("pdfkit");
+const { PDFDocument: PDFLibDocument } = require("pdf-lib");
 const path = require("path");
 const fs = require("fs");
+const sharp = require("sharp");
+const heicConvert = require("heic-convert");
 const { getObjectBuffer } = require("../s3");
+const { fetchCaseLeadsData } = require("../utils/caseDataFetcher");
+const Case = require("../models/case");
+
+async function mergeWithAnotherPDF(mainBuffer, otherPdfBuffer) {
+  const mainDoc  = await PDFLibDocument.load(mainBuffer);
+  const otherDoc = await PDFLibDocument.load(otherPdfBuffer);
+  const copied   = await mainDoc.copyPages(otherDoc, otherDoc.getPageIndices());
+  copied.forEach(p => mainDoc.addPage(p));
+  return Buffer.from(await mainDoc.save());
+}
+
+// Convert image buffer to a format PDFKit understands (PNG or JPEG).
+// Handles HEIC (iPhone), WebP, and other formats; passes PNG/JPEG as-is.
+async function toPdfSafeBuffer(buf) {
+  if (!buf || buf.length < 12) return buf;
+  // JPEG — pass through
+  if (buf[0] === 0xFF && buf[1] === 0xD8) return buf;
+  // PNG — pass through
+  if (buf[0] === 0x89 && buf.slice(1, 4).toString() === "PNG") return buf;
+  // HEIC/HEIF — use heic-convert (sharp lacks HEIC support on Windows)
+  if (buf.toString("ascii", 4, 8) === "ftyp") {
+    const brand = buf.toString("ascii", 8, 12);
+    if (["heic", "heix", "hevc", "mif1"].includes(brand)) {
+      const jpegBuf = await heicConvert({ buffer: buf, format: "JPEG", quality: 0.8 });
+      return Buffer.from(jpegBuf);
+    }
+  }
+  // WebP and other formats — use sharp to convert to PNG
+  if (buf.slice(0, 4).toString() === "RIFF" && buf.slice(8, 12).toString() === "WEBP") {
+    return sharp(buf).png().toBuffer();
+  }
+  // Unknown format — try sharp as a last resort
+  try {
+    return await sharp(buf).png().toBuffer();
+  } catch {
+    return buf; // give PDFKit the raw buffer; it will throw if unsupported
+  }
+}
 
 // Small section header that respects page breaks
 function startSection(doc, title, currentY) {
@@ -16,6 +57,8 @@ function startSection(doc, title, currentY) {
 }
 
 const LR_ALIASES = {
+  persons:    ["persons", "leadPersons", "people", "lrPersons"],
+  vehicles:   ["vehicles", "leadVehicles", "cars", "lrVehicles"],
   enclosures: ["enclosures", "leadEnclosures", "attachments"],
   evidence:   ["evidence", "leadEvidence", "items"],
   pictures:   ["pictures", "leadPictures", "images", "photos"],
@@ -36,6 +79,8 @@ function pickFirstArray(obj, keys) {
 function normalizeLeadReturn(lr) {
   return {
     ...lr,
+    persons:    pickFirstArray(lr, LR_ALIASES.persons),
+    vehicles:   pickFirstArray(lr, LR_ALIASES.vehicles),
     enclosures: pickFirstArray(lr, LR_ALIASES.enclosures),
     evidence:   pickFirstArray(lr, LR_ALIASES.evidence),
     pictures:   pickFirstArray(lr, LR_ALIASES.pictures),
@@ -173,13 +218,13 @@ function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
 
 // Reuse your drawTextBox (you already have a robust version). If not, keep your newest one.
 
-// Embed any image files (JPEG/PNG) in a list of items that carry { filename, s3Key }
+// Embed any image files in a list of items that carry { filename, s3Key }
 async function embedImagesFromS3List(doc, items, currentY, labelGetter = (x) => x.filename) {
   if (!Array.isArray(items) || items.length === 0) return currentY;
 
   for (const item of items) {
     const fnameLower = (item?.filename || "").toLowerCase();
-    const isImage = /\.(jpe?g|png)$/i.test(fnameLower);
+    const isImage = /\.(jpe?g|png|heic|heif|webp)$/i.test(fnameLower);
     if (!isImage) continue;
 
     if (!item?.s3Key) {
@@ -191,7 +236,8 @@ async function embedImagesFromS3List(doc, items, currentY, labelGetter = (x) => 
     }
 
     try {
-      const buf = await getObjectBuffer(item.s3Key);
+      const rawBuf = await getObjectBuffer(item.s3Key);
+      const buf = await toPdfSafeBuffer(rawBuf);
       const maxH = 300;
       const bottom = doc.page.height - doc.page.margins.bottom;
       if (currentY + maxH > bottom) {
@@ -214,6 +260,60 @@ async function embedImagesFromS3List(doc, items, currentY, labelGetter = (x) => 
   }
 
   return currentY + 10;
+}
+
+// Embed attachments (links, images, or non-image file notes) for enclosures/evidence/pictures/audio/video
+async function embedAttachments(doc, items, currentY, fileLabel = "File") {
+  if (!Array.isArray(items) || items.length === 0) return currentY;
+
+  for (const item of items) {
+    // Handle external links
+    if (item.isLink && item.link) {
+      currentY = ensureSpace(doc, currentY, 30);
+      doc.font("Helvetica-Bold").fontSize(10).fillColor("#000")
+         .text(`${fileLabel} Link: `, 50, currentY, { continued: true });
+      doc.font("Helvetica").fontSize(10).fillColor("#003399")
+         .text(item.link, { width: 400 });
+      doc.fillColor("#000");
+      currentY = doc.y + 8;
+      continue;
+    }
+
+    if (!item.s3Key) continue;
+
+    const fname = (item.originalName || item.filename || "").toLowerCase();
+    const isImage = /\.(jpe?g|png|heic|heif|webp)$/i.test(fname);
+
+    if (isImage) {
+      try {
+        const rawBuf = await getObjectBuffer(item.s3Key);
+        const buf = await toPdfSafeBuffer(rawBuf);
+        const maxH = 300;
+        currentY = ensureSpace(doc, currentY, maxH + 30);
+        doc.image(buf, 50, currentY, { fit: [300, 300] });
+        currentY += 310;
+        doc.font("Helvetica").fontSize(9).fillColor("#555")
+           .text(item.originalName || item.filename || "Image", 50, currentY, { width: 300 });
+        doc.fillColor("#000");
+        currentY += 20;
+      } catch (e) {
+        currentY = ensureSpace(doc, currentY, 20);
+        doc.font("Helvetica-Oblique").fontSize(10).fillColor("red")
+           .text(`(Could not load image: ${item.originalName || item.filename || "Unknown"})`, 50, currentY);
+        doc.fillColor("#000");
+        currentY += 18;
+      }
+    } else {
+      // Non-image file — list filename
+      currentY = ensureSpace(doc, currentY, 25);
+      doc.font("Helvetica").fontSize(10).fillColor("#555")
+         .text(`Attached ${fileLabel}: ${item.originalName || item.filename || "Document"}`, 50, currentY);
+      doc.fillColor("#000");
+      currentY += 18;
+    }
+  }
+
+  return currentY;
 }
 
 
@@ -417,6 +517,51 @@ function formatDate(dateString) {
   return `${month}/${day}/${year}`;
 }
 
+function drawMetaBar(doc, x, y, width, entry) {
+  const rowH = 20;
+  const padding = 5;
+  const bg = "#ffffff";
+  const border = "#ccc";
+
+  const idVal  = `${entry.leadReturnId ?? "N/A"}`;
+  const byVal  = `${entry.enteredBy ?? "N/A"}`;
+  const dtVal  = `${formatDate(entry.enteredDate) || "N/A"}`;
+
+  const colW1 = Math.round(width * 0.33);
+  const colW2 = Math.round(width * 0.34);
+  const colW3 = width - colW1 - colW2;
+
+  const bottom = doc.page.height - doc.page.margins.bottom;
+  if (y + rowH > bottom) {
+    doc.addPage();
+    y = doc.page.margins.top;
+  }
+
+  // Draw cells
+  let cx = x;
+  [colW1, colW2, colW3].forEach((w) => {
+    doc.rect(cx, y, w, rowH).fillAndStroke(bg, border);
+    cx += w;
+  });
+
+  const baseY = y + 5;
+
+  function drawLabelValue(cellX, cellW, label, value) {
+    const maxW = cellW - 2 * padding;
+    doc.fillColor("#000").font("Helvetica-Bold").fontSize(11);
+    doc.text(label, cellX + padding, baseY, { continued: true });
+    doc.font("Helvetica").fontSize(11);
+    doc.text(` ${value}`, { width: maxW, ellipsis: true });
+  }
+
+  drawLabelValue(x, colW1, "Narrative ID:", idVal);
+  drawLabelValue(x + colW1, colW2, "Entered By:", byVal);
+  drawLabelValue(x + colW1 + colW2, colW3, "Entered Date:", dtVal);
+
+  doc.fillColor("black");
+  return y + rowH + 10;
+}
+
 // Basic table that does NOT split rows across pages
 function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
   const minRowHeight = 20;
@@ -542,100 +687,72 @@ function measureTableHeight(table) {
 // }
 
 function drawTextBox(doc, x, y, width, title, content) {
-  const padding   = 5;
-  const fontSize  = 10;
-  const bodyFont  = "Helvetica";
-  const titleFont = "Helvetica-Bold";
-  const topMargin = doc.page.margins.top;
-  const bottomY   = doc.page.height - doc.page.margins.bottom;
+  const pad = 0, fs = 10; // border/bleed not needed now
+  const bodyFont = "Helvetica", titleFont = "Helvetica-Bold";
+  const innerW = width - 2 * pad;
 
-  // prepare your wrapped lines
-  doc.font(bodyFont).fontSize(fontSize);
-  const words = content.split(/\s+/);
+  const topY    = doc.page.margins.top;
+  const bottomY = doc.page.height - doc.page.margins.bottom;
+
+  const text = ((content ?? "") + "").replace(/\s+/g, " ").trim();
+
+  // Pre-wrap to lines so we can page-split cleanly
+  doc.font(bodyFont).fontSize(fs);
+  const lineH = doc.currentLineHeight();
+  const words = text ? text.split(" ") : [];
   const lines = [];
   let line = "";
-  for (let w of words) {
-    const test = line ? line + " " + w : w;
-    if (doc.widthOfString(test) > width - 2 * padding) {
-      lines.push(line);
-      line = w;
-    } else {
-      line = test;
-    }
+  for (const w of words) {
+    const cand = line ? line + " " + w : w;
+    if (doc.widthOfString(cand) <= innerW) line = cand;
+    else { if (line) lines.push(line); line = w; }
   }
   if (line) lines.push(line);
 
-  // iterate chunks that fit each page
-  let idx = 0, currY = y, first = true;
-  while (idx < lines.length) {
-    // 1) decide how many lines fit
-    let fit = 0;
-    // walk forward until we exceed the bottom margin
-    while (idx + fit < lines.length) {
-      // measure title on first chunk
-      const titleH   = first && title
-                       ? doc.heightOfString(title, { width: width - 2*padding })
-                       : 0;
-      // measure these lines as a single block
-      const block    = lines.slice(idx, idx + fit + 1).join("\n");
-      const textH    = doc.heightOfString(block, { width: width - 2*padding });
-      const boxH     = titleH + textH + 2 * padding;
-      if (currY + boxH > bottomY) break;
-      fit++;
-    }
-    // if none fit, force at least one to avoid infinite loop
-    if (fit === 0) fit = 1;
+  // Title height (measured once)
+  const titleH = title
+    ? (doc.font(titleFont).fontSize(fs), doc.heightOfString(title, { width: innerW }))
+    : 0;
+  doc.font(bodyFont).fontSize(fs);
 
-    // 2) compute exact heights
-    const chunkLines = lines.slice(idx, idx + fit);
-    const titleH     = first && title
-                       ? doc.heightOfString(title, { width: width - 2*padding })
-                       : 0;
-    const textBlock  = chunkLines.join("\n");
-    const textH      = doc.heightOfString(textBlock, { width: width - 2*padding });
-    const boxH       = titleH + textH + 2 * padding;
+  let i = 0, currY = y, first = true;
 
-    // 3) draw the box
-    doc.save()
-       .lineWidth(1)
-       .strokeColor("#999999")
-       .rect(x, currY, width, boxH)
-       .stroke()
-       .restore();
+  while (i < lines.length || (first && title && !lines.length)) {
+    // we still need a minimum space check so text doesn’t clip at bottom
+    const minNeededH = (first ? titleH : 0) + lineH + 2 * pad;
+    if (currY + minNeededH > bottomY) { doc.addPage(); currY = topY; }
 
-    // 4) draw the title + text
-    let textY = currY + padding;
+    const available = bottomY - currY - 2 * pad - (first ? titleH : 0);
+    const canLines  = Math.max(1, Math.floor(available / lineH));
+    const end       = Math.min(lines.length, i + canLines);
+
+    // --- draw text only (no border) ---
+    let textY = currY + pad;
+
     if (first && title) {
-      doc.font(titleFont)
-         .fontSize(fontSize)
-         .text(title, x + padding, textY, { width: width - 2*padding });
-      textY += titleH;
+      doc.font(titleFont).fontSize(fs).text(title, x + pad, textY, { width: innerW });
+      textY = doc.y; // after title
+      doc.font(bodyFont).fontSize(fs);
     }
-    doc.font(bodyFont)
-       .fontSize(fontSize)
-       .text(textBlock, x + padding, textY, {
-         width: width - 2 * padding,
-         align: "justify"
-       });
 
-    // advance
-    idx   += fit;
-    first  = false;
-    currY += boxH;
+    const block = lines.slice(i, end).join("\n");
+    doc.text(block, x + pad, textY, { width: innerW, align: "justify" });
 
-    // if there’s more, new page
-    if (idx < lines.length) {
-      doc.addPage();
-      currY = topMargin;
-    }
+    // advance currY based on how much text was actually written
+    const usedTextH = doc.y - textY;
+    const sectionH = (first ? titleH : 0) + usedTextH + 2 * pad;
+
+    currY = currY + sectionH;
+    i = end;
+    first = false;
   }
 
-  return currY + padding;
+  return currY + 6;
 }
 /* ---------------------------------------
    Your "structured" lead detail drawing
 -----------------------------------------*/
-function drawStructuredLeadDetails(doc, x, y, lead) {
+function drawStructuredLeadDetails(doc, x, y, lead, characterOfCase) {
   const colWidths = [130, 130, 130, 122];
   const rowHeight = 20;
   const padding = 5;
@@ -671,22 +788,48 @@ function drawStructuredLeadDetails(doc, x, y, lead) {
     currX += colWidths[i];
   }
 
-  // Second Row - Assigned Officers
- // Second Row - Assigned Officers (dynamic height + wrapping)
-y += rowHeight;
+  y += rowHeight;
 
-const tableWidth   = colWidths.reduce((a, b) => a + b, 0);
-const labelWidth   = 130; // keep same visual as your header row
-const valueWidth   = tableWidth - labelWidth;
-const labelHeight  = 20;  // min box height
+  const tableWidth  = colWidths.reduce((a, b) => a + b, 0);
+  const labelWidth  = 130;
+  const valueWidth  = tableWidth - labelWidth;
+  const labelHeight = 20;
+  const paddingX    = 5;
+  const paddingY    = 5;
 
-// Build the officers text from objects/strings
-const officersText = formatOfficerList(lead.assignedTo);
+  // Character of Case row
+  const charText = characterOfCase || "N/A";
+  doc.font("Helvetica").fontSize(10);
+  const charTextHeight = doc.heightOfString(charText, { width: valueWidth - 2 * paddingX });
+  const charRowH = Math.max(labelHeight, charTextHeight + 2 * paddingY);
+
+  if (y + charRowH > doc.page.height - doc.page.margins.bottom) {
+    doc.addPage();
+    y = doc.page.margins.top;
+  }
+
+  doc.rect(x, y, labelWidth, charRowH).fillAndStroke("#f5f5f5", "#ccc");
+  doc.font("Helvetica-Bold").fontSize(11).fillColor("#000")
+    .text("Character of Case:", x + paddingX, y + paddingY, {
+      width: labelWidth - 2 * paddingX,
+      align: "left",
+    });
+
+  doc.strokeColor("#999999");
+  doc.rect(x + labelWidth, y, valueWidth, charRowH).stroke();
+  doc.font("Helvetica").fontSize(10).fillColor("#000")
+    .text(charText, x + labelWidth + paddingX, y + paddingY, {
+      width: valueWidth - 2 * paddingX,
+      align: "left",
+    });
+
+  y += charRowH;
+
+  // Assigned Officers row
+  const officersText = formatOfficerList(lead.assignedTo);
 
 // Measure the wrapped text height for the value cell
-doc.font("Helvetica").fontSize(10); // slightly smaller to fit better
-const paddingX     = 5;
-const paddingY     = 5;
+doc.font("Helvetica").fontSize(10);
 const textHeight   = doc.heightOfString(officersText, {
   width: valueWidth - 2 * paddingX,
   align: "left",
@@ -730,11 +873,54 @@ return y + rowH + 20;
    The main generation function
 -----------------------------------------*/
 async function generateCaseReport(req, res) {
-  const { user, reportTimestamp, leadsData, caseSummary, selectedReports,summaryMode } = req.body;
+  const {
+    user,
+    reportTimestamp,
+    caseSummary,
+    selectedReports,
+    summaryMode,
+    leadsData: leadsDataFromBody,
+    // New: server-side data fetching params
+    caseNo: caseNoParam,
+    caseName: caseNameParam,
+    reportScope,
+    subsetRange,
+    leadNos,
+  } = req.body;
+
   const includeAll = selectedReports && selectedReports.FullReport;
 
-   const caseNo   =  leadsData?.[0]?.caseNo   || "";
-  const caseName = leadsData?.[0]?.caseName || "";
+  // Server-side fetch: if no leadsData in body, fetch from DB
+  let leadsData;
+  if (Array.isArray(leadsDataFromBody) && leadsDataFromBody.length > 0) {
+    leadsData = leadsDataFromBody;
+  } else if (caseNoParam) {
+    try {
+      leadsData = await fetchCaseLeadsData(caseNoParam, caseNameParam, {
+        reportScope,
+        subsetRange,
+        leadNos,
+      });
+    } catch (fetchErr) {
+      console.error("Error fetching case data for report:", fetchErr);
+      return res.status(500).json({ error: "Failed to fetch case data" });
+    }
+  } else {
+    return res.status(400).json({ error: "caseNo or leadsData is required" });
+  }
+
+  if (!leadsData || leadsData.length === 0) {
+    return res.status(404).json({ error: "No leads found for this case" });
+  }
+
+  const caseNo   = caseNoParam || leadsData?.[0]?.caseNo   || "";
+  const caseName = caseNameParam || leadsData?.[0]?.caseName || "";
+
+  let characterOfCase = "";
+  if (caseNo) {
+    const caseDoc = await Case.findOne({ caseNo }).select("characterOfCase").lean();
+    characterOfCase = caseDoc?.characterOfCase || "";
+  }
 
 
   try {
@@ -760,10 +946,16 @@ async function generateCaseReport(req, res) {
     }
 
 
-    // Pipe the PDF into the response
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "inline; filename=report.pdf");
-    doc.pipe(res);
+    // Collect into buffer so we can merge PDF attachments afterwards
+    const pdfChunks = [];
+    doc.on("data", (chunk) => pdfChunks.push(chunk));
+    const docEndPromise = new Promise((resolve, reject) => {
+      doc.on("end",   resolve);
+      doc.on("error", reject);
+    });
+
+    // Track PDF-file attachments discovered during rendering
+    const pdfAttachments = [];
 
     // -- Header Section --
     const headerHeight = 80;
@@ -820,7 +1012,7 @@ async function generateCaseReport(req, res) {
 
         // structured details
         // currentY = ensureSpace(doc, currentY, 60);
-        currentY = drawStructuredLeadDetails(doc, 50, currentY, lead);
+        currentY = drawStructuredLeadDetails(doc, 50, currentY, lead, characterOfCase);
 
         const { state: leadState, reason: leadReason } = getLeadClosureInfo(lead);
 if (leadState) {
@@ -856,8 +1048,7 @@ if (leadState) {
               currentY = ensureSpace(doc, currentY, 100);
 
               // 1) Return ID
-              doc.font("Helvetica-Bold").fontSize(11).text(`Lead Return ID: ${lr.leadReturnId}`, 50, currentY);
-              currentY += 20;
+              currentY = drawMetaBar(doc, 50, currentY, 512, lr);
               currentY = ensureSpace(doc, currentY, 100);
 
               currentY = drawTextBox(doc, 50, currentY, 512, "", lr.leadReturnResult || "") + 20;
@@ -873,7 +1064,8 @@ if (leadState) {
                   // Person photo
                   if (person.photoS3Key) {
                     try {
-                      const imgBuf = await getObjectBuffer(person.photoS3Key);
+                      const rawBuf = await getObjectBuffer(person.photoS3Key);
+                      const imgBuf = await toPdfSafeBuffer(rawBuf);
                       const photoSize = 60;
                       currentY = ensureSpace(doc, currentY, photoSize + 10);
                       doc.image(imgBuf, 50, currentY, { width: photoSize, height: photoSize, fit: [photoSize, photoSize] });
@@ -968,6 +1160,16 @@ if (leadState) {
                           ? `${person.height.feet || 0}'${person.height.inches || 0}"`
                           : "N/A",
                         "Weight": person.weight != null ? person.weight.toString() : "N/A",
+                      },
+                    },
+                    {
+                      headers: ["Alias", "Suffix", "Scar / Tattoo / Mark"],
+                      widths: [170, 170, 172],
+                      row: {
+                        "Alias": person.alias || "N/A",
+                        "Suffix": person.suffix || "N/A",
+                        "Scar / Tattoo / Mark": [person.scar, person.tattoo, person.mark]
+                          .filter(Boolean).join("; ") || "N/A",
                       },
                     },
                   ];
@@ -1086,19 +1288,50 @@ if (leadState) {
                 doc.font("Helvetica-Bold").fontSize(12).text("Vehicle Details:", 50, currentY);
                 currentY += 20;
 
-                const vehicleHeaders = ["Date Entered", "Make", "Model", "Plate", "State"];
-                const vehicleRows = lr.vehicles.map((vehicle) => ({
-                  "Date Entered": formatDate(vehicle.enteredDate),
-                  "Make": vehicle.make || "N/A",
-                  "Model": vehicle.model || "N/A",
-                  "Plate": vehicle.plate || "N/A",
-                  "State": vehicle.state || "N/A",
-                }));
-                // If you want 5 columns the same width, do e.g. [102, 102, 102, 102, 104]
-                currentY = ensureSpace(doc, currentY, 60);
-                currentY = drawTable(doc, 50, currentY, vehicleHeaders, vehicleRows, [
-                  102, 102, 102, 102, 104,
-                ]) + 20;
+                for (const vehicle of lr.vehicles) {
+                  const vehicleTables = [
+                    {
+                      headers: ["Date Entered", "Year", "Make", "Model", "Plate", "State"],
+                      widths: [86, 85, 85, 85, 85, 86],
+                      row: {
+                        "Date Entered": formatDate(vehicle.enteredDate),
+                        "Year":  vehicle.year  || "N/A",
+                        "Make":  vehicle.make  || "N/A",
+                        "Model": vehicle.model || "N/A",
+                        "Plate": vehicle.plate || "N/A",
+                        "State": vehicle.state || "N/A",
+                      },
+                    },
+                    {
+                      headers: ["VIN", "Category", "Type", "Primary Color", "Secondary Color"],
+                      widths: [103, 102, 102, 102, 103],
+                      row: {
+                        "VIN":             vehicle.vin             || "N/A",
+                        "Category":        vehicle.category        || "N/A",
+                        "Type":            vehicle.type            || "N/A",
+                        "Primary Color":   vehicle.primaryColor    || "N/A",
+                        "Secondary Color": vehicle.secondaryColor  || "N/A",
+                      },
+                    },
+                  ];
+
+                  if (vehicle.information || vehicle.additionalData) {
+                    vehicleTables.push({
+                      headers: ["Additional Information"],
+                      widths: [512],
+                      row: {
+                        "Additional Information": vehicle.information || vehicle.additionalData || "N/A",
+                      },
+                    });
+                  }
+
+                  vehicleTables.forEach((tbl) => {
+                    const rowH = measureRowHeight(doc, tbl.row, tbl.headers, tbl.widths);
+                    currentY = ensureSpace(doc, currentY, rowH + 20);
+                    currentY = drawTableWithRowSplitting(doc, 50, currentY, tbl.headers, [tbl.row], tbl.widths) + 8;
+                  });
+                  currentY += 12;
+                }
               }
               // 3b) Enclosure Details
 if (lr.enclosures && lr.enclosures.length > 0) {
@@ -1106,14 +1339,26 @@ if (lr.enclosures && lr.enclosures.length > 0) {
   doc.font("Helvetica-Bold").fontSize(12).text("Enclosure Details:", 50, currentY);
   currentY += 20;
 
-  const headers = ["Date Entered", "Type", "Description"];
-  const rows = lr.enclosures.map((e) => ({
+  const encHeaders = ["Date Entered", "Type", "Description", "File / Link"];
+  const encRows = lr.enclosures.map((e) => ({
     "Date Entered": formatDate(e.enteredDate),
     "Type": e.type || "N/A",
     "Description": e.enclosureDescription || "N/A",
+    "File / Link": e.isLink ? (e.link || "Link") : (e.originalName || e.filename || "N/A"),
   }));
   currentY = ensureSpace(doc, currentY, 60);
-  currentY = drawTable(doc, 50, currentY, headers, rows, [90, 100, 322]) + 20;
+  currentY = drawTable(doc, 50, currentY, encHeaders, encRows, [80, 80, 222, 130]) + 10;
+
+  // Embed images / list documents / show links
+  currentY = await embedAttachments(doc, lr.enclosures, currentY, "Enclosure");
+
+  // Queue PDF files for end-of-report merging
+  for (const enc of lr.enclosures) {
+    if (!enc.isLink && enc.s3Key && /\.pdf$/i.test(enc.originalName || enc.filename || "")) {
+      pdfAttachments.push({ s3Key: enc.s3Key, filename: enc.originalName || enc.filename || "enclosure.pdf" });
+    }
+  }
+  currentY += 10;
 }
 
 // 3c) Evidence Details
@@ -1122,16 +1367,28 @@ if (lr.evidence && lr.evidence.length > 0) {
   doc.font("Helvetica-Bold").fontSize(12).text("Evidence Details:", 50, currentY);
   currentY += 20;
 
-  const headers = ["Date Entered", "Type", "Collection Date", "Disposed Date", "Description"];
-  const rows = lr.evidence.map((ev) => ({
+  const evHeaders = ["Date Entered", "Type", "Disposed Date", "Description", "File / Link"];
+  const evRows = lr.evidence.map((ev) => ({
     "Date Entered":    formatDate(ev.enteredDate),
     "Type":            ev.type || "N/A",
-    "Collection Date": formatDate(ev.collectionDate),
+    // "Collection Date": formatDate(ev.collectionDate),
     "Disposed Date":   formatDate(ev.disposedDate),
     "Description":     ev.evidenceDescription || "N/A",
+    "File / Link":     ev.isLink ? (ev.link || "Link") : (ev.originalName || ev.filename || "N/A"),
   }));
   currentY = ensureSpace(doc, currentY, 60);
-  currentY = drawTable(doc, 50, currentY, headers, rows, [80, 80, 90, 90, 172]) + 20;
+  currentY = drawTable(doc, 50, currentY, evHeaders, evRows, [107, 65, 113, 127, 100]) + 10;
+
+  // Embed images / list documents / show links
+  currentY = await embedAttachments(doc, lr.evidence, currentY, "Evidence");
+
+  // Queue PDF files for end-of-report merging
+  for (const ev of lr.evidence) {
+    if (!ev.isLink && ev.s3Key && /\.pdf$/i.test(ev.originalName || ev.filename || "")) {
+      pdfAttachments.push({ s3Key: ev.s3Key, filename: ev.originalName || ev.filename || "evidence.pdf" });
+    }
+  }
+  currentY += 10;
 }
 
 // 3d) Picture Details
@@ -1140,14 +1397,19 @@ if (lr.pictures && lr.pictures.length > 0) {
   doc.font("Helvetica-Bold").fontSize(12).text("Picture Details:", 50, currentY);
   currentY += 20;
 
-  const headers = ["Date Entered", "Date Picture Taken", "Description"];
-  const rows = lr.pictures.map((p) => ({
+  const picHeaders = ["Date Entered", "Date Picture Taken", "Description", "File / Link"];
+  const picRows = lr.pictures.map((p) => ({
     "Date Entered":       formatDate(p.enteredDate),
     "Date Picture Taken": formatDate(p.datePictureTaken),
     "Description":        p.pictureDescription || "N/A",
+    "File / Link":        p.isLink ? (p.link || "Link") : (p.originalName || p.filename || "N/A"),
   }));
   currentY = ensureSpace(doc, currentY, 60);
-  currentY = drawTable(doc, 50, currentY, headers, rows, [90, 120, 302]) + 20;
+  currentY = drawTable(doc, 50, currentY, picHeaders, picRows, [80, 110, 192, 130]) + 10;
+
+  // Embed actual images from S3
+  currentY = await embedAttachments(doc, lr.pictures, currentY, "Picture");
+  currentY += 10;
 }
 
 // 3e) Audio Details
@@ -1156,14 +1418,15 @@ if (lr.audio && lr.audio.length > 0) {
   doc.font("Helvetica-Bold").fontSize(12).text("Audio Details:", 50, currentY);
   currentY += 20;
 
-  const headers = ["Date Entered", "Date Audio Recorded", "Description"];
-  const rows = lr.audio.map((a) => ({
-    "Date Entered":         formatDate(a.enteredDate),
-    "Date Audio Recorded":  formatDate(a.dateAudioRecorded),
-    "Description":          a.audioDescription || "N/A",
+  const audioHeaders = ["Date Entered", "Date Recorded", "Description", "File / Link"];
+  const audioRows = lr.audio.map((a) => ({
+    "Date Entered":        formatDate(a.enteredDate),
+    "Date Audio Recorded": formatDate(a.dateAudioRecorded),
+    "Description":         a.audioDescription || "N/A",
+    "File / Link":         a.isLink ? (a.link || "Link") : (a.originalName || a.filename || "N/A"),
   }));
   currentY = ensureSpace(doc, currentY, 60);
-  currentY = drawTable(doc, 50, currentY, headers, rows, [90, 120, 302]) + 20;
+  currentY = drawTable(doc, 50, currentY, audioHeaders, audioRows, [80, 110, 192, 130]) + 20;
 }
 
 // 3f) Video Details
@@ -1172,14 +1435,15 @@ if (lr.videos && lr.videos.length > 0) {
   doc.font("Helvetica-Bold").fontSize(12).text("Video Details:", 50, currentY);
   currentY += 20;
 
-  const headers = ["Date Entered", "Date Video Recorded", "Description"];
-  const rows = lr.videos.map((v) => ({
-    "Date Entered":         formatDate(v.enteredDate),
-    "Date Video Recorded":  formatDate(v.dateVideoRecorded),
-    "Description":          v.videoDescription || "N/A",
+  const vidHeaders = ["Date Entered", "Date Recorded", "Description", "File / Link"];
+  const vidRows = lr.videos.map((v) => ({
+    "Date Entered":        formatDate(v.enteredDate),
+    "Date Video Recorded": formatDate(v.dateVideoRecorded),
+    "Description":         v.videoDescription || "N/A",
+    "File / Link":         v.isLink ? (v.link || "Link") : (v.originalName || v.filename || "N/A"),
   }));
   currentY = ensureSpace(doc, currentY, 60);
-  currentY = drawTable(doc, 50, currentY, headers, rows, [90, 120, 302]) + 20;
+  currentY = drawTable(doc, 50, currentY, vidHeaders, vidRows, [80, 110, 192, 130]) + 20;
 }
 
 // 3g) Lead Notes (Scratchpad)
@@ -1242,17 +1506,30 @@ if (timeline && timeline.length > 0) {
       doc.text("No leads data available.", 50, currentY);
     }
 
-    // End the PDF
+    // Finalise the PDFKit document
     doc.end();
-    // Note: This is the ONLY place we call doc.end().
-    // Don’t call it again, or call doc.* after this line!
+    await docEndPromise;
+
+    // Merge any queued PDF attachments (enclosures / evidence)
+    let finalBuffer = Buffer.concat(pdfChunks);
+    for (const att of pdfAttachments) {
+      try {
+        const attBuf = await getObjectBuffer(att.s3Key);
+        finalBuffer = await mergeWithAnotherPDF(finalBuffer, attBuf);
+      } catch (e) {
+        console.warn(`Failed to merge PDF attachment "${att.filename}":`, e?.message);
+      }
+    }
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "inline; filename=report.pdf");
+    res.end(finalBuffer);
+
   } catch (error) {
     console.error("Error generating PDF:", error);
-    // In an error scenario, you generally do NOT want to continue writing
-    // to doc, because that can also cause "write after end" if doc.end() was
-    // already triggered. You might want to handle it like this:
-    // doc.end(); // optionally end if you started writing
-    res.status(500).json({ error: "Failed to generate PDF" });
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Failed to generate PDF" });
+    }
   }
 }
 

@@ -1514,7 +1514,9 @@
 .main-page-contenthp,
 .main-page-content{
   margin-left: 20%;
-     width: 80%;
+  width: 80%;
+  padding-left: 20px;
+  box-sizing: border-box;
   /* allow the right side to scroll independently if needed */
   min-height: calc(100dvh - var(--nav-h));
   overflow: hidden; /* keep internal sections managing their own scroll */

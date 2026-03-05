@@ -1,171 +1,116 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-/**
- * Lead Return Audit Log Schema
- * Tracks all actions performed on lead returns and related entities
- * Provides complete chain of custody and audit trail
- */
 const leadReturnAuditLogSchema = new Schema({
-    // Lead Return Identification
+    // ── Stable ObjectId refs ──────────────────────────────────
+    caseId:       { type: Schema.Types.ObjectId, ref: "Case" },
+    leadId:       { type: Schema.Types.ObjectId, ref: "Lead" },
+    leadReturnObjectId: { type: Schema.Types.ObjectId, ref: "LeadReturn" },
+    performedByUserId:  { type: Schema.Types.ObjectId, ref: "User" },
+
+    // ── Existing fields ───────────────────────────────────────
     leadNo: {
         type: Number,
         required: true,
-        index: true
     },
     caseNo: {
         type: String,
-        index: true
     },
 
-    // Action Details
     action: {
         type: String,
         required: true,
         enum: [
-            // Lead Return Actions
-            "LEAD_CREATED",
-            "LEAD_ASSIGNED",
-            "LEAD_SUBMITTED",
-            "LEAD_APPROVED",
-            "LEAD_RETURNED",
-            "LEAD_REOPENED",
-            "LEAD_COMPLETED",
-            "LEAD_DELETED",
-            "LEAD_UPDATED",
+            "LEAD_CREATED", "LEAD_ASSIGNED", "LEAD_SUBMITTED",
+            "LEAD_APPROVED", "LEAD_RETURNED", "LEAD_REOPENED",
+            "LEAD_COMPLETED", "LEAD_DELETED", "LEAD_UPDATED",
 
-            // Entity Actions
-            "NARRATIVE_CREATED",
-            "NARRATIVE_UPDATED",
-            "NARRATIVE_DELETED",
+            "NARRATIVE_CREATED", "NARRATIVE_UPDATED", "NARRATIVE_DELETED",
 
-            "PERSON_ADDED",
-            "PERSON_UPDATED",
-            "PERSON_DELETED",
+            "PERSON_ADDED", "PERSON_UPDATED", "PERSON_DELETED",
+            "VEHICLE_ADDED", "VEHICLE_UPDATED", "VEHICLE_DELETED",
+            "TIMELINE_ADDED", "TIMELINE_UPDATED", "TIMELINE_DELETED",
+            "EVIDENCE_ADDED", "EVIDENCE_UPDATED", "EVIDENCE_DELETED",
 
-            "VEHICLE_ADDED",
-            "VEHICLE_UPDATED",
-            "VEHICLE_DELETED",
+            "PICTURE_UPLOADED", "PICTURE_DELETED",
+            "AUDIO_UPLOADED", "AUDIO_DELETED",
+            "VIDEO_UPLOADED", "VIDEO_DELETED",
+            "ENCLOSURE_UPLOADED", "ENCLOSURE_DELETED",
 
-            "TIMELINE_ADDED",
-            "TIMELINE_UPDATED",
-            "TIMELINE_DELETED",
+            "NOTE_CREATED", "NOTE_UPDATED", "NOTE_DELETED",
 
-            "EVIDENCE_ADDED",
-            "EVIDENCE_UPDATED",
-            "EVIDENCE_DELETED",
+            "SNAPSHOT_CREATED", "VERSION_RESTORED", "VERSION_COMPARED",
 
-            "PICTURE_UPLOADED",
-            "PICTURE_DELETED",
-
-            "AUDIO_UPLOADED",
-            "AUDIO_DELETED",
-
-            "VIDEO_UPLOADED",
-            "VIDEO_DELETED",
-
-            "ENCLOSURE_UPLOADED",
-            "ENCLOSURE_DELETED",
-
-            "NOTE_CREATED",
-            "NOTE_UPDATED",
-            "NOTE_DELETED",
-
-            // Version Actions
-            "SNAPSHOT_CREATED",
-            "VERSION_RESTORED",
-            "VERSION_COMPARED",
-
-            // Access Actions
-            "LEAD_VIEWED",
-            "LEAD_EXPORTED",
-            "LEAD_PRINTED"
+            "LEAD_VIEWED", "LEAD_EXPORTED", "LEAD_PRINTED"
         ]
     },
 
-    // Entity Information
     entityType: {
         type: String,
         enum: [
-            "LeadReturn",
-            "Narrative",
-            "Person",
-            "Vehicle",
-            "Timeline",
-            "Evidence",
-            "Picture",
-            "Audio",
-            "Video",
-            "Enclosure",
-            "Note",
-            "Version"
+            "LeadReturn", "Narrative", "Person", "Vehicle",
+            "Timeline", "Evidence", "Picture", "Audio",
+            "Video", "Enclosure", "Note", "Version"
         ]
     },
     entityId: {
-        type: String // Can be ObjectId or custom ID
+        type: String
     },
 
-    // User Information
     performedBy: {
         username: { type: String, required: true },
-        userId: { type: String },
-        role: { type: String }, // Investigator, Case Manager, Admin, etc.
-        badge: { type: String }
+        userId:   { type: String },
+        role:     { type: String },
+        badge:    { type: String }
     },
 
-    // Action Context
     description: {
         type: String,
         required: true
     },
 
-    // Change Details
     changes: {
-        before: { type: Schema.Types.Mixed }, // State before action
-        after: { type: Schema.Types.Mixed }   // State after action
+        before: { type: Schema.Types.Mixed },
+        after:  { type: Schema.Types.Mixed }
     },
 
-    // Field-level changes
     fieldChanges: [{
-        field: String,
+        field:    String,
         oldValue: Schema.Types.Mixed,
         newValue: Schema.Types.Mixed
     }],
 
-    // Metadata
     metadata: {
-        ipAddress: String,
-        userAgent: String,
-        sessionId: String,
-        versionId: Number,
+        ipAddress:       String,
+        userAgent:       String,
+        sessionId:       String,
+        versionId:       Number,
         reasonForChange: String,
-        comments: String
+        comments:        String
     },
 
-    // Timestamps
     timestamp: {
         type: Date,
         default: Date.now,
-        index: true
     },
 
-    // Chain of Custody
     chainOfCustody: {
-        transferredFrom: String,  // Previous owner/handler
-        transferredTo: String,    // New owner/handler
-        transferReason: String,
-        transferDate: Date
+        transferredFrom: String,
+        transferredTo:   String,
+        transferReason:  String,
+        transferDate:    Date
     }
 }, {
     timestamps: true
 });
 
-// Indexes for efficient querying
+// Compound indexes (cover all query patterns used by static methods)
+leadReturnAuditLogSchema.index({ caseId: 1, leadNo: 1, timestamp: -1 });
 leadReturnAuditLogSchema.index({ leadNo: 1, timestamp: -1 });
 leadReturnAuditLogSchema.index({ 'performedBy.username': 1, timestamp: -1 });
+leadReturnAuditLogSchema.index({ performedByUserId: 1, timestamp: -1 });
 leadReturnAuditLogSchema.index({ action: 1, timestamp: -1 });
 leadReturnAuditLogSchema.index({ entityType: 1, entityId: 1 });
-leadReturnAuditLogSchema.index({ timestamp: -1 });
 
 // Static method to log an action
 leadReturnAuditLogSchema.statics.logAction = async function(logData) {
@@ -182,23 +127,17 @@ leadReturnAuditLogSchema.statics.logAction = async function(logData) {
 // Static method to get audit trail for a lead
 leadReturnAuditLogSchema.statics.getAuditTrail = async function(leadNo, options = {}) {
     const {
-        startDate,
-        endDate,
-        action,
-        performedBy,
-        entityType,
-        limit = 100,
-        skip = 0
+        startDate, endDate, action,
+        performedBy, entityType,
+        limit = 100, skip = 0
     } = options;
 
     const query = { leadNo };
-
     if (startDate || endDate) {
         query.timestamp = {};
         if (startDate) query.timestamp.$gte = new Date(startDate);
         if (endDate) query.timestamp.$lte = new Date(endDate);
     }
-
     if (action) query.action = action;
     if (performedBy) query['performedBy.username'] = performedBy;
     if (entityType) query.entityType = entityType;
@@ -216,12 +155,8 @@ leadReturnAuditLogSchema.statics.getChainOfCustody = async function(leadNo) {
         leadNo,
         action: {
             $in: [
-                "LEAD_CREATED",
-                "LEAD_ASSIGNED",
-                "LEAD_SUBMITTED",
-                "LEAD_APPROVED",
-                "LEAD_RETURNED",
-                "LEAD_REOPENED",
+                "LEAD_CREATED", "LEAD_ASSIGNED", "LEAD_SUBMITTED",
+                "LEAD_APPROVED", "LEAD_RETURNED", "LEAD_REOPENED",
                 "LEAD_COMPLETED"
             ]
         }
@@ -233,15 +168,12 @@ leadReturnAuditLogSchema.statics.getChainOfCustody = async function(leadNo) {
 // Static method to get user activity
 leadReturnAuditLogSchema.statics.getUserActivity = async function(username, options = {}) {
     const { startDate, endDate, limit = 50 } = options;
-
     const query = { 'performedBy.username': username };
-
     if (startDate || endDate) {
         query.timestamp = {};
         if (startDate) query.timestamp.$gte = new Date(startDate);
         if (endDate) query.timestamp.$lte = new Date(endDate);
     }
-
     return this.find(query)
         .sort({ timestamp: -1 })
         .limit(limit)

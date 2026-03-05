@@ -1,0 +1,237 @@
+/* ===== Layout ===== */
+.adminContainer {
+  display: flex;
+  flex-direction: column;
+  font-family: Arial, sans-serif;
+}
+
+.mainContainer {
+  display: flex;
+}
+
+.leftContent {
+  margin-left: 20%;
+  margin-top: 110px;
+  width: 80%;
+  min-height: calc(100dvh - 110px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 0 20px;
+  overflow: hidden;
+}
+
+/* ===== Top menu nav ===== */
+.topMenuNav {
+  position: fixed;
+  top: 110px;
+  left: 20%;
+  width: 80%;
+  height: 56px;
+  z-index: 150;
+  box-sizing: border-box;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 2px solid #e8eaf0;
+  box-shadow: 0 2px 6px rgba(41, 41, 139, 0.08);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.menuItems {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menuItem {
+  color: #111;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 4px;
+  white-space: nowrap;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.menuItem:hover {
+  background-color: #eef0fa;
+  color: #29298b;
+}
+
+.menuItemActive {
+  color: #29298b !important;
+  font-weight: 700;
+  border-bottom: 2px solid #29298b;
+  border-radius: 0;
+}
+
+/* ===== Assignment Log card ===== */
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.04);
+  margin: 78px auto 8px;
+  width: 90%;
+}
+
+/* Card is the scroll container */
+.elog.card,
+.card.elog {
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+  overflow: auto;
+  font-size: 20px;
+}
+
+.elog {
+  padding: 18px 20px;
+}
+
+/* Sticky header within scroll container */
+.elog-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 20px;
+}
+
+.elog-header h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #0f172a;
+  text-align: left;
+}
+
+/* Sticky counters below header */
+.elog-counters {
+  position: sticky;
+  top: 48px;
+  z-index: 1;
+  background: #fff;
+  display: flex;
+  gap: 10px;
+  padding: 10px 0 12px;
+  margin: 0;
+  border-bottom: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.elog-counters :global(.version-history-btn) {
+  margin-left: auto;
+}
+
+/* Stream content */
+.elog-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-top: 12px;
+}
+
+/* Chips */
+.chip {
+  background: #eef2ff;
+  color: #312e81;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 20px;
+}
+
+.chip-status.in-review { background: #fff7ed; color: #9a3412; border-color: #fed7aa; }
+.chip-status.completed  { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+.chip-status.closed     { background: #fee2e2; color: #7f1d1d; border-color: #fecaca; }
+
+/* Counters */
+.counter {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 20px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.counter.ok    { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+.counter.bad   { background: #fee2e2; color: #7f1d1d; border-color: #fecaca; }
+.counter.base  { background: #eef2ff; color: #1e3a8a; }
+.counter.warn  { background: #fef3c7; color: #92400e; }
+.counter.muted { background: #f3f4f6; color: #374151; }
+.counter.info  { background: #dbeafe; color: #1e40af; }
+
+/* Event list */
+.elog-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.elog-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+/* Icon pin */
+.elog-item .pin {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.15);
+  margin-right: 10px;
+  margin-left: 12px;
+  margin-top: 8px;
+  flex-shrink: 0;
+}
+
+.elog-item.base  .pin { background: #64748b; }
+.elog-item.ok    .pin { background: #16a34a; }
+.elog-item.bad   .pin { background: #b91c1c; }
+.elog-item.info  .pin { background: #2563eb; }
+.elog-item.muted .pin { background: #94a3b8; }
+
+/* Event body */
+.elog-item .body {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 8px;
+  flex: 1;
+  margin-top: 4px;
+}
+
+.elog-item .line {
+  font-weight: 600;
+  font-size: 20px;
+  text-align: left;
+  color: #111827;
+}
+
+.elog-item .meta {
+  color: #6b7280;
+  font-size: 20px;
+  text-align: left;
+  margin-top: 4px;
+}

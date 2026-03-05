@@ -25,14 +25,16 @@ html, body, #root { height: 100%; margin: 0; }
   padding: 12px;
   display: flex;
   flex-direction: column;
-  z-index: 200;
+  z-index: 1060;
 }
 
 /* Use this on your page content wrapper on every page */
 .page-with-sidebar{
   margin-left: var(--sidebar-w);
   padding-top: var(--nav-h);
+  padding-left: 20px;
   min-height: 100dvh;
+  box-sizing: border-box;
   overflow: hidden; /* your inner sections can manage their own scroll */
 }
 

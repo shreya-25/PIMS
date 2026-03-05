@@ -57,16 +57,38 @@ const [showAddCase, setShowAddCase] = useState(false);
     };
 
     const mapCaseForOfficer = (c, officerName) => {
-  const officer = Array.isArray(c.assignedOfficers)
-    ? c.assignedOfficers.find(o => o.name === officerName || o.username === officerName)
-    : null;
+  const name = officerName?.toLowerCase?.() ?? "";
+
+  // Determine role from the new populated ObjectId fields
+  let role = "";
+  if (
+    c.detectiveSupervisorUserId &&
+    (c.detectiveSupervisorUserId.username?.toLowerCase() === name ||
+     c.detectiveSupervisorUserId.displayName?.toLowerCase() === name)
+  ) {
+    role = "Detective Supervisor";
+  } else if (
+    Array.isArray(c.caseManagerUserIds) &&
+    c.caseManagerUserIds.some(
+      u => u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name
+    )
+  ) {
+    role = "Case Manager";
+  } else if (
+    Array.isArray(c.investigatorUserIds) &&
+    c.investigatorUserIds.some(
+      u => u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name
+    )
+  ) {
+    role = "Investigator";
+  }
 
   return {
     _id:       c._id,
     id:        c.caseNo,
     title:     c.caseName,
-    status:    c.caseStatus,
-    role:      officer?.role || "",
+    status:    c.status,
+    role,
     createdAt: c.createdAt
   };
 };
@@ -98,7 +120,7 @@ const [showAddCase, setShowAddCase] = useState(false);
           // ✅ Filter cases where the signed-in officer is assigned
           // const assignedCases = response.data
           //   .filter(c =>
-          //     c.caseStatus === "Ongoing" &&
+          //     c.status === "ONGOING" &&
           //     c.assignedOfficers.some(o => o.name === signedInOfficer)
           //   )
           //   .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -114,12 +136,24 @@ const [showAddCase, setShowAddCase] = useState(false);
           //   });
 
           //   setCases(assignedCases); 
+          const name = signedInOfficer?.toLowerCase?.() ?? "";
           const assignedCases = response.data
-  .filter(c =>
-    c.caseStatus === "Ongoing" &&
-    Array.isArray(c.assignedOfficers) &&
-    c.assignedOfficers.some(o => o.name === signedInOfficer || o.username === signedInOfficer)
-  )
+  .filter(c => {
+    if (c.status !== "ONGOING") return false;
+    // Check if the officer is DS, CM, or investigator
+    const isDS = c.detectiveSupervisorUserId &&
+      (c.detectiveSupervisorUserId.username?.toLowerCase() === name ||
+       c.detectiveSupervisorUserId.displayName?.toLowerCase() === name);
+    const isCM = Array.isArray(c.caseManagerUserIds) &&
+      c.caseManagerUserIds.some(
+        u => u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name
+      );
+    const isInv = Array.isArray(c.investigatorUserIds) &&
+      c.investigatorUserIds.some(
+        u => u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name
+      );
+    return isDS || isCM || isInv;
+  })
   .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
   .map(c => mapCaseForOfficer(c, signedInOfficer));
 
@@ -452,7 +486,7 @@ const [leads, setLeads] = useState({
 
             // ✅ Extract only ongoing cases (caseStatus = "Ongoing")
             const ongoingCases = casesResponse.data
-                .filter(c => c.caseStatus === "Ongoing")
+                .filter(c => c.status === "ONGOING")
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .map(c => ({ caseNo: c.caseNo, caseName: c.caseName })); // Extract relevant fields
 
@@ -535,7 +569,7 @@ useEffect(() => {
 
           // ✅ Extract only ongoing cases (caseStatus = "Ongoing")
           const ongoingCases = casesResponse.data
-              .filter(c => c.caseStatus === "Ongoing")
+              .filter(c => c.status === "ONGOING")
               .map(c => ({ caseNo: c.caseNo, caseName: c.caseName })); // Extract relevant fields
 
           console.log("✅ Ongoing Cases:", ongoingCases);
@@ -608,7 +642,7 @@ useEffect(() => {
       });
       const ongoingSet = new Set(
         allCases
-          .filter(c => c.caseStatus === "Ongoing")
+          .filter(c => c.status === "ONGOING")
           .map(c => `${c.caseNo}||${c.caseName}`)
       );
 
@@ -675,7 +709,7 @@ console.log("pending LR",leads );
         });
         const ongoingSet = new Set(
           allCases
-            .filter(c => c.caseStatus === "Ongoing")
+            .filter(c => c.status === "ONGOING")
             .map(c => `${c.caseNo}||${c.caseName}`)
         );
 

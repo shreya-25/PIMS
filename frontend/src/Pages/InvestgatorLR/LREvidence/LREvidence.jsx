@@ -1,6 +1,5 @@
 import Navbar from '../../../components/Navbar/Navbar';
-import "./LREvidence.css"; // Custom CSS file for Evidence styling
-import FootBar from '../../../components/FootBar/FootBar';
+import styles from './LREvidence.module.css';
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import Comment from "../../../components/Comment/Comment";
@@ -707,455 +706,374 @@ const handleEdit = idx => {
   });
 
   return (
-    <div className="lrevidence-container">
-      {/* Navbar */}
+    <div className={styles.evidencePage}>
       <Navbar />
-        <AlertModal
-          isOpen={alertOpen}
-          title="Notification"
-          message={alertMessage}
-          onConfirm={() => setAlertOpen(false)}
-          onClose={()   => setAlertOpen(false)}
-        />
-
-        <AlertModal
-  isOpen={deleteOpen}
-  title="Confirm Delete"
-  message="Are you sure you want to delete this evidence? This action cannot be undone."
-  onConfirm={confirmDelete}
-  onClose={() => { setDeleteOpen(false); setPendingDeleteIndex(null); }}
-/>
-
-      <div className="LRI_Content">
-    
-                  <SideBar  activePage="LeadReview" />
-                <div className="left-contentLI">
-
-                  
-        <div className="top-menu1" >
-      <div className="menu-items" >
-        <span className="menu-item " onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/LeadReview", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } }} > Lead Information</span>
-                   <span className="menu-item active" >Add Lead Return</span>
-
-                       {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
-           <span
-              className="menu-item"
-              onClick={handleViewLeadReturn}
-              title={isGenerating ? "Preparing report…" : "View Lead Return"}
-              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-            >
-              Manage Lead Return
-            </span>
-              )}
-              
-            {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
-    Submit Lead Return
-  </span>
-)}
-  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
-   Review Lead Return
-  </span>
-)}
-
-
-                   <span className="menu-item" onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/ChainOfCustody", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } else {
-                     setAlertMessage("Please select a case and lead first.");
-                      setAlertOpen(true);
-                  }
-                }}>Lead Chain of Custody</span>
-          
-                  </div>
-       
-       </div>
-
-                <div className="top-menu1" >
-       <div className="menu-items" style={{ fontSize: '19px' }}>
-       
-        <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Narrative
-          </span>
-          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className="menu-item " style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className="menu-item " style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className="menu-item active" style={{fontWeight: '600' }}  onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRScratchpad')}>
-            Notes
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          {/* <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span> */}
-         </div> </div>
-                {/* <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
-          <h5 className="side-title">
-  {selectedLead?.leadNo
-    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
-    : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
-</h5>
-
-
-          </div> */}
-               <div className="caseandleadinfo">
-          <h5 className = "side-title"> 
-            <div className="ld-head">
-                                       <Link to="/HomePage" className="crumb">PIMS Home</Link>
-                                       <span className="sep">{" >> "}</span>
-                                       <Link
-                                         to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
-                                         state={{ caseDetails: selectedCase }}
-                                         className="crumb"
-                                       >
-                                         Case: {selectedCase.caseNo || ""}
-                                       </Link>
-                                       <span className="sep">{" >> "}</span>
-                                       <Link
-                                         to={"/LeadReview"}
-                                         state={{ leadDetails: selectedLead }}
-                                         className="crumb"
-                                       >
-                                         Lead: {selectedLead.leadNo || ""}
-                                       </Link>
-                                       <span className="sep">{" >> "}</span>
-                                       <span className="crumb-current" aria-current="page">Lead Evidence</span>
-                                     </div>
-             </h5>
-          <h5 className="side-title">
-  {selectedLead?.leadNo
-        ? ` Lead Status:  ${status}`
-    : ` ${leadStatus}`}
-</h5>
-
-          </div>
-    
-        <div className="case-header">
-          <h2 className="">EVIDENCE INFORMATION</h2>
-        </div>
-
-        <div className = "LRI-content-section">
-
-<div className = "content-subsection">
-
-        {/* Evidence Form */}
-        <div className = "timeline-form-sec-enc">
-          <div className="enclosure-form">
-          <div className="form-row-evidence">
-            <label  className="evidence-head">Collection Date*</label>
-            <input
-              type="date"
-              value={evidenceData.collectionDate}
-             
-              onChange={(e) => handleInputChange("collectionDate", e.target.value)}
-            />
-            <label className="evidence-head">Disposed Date</label>
-            <input
-              type="date"
-              value={evidenceData.disposedDate}
-            
-              onChange={(e) => handleInputChange("disposedDate", e.target.value)}
-            />
-            <label className="evidence-head">Narrative Id*</label>
-            <select
-              value={evidenceData.leadReturnId}
-              onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
-            >
-              <option value="">Select Id</option>
-              {narrativeIds.map(id => (
-                <option key={id} value={id}>{id}</option>
-              ))}
-            </select>
-
-          </div>
-          <div className="form-row-evidence">
-            <label className="evidence-head">Type</label>
-            <select
-              value={evidenceData.type}
-              onChange={(e) => handleInputChange("type", e.target.value)}
-            >
-              <option value="">Select Type</option>
-              <option value="Document">Document</option>
-              <option value="Business Records">Business Records</option>
-              <option value="Cellular Phone Records">Cellular Phone Records</option>
-              <option value="Deposition">Deposition</option>
-              <option value="Statement">Statement</option>
-            </select>
-          </div>
-          <label className="evidence-head">Description*</label>
-<textarea
-  value={evidenceData.evidenceDescription}
-  onChange={e => handleInputChange("evidenceDescription", e.target.value)}
-/>
-{/* Upload Type */}
-<div className="form-row-evidence">
-  <label>Upload Type</label>
-  <select
-    value={evidenceData.uploadMode}
-    onChange={e => {
-      const mode = e.target.value; // 'file' | 'link'
-      setEvidenceData(prev => ({
-        ...prev,
-        uploadMode: mode,
-        isLink: mode === "link", // keep this in sync for server
-        link: mode === "link" ? prev.link : "", // clear link if not link mode
-      }));
-      // clear the file input if leaving 'file' mode
-      if (mode !== "file") {
-        setFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-      }
-    }}
-  >
-    <option value="file">File</option>
-    <option value="link">Link</option>
-  </select>
-</div>
-
-{/* If editing a file‐upload entry, show current filename */}
-{editIndex !== null && evidenceData.uploadMode === "file" && evidenceData.originalName && (
-  <div className="form-row-evidence">
-    <label>Current File:</label>
-    <span className="current-filename">
-      {evidenceData.originalName}
-    </span>
-  </div>
-)}
-
-{evidenceData.uploadMode === "file" && (
-  <div className="form-row-evidence">
-    <label>{editIndex === null ? "Upload File" : "Replace File (optional)"}</label>
-    <input
-      type="file"
-      ref={fileInputRef}
-      onChange={handleFileChange}
-    />
-  </div>
-)}
-
-{evidenceData.uploadMode === "link" && (
-  <div className="form-row-evidence">
-    <label>Paste Link</label>
-    <input
-      type="text"
-      placeholder="https://..."
-      value={evidenceData.link}
-      onChange={e => setEvidenceData(prev => ({ ...prev, link: e.target.value }))}
-    />
-  </div>
-)}
-
-        </div>
-  
-        <div className="form-buttons">
-  <button
-    disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
-    className="save-btn1"
-    onClick={handleSaveEvidence}
-  >
-    {editIndex === null ? "Add Evidence" : "Update Evidence"}
-  </button>
-
-  {editIndex !== null && (
-    <button
-      disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
-      className="save-btn1"
-      onClick={() => {
-        // reset form back to “add” mode
-        setEditIndex(null);
-        setEvidenceData({
-          leadReturnId:        "",
-          evidenceDescription: "",
-          collectionDate:      "",
-          disposedDate:        "",
-          type:                "",
-          disposition:         "",
-          isLink:              false,
-          link:                "",
-          originalName:        "",
-          filename:            ""
-        });
-        setEvidenceData(defaultEvidence());
-        setFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-      }}
-    >
-      Cancel
-    </button>
-  )}
-</div>
-
-        </div>  
-  
-
-            {/* Evidence Table */}
-            <table className="leads-table">
-          <thead>
-            <tr>
-              <th>Date Entered</th>
-              <th style={{ width: "12%" }}> Narrative Id </th>
-              <th>Type</th>
-              {/* <th>Collection Date</th> */}
-              {/* <th>Disposed Date</th> */}
-              <th>File Name</th>
-              <th>Description</th>
-              <th>Actions</th>
-              {isCaseManager && (
-              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
-            )}
-            </tr>
-          </thead>
-          <tbody>
-            {evidences.length > 0 ?  evidences.map((item, index) => (
-              <tr key={index}>
-                <td>{item.dateEntered}</td>
-                <td> {item.returnId} </td>
-                <td>{item.type}</td>
-                {/* <td>{item.collectionDate}</td> */}
-                {/* <td>{item.disposedDate}</td> */}
-                <td>
-  {item.link ? (
-    // if it's a link‐type upload
-    <a
-      href={item.link}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="link-button"
-    >
-      {item.link}
-    </a>
-  )  : item.signedUrl ? (
-                    <a href={item.signedUrl} target="_blank" rel="noopener noreferrer" className="link-button">
-                      {item.originalName}
-                    </a>
-                  ) : (
-                    <span style={{ color: "gray" }}>No File Available</span>
-                  )}
-                </td>
-
-                <td>{item.evidenceDescription}</td>
-                <td>
-                  <div classname = "lr-table-btn">
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
-                  alt="Edit Icon"
-                  className="edit-icon"
-                  onClick={() => handleEdit(index)}
-                />
-                  </button>
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
-                  alt="Delete Icon"
-                  className="edit-icon"
-                  onClick={() => requestDelete(index)}
-                />
-                  </button>
-                  </div>
-                </td>
-                {isCaseManager && (
-          <td>
-            <select
-              value={item.accessLevel}
-              onChange={e => handleAccessChange(index, e.target.value)}
-            >
-              <option value="Everyone">All</option>
-              <option value="Case Manager">Case Manager</option>
-              <option value="Case Manager and Assignees">Assignees</option>
-            </select>
-          </td>
-        )}
-      </tr>
-       )) : (
-        <tr>
-          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
-            No Evidences Available
-          </td>
-        </tr>
-      )}
-          </tbody>
-        </table>
-
-         {/* {selectedLead?.leadStatus !== "Completed" && !isCaseManager && (
-  <div className="form-buttons-finish">
-    <h4> Click here to submit the lead</h4>
-    <button
-      disabled={selectedLead?.leadStatus === "In Review"}
-      className="save-btn1"
-      onClick={handleSubmitReport}
-    >
-      Submit 
-    </button>
-  </div>
-)}  */}
-
-        {/* <Comment tag = "Evidence"/> */}
-        </div>
-        </div>
-
-        {/* Action Buttons */}
-        {/* <div className="form-buttons-evidence">
-          <button className="add-btn" onClick={handleAddEvidence}>Add Evidence</button>
-          <button className="back-btn" onClick={() => handleNavigation("/LREnclosures")}>Back</button>
-          <button className="next-btn" onClick={() => handleNavigation("/LRPictures")}>Next</button>
-          <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button>
-        </div> */}
-     
-
-      <FootBar
-        onPrevious={() => navigate(-1)} // Takes user to the last visited page
-        onNext={() => navigate("/LRPictures")} // Takes user to CM Return page
+      <AlertModal
+        isOpen={alertOpen}
+        title="Notification"
+        message={alertMessage}
+        onConfirm={() => setAlertOpen(false)}
+        onClose={() => setAlertOpen(false)}
       />
+      <AlertModal
+        isOpen={deleteOpen}
+        title="Confirm Delete"
+        message="Are you sure you want to delete this evidence? This action cannot be undone."
+        onConfirm={confirmDelete}
+        onClose={() => { setDeleteOpen(false); setPendingDeleteIndex(null); }}
+      />
+
+      <div className={styles.LRIContent}>
+        <SideBar activePage="LeadReview" />
+        <div className={styles.leftContentLI}>
+
+          <div className={styles.topMenuNav}>
+            <div className={styles.menuItems}>
+              <span className={styles.menuItem} onClick={() => {
+                const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                if (lead && kase) {
+                  navigate("/LeadReview", { state: { caseDetails: kase, leadDetails: lead } });
+                }
+              }}>Lead Information</span>
+              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>Add Lead Return</span>
+              {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
+                <span
+                  className={styles.menuItem}
+                  onClick={handleViewLeadReturn}
+                  title={isGenerating ? "Preparing report…" : "View Lead Return"}
+                  style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
+                >
+                  Manage Lead Return
+                </span>
+              )}
+              {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
+                <span className={styles.menuItem} onClick={goToViewLR}>
+                  Submit Lead Return
+                </span>
+              )}
+              {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
+                <span className={styles.menuItem} onClick={goToViewLR}>
+                  Review Lead Return
+                </span>
+              )}
+              <span className={styles.menuItem} onClick={() => {
+                const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                if (lead && kase) {
+                  navigate("/ChainOfCustody", { state: { caseDetails: kase, leadDetails: lead } });
+                } else {
+                  setAlertMessage("Please select a case and lead first.");
+                  setAlertOpen(true);
+                }
+              }}>Lead Chain of Custody</span>
+            </div>
+          </div>
+
+          <div className={styles.topMenuSections}>
+            <div className={styles.menuItems} style={{ fontSize: '19px' }}>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
+                Instructions
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
+                Narrative
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')}>
+                Person
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRVehicle')}>
+                Vehicles
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LREnclosures')}>
+                Enclosures
+              </span>
+              <span className={`${styles.menuItem} ${styles.menuItemActive}`} style={{ fontWeight: '600' }} onClick={() => handleNavigation('/LREvidence')}>
+                Evidence
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRPictures')}>
+                Pictures
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRAudio')}>
+                Audio
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRVideo')}>
+                Videos
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRScratchpad')}>
+                Notes
+              </span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRTimeline')}>
+                Timeline
+              </span>
+            </div>
+          </div>
+
+          <div className={styles.caseandleadinfo}>
+            <h5 className={styles.sideTitle}>
+              <div className={styles.ldHead}>
+                <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+                <span className={styles.sep}>{" >> "}</span>
+                <Link
+                  to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+                  state={{ caseDetails: selectedCase }}
+                  className={styles.crumb}
+                >
+                  Case: {selectedCase.caseNo || ""}
+                </Link>
+                <span className={styles.sep}>{" >> "}</span>
+                <Link
+                  to={"/LeadReview"}
+                  state={{ leadDetails: selectedLead }}
+                  className={styles.crumb}
+                >
+                  Lead: {selectedLead.leadNo || ""}
+                </Link>
+                <span className={styles.sep}>{" >> "}</span>
+                <span className={styles.crumbCurrent} aria-current="page">Lead Evidence</span>
+              </div>
+            </h5>
+            <h5 className={styles.sideTitle}>
+              {selectedLead?.leadNo ? ` Lead Status:  ${status}` : ` ${leadStatus}`}
+            </h5>
+          </div>
+
+          <div className={styles.caseHeader}>
+            <h2>EVIDENCE INFORMATION</h2>
+          </div>
+
+          <div className={styles.lriContentSection}>
+            <div className={styles.contentSubsection}>
+
+              {/* Evidence Form */}
+              <div className={styles.sectionBlock}>
+                <div className={styles.sectionHeading}>Evidence Entry</div>
+                <div className={styles.LREnteringContentBox}>
+                  <div className={styles.evidenceForm}>
+                    <div className={styles.formRowPair}>
+                      <div className={styles.formRowEvidence}>
+                        <label>Narrative Id*</label>
+                        <select
+                          value={evidenceData.leadReturnId}
+                          onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
+                        >
+                          <option value="">Select Id</option>
+                          {narrativeIds.map(id => (
+                            <option key={id} value={id}>{id}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className={styles.formRowEvidence}>
+                        <label>Type</label>
+                        <select
+                          value={evidenceData.type}
+                          onChange={(e) => handleInputChange("type", e.target.value)}
+                        >
+                          <option value="">Select Type</option>
+                          <option value="Document">Document</option>
+                          <option value="Business Records">Business Records</option>
+                          <option value="Cellular Phone Records">Cellular Phone Records</option>
+                          <option value="Deposition">Deposition</option>
+                          <option value="Statement">Statement</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className={styles.formRowPair}>
+                      <div className={styles.formRowEvidence}>
+                        <label>Collection Date*</label>
+                        <input
+                          type="date"
+                          value={evidenceData.collectionDate}
+                          onChange={(e) => handleInputChange("collectionDate", e.target.value)}
+                        />
+                      </div>
+                      <div className={styles.formRowEvidence}>
+                        <label>Disposed Date</label>
+                        <input
+                          type="date"
+                          value={evidenceData.disposedDate}
+                          onChange={(e) => handleInputChange("disposedDate", e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRowEvidence}>
+                      <label>Description*</label>
+                      <textarea
+                        value={evidenceData.evidenceDescription}
+                        onChange={e => handleInputChange("evidenceDescription", e.target.value)}
+                      />
+                    </div>
+
+                    <div className={styles.formRowPair}>
+                      <div className={styles.formRowEvidence}>
+                        <label>Upload Type</label>
+                        <select
+                          value={evidenceData.uploadMode}
+                          onChange={e => {
+                            const mode = e.target.value;
+                            setEvidenceData(prev => ({
+                              ...prev,
+                              uploadMode: mode,
+                              isLink: mode === "link",
+                              link: mode === "link" ? prev.link : "",
+                            }));
+                            if (mode !== "file") {
+                              setFile(null);
+                              if (fileInputRef.current) fileInputRef.current.value = "";
+                            }
+                          }}
+                        >
+                          <option value="file">File</option>
+                          <option value="link">Link</option>
+                        </select>
+                      </div>
+                      <div className={styles.formRowEvidence}>
+                        {editIndex !== null && evidenceData.uploadMode === "file" && evidenceData.originalName ? (
+                          <>
+                            <label>Current File:</label>
+                            <span className={styles.currentFilename}>{evidenceData.originalName}</span>
+                          </>
+                        ) : evidenceData.uploadMode === "file" ? (
+                          <>
+                            <label>{editIndex === null ? "Upload File" : "Replace File (optional)"}</label>
+                            <input type="file" ref={fileInputRef} onChange={handleFileChange} />
+                          </>
+                        ) : (
+                          <>
+                            <label>Paste Link</label>
+                            <input
+                              type="text"
+                              placeholder="https://..."
+                              value={evidenceData.link}
+                              onChange={e => setEvidenceData(prev => ({ ...prev, link: e.target.value }))}
+                            />
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {editIndex !== null && evidenceData.uploadMode === "file" && evidenceData.originalName && (
+                      <div className={styles.formRowEvidence}>
+                        <label>Replace File (optional)</label>
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className={styles.formButtonsReturn}>
+                    <button
+                      disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
+                      className={styles.saveBtn1}
+                      onClick={handleSaveEvidence}
+                    >
+                      {editIndex === null ? "Add Evidence" : "Update Evidence"}
+                    </button>
+                    {editIndex !== null && (
+                      <button
+                        disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
+                        className={styles.saveBtn1}
+                        onClick={() => {
+                          setEditIndex(null);
+                          setEvidenceData(defaultEvidence());
+                          setFile(null);
+                          if (fileInputRef.current) fileInputRef.current.value = "";
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Evidence Table */}
+              <div className={styles.sectionBlock}>
+                <div className={styles.sectionHeading}>Evidence History</div>
+                <table className={styles.leadsTable}>
+                  <thead>
+                    <tr>
+                      <th>Date Entered</th>
+                      <th style={{ width: "12%" }}>Narrative Id</th>
+                      <th>Type</th>
+                      <th>File Name</th>
+                      <th>Description</th>
+                      <th>Actions</th>
+                      {isCaseManager && (
+                        <th style={{ width: "15%" }}>Access</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {evidences.length > 0 ? evidences.map((item, index) => (
+                      <tr key={index}>
+                        <td>{item.dateEntered}</td>
+                        <td>{item.returnId}</td>
+                        <td>{item.type}</td>
+                        <td>
+                          {item.link ? (
+                            <a href={item.link} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
+                              {item.link}
+                            </a>
+                          ) : item.signedUrl ? (
+                            <a href={item.signedUrl} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
+                              {item.originalName}
+                            </a>
+                          ) : (
+                            <span style={{ color: "gray" }}>No File Available</span>
+                          )}
+                        </td>
+                        <td>{item.evidenceDescription}</td>
+                        <td>
+                          <div className={styles.lrTableBtn}>
+                            <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
+                              <img
+                                src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                                alt="Edit Icon"
+                                className={styles.editIcon}
+                                onClick={() => handleEdit(index)}
+                              />
+                            </button>
+                            <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
+                              <img
+                                src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                                alt="Delete Icon"
+                                className={styles.editIcon}
+                                onClick={() => requestDelete(index)}
+                              />
+                            </button>
+                          </div>
+                        </td>
+                        {isCaseManager && (
+                          <td>
+                            <select
+                              value={item.accessLevel}
+                              onChange={e => handleAccessChange(index, e.target.value)}
+                              className={styles.accessDropdown}
+                            >
+                              <option value="Everyone">All</option>
+                              <option value="Case Manager">Case Manager</option>
+                              <option value="Case Manager and Assignees">Assignees</option>
+                            </select>
+                          </td>
+                        )}
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: 'center' }}>
+                          No Evidences Available
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
-    </div>
-   </div>
   );
 };

@@ -1,9 +1,15 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
+const { LR_ACCESS_LEVELS } = require("../constants/accessLevels");
 
 const completeLeadReturnSchema = new mongoose.Schema(
     {
-        // Version control fields
+        // ── Stable ObjectId refs ──────────────────────────────────
+        leadReturnId: { type: Schema.Types.ObjectId, ref: "LeadReturn", required: true },
+        caseId:       { type: Schema.Types.ObjectId, ref: "Case", required: true },
+        leadId:       { type: Schema.Types.ObjectId, ref: "Lead", required: true },
+
+        // ── Version control fields ────────────────────────────────
         versionId: {
             type: Number,
             required: true,
@@ -12,7 +18,6 @@ const completeLeadReturnSchema = new mongoose.Schema(
         isCurrentVersion: {
             type: Boolean,
             default: true,
-            index: true
         },
         parentVersionId: {
             type: Schema.Types.ObjectId,
@@ -33,8 +38,9 @@ const completeLeadReturnSchema = new mongoose.Schema(
             required: true
         },
 
-        // Core Lead Return Info (from leadreturn.js)
-        leadNo: { type: Number, required: true, index: true },
+        // Core Lead Return Info (snapshots from leadreturn.js)
+        leadNo: { type: Number, required: true },
+        returnNo: { type: Number },
         assignedTo: {
             assignees: [{ type: String, required: true }],
             lRStatus: {
@@ -59,213 +65,24 @@ const completeLeadReturnSchema = new mongoose.Schema(
         caseNo: { type: String, required: true },
         accessLevel: {
             type: String,
-            enum: ["Only Case Manager", "Everyone"],
+            enum: LR_ACCESS_LEVELS,
             default: "Everyone"
         },
 
-        // Lead Return Result snapshot
-        leadReturnResults: [{
-            resultId: { type: Schema.Types.ObjectId },
-            leadReturnId: { type: String },
-            description: { type: String },
-            enteredDate: { type: Date },
-            enteredBy: { type: String },
-            lastModifiedDate: { type: Date },
-            lastModifiedBy: { type: String },
-            leadReturnResult: { type: String },
-            accessLevel: { type: String },
-            isDeleted: { type: Boolean, default: false },
-            deletedAt: { type: Date },
-            deletedBy: { type: String }
-        }],
-
-        // Audio files snapshot
-        audios: [{
-            audioId: { type: Schema.Types.ObjectId },
-            description: { type: String },
-            enteredBy: { type: String },
-            enteredDate: { type: Date },
-            dateAudioRecorded: { type: Date },
-            audioDescription: { type: String },
-            isLink: { type: Boolean, default: false },
-            link: { type: String },
-            s3Key: { type: String },
-            originalName: { type: String },
-            filename: { type: String },
-            filePath: { type: String },
-            accessLevel: { type: String }
-        }],
-
-        // Video files snapshot
-        videos: [{
-            videoId: { type: Schema.Types.ObjectId },
-            description: { type: String },
-            enteredBy: { type: String },
-            enteredDate: { type: Date },
-            dateVideoRecorded: { type: Date },
-            videoDescription: { type: String },
-            filePath: { type: String },
-            s3Key: { type: String },
-            originalName: { type: String },
-            filename: { type: String },
-            isLink: { type: Boolean, default: false },
-            link: { type: String },
-            accessLevel: { type: String }
-        }],
-
-        // Pictures snapshot
-        pictures: [{
-            pictureId: { type: Schema.Types.ObjectId },
-            description: { type: String },
-            enteredBy: { type: String },
-            enteredDate: { type: Date },
-            datePictureTaken: { type: Date },
-            pictureDescription: { type: String },
-            s3Key: { type: String },
-            originalName: { type: String },
-            filename: { type: String },
-            isLink: { type: Boolean, default: false },
-            link: { type: String },
-            filePath: { type: String },
-            accessLevel: { type: String }
-        }],
-
-        // Enclosures snapshot
-        enclosures: [{
-            enclosureId: { type: Schema.Types.ObjectId },
-            description: { type: String },
-            enteredBy: { type: String },
-            enteredDate: { type: Date },
-            type: { type: String },
-            enclosureDescription: { type: String },
-            filePath: { type: String },
-            s3Key: { type: String },
-            originalName: { type: String },
-            filename: { type: String },
-            accessLevel: { type: String },
-            isLink: { type: Boolean, default: false },
-            link: { type: String }
-        }],
-
-        // Evidence snapshot
-        evidences: [{
-            evidenceId: { type: Schema.Types.ObjectId },
-            description: { type: String },
-            enteredBy: { type: String },
-            enteredDate: { type: Date },
-            collectionDate: { type: Date },
-            disposedDate: { type: Date },
-            type: { type: String },
-            evidenceDescription: { type: String },
-            s3Key: { type: String },
-            originalName: { type: String },
-            filename: { type: String },
-            filePath: { type: String },
-            isLink: { type: Boolean, default: false },
-            link: { type: String },
-            accessLevel: { type: String }
-        }],
-
-        // Persons snapshot
-        persons: [{
-            personId: { type: Schema.Types.ObjectId },
-            description: { type: String },
-            enteredBy: { type: String },
-            enteredDate: { type: Date },
-            lastName: { type: String },
-            firstName: { type: String },
-            middleInitial: { type: String },
-            suffix: { type: String },
-            cellNumber: { type: String },
-            alias: { type: String },
-            businessName: { type: String },
-            address: {
-                street1: { type: String },
-                street2: { type: String },
-                building: { type: String },
-                apartment: { type: String },
-                city: { type: String },
-                state: { type: String },
-                zipCode: { type: String }
-            },
-            ssn: { type: String },
-            age: { type: Number },
-            email: { type: String },
-            occupation: { type: String },
-            personType: { type: String },
-            condition: { type: String },
-            cautionType: { type: String },
-            sex: { type: String },
-            race: { type: String },
-            ethnicity: { type: String },
-            skinTone: { type: String },
-            eyeColor: { type: String },
-            hairColor: { type: String },
-            glasses: { type: String },
-            height: {
-                feet: { type: Number },
-                inches: { type: Number }
-            },
-            weight: { type: Number },
-            scar: { type: String },
-            tattoo: { type: String },
-            mark: { type: String },
-            additionalData: { type: Schema.Types.Mixed },
-            accessLevel: { type: String }
-        }],
-
-        // Vehicles snapshot
-        vehicles: [{
-            vehicleId: { type: Schema.Types.ObjectId },
-            description: { type: String },
-            enteredBy: { type: String },
-            enteredDate: { type: Date },
-            year: { type: String },
-            make: { type: String },
-            model: { type: String },
-            plate: { type: String },
-            vin: { type: String },
-            state: { type: String },
-            category: { type: String },
-            type: { type: String },
-            primaryColor: { type: String },
-            secondaryColor: { type: String },
-            information: { type: String },
-            additionalData: { type: Schema.Types.Mixed },
-            accessLevel: { type: String }
-        }],
-
-        // Scratchpad entries snapshot
-        scratchpads: [{
-            scratchpadId: { type: Schema.Types.ObjectId },
-            description: { type: String },
-            enteredBy: { type: String },
-            enteredDate: { type: Date },
-            text: { type: String },
-            type: { type: String },
-            accessLevel: { type: String }
-        }],
-
-        // Timeline entries snapshot
-        timelines: [{
-            timelineId: { type: Schema.Types.ObjectId },
-            description: { type: String },
-            enteredBy: { type: String },
-            enteredDate: { type: Date },
-            eventDate: { type: Date },
-            eventStartDate: { type: Date },
-            eventEndDate: { type: Date },
-            eventStartTime: { type: Date },
-            eventEndTime: { type: Date },
-            eventLocation: { type: String },
-            eventDescription: { type: String },
-            timelineFlag: { type: [String], default: [] },
-            accessLevel: { type: String }
-        }]
+        // ── Related-record ObjectId arrays (replaces embedded snapshots) ──
+        leadReturnResultIds: [{ type: Schema.Types.ObjectId, ref: "LeadReturnResult" }],
+        audioIds:            [{ type: Schema.Types.ObjectId, ref: "LRAudio" }],
+        videoIds:            [{ type: Schema.Types.ObjectId, ref: "LRVideo" }],
+        pictureIds:          [{ type: Schema.Types.ObjectId, ref: "LRPicture" }],
+        enclosureIds:        [{ type: Schema.Types.ObjectId, ref: "LREnclosure" }],
+        evidenceIds:         [{ type: Schema.Types.ObjectId, ref: "LREvidence" }],
+        personIds:           [{ type: Schema.Types.ObjectId, ref: "LRPerson" }],
+        vehicleIds:          [{ type: Schema.Types.ObjectId, ref: "LRVehicle" }],
+        scratchpadIds:       [{ type: Schema.Types.ObjectId, ref: "LRScratchpad" }],
+        timelineIds:         [{ type: Schema.Types.ObjectId, ref: "LRTimeline" }],
     },
     {
         timestamps: true,
-        // Index for efficient version queries (removed old leadNo+versionId index - now using leadNo+caseNo+versionId)
         index: [
             { leadNo: 1, isCurrentVersion: 1 },
             { parentVersionId: 1 }
@@ -274,55 +91,56 @@ const completeLeadReturnSchema = new mongoose.Schema(
 );
 
 // Compound index to ensure unique version numbers per lead + case combination
-// This allows different cases to have their own Lead 1 with separate version histories
 completeLeadReturnSchema.index({ leadNo: 1, caseNo: 1, versionId: 1 }, { unique: true });
 
 // Index to quickly find current version for a lead in a specific case
 completeLeadReturnSchema.index({ leadNo: 1, caseNo: 1, isCurrentVersion: 1 });
 
+// ObjectId-based indexes
+completeLeadReturnSchema.index({ leadReturnId: 1, isCurrentVersion: 1 });
+completeLeadReturnSchema.index({ caseId: 1, leadNo: 1, versionId: -1 });
+
 // Static method to get the latest version for a lead (with optional case filtering)
 completeLeadReturnSchema.statics.getCurrentVersion = async function(leadNo, caseNo = null, caseName = null) {
     const query = { leadNo, isCurrentVersion: true };
-
-    // Add case filters if provided to ensure version history is case-specific
-    if (caseNo) {
-        query.caseNo = caseNo;
-    }
-    if (caseName) {
-        query.caseName = caseName;
-    }
-
+    if (caseNo) query.caseNo = caseNo;
+    if (caseName) query.caseName = caseName;
     return this.findOne(query).sort({ versionId: -1 }).lean();
 };
 
 // Static method to get all versions for a lead (with optional case filtering)
 completeLeadReturnSchema.statics.getAllVersions = async function(leadNo, caseNo = null, caseName = null) {
     const query = { leadNo };
-
-    // Add case filters if provided to ensure version history is case-specific
-    if (caseNo) {
-        query.caseNo = caseNo;
-    }
-    if (caseName) {
-        query.caseName = caseName;
-    }
-
+    if (caseNo) query.caseNo = caseNo;
+    if (caseName) query.caseName = caseName;
     return this.find(query).sort({ versionId: -1 }).lean();
 };
 
 // Static method to get a specific version (with optional case filtering)
 completeLeadReturnSchema.statics.getVersion = async function(leadNo, versionId, caseNo = null, caseName = null) {
     const query = { leadNo, versionId };
-
-    // Add case filters if provided to ensure version history is case-specific
-    if (caseNo) {
-        query.caseNo = caseNo;
-    }
-    if (caseName) {
-        query.caseName = caseName;
-    }
-
+    if (caseNo) query.caseNo = caseNo;
+    if (caseName) query.caseName = caseName;
     return this.findOne(query).lean();
+};
+
+// Static method to get a version with all related data populated
+completeLeadReturnSchema.statics.getVersionPopulated = async function(leadNo, versionId, caseNo = null, caseName = null) {
+    const query = { leadNo, versionId };
+    if (caseNo) query.caseNo = caseNo;
+    if (caseName) query.caseName = caseName;
+    return this.findOne(query)
+        .populate("leadReturnResultIds")
+        .populate("audioIds")
+        .populate("videoIds")
+        .populate("pictureIds")
+        .populate("enclosureIds")
+        .populate("evidenceIds")
+        .populate("personIds")
+        .populate("vehicleIds")
+        .populate("scratchpadIds")
+        .populate("timelineIds")
+        .lean();
 };
 
 module.exports = mongoose.model("CompleteleadReturn", completeLeadReturnSchema, "CompleteleadReturns");

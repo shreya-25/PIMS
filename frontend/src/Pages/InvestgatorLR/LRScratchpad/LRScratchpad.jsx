@@ -2,8 +2,7 @@ import React, { useContext, useState, useEffect} from 'react';
 import { useLocation, useNavigate, Link } from "react-router-dom";
 
 import Navbar from "../../../components/Navbar/Navbar";
-import "./LRScratchpad.css"; // Custom CSS file for Scratchpad styling
-import FootBar from '../../../components/FootBar/FootBar';
+import styles from "./LRScratchpad.module.css";
 import Comment from "../../../components/Comment/Comment";
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
@@ -590,7 +589,7 @@ const { status, isReadOnly } = useLeadStatus({
     leadName: selectedLead.leadName,
   });
   return (
-    <div className="lrscratchpad-container">
+    <div className={styles.scratchpadPage}>
       {/* Navbar */}
       <Navbar />
       <AlertModal
@@ -632,7 +631,7 @@ const { status, isReadOnly } = useLeadStatus({
         </div>
       </div> */}
  
-      <div className="LRI_Content">
+      <div className={styles.LRIContent}>
       {/* <div className="sideitem">
        <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
 
@@ -691,11 +690,11 @@ Case Page
 
                 </div> */}
                   <SideBar  activePage="LeadReview" />
-                <div className="left-contentLI">
+                <div className={styles.leftContentLI}>
 
-                         <div className="top-menu1">
-      <div className="menu-items" >
-        <span className="menu-item " onClick={() => {
+                         <div className={styles.topMenuNav}>
+      <div className={styles.menuItems}>
+        <span className={styles.menuItem} onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
@@ -707,11 +706,11 @@ Case Page
                       }
                     });
                   } }} > Lead Information</span>
-                   <span className="menu-item active" >Add Lead Return</span>
+                   <span className={`${styles.menuItem} ${styles.menuItemActive}`}>Add Lead Return</span>
 
                        {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
            <span
-              className="menu-item"
+              className={styles.menuItem}
               onClick={handleViewLeadReturn}
               title={isGenerating ? "Preparing report…" : "View Lead Return"}
               style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
@@ -722,17 +721,17 @@ Case Page
 
               
             {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
+  <span className={styles.menuItem} onClick={goToViewLR}>
     Submit Lead Return
   </span>
 )}
   {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
+  <span className={styles.menuItem} onClick={goToViewLR}>
    Review Lead Return
   </span>
 )}
 
-                   <span className="menu-item" onClick={() => {
+                   <span className={styles.menuItem} onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
@@ -791,43 +790,43 @@ Case Page
          </div> */}
        </div>
 
-                <div className="top-menu1">
-       <div className="menu-items" style={{ fontSize: '19px' }}>
-       
-        <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
+                <div className={styles.topMenuSections}>
+       <div className={styles.menuItems} style={{ fontSize: '19px' }}>
+
+        <span className={styles.menuItem} style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
             Instructions
           </span>
-          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
+          <span className={styles.menuItem} style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
             Narrative
           </span>
-          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
+          <span className={styles.menuItem} style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
             Person
           </span>
-          <span className="menu-item " style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
             Vehicles
           </span>
-          <span className="menu-item " style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREnclosures')} >
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREnclosures')} >
             Enclosures
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREvidence')} >
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREvidence')} >
             Evidence
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRPictures')} >
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRPictures')} >
             Pictures
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRAudio')} >
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRAudio')} >
             Audio
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
             Videos
           </span>
-          <span className="menu-item active" style={{fontWeight: '600' }}  onClick={() => handleNavigation('/LRScratchpad')}>
+          <span className={`${styles.menuItem} ${styles.menuItemActive}`} style={{fontWeight: '600' }}  onClick={() => handleNavigation('/LRScratchpad')}>
             Notes
           </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
+          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
             Timeline
           </span>
-          {/* <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
+          {/* <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
             Finish
           </span> */}
          </div> </div>
@@ -842,31 +841,31 @@ Case Page
 
 
           </div> */}
-               <div className="caseandleadinfo">
-          <h5 className = "side-title"> 
-             <div className="ld-head">
-                                        <Link to="/HomePage" className="crumb">PIMS Home</Link>
-                                        <span className="sep">{" >> "}</span>
+               <div className={styles.caseandleadinfo}>
+          <h5 className={styles.sideTitle}>
+             <div className={styles.ldHead}>
+                                        <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+                                        <span className={styles.sep}>{" >> "}</span>
                                         <Link
                                           to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
                                           state={{ caseDetails: selectedCase }}
-                                          className="crumb"
+                                          className={styles.crumb}
                                         >
                                           Case: {selectedCase.caseNo || ""}
                                         </Link>
-                                        <span className="sep">{" >> "}</span>
+                                        <span className={styles.sep}>{" >> "}</span>
                                         <Link
                                           to={"/LeadReview"}
                                           state={{ leadDetails: selectedLead }}
-                                          className="crumb"
+                                          className={styles.crumb}
                                         >
                                           Lead: {selectedLead.leadNo || ""}
                                         </Link>
-                                        <span className="sep">{" >> "}</span>
-                                        <span className="crumb-current" aria-current="page">Lead Notes</span>
+                                        <span className={styles.sep}>{" >> "}</span>
+                                        <span className={styles.crumbCurrent} aria-current="page">Lead Notes</span>
                                       </div>
              </h5>
-          <h5 className="side-title">
+          <h5 className={styles.sideTitle}>
   {selectedLead?.leadNo
         ? ` Lead Status:  ${status}`
     : ` ${leadStatus}`}
@@ -875,16 +874,16 @@ Case Page
           </div>
 
         {/* Center Section */}
-        <div className="case-header">
-          <h2 className="">NOTES</h2>
+        <div className={styles.caseHeader}>
+          <h2>NOTES</h2>
         </div>
 
-        <div className = "LRI-content-section">
+        <div className={styles.lriContentSection}>
 
-<div className = "content-subsection">
+<div className={styles.contentSubsection}>
         {/* Scratchpad Form */}
-        <div className = "timeline-form-sec">
-        <div className="scratchpad-form">
+        <div className={styles.timelineFormSec}>
+        <div className={styles.formRowEvidence}>
             <label>Narrative Id*</label>
              <select
     value={noteData.returnId}
@@ -904,15 +903,15 @@ Case Page
     ))}
   </select>
           </div>
-        <h4 className="evidence-form-h4">Add New Note*</h4>
-        <div className="scratchpad-form">
+        <h4 className={styles.evidenceFormH4}>Add New Note*</h4>
+        <div className={styles.formRowEvidence}>
           <textarea
             value={noteData.text}
             onChange={(e) => handleInputChange("text", e.target.value)}
             placeholder="Write your note here"
           ></textarea>
         </div>
-        <div className="form-buttons-scratchpad">
+        <div className={styles.formButtonsReturn}>
         {/* <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
 
         className="save-btn1" onClick={handleAddNote}>Add Note</button> */}
@@ -920,14 +919,14 @@ Case Page
 {editingIndex === null ? (
               <button 
               disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
-              onClick={handleAddNote} className="save-btn1">
+              onClick={handleAddNote} className={styles.saveBtn1}>
                 Add Note
               </button>
             ) : (
               <>
                 <button
-                 disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly} 
-                onClick={handleUpdateNote} className="save-btn1">
+                 disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
+                onClick={handleUpdateNote} className={styles.saveBtn1}>
                   Update Note
                 </button>
                 <button
@@ -936,7 +935,7 @@ Case Page
                     setEditingIndex(null);
                     setNoteData({ text: "", returnId: "", accessLevel: "Everyone" });
                   }}
-                  className="save-btn1"
+                  className={styles.saveBtn1}
                 >
                   Cancel
                 </button>
@@ -946,7 +945,7 @@ Case Page
         </div>
 
            {/* Scratchpad Table */}
-           <table className="leads-table">
+           <table className={styles.leadsTable}>
           <thead>
             <tr>
               <th>Date Entered</th>
@@ -968,22 +967,20 @@ Case Page
                 <td>{note.enteredBy}</td>
                 <td>{note.text}</td>
                 <td>
-                  <div classname = "lr-table-btn">
+                  <div className={styles.lrTableBtn}>
                   <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                   alt="Edit Icon"
-                  className="edit-icon"
+                  className={styles.editIcon}
                   onClick={() => handleEditClick(index)}
                 />
                   </button>
                   <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-
                   <img
                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                   alt="Delete Icon"
-                  className="edit-icon"
+                  className={styles.editIcon}
                   onClick={() => requestDeleteNote(index)}
                 />
                   </button>
@@ -995,6 +992,7 @@ Case Page
             <select
               value={note.accessLevel}
               onChange={e => handleAccessChange(index, e.target.value)}
+              className={styles.accessDropdown}
             >
               <option value="Everyone">All</option>
               <option value="Case Manager">Case Manager</option>
@@ -1040,10 +1038,6 @@ Case Page
         </div> */}
       </div>
 
-      <FootBar
-        onPrevious={() => navigate(-1)} // Takes user to the last visited page
-        onNext={() => navigate("/LRTimeline")} // Takes user to CM Return page
-      />
     </div>
     </div>
     </div>

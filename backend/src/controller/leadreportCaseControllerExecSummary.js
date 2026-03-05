@@ -1708,6 +1708,8 @@ const path = require('path');
 const fs = require('fs');
 const PDFDocument = require("pdfkit");
 const { PDFDocument: PDFLibDocument } = require("pdf-lib");
+const { fetchCaseLeadsData } = require("../utils/caseDataFetcher");
+const Case = require("../models/case");
 
 /* ==============================
    PDF Drawing Helper Functions
@@ -1918,95 +1920,67 @@ function formatOfficerList(arr) {
 }
 
 function drawTextBox(doc, x, y, width, title, content) {
-  const padding   = 5;
-  const fontSize  = 10;
-  const bodyFont  = "Helvetica";
-  const titleFont = "Helvetica-Bold";
-  const topMargin = doc.page.margins.top;
-  const bottomY   = doc.page.height - doc.page.margins.bottom;
+  const pad = 0, fs = 10; // border/bleed not needed now
+  const bodyFont = "Helvetica", titleFont = "Helvetica-Bold";
+  const innerW = width - 2 * pad;
 
-  // prepare your wrapped lines
-  doc.font(bodyFont).fontSize(fontSize);
-  const words = content.split(/\s+/);
+  const topY    = doc.page.margins.top;
+  const bottomY = doc.page.height - doc.page.margins.bottom;
+
+  const text = ((content ?? "") + "").replace(/\s+/g, " ").trim();
+
+  // Pre-wrap to lines so we can page-split cleanly
+  doc.font(bodyFont).fontSize(fs);
+  const lineH = doc.currentLineHeight();
+  const words = text ? text.split(" ") : [];
   const lines = [];
   let line = "";
-  for (let w of words) {
-    const test = line ? line + " " + w : w;
-    if (doc.widthOfString(test) > width - 2 * padding) {
-      lines.push(line);
-      line = w;
-    } else {
-      line = test;
-    }
+  for (const w of words) {
+    const cand = line ? line + " " + w : w;
+    if (doc.widthOfString(cand) <= innerW) line = cand;
+    else { if (line) lines.push(line); line = w; }
   }
   if (line) lines.push(line);
 
-  // iterate chunks that fit each page
-  let idx = 0, currY = y, first = true;
-  while (idx < lines.length) {
-    // 1) decide how many lines fit
-    let fit = 0;
-    // walk forward until we exceed the bottom margin
-    while (idx + fit < lines.length) {
-      // measure title on first chunk
-      const titleH   = first && title
-                       ? doc.heightOfString(title, { width: width - 2*padding })
-                       : 0;
-      // measure these lines as a single block
-      const block    = lines.slice(idx, idx + fit + 1).join("\n");
-      const textH    = doc.heightOfString(block, { width: width - 2*padding });
-      const boxH     = titleH + textH + 2 * padding;
-      if (currY + boxH > bottomY) break;
-      fit++;
-    }
-    // if none fit, force at least one to avoid infinite loop
-    if (fit === 0) fit = 1;
+  // Title height (measured once)
+  const titleH = title
+    ? (doc.font(titleFont).fontSize(fs), doc.heightOfString(title, { width: innerW }))
+    : 0;
+  doc.font(bodyFont).fontSize(fs);
 
-    // 2) compute exact heights
-    const chunkLines = lines.slice(idx, idx + fit);
-    const titleH     = first && title
-                       ? doc.heightOfString(title, { width: width - 2*padding })
-                       : 0;
-    const textBlock  = chunkLines.join("\n");
-    const textH      = doc.heightOfString(textBlock, { width: width - 2*padding });
-    const boxH       = titleH + textH + 2 * padding;
+  let i = 0, currY = y, first = true;
 
-    // 3) draw the box
-    doc.save()
-       .lineWidth(1)
-       .strokeColor("#999999")
-       .rect(x, currY, width, boxH)
-       .stroke()
-       .restore();
+  while (i < lines.length || (first && title && !lines.length)) {
+    // we still need a minimum space check so text doesn’t clip at bottom
+    const minNeededH = (first ? titleH : 0) + lineH + 2 * pad;
+    if (currY + minNeededH > bottomY) { doc.addPage(); currY = topY; }
 
-    // 4) draw the title + text
-    let textY = currY + padding;
+    const available = bottomY - currY - 2 * pad - (first ? titleH : 0);
+    const canLines  = Math.max(1, Math.floor(available / lineH));
+    const end       = Math.min(lines.length, i + canLines);
+
+    // --- draw text only (no border) ---
+    let textY = currY + pad;
+
     if (first && title) {
-      doc.font(titleFont)
-         .fontSize(fontSize)
-         .text(title, x + padding, textY, { width: width - 2*padding });
-      textY += titleH;
+      doc.font(titleFont).fontSize(fs).text(title, x + pad, textY, { width: innerW });
+      textY = doc.y; // after title
+      doc.font(bodyFont).fontSize(fs);
     }
-    doc.font(bodyFont)
-       .fontSize(fontSize)
-       .text(textBlock, x + padding, textY, {
-         width: width - 2 * padding,
-         align: "justify"
-       });
 
-    // advance
-    idx   += fit;
-    first  = false;
-    currY += boxH;
+    const block = lines.slice(i, end).join("\n");
+    doc.text(block, x + pad, textY, { width: innerW, align: "justify" });
 
-    // if there’s more, new page
-    if (idx < lines.length) {
-      doc.addPage();
-      currY = topMargin;
-    }
+    // advance currY based on how much text was actually written
+    const usedTextH = doc.y - textY;
+    const sectionH = (first ? titleH : 0) + usedTextH + 2 * pad;
+
+    currY = currY + sectionH;
+    i = end;
+    first = false;
   }
 
-  return currY + padding;
+  return currY + 6;
 }
 
 
@@ -2095,101 +2069,166 @@ function formatDate(dateString) {
   return `${month}/${day}/${year}`;
 }
 
-function drawStructuredLeadDetails(doc, x, y, lead) {
+function drawMetaBar(doc, x, y, width, entry) {
+  const rowH = 20;
   const padding = 5;
-  const contentWidth =
-    doc.page.width - doc.page.margins.left - doc.page.margins.right;
+  const bg = "#ffffff";
+  const border = "#ccc";
 
-  // proportions sum to 1
-  const colWidths = [
-    Math.round(contentWidth * 0.25), // Lead Number
-    Math.round(contentWidth * 0.25), // Lead Origin
-    Math.round(contentWidth * 0.20), // Assigned Date
-    Math.round(contentWidth * 0.30)  // Completed Date
-  ];
+  const idVal  = `${entry.leadReturnId ?? "N/A"}`;
+  const byVal  = `${entry.enteredBy ?? "N/A"}`;
+  const dtVal  = `${formatDate(entry.enteredDate) || "N/A"}`;
 
-  const minRowH = 20;
+  const colW1 = Math.round(width * 0.33);
+  const colW2 = Math.round(width * 0.34);
+  const colW3 = width - colW1 - colW2;
 
-  const headers = ["Lead Number:", "Lead Origin:", "Assigned Date:", "Completed Date:"];
+  const bottom = doc.page.height - doc.page.margins.bottom;
+  if (y + rowH > bottom) {
+    doc.addPage();
+    y = doc.page.margins.top;
+  }
+
+  // Draw cells
+  let cx = x;
+  [colW1, colW2, colW3].forEach((w) => {
+    doc.rect(cx, y, w, rowH).fillAndStroke(bg, border);
+    cx += w;
+  });
+
+  const baseY = y + 5;
+
+  function drawLabelValue(cellX, cellW, label, value) {
+    const maxW = cellW - 2 * padding;
+    doc.fillColor("#000").font("Helvetica-Bold").fontSize(11);
+    doc.text(label, cellX + padding, baseY, { continued: true });
+    doc.font("Helvetica").fontSize(11);
+    doc.text(` ${value}`, { width: maxW, ellipsis: true });
+  }
+
+  drawLabelValue(x, colW1, "Narrative ID:", idVal);
+  drawLabelValue(x + colW1, colW2, "Entered By:", byVal);
+  drawLabelValue(x + colW1 + colW2, colW3, "Entered Date:", dtVal);
+
+  doc.fillColor("black");
+  return y + rowH + 10;
+}
+
+function drawStructuredLeadDetails(doc, x, y, lead, characterOfCase) {
+  const colWidths = [130, 130, 130, 122];
+  const rowHeight = 20;
+  const padding = 5;
+
+  // Header Row
+  const headers = ["Lead Number:", "Lead Origin:", "Assigned Date:", "Submitted Date:"];
   const values = [
     lead.leadNo || "N/A",
-    Array.isArray(lead.parentLeadNo) ? lead.parentLeadNo.join(", ") : (lead.parentLeadNo || "N/A"),
+    lead.parentLeadNo ? lead.parentLeadNo.join(", ") : "N/A",
     lead.assignedDate ? formatDate(lead.assignedDate) : "N/A",
-    lead.completedDate ? formatDate(lead.completedDate) : "N/A",
+    lead.submittedDate ? formatDate(lead.submittedDate) : "N/A",
   ];
 
-  // ----- First Row: Headers (Grey) -----
   let currX = x;
-  doc.font("Helvetica-Bold").fontSize(11);
+
+  // Grey background cells
   for (let i = 0; i < headers.length; i++) {
-    doc.rect(currX, y, colWidths[i], minRowH).fillAndStroke("#f5f5f5", "#ccc");
-    doc.fillColor("#000").text(headers[i], currX + padding, y + 5, {
-      width: colWidths[i] - 2 * padding,
-      align: "left",
-    });
+    doc.rect(currX, y, colWidths[i], rowHeight).fillAndStroke("#f5f5f5", "#ccc");
+    doc.fillColor("#000")
+      .font("Helvetica-Bold")
+      .fontSize(11)
+      .text(headers[i], currX + padding, y + 5);
     currX += colWidths[i];
   }
 
-  // ----- Second Row: Values (auto height) -----
-  doc.font("Helvetica").fontSize(12);
-
-  let valueRowHeight = minRowH;
-  for (let i = 0; i < values.length; i++) {
-    const h = doc.heightOfString(values[i], {
-      width: colWidths[i] - 2 * padding,
-      align: "left",
-    }) + 2 * padding;
-    valueRowHeight = Math.max(valueRowHeight, h);
-  }
-
-  y += minRowH;
+  y += rowHeight;
   currX = x;
+
+  // Values row
   for (let i = 0; i < values.length; i++) {
-    doc.rect(currX, y, colWidths[i], valueRowHeight).stroke();
-    doc.text(values[i], currX + padding, y + padding, {
-      width: colWidths[i] - 2 * padding,
-      align: "left",
-    });
+    doc.rect(currX, y, colWidths[i], rowHeight).stroke();
+    doc.font("Helvetica").fontSize(12).text(values[i], currX + padding, y + 5);
     currX += colWidths[i];
   }
 
-  // ----- Third Row: Assigned Officers (Label + WRAPPED Value) -----
-  y += valueRowHeight;
+  y += rowHeight;
 
-  const labelWidth = colWidths[0]; // ✅ same width as Lead Number
-  const valueWidth = contentWidth - labelWidth; // 🔥 This gives more room to names
+  const tableWidth  = colWidths.reduce((a, b) => a + b, 0);
+  const labelWidth  = 130;
+  const valueWidth  = tableWidth - labelWidth;
+  const labelHeight = 20;
+  const paddingX    = 5;
+  const paddingY    = 5;
 
-  // Properly formatted list → prevents [object Object]
+  // Character of Case row
+  const charText = characterOfCase || "N/A";
+  doc.font("Helvetica").fontSize(10);
+  const charTextHeight = doc.heightOfString(charText, { width: valueWidth - 2 * paddingX });
+  const charRowH = Math.max(labelHeight, charTextHeight + 2 * paddingY);
+
+  if (y + charRowH > doc.page.height - doc.page.margins.bottom) {
+    doc.addPage();
+    y = doc.page.margins.top;
+  }
+
+  doc.rect(x, y, labelWidth, charRowH).fillAndStroke("#f5f5f5", "#ccc");
+  doc.font("Helvetica-Bold").fontSize(11).fillColor("#000")
+    .text("Character of Case:", x + paddingX, y + paddingY, {
+      width: labelWidth - 2 * paddingX,
+      align: "left",
+    });
+
+  doc.strokeColor("#999999");
+  doc.rect(x + labelWidth, y, valueWidth, charRowH).stroke();
+  doc.font("Helvetica").fontSize(10).fillColor("#000")
+    .text(charText, x + labelWidth + paddingX, y + paddingY, {
+      width: valueWidth - 2 * paddingX,
+      align: "left",
+    });
+
+  y += charRowH;
+
+  // Assigned Officers row
   const officersText = formatOfficerList(lead.assignedTo);
 
-  doc.font("Helvetica").fontSize(12);
-  const officersTextH =
-    doc.heightOfString(officersText, {
-      width: valueWidth - 2 * padding,
-      align: "left",
-    }) + 2 * padding;
+// Measure the wrapped text height for the value cell
+doc.font("Helvetica").fontSize(10);
+const textHeight   = doc.heightOfString(officersText, {
+  width: valueWidth - 2 * paddingX,
+  align: "left",
+});
+const rowH         = Math.max(labelHeight, textHeight + 2 * paddingY);
 
-  const officersRowH = Math.max(minRowH, officersTextH);
+// If it won’t fit this page, break before drawing
+if (y + rowH > doc.page.height - doc.page.margins.bottom) {
+  doc.addPage();
+  y = doc.page.margins.top;
+}
 
-  // Label cell
-  doc.rect(x, y, labelWidth, officersRowH).fillAndStroke("#f5f5f5", "#ccc");
-  doc.font("Helvetica-Bold").fontSize(11)
-    .fillColor("#000")
-    .text("Assigned Officers:", x + padding, y + padding, {
-      width: labelWidth - 2 * padding,
-      align: "left",
-    });
+// Draw label cell (gray)
+doc.rect(x, y, labelWidth, rowH).fillAndStroke("#f5f5f5", "#ccc");
+doc
+  .font("Helvetica-Bold")
+  .fontSize(11)
+  .fillColor("#000")
+  .text("Assigned Officers:", x + paddingX, y + paddingY, {
+    width: labelWidth - 2 * paddingX,
+    align: "left",
+  });
 
-  // Value cell
-  doc.rect(x + labelWidth, y, valueWidth, officersRowH).stroke();
-  doc.font("Helvetica").fontSize(12)
-    .fillColor("#000")
-    .text(officersText, x + labelWidth + padding, y + padding, {
-      width: valueWidth - 2 * padding,
-      align: "left",
-    });
+// Draw value cell (bordered) with wrapped names
+doc.strokeColor("#999999");
+doc.rect(x + labelWidth, y, valueWidth, rowH).stroke();
+doc
+  .font("Helvetica")
+  .fontSize(10)
+  .fillColor("#000")
+  .text(officersText, x + labelWidth + paddingX, y + paddingY, {
+    width: valueWidth - 2 * paddingX,
+    align: "left",
+  });
 
-  return y + officersRowH + 20;
+return y + rowH + 20;
+
 }
 
 
@@ -2315,34 +2354,61 @@ async function mergeWithWordFileAtStart(pdfKitBuffer, wordPdfPath) {
 
 // Note: The function is now declared as async.
 async function generateCaseReportwithExecSummary(req, res) {
-  // const { user, reportTimestamp, leadsData, caseSummary, selectedReports } = req.body;
-
-    // 2) Pull the raw leadsData out of the body
     const {
       user,
       reportTimestamp,
       leadsData: leadsDataRaw,
       caseSummary,
-      selectedReports
+      selectedReports: selectedReportsRaw,
+      // New: server-side data fetching params
+      caseNo: caseNoParam,
+      caseName: caseNameParam,
+      reportScope,
+      subsetRange: subsetRangeRaw,
+      leadNos: leadNosRaw,
     } = req.body;
-  
-    // 3) If it’s a string, parse it back into an array
-    let leadsData = leadsDataRaw;
-    if (typeof leadsData === "string") {
+
+    // Parse stringified JSON fields (multipart sends strings)
+    const selectedReports = typeof selectedReportsRaw === "string"
+      ? JSON.parse(selectedReportsRaw) : selectedReportsRaw;
+    const subsetRange = typeof subsetRangeRaw === "string"
+      ? JSON.parse(subsetRangeRaw) : subsetRangeRaw;
+    const leadNos = typeof leadNosRaw === "string"
+      ? JSON.parse(leadNosRaw) : leadNosRaw;
+
+    // Parse leadsData if provided as string (multipart form)
+    let leadsData;
+    if (typeof leadsDataRaw === "string" && leadsDataRaw.length > 0) {
+      try { leadsData = JSON.parse(leadsDataRaw); } catch (err) { /* ignore */ }
+    }
+    if (Array.isArray(leadsDataRaw)) leadsData = leadsDataRaw;
+
+    // If no leadsData provided, fetch server-side
+    if (!Array.isArray(leadsData) || leadsData.length === 0) {
+      if (!caseNoParam) {
+        return res.status(400).json({ error: "caseNo or leadsData is required" });
+      }
       try {
-        leadsData = JSON.parse(leadsData);
-      } catch (err) {
-        return res.status(400).json({ error: "Invalid JSON for leadsData" });
+        leadsData = await fetchCaseLeadsData(caseNoParam, caseNameParam, {
+          reportScope,
+          subsetRange,
+          leadNos,
+        });
+      } catch (fetchErr) {
+        console.error("Error fetching case data for exec summary report:", fetchErr);
+        return res.status(500).json({ error: "Failed to fetch case data" });
       }
     }
-  
-    // 4) Guard: now it really must be an array
-    if (!Array.isArray(leadsData)) {
-      return res.status(400).json({ error: "leadsData must be an array" });
+
+    if (!Array.isArray(leadsData) || leadsData.length === 0) {
+      return res.status(404).json({ error: "No leads found for this case" });
     }
 
-
     const includeAll = selectedReports && selectedReports.FullReport;
+
+    const caseDoc = await Case.findOne({ caseNo: caseNoParam }).lean();
+    const characterOfCase = caseDoc?.characterOfCase || "";
+
   // 1) Make sure a file was uploaded
   if (!req.file || !req.file.path) {
     return res.status(400).json({ error: "No executive summary file uploaded." });
@@ -2436,7 +2502,7 @@ async function generateCaseReportwithExecSummary(req, res) {
         currentY += 20;
 
         // Draw the structured lead details.
-        currentY = drawStructuredLeadDetails(doc, 50, currentY, lead);
+        currentY = drawStructuredLeadDetails(doc, 50, currentY, lead, characterOfCase);
 
         // Optional: Lead Log Summary.
         if (includeAll && lead.description) {
@@ -2459,8 +2525,7 @@ async function generateCaseReportwithExecSummary(req, res) {
           if (lead.leadReturns && lead.leadReturns.length > 0) {
             lead.leadReturns.forEach((lr) => {
               currentY = ensureSpace(doc, currentY, 100);
-              doc.font("Helvetica-Bold").fontSize(11).text(`Lead Return ID: ${lr.leadReturnId}`, 50, currentY);
-              currentY += 20;
+              currentY = drawMetaBar(doc, 50, currentY, 512, lr);
               currentY = drawTextBox(doc, 50, currentY, 512, "", lr.leadReturnResult || "") + 20;
 
               // PERSON DETAILS within each return.

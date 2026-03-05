@@ -1,37 +1,26 @@
 const LRScratchpad = require("../models/LRScratchpad");
+const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 
-// ✅ Create a new LRScratchpad entry
 const createLRScratchpad = async (req, res) => {
     try {
         const {
-            leadNo,
-            description,
-            assignedTo,
-            assignedBy,
-            enteredBy,
-            caseName,
-            caseNo,
-            leadReturnId,
-            enteredDate,
-            text,
-            type,
+            leadNo, description, enteredBy, caseName, caseNo,
+            leadReturnId, enteredDate, text, type,
         } = req.body;
 
         const accessLevel = req.body.accessLevel || "Everyone";
 
+        // Resolve ObjectId refs
+        const refs = await resolveLeadReturnRefs({ caseNo, caseName, leadNo, enteredBy });
+
         const newScratchpad = new LRScratchpad({
-            leadNo,
-            description,
-            assignedTo,
-            assignedBy,
-            enteredBy,
-            caseName,
-            caseNo,
-            leadReturnId,
-            enteredDate,
-            text,
-            type,
-            accessLevel,
+            leadNo, description, enteredBy, caseName, caseNo,
+            leadReturnId, enteredDate, text, type, accessLevel,
+            // ObjectId refs
+            caseId: refs.caseId,
+            leadId: refs.leadId,
+            leadReturnObjectId: refs.leadReturnObjectId,
+            enteredByUserId: refs.enteredByUserId,
         });
 
         await newScratchpad.save();
@@ -42,24 +31,13 @@ const createLRScratchpad = async (req, res) => {
     }
 };
 
-// ✅ Get all LRScratchpad entries by lead & case info
 const getLRScratchpadByDetails = async (req, res) => {
     try {
         const { leadNo, leadName, caseNo, caseName } = req.params;
-
-        const query = {
-            leadNo: Number(leadNo),
-            description: leadName,
-            caseNo,
-            caseName
-        };
-
+        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName };
         const scratchpads = await LRScratchpad.find(query);
 
-        if (scratchpads.length === 0) {
-            return res.status(404).json({ message: "No scratchpad entries found." });
-        }
-
+        if (scratchpads.length === 0) return res.status(404).json({ message: "No scratchpad entries found." });
         res.status(200).json(scratchpads);
     } catch (err) {
         console.error("Error fetching LRScratchpad records:", err.message);
@@ -67,25 +45,13 @@ const getLRScratchpadByDetails = async (req, res) => {
     }
 };
 
-// ✅ Get scratchpad entries by details *and* leadReturnId
 const getLRScratchpadByDetailsAndId = async (req, res) => {
     try {
         const { leadNo, leadName, caseNo, caseName, id } = req.params;
-
-        const query = {
-            leadNo: Number(leadNo),
-            description: leadName,
-            caseNo,
-            caseName,
-            leadReturnId: id
-        };
-
+        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId: id };
         const scratchpads = await LRScratchpad.find(query);
 
-        if (scratchpads.length === 0) {
-            return res.status(404).json({ message: "No scratchpad entries found for the given return ID." });
-        }
-
+        if (scratchpads.length === 0) return res.status(404).json({ message: "No scratchpad entries found for the given return ID." });
         res.status(200).json(scratchpads);
     } catch (err) {
         console.error("Error fetching LRScratchpad by ID:", err.message);
@@ -96,32 +62,21 @@ const getLRScratchpadByDetailsAndId = async (req, res) => {
 async function updateLRScratchpad(req, res) {
     try {
       const { id } = req.params;
-      // Only these fields are updatable
       const { leadReturnId, text, type, accessLevel } = req.body;
 
       const updateData = { leadReturnId, text, type };
+      if (accessLevel !== undefined) updateData.accessLevel = accessLevel || "Everyone";
 
-      // Update accessLevel if provided
-      if (accessLevel !== undefined) {
-        updateData.accessLevel = accessLevel || "Everyone";
-      }
-
-      const updated = await LRScratchpad.findByIdAndUpdate(
-        id,
-        updateData,
-        { new: true }
-      );
-
+      const updated = await LRScratchpad.findByIdAndUpdate(id, updateData, { new: true });
       if (!updated) return res.status(404).json({ message: "Not found" });
       res.json(updated);
     } catch (err) {
       console.error("Error updating scratchpad:", err);
       res.status(500).json({ message: "Something went wrong" });
     }
-  }
-  
-  // **Delete** a scratchpad entry
-  async function deleteLRScratchpad(req, res) {
+}
+
+async function deleteLRScratchpad(req, res) {
     try {
       const { id } = req.params;
       const removed = await LRScratchpad.findByIdAndDelete(id);
@@ -131,12 +86,12 @@ async function updateLRScratchpad(req, res) {
       console.error("Error deleting scratchpad:", err);
       res.status(500).json({ message: "Something went wrong" });
     }
-  }
+}
 
 module.exports = {
     createLRScratchpad,
     getLRScratchpadByDetails,
-    getLRScratchpadByDetailsAndId  ,
+    getLRScratchpadByDetailsAndId,
     updateLRScratchpad,
     deleteLRScratchpad,
 };

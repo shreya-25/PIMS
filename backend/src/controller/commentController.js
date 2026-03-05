@@ -81,7 +81,7 @@ const getComments = async (req, res) => {
       query.tag = new RegExp(`^${tag}$`, "i");
     }
     
-    const comments = await Comment.find(query);
+    const comments = await Comment.find(query).lean();
     return res.status(200).json(comments);
   } catch (err) {
     console.error("Error fetching comments:", err.message);

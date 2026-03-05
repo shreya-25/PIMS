@@ -1,8 +1,7 @@
 import React, { useContext, useState, useEffect, useRef, useMemo} from 'react';
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import Navbar from '../../../components/Navbar/Navbar';
-import "./LREnclosures.css"; // Custom CSS file for Enclosures styling
-import FootBar from '../../../components/FootBar/FootBar';
+import styles from './LREnclosures.module.css';
 import { CaseContext } from "../../CaseContext";
 import api from "../../../api";
 import {SideBar } from "../../../components/Sidebar/Sidebar";
@@ -803,459 +802,334 @@ const performDeleteEnclosure = async () => {
   });
 
   return (
-    <div className="lrenclosures-container">
-      {/* Navbar */}
+    <div className={styles.personPage}>
       <Navbar />
-       <AlertModal
-                          isOpen={alertOpen}
-                          title="Notification"
-                          message={alertMessage}
-                          onConfirm={() => setAlertOpen(false)}
-                          onClose={()   => setAlertOpen(false)}
-                        />
-
-        <AlertModal
-  isOpen={confirmOpen}
-  title="Confirm Deletion"
-  message="Are you sure you want to delete this record?"
-  onConfirm={performDeleteEnclosure}
-  onClose={() => { setConfirmOpen(false); setPendingDeleteIndex(null); }}
-/>
-
- 
-      <div className="LRI_Content">
-    
-                 <SideBar  activePage="LeadReview" />
-                <div className="left-contentLI">
-
-                    <div className="top-menu1"   >
-      <div className="menu-items" >
-        <span className="menu-item " onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/LeadReview", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } }} > Lead Information</span>
-                   <span className="menu-item active" >Add Lead Return</span>
-
-                   {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
-           <span
-              className="menu-item"
-              onClick={handleViewLeadReturn}
-              title={isGenerating ? "Preparing report…" : "View Lead Return"}
-              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-            >
-              Manage Lead Return
-            </span>
-              )}
-
-              
-            {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
-    Submit Lead Return
-  </span>
-)}
-
-  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
-   Review Lead Return
-  </span>
-)}
-
-
-                   <span className="menu-item" onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/ChainOfCustody", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } else {
-                      setAlertMessage("Please select a case and lead first.");
-                      setAlertOpen(true);
-                  }
-                }}>Lead Chain of Custody</span>
-          
-                  </div>
-      
-       </div>
-
-                <div className="top-menu1">
-       <div className="menu-items" style={{ fontSize: '19px' }}>
-       
-        <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Narrative
-          </span>
-          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className="menu-item " style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className="menu-item active" style={{fontWeight: '600' }}  onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRScratchpad')}>
-            Notes
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          {/* <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span> */}
-         </div> </div>
-              
-               <div className="caseandleadinfo">
-          <h5 className = "side-title"> 
-            <div className="ld-head">
-                                       <Link to="/HomePage" className="crumb">PIMS Home</Link>
-                                       <span className="sep">{" >> "}</span>
-                                       <Link
-                                         to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
-                                         state={{ caseDetails: selectedCase }}
-                                         className="crumb"
-                                       >
-                                         Case: {selectedCase.caseNo || ""}
-                                       </Link>
-                                       <span className="sep">{" >> "}</span>
-                                       <Link
-                                         to={"/LeadReview"}
-                                         state={{ leadDetails: selectedLead }}
-                                         className="crumb"
-                                       >
-                                         Lead: {selectedLead.leadNo || ""}
-                                       </Link>
-                                       <span className="sep">{" >> "}</span>
-                                       <span className="crumb-current" aria-current="page">Lead Enclosures</span>
-                                     </div>
-             </h5>
-          <h5 className="side-title">
-  {selectedLead?.leadNo
-        ? ` Lead Status:  ${status}`
-    : ` ${leadStatus}`}
-</h5>
-
-          </div>
-
-        {/* Center Section */}
-        <div className="case-header">
-          <h2 className="">ENCLOSURES INFORMATION</h2>
-        </div>
-     
-
-      <div className = "LRI-content-section">
-
-<div className = "content-subsection">
-
-        {/* Enclosure Form */}
-        <div className = "timeline-form-sec-enc">
-        <div className="enclosure-form">
-        <div className="form-row-evidence">
-            <label>Narrative Id *</label>
-            <select
-              value={enclosureData.returnId}
-              onChange={(e) => handleInputChange("returnId", e.target.value)}
-            >
-              <option value="">Select Id</option>
-              {narrativeIds.map(id => (
-                <option key={id} value={id}>{id}</option>
-              ))}
-            </select>
-          </div>
-          <div className="form-row-evidence">
-            <label>Enclosure Type</label>
-            <select
-              value={enclosureData.type}
-              onChange={(e) => handleInputChange("type", e.target.value)}
-            >
-              <option value="">Select Type</option>
-              <option value="Document">Document</option>
-              <option value="Business Records">Business Records</option>
-              <option value="Cellular Phone Records">Cellular Phone Records</option>
-              <option value="Deposition">Deposition</option>
-              <option value="Statement">Statement</option>
-            </select>
-          </div>
-          <div className="form-row-evidence">
-            <label>Enclosure Description *</label>
-            <textarea
-              value={enclosureData.enclosure}
-              onChange={(e) => handleInputChange("enclosure", e.target.value)}
-            ></textarea>
-          </div>
-          {/* <div className="form-row-evidence">
-            <label>Upload File:</label>
-          
-<input
-  type="file"
-  name="file"               
-  ref={fileInputRef}      
-  onChange={handleFileChange}
-/>
-
-          </div> */}
-          <div className="form-row-evidence">
-  <label>Upload Type</label>
-  <select
-    value={enclosureData.isLink ? "link" : "file"}
-    onChange={(e) =>
-      setEnclosureData((prev) => ({
-        ...prev,
-        isLink: e.target.value === "link",
-        link: "", // Reset link if switching from file
-      }))
-    }
-  >
-    <option value="file">File</option>
-    <option value="link">Link</option>
-  </select>
-</div>
-{/* {!enclosureData.isLink ? (
-  <div className="form-row-evidence">
-    <label>Upload File:</label>
-    <input
-      type="file"
-      name="file"
-      ref={fileInputRef}
-      onChange={handleFileChange}
-    />
-  </div>
-) : (
-  <div className="form-row-evidence">
-    <label>Paste Link:</label>
-    <input
-      type="text"
-      placeholder="Enter URL (https://...)"
-      value={enclosureData.link || ""}
-      onChange={(e) =>
-        setEnclosureData((prev) => ({ ...prev, link: e.target.value }))
-      }
-    />
-  </div>
-)} */}
-
-{editIndex !== null && !enclosureData.isLink && enclosureData.originalName && (
-  <div className="form-row-evidence">
-    <label>Current File:</label>
-    <span className="current-filename">
-      {enclosureData.originalName}
-    </span>
-  </div>
-)}
-
-{!enclosureData.isLink ? (
-  <div className="form-row-evidence">
-    <label>{editIndex === null ? 'Upload File' : 'Replace File (optional):'}</label>
-    <input
-      type="file"
-      name="file"
-      ref={fileInputRef}
-      onChange={handleFileChange}
-    />
-  </div>
-) : (
-  <div className="form-row-evidence">
-    <label>Paste Link:</label>
-    <input
-      type="text"
-      placeholder="Enter URL (https://...)"
-      value={enclosureData.link || ""}
-      onChange={e =>
-        setEnclosureData(prev => ({ ...prev, link: e.target.value }))
-      }
-    />
-  </div>
-)}
-
-
-        </div>
-
-           {/* Action Buttons */}
-          <div className="form-buttons">
-              <button
-                disabled={uploading || selectedLead?.leadStatus==="In Review" || selectedLead?.leadStatus==="Completed" || isReadOnly}
-                onClick={handleSave}
-                className='save-btn1'
-              >
-                {uploading ? "Saving..." : editIndex === null ? "Add Enclosure" : "Save Changes"}
-              </button>
-              {editIndex !== null && (
-                <button 
-                disabled={selectedLead?.leadStatus==="In Review" || selectedLead?.leadStatus==="Completed" || isReadOnly}
-                className='save-btn1'
-                onClick={() => {
-                  setEditIndex(null);
-                  setEnclosureData({ returnId:"", type:"", enclosure:"" });
-                  setFile(null);
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                }}>
-                  Cancel
-                </button>
-              )}
-            </div>
-    
-        </div>
-
-              {/* Enclosures Table */}
-              <table className="leads-table">
-          <thead>
-            <tr>
-              <th>Date Entered</th>
-              <th>Narrative Id </th>
-              <th>Type</th>
-              <th>Description</th>
-              <th>File Name</th>
-              <th>Actions</th>
-              {isCaseManager && (
-              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
-            )}
-            </tr>
-          </thead>
-          <tbody>
-          {enclosures.length > 0 ? (
-            enclosures.map((enclosure, index) => (
-              <tr key={index}>
-                <td>{enclosure.dateEntered}</td>
-                <td>{enclosure.returnId}</td>
-                <td>{enclosure.type}</td>
-                <td>{enclosure.enclosure}</td>
-                <td>
-  {enclosure.link?.trim() ? (
-    <a
-      href={enclosure.link.startsWith('http') ? enclosure.link : `https://${enclosure.link}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="link-button"
-    >
-      {enclosure.link}
-    </a>
-  ) : enclosure.originalName ? (
-    <a
-      href={enclosure.signedUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="link-button"
-    >
-      {enclosure.originalName}
-    </a>
-  ) : (
-    <span>—</span>
-  )}
-</td>
-
-
-                <td>
-                  <div classname = "lr-table-btn">
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
-                  alt="Edit Icon"
-                  className="edit-icon"
-                  onClick={()=>handleEdit(index)}
-                />
-                  </button>
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
-                  alt="Delete Icon"
-                  className="edit-icon"
-                  onClick={()=>requestDeleteEnclosure(index)}
-                />
-                  </button>
-                  </div>
-                </td>
-              
-                {isCaseManager && (
-          <td>
-            <select
-              value={enclosure.accessLevel}
-              onChange={e => handleAccessChange(index, e.target.value)}
-            >
-              <option value="Everyone">All</option>
-              <option value="Case Manager">Case Manager</option>
-              <option value="Case Manager and Assignees">Assignees</option>
-            </select>
-          </td>
-        )}
-      </tr>
-       ))) : (
-        <tr>
-          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
-            No Enclosures Available
-          </td>
-        </tr>
-      )}
-          </tbody>
-        </table>
-         {/* <Attachment /> */}
-                {/* <Attachment attachments={enclosures.map(e => ({
-                    name: e.originalName || e.filename,
-                    // Optionally include size and date if available:
-                    size: e.size || "N/A",
-                    date: e.enteredDate ? new Date(e.enteredDate).toLocaleString() : "N/A",
-                    // Build a URL to view/download the file
-                    url: `http://${BASE_URL}/uploads/${e.filename}`
-                  }))} />
-         */}
-
-          {/* {selectedLead?.leadStatus !== "Completed" && !isCaseManager && (
-  <div className="form-buttons-finish">
-    <h4> Click here to submit the lead</h4>
-    <button
-      disabled={selectedLead?.leadStatus === "In Review"}
-      className="save-btn1"
-      onClick={handleSubmitReport}
-    >
-      Submit
-    </button>
-  </div>
-)} */}
-
-        {/* Activity Log Component */}
-        {/* <ActivityLog
-          caseNo={effectiveCase?.caseNo}
-          leadNo={effectiveLead?.leadNo}
-          entityType="LREnclosure"
-          refreshTrigger={auditLogRefresh}
-        /> */}
-
-        {/* <Comment tag= "Enclosures"/> */}
-      </div>
-      </div>
-      <FootBar
-        onPrevious={() => navigate(-1)} // Takes user to the last visited page
-        onNext={() => navigate("/LREvidence")} // Takes user to CM Return page
+      <AlertModal
+        isOpen={alertOpen}
+        title="Notification"
+        message={alertMessage}
+        onConfirm={() => setAlertOpen(false)}
+        onClose={() => setAlertOpen(false)}
       />
-    </div>
-    </div>
+      <AlertModal
+        isOpen={confirmOpen}
+        title="Confirm Deletion"
+        message="Are you sure you want to delete this record?"
+        onConfirm={performDeleteEnclosure}
+        onClose={() => { setConfirmOpen(false); setPendingDeleteIndex(null); }}
+      />
+
+      <div className={styles.LRIContent}>
+        <SideBar activePage="LeadReview" />
+        <div className={styles.leftContentLI}>
+
+          {/* Top nav menu */}
+          <div className={styles.topMenuNav}>
+            <div className={styles.menuItems}>
+              <span className={styles.menuItem} onClick={() => {
+                const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                if (lead && kase) {
+                  navigate("/LeadReview", { state: { caseDetails: kase, leadDetails: lead } });
+                }
+              }}>Lead Information</span>
+              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>Add Lead Return</span>
+              {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
+                <span
+                  className={styles.menuItem}
+                  onClick={handleViewLeadReturn}
+                  title={isGenerating ? "Preparing report…" : "View Lead Return"}
+                  style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
+                >
+                  Manage Lead Return
+                </span>
+              )}
+              {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
+                <span className={styles.menuItem} onClick={goToViewLR}>Submit Lead Return</span>
+              )}
+              {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
+                <span className={styles.menuItem} onClick={goToViewLR}>Review Lead Return</span>
+              )}
+              <span className={styles.menuItem} onClick={() => {
+                const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                if (lead && kase) {
+                  navigate("/ChainOfCustody", { state: { caseDetails: kase, leadDetails: lead } });
+                } else {
+                  setAlertMessage("Please select a case and lead first.");
+                  setAlertOpen(true);
+                }
+              }}>Lead Chain of Custody</span>
+            </div>
+          </div>
+
+          {/* Section tabs menu */}
+          <div className={styles.topMenuSections}>
+            <div className={styles.menuItems} style={{ fontSize: '19px' }}>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>Instructions</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>Narrative</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')}>Person</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRVehicle')}>Vehicles</span>
+              <span className={`${styles.menuItem} ${styles.menuItemActive}`} style={{ fontWeight: '600' }} onClick={() => handleNavigation('/LREnclosures')}>Enclosures</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LREvidence')}>Evidence</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRPictures')}>Pictures</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRAudio')}>Audio</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRVideo')}>Videos</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRScratchpad')}>Notes</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRTimeline')}>Timeline</span>
+            </div>
+          </div>
+
+          {/* Breadcrumb + status bar */}
+          <div className={styles.caseandleadinfo}>
+            <h5 className={styles.sideTitle}>
+              <div className={styles.ldHead}>
+                <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+                <span className={styles.sep}>{" >> "}</span>
+                <Link
+                  to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+                  state={{ caseDetails: selectedCase }}
+                  className={styles.crumb}
+                >
+                  Case: {selectedCase.caseNo || ""}
+                </Link>
+                <span className={styles.sep}>{" >> "}</span>
+                <Link to="/LeadReview" state={{ leadDetails: selectedLead }} className={styles.crumb}>
+                  Lead: {selectedLead.leadNo || ""}
+                </Link>
+                <span className={styles.sep}>{" >> "}</span>
+                <span className={styles.crumbCurrent} aria-current="page">Lead Enclosures</span>
+              </div>
+            </h5>
+            <h5 className={styles.sideTitle}>
+              {selectedLead?.leadNo ? ` Lead Status:  ${status}` : ` ${leadStatus}`}
+            </h5>
+          </div>
+
+          {/* Page heading */}
+          <div className={styles.caseHeader}>
+            <h2>ENCLOSURES INFORMATION</h2>
+          </div>
+
+          <div className={styles.lriContentSection}>
+            <div className={styles.contentSubsection}>
+
+              {/* Enclosure Entry section */}
+              <div className={styles.sectionBlock}>
+                <div className={styles.sectionHeading}>Enclosure Entry</div>
+                <div className={styles.LREnteringContentBox}>
+                  <div className={styles.enclosureForm}>
+                    <div className={styles.formRowPair}>
+                      <div className={styles.formRowEvidence}>
+                        <label>Narrative Id *</label>
+                        <select
+                          value={enclosureData.returnId}
+                          onChange={(e) => handleInputChange("returnId", e.target.value)}
+                        >
+                          <option value="">Select Id</option>
+                          {narrativeIds.map(id => (
+                            <option key={id} value={id}>{id}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className={styles.formRowEvidence}>
+                        <label>Enclosure Type</label>
+                        <select
+                          value={enclosureData.type}
+                          onChange={(e) => handleInputChange("type", e.target.value)}
+                        >
+                          <option value="">Select Type</option>
+                          <option value="Document">Document</option>
+                          <option value="Business Records">Business Records</option>
+                          <option value="Cellular Phone Records">Cellular Phone Records</option>
+                          <option value="Deposition">Deposition</option>
+                          <option value="Statement">Statement</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className={styles.formRowEvidence}>
+                      <label>Enclosure Description *</label>
+                      <textarea
+                        value={enclosureData.enclosure}
+                        onChange={(e) => handleInputChange("enclosure", e.target.value)}
+                      />
+                    </div>
+                    <div className={styles.formRowPair}>
+                      <div className={styles.formRowEvidence}>
+                        <label>Upload Type</label>
+                        <select
+                          value={enclosureData.isLink ? "link" : "file"}
+                          onChange={(e) =>
+                            setEnclosureData((prev) => ({
+                              ...prev,
+                              isLink: e.target.value === "link",
+                              link: "",
+                            }))
+                          }
+                        >
+                          <option value="file">File</option>
+                          <option value="link">Link</option>
+                        </select>
+                      </div>
+                      {editIndex !== null && !enclosureData.isLink && enclosureData.originalName ? (
+                        <div className={styles.formRowEvidence}>
+                          <label>Current File:</label>
+                          <span className={styles.currentFilename}>{enclosureData.originalName}</span>
+                        </div>
+                      ) : !enclosureData.isLink ? (
+                        <div className={styles.formRowEvidence}>
+                          <label>{editIndex === null ? 'Upload File' : 'Replace File (optional):'}</label>
+                          <input
+                            type="file"
+                            name="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                          />
+                        </div>
+                      ) : (
+                        <div className={styles.formRowEvidence}>
+                          <label>Paste Link:</label>
+                          <input
+                            type="text"
+                            placeholder="Enter URL (https://...)"
+                            value={enclosureData.link || ""}
+                            onChange={e => setEnclosureData(prev => ({ ...prev, link: e.target.value }))}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    {editIndex !== null && !enclosureData.isLink && enclosureData.originalName && (
+                      <div className={styles.formRowEvidence}>
+                        <label>{`Replace File (optional):`}</label>
+                        <input
+                          type="file"
+                          name="file"
+                          ref={fileInputRef}
+                          onChange={handleFileChange}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className={styles.formButtonsReturn}>
+                    <button
+                      disabled={uploading || selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
+                      onClick={handleSave}
+                      className={styles.saveBtn1}
+                    >
+                      {uploading ? "Saving..." : editIndex === null ? "Add Enclosure" : "Save Changes"}
+                    </button>
+                    {editIndex !== null && (
+                      <button
+                        disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
+                        className={styles.saveBtn1}
+                        onClick={() => {
+                          setEditIndex(null);
+                          setEnclosureData({ returnId: "", type: "", enclosure: "" });
+                          setFile(null);
+                          if (fileInputRef.current) fileInputRef.current.value = "";
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Enclosures History section */}
+              <div className={styles.sectionBlock}>
+                <div className={styles.sectionHeading}>Enclosure History</div>
+                <table className={styles.leadsTable}>
+                  <thead>
+                    <tr>
+                      <th>Date Entered</th>
+                      <th>Narrative Id</th>
+                      <th>Type</th>
+                      <th>Description</th>
+                      <th>File Name</th>
+                      <th>Actions</th>
+                      {isCaseManager && <th style={{ width: "15%" }}>Access</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {enclosures.length > 0 ? (
+                      enclosures.map((enclosure, index) => (
+                        <tr key={index}>
+                          <td>{enclosure.dateEntered}</td>
+                          <td>{enclosure.returnId}</td>
+                          <td>{enclosure.type}</td>
+                          <td>{enclosure.enclosure}</td>
+                          <td>
+                            {enclosure.link?.trim() ? (
+                              <a
+                                href={enclosure.link.startsWith('http') ? enclosure.link : `https://${enclosure.link}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={styles.linkButton}
+                              >
+                                {enclosure.link}
+                              </a>
+                            ) : enclosure.originalName ? (
+                              <a
+                                href={enclosure.signedUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={styles.linkButton}
+                              >
+                                {enclosure.originalName}
+                              </a>
+                            ) : (
+                              <span>—</span>
+                            )}
+                          </td>
+                          <td>
+                            <div className={styles.lrTableBtn}>
+                              <button
+                                disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
+                                onClick={() => handleEdit(index)}
+                              >
+                                <img src={`${process.env.PUBLIC_URL}/Materials/edit.png`} alt="Edit Icon" className={styles.editIcon} />
+                              </button>
+                              <button
+                                disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
+                                onClick={() => requestDeleteEnclosure(index)}
+                              >
+                                <img src={`${process.env.PUBLIC_URL}/Materials/delete.png`} alt="Delete Icon" className={styles.editIcon} />
+                              </button>
+                            </div>
+                          </td>
+                          {isCaseManager && (
+                            <td>
+                              <select
+                                value={enclosure.accessLevel}
+                                onChange={e => handleAccessChange(index, e.target.value)}
+                                className={styles.accessDropdown}
+                              >
+                                <option value="Everyone">All</option>
+                                <option value="Case Manager">Case Manager</option>
+                                <option value="Case Manager and Assignees">Assignees</option>
+                              </select>
+                            </td>
+                          )}
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: 'center' }}>
+                          No Enclosures Available
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 };

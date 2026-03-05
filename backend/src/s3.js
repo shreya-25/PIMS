@@ -75,13 +75,16 @@ const s3 = new S3Client({
 });
 
 const uploadToS3 = async ({ filePath, userId, mimetype }) => {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`File not found for upload: ${filePath}`);
+  }
   const key = `${userId}/${uuid()}`;
-  const fileStream = fs.createReadStream(filePath);
+  const fileBuffer = fs.readFileSync(filePath);
 
   await s3.send(new PutObjectCommand({
     Bucket: process.env.BUCKET,
     Key: key,
-    Body: fileStream,
+    Body: fileBuffer,
     ContentType: mimetype,
   }));
   return { key };

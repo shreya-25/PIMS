@@ -1,54 +1,43 @@
-// controllers/lrVideoController.js
 const LRVideo = require("../models/LRVideo");
 const fs = require("fs");
-const path = require("path");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
+const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 
 const createLRVideo = async (req, res) => {
   try {
-    const isLink =
-      req.body.isLink === true ||
-      req.body.isLink === "true" ||
-      req.body.isLink === 1 ||
-      req.body.isLink === "1";
+    const isLink = req.body.isLink === true || req.body.isLink === "true" || req.body.isLink === 1 || req.body.isLink === "1";
 
-    // If link mode, ensure link is provided
     if (isLink && !req.body.link) {
       return res.status(400).json({ message: "Link is required when isLink is true." });
     }
 
-    let filePath = null;
-    let originalName = null;
-    let filename = null;
-    let s3Key = null;
+    let filePath = null, originalName = null, filename = null, s3Key = null;
 
-    // If not link mode and a file was actually uploaded → push to S3
     if (!isLink && req.file) {
       filePath = req.file.path;
       originalName = req.file.originalname;
       filename = req.file.filename;
 
-      const { error, key } = await uploadToS3({
-        filePath,
-        userId: req.body.caseNo,
-        mimetype: req.file.mimetype,
-      });
+      const { error, key } = await uploadToS3({ filePath, userId: req.body.caseNo, mimetype: req.file.mimetype });
       if (error) {
         if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         return res.status(500).json({ message: "S3 upload failed", error: error.message });
       }
-
       s3Key = key;
-
-      // cleanup local temp file
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     }
+
+    // Resolve ObjectId refs
+    const refs = await resolveLeadReturnRefs({
+      caseNo: req.body.caseNo,
+      caseName: req.body.caseName,
+      leadNo: req.body.leadNo,
+      enteredBy: req.body.enteredBy,
+    });
 
     const newLRVideo = new LRVideo({
       leadNo: req.body.leadNo,
       description: req.body.description,
-      assignedTo: req.body.assignedTo ? JSON.parse(req.body.assignedTo) : {},
-      assignedBy: req.body.assignedBy ? JSON.parse(req.body.assignedBy) : {},
       enteredBy: req.body.enteredBy,
       caseName: req.body.caseName,
       caseNo: req.body.caseNo,
@@ -56,45 +45,29 @@ const createLRVideo = async (req, res) => {
       enteredDate: req.body.enteredDate,
       dateVideoRecorded: req.body.dateVideoRecorded,
       videoDescription: req.body.videoDescription,
-
-      // keep if still using access control; otherwise remove
       accessLevel: req.body.accessLevel,
-
       isLink,
       link: isLink ? req.body.link : null,
-
-      filePath,       // may be null
-      originalName,   // may be null
-      filename,       // may be null
-      s3Key,          // may be null
+      filePath, originalName, filename, s3Key,
+      // ObjectId refs
+      caseId: refs.caseId,
+      leadId: refs.leadId,
+      leadReturnObjectId: refs.leadReturnObjectId,
+      enteredByUserId: refs.enteredByUserId,
     });
 
     await newLRVideo.save();
-
-    res.status(201).json({
-      message: "Video saved successfully",
-      video: newLRVideo,
-    });
+    res.status(201).json({ message: "Video saved successfully", video: newLRVideo });
   } catch (err) {
     console.error("Error saving LRVideo:", err);
     res.status(500).json({ message: "Something went wrong" });
   }
 };
 
-
-
-// **Get LREnclosure records using leadNo, leadName (description), caseNo, caseName, and leadReturnId**
 const getLRVideoByDetails = async (req, res) => {
   try {
     const { leadNo, leadName, caseNo, caseName } = req.params;
-
-    const query = {
-      leadNo: Number(leadNo),
-      description: leadName,
-      caseNo: caseNo,
-      caseName: caseName,
-    };
-
+    const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
     const lrVideos = await LRVideo.find(query);
 
     const withUrls = await Promise.all(
@@ -103,8 +76,7 @@ const getLRVideoByDetails = async (req, res) => {
         return { ...v.toObject(), signedUrl };
       })
     );
-
-    return res.status(200).json(withUrls); // 200 with [] if none
+    return res.status(200).json(withUrls);
   } catch (err) {
     console.error("Error fetching LRVideos:", err);
     res.status(500).json({ message: "Something went wrong" });
@@ -114,82 +86,35 @@ const getLRVideoByDetails = async (req, res) => {
 const updateLRVideo = async (req, res) => {
   try {
     const { id } = req.params;
-    const video = await LRVideo.findById(id);
+    const video = await LRVideo.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!video) return res.status(404).json({ message: "Video not found" });
 
-    // Parse isLink toggle from body (may be string or boolean)
-    const wantsLink =
-      req.body.isLink === true ||
-      req.body.isLink === "true" ||
-      req.body.isLink === 1 ||
-      req.body.isLink === "1";
+    const wantsLink = req.body.isLink === true || req.body.isLink === "true" || req.body.isLink === 1 || req.body.isLink === "1";
 
-    // 1) If switching to link mode
     if (wantsLink) {
-      if (!req.body.link) {
-        return res.status(400).json({ message: "Link is required when isLink is true." });
-      }
-
-      // If we had a file before, optionally clean it up in S3
-      if (video.s3Key) {
-        try {
-          await deleteFromS3(video.s3Key);
-        } catch (e) {
-          console.warn("Failed to delete old S3 object:", e?.message);
-        }
-      }
-
+      if (!req.body.link) return res.status(400).json({ message: "Link is required when isLink is true." });
+      if (video.s3Key) { try { await deleteFromS3(video.s3Key); } catch (e) { console.warn("Failed to delete old S3 object:", e?.message); } }
       video.isLink = true;
       video.link = req.body.link;
-      video.s3Key = null;
-      video.filePath = null;
-      video.filename = null;
-      video.originalName = null;
+      video.s3Key = null; video.filePath = null; video.filename = null; video.originalName = null;
     } else {
-      // 2) File mode (may or may not include a new file)
       video.isLink = false;
       video.link = null;
-
       if (req.file) {
-        // Replace existing S3 object if present
-        if (video.s3Key) {
-          try {
-            await deleteFromS3(video.s3Key);
-          } catch (e) {
-            console.warn("Failed to delete old S3 object:", e?.message);
-          }
-        }
-
-        const { error, key } = await uploadToS3({
-          filePath: req.file.path,
-          userId: video.caseNo,
-          mimetype: req.file.mimetype,
-        });
-
+        if (video.s3Key) { try { await deleteFromS3(video.s3Key); } catch (e) { console.warn("Failed to delete old S3 object:", e?.message); } }
+        const { error, key } = await uploadToS3({ filePath: req.file.path, userId: video.caseNo, mimetype: req.file.mimetype });
         if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-
-        if (error) {
-          return res.status(500).json({ message: "S3 upload failed", error: error.message });
-        }
-
+        if (error) return res.status(500).json({ message: "S3 upload failed", error: error.message });
         video.s3Key = key;
         video.originalName = req.file.originalname;
         video.filename = req.file.filename;
       }
-      // else: metadata-only update in file mode; keep existing s3Key as is
     }
 
-    // 3) Common metadata updates
-    if (typeof req.body.videoDescription !== "undefined")
-      video.videoDescription = req.body.videoDescription;
-    if (typeof req.body.dateVideoRecorded !== "undefined")
-      video.dateVideoRecorded = req.body.dateVideoRecorded;
-    if (typeof req.body.leadReturnId !== "undefined")
-      video.leadReturnId = req.body.leadReturnId;
-
-    // If you’re no longer using accessLevel, remove this line:
-    if (typeof req.body.accessLevel !== "undefined")
-      video.accessLevel = req.body.accessLevel || "Everyone";
+    if (typeof req.body.videoDescription !== "undefined") video.videoDescription = req.body.videoDescription;
+    if (typeof req.body.dateVideoRecorded !== "undefined") video.dateVideoRecorded = req.body.dateVideoRecorded;
+    if (typeof req.body.leadReturnId !== "undefined") video.leadReturnId = req.body.leadReturnId;
+    if (typeof req.body.accessLevel !== "undefined") video.accessLevel = req.body.accessLevel || "Everyone";
 
     await video.save();
     res.json({ message: "Video updated", video });
@@ -199,15 +124,16 @@ const updateLRVideo = async (req, res) => {
   }
 };
 
-  
-  // **DELETE** a video entry
 const deleteLRVideo = async (req, res) => {
   try {
     const { id } = req.params;
-    const video = await LRVideo.findByIdAndDelete(id);
+    const video = await LRVideo.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!video) return res.status(404).json({ message: "Video not found" });
 
-    if (video.s3Key) await deleteFromS3(video.s3Key);
+    video.isDeleted = true;
+    video.deletedAt = new Date();
+    video.deletedBy = req.user?.name || "Unknown";
+    await video.save();
 
     res.json({ message: "Video deleted" });
   } catch (err) {
@@ -215,6 +141,5 @@ const deleteLRVideo = async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 };
-module.exports = { createLRVideo, getLRVideoByDetails,
-    updateLRVideo,
-    deleteLRVideo, };
+
+module.exports = { createLRVideo, getLRVideoByDetails, updateLRVideo, deleteLRVideo };

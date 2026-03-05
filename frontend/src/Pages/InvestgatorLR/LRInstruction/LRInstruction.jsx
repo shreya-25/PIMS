@@ -1,4 +1,3 @@
-import FootBar from '../../../components/FootBar/FootBar';
 import React, { useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import ReactToPrint from 'react-to-print';
@@ -7,7 +6,7 @@ import { useLeadStatus } from '../../../hooks/useLeadStatus';
 
 
 import Navbar from '../../../components/Navbar/Navbar';
-import './LRInstruction.css';
+import styles from './LRInstruction.module.css';
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import api, { BASE_URL } from "../../../api";
@@ -244,8 +243,8 @@ const attachFiles = async (items, idFieldName, filesEndpoint) => {
     leadNumber: '',
     parentLeadNo: '',
     incidentNo: '',
-    subNumber: '',
-    associatedSubNumbers: [],
+    subCategory: '',
+    associatedSubCategories: [],
     assignedDate: '',
     dueDate: '',
     summary: '',
@@ -255,8 +254,8 @@ const attachFiles = async (items, idFieldName, filesEndpoint) => {
     assignedOfficer: []
   });
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [availableSubNumbers, setAvailableSubNumbers] = useState([]);
-  const [associatedSubNumbers, setAssociatedSubNumbers] = useState([]); // Selected Subnumbers
+  const [availableSubCategories, setAvailableSubCategories] = useState([]);
+  const [associatedSubCategories, setAssociatedSubCategories] = useState([]); // Selected Subcategories
   const [subDropdownOpen, setSubDropdownOpen] = useState(false);
   const handleInputChange = (field, value) => {
     setLeadData({ ...leadData, [field]: value });
@@ -398,18 +397,18 @@ console.log("isReadOnly", isReadOnly);
     <div ref={ref}>
       {/* Title with Case No and Case Name */}
       <h1 style={{ textAlign: 'center', marginBottom: '20px' }}>
-        Lead Return Report – {caseDetails.caseNo} – {caseDetails.caseName}
+        Lead Return Report - {caseDetails.caseNo} - {caseDetails.caseName}
       </h1>
       {/* The printable area (starting from the bottom-content) */}
-      <div className="bottom-content">
-        <table className="details-table">
+      <div className={styles.bottomContentLRI}>
+        <table className={styles.detailsTable}>
           <tbody>
             <tr>
               <td>Case Name:</td>
               <td>
                 <input
                   type="text"
-                  className="input-field"
+                  className={styles.inputField}
                   value={leadData.caseName || 'Main Street Murder'}
                   readOnly
                 />
@@ -420,7 +419,7 @@ console.log("isReadOnly", isReadOnly);
               <td>
                 <input
                   type="text"
-                  className="input-field"
+                  className={styles.inputField}
                   value={leadData.leadSummary}
                   readOnly
                 />
@@ -431,7 +430,7 @@ console.log("isReadOnly", isReadOnly);
               <td>
                 <input
                   type="text"
-                  className="input-field"
+                  className={styles.inputField}
                   value={leadData.assignedDate}
                   readOnly
                 />
@@ -445,321 +444,234 @@ console.log("isReadOnly", isReadOnly);
   ));
   
   return (
-    <div className="person-page">
+    <div className={styles.personPage}>
       {/* Navbar at the top */}
       <Navbar />
-      
 
-<div className="LRI_Content">
-      
-      <SideBar  activePage="LeadReview" />
+      <div className={styles.LRIContent}>
 
-       <div className="left-contentLI">
+        <SideBar activePage="LeadReview" />
 
-            <div className="top-menu1" >
-      <div className="menu-items" >
-        <span className="menu-item " onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+        <div className={styles.leftContentLI}>
 
-                  if (lead && kase) {
-                    navigate("/LeadReview", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } }} > Lead Information</span>
-                   <span className="menu-item active" >Add Lead Return</span>
-                 {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
-           <span
-              className="menu-item"
-              onClick={handleViewLeadReturn}
-              title={isGenerating ? "Preparing report…" : "View Lead Return"}
-              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-            >
-              Manage Lead Return
-            </span>
+          <div className={styles.topMenuNav}>
+            <div className={styles.menuItems}>
+              <span className={styles.menuItem} onClick={() => {
+                const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                if (lead && kase) {
+                  navigate("/LeadReview", { state: { caseDetails: kase, leadDetails: lead } });
+                }
+              }}>Lead Information</span>
+              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>Add Lead Return</span>
+              {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
+                <span
+                  className={styles.menuItem}
+                  onClick={handleViewLeadReturn}
+                  title={isGenerating ? "Preparing report..." : "View Lead Return"}
+                  style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
+                >
+                  Manage Lead Return
+                </span>
               )}
-
-            {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
-    Submit Lead Return
-  </span>
-)}
-
-  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
-   Review Lead Return
-  </span>
-)}
-
-                   <span className="menu-item" onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/ChainOfCustody", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } else {
-                    alert("Please select a case and lead first.");
-                  }
-                }}>Lead Chain of Custody</span>
-          
-                  </div>
-       </div>
-       <div className="top-menu1">
-       <div className="menu-items" style={{ fontSize: '19px' }}>
-       
-        <span className="menu-item active" style={{fontWeight: '600' }} onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Narrative
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRScratchpad')}>
-            Notes
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-
-         </div> </div>
-       <div className="caseandleadinfo">
-          <h5 className = "side-title"> 
-                <div className="ld-head">
-                           <Link to="/HomePage" className="crumb">PIMS Home</Link>
-                           <span className="sep">{" >> "}</span>
-                           <Link
-                             to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
-                             state={{ caseDetails: selectedCase }}
-                             className="crumb"
-                           >
-                             Case: {selectedCase.caseNo || ""}
-                           </Link>
-                           <span className="sep">{" >> "}</span>
-                           <Link
-                             to={"/LeadReview"}
-                             state={{ leadDetails: selectedLead }}
-                             className="crumb"
-                           >
-                             Lead: {selectedLead.leadNo || ""}
-                           </Link>
-                           <span className="sep">{" >> "}</span>
-                           <span className="crumb-current" aria-current="page">Lead Instructions</span>
-                         </div>
-             </h5>
-          <h5 className="side-title">
-  {selectedLead?.leadNo
-        ? ` Lead Status:  ${leadStatus}`
-
-    : ` ${leadStatus}`}
-</h5>
-
+              {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
+                <span className={styles.menuItem} onClick={goToViewLR}>
+                  Submit Lead Return
+                </span>
+              )}
+              {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
+                <span className={styles.menuItem} onClick={goToViewLR}>
+                  Review Lead Return
+                </span>
+              )}
+              <span className={styles.menuItem} onClick={() => {
+                const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                if (lead && kase) {
+                  navigate("/ChainOfCustody", { state: { caseDetails: kase, leadDetails: lead } });
+                } else {
+                  alert("Please select a case and lead first.");
+                }
+              }}>Lead Chain of Custody</span>
+            </div>
           </div>
 
-          
+          <div className={styles.topMenuSections}>
+            <div className={styles.menuItems} style={{ fontSize: '18px' }}>
+              <span className={`${styles.menuItem} ${styles.menuItemActive}`} onClick={() => handleNavigation('/LRInstruction')}>Instructions</span>
+              <span className={styles.menuItem} onClick={() => handleNavigation('/LRReturn')}>Narrative</span>
+              <span className={styles.menuItem} onClick={() => handleNavigation('/LRPerson')}>Person</span>
+              <span className={styles.menuItem} onClick={() => handleNavigation('/LRVehicle')}>Vehicles</span>
+              <span className={styles.menuItem} onClick={() => handleNavigation('/LREnclosures')}>Enclosures</span>
+              <span className={styles.menuItem} onClick={() => handleNavigation('/LREvidence')}>Evidence</span>
+              <span className={styles.menuItem} onClick={() => handleNavigation('/LRPictures')}>Pictures</span>
+              <span className={styles.menuItem} onClick={() => handleNavigation('/LRAudio')}>Audio</span>
+              <span className={styles.menuItem} onClick={() => handleNavigation('/LRVideo')}>Videos</span>
+              <span className={styles.menuItem} onClick={() => handleNavigation('/LRScratchpad')}>Notes</span>
+              <span className={styles.menuItem} onClick={() => handleNavigation('/LRTimeline')}>Timeline</span>
+            </div>
+          </div>
 
+          <div className={styles.caseandleadinfo}>
+            <h5 className={styles.sideTitle}>
+              <div className={styles.ldHead}>
+                <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+                <span className={styles.sep}>{" >> "}</span>
+                <Link
+                  to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+                  state={{ caseDetails: selectedCase }}
+                  className={styles.crumb}
+                >
+                  Case: {selectedCase.caseNo || ""}
+                </Link>
+                <span className={styles.sep}>{" >> "}</span>
+                <Link
+                  to={"/LeadReview"}
+                  state={{ leadDetails: selectedLead }}
+                  className={styles.crumb}
+                >
+                  Lead: {selectedLead.leadNo || ""}
+                </Link>
+                <span className={styles.sep}>{" >> "}</span>
+                <span className={styles.crumbCurrent} aria-current="page">Lead Instructions</span>
+              </div>
+            </h5>
+            <h5 className={styles.sideTitle}>
+              {selectedLead?.leadNo ? ` Lead Status:  ${leadStatus}` : ` ${leadStatus}`}
+            </h5>
+          </div>
 
-        {/* Center Section */}
-        <div className="case-header">
-          <h2 className="">LEAD INSTRUCTIONS</h2>
+          {/* Center Section */}
+          <div className={styles.caseHeader}>
+            <h2>LEAD INSTRUCTIONS</h2>
+          </div>
+
+          {/* Right Section */}
+          <div className={styles.lriContentSection}>
+
+            {(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
+              <div className={styles.addLeadSection}>
+              </div>
+            )}
+
+            <table className={styles.leadsTable}>
+              <thead>
+                <tr>
+                  <th style={{ width: "10%" }}>Lead No.</th>
+                  <th style={{ width: "10%" }}>Case No.</th>
+                  <th style={{ width: "10%" }}>Assigned By</th>
+                  <th style={{ width: "8%" }}>Assigned Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{selectedLead.leadNo}</td>
+                  <td>{leadData.caseNo}</td>
+                  <td>{leadData.assignedBy}</td>
+                  <td>{formatDate(leadData.assignedDate)}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Bottom Content */}
+            <div className={styles.bottomContentLRI}>
+              <table className={styles.detailsTable}>
+                <tbody>
+                  <tr>
+                    <td>Case Name:</td>
+                    <td>
+                      <input
+                        type="text"
+                        className={styles.inputField}
+                        value={leadData.caseName}
+                        onChange={(e) => handleInputChange('caseName', e.target.value)}
+                        placeholder=""
+                        readOnly
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Lead Log Summary:</td>
+                    <td>
+                      <input
+                        type="text"
+                        className={styles.inputField}
+                        value={leadData.description}
+                        onChange={(e) => handleInputChange('leadDescription', e.target.value)}
+                        placeholder=""
+                        readOnly
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Lead Instruction:</td>
+                    <td>
+                      <textarea
+                        className={styles.inputField}
+                        value={leadData.summary}
+                        onChange={(e) => handleInputChange('summary', e.target.value)}
+                        placeholder=""
+                        readOnly
+                      ></textarea>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Assigned Officers:</td>
+                    <td>
+                      <input
+                        type="text"
+                        className={styles.inputField}
+                        value={Array.isArray(leadData.assignedTo)
+                          ? leadData.assignedTo.map(o => typeof o === "string" ? o : o.username).join(", ")
+                          : ""}
+                        readOnly
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Lead Origin:</td>
+                    <td>
+                      <input
+                        type="text"
+                        className={styles.inputField}
+                        value={leadData.parentLeadNo}
+                        onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
+                        placeholder=""
+                        readOnly
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Subcategory:</td>
+                    <td>
+                      <input
+                        type="text"
+                        className={styles.inputField}
+                        value={leadData.subCategory || ""}
+                        readOnly
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Associated Subcategories:</td>
+                    <td>
+                      <input
+                        type="text"
+                        className={styles.inputField}
+                        value={Array.isArray(leadData.associatedSubCategories)
+                          ? leadData.associatedSubCategories.join(", ")
+                          : ""}
+                        readOnly
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
         </div>
-
-        {/* Right Section */}
-
-        <div className="LRI-content-section">
-
-      {(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") && (
-  <div className="add-lead-section">
-    {/* <div className="add-lead-section-content">
-      <h4>Click here to add a new lead</h4>
-    </div> */}
-    {/* <div className="add-lead-btn1">
-      <button
-        className="save-btn1"
-        style={{ cursor: 'pointer' }}
-        onClick={() =>
-          navigate('/createlead', {
-            state: {
-              caseDetails: selectedCase,
-              // send current lead as the “origin”
-              leadOrigin: selectedLead?.leadNo || leadData.leadNumber
-            }
-          })
-        }
-      >
-       <i className="fa-solid fa-plus"></i> Add Lead
-      </button>
-    </div> */}
-  </div>
-)}
-
-        <table className="leads-table">
-    <thead>
-      <tr>
-
-        <th style={{ width: "10%" }}>Lead No.</th>
-          <th style={{ width: "10%" }}>Case No.</th>
-          <th style={{ width: "10%" }}>Assigned By</th>
-          <th style={{ width: "8%" }}>Assigned Date</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr>
-      <td>{selectedLead.leadNo} </td>
-      <td>{leadData.caseNo}</td>
-      <td> {leadData.assignedBy} </td>
-        <td>{formatDate(leadData.assignedDate)} </td>
-
-      </tr>
-    </tbody>
-  </table>
-      {/* </div> */}
-
-       {/* Bottom Content */}
-       <div className="bottom-content-LRI">
-        <table className="details-table">
-          <tbody>
-          <tr>
-              <td>Case Name:</td>
-              <td>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={leadData.caseName} // Display selected case name or an empty string
-                  onChange={(e) => handleInputChange('caseName', e.target.value)} // Update 'caseName' in leadData
-                  placeholder=""
-                  readOnly
-    />
-              </td>
-            </tr>
-            <tr>
-              <td>Lead Log Summary:</td>
-              <td>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={leadData.description}
-                  onChange={(e) => handleInputChange('leadDescription', e.target.value)}
-                  placeholder=""
-                  readOnly
-                />
-              </td>
-            </tr>
-            <tr>
-              <td>Lead Instruction:</td>
-              <td>
-                <textarea
-                  className="input-field"
-                  value={leadData.summary}
-                  onChange={(e) => handleInputChange('summary', e.target.value)}
-                  placeholder=""
-                  readOnly
-                ></textarea>
-              </td>
-            </tr>
-              <tr>
-                <td>Assigned Officers:</td>
-                <td>
-                  <input
-                    type="text"
-                    className="input-field"
-                    value={Array.isArray(leadData.assignedTo)
-                      ? leadData.assignedTo
-                          .map(o => typeof o === "string" ? o : o.username)
-                          .join(", ")
-                      : ""}
-                    readOnly
-                  />
-                </td>
-              </tr>
-
-                 <tr>
-                <td>Lead Origin:</td>
-                <td>
-                  <input
-                    type="text"
-                    className="input-field"
-                    value={leadData.parentLeadNo}
-                    onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
-                    placeholder=""
-                  readOnly
-                  />
-                </td>
-              </tr>
-
-             <tr>
-  <td>Subnumber:</td>
-  <td>
-    <input
-      type="text"
-      className="input-field"
-      value={leadData.subNumber || ""}
-      readOnly
-    />
-  </td>
-</tr>
-<tr>
-  <td>Associated Subnumbers:</td>
-  <td>
-    <input
-      type="text"
-      className="input-field"
-      value={Array.isArray(leadData.associatedSubNumbers)
-        ? leadData.associatedSubNumbers.join(", ")
-        : ""}
-      readOnly
-    />
-  </td>
-</tr>
-
-          </tbody>
-        </table>
       </div>
-      </div>
-      {/* Action Buttons */}
-      {/* <div className="form-buttons-inst">
-        <button className="edit-btn" onClick={handleGenerateLead}>
-          Edit
-        </button>
-        <button className="next-btn" onClick={handleNextPage}>Next</button>
-        <button className="next-btn" onClick={handleNextPage}>Save</button>
-        <button className="next-btn" onClick={handleNextPage}>Cancel</button>
-
-
-      </div> */}
-     <FootBar
-        onPrevious={() => navigate(-1)} // Takes user to the last visited page
-        onNext={() => navigate("/LRReturn")} // Takes user to CM Return page
-      />
-    </div>
-    </div>
     </div>
   );
 };

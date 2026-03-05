@@ -4,7 +4,8 @@ const getAllUsernames = async (req, res) => {
   try {
     // Fetch only the username field from each user document.
      const users = await User.find()
-                            .select('-password -__v');
+                            .select('-password -__v')
+                            .lean();
     // Map the result to an array of usernames.
     // const usernames = users.map(user => user.username);
     res.status(200).json({ users });

@@ -1,8 +1,9 @@
 // routes/presenceRoutes.js
 const express = require("express");
 const Case = require("../models/case");
+const User = require("../models/userModel");
 const verifyToken = require("../middleware/authMiddleware");
-const Presence = require("../models/presence"); // if you're using the Mongo presence model I gave earlier
+const Presence = require("../models/presence");
 
 const router = express.Router();
 router.use(verifyToken);
@@ -10,17 +11,23 @@ router.use(verifyToken);
 const TTL_MS = 30_000;
 const normalize = (s) => String(s ?? "").trim();
 
-// 👇 CHANGE: room is just (caseNo, caseName) — no page dimension
 const roomKeyFor = ({ caseNo, caseName }) =>
   `caseNo=${String(caseNo)}|caseName=${normalize(caseName)}`;
 
 async function getUserRoleForCase({ caseNo, caseName, username }) {
-  const doc = await Case.findOne(
-    { caseNo, caseName, "assignedOfficers.name": username },
-    { "assignedOfficers.$": 1 }
-  ).lean();
-  if (!doc || !doc.assignedOfficers || !doc.assignedOfficers.length) return null;
-  return doc.assignedOfficers[0].role || "User";
+  const user = await User.findOne({ username: username.toLowerCase().trim() }).select("_id").lean();
+  if (!user) return null;
+
+  const doc = await Case.findOne({ caseNo, isDeleted: { $ne: true } })
+    .select("caseManagerUserIds detectiveSupervisorUserId investigatorUserIds")
+    .lean();
+  if (!doc) return null;
+
+  const uid = user._id.toString();
+  if ((doc.caseManagerUserIds || []).some(id => id?.toString() === uid)) return "Case Manager";
+  if (doc.detectiveSupervisorUserId?.toString() === uid) return "Detective Supervisor";
+  if ((doc.investigatorUserIds || []).some(id => id?.toString() === uid)) return "Investigator";
+  return null;
 }
 
 // POST /api/presence/heartbeat

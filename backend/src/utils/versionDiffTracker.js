@@ -87,22 +87,18 @@ function compareObjects(oldObj, newObj) {
     'updatedAt',
     '__v',
     'completeLeadReturnId',
-    'resultId', // MongoDB ObjectId for narratives
-    'personId', // MongoDB ObjectId for persons
-    'vehicleId', // MongoDB ObjectId for vehicles
-    'timelineId', // MongoDB ObjectId for timelines
-    'evidenceId', // MongoDB ObjectId for evidences
-    'pictureId', // MongoDB ObjectId for pictures
-    'audioId', // MongoDB ObjectId for audios
-    'videoId', // MongoDB ObjectId for videos
-    'enclosureId', // MongoDB ObjectId for enclosures
-    'scratchpadId', // MongoDB ObjectId for scratchpads
-    'enteredDate', // When record was created
-    'enteredBy', // Who created the record
-    'lastModifiedDate', // Timestamp metadata
-    'lastModifiedBy', // User metadata
-    'deletedAt', // Soft delete metadata
-    'deletedBy' // Soft delete metadata
+    'leadReturnObjectId',
+    'caseId',
+    'leadId',
+    'enteredByUserId',
+    'deletedByUserId',
+    'enteredDate',
+    'enteredBy',
+    'lastModifiedDate',
+    'lastModifiedBy',
+    'deletedAt',
+    'deletedBy',
+    'isDeleted'
   ];
 
   allKeys.forEach(key => {
@@ -193,22 +189,22 @@ function generateActivityLog(fromVersion, toVersion) {
   const activities = [];
 
   // Compare lead return results
-  if (fromVersion.leadReturnResults || toVersion.leadReturnResults) {
+  if (fromVersion.leadReturnResultIds || toVersion.leadReturnResultIds) {
     console.log('🔍 Comparing narratives...');
-    console.log('📊 From version narratives:', fromVersion.leadReturnResults?.length || 0);
-    console.log('📊 To version narratives:', toVersion.leadReturnResults?.length || 0);
+    console.log('📊 From version narratives:', fromVersion.leadReturnResultIds?.length || 0);
+    console.log('📊 To version narratives:', toVersion.leadReturnResultIds?.length || 0);
 
     // Log narrative IDs for debugging
-    if (fromVersion.leadReturnResults?.length > 0) {
-      console.log('📋 From version narrative IDs:', fromVersion.leadReturnResults.map(r => ({
+    if (fromVersion.leadReturnResultIds?.length > 0) {
+      console.log('📋 From version narrative IDs:', fromVersion.leadReturnResultIds.map(r => ({
         leadReturnId: r.leadReturnId,
         resultId: r.resultId?.toString().substring(0, 8),
         contentLength: r.leadReturnResult?.length || 0,
         contentPreview: r.leadReturnResult?.substring(0, 50) + '...'
       })));
     }
-    if (toVersion.leadReturnResults?.length > 0) {
-      console.log('📋 To version narrative IDs:', toVersion.leadReturnResults.map(r => ({
+    if (toVersion.leadReturnResultIds?.length > 0) {
+      console.log('📋 To version narrative IDs:', toVersion.leadReturnResultIds.map(r => ({
         leadReturnId: r.leadReturnId,
         resultId: r.resultId?.toString().substring(0, 8),
         contentLength: r.leadReturnResult?.length || 0,
@@ -219,8 +215,8 @@ function generateActivityLog(fromVersion, toVersion) {
     // CRITICAL FIX: Use 'leadReturnId' (stable identifier like "A", "B", "C")
     // instead of 'resultId' (MongoDB ObjectId which can change)
     const changes = compareArrays(
-      fromVersion.leadReturnResults,
-      toVersion.leadReturnResults,
+      fromVersion.leadReturnResultIds,
+      toVersion.leadReturnResultIds,
       'leadReturnId', // Changed from 'resultId' to 'leadReturnId'
       'leadReturnResult'
     );
@@ -327,11 +323,11 @@ function generateActivityLog(fromVersion, toVersion) {
   }
 
   // Compare persons
-  if (fromVersion.persons || toVersion.persons) {
+  if (fromVersion.personIds || toVersion.personIds) {
     const changes = compareArrays(
-      fromVersion.persons,
-      toVersion.persons,
-      'personId',
+      fromVersion.personIds,
+      toVersion.personIds,
+      '_id',
       'firstName'
     );
 
@@ -378,11 +374,11 @@ function generateActivityLog(fromVersion, toVersion) {
   }
 
   // Compare vehicles
-  if (fromVersion.vehicles || toVersion.vehicles) {
+  if (fromVersion.vehicleIds || toVersion.vehicleIds) {
     const changes = compareArrays(
-      fromVersion.vehicles,
-      toVersion.vehicles,
-      'vehicleId',
+      fromVersion.vehicleIds,
+      toVersion.vehicleIds,
+      '_id',
       'vin'
     );
 
@@ -422,11 +418,11 @@ function generateActivityLog(fromVersion, toVersion) {
   }
 
   // Compare timeline events
-  if (fromVersion.timelines || toVersion.timelines) {
+  if (fromVersion.timelineIds || toVersion.timelineIds) {
     const changes = compareArrays(
-      fromVersion.timelines,
-      toVersion.timelines,
-      'timelineId',
+      fromVersion.timelineIds,
+      toVersion.timelineIds,
+      '_id',
       'eventDescription'
     );
 
@@ -466,11 +462,11 @@ function generateActivityLog(fromVersion, toVersion) {
   }
 
   // Compare evidence
-  if (fromVersion.evidences || toVersion.evidences) {
+  if (fromVersion.evidenceIds || toVersion.evidenceIds) {
     const changes = compareArrays(
-      fromVersion.evidences,
-      toVersion.evidences,
-      'evidenceId',
+      fromVersion.evidenceIds,
+      toVersion.evidenceIds,
+      '_id',
       'evidenceDescription'
     );
 
@@ -512,11 +508,11 @@ function generateActivityLog(fromVersion, toVersion) {
   }
 
   // Compare pictures
-  if (fromVersion.pictures || toVersion.pictures) {
+  if (fromVersion.pictureIds || toVersion.pictureIds) {
     const changes = compareArrays(
-      fromVersion.pictures,
-      toVersion.pictures,
-      'pictureId',
+      fromVersion.pictureIds,
+      toVersion.pictureIds,
+      '_id',
       'pictureDescription'
     );
 
@@ -558,11 +554,11 @@ function generateActivityLog(fromVersion, toVersion) {
   }
 
   // Compare audio
-  if (fromVersion.audios || toVersion.audios) {
+  if (fromVersion.audioIds || toVersion.audioIds) {
     const changes = compareArrays(
-      fromVersion.audios,
-      toVersion.audios,
-      'audioId',
+      fromVersion.audioIds,
+      toVersion.audioIds,
+      '_id',
       'audioDescription'
     );
 
@@ -604,11 +600,11 @@ function generateActivityLog(fromVersion, toVersion) {
   }
 
   // Compare videos
-  if (fromVersion.videos || toVersion.videos) {
+  if (fromVersion.videoIds || toVersion.videoIds) {
     const changes = compareArrays(
-      fromVersion.videos,
-      toVersion.videos,
-      'videoId',
+      fromVersion.videoIds,
+      toVersion.videoIds,
+      '_id',
       'videoDescription'
     );
 
@@ -650,11 +646,11 @@ function generateActivityLog(fromVersion, toVersion) {
   }
 
   // Compare enclosures
-  if (fromVersion.enclosures || toVersion.enclosures) {
+  if (fromVersion.enclosureIds || toVersion.enclosureIds) {
     const changes = compareArrays(
-      fromVersion.enclosures,
-      toVersion.enclosures,
-      'enclosureId',
+      fromVersion.enclosureIds,
+      toVersion.enclosureIds,
+      '_id',
       'enclosureDescription'
     );
 
@@ -696,11 +692,11 @@ function generateActivityLog(fromVersion, toVersion) {
   }
 
   // Compare scratchpads
-  if (fromVersion.scratchpads || toVersion.scratchpads) {
+  if (fromVersion.scratchpadIds || toVersion.scratchpadIds) {
     const changes = compareArrays(
-      fromVersion.scratchpads,
-      toVersion.scratchpads,
-      'scratchpadId',
+      fromVersion.scratchpadIds,
+      toVersion.scratchpadIds,
+      '_id',
       'text'
     );
 

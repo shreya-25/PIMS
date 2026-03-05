@@ -1,7 +1,5 @@
 import Navbar from "../../../components/Navbar/Navbar";
-import "./LRPictures.css";
-import FootBar from '../../../components/FootBar/FootBar';
-import Comment from "../../../components/Comment/Comment";
+import styles from './LRPictures.module.css';
 import axios from "axios";
 import { CaseContext } from "../../CaseContext";
 import React, { useContext, useState, useEffect, useRef} from 'react';
@@ -766,542 +764,309 @@ const handleAccessChange = async (idx, newAccessLevel) => {
 
 
   return (
-    <div className="lrpictures-container">
-      {/* Navbar */}
+    <div className={styles.evidencePage}>
       <Navbar />
       <AlertModal
-                isOpen={alertOpen}
-                title="Notification"
-                message={alertMessage}
-                onConfirm={() => setAlertOpen(false)}
-                onClose={()   => setAlertOpen(false)}
-              />
-
-    <AlertModal
-  isOpen={confirmOpen}
-  title="Confirm Deletion"
-  message="Are you sure you want to delete this record?"
-  onConfirm={performDeletePicture}
-  onClose={() => {
-    setConfirmOpen(false);
-    setPendingDeleteIndex(null);
-  }}
-/>
-
-
-
-      {/* Top Menu */}
-      {/* <div className="top-menu">
-        <div className="menu-items">
-          <span className="menu-item" onClick={() => handleNavigation("/LRInstruction")}>Instructions</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRReturn")}>Returns</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRPerson")}>Person</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRVehicle")}>Vehicles</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LREnclosures")}>Enclosures</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LREvidence")}>Evidence</span>
-          <span className="menu-item active" onClick={() => handleNavigation("/LRPictures")}>Pictures</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRAudio")}>Audio</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRVideos")}>Videos</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRScratchpad")}>Scratchpad</span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRFinish")}>Finish</span>
-        </div>
-      </div> */}
-   
-
-      <div className="LRI_Content">
-      {/* <div className="sideitem">
-       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-       <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
-        </li>
-        {caseDropdownOpen && (
-      <ul >
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>  
-          
-
-
-                  <li
-  className="sidebar-item"
-  onClick={() =>
-    selectedCase.role === "Investigator"
-      ? navigate("/Investigator")
-      : navigate("/CasePageManager")
-  }
->
-Case Page
-</li>
-
-
-            {selectedCase.role !== "Investigator" && (
-<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-         
-              {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
-            </li>)}
-      
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-
-            </ul>
-        )}
-          <li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
-          </li>
-        {leadDropdownOpen && (
-          <ul>
-              <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-              View Lead Chain of Custody
-            </li>
-             )}
-          </ul>
-
-            )}
-
-                </div> */}
-                  <SideBar  activePage="LeadReview" />
-                <div className="left-contentLI">
-
-                       <div className="top-menu1">
-      <div className="menu-items" >
-        <span className="menu-item " onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/LeadReview", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } }} > Lead Information</span>
-                   <span className="menu-item active" >Add Lead Return</span>
-                    {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
-           <span
-              className="menu-item"
-              onClick={handleViewLeadReturn}
-              title={isGenerating ? "Preparing report…" : "View Lead Return"}
-              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-            >
-              Manage Lead Return
-            </span>
-              )}
-
-            {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
-    Submit Lead Return
-  </span>
-)}
-
-  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-  <span className="menu-item" onClick={goToViewLR}>
-   Review Lead Return
-  </span>
-)}
-
-
-                   <span className="menu-item" onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/ChainOfCustody", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } else {
-                    setAlertMessage("Please select a case and lead first.");
-                      setAlertOpen(true);
-                  }
-                }}>Lead Chain of Custody</span>
-          
-                  </div>
-        {/* <div className="menu-items">
-      
-        <span className="menu-item active" onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRReturn')}>
-            Returns
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRScratchpad')}>
-            Scratchpad
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span>
-         </div> */}
-       </div>
-                <div className="top-menu1">
-       <div className="menu-items" style={{ fontSize: '19px' }}>
-       
-        <span className="menu-item" style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Narrative
-          </span>
-          <span className="menu-item " style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className="menu-item " style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className="menu-item " style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className="menu-item " style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className="menu-item active" style={{fontWeight: '600' }}  onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRScratchpad')}>
-            Notes
-          </span>
-          <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          {/* <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span> */}
-         </div> </div>
-                {/* <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
-          <h5 className="side-title">
-  {selectedLead?.leadNo
-    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
-    : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
-</h5>
-
-          </div> */}
-               <div className="caseandleadinfo">
-          <h5 className = "side-title"> 
-           <div className="ld-head">
-                                      <Link to="/HomePage" className="crumb">PIMS Home</Link>
-                                      <span className="sep">{" >> "}</span>
-                                      <Link
-                                        to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
-                                        state={{ caseDetails: selectedCase }}
-                                        className="crumb"
-                                      >
-                                        Case: {selectedCase.caseNo || ""}
-                                      </Link>
-                                      <span className="sep">{" >> "}</span>
-                                      <Link
-                                        to={"/LeadReview"}
-                                        state={{ leadDetails: selectedLead }}
-                                        className="crumb"
-                                      >
-                                        Lead: {selectedLead.leadNo || ""}
-                                      </Link>
-                                      <span className="sep">{" >> "}</span>
-                                      <span className="crumb-current" aria-current="page">Lead Pictures</span>
-                                    </div>
-             </h5>
-          <h5 className="side-title">
-  {selectedLead?.leadNo
-        ? ` Lead Status:  ${status}`
-    : ` ${leadStatus}`}
-</h5>
-
-          </div>
-                  
-
-        {/* Center Section */}
-        <div className="case-header">
-          <h2 className="">PICTURES INFORMATION</h2>
-        </div>
-
-        <div className = "LRI-content-section">
-
-<div className = "content-subsection">
-
-        {/* Picture Form */}
-        <div className = "timeline-form-sec">
-        <div className="picture-form">
-          <div className="form-row-pic">
-            <label  className="evidence-head">Date Picture Taken*</label>
-            <input
-              type="date"
-              value={pictureData.datePictureTaken}
-               className="evidence-head"
-              onChange={(e) => handleInputChange("datePictureTaken", e.target.value)}
-            />
-          </div>
-          <div className="form-row-pic">
-            <label className="evidence-head">Narrative Id*</label>
-            <select
-              value={pictureData.leadReturnId}
-              className="evidence-head"
-              onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
-            >
-              <option value="">Select Id</option>
-              {narrativeIds.map(id => (
-                <option key={id} value={id}>{id}</option>
-              ))}
-            </select>
-
-          </div>
-          <div className="form-row-pic">
-            <label  className="evidence-head">Description*</label>
-            <textarea
-              value={pictureData.description}
-               className="evidence-head"
-              onChange={(e) => handleInputChange("description", e.target.value)}
-            ></textarea>
-          </div>
-        {/* … above your “Upload Image” row … */}
-<div className="form-row-pic">
-  <label>Upload Type</label>
-  <select
-  value={pictureData.isLink ? "link" : "file"}
-  onChange={handleUploadTypeChange}
->
-  <option value="file">File</option>
-  <option value="link">Link</option>
-</select>
-</div>
-
-{/* If editing a file‐upload entry, show current filename */}
-{isEditing && !pictureData.isLink && pictureData.originalName && (
-  <div className="form-row-pic">
-    <label>Current File:</label>
-    <span className="current-filename">{pictureData.originalName}</span>
-  </div>
-)}
-
-{/* File vs Link input */}
-{!pictureData.isLink ? (
-  <div className="form-row-pic">
-    <label>{isEditing ? "Replace Image (optional)" : "Upload Image"}</label>
-    <input
-      type="file"
-      accept="image/*"
-      ref={fileInputRef}
-      onChange={handleFileChange}
-    />
-  </div>
-) : (
-  <div className="form-row-pic">
-    <label>Paste Link:</label>
-    <input
-      type="text"
-      placeholder="https://..."
-      value={pictureData.link}
-      onChange={e =>
-        setPictureData(prev => ({ ...prev, link: e.target.value }))
-      }
-    />
-  </div>
-)}
-
-        </div>
-        <div className="form-buttons">
-        <div className="form-buttons">
-  <button
-    disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
-    className="save-btn1"
-    onClick={isEditing ? handleUpdatePicture : handleAddPicture}
-  >
-    {isEditing ? "Update Picture" : "Add Picture"}
-  </button>
-
-  {isEditing && (
-    <button
-      disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
-      className="save-btn1"
-      onClick={() => {
-        // Cancel editing & reset form
-        setIsEditing(false);
-        setEditingIndex(null);
-        setPictureData({
-          datePictureTaken: "",
-          leadReturnId:     "",
-          description:      "",
-          image:            "",
-          filename:         "",
-          link:             "",
-          isLink:           false
-        });
-        setFile(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-      }}
-    >
-      Cancel
-    </button>
-  )}
-</div>
-
-        </div>
-        {/* Uploaded Pictures Preview */}
-        <div className="uploaded-pictures">
-          {/* <h4 className="evidence-head">Uploaded Pictures</h4> */}
-          <div className="pictures-gallery">
-            {pictures.map((picture, index) => (
-              <div key={index} className="picture-card">
-                <img src={picture.image} alt={`Uploaded ${index + 1}`} className="uploaded-image" />
-                <p className="evidence-head">{picture.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-        </div>
-
-
-           {/* Pictures Table */}
-           <table className="leads-table">
-          <thead>
-            <tr>
-              <th>Date Entered</th>
-              <th>Narrative Id </th>
-              {/* <th>Date Picture Taken</th> */}
-              <th>File Name</th>
-              <th>Description</th>
-              <th>Actions</th>
-              {isCaseManager && (
-              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
-            )}
-            </tr>
-          </thead>
-          <tbody>
-            {pictures.length > 0 ? pictures.map((picture, index) => (
-              <tr key={index}>
-                <td>{picture.dateEntered}</td>
-                <td>{picture.returnId}</td>
-                {/* <td>{picture.datePictureTaken}</td> */}
-                
-                 <td>
-  {picture.link ? (
-    // if it was saved as a URL
-    <a
-      href={picture.link}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="link-button"
-    >
-      {picture.link}
-    </a>
-  ) : (
-    // otherwise it’s a file on your server
-    <a
-      href={picture.link ? picture.link : picture.image}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="link-button"
-    >
-      {picture.originalName}
-    </a>
-  )}
-</td>
-
-                <td>{picture.description}</td>
-                <td>
-        <button
-          disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
-          onClick={() => handleEditPicture(index)}
-        >
-          <img src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
-               alt="Edit" className="edit-icon" />
-        </button>
-        <button
-          disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
-          onClick={() => requestDeletePicture(index)}
-        >
-          <img src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
-               alt="Delete" className="edit-icon" />
-        </button>
-      </td>
-                {isCaseManager && (
-          <td>
-            <select
-              value={picture.accessLevel}
-              onChange={e => handleAccessChange(index, e.target.value)}
-            >
-              <option value="Everyone">All</option>
-              <option value="Case Manager">Case Manager</option>
-              <option value="Case Manager and Assignees">Assignees</option>
-            </select>
-          </td>
-        )}
-      </tr>
-       )) : (
-        <tr>
-          <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign:'center' }}>
-            No Pictures Available
-          </td>
-        </tr>
-      )}
-          </tbody>
-        </table>
-               {/* {selectedLead?.leadStatus !== "Completed" && !isCaseManager && (
-  <div className="form-buttons-finish">
-    <h4> Click here to submit the lead</h4>
-    <button
-      disabled={selectedLead?.leadStatus === "In Review"}
-      className="save-btn1"
-      onClick={handleSubmitReport}
-    >
-      Submit 
-    </button>
-  </div>
-)} */}
-
-        {/* <Comment tag= "Pictures"/> */}
-       </div>
-    </div>
-    
-      <FootBar
-        onPrevious={() => navigate(-1)} // Takes user to the last visited page
-        onNext={() => navigate("/LRAudio")} // Takes user to CM Return page
+        isOpen={alertOpen}
+        title="Notification"
+        message={alertMessage}
+        onConfirm={() => setAlertOpen(false)}
+        onClose={() => setAlertOpen(false)}
       />
-    </div>
-    </div>
+      <AlertModal
+        isOpen={confirmOpen}
+        title="Confirm Deletion"
+        message="Are you sure you want to delete this record?"
+        onConfirm={performDeletePicture}
+        onClose={() => {
+          setConfirmOpen(false);
+          setPendingDeleteIndex(null);
+        }}
+      />
+
+      <div className={styles.LRIContent}>
+        <SideBar activePage="LeadReview" />
+        <div className={styles.leftContentLI}>
+
+          <div className={styles.topMenuNav}>
+            <div className={styles.menuItems}>
+              <span className={styles.menuItem} onClick={() => {
+                const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                if (lead && kase) {
+                  navigate("/LeadReview", { state: { caseDetails: kase, leadDetails: lead } });
+                }
+              }}>Lead Information</span>
+              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>Add Lead Return</span>
+              {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
+                <span
+                  className={styles.menuItem}
+                  onClick={handleViewLeadReturn}
+                  title={isGenerating ? "Preparing report..." : "View Lead Return"}
+                  style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
+                >
+                  Manage Lead Return
+                </span>
+              )}
+              {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
+                <span className={styles.menuItem} onClick={goToViewLR}>Submit Lead Return</span>
+              )}
+              {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
+                <span className={styles.menuItem} onClick={goToViewLR}>Review Lead Return</span>
+              )}
+              <span className={styles.menuItem} onClick={() => {
+                const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                if (lead && kase) {
+                  navigate("/ChainOfCustody", { state: { caseDetails: kase, leadDetails: lead } });
+                } else {
+                  setAlertMessage("Please select a case and lead first.");
+                  setAlertOpen(true);
+                }
+              }}>Lead Chain of Custody</span>
+            </div>
+          </div>
+
+          <div className={styles.topMenuSections}>
+            <div className={styles.menuItems} style={{ fontSize: '19px' }}>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>Instructions</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>Narrative</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')}>Person</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRVehicle')}>Vehicles</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LREnclosures')}>Enclosures</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LREvidence')}>Evidence</span>
+              <span className={`${styles.menuItem} ${styles.menuItemActive}`} style={{ fontWeight: '600' }} onClick={() => handleNavigation('/LRPictures')}>Pictures</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRAudio')}>Audio</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRVideo')}>Videos</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRScratchpad')}>Notes</span>
+              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRTimeline')}>Timeline</span>
+            </div>
+          </div>
+
+          <div className={styles.caseandleadinfo}>
+            <h5 className={styles.sideTitle}>
+              <div className={styles.ldHead}>
+                <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+                <span className={styles.sep}>{" >> "}</span>
+                <Link
+                  to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+                  state={{ caseDetails: selectedCase }}
+                  className={styles.crumb}
+                >
+                  Case: {selectedCase.caseNo || ""}
+                </Link>
+                <span className={styles.sep}>{" >> "}</span>
+                <Link to="/LeadReview" state={{ leadDetails: selectedLead }} className={styles.crumb}>
+                  Lead: {selectedLead.leadNo || ""}
+                </Link>
+                <span className={styles.sep}>{" >> "}</span>
+                <span className={styles.crumbCurrent} aria-current="page">Lead Pictures</span>
+              </div>
+            </h5>
+            <h5 className={styles.sideTitle}>
+              {selectedLead?.leadNo ? ` Lead Status:  ${status}` : ` ${leadStatus}`}
+            </h5>
+          </div>
+
+          <div className={styles.caseHeader}>
+            <h2>PICTURES INFORMATION</h2>
+          </div>
+
+          <div className={styles.lriContentSection}>
+            <div className={styles.contentSubsection}>
+
+              {/* Picture Form */}
+              <div className={styles.sectionBlock}>
+                <div className={styles.sectionHeading}>Picture Entry</div>
+                <div className={styles.LREnteringContentBox}>
+                  <div className={styles.evidenceForm}>
+                    <div className={styles.formRowPair}>
+                      <div className={styles.formRowEvidence}>
+                        <label>Narrative Id*</label>
+                        <select
+                          value={pictureData.leadReturnId}
+                          onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
+                        >
+                          <option value="">Select Id</option>
+                          {narrativeIds.map(id => (
+                            <option key={id} value={id}>{id}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className={styles.formRowEvidence}>
+                        <label>Date Picture Taken*</label>
+                        <input
+                          type="date"
+                          value={pictureData.datePictureTaken}
+                          onChange={(e) => handleInputChange("datePictureTaken", e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.formRowEvidence}>
+                      <label>Description*</label>
+                      <textarea
+                        value={pictureData.description}
+                        onChange={(e) => handleInputChange("description", e.target.value)}
+                      />
+                    </div>
+
+                    <div className={styles.formRowPair}>
+                      <div className={styles.formRowEvidence}>
+                        <label>Upload Type</label>
+                        <select
+                          value={pictureData.isLink ? "link" : "file"}
+                          onChange={handleUploadTypeChange}
+                        >
+                          <option value="file">File</option>
+                          <option value="link">Link</option>
+                        </select>
+                      </div>
+                      <div className={styles.formRowEvidence}>
+                        {isEditing && !pictureData.isLink && pictureData.originalName ? (
+                          <>
+                            <label>Current File:</label>
+                            <span className={styles.currentFilename}>{pictureData.originalName}</span>
+                          </>
+                        ) : !pictureData.isLink ? (
+                          <>
+                            <label>{isEditing ? "Replace Image (optional)" : "Upload Image"}</label>
+                            <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} />
+                          </>
+                        ) : (
+                          <>
+                            <label>Paste Link</label>
+                            <input
+                              type="text"
+                              placeholder="https://..."
+                              value={pictureData.link}
+                              onChange={e => setPictureData(prev => ({ ...prev, link: e.target.value }))}
+                            />
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {isEditing && !pictureData.isLink && pictureData.originalName && (
+                      <div className={styles.formRowEvidence}>
+                        <label>Replace Image (optional)</label>
+                        <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className={styles.formButtonsReturn}>
+                    <button
+                      disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
+                      className={styles.saveBtn1}
+                      onClick={isEditing ? handleUpdatePicture : handleAddPicture}
+                    >
+                      {isEditing ? "Update Picture" : "Add Picture"}
+                    </button>
+                    {isEditing && (
+                      <button
+                        disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
+                        className={styles.saveBtn1}
+                        onClick={() => {
+                          setIsEditing(false);
+                          setEditingIndex(null);
+                          setPictureData({
+                            datePictureTaken: "",
+                            leadReturnId: "",
+                            description: "",
+                            image: "",
+                            filename: "",
+                            link: "",
+                            isLink: false
+                          });
+                          setFile(null);
+                          if (fileInputRef.current) fileInputRef.current.value = "";
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Pictures Table */}
+              <div className={styles.sectionBlock}>
+                <div className={styles.sectionHeading}>Pictures History</div>
+                <table className={styles.leadsTable}>
+                  <thead>
+                    <tr>
+                      <th>Date Entered</th>
+                      <th>Narrative Id</th>
+                      <th>File Name</th>
+                      <th>Description</th>
+                      <th>Actions</th>
+                      {isCaseManager && <th style={{ width: "15%" }}>Access</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pictures.length > 0 ? pictures.map((picture, index) => (
+                      <tr key={index}>
+                        <td>{picture.dateEntered}</td>
+                        <td>{picture.returnId}</td>
+                        <td>
+                          {picture.link ? (
+                            <a href={picture.link} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
+                              {picture.link}
+                            </a>
+                          ) : (
+                            <a href={picture.image} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
+                              {picture.originalName}
+                            </a>
+                          )}
+                        </td>
+                        <td>{picture.description}</td>
+                        <td>
+                          <div className={styles.lrTableBtn}>
+                            <button
+                              disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
+                              onClick={() => handleEditPicture(index)}
+                            >
+                              <img src={`${process.env.PUBLIC_URL}/Materials/edit.png`} alt="Edit" className={styles.editIcon} />
+                            </button>
+                            <button
+                              disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
+                              onClick={() => requestDeletePicture(index)}
+                            >
+                              <img src={`${process.env.PUBLIC_URL}/Materials/delete.png`} alt="Delete" className={styles.editIcon} />
+                            </button>
+                          </div>
+                        </td>
+                        {isCaseManager && (
+                          <td>
+                            <select
+                              value={picture.accessLevel}
+                              onChange={e => handleAccessChange(index, e.target.value)}
+                              className={styles.accessDropdown}
+                            >
+                              <option value="Everyone">All</option>
+                              <option value="Case Manager">Case Manager</option>
+                              <option value="Case Manager and Assignees">Assignees</option>
+                            </select>
+                          </td>
+                        )}
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign: 'center' }}>
+                          No Pictures Available
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
   );
 };
