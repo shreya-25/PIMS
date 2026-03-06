@@ -124,7 +124,7 @@
   align-items: center;
   justify-content: space-between;
   padding-left: 50px;
- 
+
 }
 .top-controlsMP {
   padding: 1%;
@@ -137,27 +137,20 @@
   gap: 20px;
 }
 
-.search-container 
+.search-container
 {
   width: 100%;
   height: 20%;
 }
-/* .slidebartopcontrolMP
-{
-  width: 80%;
-  min-height: 20%;
-} */
 
 .custom-add-case-btn1 {
-  background-color: rgb(41, 41, 139); 
-  /* background-color: rgba(25, 58, 73, 0.795); */
-  color: white; 
+  background-color: rgb(41, 41, 139);
+  color: white;
   border: none;
   font-size: 20px;
 }
 
 .add-case-button:hover {
-  /* background-color: rgba(137, 51, 51, 0.705);  */
   background-color: rgba(25, 58, 73, 0.795);
 }
 
@@ -195,10 +188,8 @@
  display: flex;
  flex-direction: column;
     align-items: center;
-    /* height: calc(100vh - 10px); */
     height: auto;
     width: 99%;
-    /* padding-bottom: 80px;  */
     box-sizing: border-box;
     margin-top: 20px;
   }
@@ -207,10 +198,8 @@
 .stats-bar {
   display: flex;
   justify-content: space-around;
-  background-color: rgb(41, 41, 139); 
-  /* padding: 8px; */
+  background-color: rgb(41, 41, 139);
   border-radius: 5px;
-  /* margin-bottom: 20px; */
   font-size: 18px;
   width:95%;
   align-items: center;
@@ -221,16 +210,10 @@
 .stats-bar {
   display: flex;
   justify-content: space-around;
-  /* background-color: rgba(22, 83, 87, 0.88);  */
-  /* background-color: #0D8790; */
   padding: 10px;
   border-radius: 5px;
-  /* margin-bottom: 8px; */
   font-size: 14px;
-  /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
-  /* width: 80%; */
   align-items: center;
-  /* margin-top: 8px; */
   font-size: 18px;
 }
 
@@ -246,7 +229,6 @@
 
 /* Active Tab */
 .stats-bar .active {
-  /* background-color: #46494bbe; */
   color: white;
   font-weight: bold;
   padding: 5px 10px;
@@ -269,13 +251,11 @@
 /* Hover effect for header items */
 .stats-bar .hoverable:hover {
   background-color: rgb(96, 96, 179); /* Darker grey for hover effect */
-  /* background-color: #54575873; */
 }
 
 /* Active tab styling */
 .stats-bar .active {
   background-color: rgb(96, 96, 179);
-  /* background-color: #46494bbe;  */
   color: white; /* Consistent white text */
   text-decoration: none; /* Remove underline */
   font-weight: bold;
@@ -289,16 +269,29 @@
   text-align: center; /* Center-align text */
 }
 
-/* @media (max-width: 768px) {
-  .stats-bar {
-    flex-direction: column;
-  }
+/* CSS Modules: hoverable and active as standalone classes (used via template literals) */
+.hoverable {
+  cursor: pointer;
+  font-weight: bold;
+  color: white;
+  text-align: center;
+  padding: 5px 10px;
+  border-radius: 5px;
+  transition: all 0.3s ease-in-out;
+  font-size: 18px;
+}
 
-  .stats-bar span {
-    flex: 1 1 100%;
-    margin-bottom: 10px;
-  }
-} */
+.hoverable:hover {
+  background-color: rgb(96, 96, 179);
+}
+
+.active {
+  background-color: rgb(96, 96, 179);
+  color: white;
+  font-weight: bold;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
 
 /* Content sections container */
 .content-section {
@@ -313,7 +306,6 @@
   height: 20px;
   width: 20px;
   filter: brightness(0) saturate(100%);
-  /* …then make it semi-transparent to look grey */
   opacity: 0.6;
 }
 .filter-sort-icons
@@ -322,20 +314,6 @@
   gap: 10px;
 }
 
-/* @media (max-width: 600px) {
-  .case-item,
-  .lead-item {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .case-actions,
-  .lead-item button {
-    display: flex; 
-  gap: 10px; 
-  justify-content: flex-start; 
-  }
-} */
 /* Case and lead items */
 .lead-item {
   display: flex;
@@ -356,87 +334,18 @@
 }
 
 .column-header {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start; /* so “Case No.” and the icons all line up on the left */
-  gap: 4px;               /* optional spacing between the title and the icons */
+  position: relative;
 }
 
-/* .column-controls {
-  display: flex;
-  flex-direction: column; 
-  gap: 4px;             
+/* column-header1 is used in JSX for th elements */
+.column-header1 {
+  position: relative;
 }
-
-.icon-button {
-  background: none;
-  border: none;
-  padding: 4px;
-} */
-
 
 /* Hover effect for case and lead items */
 .lead-item:hover {
   background-color: rgba(22, 83, 87, 0.03); /* Light greenish tint for hover */
 }
-
-/* @media (max-width: 930px) {
-  .leads-table {
-    font-size: 0.8rem;
-  }
-  .stats-bar
-  {
-    width: 90%;
-  }
-} */
-
-/* Mobile View - Stack Data */
-/* @media (max-width: 870px) {
-  .leads-table thead {
-    display: none; 
-  }
-
-  .leads-table tr {
-    display: block;
-    border: 1px solid #ddd;
-    margin-bottom: 10px;
-    padding: 10px;
-  }
-
-  .leads-table td {
-    display: flex;
-    justify-content: space-between;
-    padding: 6px;
-    font-size: 12px;
-  }
-
-  .leads-table td::before {
-    content: attr(data-label);
-    font-weight: bold;
-  }
-
-  .btn-view, .btn-accept {
-    width: 100%;
-  }
-
-  .pending-lr-table tr:nth-child(even) {
-    background-color: #f9f9f9;
-  }
-  
-  .pending-lr-table th:nth-child(1), 
-  .pending-lr-table td:nth-child(1) {
-    min-width: 50px; 
-    max-width: 50px;
-  }
-  
-   .pending-lr-table th:nth-child(3), 
-  .pending-lr-table td:nth-child(3) {
-    min-width: 50px; 
-    max-width: 50px;
-  }
-  
-} */
-
 
 .table-scroll-container {
   max-height: 900px;      /* adjust height */
@@ -447,7 +356,6 @@
 .table-scroll-container table thead th {
   position: sticky;
   top: 0;
-  /* z-index: 1; */
 }
 
 .table-scroll-container table {
@@ -461,7 +369,7 @@
   width: 100%;
   border-collapse: collapse;
   margin-top: 8px;
-  table-layout: fixed; 
+  table-layout: fixed;
 }
 
 .leads-table th,
@@ -482,59 +390,55 @@
 .leads-table th {
   background-color: #f2f2f2;
   font-weight: bold;
-  min-width: 220px;
-  max-width: 220px;
-  min-height: 300px;
 }
 
 .leads-table tr:nth-child(even) {
   background-color: #f9f9f9;
 }
 
-.leads-table th:nth-child(1), 
+.leads-table th:nth-child(1),
 .leads-table td:nth-child(1) {
   min-width: 5px; /* Lead Name */
   max-width: 5px;
 }
 
-.leads-table th:nth-child(2), 
+.leads-table th:nth-child(2),
 .leads-table td:nth-child(2) {
   min-width: 250px; /* Lead Name */
   max-width: 250px;
 }
 
-.leads-table th:nth-child(3), 
+.leads-table th:nth-child(3),
 .leads-table td:nth-child(3) {
   min-width: 70px; /* Due Date */
   max-width: 70px;
 }
 
-.leads-table th:nth-child(4), 
+.leads-table th:nth-child(4),
 .leads-table td:nth-child(4) {
   min-width: 40px; /* Priority */
   max-width: 40px;
 }
 
-.leads-table th:nth-child(5), 
+.leads-table th:nth-child(5),
 .leads-table td:nth-child(5) {
   min-width: 40px; /* Remaining Days */
   max-width: 40px;
 }
 
-.leads-table th:nth-child(6), 
+.leads-table th:nth-child(6),
 .leads-table td:nth-child(6) {
   min-width: 50px; /* Flags */
   max-width: 50px;
 }
 
-.leads-table th:nth-child(7), 
+.leads-table th:nth-child(7),
 .leads-table td:nth-child(7) {
   min-width: 190px; /* Assigned Officers */
   max-width: 190px;
 }
 
 .leads-table td:last-child {
-  /* width: auto; */
   min-width: 50px; /* Flags */
   max-width: 50px;
 
@@ -543,7 +447,6 @@
 .btn-sec-HP
 {
   display: flex;
-  /* justify-content: center; */
 }
 
 .manage-btn, .case-close-btn
@@ -562,22 +465,13 @@
 
 
 
-/* .leads-table td:last-child {
-  text-align: center;
-  display: flex;
-  flex-direction: column; 
-  align-items: center; 
-  gap: 10px;
-  padding: 10px;
-} */
-
 /*  Ongoing case table  */
 /* General Table Styling */
 .ongoing-case-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 20px;
-  table-layout: fixed; 
+  table-layout: fixed;
 }
 
 .ongoing-case-table th,
@@ -600,19 +494,19 @@
   background-color: #f9f9f9;
 }
 
-.ongoing-case-table th:nth-child(1), 
+.ongoing-case-table th:nth-child(1),
 .ongoing-case-table td:nth-child(1) {
   min-width: 30px; /* Lead Name */
   max-width: 30px;
 }
 
-.ongoing-case-table th:nth-child(2), 
+.ongoing-case-table th:nth-child(2),
 .ongoing-case-table td:nth-child(2) {
   min-width: 250px; /* Lead Name */
   max-width: 250px;
 }
 
-.ongoing-case-table th:nth-child(3), 
+.ongoing-case-table th:nth-child(3),
 .ongoing-case-table td:nth-child(3) {
   min-width: 50px; /* Due Date */
   max-width: 50px;
@@ -671,15 +565,15 @@
   background-color: #f9f9f9;
 }
 
-.pending-lr-table th:nth-child(1), 
+.pending-lr-table th:nth-child(1),
 .pending-lr-table td:nth-child(1) {
-  min-width: 40px; 
+  min-width: 40px;
   max-width: 40px;
 }
 
- .pending-lr-table th:nth-child(3), 
+ .pending-lr-table th:nth-child(3),
 .pending-lr-table td:nth-child(3) {
-  min-width: 50px; 
+  min-width: 50px;
   max-width: 50px;
 }
 
@@ -713,21 +607,21 @@
   background-color: #f9f9f9;
 }
 
-.all-lead-table th:nth-child(1), 
+.all-lead-table th:nth-child(1),
 .all-lead-table td:nth-child(1) {
-  min-width: 60px; 
+  min-width: 60px;
   max-width: 60px;
 }
 
- .all-lead-table th:nth-child(3), 
+ .all-lead-table th:nth-child(3),
 .all-lead-tabletd:nth-child(3) {
-  min-width: 20px; 
+  min-width: 20px;
   max-width: 20px;
 }
 
-.all-lead-table th:nth-child(4), 
+.all-lead-table th:nth-child(4),
 .all-lead-table td:nth-child(4) {
-  min-width: auto; 
+  min-width: auto;
   max-width: auto;
 }
 
@@ -904,16 +798,6 @@
   flex-direction: column;
   align-items: flex-start;
 }
-
-/* .filter-popup {
-  background-color: #ffffff;
-  border: 1px solid #ddd;
-  padding: 15px;
-  border-radius: 5px;
-  margin-top: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  z-index:3000;
-} */
 
 .filter-fields {
   display: flex;
@@ -1175,8 +1059,6 @@
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-/* at the bottom of HomePage.css */
-
 /* Styling for the buttons */
 .view-btn1,
 .accept-btn {
@@ -1191,17 +1073,14 @@
 
 .view-btn1 {
   background-color: rgb(41, 41, 139);
-  /* background-color: #404142de; */
   color: #fff;
 }
 
 .view-btn1:hover {
-  /* background-color: #787a7c; */
   background-color: rgb(96, 96, 179);
 }
 
 .case-close-btn {
-  /* background-color: #007bffde; */
   background-color: #7c2121de;
   color: #fff;
 }
@@ -1381,7 +1260,7 @@
 
 @media (max-width: 480px) {
   .leads-table {
-    display: none; 
+    display: none;
   }
 
   .lead-cards {
@@ -1445,23 +1324,10 @@
   border-radius: 4px;
 }
 
-/* Responsive tweaks */
-/* @media (max-width: 768px) {
-  .leads-table {
-    min-width: 1000px; 
-  }
-
-  .leads-table th,
-  .leads-table td {
-    font-size: 16px;
-    padding: 8px;
-  }
-} */
-
 
 /* #################### Responsive Table Design  ############################*/
 
-/* 🔄 Scroll container */
+/* Scroll container */
 .table-scroll-container {
   width: 100%;
   overflow-x: auto;
@@ -1471,12 +1337,12 @@
 .leads-table {
   table-layout: fixed;
   border-collapse: collapse;
-  width: 1000px; /* ✅ fixed width to match full screen layout */
-  min-width: 1000px; /* ✅ ensures it doesn't shrink */
+  width: 1000px;
+  min-width: 1000px;
 }
 
 
-/* ✅ Ensure wrapping inside columns */
+/* Ensure wrapping inside columns */
 .leads-table th,
 .leads-table td {
   padding: 4px;
@@ -1497,8 +1363,8 @@
   margin-left: 0;
   padding: 0;
   font-size: 20px;
-  border: none;     /* if you also want no border */
-  background: none; /* if you want no bg */
+  border: none;
+  background: none;
 }
 
 /* make the header cell a positioning context */
@@ -1516,17 +1382,37 @@
   margin-left: 20%;
   width: 80%;
   padding-left: 20px;
+  padding-top: var(--nav-h);
   box-sizing: border-box;
-  /* allow the right side to scroll independently if needed */
-  min-height: calc(100dvh - var(--nav-h));
-  overflow: hidden; /* keep internal sections managing their own scroll */
+  min-height: 100dvh;
+  overflow-y: auto;
 }
 
 /* The scroller area(s) inside your content */
 .table-scroll-container,
 .main-pagehp,
 .main-page-belowpart {
-  /* these can scroll while the sidebar also scrolls */
   overflow-y: auto;
   max-height: calc(100dvh - var(--nav-h) - 20px);
 }
+
+/* ── New classes used in JSX ── */
+
+.case-page-manager {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.left-content {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.assigned-leads {}
+
+.pending-leads {}
+
+.pending-lead-returns {}

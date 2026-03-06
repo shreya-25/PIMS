@@ -103,11 +103,14 @@
   position: relative;
   display: block;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 4px 32px 4px 0;
   border-radius: 8px;
   background: #fff;
   cursor: pointer;
   font-size: 18px;
+  overflow: hidden;
 }
 
 .custom-dropdown .dh-text {
@@ -168,17 +171,17 @@
   border-color: #007bff;
 }
 
-.dropdown-item {
+.custom-dropdown .dropdown-item {
   padding: 8px 12px;
   border-bottom: 1px solid #eee;
   cursor: pointer;
   display: flex;
   align-items: center;
-  font-size: 18px;
+  font-size: 30px;
   gap: 6px;
 }
 
-.dropdown-item:hover {
+.custom-dropdown .dropdown-item:hover {
   background: #f5f5f5;
 }
 
@@ -379,6 +382,74 @@
   color: #6B7280;
   display: flex;
   align-items: center;
+}
+
+/* ─── Presence alert ────────────────────────────────────────────────────── */
+.presence-alert {
+  background: #a038181e;
+  border: 1px solid #a03818ff;
+  color: #a03818ff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 8px 16px;
+}
+
+/* ─── Summary textarea ──────────────────────────────────────────────────── */
+.summary-body {
+  font-size: 18px;
+}
+
+.summary-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  white-space: pre-wrap;
+  border: none;
+  outline: none;
+  resize: none;
+  text-align: left;
+  padding-left: 8px;
+}
+
+.summary-textarea:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* ─── Case team table ───────────────────────────────────────────────────── */
+.case-team-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+}
+
+.case-team-col-role {
+  width: 220px;
+}
+
+.case-team-th {
+  text-align: left;
+  padding: 4px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+  white-space: nowrap;
+  font-size: 18px;
+}
+
+.case-team-th-role {
+  width: 20%;
+}
+
+.case-team-td {
+  padding: 4px;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+  height: auto;
+  font-size: 18px;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .summary-box {

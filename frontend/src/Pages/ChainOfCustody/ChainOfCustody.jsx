@@ -233,9 +233,9 @@ const tone = (t) =>
   return (
     <div className={`${styles.elog} ${styles.card}`}>
       <div className={styles['elog-header']}>
-       <h3>
+      <h3>
   {selectedLead?.leadNo
-    ? `Lead: ${toTitleCase(selectedLead?.leadName || "")}`
+    ? `Lead #${selectedLead.leadNo}: ${toTitleCase(selectedLead?.leadName || "")}`
     : "LEAD DETAILS"}
 </h3>
 

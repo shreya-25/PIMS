@@ -1,17 +1,14 @@
 import React, { useContext, useState, useEffect, useRef, useMemo } from 'react';
 import Navbar from '../../components/Navbar/Navbar';
-import './LeadLog.css';
+import styles from './LeadLog.module.css';
 import Filter from "../../components/Filter/Filter";
 import Sort from "../../components/Sort/Sort";
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from "axios";
 import { CaseContext } from "../CaseContext";
 import Pagination from "../../components/Pagination/Pagination";
 import api from "../../api"; // adjust the path as needed
 import { SideBar } from "../../components/Sidebar/Sidebar";
-
-
-
 
 export const LeadLog = () => {
   const location = useLocation();
@@ -260,19 +257,6 @@ export const LeadLog = () => {
     setDateRange({ startDate: "", endDate: "" });
   };
 
- const caseTeamStyles = {
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-  },
-  th: {
-    padding: "8px"
-  },
-  td: {
-    padding: "8px",
-    verticalAlign: "center",
-  },
-};
 
 
   // State to maintain a list of lead entries
@@ -440,7 +424,7 @@ const formatDate = (dateString) => {
   // Column mapping for filter/sort
   const colKey = {
     "Lead #": "leadNo",
-    "Lead Log Summary": "description",
+    "Log Summary": "description",
     "Date Created": "assignedDate",
     "Status": "leadStatus",
     "Assigned To": "assignedTo",
@@ -449,13 +433,13 @@ const formatDate = (dateString) => {
   };
 
   const columnWidths = {
-    "Lead #": "10%",
-    "Lead Log Summary": "auto",
-    "Date Created": "14%",
-    "Status": "10%",
-    "Assigned To": "13%",
-    "Date Submitted": "15%",
-    "Date Approved": "15%"
+    "Lead #": "7%",
+    "Log Summary": "auto",
+    "Date Created": "11%",
+    "Status": "8%",
+    "Assigned To": "11%",
+    "Date Submitted": "13%",
+    "Date Approved": "12%"
   };
 
   // Compute distinct values for filters
@@ -600,11 +584,11 @@ const formatDate = (dateString) => {
 
 
   return (
-    <div className="lead-log-page">
+    <div className={styles['lead-log-page']}>
       <Navbar />
 
 
-      <div className="main-container">
+      <div className={styles['main-container']}>
             {/* Sidebar */}
             {/* <div className="sideitem">
                     <ul className="sidebar-list">
@@ -656,32 +640,12 @@ const formatDate = (dateString) => {
                 <SideBar activePage="LeadLog" />
      
 
-        <div className="left-content">
-
-          {/* <div className = "side-titleLeft">
-                  <p> PIMS &gt; Cases \ {selectedCase.caseNo || ""} &gt; Lead Log
-                 </p>
-                </div> */}
-          <div className = "side-titleLeft">
-             <div className="ld-head">
-            <Link to="/HomePage" className="crumb">PIMS Home</Link>
-            <span className="sep">{" >> "}</span>
-            <Link
-              to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
-              state={{ caseDetails: selectedCase }}
-              className="crumb"
-            >
-              Case Page: {selectedCase.caseNo || ""} - {selectedCase.caseName || "Unknown Case"}
-            </Link>
-            <span className="sep">{" >> "}</span>
-            <span className="crumb-current" aria-current="page">Case Log</span>
-          </div>
-          </div>
+        <div className={styles['left-content']}>
 
 
-         <div className="case-header">
-            <div className="cp-head">
-          <h2 className="">CASE LOG</h2>
+         <div className={styles['case-header']}>
+            <div className={styles['cp-head']}>
+          <h2>CASE LOG</h2>
         </div>
         </div>
 
@@ -703,9 +667,9 @@ const formatDate = (dateString) => {
                   </div> */}
 
       {showFilter && (
-        <div className="popup-overlay">
-          <div className="popup-content">
-            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
+        <div className={styles['popup-overlay']}>
+          <div className={styles['popup-content']}>
+            <button className={styles['close-popup-btn']} onClick={() => setShowFilter(false)}>
               &times;
             </button>
             <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
@@ -715,9 +679,9 @@ const formatDate = (dateString) => {
 
   
       {showSort && (
-        <div className="popup-overlay">
-          <div className="popup-content">
-            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
+        <div className={styles['popup-overlay']}>
+          <div className={styles['popup-content']}>
+            <button className={styles['close-popup-btn']} onClick={() => setShowSort(false)}>
               &times;
             </button>
             <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
@@ -726,23 +690,24 @@ const formatDate = (dateString) => {
       )}
 
 
-      <div className="table-section1">
-      <div className="table-section">
-        <table className="leads-table" style={caseTeamStyles.table}>
+      <div className={styles['table-section1']}>
+      <div className={styles['table-section']}>
+      <div className={styles['table-scroll-container']}>
+        <table className={styles['leads-table']}>
           <thead>
             <tr>
-              {["Lead #", "Lead Log Summary", "Date Created", "Status", "Assigned To", "Date Submitted", "Date Approved"].map(col => {
+              {["Lead #", "Log Summary", "Date Created", "Status", "Assigned To", "Date Submitted", "Date Approved"].map(col => {
                 const dataKey = colKey[col];
                 return (
-                  <th key={col} style={{ ...caseTeamStyles.th, width: columnWidths[col] }} className="column-header1">
-                    <div className="header-title">
+                  <th key={col} style={{ width: columnWidths[col] }} className={styles['column-header1']}>
+                    <div className={styles['header-title']}>
                       {col}
                       <span>
                         <button
                           ref={el => (filterButtonRefs.current[dataKey] = el)}
                           onClick={() => setOpenFilter(prev => prev === dataKey ? null : dataKey)}
                         >
-                          <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className="icon-image" alt="filter" />
+                          <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className={styles['icon-image']} alt="filter" />
                         </button>
                         <Filter
                           dataKey={dataKey}
@@ -770,15 +735,8 @@ const formatDate = (dateString) => {
           {paginatedLeads.length > 0 ? (
               paginatedLeads.map((entry, index) => (
                 <tr key={index} >
-                  <td style={caseTeamStyles.td}>{entry.leadNo}</td>
-                  {/* <td 
-          className="clickable-description" 
-          onClick={() => handleLeadClick(entry)}
-          style={{ color: "blue", cursor: "pointer", textDecoration: "underline" }}
-        >
-          {entry.description}
-        </td> */}
-         <td style={caseTeamStyles.td}>
+                  <td>{entry.leadNo}</td>
+                  <td>
                 {(() => {
                   const desc = entry.description || "";
                   const isTruncated = desc.length > 100;
@@ -793,30 +751,21 @@ const formatDate = (dateString) => {
                         <span>{displayText}</span>
                       ) : (
                         <span
-                          className="clickable-description"
+                          className={styles['clickable-description']}
                           onClick={() => handleLeadClick(entry)}
-                          style={{ color: 'blue', cursor: 'pointer', textDecoration: 'underline' }}
                         >
                           {displayText}
                         </span>
                       )}
                       {isTruncated && (
                         <span
+                          className={styles['read-more']}
                           onClick={(e) => {
                             e.stopPropagation();
                             setExpandedDescriptions(prev => ({
                               ...prev,
                               [entry.leadNo]: !prev[entry.leadNo]
                             }));
-                          }}
-                          style={{
-                            color: '#0056b3',
-                            cursor: 'pointer',
-                            marginLeft: '4px',
-                            fontSize: '0.85em',
-                            fontWeight: '500',
-                            textDecoration: 'none',
-                            whiteSpace: 'nowrap'
                           }}
                         >
                           {isExpanded ? "Show less" : "Read more"}
@@ -826,28 +775,25 @@ const formatDate = (dateString) => {
                   );
                 })()}
               </td>
-                  <td style={caseTeamStyles.td}>{formatDate(entry.assignedDate)}</td>
-                  <td style={caseTeamStyles.td}>{entry.leadStatus }</td>
-                  {/* <td>{entry.assignedTo?.join(", ")}</td> */}
-                  <td style={{ ...caseTeamStyles.td, whiteSpace: "pre-line" }}>
-          {/* {entry.assignedTo?.map((officer, i) => (
-            <span key={i} style={{ display: "block", padding: "2px 0" }}>{officer}</span>
-          ))} */}
-           {entry.assignedTo?.map(o => o.username).join(", ") || "None"}
-        </td>
-                  <td style={caseTeamStyles.td}>{formatDate(entry.submittedDate)}</td> 
-                  <td style={caseTeamStyles.td}>{formatDate(entry.approvedDate)}</td> 
+                  <td>{formatDate(entry.assignedDate)}</td>
+                  <td>{entry.leadStatus}</td>
+                  <td className={styles['assigned-to-cell']}>
+                    {entry.assignedTo?.map(o => o.username).join(", ") || "None"}
+                  </td>
+                  <td>{formatDate(entry.submittedDate)}</td>
+                  <td>{formatDate(entry.approvedDate)}</td> 
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="7" style={{ textAlign: 'center' }}>
+                <td colSpan="7" className={styles['empty-cell']}>
                   No Leads Available
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+      </div>
 
       <Pagination
   currentPage={currentPage}
