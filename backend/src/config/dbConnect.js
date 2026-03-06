@@ -7,7 +7,12 @@ let gfs; // Global GridFS instance
 
 const dbConnect = async () => {
     try {
-        const conn = await mongoose.connect(process.env.MONGO_URI);
+        // const conn = await mongoose.connect(process.env.MONGO_URI);
+        const conn = await mongoose.connect(process.env.MONGO_URI, {
+        serverSelectionTimeoutMS: 30000,
+        socketTimeoutMS: 60000,
+        retryWrites: false, // Cosmos Mongo often requires this
+        });
         
         // Use the correct way to log the connected database
         console.log(`✅ MongoDB Connected: ${conn.connection.name}`); // Correct way to log the DB name
