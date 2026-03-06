@@ -1,0 +1,256 @@
+/* ─── Layout ────────────────────────────────────────────────────────────── */
+.lead-log-page {
+  display: flex;
+  flex-direction: column;
+  font-family: Arial, sans-serif;
+  height: 100%;
+  background-color: #f9f9f9;
+}
+
+.main-container {
+  display: flex;
+}
+
+.left-content {
+  display: flex;
+  flex-direction: column;
+  margin-top: 110px;
+  align-items: center;
+  height: auto;
+  width: 80%;
+  box-sizing: border-box;
+  margin-left: 20%;
+  padding-left: 20px;
+}
+
+/* ─── Breadcrumb ─────────────────────────────────────────────────────────── */
+.side-titleLeft {
+  width: 95%;
+  margin-bottom: 4px;
+}
+
+.ld-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 16px;
+  gap: 4px;
+}
+
+.crumb {
+  color: rgb(41, 41, 139);
+  text-decoration: none;
+}
+
+.crumb:hover {
+  text-decoration: underline;
+}
+
+.sep {
+  color: #555;
+}
+
+.crumb-current {
+  color: #555;
+}
+
+/* ─── Case Header ───────────────────────────────────────────────────────── */
+.case-header {
+  display: flex;
+  width: 95%;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+  font-family: Arial, sans-serif;
+}
+
+.case-header h2 {
+  margin: 8px 0;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+  width: 100%;
+}
+
+.cp-head {
+  width: 87%;
+}
+
+/* ─── Icon image ────────────────────────────────────────────────────────── */
+.icon-image {
+  height: 20px;
+  width: 20px;
+  filter: brightness(0) saturate(100%);
+  opacity: 0.6;
+}
+
+/* ─── Table wrapper ─────────────────────────────────────────────────────── */
+.table-section1 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.table-section {
+  width: 95%;
+  padding: 10px;
+}
+
+/* ─── Table scroll container ─────────────────────────────────────────────── */
+.table-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100dvh - 220px);
+}
+
+.table-scroll-container::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.table-scroll-container table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* ─── Leads table ───────────────────────────────────────────────────────── */
+.leads-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0;
+  table-layout: fixed;
+}
+
+.leads-table th,
+.leads-table td {
+  padding: 10px 8px;
+  text-align: left;
+  border: 1px solid #ddd;
+  font-size: 18px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  vertical-align: middle;
+}
+
+.leads-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+  color: #333;
+}
+
+.leads-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.leads-table tbody tr:hover {
+  background-color: rgba(41, 41, 139, 0.05);
+  cursor: default;
+}
+
+
+/* ─── Column header ─────────────────────────────────────────────────────── */
+.column-header1 {
+  position: relative;
+  padding-top: 0.5rem;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.header-title button {
+  margin-left: 0;
+  padding: 0;
+  font-size: 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+/* ─── Clickable description ──────────────────────────────────────────────── */
+.clickable-description {
+  color: blue;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.read-more {
+  color: #0056b3;
+  cursor: pointer;
+  margin-left: 4px;
+  font-size: 0.85em;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* ─── Assigned-to cell ───────────────────────────────────────────────────── */
+.assigned-to-cell {
+  white-space: pre-line;
+}
+
+/* ─── Empty state ────────────────────────────────────────────────────────── */
+.empty-cell {
+  text-align: center;
+}
+
+/* ─── Popup ──────────────────────────────────────────────────────────────── */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.popup-content {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  width: 70%;
+  height: 90%;
+  max-width: 900px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+  font-family: Arial, sans-serif;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.close-popup-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background-color: transparent;
+  border: none;
+  font-size: 30px;
+  font-weight: bold;
+  color: #555;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.close-popup-btn:hover {
+  color: #323638;
+}

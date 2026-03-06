@@ -1,11 +1,4 @@
-:root
-{
-  background-color: #f9f9f9;
-    font-family: Arial, sans-serif;
-  
-}
-
-/* Overall Page Layout */
+/* 
 .lead-log-page {
     display: flex;
     flex-direction: column;
@@ -14,7 +7,7 @@
     font-family: Arial, sans-serif;
   }
   
-  /* Main Content */
+
   .main-content {
     display: flex;
     align-items: center;
@@ -22,20 +15,19 @@
     margin-bottom: 20px;
   }
   
-  /* Logo */
   .left-section .police-logo {
     width: 150px;
     height: auto;
   }
   
-  /* Title */
+
   .center-section .title {
     font-size: 30px;
     font-weight: bold;
     text-align: center;
   }
   
-  /* Filters Section */
+
   .filters-section {
     display: flex;
     justify-content: space-between;
@@ -60,8 +52,6 @@
     margin-right: 15px;
   }
   
-  /* Table Section */
-  
   .lead-table {
     width: 100%;
     border-collapse: collapse;
@@ -80,7 +70,7 @@
     background-color: #f2f2f2;
   }
   
-  /* Report Section */
+
   .report-section {
     width: 40%;
     display: flex;
@@ -95,7 +85,6 @@
     width: 200px;
   }
   
-  /* Action Buttons */
   .action-buttons {
     display: flex;
     justify-content: flex-end;
@@ -131,8 +120,8 @@
   }
   
   .flagged-lead-table td:nth-child(2) {
-    width: 40%;  /* Adjust the width of LEAD SUMMARY */
-    max-width: 500px;  /* Limit the maximum width */
+    width: 40%;  
+    max-width: 500px; 
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -154,4 +143,4 @@
   
   .flagged-lead-table tr:hover {
     background-color: #f1f1f1;
-  }
+  }  */
