@@ -1,6 +1,6 @@
 import React, { createContext, useState,useRef, useMemo, useEffect } from "react";
 import axios from "axios";
-import "./HomePage.css";
+import styles from "./HomePage.module.css";
 import { CaseContext } from "../CaseContext";
 import Navbar from "../../components/Navbar/Navbar";
 import Searchbar from "../../components/Searchbar/Searchbar";
@@ -1235,7 +1235,7 @@ useEffect(() => {
 
   return (
     //  <div className="page-scale"> 
-     <div className="case-page-manager">
+     <div className={styles['case-page-manager']}>
 
          <Navbar />
     <AlertModal
@@ -1252,7 +1252,7 @@ useEffect(() => {
 
   
 
-    <div className = "main-container">
+    <div className={styles['main-container']}>
    
        <SideBar
             variant="home"
@@ -1280,9 +1280,9 @@ useEffect(() => {
 
     {/* <div className="main-page-contenthp"> */}
             
-           <div className="left-content">
+           <div className={styles['left-content']}>
 
-      <div className="main-page-abovepart">
+      <div className={styles['main-page-abovepart']}>
           {!isCaseMgmt && (
     <>
         <NotificationCard  acceptLead={acceptLead} signedInOfficer={signedInOfficer} 
@@ -1310,18 +1310,18 @@ useEffect(() => {
 
             {isCaseMgmt && (
     <>
-      <div className="main-page-belowpart">
-      <div className="stats-bar">
+      <div className={styles['main-page-belowpart']}>
+      <div className={styles['stats-bar']}>
         
           <span
-            className={`hoverable ${activeTab === "cases" ? "active" : ""}`}
+            className={`${styles.hoverable} ${activeTab === "cases" ? styles.active : ""}`}
             onClick={() => setActiveTab("cases")}
           >
             My Ongoing Cases: {cases.length}
           </span>
 
             <span
-            className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
+            className={`${styles.hoverable} ${activeTab === "assignedLeads" ? styles.active : ""}`}
             onClick={() => setActiveTab("assignedLeads")}
           >
             Assigned Leads: {leads.assignedLeads.length}
@@ -1334,25 +1334,25 @@ useEffect(() => {
             Pending Leads: {leads?.pendingLeads?.length || 0}
           </span> */}
           <span
-            className={`hoverable ${activeTab === "pendingLeadReturns" ? "active" : ""}`}
+            className={`${styles.hoverable} ${activeTab === "pendingLeadReturns" ? styles.active : ""}`}
             onClick={() => setActiveTab("pendingLeadReturns")}
           >
             Lead Returns for Review: {leads.pendingLeadReturns.length}
           </span>
         </div>
 
-        <div className="content-section">
+        <div className={styles['content-section']}>
 
 {activeTab === "cases" && (
-          <div className="table-scroll-container">
-            <table className="leads-table">
+          <div className={styles['table-scroll-container']}>
+            <table className={styles['leads-table']}>
               <thead>
                 <tr>
                   {["Case No.","Case Name","Created At","Role"].map(col => {
                     const dataKey = colKey[col];
                     return (
-                      <th key={col} className="column-header1" style={{ width: columnWidths[col] , position: 'relative' }}>
-                          <div className="header-title">{col}
+                      <th key={col} className={styles['column-header1']} style={{ width: columnWidths[col] , position: 'relative' }}>
+                          <div className={styles['header-title']}>{col}
                            <span> 
                                <button
                                 ref={el => (filterButtonRefs.current[dataKey] = el)}
@@ -1360,7 +1360,7 @@ useEffect(() => {
                                   setOpenFilter(prev => prev === dataKey ? null : dataKey)
                                 }
                               >
-                                <img src="/Materials/fs.png" className="icon-image"  />
+                                <img src="/Materials/fs.png" className={styles['icon-image']}  />
                               </button>
                                <Filter
                                 dataKey={dataKey}
@@ -1394,9 +1394,9 @@ useEffect(() => {
                       <td>{formatDate(c.createdAt)}</td> 
                       <td>{c.role}</td>
                       <td style={{ width: "5%", textAlign: "center" }} >
-                        <div className="btn-sec-HP">
+                        <div className={styles['btn-sec-HP']}>
                         <button
-                          className="manage-btn"
+                          className={styles['manage-btn']}
                           onClick={() => handleCaseClick(c)}
                         >
                           Manage
@@ -1404,7 +1404,7 @@ useEffect(() => {
 
                         { (c.role === "Detective Supervisor" || c.role === "Case Manager") && (
                           <button
-                            className="case-close-btn"
+                            className={styles['case-close-btn']}
                             onClick={() => {
                               setCaseToClose({ caseNo: c.id, caseName: c.title });
                               setCloseConfirmOpen(true);
@@ -1438,22 +1438,22 @@ useEffect(() => {
 
 
    {activeTab === "assignedLeads" && (
-        <div className="assigned-leads">
-          <div className="table-scroll-container">
-            <table className="leads-table">
+        <div className={styles['assigned-leads']}>
+          <div className={styles['table-scroll-container']}>
+            <table className={styles['leads-table']}>
               <thead>
                 <tr>
                   {assignedColumns.map(col => {
   const dataKey = assignedColKey[col]; // e.g. "id", "description", etc.
   return (
     <th key={col} style={{ width: assignedColWidths[col] }}>
-      <div className="header-title">
+      <div className={styles['header-title']}>
         {col}
         <span>
           <button 
            ref={el => (assignedFilterButtonRefs.current[dataKey] = el)}
           onClick={() => setOpenAssignedFilter(prev => prev === dataKey ? null : dataKey ) }>
-                        <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className="icon-image"/>
+                        <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className={styles['icon-image']}/>
                       </button>
           <Filter
                         dataKey={dataKey}
@@ -1492,7 +1492,7 @@ useEffect(() => {
                       <td>{lead.assignedOfficers.join(", ")}</td>
                       <td style={{ textAlign: "center" }}>
                         <button
-                          className="view-btn1"
+                          className={styles['view-btn1']}
                           onClick={() =>  handleViewAssignedLead(lead)}
                         >
                          Manage
@@ -1521,11 +1521,11 @@ useEffect(() => {
 
          
 {activeTab === "pendingLeads" && (
-  <div className="pending-leads">
+  <div className={styles['pending-leads']}>
 
 
-<div className="table-scroll-container">
-<table className="leads-table" style={{ minWidth: "1000px" }}>
+<div className={styles['table-scroll-container']}>
+<table className={styles['leads-table']} style={{ minWidth: "1000px" }}>
       <thead>
         <tr>
           <th style={{ width: "8%" }}>Lead No.</th>
@@ -1553,7 +1553,7 @@ useEffect(() => {
               <td style={{ width: "5%", textAlign: "center" }}
 >
                 <button
-                  className="view-btn1"
+                  className={styles['view-btn1']}
                 >
                  Manage
                 </button>
@@ -1575,9 +1575,9 @@ useEffect(() => {
 )}
 
 {activeTab === "pendingLeadReturns" && (
-  <div className="pending-lead-returns">
-<div className="table-scroll-container">
-<table className="leads-table" style={{ minWidth: "1000px" }}>
+  <div className={styles['pending-lead-returns']}>
+<div className={styles['table-scroll-container']}>
+<table className={styles['leads-table']} style={{ minWidth: "1000px" }}>
 
   <colgroup>
       <col style={{ width: "8%" }} />     {/* Lead No. */}
@@ -1592,8 +1592,8 @@ useEffect(() => {
       const keyMap = { "Lead No.": "id", "Lead Name": "description", "Case Name":"caseName" };
       const dataKey = keyMap[col];
       return (
-        <th key={col} className="column-header1">
-          <div className="header-title">
+        <th key={col} className={styles['column-header1']}>
+          <div className={styles['header-title']}>
             {col}
             <span ref={el => popupPendingRefs.current[col] = el}>
               <button
@@ -1602,7 +1602,7 @@ useEffect(() => {
                   setOpenPendingFilter(prev => prev === dataKey ? null : dataKey)
                 }
               >
-                <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className="icon-image" />
+                <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className={styles['icon-image']} />
               </button>
               <Filter
                 dataKey={dataKey}
@@ -1652,7 +1652,7 @@ useEffect(() => {
                       <td>{lead.caseName}</td>
                       <td style={{  textAlign: "center" }}>
                         <button
-                              className="continue-btn"
+                              className={styles['continue-btn']}
                               onClick={() => {
                                 handleLRClick(lead)
                               }}

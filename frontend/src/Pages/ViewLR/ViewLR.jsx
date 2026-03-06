@@ -409,7 +409,7 @@ const actuallyDoSubmitReport = async () => {
 
 
   return (
-    <div className="lrfinish-container">
+    <div className={styles.lrfinishContainer}>
       <Navbar />
       <AlertModal
         isOpen={confirmConfig.open}
@@ -436,16 +436,16 @@ const actuallyDoSubmitReport = async () => {
 
           <div className={styles.leftContent9}>
             {loading ? (
-              <div className="loading">Loading…</div>
+              <div className={styles.loading}>Loading…</div>
             ) : (
               <>
 
        <div className={styles.cont}>
                   <div className={`${styles.lrsec} ${styles.singleCol} ${!showComments ? styles.lrsecFull : ""}`}>
 
-                         <div className="top-menu">
-        <div className="menu-items">
-                <span className="menu-item " onClick={() => {
+                         <div className={styles.topMenuBar}>
+        <div className={styles.menuItems}>
+                <span className={styles.menuItem} onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
@@ -458,7 +458,7 @@ const actuallyDoSubmitReport = async () => {
                     });
                   } }} > Lead Information</span>
 
-           <span className="menu-item" onClick={() => {
+           <span className={styles.menuItem} onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
@@ -475,14 +475,14 @@ const actuallyDoSubmitReport = async () => {
                     //  setAlertOpen(true);
                   }
                 }}>Add Lead Return</span>
-          {/* <span className="menu-item active">Submit Lead Return</span> */}
+          {/* <span className={`${styles.menuItem} ${styles.menuItemActive}`}>Submit Lead Return</span> */}
   <span
-    className="menu-item active"
+    className={`${styles.menuItem} ${styles.menuItemActive}`}
     title={isPrimaryInvestigator ? "Submit Lead Return" : "Review Lead Return"}
   >
     {isPrimaryInvestigator ? "Submit Lead Return" : "Review Lead Return"}
   </span>
-          <span className="menu-item" onClick={() => {
+          <span className={styles.menuItem} onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
@@ -505,8 +505,8 @@ const actuallyDoSubmitReport = async () => {
 
                   {/* Instructions */}
                   <section className={styles.block}>
-                          <header className="dr-toolbar">
-          <div className="dr-title"> 
+                          <header className={styles.drToolbar}>
+          <div className={styles.drTitle}>
             {/* <div className="ld-head">
                                      <Link to="/HomePage" className="crumb">PIMS Home</Link>
                                      <span className="sep">{" >> "}</span>
@@ -530,9 +530,9 @@ const actuallyDoSubmitReport = async () => {
                                    </div> */}
                                      Lead Return Review
                                    </div>
-          <div className="">
+          <div>
               {canShowSubmit && (
-                    <button className="approve-btn-lr" onClick={handleSubmitReport}>
+                    <button className={styles.approveBtnLr} onClick={handleSubmitReport}>
                       Submit
                     </button>
                   )}

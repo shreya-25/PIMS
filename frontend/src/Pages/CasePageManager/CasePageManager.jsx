@@ -1000,17 +1000,8 @@ const displayNames = (usernames = []) =>
 //   },
 // };
 
-const caseTeamStyles = {
-  table: { width: "100%", borderCollapse: "separate", borderSpacing: 0, tableLayout: "auto" },
-  th:    { textAlign: "left", padding: "4px", borderBottom: "1px solid #eee", verticalAlign: "center", whiteSpace: "nowrap", fontSize: "18px" },
-  td:    { padding: "4px", borderBottom: "1px solid #eee", verticalAlign: "center" , height: "auto", fontSize: "18px",
-       whiteSpace: "normal",   // allow line breaks
-    wordBreak: "break-word", // break long words if needed
-    overflowWrap: "anywhere" // modern property, ensures wrapping
-  }
-};
 
-  
+
     // Continue a pending lead return
     const continueLead = (leadId) => {
         const leadToContinue = leads.pendingLeadReturns.find(
@@ -1696,14 +1687,7 @@ const toTitleCase = (s = "") =>
                   />
 
             {presenceOthers.length > 0 && (
-  <div style={{
-    background: "#a038181e",
-    border: "1px solid #a03818ff",
-    color: "#a03818ff",
-    padding: "8px 12px",
-    borderRadius: 8,
-    margin: "8px 16px"
-  }}>
+  <div className={styles['presence-alert']}>
    {/* {presenceOthers.map(o => o.username).join(", ")}{" "}
     {presenceOthers.length === 1 ? "is" : "are"} also viewing this case page now. */}
       {presenceNames.join(", ")}{" "}
@@ -1838,8 +1822,9 @@ const toTitleCase = (s = "") =>
   </button>
 
   {isCaseSummaryOpen && (
-      <div style={{ fontSize: 18 }}>
+      <div className={styles['summary-body']}>
         <textarea
+  className={styles['summary-textarea']}
   value={summary ?? ""}
   onChange={e => {
     const raw = e.target.value;
@@ -1847,18 +1832,8 @@ const toTitleCase = (s = "") =>
     setSummary(next);
   }}
   rows={6}
-  style={{
-    width: "100%",
-    font: "inherit",
-    whiteSpace: "pre-wrap",
-    border: "none",
-    outline: "none",
-    resize: "none",
-    textAlign: "left",   // ensure alignment to the left
-    paddingLeft: "8px"          // remove default left padding
-  }}
 />
-     
+
     </div>
   )}
 </section>
@@ -1875,15 +1850,15 @@ const toTitleCase = (s = "") =>
   </button>
   {isCaseTeamOpen && (
     <div className={styles['case-team']}>
-      <table style={caseTeamStyles.table}>
+      <table className={styles['case-team-table']}>
         <colgroup>
-          <col style={{ width: 220 }} />   
-          <col style={{ height: "200px" }} />
+          <col className={styles['case-team-col-role']} />
+          <col />
         </colgroup>
         <thead>
           <tr>
-          <th style={{...caseTeamStyles.th, width: "20%" }}>Role</th>
-          <th style={caseTeamStyles.th}>Name(s)</th>
+          <th className={`${styles['case-team-th']} ${styles['case-team-th-role']}`}>Role</th>
+          <th className={styles['case-team-th']}>Name(s)</th>
           </tr>
         </thead>
         <tbody>
@@ -1938,8 +1913,8 @@ const toTitleCase = (s = "") =>
           </tr> */}
 
           <tr>
-  <td style={caseTeamStyles.td}>Detective Supervisor</td>
-  <td className={styles['name-cell']} style={caseTeamStyles.td}>
+  <td className={styles['case-team-td']}>Detective Supervisor</td>
+  <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
     {selectedCase.role === "Detective Supervisor" ? (
       <div ref={dsRef} className={styles['custom-dropdown']}>
         <div
@@ -2006,8 +1981,8 @@ const toTitleCase = (s = "") =>
 </tr>
 
           <tr>
-              <td style={caseTeamStyles.td}>Case Manager{team.caseManagers.length>1 ? "s" : ""}</td>
-              <td className={styles['name-cell']} style={caseTeamStyles.td}>
+              <td className={styles['case-team-td']}>Case Manager{team.caseManagers.length>1 ? "s" : ""}</td>
+              <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
                 {(selectedCase.role==="Case Manager" || selectedCase.role==="Detective Supervisor") ? (
                   <div ref={cmRef} className={styles['custom-dropdown']}>
                     <div
@@ -2074,8 +2049,8 @@ const toTitleCase = (s = "") =>
               </td>
           </tr>
           <tr>
-              <td className={styles['name-cell']} style={caseTeamStyles.td}> Investigator{team.investigators.length > 1 ? "s" : ""}</td>
-              <td style={caseTeamStyles.td}>
+              <td className={`${styles['name-cell']} ${styles['case-team-td']}`}> Investigator{team.investigators.length > 1 ? "s" : ""}</td>
+              <td className={styles['case-team-td']}>
                 {(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") ? (
                     <div ref={invRef} className={styles['custom-dropdown']}>
                       <div

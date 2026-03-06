@@ -578,91 +578,72 @@ console.log("isReadOnly", isReadOnly);
               <table className={styles.detailsTable}>
                 <tbody>
                   <tr>
-                    <td>Case Name:</td>
+                    <td className={styles.infoLabel}>Case Name:</td>
                     <td>
-                      <input
-                        type="text"
-                        className={styles.inputField}
-                        value={leadData.caseName}
-                        onChange={(e) => handleInputChange('caseName', e.target.value)}
-                        placeholder=""
-                        readOnly
-                      />
+                      <div className={styles.inputField}>
+                        {leadData.caseName || "—"}
+                      </div>
                     </td>
                   </tr>
+
                   <tr>
-                    <td>Lead Log Summary:</td>
+                    <td className={styles.infoLabel}>Lead Log Summary:</td>
                     <td>
-                      <input
-                        type="text"
-                        className={styles.inputField}
-                        value={leadData.description}
-                        onChange={(e) => handleInputChange('leadDescription', e.target.value)}
-                        placeholder=""
-                        readOnly
-                      />
+                      <div className={styles.inputField}>
+                        {leadData.description || "—"}
+                      </div>
                     </td>
                   </tr>
+
                   <tr>
-                    <td>Lead Instruction:</td>
+                    <td className={styles.infoLabel}>Lead Instruction:</td>
                     <td>
-                      <textarea
-                        className={styles.inputField}
-                        value={leadData.summary}
-                        onChange={(e) => handleInputChange('summary', e.target.value)}
-                        placeholder=""
-                        readOnly
-                      ></textarea>
+                      <div className={styles.leadInstructionText}>
+                        {leadData.summary || "—"}
+                      </div>
                     </td>
                   </tr>
+
                   <tr>
-                    <td>Assigned Officers:</td>
+                    <td className={styles.infoLabel}>Assigned Officers:</td>
                     <td>
-                      <input
-                        type="text"
-                        className={styles.inputField}
-                        value={Array.isArray(leadData.assignedTo)
-                          ? leadData.assignedTo.map(o => typeof o === "string" ? o : o.username).join(", ")
-                          : ""}
-                        readOnly
-                      />
+                      <div className={styles.inputField}>
+                        {Array.isArray(leadData.assignedTo)
+                          ? leadData.assignedTo
+                              .map(o => (typeof o === "string" ? o : o.username))
+                              .filter(Boolean)
+                              .join(", ") || "—"
+                          : "—"}
+                      </div>
                     </td>
                   </tr>
+
                   <tr>
-                    <td>Lead Origin:</td>
+                    <td className={styles.infoLabel}>Lead Origin:</td>
                     <td>
-                      <input
-                        type="text"
-                        className={styles.inputField}
-                        value={leadData.parentLeadNo}
-                        onChange={(e) => handleInputChange('leadOrigin', e.target.value)}
-                        placeholder=""
-                        readOnly
-                      />
+                      <div className={styles.inputField}>
+                        {leadData.parentLeadNo || "—"}
+                      </div>
                     </td>
                   </tr>
+
                   <tr>
-                    <td>Subcategory:</td>
+                    <td className={styles.infoLabel}>Subcategory:</td>
                     <td>
-                      <input
-                        type="text"
-                        className={styles.inputField}
-                        value={leadData.subCategory || ""}
-                        readOnly
-                      />
+                      <div className={styles.inputField}>
+                        {leadData.subCategory || "—"}
+                      </div>
                     </td>
                   </tr>
+
                   <tr>
-                    <td>Associated Subcategories:</td>
+                    <td className={styles.infoLabel}>Associated Subcategories:</td>
                     <td>
-                      <input
-                        type="text"
-                        className={styles.inputField}
-                        value={Array.isArray(leadData.associatedSubCategories)
-                          ? leadData.associatedSubCategories.join(", ")
-                          : ""}
-                        readOnly
-                      />
+                      <div className={styles.inputField}>
+                        {Array.isArray(leadData.associatedSubCategories)
+                          ? leadData.associatedSubCategories.join(", ") || "—"
+                          : "—"}
+                      </div>
                     </td>
                   </tr>
                 </tbody>
