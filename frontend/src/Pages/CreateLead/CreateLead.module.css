@@ -117,7 +117,7 @@
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(41, 41, 139, 0.10);
   margin-bottom: 16px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* ===== Details form table ===== */
@@ -379,11 +379,12 @@ select.inputField:disabled {
   left: 0;
   width: 100%;
   background: #fff;
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10);
+  margin-top: 2px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 200;
-  max-height: 260px;
+  max-height: 220px;
   display: flex;
   flex-direction: column;
 }
@@ -400,16 +401,21 @@ select.inputField:disabled {
 .invSearch {
   width: 100%;
   padding: 6px 10px;
-  font-size: 16px;
-  border: 1px solid #ddd;
+  font-size: 18px;
+  color: #000;
+  border: 1px solid #ccc;
   border-radius: 4px;
   box-sizing: border-box;
   outline: none;
   font-family: inherit;
 }
 
+.invSearch::placeholder {
+  color: #555;
+}
+
 .invSearch:focus {
-  border-color: #29298b;
+  border-color: #007bff;
 }
 
 .invList {
@@ -421,12 +427,13 @@ select.inputField:disabled {
   display: flex;
   align-items: center;
   padding: 8px 12px;
+  border-bottom: 1px solid #eee;
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .invItem:hover {
-  background-color: #f0f0f0;
+  background-color: #f5f5f5;
 }
 
 .invItem input[type="checkbox"] {
@@ -438,12 +445,13 @@ select.inputField:disabled {
 }
 
 .invText {
-  font-size: 16px;
+  font-size: 18px;
+  color: #000;
 }
 
 .invEmpty {
   padding: 12px;
-  font-size: 16px;
+  font-size: 18px;
   color: #888;
   text-align: center;
 }

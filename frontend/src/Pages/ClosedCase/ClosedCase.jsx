@@ -1,7 +1,7 @@
 // src/Pages/ClosedCase/ClosedCase.jsx
-import React, { useEffect, useMemo, useRef, useState, useContext } from "react";
+import { useEffect, useMemo, useRef, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import "./ClosedCase.css";
+import styles from "./ClosedCase.module.css";
 import Navbar from "../../components/Navbar/Navbar";
 import { SideBar } from "../../components/Sidebar/Sidebar";
 import Filter from "../../components/Filter/Filter";
@@ -232,9 +232,9 @@ export const ClosedCase = () => {
   };
 
   return (
-    <div className="case-page-manager">
+    <div className={styles['case-page-manager']}>
       <Navbar />
-      <div className="main-container">
+      <div className={styles['main-container']}>
         <SideBar
           activePage="ClosedCase"
           activeTab="closed"
@@ -242,117 +242,117 @@ export const ClosedCase = () => {
           onShowCaseSelector={() => {}}
         />
 
-        <div className="left-content">
-          <div className="main-page-abovepart">
-            <div className="case-header">
+        <div className={styles['left-content']}>
+          <div className={styles['main-page-abovepart']}>
+            <div className={styles['case-header']}>
               <h2>ARCHIVED CASES</h2>
             </div>
           </div>
 
-          <div className="main-page-belowpart">
-            <div className="content-section">
-            <div className="table-scroll-container">
-              <table className="leads-table">
-                <colgroup>
-    <col style={{ width: columnWidths["Case No."] }} />
-    <col style={{ width: columnWidths["Case Name"] }} />
-    <col style={{ width: columnWidths["Closed At"] }} />
-    <col style={{ width: columnWidths["Role"] }} />
-    <col style={{ width: "5%" }} /> {/* Actions */}
-  </colgroup>
+          <div className={styles['main-page-belowpart']}>
+            <div className={styles['content-section']}>
+              <div className={styles['table-scroll-container']}>
+                <table className={styles['leads-table']}>
+                  <colgroup>
+                    <col style={{ width: columnWidths["Case No."] }} />
+                    <col style={{ width: columnWidths["Case Name"] }} />
+                    <col style={{ width: columnWidths["Closed At"] }} />
+                    <col style={{ width: columnWidths["Role"] }} />
+                    <col style={{ width: "5%" }} /> {/* Actions */}
+                  </colgroup>
 
-                <thead>
-                  <tr>
-                    {["Case No.", "Case Name", "Closed At", "Role"].map((col) => {
-                      const dataKey = colKey[col];
-                      return (
-                        <th
-                          key={col}
-                          className="column-header1"
-                          style={{ width: columnWidths[col], position: "relative" }}
-                        >
-                          <div className="header-title">
-                            {col}
-                            <span>
-                              <button
-                                ref={(el) =>
-                                  (filterButtonRefs.current[dataKey] = el)
-                                }
-                                onClick={() =>
-                                  setOpenFilter((prev) =>
-                                    prev === dataKey ? null : dataKey
-                                  )
-                                }
-                                aria-label={`Filter ${col}`}
-                              >
-                                <img
-                                  src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-                                  className="icon-image"
-                                  alt="filter"
+                  <thead>
+                    <tr>
+                      {["Case No.", "Case Name", "Closed At", "Role"].map((col) => {
+                        const dataKey = colKey[col];
+                        return (
+                          <th
+                            key={col}
+                            className={styles['column-header1']}
+                            style={{ width: columnWidths[col] }}
+                          >
+                            <div className={styles['header-title']}>
+                              {col}
+                              <span>
+                                <button
+                                  ref={(el) =>
+                                    (filterButtonRefs.current[dataKey] = el)
+                                  }
+                                  onClick={() =>
+                                    setOpenFilter((prev) =>
+                                      prev === dataKey ? null : dataKey
+                                    )
+                                  }
+                                  aria-label={`Filter ${col}`}
+                                >
+                                  <img
+                                    src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
+                                    className={styles['icon-image']}
+                                    alt="filter"
+                                  />
+                                </button>
+
+                                <Filter
+                                  dataKey={dataKey}
+                                  distinctValues={distinctValues}
+                                  open={openFilter === dataKey}
+                                  anchorRef={{ current: filterButtonRefs.current[dataKey] }}
+                                  searchValue={filterSearch[dataKey] || ""}
+                                  selections={tempFilterSelections[dataKey] || []}
+                                  onSort={sortColumn}
+                                  onSearch={handleFilterSearch}
+                                  allChecked={allChecked}
+                                  onToggleAll={toggleSelectAll}
+                                  onToggleOne={handleCheckboxToggle}
+                                  onApply={applyFilter}
+                                  onCancel={cancelFilter}
                                 />
-                              </button>
-
-                              <Filter
-                                dataKey={dataKey}
-                                distinctValues={distinctValues}
-                                open={openFilter === dataKey}
-                                anchorRef={{ current: filterButtonRefs.current[dataKey] }}
-                                searchValue={filterSearch[dataKey] || ""}
-                                selections={tempFilterSelections[dataKey] || []}
-                                onSort={sortColumn} // provides A→Z / Z→A from popover
-                                onSearch={handleFilterSearch}
-                                allChecked={allChecked}
-                                onToggleAll={toggleSelectAll}
-                                onToggleOne={handleCheckboxToggle}
-                                onApply={applyFilter}
-                                onCancel={cancelFilter}
-                              />
-                            </span>
-                          </div>
-                        </th>
-                      );
-                    })}
-                    <th style={{ width: "8%", textAlign: "center" }}>Actions</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={5} style={{ textAlign: "center", padding: 12 }}>
-                        Loading…
-                      </td>
+                              </span>
+                            </div>
+                          </th>
+                        );
+                      })}
+                      <th className={styles['actions-header']}>Actions</th>
                     </tr>
-                  ) : err ? (
-                    <tr>
-                      <td colSpan={5} style={{ textAlign: "center", padding: 12 }}>
-                        {err}
-                      </td>
-                    </tr>
-                  ) : sortedCases.length ? (
-                    sortedCases.map((c) => (
-                      <tr key={c.id}>
-                        <td>{c.id}</td>
-                        <td>{c.title}</td>
-                        <td>{formatDate(c.closedAt)}</td>
-                        <td>{c.role}</td>
-                        <td style={{ textAlign: "center" }}>
-                          <button className="view-btn1" onClick={() => handleView(c)}>
-                            View
-                          </button>
+                  </thead>
+
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td colSpan={5} className={styles['center-cell-pad']}>
+                          Loading…
                         </td>
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} style={{ textAlign: "center", padding: 12 }}>
-                        No closed cases found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ) : err ? (
+                      <tr>
+                        <td colSpan={5} className={styles['center-cell-pad']}>
+                          {err}
+                        </td>
+                      </tr>
+                    ) : sortedCases.length ? (
+                      sortedCases.map((c) => (
+                        <tr key={c.id}>
+                          <td>{c.id}</td>
+                          <td>{c.title}</td>
+                          <td>{formatDate(c.closedAt)}</td>
+                          <td>{c.role}</td>
+                          <td className={styles['center-cell']}>
+                            <button className={styles['view-btn1']} onClick={() => handleView(c)}>
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className={styles['center-cell-pad']}>
+                          No closed cases found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>

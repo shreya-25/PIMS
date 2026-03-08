@@ -1,0 +1,183 @@
+/* ─── Layout ────────────────────────────────────────────────────────────── */
+.case-page-manager {
+  display: flex;
+  flex-direction: column;
+  font-family: Arial, sans-serif;
+  height: 100%;
+  background-color: #f9f9f9;
+}
+
+.main-container {
+  display: flex;
+}
+
+.left-content {
+  display: flex;
+  flex-direction: column;
+  margin-top: 110px;
+  align-items: center;
+  height: auto;
+  width: 80%;
+  box-sizing: border-box;
+  margin-left: 20%;
+  padding-left: 20px;
+}
+
+/* ─── Case Header ────────────────────────────────────────────────────────── */
+.main-page-abovepart {
+  width: 95%;
+}
+
+.case-header {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+  font-family: Arial, sans-serif;
+}
+
+.case-header h2 {
+  margin: 8px 0;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+  width: 100%;
+}
+
+/* ─── Table wrapper ──────────────────────────────────────────────────────── */
+.main-page-belowpart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.content-section {
+  width: 95%;
+  padding: 10px;
+}
+
+/* ─── Table scroll container ─────────────────────────────────────────────── */
+.table-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100dvh - 220px);
+}
+
+.table-scroll-container::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.table-scroll-container table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* ─── Leads table ────────────────────────────────────────────────────────── */
+.leads-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0;
+  table-layout: fixed;
+}
+
+.leads-table th,
+.leads-table td {
+  padding: 10px 8px;
+  text-align: left;
+  border: 1px solid #ddd;
+  font-size: 18px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  vertical-align: middle;
+}
+
+.leads-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+  color: #333;
+}
+
+.leads-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.leads-table tbody tr:hover {
+  background-color: rgba(41, 41, 139, 0.05);
+  cursor: default;
+}
+
+/* ─── Column header ──────────────────────────────────────────────────────── */
+.column-header1 {
+  position: relative;
+  padding-top: 0.5rem;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.header-title button {
+  margin-left: 0;
+  padding: 0;
+  font-size: 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+/* ─── Icon image ─────────────────────────────────────────────────────────── */
+.icon-image {
+  height: 20px;
+  width: 20px;
+  filter: brightness(0) saturate(100%);
+  opacity: 0.6;
+}
+
+/* ─── Actions column ─────────────────────────────────────────────────────── */
+.actions-header {
+  width: 8%;
+  text-align: center;
+}
+
+.center-cell {
+  text-align: center;
+}
+
+.leads-table .center-cell-pad,
+.center-cell-pad {
+  text-align: center;
+  padding: 12px;
+}
+
+/* ─── View button ────────────────────────────────────────────────────────── */
+.view-btn1 {
+  background-color: rgb(41, 41, 139);
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.view-btn1:hover {
+  background-color: rgb(30, 30, 110);
+}

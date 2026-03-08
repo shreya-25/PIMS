@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect, useRef, useMemo, } from "react";
 import Navbar from "../../components/Navbar/Navbar";
-import "./SearchLead.css";
+import styles from "./SearchLead.module.css";
 import Pagination from "../../components/Pagination/Pagination";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -655,29 +655,38 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
 
 
   return (
-    <div className="searchlead-container">
+    <div className={styles['searchlead-container']}>
       <Navbar />
-      <div className="main-container">
+      <div className={styles['main-container']}>
         <SideBar activePage="SearchLead" />
-        <div className="left-content">
-          <div className="main-content-searchlead">
-            <div className="search-page-bar">
-              <div className="search-bar-page">
-                <div className="search-container1">
-                  <i className="fa-solid fa-magnifying-glass"></i>
-                  <input
-                    type="text"
-                    className="search-input1"
-                    placeholder="Search Lead"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        console.log("Enter pressed, calling handleSearch");
-                        handleSearch();
-                      }
-                    }}
-                  />
+        <div className={styles['main-content-searchlead']}>
+            <div className={styles['case-header']}>
+              <div className={styles['cp-head']}>
+                <h2>SEARCH LEADS</h2>
+              </div>
+            </div>
+            <div className={styles['search-lead-portion']}>
+              <div className={styles['search-lead-head']}>
+                <label className={styles['input-label1']}>Search Lead</label>
+              </div>
+              <div className={styles['search_and_hierarchy_container']}>
+                <div className={styles['search-bar']}>
+                  <div className={styles['search-container1']}>
+                    <i className="fa-solid fa-magnifying-glass"></i>
+                    <input
+                      type="text"
+                      className={styles['search-input1']}
+                      placeholder="Search leads by keyword..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleSearch();
+                        }
+                      }}
+                    />
+                    <button className={styles['search-btn']} onClick={handleSearch}>Search</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -688,7 +697,7 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
             {/* Conditionally Render Advanced Search Section */}
             {showAdvancedSearch && (
               <>
-                <table className="search-table">
+                <table className={styles['search-table']}>
                   <thead>
                     <tr>
                       <th>Junction</th>
@@ -769,7 +778,7 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
                         </td>
                         <td>
                           <button
-                            className="clear-btn"
+                            className={styles['clear-btn']}
                             onClick={() => handleClearStaticRow(index)}
                           >
                             Clear row
@@ -852,7 +861,7 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
                         </td>
                         <td>
                           <button
-                            className="clear-btn"
+                            className={styles['clear-btn']}
                             onClick={() => handleRemoveDynamicRow(index)}
                           >
                             Remove row
@@ -863,20 +872,20 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
                   </tbody>
                 </table>
 
-                <div className="searchlead-btns-container">
-                  <button className="add-row-btn" onClick={handleAddRow}>
+                <div className={styles['searchlead-btns-container']}>
+                  <button className={styles['add-row-btn']} onClick={handleAddRow}>
                     + Add Row
                   </button>
-                  <button className="add-row-btn" onClick={handleSearch}>
+                  <button className={styles['add-row-btn']} onClick={handleSearch}>
                     Search
                   </button>
                 </div>
               </>
             )}
 
-             <div className="results-section">
-              <p className="results-title">Matching Cases & Leads</p>
-              <div className="result-line"></div>
+             <div className={styles['results-section']}>
+              <p className={styles['results-title']}>Matching Cases & Leads</p>
+              <div className={styles['result-line']}></div>
                 {/* {leadsData.length > 0 && (
     <div className="results-summary">
       <span>
@@ -888,21 +897,23 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
     </div>
   )} */}
   {leadsData.length > 0 && (
-  <div className="results-summary">
-    <div className="results-circle">
-      <div className="results-circle-count">{uniqueCasesCount}</div>
-      <div className="results-circle-label">Cases</div>
+  <div className={styles['results-summary']}>
+    <div className={styles['stat-card']}>
+      <div className={styles['stat-count']}>{uniqueCasesCount}</div>
+      <div className={styles['stat-label']}>Cases Matched</div>
     </div>
-
-    <div className="results-circle">
-      <div className="results-circle-count">{totalLeadsCount}</div>
-      <div className="results-circle-label">Leads</div>
+    <div className={styles['stat-card']}>
+      <div className={styles['stat-count']}>{totalLeadsCount}</div>
+      <div className={styles['stat-label']}>Leads Matched</div>
     </div>
   </div>
 )}
 
 
-              <table className="results-table">
+              <div className={styles['table-section1']}>
+              <div className={styles['table-section']}>
+              <div className={styles['table-scroll-container']}>
+              <table className={styles['results-table']}>
                 <thead>
                   <tr>
                     {[
@@ -917,9 +928,9 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
                         <th
                           key={col}
                           style={{ width: columnWidths[col] }}
-                          className="column-header1"
+                          className={styles['column-header1']}
                         >
-                          <div className="header-title">
+                          <div className={styles['header-title']}>
                             {col}
                             <span>
                               <button
@@ -934,7 +945,7 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
                               >
                                 <img
                                   src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-                                  className="icon-image"
+                                  className={styles['icon-image']}
                                   alt="filter"
                                 />
                               </button>
@@ -1002,7 +1013,7 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
 
                         <td>
                           <button
-                            className="view-btn1"
+                            className={styles['view-btn1']}
                             onClick={() => handleLeadClick(lead)}
                           >
                             View
@@ -1022,6 +1033,7 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
                   )}
                 </tbody>
               </table>
+              </div>
 
               <Pagination
                 currentPage={currentPage}
@@ -1030,8 +1042,9 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
                 pageSize={pageSize}
                 onPageSizeChange={setPageSize}
               />
+              </div>
+              </div>
             </div>
-          </div>
         </div>
       </div>
     </div>
