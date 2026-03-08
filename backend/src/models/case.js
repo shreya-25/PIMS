@@ -59,6 +59,8 @@ const caseSchema = new mongoose.Schema(
     archivedAt: { type: Date, default: null },
 
     characterOfCase: { type: String, default: "" },
+
+    caseSummary: { type: String, default: "" },
   },
   { timestamps: true }
 );

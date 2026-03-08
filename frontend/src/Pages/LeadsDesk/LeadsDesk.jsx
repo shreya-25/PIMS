@@ -330,10 +330,8 @@ const toggleLeadForReport = (leadNo) => {
   const [pageSize, setPageSize] = useState(50);
 
   // Case summary
-  const defaultCaseSummary =
-    "Initial findings indicate that the suspect was last seen near the crime scene at 9:45 PM. Witness statements collected. Awaiting forensic reports and CCTV footage analysis.";
-  const [caseSummary, setCaseSummary] = useState(defaultCaseSummary);
-  const [isEditing, setIsEditing] = useState(false);
+  const [caseSummary, setCaseSummary] = useState('');
+  const caseSummarySaveTimer = useRef(null);
 
   // ------------------ Modal Handlers ------------------
   const openPersonModal = (leadNo, description, caseNo, caseName, leadReturnId) => {
@@ -600,12 +598,24 @@ const handleShowLeadsInRange = () => {
 
   // ------------------ Case Summary Editing ------------------
   const handleCaseSummaryChange = (e) => setCaseSummary(e.target.value);
-  const handleEditClick = () => setIsEditing(true);
-  
-  // const handleSaveClick = () => {
-  //   setIsEditing(false);
-  //   alert("Report Saved!");
-  // };
+
+  useEffect(() => {
+    if (!selectedCase?.caseNo) return;
+    clearTimeout(caseSummarySaveTimer.current);
+    caseSummarySaveTimer.current = setTimeout(async () => {
+      try {
+        const token = localStorage.getItem("token");
+        await api.put(
+          "/api/cases/case-summary",
+          { caseNo: selectedCase.caseNo, caseName: selectedCase.caseName, caseSummary },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } catch (err) {
+        console.error("Failed to save case summary", err);
+      }
+    }, 2000);
+    return () => clearTimeout(caseSummarySaveTimer.current);
+  }, [caseSummary, selectedCase?.caseNo]);
   const [value, setValue] = useState("");
   const handleSearch = async () => {
     try {
@@ -1273,7 +1283,6 @@ useEffect(() => {
                 style={{ fontFamily: "inherit", fontSize: "18px" }}
                 value={caseSummary}
                 onChange={handleCaseSummaryChange}
-                readOnly={!isEditing}
               ></textarea>
             </div>
             </CollapsibleSection>

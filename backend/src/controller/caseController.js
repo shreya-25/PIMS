@@ -447,7 +447,7 @@ exports.getCaseSummaryByCaseNo = async (req, res) => {
     if (!caseNo) return res.status(400).json({ message: "Case number is required" });
     const caseData = await Case.findOne({ caseNo }).lean();
     if (!caseData) return res.status(404).json({ message: "Case not found" });
-    res.status(200).json({ summary: "" });
+    res.status(200).json({ summary: caseData.caseSummary ?? "" });
   } catch (error) {
     console.error("Error fetching case summary:", error);
     res.status(500).json({ message: "Error fetching case summary", error: error.message });
@@ -459,7 +459,20 @@ exports.updateExecutiveCaseSummary = async (req, res) => {
 };
 
 exports.updateCaseSummary = async (req, res) => {
-  return res.status(200).json({ message: "Case summary field removed from schema" });
+  try {
+    const { caseNo, caseSummary } = req.body;
+    if (!caseNo) return res.status(400).json({ message: "caseNo is required" });
+    const updated = await Case.findOneAndUpdate(
+      { caseNo },
+      { caseSummary },
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ message: "Case not found" });
+    return res.status(200).json({ message: "Case summary updated", caseSummary: updated.caseSummary });
+  } catch (err) {
+    console.error("Error updating case summary:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
 };
 
 exports.getExecutiveCaseSummary = async (req, res) => {
@@ -481,7 +494,7 @@ exports.getCaseSummary = async (req, res) => {
     if (!caseNo) return res.status(400).json({ message: "caseNo is required" });
     const caseDoc = await Case.findOne({ caseNo }).lean();
     if (!caseDoc) return res.status(404).json({ message: "Case not found" });
-    return res.status(200).json({ caseNo: caseDoc.caseNo, caseSummary: "" });
+    return res.status(200).json({ caseNo: caseDoc.caseNo, caseSummary: caseDoc.caseSummary ?? "" });
   } catch (err) {
     console.error("Error fetching case summary:", err);
     return res.status(500).json({ message: "Server error", error: err.message });

@@ -45,7 +45,7 @@ export const CasePageManager = () => {
     const [showSort, setShowSort] = useState(false);
     const [pendingRoute, setPendingRoute]   = useState(null);
 
-    const [summary, setSummary] = useState('');
+    const [summary, setSummary] = useState(null);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState('');
     const saveTimer = useRef(null);
@@ -880,6 +880,8 @@ const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
 
 
 useEffect(() => {
+    setSummary(null); // reset while loading new case
+    isFirstLoad.current = true;
     async function load() {
       if (!selectedCase?.caseNo) return;
       try {
@@ -888,9 +890,11 @@ useEffect(() => {
           `/api/cases/case-summary/${selectedCase.caseNo}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setSummary(data.caseSummary);
+        console.log('[CaseSummary] loaded:', data);
+        setSummary(data.caseSummary ?? '');
       } catch (err) {
-        console.error('Failed to load summary', err);
+        console.error('[CaseSummary] Failed to load summary', err);
+        setSummary('');
       }
     }
     load();
@@ -906,8 +910,8 @@ useEffect(() => {
     // clear any pending save
     clearTimeout(saveTimer.current);
 
-    // if summary is empty or no case selected, don’t bother
-    if (!selectedCase?.caseNo) return;
+    // if summary not yet loaded or no case selected, don’t bother
+    if (summary === null || !selectedCase?.caseNo) return;
 
     // schedule a save
     saveTimer.current = setTimeout(async () => {
@@ -915,6 +919,7 @@ useEffect(() => {
       setError('');
       try {
         const token = localStorage.getItem('token');
+        console.log('[CaseSummary] saving:', { caseNo: selectedCase.caseNo, caseSummary: summary });
         await api.put(
           '/api/cases/case-summary',
           {
@@ -924,8 +929,9 @@ useEffect(() => {
           },
           { headers: { Authorization: `Bearer ${token}` } }
         );
+        console.log('[CaseSummary] saved successfully');
       } catch (err) {
-        console.error('Save failed', err);
+        console.error('[CaseSummary] Save failed', err);
         setError('Save failed. Try again.');
       } finally {
         setIsSaving(false);

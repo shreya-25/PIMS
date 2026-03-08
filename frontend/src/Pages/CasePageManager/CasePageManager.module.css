@@ -177,7 +177,8 @@
   cursor: pointer;
   display: flex;
   align-items: center;
-  font-size: 30px;
+  font-size: 18px;
+  color: #000;
   gap: 6px;
 }
 

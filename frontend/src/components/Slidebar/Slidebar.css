@@ -321,7 +321,7 @@ font-size: 18px; /* Adjust the size as needed */
 .inv-item:hover { background: #eef0fa; }
 .inv-text {
   flex: 1;
-  color: #555;
+  color: black;
   font-size: 18px;
   font-weight: 400;
   font-family: Arial, sans-serif;
