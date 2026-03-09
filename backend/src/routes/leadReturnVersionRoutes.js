@@ -13,7 +13,7 @@ const {
     restoreVersion
 } = require("../utils/leadReturnVersioning");
 const { generateActivityLog } = require("../utils/versionDiffTracker");
-const { getFileFromS3 } = require("../s3");
+const { getProxyUrl } = require("../s3");
 const LREnclosure = require("../models/LREnclosure");
 const LRPicture = require("../models/LRPicture");
 const LRAudio = require("../models/LRAudio");
@@ -62,7 +62,7 @@ router.get("/file-url", async (req, res) => {
             });
         }
 
-        const signedUrl = await getFileFromS3(record.s3Key);
+        const signedUrl = getProxyUrl(record.s3Key, record.caseNo);
 
         res.json({
             success: true,

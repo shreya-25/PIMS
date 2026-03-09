@@ -1,6 +1,6 @@
 const LREnclosure = require("../models/LREnclosure");
 const fs = require("fs");
-const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
+const { uploadToS3, deleteFromS3, getProxyUrl } = require("../s3");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 
@@ -89,12 +89,10 @@ const getLREnclosureByDetails = async (req, res) => {
     const lrEnclosures = await LREnclosure.find(query);
     if (lrEnclosures.length === 0) return res.status(404).json({ message: "No enclosures found." });
 
-    const enclosuresWithUrls = await Promise.all(
-      lrEnclosures.map(async (enc) => {
-        const signedUrl = enc.s3Key ? await getFileFromS3(enc.s3Key) : null;
+    const enclosuresWithUrls = lrEnclosures.map((enc) => {
+        const signedUrl = enc.s3Key ? getProxyUrl(enc.s3Key, caseNo) : null;
         return { ...enc.toObject(), signedUrl };
-      })
-    );
+      });
     res.status(200).json(enclosuresWithUrls);
   } catch (err) {
     console.error("Error fetching LREnclosure records:", err);

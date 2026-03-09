@@ -32,6 +32,7 @@ const verifyToken = require("./middleware/authMiddleware");
 
 
 const reportRoutes = require("./routes/reportRoutes.js"); // For report generation
+const fileRoutes = require("./routes/fileRoutes.js"); // Azure blob proxy (case-membership gated)
 
 if (process.env.NODE_ENV !== "production") require("dotenv").config();
 
@@ -117,6 +118,7 @@ app.use("/api/leadreturn-versions", leadReturnVersionRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'temp_uploads')));
 
 app.use("/api/report", reportRoutes); // For report generation
+app.use("/api/files", fileRoutes); // Blob proxy - access gated by case membership
 
 if (process.env.NODE_ENV === 'production') {
   const buildPath = path.join(__dirname, '..', '..', 'frontend', 'build');

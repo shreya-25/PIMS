@@ -1,6 +1,6 @@
 const LREvidence = require("../models/LREvidence");
 const fs = require("fs");
-const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
+const { uploadToS3, deleteFromS3, getProxyUrl } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 
 const asBool = v => v === true || v === "true" || v === 1 || v === "1";
@@ -71,12 +71,10 @@ const getLREvidenceByDetails = async (req, res) => {
             return res.status(404).json({ message: "No evidences found." });
         }
 
-        const evidencesWithUrls = await Promise.all(
-          lrEvidences.map(async (ev) => {
-            const signedUrl = ev.s3Key ? await getFileFromS3(ev.s3Key) : null;
+        const evidencesWithUrls = lrEvidences.map((ev) => {
+            const signedUrl = ev.s3Key ? getProxyUrl(ev.s3Key, caseNo) : null;
             return { ...ev.toObject(), signedUrl };
-          })
-        );
+          });
         res.status(200).json(evidencesWithUrls);
     } catch (err) {
         console.error("Error fetching LREvidence records:", err.message);

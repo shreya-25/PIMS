@@ -1,6 +1,6 @@
 const LRPicture = require("../models/LRPicture");
 const fs = require("fs");
-const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
+const { uploadToS3, deleteFromS3, getProxyUrl } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 
 const createLRPicture = async (req, res) => {
@@ -63,16 +63,10 @@ const getLRPictureByDetails = async (req, res) => {
 
     if (!lrPictures || lrPictures.length === 0) return res.status(200).json([]);
 
-    const picturesWithUrls = await Promise.all(
-      lrPictures.map(async (pic) => {
-        let signedUrl = null;
-        if (pic.s3Key) {
-          try { signedUrl = await getFileFromS3(pic.s3Key); }
-          catch (e) { console.warn(`Failed to sign S3 key ${pic.s3Key}:`, e?.message); }
-        }
+    const picturesWithUrls = lrPictures.map((pic) => {
+        const signedUrl = pic.s3Key ? getProxyUrl(pic.s3Key, caseNo) : null;
         return { ...pic.toObject(), signedUrl };
-      })
-    );
+      });
     res.status(200).json(picturesWithUrls);
   } catch (err) {
     console.error("Error fetching lrPictures records:", err?.message);

@@ -1,7 +1,7 @@
 const LRPerson = require("../models/LRPerson");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const fs = require("fs");
-const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
+const { uploadToS3, deleteFromS3, getProxyUrl } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 
 // Validation function to check if at least one meaningful field is filled
@@ -106,16 +106,11 @@ const getLRPersonByDetails = async (req, res) => {
             return res.status(404).json({ message: "No records found." });
         }
 
-        const personsWithPhotos = await Promise.all(
-            lrPersons.map(async (p) => {
+        const personsWithPhotos = lrPersons.map((p) => {
                 const obj = p.toObject();
-                if (obj.photoS3Key) {
-                    try { obj.photoUrl = await getFileFromS3(obj.photoS3Key); }
-                    catch (e) { console.warn(`Failed to sign photo key ${obj.photoS3Key}:`, e?.message); obj.photoUrl = null; }
-                }
+                if (obj.photoS3Key) obj.photoUrl = getProxyUrl(obj.photoS3Key, caseNo);
                 return obj;
-            })
-        );
+            });
         res.status(200).json(personsWithPhotos);
     } catch (err) {
         console.error("Error fetching LRPerson records:", err.message);
@@ -133,16 +128,11 @@ const getLRPersonByDetailsandid = async (req, res) => {
             return res.status(404).json({ message: "No records found." });
         }
 
-        const personsWithPhotos = await Promise.all(
-            lrPersons.map(async (p) => {
+        const personsWithPhotos = lrPersons.map((p) => {
                 const obj = p.toObject();
-                if (obj.photoS3Key) {
-                    try { obj.photoUrl = await getFileFromS3(obj.photoS3Key); }
-                    catch (e) { console.warn(`Failed to sign photo key ${obj.photoS3Key}:`, e?.message); obj.photoUrl = null; }
-                }
+                if (obj.photoS3Key) obj.photoUrl = getProxyUrl(obj.photoS3Key, caseNo);
                 return obj;
-            })
-        );
+            });
         res.status(200).json(personsWithPhotos);
     } catch (err) {
         console.error("Error fetching LRPerson records:", err.message);
@@ -266,7 +256,7 @@ const uploadPersonPhoto = async (req, res) => {
         person.photoFilename = req.file.filename;
         await person.save();
 
-        const photoUrl = await getFileFromS3(key);
+        const photoUrl = getProxyUrl(key, person.caseNo);
         res.status(200).json({ message: "Photo uploaded successfully.", photoUrl, photoS3Key: key });
     } catch (err) {
         if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);

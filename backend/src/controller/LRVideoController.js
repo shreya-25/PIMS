@@ -1,6 +1,6 @@
 const LRVideo = require("../models/LRVideo");
 const fs = require("fs");
-const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
+const { uploadToS3, deleteFromS3, getProxyUrl } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 
 const createLRVideo = async (req, res) => {
@@ -70,12 +70,10 @@ const getLRVideoByDetails = async (req, res) => {
     const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
     const lrVideos = await LRVideo.find(query);
 
-    const withUrls = await Promise.all(
-      lrVideos.map(async (v) => {
-        const signedUrl = v.s3Key ? await getFileFromS3(v.s3Key) : null;
+    const withUrls = lrVideos.map((v) => {
+        const signedUrl = v.s3Key ? getProxyUrl(v.s3Key, caseNo) : null;
         return { ...v.toObject(), signedUrl };
-      })
-    );
+      });
     return res.status(200).json(withUrls);
   } catch (err) {
     console.error("Error fetching LRVideos:", err);

@@ -104,12 +104,32 @@ const getObjectBuffer = async (key) => {
   });
 };
 
+// Returns a backend proxy URL for a blob. Access is enforced server-side
+// by /api/files route (case membership check). No SAS token is exposed.
+const getProxyUrl = (key, caseNo) => {
+  return `/api/files/${key}?caseNo=${encodeURIComponent(caseNo)}`;
+};
+
+// Streams a blob directly from Azure, returning the readable stream and metadata.
+// Used by the /api/files proxy route to pipe the response to the client.
+const downloadBlob = async (key) => {
+  const blockBlobClient = containerClient.getBlockBlobClient(key);
+  const response = await blockBlobClient.download(0);
+  return {
+    contentType: response.contentType || "application/octet-stream",
+    contentLength: response.contentLength,
+    stream: response.readableStreamBody,
+  };
+};
+
 module.exports = {
   blobServiceClient,
   uploadToS3,
   deleteFromS3,
   getFileFromS3,
   getObjectBuffer,
+  getProxyUrl,
+  downloadBlob,
 };
 
 // s3.js

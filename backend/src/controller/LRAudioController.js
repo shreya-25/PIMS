@@ -1,6 +1,6 @@
 const LRAudio = require("../models/LRAudio");
 const fs = require("fs");
-const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
+const { uploadToS3, deleteFromS3, getProxyUrl } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 
 const toBool = (v) => v === true || v === "true" || v === "1";
@@ -72,12 +72,10 @@ const getLRAudioByDetails = async (req, res) => {
     const lrAudios = await LRAudio.find(query);
     if (lrAudios.length === 0) return res.status(404).json({ message: "No Audios found." });
 
-    const withUrls = await Promise.all(
-      lrAudios.map(async (a) => {
-        const signedUrl = a.s3Key ? await getFileFromS3(a.s3Key) : null;
+    const withUrls = lrAudios.map((a) => {
+        const signedUrl = a.s3Key ? getProxyUrl(a.s3Key, caseNo) : null;
         return { ...a.toObject(), signedUrl };
-      })
-    );
+      });
     res.status(200).json(withUrls);
   } catch (err) {
     console.error("Error fetching lrAudios records:", err);
