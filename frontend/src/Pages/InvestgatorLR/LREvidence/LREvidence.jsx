@@ -1,618 +1,544 @@
-import Navbar from '../../../components/Navbar/Navbar';
-import styles from './LREvidence.module.css';
-import axios from "axios";
-import { CaseContext } from "../../CaseContext";
-import Comment from "../../../components/Comment/Comment";
-import React, { useContext, useState, useEffect, useRef, useMemo} from 'react';
+/**
+ * LREvidence.jsx
+ *
+ * Manages the Evidence section of a Lead Return. Allows investigators and case
+ * managers to add, edit, and delete evidence items (file uploads or external
+ * links) linked to specific narrative IDs within a case/lead context.
+ *
+ * Access control:
+ *  - Case Managers / Detective Supervisors see all records and may change
+ *    per-row access levels.
+ *  - Investigators and assignees see only records matching their access tier.
+ *  - Read-only mode is enforced when the lead status is "In Review" or
+ *    "Completed", or when useLeadStatus returns isReadOnly.
+ */
+
+import { useContext, useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import api, { BASE_URL } from "../../../api";
-import {SideBar } from "../../../components/Sidebar/Sidebar";
+
+import Navbar from "../../../components/Navbar/Navbar";
+import { SideBar } from "../../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../../components/AlertModal/AlertModal";
-import { useLeadStatus } from '../../../hooks/useLeadStatus';
+import { CaseContext } from "../../CaseContext";
+import { useLeadStatus } from "../../../hooks/useLeadStatus";
+import api from "../../../api";
+import styles from "../LR.module.css";
+import { formatDate, alphabetToNumber, buildLeadCasePath } from "../lrUtils";
+import { useLeadReport } from "../useLeadReport";
 
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-export const LREvidence = () => {
-    // useEffect(() => {
-    //     // Apply style when component mounts
-    //     document.body.style.overflow = "hidden";
-    
-    //     return () => {
-    //       // Reset to default when component unmounts
-    //       document.body.style.overflow = "auto";
-    //     };
-    //   }, []);
-  const navigate = useNavigate(); // Initialize navigate hook
-  const location = useLocation();
-  const [loading, setLoading] = useState(true);
-      const [error, setError] = useState("");
-      const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);  
-      const fileInputRef = useRef();
-      const [editIndex, setEditIndex]         = useState(null);
-      const [originalDesc, setOriginalDesc]   = useState("");
-      const [leadData, setLeadData] = useState({});
- const [alertOpen, setAlertOpen] = useState(false);
-    const [alertMessage, setAlertMessage] = useState("");
-    const [deleteOpen, setDeleteOpen] = useState(false);
-const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
+const EVIDENCE_TYPES = [
+  "Document",
+  "Business Records",
+  "Cellular Phone Records",
+  "Deposition",
+  "Statement",
+];
 
-// Open the confirm modal
-const requestDelete = (idx) => {
-  setPendingDeleteIndex(idx);
-  setDeleteOpen(true);
-};
+// Section tab definitions — label + route + whether this tab is active here
+const SECTION_TABS = [
+  { label: "Instructions", path: "/LRInstruction" },
+  { label: "Narrative",    path: "/LRReturn"      },
+  { label: "Person",       path: "/LRPerson"      },
+  { label: "Vehicles",     path: "/LRVehicle"     },
+  { label: "Enclosures",   path: "/LREnclosures"  },
+  { label: "Evidence",     path: "/LREvidence",   active: true },
+  { label: "Pictures",     path: "/LRPictures"    },
+  { label: "Audio",        path: "/LRAudio"       },
+  { label: "Videos",       path: "/LRVideo"       },
+  { label: "Notes",        path: "/LRScratchpad"  },
+  { label: "Timeline",     path: "/LRTimeline"    },
+];
 
-// User clicked "Confirm" on the modal
-const confirmDelete = async () => {
-  const idx = pendingDeleteIndex;
-  setDeleteOpen(false);
-  setPendingDeleteIndex(null);
-  if (idx == null) return;
-  await performDelete(idx); // calls the actual delete
-};
+// ─── Pure Helpers ─────────────────────────────────────────────────────────────
 
-function getMissingEvidenceFields({ evidenceData, file, editIndex }) {
+/** Returns a blank evidence form object. */
+const defaultEvidence = () => ({
+  leadReturnId:        "",
+  evidenceDescription: "",
+  collectionDate:      "",
+  disposedDate:        "",
+  type:                "",
+  disposition:         "",
+  isLink:              false,
+  link:                "",
+  originalName:        "",
+  filename:            "",
+  uploadMode:          "file",    // "file" | "link"
+  accessLevel:         "Everyone",
+});
+
+/**
+ * Validates the evidence form and returns an array of missing field names.
+ *
+ * @param {Object}     evidenceData - Current form state.
+ * @param {File|null}  file         - Currently selected file (if any).
+ * @param {number|null} editIndex   - null when creating, row index when editing.
+ * @returns {string[]}
+ */
+const getMissingFields = ({ evidenceData, file, editIndex }) => {
   const missing = [];
 
-  // Required fields
-  if (!evidenceData.leadReturnId?.trim()) missing.push("Narrative Id");
-  if (!evidenceData.collectionDate?.trim()) missing.push("Collection Date");
+  if (!evidenceData.leadReturnId?.trim())       missing.push("Narrative Id");
+  if (!evidenceData.collectionDate?.trim())     missing.push("Collection Date");
   if (!evidenceData.evidenceDescription?.trim()) missing.push("Description");
 
-  // Upload-type specific checks
-  const mode = evidenceData.uploadMode; // 'none' | 'file' | 'link'
-  if (mode === "link") {
+  if (evidenceData.uploadMode === "link") {
     if (!evidenceData.link?.trim()) missing.push("Link");
-  } else if (mode === "file") {
-    // Only require a file when creating new; replacement is optional on edit
-    if (editIndex === null && !file) missing.push("File");
+  } else if (evidenceData.uploadMode === "file" && editIndex === null && !file) {
+    missing.push("File");
   }
 
   return missing;
-}
-
-
-// DELETE without any prompt
-const performDelete = async (idx) => {
-  const ev = evidences[idx];
-  const token = localStorage.getItem("token");
-  const url = `/api/lrevidence/${selectedLead.leadNo}/` +
-              `${encodeURIComponent(selectedLead.leadName)}/` +
-              `${selectedCase.caseNo}/` +
-              `${encodeURIComponent(selectedCase.caseName)}/` +
-              `${ev.returnId}/` +
-              `${encodeURIComponent(ev.evidenceDescription)}`;
-
-  try {
-    await api.delete(url, { headers: { Authorization: `Bearer ${token}` } });
-    setEvidences(list => list.filter((_, i) => i !== idx));
-  } catch (err) {
-    console.error(err);
-    setAlertMessage("Failed to delete: " + (err.response?.data?.message || err.message));
-    setAlertOpen(true);
-  }
 };
 
+// ─── Component ────────────────────────────────────────────────────────────────
 
-  
-    const { formKey, listKey } = useMemo(() => {
-  const cn   = selectedCase?.caseNo ?? "NA";
-  const cNam = encodeURIComponent(selectedCase?.caseName ?? "NA");
-  const ln   = selectedLead?.leadNo ?? "NA";
-  const lNam = encodeURIComponent(selectedLead?.leadName ?? "NA");
-  return {
-    formKey: `LREvidence:form:${cn}:${cNam}:${ln}:${lNam}`,
-    listKey: `LREvidence:list:${cn}:${cNam}:${ln}:${lNam}`,
-  };
-}, [
-  selectedCase?.caseNo,
-  selectedCase?.caseName,
-  selectedLead?.leadNo,
-  selectedLead?.leadName,
-]);
-  
-     const formatDate = (dateString) => {
-      if (!dateString) return "";
-      const date = new Date(dateString);
-      if (isNaN(date)) return "";
-      const month = (date.getMonth() + 1).toString().padStart(2, "0");
-      const day = date.getDate().toString().padStart(2, "0");
-      const year = date.getFullYear().toString().slice(-2);
-      return `${month}/${day}/${year}`;
-    };
-  
-    const { leadDetails, caseDetails } = location.state || {};
+export const LREvidence = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-// defaultEvidence()
-const defaultEvidence = () => ({
-  leadReturnId: "",
-  evidenceDescription: "",
-  collectionDate: "",
-  disposedDate: "",
-  type: "",
-  disposition: "",
-  // old fields
-  isLink: false,
-  link: "",
-  originalName: "",
-  filename: "",
-  // NEW
-  uploadMode: "file", // 'file' | 'link'
-  accessLevel: "Everyone",
-});
+  // ── Context ─────────────────────────────────────────────────────────────────
+  const { selectedCase, selectedLead, leadStatus } = useContext(CaseContext);
 
-
-    // add near other useState hooks
-const [narrativeIds, setNarrativeIds] = useState([]);
-
-const alphabetToNumber = (str = "") => {
-  let n = 0;
-  for (let i = 0; i < str.length; i++) n = n * 26 + (str.charCodeAt(i) - 64);
-  return n;
-};
-
-useEffect(() => {
-  if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
-
-  const ac = new AbortController();
-
-  (async () => {
-    try {
-      const token   = localStorage.getItem("token");
-      const leadNo  = selectedLead.leadNo;
-      const caseNo  = selectedCase.caseNo;
-      const encLead = encodeURIComponent(selectedLead.leadName);
-      const encCase = encodeURIComponent(selectedCase.caseName);
-
-      const resp = await api.get(
-        `/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`,
-        { headers: { Authorization: `Bearer ${token}` }, signal: ac.signal }
-      );
-
-      const ids = [...new Set((resp?.data || []).map(r => r?.leadReturnId).filter(Boolean))];
-      ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
-      setNarrativeIds(ids);
-
-      // for NEW entries (not editing), preselect the newest Narrative Id if none chosen yet
-      setEvidenceData(prev =>
-        (editIndex === null && !prev.leadReturnId)
-          ? { ...prev, leadReturnId: ids.at(-1) || "" }
-          : prev
-      );
-    } catch (e) {
-      if (!ac.signal.aborted) console.error("Failed to fetch Narrative Ids:", e);
-    }
-  })();
-
-  return () => ac.abort();
-}, [
-  selectedLead?.leadNo,
-  selectedLead?.leadName,
-  selectedCase?.caseNo,
-  selectedCase?.caseName,
-  editIndex
-]);
-
-
-
-  // State to manage form data
-   const [evidenceData, setEvidenceData] = useState(() => {
-  const saved = sessionStorage.getItem(formKey);
-  return saved ? JSON.parse(saved) : defaultEvidence();
-});
-
-const [evidences, setEvidences] = useState(() => {
-  const saved = sessionStorage.getItem(listKey);
-  return saved ? JSON.parse(saved) : [];
-});
-
-useEffect(() => {
-  // reload form & list for the newly selected lead/case
-  const savedForm = sessionStorage.getItem(formKey);
-  setEvidenceData(savedForm ? JSON.parse(savedForm) : defaultEvidence());
-
-  const savedList = sessionStorage.getItem(listKey);
-  setEvidences(savedList ? JSON.parse(savedList) : []);
-
-  // reset edit state and file input
-  setEditIndex(null);
-  setOriginalDesc("");
-  setFile(null);
-  if (fileInputRef.current) fileInputRef.current.value = "";
-}, [formKey, listKey]);
-
-
-  const [file, setFile] = useState(null);
-
-useEffect(() => {
-  sessionStorage.setItem(formKey, JSON.stringify(evidenceData));
-}, [formKey, evidenceData]);
-
-useEffect(() => {
-  sessionStorage.setItem(listKey, JSON.stringify(evidences));
-}, [listKey, evidences]);
-
-  
-  const handleInputChange = (field, value) => {
-    setEvidenceData({ ...evidenceData, [field]: value });
-  };
-
-  const handleNavigation = (route) => {
-    navigate(route); // Navigate to respective page
-  };
-
-   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
-                const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
-              
-                const onShowCaseSelector = (route) => {
-                  navigate(route, { state: { caseDetails } });
-              };
-
-   const attachFiles = async (items, idFieldName, filesEndpoint) => {
-  return Promise.all(
-    (items || []).map(async (item) => {
-      const realId = item[idFieldName];
-      if (!realId) return { ...item, files: [] };
-      try {
-        const { data: filesArray } = await api.get(
-          `${filesEndpoint}/${realId}`,
-          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-        );
-        return { ...item, files: filesArray };
-      } catch (err) {
-        console.error(`Error fetching files for ${filesEndpoint}/${realId}:`, err);
-        return { ...item, files: [] };
-      }
-    })
-  );
-};
-
-
-    const [isGenerating, setIsGenerating] = useState(false);
-    const handleViewLeadReturn = async () => {
-  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-  if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
-    setAlertMessage("Please select a case and lead first.");
-    setAlertOpen(true);
-    return;
-  }
-
-  if (isGenerating) return;
-
-  try {
-    setIsGenerating(true);
-
-    const token = localStorage.getItem("token");
-    const headers = { headers: { Authorization: `Bearer ${token}` } };
-
-    const { leadNo } = lead;
-    const leadName = lead.leadName || lead.description;
-    const { caseNo, caseName } = kase;
-    const encLead = encodeURIComponent(leadName);
-    const encCase = encodeURIComponent(caseName);
-
-    // fetch everything we need for the report (same endpoints you use on LRFinish)
-    const [
-      instrRes,
-      returnsRes,
-      personsRes,
-      vehiclesRes,
-      enclosuresRes,
-      evidenceRes,
-      picturesRes,
-      audioRes,
-      videosRes,
-      scratchpadRes,
-      timelineRes,
-    ] = await Promise.all([
-      api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-    ]);
-
-    // add files where applicable (note the plural file endpoints)
-    const enclosuresWithFiles = await attachFiles(enclosuresRes.data, "_id", "/api/lrenclosures/files");
-    const evidenceWithFiles   = await attachFiles(evidenceRes.data,   "_id", "/api/lrevidences/files");
-    const picturesWithFiles   = await attachFiles(picturesRes.data,   "pictureId", "/api/lrpictures/files");
-    const audioWithFiles      = await attachFiles(audioRes.data,      "audioId",   "/api/lraudio/files");
-    const videosWithFiles     = await attachFiles(videosRes.data,     "videoId",   "/api/lrvideo/files");
-
-    const leadInstructions = instrRes.data?.[0] || {};
-    const leadReturns      = returnsRes.data || [];
-    const leadPersons      = personsRes.data || [];
-    const leadVehicles     = vehiclesRes.data || [];
-    const leadScratchpad   = scratchpadRes.data || [];
-    const leadTimeline     = timelineRes.data || [];
-
-    // make all sections true (Full Report)
-    const selectedReports = {
-      FullReport: true,
-      leadInstruction: true,
-      leadReturn: true,
-      leadPersons: true,
-      leadVehicles: true,
-      leadEnclosures: true,
-      leadEvidence: true,
-      leadPictures: true,
-      leadAudio: true,
-      leadVideos: true,
-      leadScratchpad: true,
-      leadTimeline: true,
-    };
-
-    const body = {
-      user: localStorage.getItem("loggedInUser") || "",
-      reportTimestamp: new Date().toISOString(),
-
-      // sections (values are the fetched arrays/objects)
-      leadInstruction: leadInstructions,
-      leadReturn:      leadReturns,
-      leadPersons,
-      leadVehicles,
-      leadEnclosures:  enclosuresWithFiles,
-      leadEvidence:    evidenceWithFiles,
-      leadPictures:    picturesWithFiles,
-      leadAudio:       audioWithFiles,
-      leadVideos:      videosWithFiles,
-      leadScratchpad,
-      leadTimeline,
-
-      // also send these two, since your backend expects them
-      selectedReports,
-      leadInstructions,
-      leadReturns,
-    };
-
-    const resp = await api.post("/api/report/generate", body, {
-      responseType: "blob",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    const file = new Blob([resp.data], { type: "application/pdf" });
-
-    navigate("/DocumentReview", {
-      state: {
-        pdfBlob: file,
-        filename: `Lead_${leadNo || "report"}.pdf`,
-      },
-    });
-  } catch (err) {
-    if (err?.response?.data instanceof Blob) {
-      const text = await err.response.data.text();
-      console.error("Report error:", text);
-      setAlertMessage("Error generating PDF:\n" + text);
-    } else {
-      console.error("Report error:", err);
-      setAlertMessage("Error generating PDF:\n" + (err.message || "Unknown error"));
-    }
-    setAlertOpen(true);
-  } finally {
-    setIsGenerating(false);
-  }
-};
-
+  // ── Permission flags ────────────────────────────────────────────────────────
+  const isCaseManager =
+    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
   const signedInOfficer = localStorage.getItem("loggedInUser");
- // who is primary for this lead?
-const primaryUsername =
-  leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
 
-// am I the primary investigator on this lead?
-const isPrimaryInvestigator =
-  selectedCase?.role === "Investigator" &&
-  !!signedInOfficer &&
-  signedInOfficer === primaryUsername;
-
-// primary goes to the interactive ViewLR page
-const goToViewLR = () => {
-  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-  if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-    setAlertMessage("Please select a case and lead first.");
-    setAlertOpen(true);
-    return;
-  }
-
-  navigate("/viewLR", {
-    state: { caseDetails: kase, leadDetails: lead }
+  // ── Lead status hook (read-only gate) ───────────────────────────────────────
+  const { status, isReadOnly } = useLeadStatus({
+    caseNo:   selectedCase.caseNo,
+    caseName: selectedCase.caseName,
+    leadNo:   selectedLead.leadNo,
+    leadName: selectedLead.leadName,
   });
-};
-  
 
-const handleSaveEvidence = async () => {
+  // ── Session-storage keys (memoized per case/lead) ───────────────────────────
+  const { formKey, listKey } = useMemo(() => {
+    const cn   = selectedCase?.caseNo  ?? "NA";
+    const cNam = encodeURIComponent(selectedCase?.caseName ?? "NA");
+    const ln   = selectedLead?.leadNo  ?? "NA";
+    const lNam = encodeURIComponent(selectedLead?.leadName ?? "NA");
+    return {
+      formKey: `LREvidence:form:${cn}:${cNam}:${ln}:${lNam}`,
+      listKey: `LREvidence:list:${cn}:${cNam}:${ln}:${lNam}`,
+    };
+  }, [selectedCase?.caseNo, selectedCase?.caseName, selectedLead?.leadNo, selectedLead?.leadName]);
 
-  const missing = getMissingEvidenceFields({ evidenceData, file, editIndex });
-  if (missing.length) {
-    setAlertMessage(
-      `Please fill the required field${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}.`
-    );
-    setAlertOpen(true);
-    return;
-  }
-  const fd = new FormData();
+  // ── Core state ──────────────────────────────────────────────────────────────
+  const [evidenceData, setEvidenceData] = useState(() => {
+    const saved = sessionStorage.getItem(formKey);
+    return saved ? JSON.parse(saved) : defaultEvidence();
+  });
+  const [evidences, setEvidences] = useState(() => {
+    const saved = sessionStorage.getItem(listKey);
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [file,         setFile]         = useState(null);
+  const [editIndex,    setEditIndex]    = useState(null);
+  const [originalDesc, setOriginalDesc] = useState("");
+  const [narrativeIds, setNarrativeIds] = useState([]);
+  const [leadData,     setLeadData]     = useState({});
 
-  // FILE: only if in file mode AND a file was chosen
-  if (evidenceData.uploadMode === "file" && file) {
-    fd.append("file", file);
-  }
+  // ── Alert / confirm modals ──────────────────────────────────────────────────
+  const [alertOpen,          setAlertOpen]          = useState(false);
+  const [alertMessage,       setAlertMessage]       = useState("");
+  const [deleteOpen,         setDeleteOpen]         = useState(false);
+  const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
 
-  // Always send these
-  fd.append("leadNo",            selectedLead.leadNo);
-  fd.append("description",       selectedLead.leadName);
-  fd.append("enteredBy",         localStorage.getItem("loggedInUser"));
-  fd.append("caseName",          selectedCase.caseName);
-  fd.append("caseNo",            selectedCase.caseNo);
-  fd.append("leadReturnId",      evidenceData.leadReturnId);
-  fd.append("enteredDate",       new Date().toISOString());
-  fd.append("type",              evidenceData.type);
-  fd.append("evidenceDescription", evidenceData.evidenceDescription);
-  fd.append("collectionDate",    evidenceData.collectionDate);
-  fd.append("disposedDate",      evidenceData.disposedDate);
-  fd.append("disposition",       evidenceData.disposition);
-  fd.append("accessLevel",       evidenceData.accessLevel || "Everyone");
+  const fileInputRef = useRef();
 
-  // LINK flags/values
-  const isLink = evidenceData.uploadMode === "link";
-  fd.append("isLink", String(isLink)); // backend checks 'true'/'false'
+  // ── Report generation (shared hook) ────────────────────────────────────────
+  const { isGenerating, handleViewLeadReturn } = useLeadReport({
+    selectedLead,
+    selectedCase,
+    location,
+    setAlertMessage,
+    setAlertOpen,
+  });
 
-  if (isLink && evidenceData.link?.trim()) {
-    fd.append("link", evidenceData.link.trim());
-  }
+  // ── Primary investigator check ──────────────────────────────────────────────
+  const primaryUsername = leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
+  const isPrimaryInvestigator =
+    selectedCase?.role === "Investigator" &&
+    !!signedInOfficer &&
+    signedInOfficer === primaryUsername;
 
-  try {
-    const token = localStorage.getItem("token");
-    if (editIndex === null) {
-      // CREATE
-      await api.post("/api/lrevidence/upload", fd, {
-        headers: { Authorization: `Bearer ${token}` },
-        transformRequest: [(data, headers) => {
-          delete headers["Content-Type"];
-          return data;
-        }]
-      });
-    } else {
-      // UPDATE
-      const ev = evidences[editIndex];
-      const url =
-        `/api/lrevidence/${selectedLead.leadNo}/` +
-        `${encodeURIComponent(selectedLead.leadName)}/` +
-        `${selectedCase.caseNo}/` +
-        `${encodeURIComponent(selectedCase.caseName)}/` +
-        `${ev.returnId}/` +
-        `${encodeURIComponent(originalDesc)}`;
+  // ── Derived: is the form / table locked from edits? ────────────────────────
+  const isLeadLocked =
+    selectedLead?.leadStatus === "In Review" ||
+    selectedLead?.leadStatus === "Completed"  ||
+    isReadOnly;
 
-      await api.put(url, fd, {
-        headers: { Authorization: `Bearer ${token}` },
-        transformRequest: [(data, headers) => {
-          delete headers["Content-Type"];
-          return data;
-        }]
-      });
-    }
+  // ── Session storage sync ────────────────────────────────────────────────────
 
-    await fetchEvidences();
-    setEvidenceData(defaultEvidence());
-    setFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  // Reload form/list when the active case or lead changes
+  useEffect(() => {
+    const savedForm = sessionStorage.getItem(formKey);
+    const savedList = sessionStorage.getItem(listKey);
+    setEvidenceData(savedForm ? JSON.parse(savedForm) : defaultEvidence());
+    setEvidences(savedList ? JSON.parse(savedList) : []);
     setEditIndex(null);
     setOriginalDesc("");
-    sessionStorage.removeItem(formKey);
-  } catch (err) {
-    console.error("Save error:", err);
-    setAlertMessage("Failed to save evidence.");
-    setAlertOpen(true);
-  }
-};
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [formKey, listKey]);
 
-  
+  // Persist form draft
+  useEffect(() => {
+    sessionStorage.setItem(formKey, JSON.stringify(evidenceData));
+  }, [formKey, evidenceData]);
+
+  // Persist evidence list
+  useEffect(() => {
+    sessionStorage.setItem(listKey, JSON.stringify(evidences));
+  }, [listKey, evidences]);
+
+  // ── API: Fetch narrative IDs for the dropdown ───────────────────────────────
+  useEffect(() => {
+    if (!selectedLead?.leadNo || !selectedLead?.leadName ||
+        !selectedCase?.caseNo || !selectedCase?.caseName) return;
+
+    const controller = new AbortController();
+    const token = localStorage.getItem("token");
+    const path  = buildLeadCasePath(
+      selectedLead.leadNo, selectedLead.leadName,
+      selectedCase.caseNo, selectedCase.caseName
+    );
+
+    (async () => {
+      try {
+        const resp = await api.get(`/api/leadReturnResult/${path}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal:  controller.signal,
+        });
+
+        const ids = [
+          ...new Set((resp?.data || []).map(r => r?.leadReturnId).filter(Boolean)),
+        ];
+        ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
+        setNarrativeIds(ids);
+
+        // Pre-select the latest narrative ID when creating a new record
+        setEvidenceData(prev =>
+          editIndex === null && !prev.leadReturnId
+            ? { ...prev, leadReturnId: ids.at(-1) || "" }
+            : prev
+        );
+      } catch (e) {
+        if (!controller.signal.aborted) console.error("Failed to fetch Narrative Ids:", e);
+      }
+    })();
+
+    return () => controller.abort();
+  }, [
+    selectedLead?.leadNo, selectedLead?.leadName,
+    selectedCase?.caseNo, selectedCase?.caseName,
+    editIndex,
+  ]);
+
+  // ── API: Fetch lead metadata (assignment info, primary investigator) ─────────
+  useEffect(() => {
+    if (!selectedLead?.leadNo || !selectedLead?.leadName ||
+        !selectedCase?.caseNo || !selectedCase?.caseName) return;
+
+    const token = localStorage.getItem("token");
+    const path  = buildLeadCasePath(
+      selectedLead.leadNo, selectedLead.leadName,
+      selectedCase.caseNo, selectedCase.caseName
+    );
+
+    api
+      .get(`/api/lead/lead/${path}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => {
+        if (res.data.length > 0) {
+          setLeadData({
+            ...res.data[0],
+            assignedTo: res.data[0].assignedTo || [],
+            leadStatus: res.data[0].leadStatus  || "",
+          });
+        }
+      })
+      .catch(err => console.error("Failed to fetch lead data:", err));
+  }, [selectedLead, selectedCase]);
+
+  // ── API: Fetch evidence list ────────────────────────────────────────────────
+  /**
+   * Fetches the evidence list from the server, maps to display shape, and
+   * applies visibility filtering based on the current user's role and access level.
+   */
+  const fetchEvidences = useCallback(async () => {
+    if (!selectedLead?.leadNo || !selectedCase?.caseNo) return;
+
+    const token = localStorage.getItem("token");
+    const path  = buildLeadCasePath(
+      selectedLead.leadNo, selectedLead.leadName,
+      selectedCase.caseNo, selectedCase.caseName
+    );
+
+    try {
+      const res = await api.get(`/api/lrevidence/${path}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const mapped = res.data.map(enc => ({
+        dateEntered:         formatDate(enc.enteredDate),
+        type:                enc.type,
+        evidenceDescription: enc.evidenceDescription,
+        returnId:            enc.leadReturnId,
+        originalName:        enc.originalName,
+        collectionDate:      formatDate(enc.collectionDate),
+        disposedDate:        formatDate(enc.disposedDate),
+        disposition:         enc.disposition,
+        filename:            enc.filename,
+        link:                enc.link      || "",
+        signedUrl:           enc.signedUrl || "",
+        accessLevel:         enc.accessLevel ?? "Everyone",
+        enteredBy:           enc.enteredBy,
+      }));
+
+      // Non-case-managers see only records they are permitted to view
+      const currentUser   = localStorage.getItem("loggedInUser")?.trim();
+      const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+
+      const visible = isCaseManager
+        ? mapped
+        : mapped.filter(ev => {
+            if (ev.accessLevel === "Everyone") return true;
+            if (ev.accessLevel === "Case Manager and Assignees") {
+              return leadAssignees.some(a => a === currentUser);
+            }
+            return false; // "Case Manager" only
+          });
+
+      setEvidences(visible);
+    } catch (err) {
+      console.error("Error fetching evidences:", err);
+    }
+  }, [selectedLead, selectedCase, isCaseManager, leadData?.assignedTo]);
 
   useEffect(() => {
-    if (
-      selectedLead?.leadNo &&
-      selectedLead?.leadName &&
-      selectedCase?.caseNo &&
-      selectedCase?.caseName
-    ) {
+    if (selectedLead?.leadNo && selectedLead?.leadName &&
+        selectedCase?.caseNo && selectedCase?.caseName) {
       fetchEvidences();
     }
   }, [selectedLead, selectedCase]);
-  const fetchEvidences = async () => {
-    const token = localStorage.getItem("token");
-  
-    const leadNo = selectedLead.leadNo;
-    const leadName = encodeURIComponent(selectedLead.leadName); // encode to handle spaces
-    const caseNo = selectedCase.caseNo;
-    const caseName = encodeURIComponent(selectedCase.caseName);
-  
-    try {
-      const res = await api.get(
-        `/api/lrevidence/${leadNo}/${leadName}/${caseNo}/${caseName}`,
-        {
-          headers: {
-            "Content-Type": undefined,  
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-  
-      const mappedEvidences = res.data.map((enc) => ({
-        dateEntered: formatDate(enc.enteredDate),
-        type: enc.type,
-        evidenceDescription:  enc.evidenceDescription,
-        returnId: enc.leadReturnId,
-        originalName: enc.originalName,
-        collectionDate: formatDate(enc.collectionDate),
-        disposedDate: formatDate(enc.disposedDate),
-        disposition: enc.disposition,
-        filename:            enc.filename,
-        link:                enc.link || "",
-        signedUrl: enc.signedUrl || "",
-        accessLevel: enc.accessLevel ?? "Everyone",
-        enteredBy: enc.enteredBy
-      }));
 
-      // Filter based on role and access level
-      let visible = mappedEvidences;
-      if (!isCaseManager) {
-        const currentUser = localStorage.getItem("loggedInUser")?.trim();
-        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+  // ── Handlers: navigation ────────────────────────────────────────────────────
 
-        visible = mappedEvidences.filter(ev => {
-          if (ev.accessLevel === "Everyone") return true;
-          if (ev.accessLevel === "Case Manager and Assignees") {
-            const isAssignedToLead = leadAssignees.some(a => a === currentUser);
-            return isAssignedToLead;
-          }
-          return false; // "Case Manager" only
-        });
-      }
+  const navigateToLeadReview = () => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    if (lead && kase) navigate("/LeadReview", { state: { caseDetails: kase, leadDetails: lead } });
+  };
 
-      setEvidences(visible);
-      setLoading(false);
-      setError("");
-    } catch (err) {
-      console.error("Error fetching evidences:", err);
-      setError("Failed to load evidences");
-      setLoading(false);
+  const navigateToChainOfCustody = () => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    if (lead && kase) {
+      navigate("/ChainOfCustody", { state: { caseDetails: kase, leadDetails: lead } });
+    } else {
+      setAlertMessage("Please select a case and lead first.");
+      setAlertOpen(true);
     }
   };
-   // Handle file selection
-   const handleFileChange = (event) => {
-    setFile(event.target.files[0]);
-    console.log("Selected file:", event.target.files[0]);
+
+  const goToViewLR = useCallback(() => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
+      setAlertMessage("Please select a case and lead first.");
+      setAlertOpen(true);
+      return;
+    }
+    navigate("/viewLR", { state: { caseDetails: kase, leadDetails: lead } });
+  }, [selectedLead, selectedCase, location.state, navigate]);
+
+  // ── Handlers: form ──────────────────────────────────────────────────────────
+
+  const handleInputChange = (field, value) => {
+    setEvidenceData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleAccessChange = async (idx, newAccess) => {
-    const ev = evidences[idx];
-    const token = localStorage.getItem("token");
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
+  };
 
-    const url = `/api/lrevidence/${selectedLead.leadNo}/` +
-                `${encodeURIComponent(selectedLead.leadName)}/` +
-                `${selectedCase.caseNo}/` +
-                `${encodeURIComponent(selectedCase.caseName)}/` +
-                `${ev.returnId}/` +
-                `${encodeURIComponent(ev.evidenceDescription)}`;
+  /** Switches between "file" and "link" upload modes, clearing stale state. */
+  const handleUploadModeChange = (mode) => {
+    setEvidenceData(prev => ({
+      ...prev,
+      uploadMode: mode,
+      isLink:     mode === "link",
+      link:       mode === "link" ? prev.link : "",
+    }));
+    if (mode !== "file") {
+      setFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  /** Resets the form and exits edit mode. */
+  const resetForm = useCallback(() => {
+    setEditIndex(null);
+    setOriginalDesc("");
+    setEvidenceData(defaultEvidence());
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
+
+  /** Populates the form with an existing evidence record for editing. */
+  const handleEdit = useCallback((idx) => {
+    const ev = evidences[idx];
+    const hasLink = !!ev.link;
+    setEditIndex(idx);
+    setOriginalDesc(ev.evidenceDescription);
+    setEvidenceData({
+      leadReturnId:        ev.returnId,
+      collectionDate:      ev.collectionDate,
+      disposedDate:        ev.disposedDate,
+      type:                ev.type,
+      evidenceDescription: ev.evidenceDescription,
+      disposition:         ev.disposition,
+      isLink:              hasLink,
+      link:                ev.link || "",
+      originalName:        ev.originalName,
+      filename:            ev.filename,
+      uploadMode:          hasLink ? "link" : "file",
+      accessLevel:         ev.accessLevel || "Everyone",
+    });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [evidences]);
+
+  // ── Handlers: CRUD ──────────────────────────────────────────────────────────
+
+  /**
+   * Validates the form, then creates (POST) or updates (PUT) an evidence record.
+   * On success, refreshes the list and resets the form.
+   */
+  const handleSaveEvidence = async () => {
+    const missing = getMissingFields({ evidenceData, file, editIndex });
+    if (missing.length) {
+      setAlertMessage(
+        `Please fill the required field${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}.`
+      );
+      setAlertOpen(true);
+      return;
+    }
+
+    const fd = new FormData();
+    if (evidenceData.uploadMode === "file" && file) fd.append("file", file);
+
+    fd.append("leadNo",              selectedLead.leadNo);
+    fd.append("description",         selectedLead.leadName);
+    fd.append("enteredBy",           localStorage.getItem("loggedInUser"));
+    fd.append("caseName",            selectedCase.caseName);
+    fd.append("caseNo",              selectedCase.caseNo);
+    fd.append("leadReturnId",        evidenceData.leadReturnId);
+    fd.append("enteredDate",         new Date().toISOString());
+    fd.append("type",                evidenceData.type);
+    fd.append("evidenceDescription", evidenceData.evidenceDescription);
+    fd.append("collectionDate",      evidenceData.collectionDate);
+    fd.append("disposedDate",        evidenceData.disposedDate);
+    fd.append("disposition",         evidenceData.disposition);
+    fd.append("accessLevel",         evidenceData.accessLevel || "Everyone");
+    fd.append("isLink",              String(evidenceData.uploadMode === "link"));
+    if (evidenceData.uploadMode === "link" && evidenceData.link?.trim()) {
+      fd.append("link", evidenceData.link.trim());
+    }
+
+    // Let the browser set the correct multipart boundary by removing Content-Type
+    const multipartConfig = {
+      transformRequest: [(data, headers) => { delete headers["Content-Type"]; return data; }],
+    };
 
     try {
-      await api.put(url,
+      const token  = localStorage.getItem("token");
+      const authHdr = { Authorization: `Bearer ${token}` };
+
+      if (editIndex === null) {
+        await api.post("/api/lrevidence/upload", fd, { headers: authHdr, ...multipartConfig });
+      } else {
+        const ev   = evidences[editIndex];
+        const path = buildLeadCasePath(
+          selectedLead.leadNo, selectedLead.leadName,
+          selectedCase.caseNo, selectedCase.caseName
+        );
+        await api.put(
+          `/api/lrevidence/${path}/${ev.returnId}/${encodeURIComponent(originalDesc)}`,
+          fd,
+          { headers: authHdr, ...multipartConfig }
+        );
+      }
+
+      await fetchEvidences();
+      sessionStorage.removeItem(formKey);
+      resetForm();
+    } catch (err) {
+      console.error("Save error:", err);
+      setAlertMessage("Failed to save evidence.");
+      setAlertOpen(true);
+    }
+  };
+
+  /** Opens the delete confirmation modal for the given row. */
+  const requestDelete = (idx) => {
+    setPendingDeleteIndex(idx);
+    setDeleteOpen(true);
+  };
+
+  /** Executes the deletion after user confirmation. */
+  const confirmDelete = async () => {
+    const idx = pendingDeleteIndex;
+    setDeleteOpen(false);
+    setPendingDeleteIndex(null);
+    if (idx == null) return;
+
+    const ev    = evidences[idx];
+    const token = localStorage.getItem("token");
+    const path  = buildLeadCasePath(
+      selectedLead.leadNo, selectedLead.leadName,
+      selectedCase.caseNo, selectedCase.caseName
+    );
+
+    try {
+      await api.delete(
+        `/api/lrevidence/${path}/${ev.returnId}/${encodeURIComponent(ev.evidenceDescription)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setEvidences(prev => prev.filter((_, i) => i !== idx));
+    } catch (err) {
+      console.error(err);
+      setAlertMessage("Failed to delete: " + (err.response?.data?.message || err.message));
+      setAlertOpen(true);
+    }
+  };
+
+  /**
+   * Updates the access level of a single evidence row.
+   * Sends a PATCH-style PUT to persist the change server-side, then
+   * updates local state to avoid a full refetch.
+   */
+  const handleAccessChange = async (idx, newAccess) => {
+    const ev    = evidences[idx];
+    const token = localStorage.getItem("token");
+    const path  = buildLeadCasePath(
+      selectedLead.leadNo, selectedLead.leadName,
+      selectedCase.caseNo, selectedCase.caseName
+    );
+
+    try {
+      await api.put(
+        `/api/lrevidence/${path}/${ev.returnId}/${encodeURIComponent(ev.evidenceDescription)}`,
         { accessLevel: newAccess },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      // Update local state
       setEvidences(prev => {
-        const copy = [...prev];
-        copy[idx] = { ...copy[idx], accessLevel: newAccess };
-        return copy;
+        const next = [...prev];
+        next[idx] = { ...next[idx], accessLevel: newAccess };
+        return next;
       });
     } catch (err) {
       console.error("Failed to update accessLevel", err);
@@ -620,94 +546,14 @@ const handleSaveEvidence = async () => {
       setAlertOpen(true);
     }
   };
-  const isCaseManager = 
-    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
 
-const handleEdit = idx => {
-  const ev = evidences[idx];
-  setEditIndex(idx);
-  setOriginalDesc(ev.evidenceDescription);
-
-  const hasLink = !!ev.link;
-
-  setEvidenceData({
-    leadReturnId:        ev.returnId,
-    collectionDate:      ev.collectionDate,
-    disposedDate:        ev.disposedDate,
-    type:                ev.type,
-    evidenceDescription: ev.evidenceDescription,
-    disposition:         ev.disposition,
-    isLink:              hasLink,          // keep for backward compatibility
-    link:                ev.link || "",
-    originalName:        ev.originalName,
-    filename:            ev.filename,
-    uploadMode:          hasLink ? "link" : "file", // NEW
-    accessLevel:         ev.accessLevel || "Everyone",
-  });
-
-  if (fileInputRef.current) fileInputRef.current.value = "";
-};
-
-  
-  const handleDelete = async idx => {
-    if (!window.confirm("Delete this evidence?")) return;
-    const ev = evidences[idx];
-    const token = localStorage.getItem("token");
-    const url = `/api/lrevidence/${selectedLead.leadNo}/` +
-                `${encodeURIComponent(selectedLead.leadName)}/` +
-                `${selectedCase.caseNo}/` +
-                `${encodeURIComponent(selectedCase.caseName)}/` +
-                `${ev.returnId}/` +
-                `${encodeURIComponent(ev.evidenceDescription)}`;
-    try {
-      await api.delete(url, { headers:{ Authorization:`Bearer ${token}` } });
-      setEvidences(list => list.filter((_,i)=>i!==idx));
-
-    } catch (err) {
-      console.error(err);
-      setAlertMessage("Failed to delete: " + (err.response?.data?.message||err.message));
-                      setAlertOpen(true);
-    }
-  };
-
-    useEffect(() => {
-    const fetchLeadData = async () => {
-      if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
-      const token = localStorage.getItem("token");
-
-      try {
-        const response = await api.get(
-          `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
-
-        if (response.data.length > 0) {
-          setLeadData({
-            ...response.data[0],
-            assignedTo: response.data[0].assignedTo || [],
-            leadStatus: response.data[0].leadStatus || ''
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch lead data:", error);
-      }
-    };
-
-    fetchLeadData();
-  }, [selectedLead, selectedCase]);
-  
-    const { status, isReadOnly } = useLeadStatus({
-    caseNo: selectedCase.caseNo,
-    caseName: selectedCase.caseName,
-    leadNo: selectedLead.leadNo,
-    leadName: selectedLead.leadName,
-  });
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div className={styles.evidencePage}>
       <Navbar />
+
+      {/* Notification modal */}
       <AlertModal
         isOpen={alertOpen}
         title="Notification"
@@ -715,6 +561,8 @@ const handleEdit = idx => {
         onConfirm={() => setAlertOpen(false)}
         onClose={() => setAlertOpen(false)}
       />
+
+      {/* Delete confirmation modal */}
       <AlertModal
         isOpen={deleteOpen}
         title="Confirm Delete"
@@ -725,19 +573,22 @@ const handleEdit = idx => {
 
       <div className={styles.LRIContent}>
         <SideBar activePage="LeadReview" />
+
         <div className={styles.leftContentLI}>
 
+          {/* ── Page-level navigation bar ── */}
           <div className={styles.topMenuNav}>
             <div className={styles.menuItems}>
-              <span className={styles.menuItem} onClick={() => {
-                const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                if (lead && kase) {
-                  navigate("/LeadReview", { state: { caseDetails: kase, leadDetails: lead } });
-                }
-              }}>Lead Information</span>
-              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>Add Lead Return</span>
-              {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
+              <span className={styles.menuItem} onClick={navigateToLeadReview}>
+                Lead Information
+              </span>
+
+              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
+                Add Lead Return
+              </span>
+
+              {/* Case Manager / Detective Supervisor: generate full lead return report */}
+              {["Case Manager", "Detective Supervisor"].includes(selectedCase?.role) && (
                 <span
                   className={styles.menuItem}
                   onClick={handleViewLeadReturn}
@@ -747,67 +598,37 @@ const handleEdit = idx => {
                   Manage Lead Return
                 </span>
               )}
-              {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
+
+              {/* Investigator: submit (primary) or review (non-primary) */}
+              {selectedCase?.role === "Investigator" && (
                 <span className={styles.menuItem} onClick={goToViewLR}>
-                  Submit Lead Return
+                  {isPrimaryInvestigator ? "Submit Lead Return" : "Review Lead Return"}
                 </span>
               )}
-              {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  Review Lead Return
-                </span>
-              )}
-              <span className={styles.menuItem} onClick={() => {
-                const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                if (lead && kase) {
-                  navigate("/ChainOfCustody", { state: { caseDetails: kase, leadDetails: lead } });
-                } else {
-                  setAlertMessage("Please select a case and lead first.");
-                  setAlertOpen(true);
-                }
-              }}>Lead Chain of Custody</span>
+
+              <span className={styles.menuItem} onClick={navigateToChainOfCustody}>
+                Lead Chain of Custody
+              </span>
             </div>
           </div>
 
+          {/* ── Section tab bar ── */}
           <div className={styles.topMenuSections}>
-            <div className={styles.menuItems} style={{ fontSize: '19px' }}>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
-                Instructions
-              </span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-                Narrative
-              </span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')}>
-                Person
-              </span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRVehicle')}>
-                Vehicles
-              </span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LREnclosures')}>
-                Enclosures
-              </span>
-              <span className={`${styles.menuItem} ${styles.menuItemActive}`} style={{ fontWeight: '600' }} onClick={() => handleNavigation('/LREvidence')}>
-                Evidence
-              </span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRPictures')}>
-                Pictures
-              </span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRAudio')}>
-                Audio
-              </span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRVideo')}>
-                Videos
-              </span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRScratchpad')}>
-                Notes
-              </span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRTimeline')}>
-                Timeline
-              </span>
+            <div className={styles.menuItems} style={{ fontSize: "19px" }}>
+              {SECTION_TABS.map(({ label, path, active }) => (
+                <span
+                  key={path}
+                  className={`${styles.menuItem}${active ? ` ${styles.menuItemActive}` : ""}`}
+                  style={{ fontWeight: active ? "600" : "400" }}
+                  onClick={() => navigate(path)}
+                >
+                  {label}
+                </span>
+              ))}
             </div>
           </div>
 
+          {/* ── Breadcrumb + lead status ── */}
           <div className={styles.caseandleadinfo}>
             <h5 className={styles.sideTitle}>
               <div className={styles.ldHead}>
@@ -821,11 +642,7 @@ const handleEdit = idx => {
                   Case: {selectedCase.caseNo || ""}
                 </Link>
                 <span className={styles.sep}>{" >> "}</span>
-                <Link
-                  to={"/LeadReview"}
-                  state={{ leadDetails: selectedLead }}
-                  className={styles.crumb}
-                >
+                <Link to="/LeadReview" state={{ leadDetails: selectedLead }} className={styles.crumb}>
                   Lead: {selectedLead.leadNo || ""}
                 </Link>
                 <span className={styles.sep}>{" >> "}</span>
@@ -833,10 +650,11 @@ const handleEdit = idx => {
               </div>
             </h5>
             <h5 className={styles.sideTitle}>
-              {selectedLead?.leadNo ? ` Lead Status:  ${status}` : ` ${leadStatus}`}
+              {selectedLead?.leadNo ? `Lead Status: ${status}` : leadStatus}
             </h5>
           </div>
 
+          {/* ── Page heading ── */}
           <div className={styles.caseHeader}>
             <h2>EVIDENCE INFORMATION</h2>
           </div>
@@ -844,17 +662,19 @@ const handleEdit = idx => {
           <div className={styles.lriContentSection}>
             <div className={styles.contentSubsection}>
 
-              {/* Evidence Form */}
+              {/* ── Evidence entry form ── */}
               <div className={styles.sectionBlock}>
                 <div className={styles.sectionHeading}>Evidence Entry</div>
                 <div className={styles.LREnteringContentBox}>
                   <div className={styles.evidenceForm}>
+
+                    {/* Row 1: Narrative Id + Type */}
                     <div className={styles.formRowPair}>
                       <div className={styles.formRowEvidence}>
                         <label>Narrative Id*</label>
                         <select
                           value={evidenceData.leadReturnId}
-                          onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
+                          onChange={e => handleInputChange("leadReturnId", e.target.value)}
                         >
                           <option value="">Select Id</option>
                           {narrativeIds.map(id => (
@@ -866,25 +686,24 @@ const handleEdit = idx => {
                         <label>Type</label>
                         <select
                           value={evidenceData.type}
-                          onChange={(e) => handleInputChange("type", e.target.value)}
+                          onChange={e => handleInputChange("type", e.target.value)}
                         >
                           <option value="">Select Type</option>
-                          <option value="Document">Document</option>
-                          <option value="Business Records">Business Records</option>
-                          <option value="Cellular Phone Records">Cellular Phone Records</option>
-                          <option value="Deposition">Deposition</option>
-                          <option value="Statement">Statement</option>
+                          {EVIDENCE_TYPES.map(t => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
                         </select>
                       </div>
                     </div>
 
+                    {/* Row 2: Collection Date + Disposed Date */}
                     <div className={styles.formRowPair}>
                       <div className={styles.formRowEvidence}>
                         <label>Collection Date*</label>
                         <input
                           type="date"
                           value={evidenceData.collectionDate}
-                          onChange={(e) => handleInputChange("collectionDate", e.target.value)}
+                          onChange={e => handleInputChange("collectionDate", e.target.value)}
                         />
                       </div>
                       <div className={styles.formRowEvidence}>
@@ -892,11 +711,12 @@ const handleEdit = idx => {
                         <input
                           type="date"
                           value={evidenceData.disposedDate}
-                          onChange={(e) => handleInputChange("disposedDate", e.target.value)}
+                          onChange={e => handleInputChange("disposedDate", e.target.value)}
                         />
                       </div>
                     </div>
 
+                    {/* Row 3: Description */}
                     <div className={styles.formRowEvidence}>
                       <label>Description*</label>
                       <textarea
@@ -905,30 +725,20 @@ const handleEdit = idx => {
                       />
                     </div>
 
+                    {/* Row 4: Upload Type + File / Link input */}
                     <div className={styles.formRowPair}>
                       <div className={styles.formRowEvidence}>
                         <label>Upload Type</label>
                         <select
                           value={evidenceData.uploadMode}
-                          onChange={e => {
-                            const mode = e.target.value;
-                            setEvidenceData(prev => ({
-                              ...prev,
-                              uploadMode: mode,
-                              isLink: mode === "link",
-                              link: mode === "link" ? prev.link : "",
-                            }));
-                            if (mode !== "file") {
-                              setFile(null);
-                              if (fileInputRef.current) fileInputRef.current.value = "";
-                            }
-                          }}
+                          onChange={e => handleUploadModeChange(e.target.value)}
                         >
                           <option value="file">File</option>
                           <option value="link">Link</option>
                         </select>
                       </div>
                       <div className={styles.formRowEvidence}>
+                        {/* Editing a file-mode record that already has a file: show current name */}
                         {editIndex !== null && evidenceData.uploadMode === "file" && evidenceData.originalName ? (
                           <>
                             <label>Current File:</label>
@@ -946,13 +756,14 @@ const handleEdit = idx => {
                               type="text"
                               placeholder="https://..."
                               value={evidenceData.link}
-                              onChange={e => setEvidenceData(prev => ({ ...prev, link: e.target.value }))}
+                              onChange={e => handleInputChange("link", e.target.value)}
                             />
                           </>
                         )}
                       </div>
                     </div>
 
+                    {/* Row 5 (edit only): Replace-file row for records that already have a file */}
                     {editIndex !== null && evidenceData.uploadMode === "file" && evidenceData.originalName && (
                       <div className={styles.formRowEvidence}>
                         <label>Replace File (optional)</label>
@@ -961,24 +772,20 @@ const handleEdit = idx => {
                     )}
                   </div>
 
+                  {/* Form action buttons */}
                   <div className={styles.formButtonsReturn}>
                     <button
-                      disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
                       className={styles.saveBtn1}
+                      disabled={isLeadLocked}
                       onClick={handleSaveEvidence}
                     >
                       {editIndex === null ? "Add Evidence" : "Update Evidence"}
                     </button>
                     {editIndex !== null && (
                       <button
-                        disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
                         className={styles.saveBtn1}
-                        onClick={() => {
-                          setEditIndex(null);
-                          setEvidenceData(defaultEvidence());
-                          setFile(null);
-                          if (fileInputRef.current) fileInputRef.current.value = "";
-                        }}
+                        disabled={isLeadLocked}
+                        onClick={resetForm}
                       >
                         Cancel
                       </button>
@@ -987,7 +794,7 @@ const handleEdit = idx => {
                 </div>
               </div>
 
-              {/* Evidence Table */}
+              {/* ── Evidence history table ── */}
               <div className={styles.sectionBlock}>
                 <div className={styles.sectionHeading}>Evidence History</div>
                 <table className={styles.leadsTable}>
@@ -999,68 +806,66 @@ const handleEdit = idx => {
                       <th>File Name</th>
                       <th>Description</th>
                       <th>Actions</th>
-                      {isCaseManager && (
-                        <th style={{ width: "15%" }}>Access</th>
-                      )}
+                      {isCaseManager && <th style={{ width: "15%" }}>Access</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {evidences.length > 0 ? evidences.map((item, index) => (
-                      <tr key={index}>
-                        <td>{item.dateEntered}</td>
-                        <td>{item.returnId}</td>
-                        <td>{item.type}</td>
-                        <td>
-                          {item.link ? (
-                            <a href={item.link} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
-                              {item.link}
-                            </a>
-                          ) : item.signedUrl ? (
-                            <a href={item.signedUrl} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
-                              {item.originalName}
-                            </a>
-                          ) : (
-                            <span style={{ color: "gray" }}>No File Available</span>
-                          )}
-                        </td>
-                        <td>{item.evidenceDescription}</td>
-                        <td>
-                          <div className={styles.lrTableBtn}>
-                            <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-                              <img
-                                src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
-                                alt="Edit Icon"
-                                className={styles.editIcon}
-                                onClick={() => handleEdit(index)}
-                              />
-                            </button>
-                            <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-                              <img
-                                src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
-                                alt="Delete Icon"
-                                className={styles.editIcon}
-                                onClick={() => requestDelete(index)}
-                              />
-                            </button>
-                          </div>
-                        </td>
-                        {isCaseManager && (
+                    {evidences.length > 0 ? (
+                      evidences.map((item, index) => (
+                        <tr key={index}>
+                          <td>{item.dateEntered}</td>
+                          <td>{item.returnId}</td>
+                          <td>{item.type}</td>
                           <td>
-                            <select
-                              value={item.accessLevel}
-                              onChange={e => handleAccessChange(index, e.target.value)}
-                              className={styles.accessDropdown}
-                            >
-                              <option value="Everyone">All</option>
-                              <option value="Case Manager">Case Manager</option>
-                              <option value="Case Manager and Assignees">Assignees</option>
-                            </select>
+                            {item.link ? (
+                              <a href={item.link} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
+                                {item.link}
+                              </a>
+                            ) : item.signedUrl ? (
+                              <a href={item.signedUrl} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
+                                {item.originalName}
+                              </a>
+                            ) : (
+                              <span style={{ color: "gray" }}>No File Available</span>
+                            )}
                           </td>
-                        )}
-                      </tr>
-                    )) : (
+                          <td>{item.evidenceDescription}</td>
+                          <td>
+                            <div className={styles.lrTableBtn}>
+                              <button disabled={isLeadLocked} onClick={() => handleEdit(index)}>
+                                <img
+                                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                                  alt="Edit"
+                                  className={styles.editIcon}
+                                />
+                              </button>
+                              <button disabled={isLeadLocked} onClick={() => requestDelete(index)}>
+                                <img
+                                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                                  alt="Delete"
+                                  className={styles.editIcon}
+                                />
+                              </button>
+                            </div>
+                          </td>
+                          {isCaseManager && (
+                            <td>
+                              <select
+                                value={item.accessLevel}
+                                onChange={e => handleAccessChange(index, e.target.value)}
+                                className={styles.accessDropdown}
+                              >
+                                <option value="Everyone">All</option>
+                                <option value="Case Manager">Case Manager</option>
+                                <option value="Case Manager and Assignees">Assignees</option>
+                              </select>
+                            </td>
+                          )}
+                        </tr>
+                      ))
+                    ) : (
                       <tr>
-                        <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: 'center' }}>
+                        <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: "center" }}>
                           No Evidences Available
                         </td>
                       </tr>
@@ -1071,7 +876,6 @@ const handleEdit = idx => {
 
             </div>
           </div>
-
         </div>
       </div>
     </div>

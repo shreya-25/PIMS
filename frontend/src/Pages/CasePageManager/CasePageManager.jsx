@@ -1,387 +1,338 @@
 import React, { useContext, useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import Navbar from '../../components/Navbar/Navbar';
-import Searchbar from '../../components/Searchbar/Searchbar';
+import { SideBar } from "../../components/Sidebar/Sidebar";
 import Filter from "../../components/Filter/Filter";
-import Sort from "../../components/Sort/Sort";
-import Button from '../../components/Button/Button';
-import {SideBar } from "../../components/Sidebar/Sidebar";
 import styles from './CasePageManager.module.css';
-import { useLocation, useNavigate } from 'react-router-dom';
-import axios from "axios";
+import { useNavigate, useLocation } from 'react-router-dom';
 import { CaseContext } from "../CaseContext";
 import { AlertModal } from "../../components/AlertModal/AlertModal";
 import Pagination from "../../components/Pagination/Pagination";
-import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
-import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
-import api, { BASE_URL } from "../../api";
-import usePresence from "../../hooks/usePresence";
+import api from "../../api";
 
 export const CasePageManager = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { caseDetails } = location.state || {};
 
-  
-    const navigate = useNavigate();
-    const location = useLocation();
-    const { caseDetails } = location.state || {};
-    const [sortField, setSortField] = useState(""); // Sorting field
-    const [filterText, setFilterText] = useState(""); // Filter text
-    const [filterPopupVisible, setFilterPopupVisible] = useState(false);
-    const [filterSortPopupVisible, setFilterSortPopupVisible] = useState(false); // State for popup visibility
-    const [selectedPriority, setSelectedPriority] = useState(""); // State for priority filter
-    const [sortOrder, setSortOrder] = useState(""); // State for sort order
-    const [remainingDaysFilter, setRemainingDaysFilter] = useState("");
-    const [flagsFilter, setFlagsFilter] = useState("");
-    const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
-    const [leadLogCount, setLeadLogCount] = useState(0);
-    const [investigatorsDropdownOpen, setInvestigatorsDropdownOpen] = useState(false);
-    const [caseManagersDropdownOpen, setCaseManagersDropdownOpen] = useState(false);
-    const [detectiveSupervisorDropdownOpen, setDetectiveSupervisorDropdownOpen] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [alertOpen, setAlertOpen] = useState(false);
-    const [alertMessage, setAlertMessage] = useState("");
-    const [confirmOfficersOpen, setConfirmOfficersOpen] = useState(false);
-    const RIGHT_ALIGN_COL = "Lead No.";
+  // ─── Context ──────────────────────────────────────────────────────────────
+  const { selectedCase, setSelectedLead, setLeadStatus } = useContext(CaseContext);
+  const isSupervisor = selectedCase.role === "Detective Supervisor";
+  const signedInOfficer = localStorage.getItem("loggedInUser");
 
-    const [showFilter, setShowFilter] = useState(false);
-    const [showSort, setShowSort] = useState(false);
-    const [pendingRoute, setPendingRoute]   = useState(null);
+  // ─── Constants ────────────────────────────────────────────────────────────
+  const RIGHT_ALIGN_COL = "Lead No.";
+  const PRESENCE_BASE = "/api/presence";
+  const upIcon = "/Materials/drop_up.png";
+  const downIcon = "/Materials/drop_down.png";
 
-    const [summary, setSummary] = useState(null);
-    const [isSaving, setIsSaving] = useState(false);
-    const [error, setError] = useState('');
-    const saveTimer = useRef(null);
-    const isFirstLoad = useRef(true);
+  // ─── Leads state ──────────────────────────────────────────────────────────
+  const [leads, setLeads] = useState({
+    assignedLeads: [],
+    pendingLeads: [],
+    pendingLeadReturns: [],
+    allLeads: [],
+  });
 
-    const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
-    const isSupervisor = selectedCase.role === "Detective Supervisor";
+  // ─── Case team state ──────────────────────────────────────────────────────
+  const [team, setTeam] = useState({ detectiveSupervisor: [], caseManagers: [], investigators: [] });
+  const [allUsers, setAllUsers] = useState([]);
+  const [selectedInvestigators, setSelectedInvestigators] = useState([]);
+  const [selectedCaseManagers, setSelectedCaseManagers] = useState([]);
+  const [selectedDetectiveSupervisor, setSelectedDetectiveSupervisor] = useState("");
 
-    const [allUsers, setAllUsers] = useState([]);
-    const [selectedInvestigators, setSelectedInvestigators] = useState([]);
-    const [selectedCaseManagers,    setSelectedCaseManagers]    = useState([]);
-    const [selectedDetectiveSupervisor, setSelectedDetectiveSupervisor] = useState("");
-    const [caseStatus, setCaseStatus] = useState("");
-const [caseUpdatedAt, setCaseUpdatedAt] = useState(null);
-const isDeletedStatus = (s) => String(s || "").toLowerCase() === "deleted";
+  // ─── Team dropdown open/search state ──────────────────────────────────────
+  const [investigatorsDropdownOpen, setInvestigatorsDropdownOpen] = useState(false);
+  const [caseManagersDropdownOpen, setCaseManagersDropdownOpen] = useState(false);
+  const [detectiveSupervisorDropdownOpen, setDetectiveSupervisorDropdownOpen] = useState(false);
+  const [dsSearch, setDsSearch] = useState("");
+  const [cmSearch, setCmSearch] = useState("");
+  const [invSearch, setInvSearch] = useState("");
 
+  // Refs for click-outside detection on team dropdowns
+  const dsRef = useRef(null);
+  const cmRef = useRef(null);
+  const invRef = useRef(null);
 
-const dsRef = useRef(null);
-const cmRef = useRef(null);
-const invRef = useRef(null);
-const [isCaseSummaryOpen, setIsCaseSummaryOpen] = useState(true);
-const [isCaseTeamOpen, setIsCaseTeamOpen] = useState(true);
+  // ─── Collapsible section state ────────────────────────────────────────────
+  const [isCaseSummaryOpen, setIsCaseSummaryOpen] = useState(true);
+  const [isCaseTeamOpen, setIsCaseTeamOpen] = useState(true);
 
-const [dsSearch, setDsSearch] = useState("");
-const [cmSearch, setCmSearch] = useState("");
-const [invSearch, setInvSearch] = useState("");
+  // ─── Case summary state ───────────────────────────────────────────────────
+  const [summary, setSummary] = useState(null);
+  const saveTimer = useRef(null);
+  const isFirstLoad = useRef(true);
 
-const upIcon = "/Materials/drop_up.png";
-const downIcon = "/Materials/drop_down.png";
+  // ─── UI / pagination state ────────────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState("allLeads");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
+  // ─── Alert / confirm modal state ──────────────────────────────────────────
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+  const [confirmOfficersOpen, setConfirmOfficersOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, lead: null });
 
+  // ─── Presence state ───────────────────────────────────────────────────────
+  const [presenceOthers, setPresenceOthers] = useState([]);
+  const beatTimerRef = useRef(null);
+
+  // ─── Helpers: user display name ───────────────────────────────────────────
+  const fullNameFor = useCallback((uname) => {
+    const u = allUsers.find(x => x.username === uname);
+    return u ? `${u.firstName} ${u.lastName}` : uname;
+  }, [allUsers]);
+
+  const formatUser = useCallback((username) => {
+    if (!username) return "—";
+    const u = allUsers.find(x => x.username === username);
+    return u ? `${u.firstName} ${u.lastName} (${u.username})` : username;
+  }, [allUsers]);
+
+  /** Display "First Last (username)" for a single username */
+  const displayName = (uname) => {
+    const u = allUsers.find(u => u.username === uname);
+    return u ? `${u.firstName} ${u.lastName} (${u.username})` : (uname || "—");
+  };
+
+  /** Join multiple usernames as full display names */
+  const displayNames = (usernames = []) => usernames.map(displayName).join(", ");
+
+  const toTitleCase = (s = "") =>
+    s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+
+  // ─── Helper: remaining days from a due date ───────────────────────────────
+  const calculateRemainingDays = (dueDate) => {
+    if (!dueDate) return "";
+    const timeDifference = new Date(dueDate) - new Date();
+    return Math.max(0, Math.ceil(timeDifference / (1000 * 60 * 60 * 24)));
+  };
+
+  /** Returns true when a lead status indicates it has been deleted */
+  const isDeletedStatus = (s) => String(s || "").toLowerCase() === "deleted";
+
+  // ─── Effect: close team dropdowns on outside click ────────────────────────
   useEffect(() => {
-  function handleClickOutside(e) {
-    if (dsRef.current && !dsRef.current.contains(e.target)) {
-      setDetectiveSupervisorDropdownOpen(false);
-      setDsSearch("");
+    function handleClickOutside(e) {
+      if (dsRef.current && !dsRef.current.contains(e.target)) {
+        setDetectiveSupervisorDropdownOpen(false);
+        setDsSearch("");
+      }
+      if (cmRef.current && !cmRef.current.contains(e.target)) {
+        setCaseManagersDropdownOpen(false);
+        setCmSearch("");
+      }
+      if (invRef.current && !invRef.current.contains(e.target)) {
+        setInvestigatorsDropdownOpen(false);
+        setInvSearch("");
+      }
     }
-    if (cmRef.current && !cmRef.current.contains(e.target)) {
-      setCaseManagersDropdownOpen(false);
-      setCmSearch("");
-    }
-    if (invRef.current && !invRef.current.contains(e.target)) {
-      setInvestigatorsDropdownOpen(false);
-      setInvSearch("");
-    }
-  }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => document.removeEventListener("mousedown", handleClickOutside);
-}, []);
+  // ─── Effect: scroll to top on mount ──────────────────────────────────────
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
-
-
-
-    const [activeTab, setActiveTab] = useState("allLeads"); // Default to All Leads tab
-    const handleViewAssignedLead = (lead) => {
-    };
-    const handleCaseClick = (caseDetails) => {
-      navigate("/CasePageManager", { state: { caseDetails } }); // Pass case details via state
-    };
-    const [team, setTeam] = useState({
-      detectiveSupervisor: [],
-      caseManagers: [],
-      investigators: []
-    });
-
-    const openConfirmOfficers = () => {
-  // 4) if no case managers, block
-  if (selectedCaseManagers.length === 0) {
-    setAlertMessage("You must assign at least one Case Manager.");
-    setAlertOpen(true);
-    return;
-  }
-  setConfirmOfficersOpen(true);
-};
-const closeConfirmOfficers = () => setConfirmOfficersOpen(false);
-const handleConfirmOfficers = () => {
-  saveInvestigators();
-  closeConfirmOfficers();
-};
-    useEffect(() => {
+  // ─── Effect: fetch all system users (for team dropdowns) ─────────────────
+  useEffect(() => {
     async function fetchUsers() {
       try {
         const token = localStorage.getItem("token");
         const { data } = await api.get("/api/users/usernames", {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
-        // Assume data.users is an array of { username, firstName, lastName, role, … }
         setAllUsers(data.users || []);
       } catch (err) {
-        console.error("Could not load user list for investigators:", err);
+        console.error("Could not load user list:", err);
       }
     }
-      fetchUsers();
-    }, []);
+    fetchUsers();
+  }, []);
 
-    useEffect(() => {
+  // ─── Effect: fetch current case team ─────────────────────────────────────
+  useEffect(() => {
+    if (!selectedCase?.caseNo) return;
+    api.get(`/api/cases/${selectedCase.caseNo}/team`)
+      .then(({ data }) => setTeam(data))
+      .catch(console.error);
+  }, [selectedCase.caseNo]);
+
+  // ─── Effect: sync fetched team into selection state ───────────────────────
+  useEffect(() => {
+    if (Array.isArray(team.investigators)) {
+      setSelectedInvestigators([...new Set(team.investigators)]);
+    }
+    if (Array.isArray(team.caseManagers)) {
+      setSelectedCaseManagers(team.caseManagers);
+    }
+    if (team.detectiveSupervisor) {
+      setSelectedDetectiveSupervisor(team.detectiveSupervisor);
+    }
+  }, [team.investigators, team.caseManagers, team.detectiveSupervisor]);
+
+  // ─── Effect: presence heartbeat ──────────────────────────────────────────
+  useEffect(() => {
+    const caseNo = selectedCase?.caseNo ?? caseDetails?.caseNo;
+    const caseName = selectedCase?.caseName ?? caseDetails?.caseName;
+    if (!caseNo || !caseName) return;
+
+    const payload = { caseNo: String(caseNo), caseName, page: "CasePageManager" };
+    let cancelled = false;
+
+    const beat = async () => {
+      try {
+        const { data } = await api.post(`${PRESENCE_BASE}/heartbeat`, payload);
+        if (!cancelled) setPresenceOthers(Array.isArray(data?.others) ? data.others : []);
+      } catch {
+        setPresenceOthers([]);
+      }
+    };
+
+    beat();
+    beatTimerRef.current = setInterval(beat, 10000);
+    return () => {
+      cancelled = true;
+      clearInterval(beatTimerRef.current);
+      api.post(`${PRESENCE_BASE}/leave`, payload).catch(() => {});
+    };
+  }, [selectedCase?.caseNo, selectedCase?.caseName, caseDetails?.caseNo, caseDetails?.caseName]);
+
+  // ─── Effect: load case summary ────────────────────────────────────────────
+  useEffect(() => {
+    setSummary(null);
+    isFirstLoad.current = true;
+    async function load() {
       if (!selectedCase?.caseNo) return;
-      api.get(`/api/cases/${selectedCase.caseNo}/team`)
-        .then(({ data }) => setTeam(data))
-        .catch(console.error);
-    }, [selectedCase.caseNo]);
-
-
-    useEffect(() => {
-        if (team.investigators && Array.isArray(team.investigators)) {
-          setSelectedInvestigators([...new Set(team.investigators)]);
-        }
-        if (team.caseManagers && Array.isArray(team.caseManagers)) {
-          setSelectedCaseManagers(team.caseManagers);
-        }
-         if (team.detectiveSupervisor) {
-          setSelectedDetectiveSupervisor(team.detectiveSupervisor);
-        }
-    }, [team.investigators , team.caseManagers , team.detectiveSupervisor]);
-
-    console.log("selectedLead", selectedLead);
-  
-    const handleNavigation = (route) => {
-      navigate(route); // Navigate to respective page
-    };
-
-    const [showSelectModal, setShowSelectModal] = useState(false);
-
-    const handleNavigateToLeadReturn = () => {
-      // if (!leads.pendingLeadReturns.length) {
-      //   alert("No lead returns available to continue.");
-      //   return;
-      // }
-      setShowSelectModal(true);
-    };
-
-    const handleSelectLead = (lead) => {
-      setSelectedLead({
-        leadNo: lead.leadNo,
-        leadName: lead.description,
-        caseName: lead.caseName,
-        caseNo: lead.caseNo,
-      });
-
-      setShowSelectModal(false);
-      navigate(pendingRoute, {
-        state: {
-          caseDetails: selectedCase,
-          leadDetails: lead
-        }
-      });
-      
-      setPendingRoute(null);
-    };
-
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
-
-    const signedInOfficer = localStorage.getItem("loggedInUser");
-
-     const [confirmConfig, setConfirmConfig] = useState({
-        isOpen:    false,
-        lead:    null,
-      });
-      const [alertConfig, setAlertConfig] = useState({
-        isOpen: false,
-        title:  "",
-        message:"",
-      });
-
-      const handleConfirmAccept = () => {
-    acceptLead(confirmConfig.lead.id, confirmConfig.lead.description);
-    closeConfirm();
-  };
-
-    const openConfirm  = (lead) => setConfirmConfig({ isOpen: true, lead });
-  const closeConfirm = ()      => setConfirmConfig({ isOpen: false, lead: null });
-
-
-    const handleLRClick = (lead) => {
-      setSelectedLead({
-          leadNo: lead.id,
-          incidentNo: lead.incidentNo,
-          leadName: lead.description,
-          dueDate: lead.dueDate || "",
-          priority: lead.priority || "Medium",
-          flags: lead.flags || [],
-          assignedOfficers: lead.assignedOfficers || [],
-          leadStatus: lead.leadStatus,
-          caseName: lead.caseName,
-          caseNo: lead.caseNo,
-          summary: lead.summary
-      });
-    
-      // Navigate to Lead Review Page
-      navigate("/LRInstruction", { state: { leadDetails: lead, caseDetails: selectedCase } });
-    };
-
-    const PRESENCE_BASE = "/api/presence";
-
-
-  const [presenceOthers, setPresenceOthers] = useState([]);
-const beatTimerRef = useRef(null);
-
-// prove it’s mounted & which baseURL we use
-useEffect(() => {
-  console.log("[presence] mounted; baseURL=", api?.defaults?.baseURL, "PRESENCE_BASE=", PRESENCE_BASE);
-}, []);
-
-useEffect(() => {
-  const caseNo   = selectedCase?.caseNo ?? caseDetails?.caseNo;
-  const caseName = selectedCase?.caseName ?? caseDetails?.caseName;
-  if (!caseNo || !caseName) {
-    console.log("[presence] skipped – missing caseNo/caseName", { caseNo, caseName });
-    return;
-  }
-
-  const payload = { caseNo: String(caseNo), caseName, page: "CasePageManager" };
-  let cancelled = false;
-
-  const beat = async () => {
-    try {
-      const { data } = await api.post(`${PRESENCE_BASE}/heartbeat`, payload);
-      if (!cancelled) setPresenceOthers(Array.isArray(data?.others) ? data.others : []);
-      console.log("[presence] heartbeat ok:", data);
-    } catch (e) {
-      console.warn("[presence] heartbeat failed:", e?.response?.status, e?.response?.data);
-      setPresenceOthers([]);
+      try {
+        const token = localStorage.getItem('token');
+        const { data } = await api.get(
+          `/api/cases/case-summary/${selectedCase.caseNo}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setSummary(data.caseSummary ?? '');
+      } catch (err) {
+        console.error('Failed to load case summary', err);
+        setSummary('');
+      }
     }
-  };
+    load();
+  }, [selectedCase.caseNo]);
 
-  beat();                          // immediate
-  beatTimerRef.current = setInterval(beat, 10000);
+  // ─── Effect: auto-save case summary with 2s debounce ─────────────────────
+  useEffect(() => {
+    if (isFirstLoad.current) { isFirstLoad.current = false; return; }
+    clearTimeout(saveTimer.current);
+    if (summary === null || !selectedCase?.caseNo) return;
 
-  return () => {
-    cancelled = true;
-    clearInterval(beatTimerRef.current);
-    api.post(`${PRESENCE_BASE}/leave`, payload).catch(() => {});
-  };
-}, [
-  selectedCase?.caseNo, selectedCase?.caseName,
-  caseDetails?.caseNo,  caseDetails?.caseName
-]);
+    saveTimer.current = setTimeout(async () => {
+      try {
+        const token = localStorage.getItem('token');
+        await api.put(
+          '/api/cases/case-summary',
+          { caseNo: selectedCase.caseNo, caseName: selectedCase.caseName, caseSummary: summary },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } catch (err) {
+        console.error('Case summary save failed', err);
+      }
+    }, 2000);
 
-    
-    // Handler to accept the assigned lead
-    const handleAcceptAssignedLead = (lead) => {
-      const confirmAccept = window.confirm(
-        `Are you sure you want to accept this lead?`
-      );
-      if (confirmAccept) {
-        // Remove lead from assignedLeads and add it to pendingLeads
-        setLeads((prevLeads) => {
-          const updatedAssignedLeads = prevLeads.assignedLeads.filter(
-            (l) => l.leadNo !== lead.leadNo
-          );
-          const updatedPendingLeads = [...prevLeads.pendingLeads, lead];
-          return {
-            ...prevLeads,
-            assignedLeads: updatedAssignedLeads,
-            pendingLeads: updatedPendingLeads,
-          };
+    return () => clearTimeout(saveTimer.current);
+  }, [summary, selectedCase.caseNo, selectedCase.caseName]);
+
+  // ─── Effect: fetch leads (polled every 15s) ───────────────────────────────
+  useEffect(() => {
+    const fetchLeadsForCase = async () => {
+      if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+      try {
+        const token = localStorage.getItem("token");
+        const response = await api.get(
+          `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        const leadsArray = Array.isArray(response.data) ? response.data : [];
+
+        // Apply access-level filter; supervisors see all leads
+        const filteredLeadsArray = leadsArray.filter((lead) => {
+          if (isSupervisor) return true;
+          if (
+            lead.accessLevel === "Only Case Manager and Assignees" &&
+            !lead.assignedTo?.includes(signedInOfficer) &&
+            lead.assignedBy !== signedInOfficer
+          ) return false;
+          return true;
         });
+
+        /** Map a raw API lead object to the UI lead shape */
+        const mapLead = (lead) => {
+          const activeAssignees = Array.isArray(lead.assignedTo)
+            ? lead.assignedTo.filter(a => a && a.status !== "declined").map(a => a.username)
+            : [];
+          return {
+            id: Number(lead.leadNo),
+            description: lead.description,
+            summary: lead.summary,
+            dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "",
+            priority: lead.priority || "Medium",
+            flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [],
+            assignedOfficers: activeAssignees,
+            leadStatus: lead.leadStatus,
+            caseName: lead.caseName,
+            caseNo: String(lead.caseNo),
+          };
+        };
+
+        const assignedLeads = filteredLeadsArray
+          .filter(lead => lead.leadStatus === "Assigned")
+          .map(mapLead);
+
+        // Sort: unassigned first, then newest by id
+        const pendingLeads = filteredLeadsArray
+          .filter(lead => lead.leadStatus === "To Reassign" || lead.leadStatus === "Rejected")
+          .map(mapLead)
+          .sort((a, b) => {
+            const aNone = (a.assignedOfficers?.length ?? 0) === 0 ? 0 : 1;
+            const bNone = (b.assignedOfficers?.length ?? 0) === 0 ? 0 : 1;
+            if (aNone !== bNone) return aNone - bNone;
+            return Number(b.id) - Number(a.id);
+          });
+
+        const LRInReview = filteredLeadsArray
+          .filter(lead => lead.leadStatus === "In Review")
+          .map(mapLead);
+
+        const allLeads = filteredLeadsArray
+          .map(mapLead)
+          .filter(lead => lead.id != null && !isNaN(lead.id))
+          .sort((a, b) => Number(b.id) - Number(a.id));
+
+        setLeads({ allLeads, assignedLeads, pendingLeads, pendingLeadReturns: LRInReview });
+      } catch (error) {
+        console.error("Error fetching leads:", error.message);
       }
     };
-    console.log("SelectedCase", selectedCase);
-  
 
-  const acceptLead = async (leadNo, description) => {
-    console.log("Accept button clicked for lead:", leadNo);
-  
-    try {
-      const token = localStorage.getItem("token");
-      const url = `/api/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`;
-      console.log("PUT request URL:", url);
-  
-      // Call the database update endpoint via a PUT request.
-      const response = await api.put(
-        url,
-        {}, // No payload; the backend sets the status to "Pending" automatically.
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      console.log("PUT request succeeded. Response data:", response.data);
-  
-      // Build a new pending lead object from the function parameters and default values.
-      const newPendingLead = {
-        id: leadNo,
-        leadNo: leadNo,
-        description: description,
-        leadStatus: "Accepted",
-        dueDate: "NA",          // Default due date (adjust if needed)
-        priority: "NA",         // Default priority (adjust if needed)
-        flags: [],              // Defaults to empty array
-        assignedOfficers: ["Unassigned"], // Default assigned officer
-      };
-  
-      // Update your local state: remove the accepted lead from assignedLeads and add it to pendingLeads.
-      setLeads((prevLeads) => {
-        const updatedAssignedLeads = prevLeads.assignedLeads.filter(
-          (lead) => Number(lead.id) !== Number(leadNo)
-        );
-        const updatedPendingLeads = [...prevLeads.pendingLeads, newPendingLead];
-        console.log(
-          "Updating leads state. New assignedLeads length:",
-          updatedAssignedLeads.length,
-          "New pendingLeads length:",
-          updatedPendingLeads.length
-        );
-        return {
-          ...prevLeads,
-          assignedLeads: updatedAssignedLeads,
-          pendingLeads: updatedPendingLeads,
-        };
-      });
-      // await fetchLeadsForCase();
-    } catch (error) {
-      console.error("Error updating lead status:", error.response?.data || error);
-      // alert("Failed to accept lead.");
-      setAlertMessage("Failed to accept lead.");
-      setAlertOpen(true);
-    }
+    fetchLeadsForCase();
+    const intervalId = setInterval(fetchLeadsForCase, 15_000);
+    return () => clearInterval(intervalId);
+  }, [selectedCase?.caseNo, selectedCase?.caseName, signedInOfficer]);
+
+  // ─── Computed: presence display names ─────────────────────────────────────
+  const presenceNames = useMemo(
+    () => presenceOthers.map(o => o.fullName || o.name || fullNameFor(o.username)),
+    [presenceOthers, fullNameFor]
+  );
+
+  // ─── Handlers: tab / lead navigation ─────────────────────────────────────
+  const handleTabClick = (tab) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
   };
-  
-    
-    
-      
-    const [leads, setLeads] = useState({
-      assignedLeads: [],
-      pendingLeads: [],
-      pendingLeadReturns: [],
-      allLeads: [],
- } );
 
- const handleLeadClick = (lead) => {
-  setSelectedLead({
+  const handleLeadClick = (lead) => {
+    setSelectedLead({
       leadNo: lead.leadNo != null ? lead.leadNo : lead.id,
       incidentNo: lead.incidentNo,
       leadName: lead.description,
@@ -392,2465 +343,1004 @@ useEffect(() => {
       leadStatus: lead.leadStatus,
       caseName: lead.caseName,
       caseNo: lead.caseNo,
-      summary: lead.summary
-  });
-  setLeadStatus(lead.leadStatus);  
-
-  // Navigate to Lead Review Page
-  navigate("/leadReview", { state: { leadDetails: lead, caseDetails: selectedCase } });
-};
-
-  const token = localStorage.getItem('token') || '';
-
-  
-  useEffect(() => {
-    const fetchLeadsForCase = async () => {
-      if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
-  
-      try {
-        const token = localStorage.getItem("token");
-        const response = await api.get(
-          `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-  
-        const data = response.data;
-        console.log("✅ Fetched Leads Data:", data);
-  
-        const leadsArray = Array.isArray(data) ? data : [];
-  
-        const filteredLeadsArray = leadsArray.filter((lead) => {
-
-           if (isSupervisor) {
-    return true;
-  }
-
-          if (
-            lead.accessLevel === "Only Case Manager and Assignees" &&
-            !lead.assignedTo?.includes(signedInOfficer) &&
-            lead.assignedBy !== signedInOfficer
-          ) {
-            return false;
-          }
-          return true;
-        });
-  
-              const filtered = filteredLeadsArray.filter(
-  lead => lead.assignedTo?.some(o => o.username === signedInOfficer)
-);
-
-    //     const mapLead = (lead) => ({
-    //        id: Number(lead.leadNo), 
-    //       description: lead.description,
-    //       summary: lead.summary,
-    //       dueDate: lead.dueDate
-    //         ? new Date(lead.dueDate).toISOString().split("T")[0]
-    //         : "N/A",
-    //       priority: lead.priority || "Medium",
-    //       flags: Array.isArray(lead.associatedFlags)
-    //         ? lead.associatedFlags
-    //         : [],
-    //       assignedOfficers: Array.isArray(lead.assignedTo)
-    // ? lead.assignedTo.map(a => a.username)
-    // : [],
-    //       leadStatus: lead.leadStatus,
-    //       caseName: lead.caseName,
-    //       caseNo: String(lead.caseNo),
-    //     });
-
-    const mapLead = (lead) => {
-  const activeAssignees = Array.isArray(lead.assignedTo)
-    ? lead.assignedTo
-        .filter(a => a && a.status !== "declined")
-        .map(a => a.username)
-    : [];
-
-  return {
-    id: Number(lead.leadNo),
-    description: lead.description,
-    summary: lead.summary,
-    dueDate: lead.dueDate
-      ? new Date(lead.dueDate).toISOString().split("T")[0]
-      : "",
-    priority: lead.priority || "Medium",
-    flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [],
-    assignedOfficers: activeAssignees,
-    leadStatus: lead.leadStatus,
-    caseName: lead.caseName,
-    caseNo: String(lead.caseNo),
-  };
-};
-
-  
-        const assignedLeads = filteredLeadsArray
-          .filter((lead) => lead.leadStatus === "Assigned")
-          .map(mapLead);
-  
-        // const pendingLeads = filteredLeadsArray
-        //   .filter((lead) => lead.leadStatus === "Accepted")
-        //   .map(mapLead);
-        const pendingLeadsRaw = filteredLeadsArray
-  .filter((lead) => lead.leadStatus === "To Reassign" || lead.leadStatus === "Rejected")
-  .map(mapLead);
-
-  //       const pendingLeads = filteredLeadsArray
-  // .filter((lead) => lead.leadStatus === "To Reassign" || lead.leadStatus === "Rejected")
-  // .map(mapLead);
-  const pendingLeads = pendingLeadsRaw.sort((a, b) => {
-  const aNone = (a.assignedOfficers?.length ?? 0) === 0 ? 0 : 1;
-  const bNone = (b.assignedOfficers?.length ?? 0) === 0 ? 0 : 1;
-  if (aNone !== bNone) return aNone - bNone;      // “None” on top
-  return Number(b.id) - Number(a.id);             // then newest first
-});
-
-  
-        const LRInReview = filteredLeadsArray
-          .filter((lead) => lead.leadStatus === "In Review")
-          .map(mapLead);
-
-        const allLeads = filteredLeadsArray
-          .map(mapLead)
-          .filter(lead => lead.id != null && !isNaN(lead.id))
-          .sort((a, b) => Number(b.id) - Number(a.id));
-  
-        console.log("✅ Assigned Leads:", assignedLeads);
-        console.log("✅ Pending Leads:", pendingLeads);
-        console.log("✅ Lead Returns In Review:", LRInReview);
-  
-        setLeads((prev) => ({
-          ...prev,
-          allLeads,
-          assignedLeads,
-          pendingLeads,
-          pendingLeadReturns: LRInReview,
-        }));
-      } catch (error) {
-        console.error("❌ Error fetching leads:", error.message);
-      }
-    };
-  
-    fetchLeadsForCase();
-
-    const intervalId = setInterval(fetchLeadsForCase, 15_000);
-
-  // 4) cleanup on unmount / deps change
-  return () => clearInterval(intervalId);
-}, [
-  selectedCase?.caseNo,
-  selectedCase?.caseName,
-  signedInOfficer
-]);
-  
-  
-
-    const handleTabClick = (tab) => {
-          setActiveTab(tab);
-          setCurrentPage(1); // Reset pagination when switching tabs
-  };
-
-    const handleGenerateLead = () => {
-        navigate('/createlead', { state: { caseDetails } }); // Pass caseDetails as state
-    };
-
-  const addPendingLead = (newLead) => {
-    setLeads((prevLeads) => ({
-      ...prevLeads,
-      pendingLeads: [
-        ...prevLeads.pendingLeads,
-        {
-          ...newLead,
-          dueDate: newLead.dueDate || "12/31/2024", // Default due date
-          priority: newLead.priority || "Medium", // Default priority
-          flags: newLead.flags || [],
-          assignedOfficers: newLead.assignedOfficers || ["Unassigned"], // Default officer
-        },
-      ],
-    }));
-  };
-
- 
-
-// const saveInvestigators = async (overrideInvestigators) => {
-//   try {
-//     setLoading(true);
-//     setError("");
-
-//     const token = localStorage.getItem("token");
-//      // 1) Figure out who’s being removed
-//     const prevSupervisor    = team.detectiveSupervisor;
-//     const prevManagers      = team.caseManagers    || [];
-//     const prevInvestigators = team.investigators   || [];
-
-//     const investigatorsToSave = overrideInvestigators || selectedInvestigators;
-//      const cmToSave = overrideInvestigators || selectedInvestigators;
-
-
-//     const removed = [
-//       // Supervisor
-//       ...(prevSupervisor && prevSupervisor !== selectedDetectiveSupervisor
-//         ? [{ username: prevSupervisor, role: "Detective Supervisor" }]
-//         : []),
-//       // Case Managers
-//       ...prevManagers
-//         .filter(u => !selectedCaseManagers.includes(u))
-//         .map(u => ({ username: u, role: "Case Manager" })),
-//       // Investigators
-//       ...prevInvestigators
-//         .filter(u => !selectedInvestigators.includes(u))
-//         .map(u => ({ username: u, role: "Investigator" })),
-//     ];
-
-//     // 2) Gather all incomplete leads (assigned or accepted)
-//     const incompleteLeads = [
-//       ...leads.assignedLeads,
-//       ...leads.pendingLeads
-//     ];
-
-//     // 3) Block any removal-candidate who still appears on an incomplete lead
-//     const blocked = removed.filter(o =>
-//       incompleteLeads.some(lead =>
-//         (lead.assignedOfficers || []).includes(o.username)
-//       )
-//     );
-
-//     if (blocked.length) {
-//       setAlertMessage(
-//         "Cannot remove " +
-//         blocked.map(b => `${b.role} ${b.username}`).join(", ") +
-//         " because they have open leads."
-//       );
-//       setAlertOpen(true);
-//       return;
-//     }
-
-//     // 1) Build the full officers array for the CASE
-//     const officers = [
-//       { name: selectedDetectiveSupervisor, role: "Detective Supervisor", status: "accepted" },
-//        ...selectedCaseManagers.map(username=>({
-//         name: username,
-//         role: "Case Manager",
-//         status: "accepted"
-//       })),
-//       ...investigatorsToSave
-//       .map(username => ({
-//         name: username,
-//         role: "Investigator",
-//         status: "pending"
-//       }))
-//     ];
-
-//     // 2) Determine who’s brand-new
-
-//     const newlyAddedSupervisor   = (selectedDetectiveSupervisor && selectedDetectiveSupervisor !== prevSupervisor)
-//       ? [selectedDetectiveSupervisor]
-//       : [];
-
-//     const newlyAddedManagers = selectedCaseManagers
-//       .filter(u => !prevManagers.includes(u));
-
-//     const newlyAddedInvestigators = selectedInvestigators
-//       .filter(u => !prevInvestigators.includes(u));
-
-//     const newlyAdded = [
-//       // Supervisor
-//       ...(selectedDetectiveSupervisor && selectedDetectiveSupervisor !== team.detectiveSupervisor
-//         ? [{ username: selectedDetectiveSupervisor, role: "Detective Supervisor" }]
-//         : []),
-
-//       // Case Managers
-//       ...selectedCaseManagers
-//         .filter(u => !team.caseManagers.includes(u))
-//         .map(u => ({ username: u, role: "Case Manager" })),
-
-//       // Investigators
-//       ...selectedInvestigators
-//         .filter(u => !team.investigators.includes(u))
-//         .map(u => ({ username: u, role: "Investigator" }))
-//     ];
-
-//     // 3) PUT to the case‐officers endpoint
-//     await api.put(
-//       `/api/cases/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/officers`,
-//       { officers },
-//       { headers: { Authorization: `Bearer ${token}` } }
-//     );
-
-//     // 4) Update local UI state
-//       setTeam(t => ({
-//        ...t,
-//       detectiveSupervisor: selectedDetectiveSupervisor,
-//       caseManagers:    [...selectedCaseManagers],
-//       investigators:   [...investigatorsToSave]
-//      }));
-
-//     // 5) Notify only the newly added
-//     if (newlyAdded.length) {
-//       const payload = {
-//         notificationId: Date.now().toString(),
-//         assignedBy:     signedInOfficer,
-//         assignedTo:     newlyAdded.map(person => ({
-//           username: person.username,
-//           role:     person.role,
-//           status:   "pending",
-//           unread:   true
-//         })),
-//         action1:        "assigned you to a new case",
-//         post1:          `${selectedCase.caseNo}: ${selectedCase.caseName}`,
-//         caseNo:         selectedCase.caseNo,
-//         caseName:       selectedCase.caseName,
-//         caseStatus:     selectedCase.caseStatus || "Open",
-//         type:           "Case"
-//       };
-
-//       try {
-//         await api.post(
-//           "/api/notifications",
-//           payload,
-//           {
-//             headers: {
-//               "Content-Type":  "application/json",
-//               Authorization:   `Bearer ${token}`
-//             }
-//           }
-//         );
-//         console.log("✅ Notified:", newlyAdded);
-//       } catch (notifErr) {
-//         console.error("❌ Notification error:", notifErr.response?.data || notifErr);
-//       }
-//     }
-
-//     // alert("Officers updated on this case successfully!");
-//     setAlertMessage("Officers updated on this case successfully!");
-//     setAlertOpen(true);
-//   } catch (err) {
-//     console.error("Save failed:", err);
-//     setError("Failed to save changes.");
-//   } finally {
-//     setLoading(false);
-//   }
-// };
-
-const saveInvestigators = async (
-  overrideInvestigators = selectedInvestigators,
-  overrideManagers = selectedCaseManagers,
-  overrideSupervisor = selectedDetectiveSupervisor
-) => {
-  try {
-    setLoading(true);
-    setError("");
-
-    const token = localStorage.getItem("token");
-
-    // 1) Previous team data
-    const prevSupervisor = team.detectiveSupervisor;
-    const prevManagers = team.caseManagers || [];
-    const prevInvestigators = team.investigators || [];
-
-    // 2) Removal check (only remove if no open leads)
-    const removed = [
-      ...(prevSupervisor && prevSupervisor !== overrideSupervisor
-        ? [{ username: prevSupervisor, role: "Detective Supervisor" }]
-        : []),
-      ...prevManagers
-        .filter(u => !overrideManagers.includes(u))
-        .map(u => ({ username: u, role: "Case Manager" })),
-      ...prevInvestigators
-        .filter(u => !overrideInvestigators.includes(u))
-        .map(u => ({ username: u, role: "Investigator" })),
-    ];
-
-    const incompleteLeads = [...leads.assignedLeads, ...leads.pendingLeads];
-    const blocked = removed.filter(o =>
-      incompleteLeads.some(lead =>
-        (lead.assignedOfficers || []).includes(o.username)
-      )
-    );
-
-    if (blocked.length) {
-      setAlertMessage(
-        "Cannot remove " +
-        blocked.map(b => `${b.role} ${b.username}`).join(", ") +
-        " because they have open leads."
-      );
-      setAlertOpen(true);
-      return;
-    }
-
-    // 3) Build full officers list
-    const officers = [
-      { name: overrideSupervisor, role: "Detective Supervisor", status: "accepted" },
-      ...overrideManagers.map(username => ({
-        name: username,
-        role: "Case Manager",
-        status: "accepted"
-      })),
-      ...overrideInvestigators.map(username => ({
-        name: username,
-        role: "Investigator",
-        status: "pending"
-      })),
-    ];
-
-    // 4) Identify newly added
-    const newlyAdded = [
-      ...(overrideSupervisor && overrideSupervisor !== prevSupervisor
-        ? [{ username: overrideSupervisor, role: "Detective Supervisor" }]
-        : []),
-      ...overrideManagers
-        .filter(u => !prevManagers.includes(u))
-        .map(u => ({ username: u, role: "Case Manager" })),
-      ...overrideInvestigators
-        .filter(u => !prevInvestigators.includes(u))
-        .map(u => ({ username: u, role: "Investigator" })),
-    ];
-
-    // 5) API update
-    await api.put(
-      `/api/cases/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/officers`,
-      { officers },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    // 6) Update local UI state instantly
-    setTeam({
-      detectiveSupervisor: overrideSupervisor,
-      caseManagers: [...overrideManagers],
-      investigators: [...overrideInvestigators],
+      summary: lead.summary,
     });
+    setLeadStatus(lead.leadStatus);
+    navigate("/leadReview", { state: { leadDetails: lead, caseDetails: selectedCase } });
+  };
 
-    // 7) Send notifications for new adds
-    if (newlyAdded.length) {
-      await api.post(
-        "/api/notifications",
-        {
-          notificationId: Date.now().toString(),
-          assignedBy: signedInOfficer,
-          assignedTo: newlyAdded.map(p => ({
-            username: p.username,
-            role: p.role,
-            status: "pending",
-            unread: true,
-          })),
-          action1: "assigned you to a new case",
-          post1: `${selectedCase.caseNo}: ${selectedCase.caseName}`,
-          caseNo: selectedCase.caseNo,
-          caseName: selectedCase.caseName,
-          caseStatus: selectedCase.caseStatus || "Open",
-          type: "Case",
-        },
-        { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
+  /** Navigate to the Lead Return Instruction page */
+  const handleLRClick = (lead) => {
+    setSelectedLead({
+      leadNo: lead.id,
+      incidentNo: lead.incidentNo,
+      leadName: lead.description,
+      dueDate: lead.dueDate || "",
+      priority: lead.priority || "Medium",
+      flags: lead.flags || [],
+      assignedOfficers: lead.assignedOfficers || [],
+      leadStatus: lead.leadStatus,
+      caseName: lead.caseName,
+      caseNo: lead.caseNo,
+      summary: lead.summary,
+    });
+    navigate("/LRInstruction", { state: { leadDetails: lead, caseDetails: selectedCase } });
+  };
+
+  // ─── Handlers: confirm / alert modals ────────────────────────────────────
+  const openConfirm = (lead) => setConfirmConfig({ isOpen: true, lead });
+  const closeConfirm = () => setConfirmConfig({ isOpen: false, lead: null });
+  const handleConfirmAccept = () => { acceptLead(confirmConfig.lead.id, confirmConfig.lead.description); closeConfirm(); };
+
+  const closeConfirmOfficers = () => setConfirmOfficersOpen(false);
+  const handleConfirmOfficers = () => { saveInvestigators(); closeConfirmOfficers(); };
+
+  // ─── Handler: accept a lead ───────────────────────────────────────────────
+  const acceptLead = async (leadNo, description) => {
+    try {
+      const token = localStorage.getItem("token");
+      const url = `/api/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`;
+      await api.put(url, {}, {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      });
+
+      const newPendingLead = {
+        id: leadNo, leadNo, description, leadStatus: "Accepted",
+        dueDate: "NA", priority: "NA", flags: [], assignedOfficers: ["Unassigned"],
+      };
+      setLeads(prev => ({
+        ...prev,
+        assignedLeads: prev.assignedLeads.filter(lead => Number(lead.id) !== Number(leadNo)),
+        pendingLeads: [...prev.pendingLeads, newPendingLead],
+      }));
+    } catch (error) {
+      console.error("Error updating lead status:", error.response?.data || error);
+      setAlertMessage("Failed to accept lead.");
+      setAlertOpen(true);
+    }
+  };
+
+  // ─── Handler: save case team officers ────────────────────────────────────
+  const saveInvestigators = async (
+    overrideInvestigators = selectedInvestigators,
+    overrideManagers = selectedCaseManagers,
+    overrideSupervisor = selectedDetectiveSupervisor
+  ) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const prevSupervisor = team.detectiveSupervisor;
+      const prevManagers = team.caseManagers || [];
+      const prevInvestigators = team.investigators || [];
+
+      // Block removal of officers who still have open leads
+      const removed = [
+        ...(prevSupervisor && prevSupervisor !== overrideSupervisor ? [{ username: prevSupervisor, role: "Detective Supervisor" }] : []),
+        ...prevManagers.filter(u => !overrideManagers.includes(u)).map(u => ({ username: u, role: "Case Manager" })),
+        ...prevInvestigators.filter(u => !overrideInvestigators.includes(u)).map(u => ({ username: u, role: "Investigator" })),
+      ];
+      const incompleteLeads = [...leads.assignedLeads, ...leads.pendingLeads];
+      const blocked = removed.filter(o =>
+        incompleteLeads.some(lead => (lead.assignedOfficers || []).includes(o.username))
       );
-    }
-
-    setAlertMessage("Officers updated on this case successfully!");
-    setAlertOpen(true);
-
-  } catch (err) {
-    console.error("Save failed:", err);
-    setError("Failed to save changes.");
-  } finally {
-    setLoading(false);
-  }
-};
-
-// put this near your other helpers
-const fullNameFor = useCallback(
-  (uname) => {
-    const u = allUsers.find(x => x.username === uname);
-    return u ? `${u.firstName} ${u.lastName}` : uname; // fallback to username
-  },
-  [allUsers]
-);
-
-// (optional) precompute once per render
-const presenceNames = useMemo(
-  () => presenceOthers.map(o =>
-    o.fullName || o.name || fullNameFor(o.username)
-  ),
-  [presenceOthers, fullNameFor]
-);
-
-const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
-const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
-const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
-
-
-useEffect(() => {
-    setSummary(null); // reset while loading new case
-    isFirstLoad.current = true;
-    async function load() {
-      if (!selectedCase?.caseNo) return;
-      try {
-        const token = localStorage.getItem('token');
-        const { data } = await api.get(
-          `/api/cases/case-summary/${selectedCase.caseNo}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        console.log('[CaseSummary] loaded:', data);
-        setSummary(data.caseSummary ?? '');
-      } catch (err) {
-        console.error('[CaseSummary] Failed to load summary', err);
-        setSummary('');
+      if (blocked.length) {
+        setAlertMessage("Cannot remove " + blocked.map(b => `${b.role} ${b.username}`).join(", ") + " because they have open leads.");
+        setAlertOpen(true);
+        return;
       }
-    }
-    load();
-  }, [selectedCase.caseNo]);
 
-useEffect(() => {
-    // skip the very first render (when we just loaded from server)
-    if (isFirstLoad.current) {
-      isFirstLoad.current = false;
-      return;
-    }
+      const officers = [
+        { name: overrideSupervisor, role: "Detective Supervisor", status: "accepted" },
+        ...overrideManagers.map(u => ({ name: u, role: "Case Manager", status: "accepted" })),
+        ...overrideInvestigators.map(u => ({ name: u, role: "Investigator", status: "pending" })),
+      ];
 
-    // clear any pending save
-    clearTimeout(saveTimer.current);
+      const newlyAdded = [
+        ...(overrideSupervisor && overrideSupervisor !== prevSupervisor ? [{ username: overrideSupervisor, role: "Detective Supervisor" }] : []),
+        ...overrideManagers.filter(u => !prevManagers.includes(u)).map(u => ({ username: u, role: "Case Manager" })),
+        ...overrideInvestigators.filter(u => !prevInvestigators.includes(u)).map(u => ({ username: u, role: "Investigator" })),
+      ];
 
-    // if summary not yet loaded or no case selected, don’t bother
-    if (summary === null || !selectedCase?.caseNo) return;
+      await api.put(
+        `/api/cases/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/officers`,
+        { officers },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    // schedule a save
-    saveTimer.current = setTimeout(async () => {
-      setIsSaving(true);
-      setError('');
-      try {
-        const token = localStorage.getItem('token');
-        console.log('[CaseSummary] saving:', { caseNo: selectedCase.caseNo, caseSummary: summary });
-        await api.put(
-          '/api/cases/case-summary',
+      setTeam({
+        detectiveSupervisor: overrideSupervisor,
+        caseManagers: [...overrideManagers],
+        investigators: [...overrideInvestigators],
+      });
+
+      // Notify newly added officers
+      if (newlyAdded.length) {
+        await api.post(
+          "/api/notifications",
           {
+            notificationId: Date.now().toString(),
+            assignedBy: signedInOfficer,
+            assignedTo: newlyAdded.map(p => ({ username: p.username, role: p.role, status: "pending", unread: true })),
+            action1: "assigned you to a new case",
+            post1: `${selectedCase.caseNo}: ${selectedCase.caseName}`,
             caseNo: selectedCase.caseNo,
             caseName: selectedCase.caseName,
-            caseSummary: summary,
+            caseStatus: selectedCase.caseStatus || "Open",
+            type: "Case",
           },
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
         );
-        console.log('[CaseSummary] saved successfully');
-      } catch (err) {
-        console.error('[CaseSummary] Save failed', err);
-        setError('Save failed. Try again.');
-      } finally {
-        setIsSaving(false);
       }
-    }, 2000);
 
-    // cleanup on unmount or before next change
-    return () => clearTimeout(saveTimer.current);
-  }, [summary, selectedCase.caseNo, selectedCase.caseName]);
-
-  
-
-  // Calculate remaining days from the due date
-  const calculateRemainingDays = (dueDate) => {
-     if (!dueDate) return "";
-    const currentDate = new Date();
-    const targetDate = new Date(dueDate);
-    const timeDifference = targetDate - currentDate;
-    return Math.max(0, Math.ceil(timeDifference / (1000 * 60 * 60 * 24))); // Return 0 if negative
-  };
-  
-  const getUserByUsername = useCallback(
-  (uname) => allUsers.find(u => u.username === uname),
-  [allUsers]
-);
-
-// display "First Last (username)" if we have the user, else just the raw value
-const displayName = (uname) => {
-  const u = getUserByUsername(uname);
-  return u ? `${u.firstName} ${u.lastName} (${u.username})` : (uname || "—");
-};
-
-// join multiple usernames as full names
-const displayNames = (usernames = []) =>
-  usernames.map(displayName).join(", ");
-
-  // Sort leads
-  const handleSort = (field, order) => {
-    setSortField(`${field}-${order}`);
-    setLeads((prevLeads) => ({
-      ...prevLeads,
-      pendingLeads: [...prevLeads.pendingLeads].sort((a, b) => {
-        let comparison = 0;
-  
-        if (field === "remainingDays") {
-          const remainingDaysA = Math.max(0, calculateRemainingDays(a.dueDate));
-          const remainingDaysB = Math.max(0, calculateRemainingDays(b.dueDate));
-          comparison = remainingDaysA - remainingDaysB;
-        } else if (field === "priority") {
-          const priorities = { High: 3, Medium: 2, Low: 1 };
-          comparison = priorities[a[field]] - priorities[b[field]];
-        } else {
-          comparison = a[field]?.localeCompare(b[field]);
-        }
-  
-        return order === "asc" ? comparison : -comparison;
-      }),
-    }));
-  };
-
-//   const caseTeamStyles = {
-//   table: {
-//     width: "100%",
-//     borderCollapse: "collapse",
-//   },
-//   th: {
-//     padding: "8px"
-//   },
-//   td: {
-//     padding: "8px",
-//     verticalAlign: "center",
-//   },
-// };
-
-
-
-    // Continue a pending lead return
-    const continueLead = (leadId) => {
-        const leadToContinue = leads.pendingLeadReturns.find(
-          (lead) => lead.id === leadId
-        );
-        if (!leadToContinue) return;
-        setLeads((prevLeads) => ({
-          ...prevLeads,
-          pendingLeadReturns: prevLeads.pendingLeadReturns.filter(
-            (lead) => lead.id !== leadId
-          ),
-          pendingLeads: [...prevLeads.pendingLeads, leadToContinue],
-        }));
-      };
-
-      // Filter leads
-  const handleFilter = (e) => {
-    setFilterText(e.target.value);
-  };
-
-   // Define a constant with some predefined notes
-  //  const [caseSummary, setCaseSummary] = useState(caseDetails?.caseSummary || defaultCaseSummary);
-  
-    const [caseSummary, setCaseSummary] = useState('');
-
-   const [isEditing, setIsEditing] = useState(false); // Controls whether the textarea is editable
-   useEffect(() => {
-    const fetchCaseSummary = async () => {
-      try {
-        if (selectedCase && selectedCase.caseNo) {
-          const token = localStorage.getItem("token");
-          const response = await api.get(`/api/cases/summary/${selectedCase.caseNo}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          // Update case summary if data is received
-          console.log("Response data:", response.data);
-          if (response.data) {
-            setCaseSummary(response.data.summary );
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching case summary:", error);
-      }
-    };
-
-    fetchCaseSummary();
-  }, [selectedCase]);
-
-  
-
-
-
-
-   const handleCaseSummaryChange = (e) => {
-       setCaseSummary(e.target.value);
-   };
-
-   // Toggle edit mode
-   const handleEditClick = () => {
-    setIsEditing(true);
-   };
-
-    // Save the edited text and disable editing
-    const handleSaveClick = () => {
-        setIsEditing(false);
-        // You can add logic here to update the backend with the new summary if needed
-    };
-      const filtersConfig = [
-        {
-          name: "leadNumber",
-          label: "Lead Number",
-          options: ["45", "23", "14"],
-        },
-        {
-          name: "leadName",
-          label: "Lead Name",
-          options: [
-            "Collect Audio from Dispatcher",
-            "Interview Mr. John",
-            "Collect evidence from 63 Mudray Street",
-          ],
-        },
-        {
-          name: "dueDate",
-          label: "Due Date",
-          options: ["Officer 1", "Officer 2", "Officer 3"],
-        },
-        {
-          name: "Priority",
-          label: "Priority",
-          options: ["High", "Medium", "Low"],
-        },
-        {
-          name: "Flag",
-          label: "Flag",
-          options: ["Important"],
-        },
-        {
-          name: "assignedOfficers",
-          label: "Assigned Officers",
-          options: ["Officer 1", "Officer 2", "Officer 3"],
-        },
-        {
-          name: "daysLeft",
-          label: "Days Left",
-          options: ["1", "2", "3"],
-        },
-      ];
-  
-      const onShowCaseSelector = (route) => {
-        navigate(route, { state: { caseDetails } });
-    };
-
-    useEffect(() => {
-      // Scroll to the top when the component mounts
-      window.scrollTo(0, 0);
-    }, []); // Empty dependency array ensures it runs only once on mount
-
-
-
-const handleFilterAllClick = col => {
-  setOpenAllFilter(prev => prev===col ? null : col);
-};
-
-// Filter and sort for assigned leads- 
-// ─── Assigned Leads filter/sort setup ──────────────────────────────────────
-// columns + mapping
-const assignedColumns   = ["Lead No.","Lead Name","Due Date","Priority","Days Left","Assigned Officers"];
-const assignedColKey    = {
-  "Lead No.":          "id",
-  "Lead Name":         "description",
-  "Due Date":          "dueDate",
-  "Priority":          "priority",
-  "Days Left":         "remainingDays",
-  "Assigned Officers": "assignedOfficers",
-};
-const assignedColWidths = {
-  "Lead No.":           "16%",
-  "Lead Name":          "22%",
-  // "Due Date":           "10%",
-  "Priority":           "10%",
-  // "Days Left":          "10%",
-  "Assigned Officers":  "20%",
-};
-
-// refs + state
-const popupAssignedRefs    = useRef({});
-const [openAssignedFilter,    setOpenAssignedFilter]    = useState(null);
-const [assignedFilterConfig,  setAssignedFilterConfig]  = useState({
-  id:[], description:[], dueDate:[], priority:[], remainingDays:[], flags:[], assignedOfficers:[]
-});
-const [tempAssignedSelections,setTempAssignedSelections]= useState({});
-const [assignedFilterSearch,  setAssignedFilterSearch]  = useState({});
-const [assignedSortConfig,    setAssignedSortConfig]    = useState({ key:null, direction:'asc' });
-
-// helpers
-const handleAssignedFilterSearch = (dk, txt) =>
-  setAssignedFilterSearch(fs => ({ ...fs, [dk]: txt }));
-
-const assignedAllChecked = dk => {
-  const sel = tempAssignedSelections[dk]||[];
-  return sel.length === (distinctAssigned[dk]||[]).length;
-};
-
-const toggleAssignedSelectAll = dk => {
-  const all = distinctAssigned[dk]||[];
-  setTempAssignedSelections(ts => ({
-    ...ts,
-    [dk]: ts[dk]?.length===all.length ? [] : [...all]
-  }));
-};
-
-const handleAssignedCheckboxToggle = (dk, v) =>
-  setTempAssignedSelections(ts => {
-    const sel = ts[dk]||[];
-    return { ...ts,
-      [dk]: sel.includes(v) ? sel.filter(x=>x!==v) : [...sel, v]
-    };
-  });
-
-const applyAssignedFilter = dk =>
-  setAssignedFilterConfig(fc => ({
-    ...fc,
-    [dk]: tempAssignedSelections[dk]||[]
-  }));
-
-const handleSortAssigned = (dk, dir) =>
-  setAssignedSortConfig({ key: dk, direction: dir });
-
-// compute distinct values for each column
-const distinctAssigned = useMemo(() => {
-  const map = {
-    id: new Set(), description: new Set(), dueDate: new Set(),
-    priority: new Set(), remainingDays: new Set(),
-    flags: new Set(), assignedOfficers: new Set()
-  };
-  leads.assignedLeads.forEach(lead => {
-    map.id.add(String(lead.id));
-    map.description.add(lead.description);
-    map.dueDate.add(lead.dueDate);
-    map.priority.add(lead.priority);
-    map.remainingDays.add(String(calculateRemainingDays(lead.dueDate)));
-    lead.flags.forEach(f => map.flags.add(f));
-    lead.assignedOfficers.forEach(o => map.assignedOfficers.add(o));
-  });
-  return Object.fromEntries(
-    Object.entries(map).map(([k,s])=>[k,Array.from(s)])
-  );
-}, [leads.assignedLeads]);
-
-// apply filters then sort
-const sortedAssignedLeads = useMemo(() => {
-  let data = leads.assignedLeads.filter(lead =>
-    Object.entries(assignedFilterConfig).every(([key,sel]) => {
-      if (!sel.length) return true;
-      let cell = lead[key];
-      if (key==="remainingDays") cell = calculateRemainingDays(lead.dueDate);
-      if (Array.isArray(cell)) return cell.some(v=>sel.includes(v));
-      return sel.includes(String(cell));
-    })
-  );
-  const { key, direction } = assignedSortConfig;
-  if (key) {
-    data = data.slice().sort((a,b) => {
-      let aV = key==="remainingDays"
-        ? calculateRemainingDays(a.dueDate)
-        : Array.isArray(a[key]) ? a[key][0] : a[key];
-      let bV = key==="remainingDays"
-        ? calculateRemainingDays(b.dueDate)
-        : Array.isArray(b[key]) ? b[key][0] : b[key];
-      return direction==='asc'
-        ? String(aV).localeCompare(String(bV))
-        : String(bV).localeCompare(String(aV));
-    });
-  }
-  return data;
-}, [leads.assignedLeads, assignedFilterConfig, assignedSortConfig]);
-
-//  Pending / Accepted Leads 
-
-// ─── Pending Leads filter/sort setup ──────────────────────────────────────
-
-// Columns + mapping
-const pendingColumns   = [
-  "Lead No.",
-  "Lead Name",
-  // "Due Date",
-  "Priority",
-  // "Days Left",
-  "Assigned Officers"
-];
-const pendingColKey    = {
-  "Lead No.":          "id",
-  "Lead Name":         "description",
-  "Due Date":          "dueDate",
-  "Priority":          "priority",
-  "Days Left":         "remainingDays",
-  "Assigned Officers": "assignedOfficers",
-};
-const pendingColWidths = {
-  "Lead No.":           "12%",
-  "Lead Name":          "32%",
-  // "Due Date":           "10%",
-  "Priority":           "8%",
-  // "Days Left":          "10%",
-  "Assigned Officers":  "18%",
-};
-
-// Refs + state
-const popupPendingRefs     = useRef({});
-const [openPendingFilter,     setOpenPendingFilter]    = useState(null);
-const [pendingFilterConfig,   setPendingFilterConfig]  = useState({
-  id: [], description: [], dueDate: [], priority: [], remainingDays: [], flags: [], assignedOfficers: []
-});
-const [tempPendingSelections, setTempPendingSelections]= useState({});
-const [pendingFilterSearch,   setPendingFilterSearch]  = useState({});
-const [pendingSortConfig,     setPendingSortConfig]    = useState({ key:null, direction:'asc' });
-
-// Helper functions
-const handlePendingFilterSearch = (dataKey, text) =>
-  setPendingFilterSearch(fs => ({ ...fs, [dataKey]: text }));
-
-const pendingAllChecked = dataKey => {
-  const sel = tempPendingSelections[dataKey] || [];
-  return sel.length === (distinctPending[dataKey] || []).length;
-};
-
-const togglePendingSelectAll = dataKey => {
-  const all = distinctPending[dataKey] || [];
-  setTempPendingSelections(ts => ({
-    ...ts,
-    [dataKey]: ts[dataKey]?.length === all.length ? [] : [...all]
-  }));
-};
-
-const handlePendingCheckboxToggle = (dataKey, v) =>
-  setTempPendingSelections(ts => {
-    const sel = ts[dataKey] || [];
-    return {
-      ...ts,
-      [dataKey]: sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v]
-    };
-  });
-
-  const handleSortPending = (columnKey) =>
-  setPendingSortConfig(prev => ({
-    key: columnKey,
-    direction: prev.key === columnKey && prev.direction === "asc" ? "desc" : "asc",
-  }));
-
-
-const applyPendingFilter = dataKey =>
-  setPendingFilterConfig(fc => ({
-    ...fc,
-    [dataKey]: tempPendingSelections[dataKey] || []
-  }));
-
-// Compute distinct values
-const distinctPending = useMemo(() => {
-  const map = {
-    id: new Set(), description: new Set(), dueDate: new Set(),
-    priority: new Set(), remainingDays: new Set(),
-    flags: new Set(), assignedOfficers: new Set()
-  };
-  leads.pendingLeads.forEach(lead => {
-    map.id.add(String(lead.id));
-    map.description.add(lead.description);
-    map.dueDate.add(lead.dueDate);
-    map.priority.add(lead.priority);
-    map.remainingDays.add(String(calculateRemainingDays(lead.dueDate)));
-    lead.flags.forEach(f => map.flags.add(f));
-    lead.assignedOfficers.forEach(o => map.assignedOfficers.add(o));
-  });
-  return Object.fromEntries(
-    Object.entries(map).map(([k,s])=>[k,Array.from(s)])
-  );
-}, [leads.pendingLeads]);
-
-// Apply filters + sort
-const sortedPendingLeads = useMemo(() => {
-  let data = leads.pendingLeads.filter(lead =>
-    Object.entries(pendingFilterConfig).every(([key, sel]) => {
-      if (!sel.length) return true;
-      let cell = key === "remainingDays"
-        ? calculateRemainingDays(lead.dueDate)
-        : lead[key];
-      if (Array.isArray(cell)) return cell.some(v => sel.includes(v));
-      return sel.includes(String(cell));
-    })
-  );
-  const { key, direction } = pendingSortConfig;
-  if (key) {
-    data = data.slice().sort((a,b) => {
-      let aV = key==="remainingDays"
-        ? calculateRemainingDays(a.dueDate)
-        : Array.isArray(a[key]) ? a[key][0] : a[key];
-      let bV = key==="remainingDays"
-        ? calculateRemainingDays(b.dueDate)
-        : Array.isArray(b[key]) ? b[key][0] : b[key];
-      return direction==='asc'
-        ? String(aV).localeCompare(String(bV))
-        : String(bV).localeCompare(String(aV));
-    });
-  }
-  return data;
-}, [leads.pendingLeads, pendingFilterConfig, pendingSortConfig]);
-
-// Paginate the sorted pending leads
-const paginatedPendingLeads = useMemo(() => {
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  return sortedPendingLeads.slice(startIndex, endIndex);
-}, [sortedPendingLeads, currentPage, pageSize]);
-
-// ─── Pending Lead Returns filter/sort setup ───────────────────────────────
-
-// Columns + mapping
-const pendingLRColumns   = ["Lead No.", "Lead Name", "Case Name"];
-const pendingLRColKey    = {
-  "Lead No.":  "id",
-  "Lead Name": "description",
-  "Case Name": "caseName",
-};
-const pendingLRColWidths = {
-  "Lead No.":  "15%",
-  "Lead Name": "40%",
-  "Case Name": "35%",
-};
-
-// Refs + state
-const popupPendingLRRefs      = useRef({});
-const [openPendingLRFilter,    setOpenPendingLRFilter]     = useState(null);
-const [pendingLRFilterConfig,  setPendingLRFilterConfig]   = useState({
-  id: [], description: [], caseName: []
-});
-const [tempPendingLRSelections, setTempPendingLRSelections]= useState({});
-const [pendingLRFilterSearch,  setPendingLRFilterSearch]   = useState({});
-const [pendingLRSortConfig,    setPendingLRSortConfig]     = useState({ key: null, direction: 'asc' });
-
-// Helper functions
-const handlePendingLRFilterSearch = (dataKey, text) =>
-  setPendingLRFilterSearch(fs => ({ ...fs, [dataKey]: text }));
-
-const pendingLRAllChecked = dataKey => {
-  const sel = tempPendingLRSelections[dataKey] || [];
-  return sel.length === (distinctPendingLR[dataKey]?.length ?? 0);
-};
-
-const togglePendingLRSelectAll = dataKey => {
-  const all = distinctPendingLR[dataKey] || [];
-  setTempPendingLRSelections(ts => ({
-    ...ts,
-    [dataKey]: ts[dataKey]?.length === all.length ? [] : [...all]
-  }));
-};
-
-const handlePendingLRCheckboxToggle = (dataKey, v) =>
-  setTempPendingLRSelections(ts => {
-    const sel = ts[dataKey] || [];
-    return {
-      ...ts,
-      [dataKey]: sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v]
-    };
-  });
-
-const applyPendingLRFilter = dataKey =>
-  setPendingLRFilterConfig(fc => ({
-    ...fc,
-    [dataKey]: tempPendingLRSelections[dataKey] || []
-  }));
-
-const handleSortPendingLR = (dk, dir) =>
-  setPendingLRSortConfig({ key: dk, direction: dir });
-
-// Distinct values for each column
-const distinctPendingLR = useMemo(() => {
-  const map = {
-    id: new Set(),
-    description: new Set(),
-    caseName: new Set()
-  };
-  leads.pendingLeadReturns.forEach(lead => {
-    map.id.add(String(lead.id));
-    map.description.add(lead.description);
-    map.caseName.add(lead.caseName);
-  });
-  return Object.fromEntries(
-    Object.entries(map).map(([k,s]) => [k, Array.from(s)])
-  );
-}, [leads.pendingLeadReturns]);
-
-// Filter + sort the pending lead returns
-const sortedPendingLRs = useMemo(() => {
-  let data = leads.pendingLeadReturns.filter(lead =>
-    Object.entries(pendingLRFilterConfig).every(([key, sel]) => {
-      if (!sel.length) return true;
-      const cell = String(lead[key]);
-      return sel.includes(cell);
-    })
-  );
-  const { key, direction } = pendingLRSortConfig;
-  if (key) {
-    data = data.slice().sort((a,b) => {
-      const aV = String(a[key]), bV = String(b[key]);
-      return direction === 'asc'
-        ? aV.localeCompare(bV)
-        : bV.localeCompare(aV);
-    });
-  }
-  return data;
-}, [leads.pendingLeadReturns, pendingLRFilterConfig, pendingLRSortConfig]);
-
-// Paginate the sorted pending lead returns
-const paginatedPendingLRs = useMemo(() => {
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  return sortedPendingLRs.slice(startIndex, endIndex);
-}, [sortedPendingLRs, currentPage, pageSize]);
-
-const formatUser = (username) => {
-  if (!username) return "—";
-  const u = allUsers?.find(x => x.username === username);
-  return u ? `${u.firstName} ${u.lastName} (${u.username})` : username; // fallback
-};
-
-
-// ─── All Leads filter/sort setup ──────────────────────────────────────────
-
-// Columns + mapping
-const allColumns   = [
-  "Lead No.",
-  "Lead Log Summary",
-  "Lead Status",
-  "Assigned Officers"
-];
-const allColKey    = {
-  "Lead No.":           "id",
-  "Lead Log Summary":   "description",
-  "Lead Status":        "leadStatus",
-  "Assigned Officers":  "assignedOfficers"
-};
-const allColWidths = {
-  "Lead No.":           "8%",
-  "Lead Log Summary":   "32%",
-  "Lead Status":        "14%",
-  "Assigned Officers":  "22%"
-};
-
-// Refs & state
-const filterButtonRefs = useRef({});
-
-const popupAllRefs     = useRef({});
-const [openAllFilter,   setOpenAllFilter]   = useState(null);
-const [allFilterConfig, setAllFilterConfig] = useState({
-  id: [], description: [], leadStatus: [], assignedOfficers: []
-});
-const [allFilterSearch, setAllFilterSearch] = useState({});
-const [tempAllSelections, setTempAllSelections] = useState({});
-const [allSortConfig,   setAllSortConfig]   = useState({ key:null, direction:'asc' });
-
-// Build distinct values for each column
-const distinctAll = useMemo(() => {
-  const map = {
-    id: new Set(),
-    description: new Set(),
-    leadStatus: new Set(),
-    assignedOfficers: new Set(),
-  };
-  leads.allLeads.forEach(lead => {
-    map.id.add(String(lead.id));
-    map.description.add(lead.description);
-    map.leadStatus.add(lead.leadStatus);
-    (lead.assignedOfficers || []).forEach(o => map.assignedOfficers.add(o));
-  });
-  return Object.fromEntries(
-    Object.entries(map).map(([k, set]) => [k, Array.from(set)])
-  );
-}, [leads.allLeads]);
-
-
-const handleAllFilterSearch = (key, txt) =>
-  setAllFilterSearch(fs => ({ ...fs, [key]: txt }));
-
-const allAllChecked = key =>
-  (tempAllSelections[key] || []).length === (distinctAll[key] || []).length;
-
-const toggleAllSelectAll = key => {
-  const all = distinctAll[key] || [];
-  setTempAllSelections(ts => ({
-    ...ts,
-    [key]: ts[key]?.length === all.length ? [] : [...all]
-  }));
-};
-
-const handleAllCheckboxToggle = (key, v) =>
-  setTempAllSelections(ts => {
-    const sel = ts[key] || [];
-    return {
-      ...ts,
-      [key]: sel.includes(v)
-        ? sel.filter(x => x !== v)
-        : [...sel, v]
-    };
-  });
-
-const applyAllFilter = key =>
-  setAllFilterConfig(cfg => ({
-    ...cfg,
-    [key]: tempAllSelections[key] || []
-  }));
-
-
-// Apply filters + sort
-const sortedAllLeads = useMemo(() => {
-  const { id: fId, description: fDesc, leadStatus: fStatus, assignedOfficers: fOffs } = allFilterConfig;
-
-  // 1) Filter
-  let data = leads.allLeads.filter(lead => {
-    // id filter
-    if (fId.length && !fId.includes(String(lead.id))) return false;
-
-    // description filter
-    if (fDesc.length && !fDesc.includes(lead.description)) return false;
-
-    // leadStatus filter
-    if (fStatus.length && !fStatus.includes(lead.leadStatus)) return false;
-
-    // assignedOfficers filter (lead.assignedOfficers is an array)
-    if (
-      fOffs.length &&
-      !lead.assignedOfficers.some(off => fOffs.includes(off))
-    ) {
-      return false;
+      setAlertMessage("Officers updated on this case successfully!");
+      setAlertOpen(true);
+    } catch (err) {
+      console.error("Save failed:", err);
     }
+  };
 
-    return true;
+  // ─── Filter/sort: Assigned Leads ──────────────────────────────────────────
+  const assignedColumns = ["Lead No.", "Lead Name", "Due Date", "Priority", "Days Left", "Assigned Officers"];
+  const assignedColKey = {
+    "Lead No.": "id", "Lead Name": "description", "Due Date": "dueDate",
+    "Priority": "priority", "Days Left": "remainingDays", "Assigned Officers": "assignedOfficers",
+  };
+  const assignedColWidths = {
+    "Lead No.": "16%", "Lead Name": "22%", "Priority": "10%", "Assigned Officers": "20%",
+  };
+
+  const popupAssignedRefs = useRef({});
+  const [openAssignedFilter, setOpenAssignedFilter] = useState(null);
+  const [assignedFilterConfig, setAssignedFilterConfig] = useState({
+    id: [], description: [], dueDate: [], priority: [], remainingDays: [], flags: [], assignedOfficers: [],
   });
+  const [tempAssignedSelections, setTempAssignedSelections] = useState({});
+  const [assignedFilterSearch, setAssignedFilterSearch] = useState({});
+  const [assignedSortConfig, setAssignedSortConfig] = useState({ key: null, direction: 'asc' });
 
-  // 2) Sort
-  const { key, direction } = allSortConfig;
-  if (key) {
-    data = data.slice().sort((a, b) => {
-      // if the field is an array, grab the first element for sorting
-      const aV = Array.isArray(a[key]) ? a[key][0] : String(a[key]);
-      const bV = Array.isArray(b[key]) ? b[key][0] : String(b[key]);
-      return direction === "asc"
-        ? aV.localeCompare(bV)
-        : bV.localeCompare(aV);
+  const handleAssignedFilterSearch = (dk, txt) => setAssignedFilterSearch(fs => ({ ...fs, [dk]: txt }));
+  const assignedAllChecked = dk => (tempAssignedSelections[dk] || []).length === (distinctAssigned[dk] || []).length;
+  const toggleAssignedSelectAll = dk => {
+    const all = distinctAssigned[dk] || [];
+    setTempAssignedSelections(ts => ({ ...ts, [dk]: ts[dk]?.length === all.length ? [] : [...all] }));
+  };
+  const handleAssignedCheckboxToggle = (dk, v) =>
+    setTempAssignedSelections(ts => { const sel = ts[dk] || []; return { ...ts, [dk]: sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v] }; });
+  const applyAssignedFilter = dk => setAssignedFilterConfig(fc => ({ ...fc, [dk]: tempAssignedSelections[dk] || [] }));
+  const handleSortAssigned = (dk, dir) => setAssignedSortConfig({ key: dk, direction: dir });
+
+  const distinctAssigned = useMemo(() => {
+    const map = { id: new Set(), description: new Set(), dueDate: new Set(), priority: new Set(), remainingDays: new Set(), flags: new Set(), assignedOfficers: new Set() };
+    leads.assignedLeads.forEach(lead => {
+      map.id.add(String(lead.id)); map.description.add(lead.description); map.dueDate.add(lead.dueDate);
+      map.priority.add(lead.priority); map.remainingDays.add(String(calculateRemainingDays(lead.dueDate)));
+      lead.flags.forEach(f => map.flags.add(f)); lead.assignedOfficers.forEach(o => map.assignedOfficers.add(o));
     });
-  }
+    return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, Array.from(s)]));
+  }, [leads.assignedLeads]);
 
-  return data;
-}, [leads.allLeads, allFilterConfig, allSortConfig]);
+  const sortedAssignedLeads = useMemo(() => {
+    let data = leads.assignedLeads.filter(lead =>
+      Object.entries(assignedFilterConfig).every(([key, sel]) => {
+        if (!sel.length) return true;
+        let cell = key === "remainingDays" ? calculateRemainingDays(lead.dueDate) : lead[key];
+        if (Array.isArray(cell)) return cell.some(v => sel.includes(v));
+        return sel.includes(String(cell));
+      })
+    );
+    const { key, direction } = assignedSortConfig;
+    if (key) {
+      data = data.slice().sort((a, b) => {
+        const aV = key === "remainingDays" ? calculateRemainingDays(a.dueDate) : Array.isArray(a[key]) ? a[key][0] : a[key];
+        const bV = key === "remainingDays" ? calculateRemainingDays(b.dueDate) : Array.isArray(b[key]) ? b[key][0] : b[key];
+        return direction === 'asc' ? String(aV).localeCompare(String(bV)) : String(bV).localeCompare(String(aV));
+      });
+    }
+    return data;
+  }, [leads.assignedLeads, assignedFilterConfig, assignedSortConfig]);
 
-// Calculate total entries based on active tab
-const totalEntries = useMemo(() => {
-  switch (activeTab) {
-    case "pendingLeads":
-      return sortedPendingLeads.length;
-    case "pendingLeadReturns":
-      return sortedPendingLRs.length;
-    case "allLeads":
-    default:
-      return sortedAllLeads.length;
-  }
-}, [activeTab, sortedPendingLeads.length, sortedPendingLRs.length, sortedAllLeads.length]);
+  // ─── Filter/sort: Pending (To Reassign) Leads ─────────────────────────────
+  const pendingColumns = ["Lead No.", "Lead Name", "Priority", "Assigned Officers"];
+  const pendingColKey = {
+    "Lead No.": "id", "Lead Name": "description", "Due Date": "dueDate",
+    "Priority": "priority", "Days Left": "remainingDays", "Assigned Officers": "assignedOfficers",
+  };
+  const pendingColWidths = { "Lead No.": "12%", "Lead Name": "32%", "Priority": "8%", "Assigned Officers": "18%" };
 
-// Paginate the sorted leads
-const paginatedLeads = useMemo(() => {
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  return sortedAllLeads.slice(startIndex, endIndex);
-}, [sortedAllLeads, currentPage, pageSize]);
+  const popupPendingRefs = useRef({});
+  const [openPendingFilter, setOpenPendingFilter] = useState(null);
+  const [pendingFilterConfig, setPendingFilterConfig] = useState({
+    id: [], description: [], dueDate: [], priority: [], remainingDays: [], flags: [], assignedOfficers: [],
+  });
+  const [tempPendingSelections, setTempPendingSelections] = useState({});
+  const [pendingFilterSearch, setPendingFilterSearch] = useState({});
+  const [pendingSortConfig, setPendingSortConfig] = useState({ key: null, direction: 'asc' });
 
-// Reset to page 1 when filters change
-React.useEffect(() => {
-  setCurrentPage(1);
-}, [allFilterConfig, allSortConfig, pendingFilterConfig, pendingSortConfig, pendingLRFilterConfig, pendingLRSortConfig]);
+  const handlePendingFilterSearch = (dk, txt) => setPendingFilterSearch(fs => ({ ...fs, [dk]: txt }));
+  const pendingAllChecked = dk => (tempPendingSelections[dk] || []).length === (distinctPending[dk] || []).length;
+  const togglePendingSelectAll = dk => {
+    const all = distinctPending[dk] || [];
+    setTempPendingSelections(ts => ({ ...ts, [dk]: ts[dk]?.length === all.length ? [] : [...all] }));
+  };
+  const handlePendingCheckboxToggle = (dk, v) =>
+    setTempPendingSelections(ts => { const sel = ts[dk] || []; return { ...ts, [dk]: sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v] }; });
+  const applyPendingFilter = dk => setPendingFilterConfig(fc => ({ ...fc, [dk]: tempPendingSelections[dk] || [] }));
+  const handleSortPending = (columnKey) =>
+    setPendingSortConfig(prev => ({ key: columnKey, direction: prev.key === columnKey && prev.direction === "asc" ? "desc" : "asc" }));
 
-const handleSortAll = columnKey => {
-  setAllSortConfig(prev => ({
-    key: prev.key === columnKey && prev.direction === "asc"
-      ? columnKey     // still sort by the same column, but flip direction
-      : columnKey,
-    direction: prev.key === columnKey && prev.direction === "asc"
-      ? "desc"
-      : "asc"
-  }));
-};
+  const distinctPending = useMemo(() => {
+    const map = { id: new Set(), description: new Set(), dueDate: new Set(), priority: new Set(), remainingDays: new Set(), flags: new Set(), assignedOfficers: new Set() };
+    leads.pendingLeads.forEach(lead => {
+      map.id.add(String(lead.id)); map.description.add(lead.description); map.dueDate.add(lead.dueDate);
+      map.priority.add(lead.priority); map.remainingDays.add(String(calculateRemainingDays(lead.dueDate)));
+      lead.flags.forEach(f => map.flags.add(f)); lead.assignedOfficers.forEach(o => map.assignedOfficers.add(o));
+    });
+    return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, Array.from(s)]));
+  }, [leads.pendingLeads]);
 
-const toTitleCase = (s = "") =>
-  s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+  const sortedPendingLeads = useMemo(() => {
+    let data = leads.pendingLeads.filter(lead =>
+      Object.entries(pendingFilterConfig).every(([key, sel]) => {
+        if (!sel.length) return true;
+        let cell = key === "remainingDays" ? calculateRemainingDays(lead.dueDate) : lead[key];
+        if (Array.isArray(cell)) return cell.some(v => sel.includes(v));
+        return sel.includes(String(cell));
+      })
+    );
+    const { key, direction } = pendingSortConfig;
+    if (key) {
+      data = data.slice().sort((a, b) => {
+        const aV = key === "remainingDays" ? calculateRemainingDays(a.dueDate) : Array.isArray(a[key]) ? a[key][0] : a[key];
+        const bV = key === "remainingDays" ? calculateRemainingDays(b.dueDate) : Array.isArray(b[key]) ? b[key][0] : b[key];
+        return direction === 'asc' ? String(aV).localeCompare(String(bV)) : String(bV).localeCompare(String(aV));
+      });
+    }
+    return data;
+  }, [leads.pendingLeads, pendingFilterConfig, pendingSortConfig]);
 
+  const paginatedPendingLeads = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedPendingLeads.slice(start, start + pageSize);
+  }, [sortedPendingLeads, currentPage, pageSize]);
 
+  // ─── Filter/sort: Lead Returns (In Review) ────────────────────────────────
+  const pendingLRColumns = ["Lead No.", "Lead Name", "Case Name"];
+  const pendingLRColKey = { "Lead No.": "id", "Lead Name": "description", "Case Name": "caseName" };
+  const pendingLRColWidths = { "Lead No.": "15%", "Lead Name": "40%", "Case Name": "35%" };
 
+  const popupPendingLRRefs = useRef({});
+  const [openPendingLRFilter, setOpenPendingLRFilter] = useState(null);
+  const [pendingLRFilterConfig, setPendingLRFilterConfig] = useState({ id: [], description: [], caseName: [] });
+  const [tempPendingLRSelections, setTempPendingLRSelections] = useState({});
+  const [pendingLRFilterSearch, setPendingLRFilterSearch] = useState({});
+  const [pendingLRSortConfig, setPendingLRSortConfig] = useState({ key: null, direction: 'asc' });
 
+  const handlePendingLRFilterSearch = (dk, txt) => setPendingLRFilterSearch(fs => ({ ...fs, [dk]: txt }));
+  const pendingLRAllChecked = dk => (tempPendingLRSelections[dk] || []).length === (distinctPendingLR[dk]?.length ?? 0);
+  const togglePendingLRSelectAll = dk => {
+    const all = distinctPendingLR[dk] || [];
+    setTempPendingLRSelections(ts => ({ ...ts, [dk]: ts[dk]?.length === all.length ? [] : [...all] }));
+  };
+  const handlePendingLRCheckboxToggle = (dk, v) =>
+    setTempPendingLRSelections(ts => { const sel = ts[dk] || []; return { ...ts, [dk]: sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v] }; });
+  const applyPendingLRFilter = dk => setPendingLRFilterConfig(fc => ({ ...fc, [dk]: tempPendingLRSelections[dk] || [] }));
+  const handleSortPendingLR = (dk, dir) => setPendingLRSortConfig({ key: dk, direction: dir });
 
-    return (
-        <div className={styles['case-page-manager']}>
-            {/* Navbar */}
-            <Navbar />
-              <AlertModal
-                isOpen={confirmOfficersOpen}
-                title="Confirm Update"
-                message="Are you sure you want to update your case officers?"
-                onClose={closeConfirmOfficers}
-                onConfirm={handleConfirmOfficers}
-              />
-              <AlertModal
-              isOpen={confirmConfig.isOpen}
-              title="Confirm Accept"
-              message={`Are you sure you want to accept Lead #${confirmConfig.lead?.id} -  ${confirmConfig.lead?.description} ?`}
-              onClose={closeConfirm}
-              onConfirm={handleConfirmAccept}
-            > </AlertModal>
+  const distinctPendingLR = useMemo(() => {
+    const map = { id: new Set(), description: new Set(), caseName: new Set() };
+    leads.pendingLeadReturns.forEach(lead => {
+      map.id.add(String(lead.id)); map.description.add(lead.description); map.caseName.add(lead.caseName);
+    });
+    return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, Array.from(s)]));
+  }, [leads.pendingLeadReturns]);
 
-             <AlertModal
-                    isOpen={alertOpen}
-                    title="Notification"
-                    message={alertMessage}
-                    onConfirm={() => setAlertOpen(false)}
-                    onClose={()   => setAlertOpen(false)}
-                  />
+  const sortedPendingLRs = useMemo(() => {
+    let data = leads.pendingLeadReturns.filter(lead =>
+      Object.entries(pendingLRFilterConfig).every(([key, sel]) => !sel.length || sel.includes(String(lead[key])))
+    );
+    const { key, direction } = pendingLRSortConfig;
+    if (key) {
+      data = data.slice().sort((a, b) => {
+        const aV = String(a[key]), bV = String(b[key]);
+        return direction === 'asc' ? aV.localeCompare(bV) : bV.localeCompare(aV);
+      });
+    }
+    return data;
+  }, [leads.pendingLeadReturns, pendingLRFilterConfig, pendingLRSortConfig]);
 
-            {presenceOthers.length > 0 && (
-  <div className={styles['presence-alert']}>
-   {/* {presenceOthers.map(o => o.username).join(", ")}{" "}
-    {presenceOthers.length === 1 ? "is" : "are"} also viewing this case page now. */}
-      {presenceNames.join(", ")}{" "}
-    {presenceNames.length === 1 ? "is" : "are"} also viewing this case page now.
-  </div>
-)}
+  const paginatedPendingLRs = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedPendingLRs.slice(start, start + pageSize);
+  }, [sortedPendingLRs, currentPage, pageSize]);
 
+  // ─── Filter/sort: All Leads ───────────────────────────────────────────────
+  const allColumns = ["Lead No.", "Lead Log Summary", "Lead Status", "Assigned Officers"];
+  const allColKey = {
+    "Lead No.": "id", "Lead Log Summary": "description",
+    "Lead Status": "leadStatus", "Assigned Officers": "assignedOfficers",
+  };
+  const allColWidths = { "Lead No.": "8%", "Lead Log Summary": "32%", "Lead Status": "14%", "Assigned Officers": "22%" };
 
-            {/* Main Container */}
-            <div className={styles['main-container']}>
+  const popupAllRefs = useRef({});
+  const [openAllFilter, setOpenAllFilter] = useState(null);
+  const [allFilterConfig, setAllFilterConfig] = useState({ id: [], description: [], leadStatus: [], assignedOfficers: [] });
+  const [allFilterSearch, setAllFilterSearch] = useState({});
+  const [tempAllSelections, setTempAllSelections] = useState({});
+  const [allSortConfig, setAllSortConfig] = useState({ key: null, direction: 'asc' });
 
-              <SideBar
-                activePage="CasePageManager"
-                leads={leads}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              />
+  const handleAllFilterSearch = (key, txt) => setAllFilterSearch(fs => ({ ...fs, [key]: txt }));
+  const allAllChecked = key => (tempAllSelections[key] || []).length === (distinctAll[key] || []).length;
+  const toggleAllSelectAll = key => {
+    const all = distinctAll[key] || [];
+    setTempAllSelections(ts => ({ ...ts, [key]: ts[key]?.length === all.length ? [] : [...all] }));
+  };
+  const handleAllCheckboxToggle = (key, v) =>
+    setTempAllSelections(ts => { const sel = ts[key] || []; return { ...ts, [key]: sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v] }; });
+  const applyAllFilter = key => setAllFilterConfig(cfg => ({ ...cfg, [key]: tempAllSelections[key] || [] }));
+  const handleSortAll = columnKey =>
+    setAllSortConfig(prev => ({ key: columnKey, direction: prev.key === columnKey && prev.direction === "asc" ? "desc" : "asc" }));
 
-              <div className={styles['left-content']}>
+  const distinctAll = useMemo(() => {
+    const map = { id: new Set(), description: new Set(), leadStatus: new Set(), assignedOfficers: new Set() };
+    leads.allLeads.forEach(lead => {
+      map.id.add(String(lead.id)); map.description.add(lead.description); map.leadStatus.add(lead.leadStatus);
+      (lead.assignedOfficers || []).forEach(o => map.assignedOfficers.add(o));
+    });
+    return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, Array.from(s)]));
+  }, [leads.allLeads]);
 
-                {/* <div className = "side-titleLeft">
-                  <p> PIMS &gt; Cases
-                 </p>
-                </div> */}
-                 {/* <div className="caseandleadinfo-cl">
-          <h5 className = "side-title-cl"> 
-               <p> PIMS &gt; Cases </p>
-             </h5>
-          <h5 className="side-title-cl">
-  {selectedCase?.role ?`Your Role: ${selectedCase.role || ""}` : ` ${leadStatus}`}
-</h5>
+  const sortedAllLeads = useMemo(() => {
+    const { id: fId, description: fDesc, leadStatus: fStatus, assignedOfficers: fOffs } = allFilterConfig;
+    let data = leads.allLeads.filter(lead => {
+      if (fId.length && !fId.includes(String(lead.id))) return false;
+      if (fDesc.length && !fDesc.includes(lead.description)) return false;
+      if (fStatus.length && !fStatus.includes(lead.leadStatus)) return false;
+      if (fOffs.length && !lead.assignedOfficers.some(off => fOffs.includes(off))) return false;
+      return true;
+    });
+    const { key, direction } = allSortConfig;
+    if (key) {
+      data = data.slice().sort((a, b) => {
+        const aV = Array.isArray(a[key]) ? a[key][0] : String(a[key]);
+        const bV = Array.isArray(b[key]) ? b[key][0] : String(b[key]);
+        return direction === "asc" ? aV.localeCompare(bV) : bV.localeCompare(aV);
+      });
+    }
+    return data;
+  }, [leads.allLeads, allFilterConfig, allSortConfig]);
 
-          </div> */}
-                {/* Display Case Number and Name */}
-                <div className={styles['case-header-cp']}>
-                  <div className={styles['cp-head']}>
-                {
-                    <h2> Case: {selectedCase?.caseName ? toTitleCase(selectedCase.caseName) : "Unknown Case"}</h2>
+  const paginatedLeads = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedAllLeads.slice(start, start + pageSize);
+  }, [sortedAllLeads, currentPage, pageSize]);
 
-                }
-                </div>
+  // ─── Computed: total entries for current tab (drives pagination) ──────────
+  const totalEntries = useMemo(() => {
+    switch (activeTab) {
+      case "pendingLeads": return sortedPendingLeads.length;
+      case "pendingLeadReturns": return sortedPendingLRs.length;
+      default: return sortedAllLeads.length;
+    }
+  }, [activeTab, sortedPendingLeads.length, sortedPendingLRs.length, sortedAllLeads.length]);
 
-                   {/* <div  className="add-lead-section">
-          
-                <div className = "add-lead-btn1">
-                <button className="cp-add-lead-btn"  onClick={() => navigate('/createlead', { state: { caseDetails: selectedCase } })}
-                style={{ cursor: 'pointer', width: '100%' }} >
-                   <i className="fa-solid fa-plus"></i> Add Lead
-                </button>
-                </div>
-                </div> */}
+  // Reset to page 1 whenever any active filter or sort changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [allFilterConfig, allSortConfig, pendingFilterConfig, pendingSortConfig, pendingLRFilterConfig, pendingLRSortConfig]);
 
+  // ─── JSX ──────────────────────────────────────────────────────────────────
+  return (
+    <div className={styles['case-page-manager']}>
+      <Navbar />
 
-                </div>
-
-                {/* <div className="cp-case-status">
-                 
-      <div className="pill">{selectedCase.role || ""}</div>
-      <div className="pill">Ongoing</div>
-      <div className="muted">Last updated 2h ago</div>
-                </div> */}
-
-{/* <div className="summary-box">
-      <div className="case-summary">
-        <div className="cp-summ-head">
-  <label className="cp-label" htmlFor="case-summary">Case Summary</label>
-
-  {(selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor") && (
-    <button
-      type="button"
-      className="icon-button"
-      onClick={handleEditClick}
-      aria-label="Edit case summary"
-      title="Edit"
-    >
-      <img
-        src={`${process.env.PUBLIC_URL || ""}/Materials/edit.png`}  // or just "/Materials/edit.png"
-        className="icon-image"
-        alt=""
+      {/* Confirm case officers update */}
+      <AlertModal
+        isOpen={confirmOfficersOpen}
+        title="Confirm Update"
+        message="Are you sure you want to update your case officers?"
+        onClose={closeConfirmOfficers}
+        onConfirm={handleConfirmOfficers}
       />
-    </button>
-  )}
-</div>
-      <textarea
-        className='cp-textarea'
-        rows={6}
-        style={{ width: '100%', fontSize: 20 }}
-        value={summary}
-        onChange={e => setSummary(e.target.value)}
+
+      {/* Confirm lead accept */}
+      <AlertModal
+        isOpen={confirmConfig.isOpen}
+        title="Confirm Accept"
+        message={`Are you sure you want to accept Lead #${confirmConfig.lead?.id} - ${confirmConfig.lead?.description}?`}
+        onClose={closeConfirm}
+        onConfirm={handleConfirmAccept}
       />
-                </div>
-                </div> */}
 
-                
-{/* <div className="summary-box">
-  <div className="case-summary" style={{ fontSize: 20, whiteSpace: "pre-wrap" }}>
-    Case Summary: 
-     <textarea
-    value={summary}
-        onChange={e => setSummary(e.target.value)}
-    />
-  </div>
-</div> */}
+      {/* General notification alert */}
+      <AlertModal
+        isOpen={alertOpen}
+        title="Notification"
+        message={alertMessage}
+        onConfirm={() => setAlertOpen(false)}
+        onClose={() => setAlertOpen(false)}
+      />
 
-{/* <div className="summary-box">
-  <div className="" style={{ fontSize: 20 }}>
-    <textarea
-      value={`Case Summary: ${summary ?? ""}`}
-      onChange={e => {
-        const raw = e.target.value;
-        const next = raw.replace(/^Case Summary:\s?/, "");
-        setSummary(next);
-      }}
-      rows={6}
-      style={{ width: "100%", font: "inherit", whiteSpace: "pre-wrap" }}
-    />
-  </div>
-</div> */}
-
-<section className={styles['collapsible-section']}>
-  <button
-    type="button"
-    className={styles['collapse-header']}
-    onClick={() => setIsCaseSummaryOpen(o => !o)}
-    aria-expanded={isCaseSummaryOpen}
-  >
-    <span className={styles['collapse-title']}>Case Summary</span>
-    <span>
-      <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-      className={styles['icon-image']}
-       /></span>
-  </button>
-
-  {isCaseSummaryOpen && (
-      <div className={styles['summary-body']}>
-        <textarea
-  className={styles['summary-textarea']}
-  value={summary ?? ""}
-  onChange={e => {
-    const raw = e.target.value;
-    const next = raw.replace(/^Case Summary:\s?/, "");
-    setSummary(next);
-  }}
-  rows={6}
-/>
-
-    </div>
-  )}
-</section>
-
-<section className={styles['collapsible-section']}>
-  <button
-    type="button"
-    className={styles['collapse-header']}
-    onClick={() => setIsCaseTeamOpen(o => !o)}
-    aria-expanded={isCaseTeamOpen}
-  >
-  <span className={styles['collapse-title']}>Case Team</span>
-  <span><img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className={styles['icon-image']}/></span>
-  </button>
-  {isCaseTeamOpen && (
-    <div className={styles['case-team']}>
-      <table className={styles['case-team-table']}>
-        <colgroup>
-          <col className={styles['case-team-col-role']} />
-          <col />
-        </colgroup>
-        <thead>
-          <tr>
-          <th className={`${styles['case-team-th']} ${styles['case-team-th-role']}`}>Role</th>
-          <th className={styles['case-team-th']}>Name(s)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {/* <tr>
-            <td style={caseTeamStyles.td}>Detective Supervisor</td>
-            <td className="name-cell" style={caseTeamStyles.td}>
-              {(selectedCase.role === "Detective Supervisor") ? (
-                <div  ref={dsRef}
-                className="custom-dropdown">
-                  <div
-                    className="dropdown-head"
-                    onClick={() => setDetectiveSupervisorDropdownOpen(prev => !prev)}
-                  >
-
-                      {selectedDetectiveSupervisor ? displayName(selectedDetectiveSupervisor) : "Select Detective Supervisor"}
-                    <span className="dropdown-icon">
-                        <img
-                          src={detectiveSupervisorDropdownOpen ? upIcon : downIcon}
-                          className="caret-icon"
-                          alt=""
-                        />
-                    </span>
-                  </div>
-                  {detectiveSupervisorDropdownOpen && (
-                    <div className="dropdown-options">
-                      {allUsers.map(user => (
-                        <div key={user.username} className="dropdown-item">
-                          <input
-                            type="radio"
-                            name="detectiveSupervisor"
-                            id={`ds-${user.username}`}
-                            value={user.username}
-                            checked={selectedDetectiveSupervisor === user.username}
-                            onChange={() => {
-                              const selected = user.username;
-                              setSelectedDetectiveSupervisor(selected);
-                              saveInvestigators(selectedInvestigators, selectedCaseManagers, selected);
-                            }}
-                          />
-                          <label htmlFor={`ds-${user.username}`}>
-                            {user.firstName} {user.lastName} ({user.username})
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                team.detectiveSupervisor || "—"
-              )}
-            </td>
-          </tr> */}
-
-          <tr>
-  <td className={styles['case-team-td']}>Detective Supervisor</td>
-  <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
-    {selectedCase.role === "Detective Supervisor" ? (
-      <div ref={dsRef} className={styles['custom-dropdown']}>
-        <div
-          className={styles['dropdown-head']}
-          onClick={() => setDetectiveSupervisorDropdownOpen(prev => !prev)}
-        >
-          <span className={styles['dh-text']}>
-            {selectedDetectiveSupervisor
-              ? displayName(selectedDetectiveSupervisor)
-              : "Select Detective Supervisor"}
-          </span>
-
-          <span className={styles['dropdown-icon']} aria-hidden="true">
-            <img
-              src={detectiveSupervisorDropdownOpen ? downIcon : upIcon}
-              className={styles['caret-icon']}
-              alt=""
-            />
-          </span>
+      {/* Banner: other users currently viewing this page */}
+      {presenceOthers.length > 0 && (
+        <div className={styles['presence-alert']}>
+          {presenceNames.join(", ")} {presenceNames.length === 1 ? "is" : "are"} also viewing this case page now.
         </div>
+      )}
 
-        {detectiveSupervisorDropdownOpen && (
-          <div className={styles['dropdown-options']}>
-            <input
-              type="text"
-              className={styles['dropdown-search']}
-              placeholder="Search officer..."
-              value={dsSearch}
-              onChange={(e) => setDsSearch(e.target.value)}
-              onClick={(e) => e.stopPropagation()}
-              autoFocus
-            />
-            {allUsers
-              .filter(user => {
-                const term = dsSearch.toLowerCase();
-                return !term || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(term);
-              })
-              .map(user => (
-              <div key={user.username} className={styles['dropdown-item']}>
-                <input
-                  type="radio"
-                  name="detectiveSupervisor"
-                  id={`ds-${user.username}`}
-                  value={user.username}
-                  checked={selectedDetectiveSupervisor === user.username}
-                  onChange={() => {
-                    const selected = user.username;
-                    setSelectedDetectiveSupervisor(selected);
-                    saveInvestigators(selectedInvestigators, selectedCaseManagers, selected);
-                  }}
-                />
-                <label htmlFor={`ds-${user.username}`}>
-                  {user.firstName} {user.lastName} ({user.username})
-                </label>
-              </div>
-            ))}
+      <div className={styles['main-container']}>
+        <SideBar activePage="CasePageManager" leads={leads} activeTab={activeTab} setActiveTab={setActiveTab} />
+
+        <div className={styles['left-content']}>
+
+          {/* Case header */}
+          <div className={styles['case-header-cp']}>
+            <div className={styles['cp-head']}>
+              <h2>Case: {selectedCase?.caseName ? toTitleCase(selectedCase.caseName) : "Unknown Case"}</h2>
+            </div>
           </div>
-        )}
-      </div>
-    ) : (
-       formatUser(team.detectiveSupervisor)|| "—"
-    )}
-  </td>
-</tr>
 
-          <tr>
-              <td className={styles['case-team-td']}>Case Manager{team.caseManagers.length>1 ? "s" : ""}</td>
-              <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
-                {(selectedCase.role==="Case Manager" || selectedCase.role==="Detective Supervisor") ? (
-                  <div ref={cmRef} className={styles['custom-dropdown']}>
-                    <div
-                      className={styles['dropdown-head']}
-                      onClick={() => setCaseManagersDropdownOpen(prev => !prev)}
-                    >
-                        {selectedCaseManagers.length > 0
-          ? displayNames(selectedCaseManagers)
-          : "Select Case Manager(s)"}
-                      <span className={styles['dropdown-icon']}>
-                         <img
-    src={caseManagersDropdownOpen ? downIcon : upIcon}
-    className={styles['caret-icon']}
-    alt=""
-    aria-hidden="true"
-  />
-                      </span>
-                    </div>
-                    {caseManagersDropdownOpen && (
-                      <div className={styles['dropdown-options']}>
-                        <input
-                          type="text"
-                          className={styles['dropdown-search']}
-                          placeholder="Search officer..."
-                          value={cmSearch}
-                          onChange={(e) => setCmSearch(e.target.value)}
-                          onClick={(e) => e.stopPropagation()}
-                          autoFocus
-                        />
-                        {allUsers
-                          .filter(user => {
-                            const term = cmSearch.toLowerCase();
-                            return !term || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(term);
-                          })
-                          .map(user=>(
-                            <div key={user.username} className={styles['dropdown-item']}>
-                              <input
-                                type="checkbox"
-                                id={`cm-${user.username}`}
-                                value={user.username}
-                                checked={selectedCaseManagers.includes(user.username)}
-
-                              onChange={(e) => {
-          const next = e.target.checked
-          ? [...selectedCaseManagers, user.username]
-          : selectedCaseManagers.filter(u => u !== user.username);
-
-          setSelectedCaseManagers(next);
-          saveInvestigators(selectedInvestigators, next, selectedDetectiveSupervisor);
-          }}
-
-                              />
-                              <label htmlFor={`cm-${user.username}`}>
-                                {user.firstName} {user.lastName} ({user.username})
-                              </label>
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  (team.caseManagers||[]).join(", ") || "—"
-                )}
-              </td>
-          </tr>
-          <tr>
-              <td className={`${styles['name-cell']} ${styles['case-team-td']}`}> Investigator{team.investigators.length > 1 ? "s" : ""}</td>
-              <td className={styles['case-team-td']}>
-                {(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") ? (
-                    <div ref={invRef} className={styles['custom-dropdown']}>
-                      <div
-                        className={styles['dropdown-head']}
-                        onClick={() => setInvestigatorsDropdownOpen(!investigatorsDropdownOpen)}
-                      >
-                       <span className={styles['dh-text']}>
-                          {selectedInvestigators.length
-                            ? displayNames(selectedInvestigators)
-                            : "Select Investigators"}
-                        </span>
-
-                      <span className={styles['dropdown-icon']}>
-                         <img
-    src={investigatorsDropdownOpen ? downIcon : upIcon}
-    className={styles['caret-icon']}
-    alt=""
-    aria-hidden="true"
-  />
-                         </span>
-                      </div>
-
-                      {investigatorsDropdownOpen && (
-                        <div className={styles['dropdown-options']}>
-                          <input
-                            type="text"
-                            className={styles['dropdown-search']}
-                            placeholder="Search officer..."
-                            value={invSearch}
-                            onChange={(e) => setInvSearch(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                            autoFocus
-                          />
-                          {allUsers
-                            .filter(user => {
-                              const term = invSearch.toLowerCase();
-                              return !term || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(term);
-                            })
-                            .map((user) => (
-                            <div key={user.username} className={styles['dropdown-item']}>
-                              <input
-                                type="checkbox"
-                                id={`inv-${user.username}`}
-                                value={user.username}
-                                checked={selectedInvestigators.includes(user.username)}
-                          onChange={(e) => {
-      const next = e.target.checked
-      ? [...selectedInvestigators, user.username]
-      : selectedInvestigators.filter(u => u !== user.username);
-
-      setSelectedInvestigators(next);
-      saveInvestigators(next, selectedCaseManagers, selectedDetectiveSupervisor);
-      }}
-
-                              />
-
-                              <label htmlFor={`inv-${user.username}`}>
-                                {user.firstName} {user.lastName} ({user.username})
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div>
-                      {team.investigators.length
-                        ? team.investigators.join(", ")
-                        : "None assigned"}
-                    </div>
-                  )}
-              </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  )}
-</section>
-
-{/* <section className="collapsible-section">
-   <button
-    type="button"
-    className="collapse-header"
-    onClick={() => setIsCaseTeamOpen(o => !o)}
-    aria-expanded={isCaseTeamOpen}
-  >
-  <span className="collapse-title">Case Team</span>
-  <span className=""> <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className="icon-image"/></span>
-  </button>         
-
-  {isCaseTeamOpen && (
-    <div className="team-body">
-      <table className="team-table">
-        <colgroup>
-          <col style={{ width: 220 }} />
-          <col />
-        </colgroup>
-
-        <thead>
-          <tr>
-            <th className="team-th role-col">Role</th>
-            <th className="team-th">Name(s)</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr>
-            <td className="team-td">Detective Supervisor</td>
-            <td className="team-td">
-              {selectedCase.role === "Detective Supervisor" ? (
-                <div ref={dsRef} className="team-dropdown">
-                  <div
-                    className="team-dropdown-header"
-                    onClick={() => setDetectiveSupervisorDropdownOpen(p => !p)}
-                  >
-                    <span className="team-text">
-                      {selectedDetectiveSupervisor
-                        ? displayName(selectedDetectiveSupervisor)
-                        : "Select Detective Supervisor"}
-                    </span>
-                    <img
-                      src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-                      className={`team-caret-icon ${detectiveSupervisorDropdownOpen ? "rotated" : ""}`}
-                      alt="toggle"
-                    />
-                  </div>
-
-                  {detectiveSupervisorDropdownOpen && (
-                    <div className="team-options">
-                      {allUsers.map(user => (
-                        <label key={user.username} className="team-option">
-                          <input
-                            type="radio"
-                            name="detectiveSupervisor"
-                            value={user.username}
-                            checked={selectedDetectiveSupervisor === user.username}
-                            onChange={() => {
-                              const selected = user.username;
-                              setSelectedDetectiveSupervisor(selected);
-                              saveInvestigators(selectedInvestigators, selectedCaseManagers, selected);
-                            }}
-                          />
-                          {user.firstName} {user.lastName} ({user.username})
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                team.detectiveSupervisor || "—"
-              )}
-            </td>
-          </tr>
-
-        
-          <tr>
-            <td className="team-td">
-              Case Manager{team.caseManagers.length > 1 ? "s" : ""}
-            </td>
-            <td className="team-td">
-              {(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") ? (
-                <div ref={cmRef} className="team-dropdown">
-                  <div
-                    className="team-dropdown-header"
-                    onClick={() => setCaseManagersDropdownOpen(p => !p)}
-                  >
-                    <span className="team-text">
-                      {selectedCaseManagers.length > 0
-                        ? displayNames(selectedCaseManagers)
-                        : "Select Case Manager(s)"}
-                    </span>
-                    <img
-                      src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-                      className={`team-caret-icon ${caseManagersDropdownOpen ? "rotated" : ""}`}
-                      alt="toggle"
-                    />
-                  </div>
-
-                  {caseManagersDropdownOpen && (
-                    <div className="team-options">
-                      {allUsers.map(user => (
-                        <label key={user.username} className="team-option">
-                          <input
-                            type="checkbox"
-                            value={user.username}
-                            checked={selectedCaseManagers.includes(user.username)}
-                            onChange={(e) => {
-                              const next = e.target.checked
-                                ? [...selectedCaseManagers, user.username]
-                                : selectedCaseManagers.filter(u => u !== user.username);
-                              setSelectedCaseManagers(next);
-                              saveInvestigators(selectedInvestigators, next, selectedDetectiveSupervisor);
-                            }}
-                          />
-                          {user.firstName} {user.lastName} ({user.username})
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                (team.caseManagers || []).join(", ") || "—"
-              )}
-            </td>
-          </tr>
-
-          <tr>
-            <td className="team-td">
-              Investigator{team.investigators.length > 1 ? "s" : ""}
-            </td>
-            <td className="team-td">
-              {(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") ? (
-                <div ref={invRef} className="team-dropdown">
-                  <div
-                    className="team-dropdown-header"
-                    onClick={() => setInvestigatorsDropdownOpen(p => !p)}
-                  >
-                    <span className="team-text1">
-                      {selectedInvestigators.length
-                        ? displayNames(selectedInvestigators)
-                        : "Select Investigators"}
-                    </span>
-                    <img
-                      src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-                      className={`team-caret-icon ${investigatorsDropdownOpen ? "rotated" : ""}`}
-                      alt="toggle"
-                    />
-                  </div>
-
-                  {investigatorsDropdownOpen && (
-                    <div className="team-options1">
-                      {allUsers.map(user => (
-                        <label key={user.username} className="team-option">
-                          <input
-                            type="checkbox"
-                            value={user.username}
-                            checked={selectedInvestigators.includes(user.username)}
-                            onChange={(e) => {
-                              const next = e.target.checked
-                                ? [...selectedInvestigators, user.username]
-                                : selectedInvestigators.filter(u => u !== user.username);
-                              setSelectedInvestigators(next);
-                              saveInvestigators(next, selectedCaseManagers, selectedDetectiveSupervisor);
-                            }}
-                          />
-                          {user.firstName} {user.lastName} ({user.username})
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  {team.investigators.length
-                    ? team.investigators.join(", ")
-                    : "None assigned"}
-                </div>
-              )}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  )}
-</section> */}
-
-             
-                <div className={styles['stats-bar']}>
-                          <span
-                            className={`${styles.hoverable} ${activeTab === "allLeads" ? styles.active : ""}`}
-                            onClick={() => handleTabClick("allLeads")}
-                        >
-                            All Leads: {leads.allLeads.length}
-                        </span>
-                        {/* <span
-                            className={`hoverable ${activeTab === "assignedLeads" ? "active" : ""}`}
-                            onClick={() => handleTabClick("assignedLeads")}
-                        >
-                            Assigned Leads: {leads.assignedLeads.length}
-                        </span>
-                        <span
-                            className={`hoverable ${activeTab === "pendingLeads" ? "active" : ""}`}
-                            onClick={() => handleTabClick("pendingLeads")}
-                          >
-                            Accepted Leads: {leads.pendingLeads.length}
-                          </span> */}
-                           <span
-                            className={`${styles.hoverable} ${activeTab === "pendingLeads" ? styles.active : ""}`}
-                            onClick={() => handleTabClick("pendingLeads")}
-                          >
-                            Leads To Reassign: {leads.pendingLeads.length}
-                          </span>
-                        <span
-                            className={`${styles.hoverable} ${activeTab === "pendingLeadReturns" ? styles.active : ""}`}
-                            onClick={() => handleTabClick("pendingLeadReturns")}
-                        >
-                            Lead Returns for Review: {leads.pendingLeadReturns.length}
-                        </span>
-
-                </div>
-
-                <div className={styles['content-section']}>
-                    {activeTab === "assignedLeads" && (
-
-<div className={styles['table-scroll-container']}>
-    <table className={styles['leads-table']} style={{ minWidth: "1000px" }}>
-      <thead>
-        <tr>
-            {assignedColumns.map(col => {
-                      const dataKey = assignedColKey[col];
-                      return (
-                        <th
-                          key={col}
-                          className={styles['column-header1']}
-                          style={{ width: assignedColWidths[col] }}
-                        >
-                          <div className={styles['header-title']}>
-                            {col}
-                            <span ref={el => (popupAssignedRefs.current[dataKey] = el)}>
-                              {/* Filter button */}
-                              <button
-                                onClick={() =>
-                                  setOpenAssignedFilter(prev =>
-                                    prev === dataKey ? null : dataKey
-                                  )
-                                }
-                              >
-                                <img
-                                  src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-                                  className={styles['icon-image']}
-                                />
-                              </button>
-                              <Filter
-                                dataKey={dataKey}
-                                distinctValues={distinctAssigned}
-                                open={openAssignedFilter === dataKey}
-                                anchorRef={{ current: popupAssignedRefs.current[dataKey] }}
-                                searchValue={assignedFilterSearch[dataKey] || ""}
-                                selections={tempAssignedSelections[dataKey] || []}
-                                onSearch={handleAssignedFilterSearch}
-                                onSort={handleSortAssigned}
-                                allChecked={assignedAllChecked}
-                                onToggleAll={toggleAssignedSelectAll}
-                                onToggleOne={handleAssignedCheckboxToggle}
-                                onApply={() => {
-                                  applyAssignedFilter(dataKey);
-                                  setOpenAssignedFilter(null);
-                                }}
-                                onCancel={() => setOpenAssignedFilter(null)}
-                              />
-                            </span>
-                          </div>
-                        </th>
-                      );
-                    })}
-                    {/* extra column for “View” button */}
-                    <th style={{ width: "10%", textAlign:"center" }}> Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-      {sortedAssignedLeads.length > 0 ? (
-        sortedAssignedLeads
-          .filter(
-            (lead) =>
-              lead.description
-                .toLowerCase()
-                .includes(filterText.toLowerCase()) &&
-              (!selectedPriority || lead.priority === selectedPriority)
-          )
-          .sort((a, b) => {
-            if (!sortField || !sortOrder) return 0;
-            if (sortField === "remainingDays") {
-              return sortOrder === "asc"
-                ? calculateRemainingDays(a.dueDate) -
-                    calculateRemainingDays(b.dueDate)
-                : calculateRemainingDays(b.dueDate) -
-                    calculateRemainingDays(a.dueDate);
-            }
-            const fieldA = (a[sortField] || "").toString().toLowerCase();
-            const fieldB = (b[sortField] || "").toString().toLowerCase();
-            return sortOrder === "asc"
-              ? fieldA.localeCompare(fieldB)
-              : fieldB.localeCompare(fieldA);
-          })
-          .map((lead) => (
-            <tr key={lead.id}>
-              <td>{lead.id}</td>
-              <td>{lead.description}</td>
-              <td>{lead.dueDate || ""}</td>
-              <td>{lead.priority || ""}</td>
-              <td>{calculateRemainingDays(lead.dueDate) }</td>
-            
-
-                {/* <td style={{ wordBreak:"break-word" }}>
-                {lead.assignedOfficers && lead.assignedOfficers.length > 0
-    ? lead.assignedOfficers.map((officer, idx) => (
-        <div key={idx}>{officer}</div>
-      ))
-    : <em>None</em>
-  }
-              </td> */}
-              <td style={{ wordBreak: "break-word" }}>
-  {lead.assignedOfficers && lead.assignedOfficers.length > 0
-    ? lead.assignedOfficers.join(", ")
-    : "None"}
-</td>
-
-              <td style={{ width: "9%", textAlign: "center" }}>
-                <button
-                  className={styles['view-btn1']}
-                  onClick={()=>handleLeadClick(lead)}
-                  // onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.summary} } )}
-                >
-                  Manage
-                </button>
-                {lead.assignedOfficers?.includes(signedInOfficer) && (
-  <button
-    className={styles['accept-btn']}
-    onClick={() => openConfirm(lead)}
-    // onClick={() => {
-    //   if (window.confirm(`Do you want to accept this lead?`)) {
-    //     acceptLead(lead.id, lead.description);
-    //   }
-    // }}
-  >
-    Accept
-  </button>
-)}
-
-              </td>
-            </tr>
-            
-           ))
-          ) : (
-            <tr>
-              <td colSpan="7" style={{ textAlign: 'center', padding: '8px' }}>
-                No Assigned Leads Available
-              </td>
-            </tr>
-          )}
-      </tbody>
-    </table>
-    </div>
-
-)}
-
-          
-{activeTab === "pendingLeads" && (
-
-<div className={styles['table-scroll-container']}>
-<table className={styles['leads-table']} style={{ minWidth: "1000px" }}>
-      <thead>
-        <tr>
-                 {pendingColumns.map(col => {
-                   const dataKey = pendingColKey[col];
-                   return (
-                     <th
-                       key={col}
-                       className={styles['column-header1']}
-                       style={{ width: pendingColWidths[col], position: 'relative' }}
-                     >
-                       <div className={styles['header-title']}>
-                         {col}
-                         <span ref={el => (popupPendingRefs.current[dataKey] = el)}>
-                           {/* FILTER */}
-                           <button onClick={() =>
-                             setOpenPendingFilter(prev =>
-                               prev === dataKey ? null : dataKey
-                             )
-                           }>
-                             <img
-                               src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-                               className={styles['icon-image']}
-                             />
-                           </button>
-                           <Filter
-                             dataKey={dataKey}
-                             distinctValues={distinctPending}
-                             open={openPendingFilter === dataKey}
-                             anchorRef={{ current: popupPendingRefs.current[dataKey] }}
-                             searchValue={pendingFilterSearch[dataKey] || ""}
-                             selections={tempPendingSelections[dataKey] || []}
-                             onSearch={handlePendingFilterSearch}
-                             allChecked={pendingAllChecked}
-                             onToggleAll={togglePendingSelectAll}
-                             onToggleOne={handlePendingCheckboxToggle}
-                             onApply={() => { applyPendingFilter(dataKey); setOpenPendingFilter(null); }}
-                             onCancel={() => setOpenPendingFilter(null)}
-                             onSort={() => handleSortPending(dataKey)} 
-                                                      />
-                          
-                         </span>
-                       </div>
-                     </th>
-                   );
-                 })}
-                 {/* extra column for “View” */}
-                 <th style={{ width: "11%", textAlign: "center" }}> Actions</th>
-               </tr>
-             </thead>
-             <tbody>
-      {paginatedPendingLeads.length > 0 ? (
-        paginatedPendingLeads
-          .filter(
-            (lead) =>
-              lead.description
-                .toLowerCase()
-                .includes(filterText.toLowerCase()) &&
-              (!selectedPriority || lead.priority === selectedPriority)
-          )
-          .sort((a, b) => {
-            if (!sortField || !sortOrder) return 0;
-            if (sortField === "remainingDays") {
-              return sortOrder === "asc"
-                ? calculateRemainingDays(a.dueDate) -
-                    calculateRemainingDays(b.dueDate)
-                : calculateRemainingDays(b.dueDate) -
-                    calculateRemainingDays(a.dueDate);
-            }
-            const fieldA = (a[sortField] || "").toString().toLowerCase();
-            const fieldB = (b[sortField] || "").toString().toLowerCase();
-            return sortOrder === "asc"
-              ? fieldA.localeCompare(fieldB)
-              : fieldB.localeCompare(fieldA);
-          })
-          .map((lead) => (
-            <tr key={lead.id}>
-              <td>{lead.id}</td>
-              <td>{lead.description}</td>
-              {/* <td>{lead.dueDate}</td> */}
-              <td>{lead.priority}</td>
-              {/* <td>{calculateRemainingDays(lead.dueDate)}</td> */}
-              {/* <td>{lead.assignedOfficers.join(", ")}</td> */}
-              {/* <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>
-            
-                {lead.assignedOfficers.map((officer, index) => (
-                  <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
-                ))}
-                </td> */}
-                {/* <td style={{ wordBreak:"break-word" }}>
-                 {lead.assignedOfficers && lead.assignedOfficers.length > 0
-    ? lead.assignedOfficers.map((officer, idx) => (
-        <div key={idx}>{officer}</div>
-      ))
-    : <em>None</em>
-  }
-              </td> */}
-              <td style={{ wordBreak: "break-word" }}>
-  {lead.assignedOfficers && lead.assignedOfficers.length > 0
-    ? lead.assignedOfficers.join(", ")
-    : "None"}
-</td>
-
-              <td style={{ width: "9%", textAlign: "center" }}>
-                <button
-                  className={styles['view-btn1']}
-                  onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.summary} } )}
-                >
-                  Manage
-                </button>
-              </td>
-            </tr>
-             ))
-            ) : (
-              <tr>
-                <td colSpan="5" style={{ textAlign: 'center', padding: "8px" }}>
-                  No Leads Available
-                </td>
-              </tr>
+          {/* ── Case Summary ────────────────────────────────────────────── */}
+          <section className={styles['collapsible-section']}>
+            <button
+              type="button"
+              className={styles['collapse-header']}
+              onClick={() => setIsCaseSummaryOpen(o => !o)}
+              aria-expanded={isCaseSummaryOpen}
+            >
+              <span className={styles['collapse-title']}>Case Summary</span>
+              <span>
+                <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className={styles['icon-image']} alt="" />
+              </span>
+            </button>
+            {isCaseSummaryOpen && (
+              <div className={styles['summary-body']}>
+                <textarea
+                  className={styles['summary-textarea']}
+                  value={summary ?? ""}
+                  onChange={e => setSummary(e.target.value.replace(/^Case Summary:\s?/, ""))}
+                  rows={6}
+                />
+              </div>
             )}
-      </tbody>
-    </table>
-    </div>
-)}
+          </section>
 
+          {/* ── Case Team ───────────────────────────────────────────────── */}
+          <section className={styles['collapsible-section']}>
+            <button
+              type="button"
+              className={styles['collapse-header']}
+              onClick={() => setIsCaseTeamOpen(o => !o)}
+              aria-expanded={isCaseTeamOpen}
+            >
+              <span className={styles['collapse-title']}>Case Team</span>
+              <span>
+                <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className={styles['icon-image']} alt="" />
+              </span>
+            </button>
 
-{activeTab === "pendingLeadReturns" && (
-<div className={styles['table-scroll-container']}>
-<table className={styles['leads-table']} style={{ minWidth: "1000px" }}>
+            {isCaseTeamOpen && (
+              <div className={styles['case-team']}>
+                <table className={styles['case-team-table']}>
+                  <colgroup>
+                    <col className={styles['case-team-col-role']} />
+                    <col />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th className={`${styles['case-team-th']} ${styles['case-team-th-role']}`}>Role</th>
+                      <th className={styles['case-team-th']}>Name(s)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
 
-    <colgroup>
-      <col style={{ width: "6%" }} />     {/* Lead No. */}
-      <col style={{ width: "30%" }} />   {/* Lead Name */}
-      <col style={{ width: "30%" }} />   {/* Case Name */}
-      <col style={{ width: "10%" }} />     {/* Actions */}
-    </colgroup>
-               <thead>
+                    {/* Detective Supervisor */}
+                    <tr>
+                      <td className={styles['case-team-td']}>Detective Supervisor</td>
+                      <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
+                        {selectedCase.role === "Detective Supervisor" ? (
+                          <div ref={dsRef} className={styles['custom-dropdown']}>
+                            <div
+                              className={styles['dropdown-head']}
+                              onClick={() => setDetectiveSupervisorDropdownOpen(prev => !prev)}
+                            >
+                              <span className={styles['dh-text']}>
+                                {selectedDetectiveSupervisor ? displayName(selectedDetectiveSupervisor) : "Select Detective Supervisor"}
+                              </span>
+                              <span className={styles['dropdown-icon']} aria-hidden="true">
+                                <img src={detectiveSupervisorDropdownOpen ? downIcon : upIcon} className={styles['caret-icon']} alt="" />
+                              </span>
+                            </div>
+                            {detectiveSupervisorDropdownOpen && (
+                              <div className={styles['dropdown-options']}>
+                                <input
+                                  type="text"
+                                  className={styles['dropdown-search']}
+                                  placeholder="Search officer..."
+                                  value={dsSearch}
+                                  onChange={e => setDsSearch(e.target.value)}
+                                  onClick={e => e.stopPropagation()}
+                                  autoFocus
+                                />
+                                {allUsers
+                                  .filter(user => !dsSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(dsSearch.toLowerCase()))
+                                  .map(user => (
+                                    <div key={user.username} className={styles['dropdown-item']}>
+                                      <input
+                                        type="radio"
+                                        name="detectiveSupervisor"
+                                        id={`ds-${user.username}`}
+                                        value={user.username}
+                                        checked={selectedDetectiveSupervisor === user.username}
+                                        onChange={() => {
+                                          setSelectedDetectiveSupervisor(user.username);
+                                          saveInvestigators(selectedInvestigators, selectedCaseManagers, user.username);
+                                        }}
+                                      />
+                                      <label htmlFor={`ds-${user.username}`}>
+                                        {user.firstName} {user.lastName} ({user.username})
+                                      </label>
+                                    </div>
+                                  ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          formatUser(team.detectiveSupervisor) || "—"
+                        )}
+                      </td>
+                    </tr>
+
+                    {/* Case Manager(s) */}
+                    <tr>
+                      <td className={styles['case-team-td']}>Case Manager{team.caseManagers.length > 1 ? "s" : ""}</td>
+                      <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
+                        {(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") ? (
+                          <div ref={cmRef} className={styles['custom-dropdown']}>
+                            <div
+                              className={styles['dropdown-head']}
+                              onClick={() => setCaseManagersDropdownOpen(prev => !prev)}
+                            >
+                              <span className={styles['dh-text']}>
+                                {selectedCaseManagers.length > 0 ? displayNames(selectedCaseManagers) : "Select Case Manager(s)"}
+                              </span>
+                              <span className={styles['dropdown-icon']} aria-hidden="true">
+                                <img src={caseManagersDropdownOpen ? downIcon : upIcon} className={styles['caret-icon']} alt="" />
+                              </span>
+                            </div>
+                            {caseManagersDropdownOpen && (
+                              <div className={styles['dropdown-options']}>
+                                <input
+                                  type="text"
+                                  className={styles['dropdown-search']}
+                                  placeholder="Search officer..."
+                                  value={cmSearch}
+                                  onChange={e => setCmSearch(e.target.value)}
+                                  onClick={e => e.stopPropagation()}
+                                  autoFocus
+                                />
+                                {allUsers
+                                  .filter(user => !cmSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(cmSearch.toLowerCase()))
+                                  .map(user => (
+                                    <div key={user.username} className={styles['dropdown-item']}>
+                                      <input
+                                        type="checkbox"
+                                        id={`cm-${user.username}`}
+                                        value={user.username}
+                                        checked={selectedCaseManagers.includes(user.username)}
+                                        onChange={e => {
+                                          const next = e.target.checked
+                                            ? [...selectedCaseManagers, user.username]
+                                            : selectedCaseManagers.filter(u => u !== user.username);
+                                          setSelectedCaseManagers(next);
+                                          saveInvestigators(selectedInvestigators, next, selectedDetectiveSupervisor);
+                                        }}
+                                      />
+                                      <label htmlFor={`cm-${user.username}`}>
+                                        {user.firstName} {user.lastName} ({user.username})
+                                      </label>
+                                    </div>
+                                  ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          (team.caseManagers || []).map(formatUser).join(", ") || "—"
+                        )}
+                      </td>
+                    </tr>
+
+                    {/* Investigator(s) */}
+                    <tr>
+                      <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
+                        Investigator{team.investigators.length > 1 ? "s" : ""}
+                      </td>
+                      <td className={styles['case-team-td']}>
+                        {(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") ? (
+                          <div ref={invRef} className={styles['custom-dropdown']}>
+                            <div
+                              className={styles['dropdown-head']}
+                              onClick={() => setInvestigatorsDropdownOpen(prev => !prev)}
+                            >
+                              <span className={styles['dh-text']}>
+                                {selectedInvestigators.length ? displayNames(selectedInvestigators) : "Select Investigators"}
+                              </span>
+                              <span className={styles['dropdown-icon']} aria-hidden="true">
+                                <img src={investigatorsDropdownOpen ? downIcon : upIcon} className={styles['caret-icon']} alt="" />
+                              </span>
+                            </div>
+                            {investigatorsDropdownOpen && (
+                              <div className={styles['dropdown-options']}>
+                                <input
+                                  type="text"
+                                  className={styles['dropdown-search']}
+                                  placeholder="Search officer..."
+                                  value={invSearch}
+                                  onChange={e => setInvSearch(e.target.value)}
+                                  onClick={e => e.stopPropagation()}
+                                  autoFocus
+                                />
+                                {allUsers
+                                  .filter(user => !invSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(invSearch.toLowerCase()))
+                                  .map(user => (
+                                    <div key={user.username} className={styles['dropdown-item']}>
+                                      <input
+                                        type="checkbox"
+                                        id={`inv-${user.username}`}
+                                        value={user.username}
+                                        checked={selectedInvestigators.includes(user.username)}
+                                        onChange={e => {
+                                          const next = e.target.checked
+                                            ? [...selectedInvestigators, user.username]
+                                            : selectedInvestigators.filter(u => u !== user.username);
+                                          setSelectedInvestigators(next);
+                                          saveInvestigators(next, selectedCaseManagers, selectedDetectiveSupervisor);
+                                        }}
+                                      />
+                                      <label htmlFor={`inv-${user.username}`}>
+                                        {user.firstName} {user.lastName} ({user.username})
+                                      </label>
+                                    </div>
+                                  ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div>
+                            {team.investigators.length ? team.investigators.map(formatUser).join(", ") : "None assigned"}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          {/* ── Tab navigation bar ──────────────────────────────────────── */}
+          <div className={styles['stats-bar']}>
+            <span
+              className={`${styles.hoverable} ${activeTab === "allLeads" ? styles.active : ""}`}
+              onClick={() => handleTabClick("allLeads")}
+            >
+              All Leads: {leads.allLeads.length}
+            </span>
+            <span
+              className={`${styles.hoverable} ${activeTab === "pendingLeads" ? styles.active : ""}`}
+              onClick={() => handleTabClick("pendingLeads")}
+            >
+              Leads To Reassign: {leads.pendingLeads.length}
+            </span>
+            <span
+              className={`${styles.hoverable} ${activeTab === "pendingLeadReturns" ? styles.active : ""}`}
+              onClick={() => handleTabClick("pendingLeadReturns")}
+            >
+              Lead Returns for Review: {leads.pendingLeadReturns.length}
+            </span>
+          </div>
+
+          <div className={styles['content-section']}>
+
+            {/* ── Assigned Leads tab ──────────────────────────────────── */}
+            {activeTab === "assignedLeads" && (
+              <div className={styles['table-scroll-container']}>
+                <table className={styles['leads-table']} style={{ minWidth: "1000px" }}>
+                  <thead>
+                    <tr>
+                      {assignedColumns.map(col => {
+                        const dataKey = assignedColKey[col];
+                        return (
+                          <th key={col} className={styles['column-header1']} style={{ width: assignedColWidths[col] }}>
+                            <div className={styles['header-title']}>
+                              {col}
+                              <span ref={el => (popupAssignedRefs.current[dataKey] = el)}>
+                                <button onClick={() => setOpenAssignedFilter(prev => prev === dataKey ? null : dataKey)}>
+                                  <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className={styles['icon-image']} alt="" />
+                                </button>
+                                <Filter
+                                  dataKey={dataKey}
+                                  distinctValues={distinctAssigned}
+                                  open={openAssignedFilter === dataKey}
+                                  anchorRef={{ current: popupAssignedRefs.current[dataKey] }}
+                                  searchValue={assignedFilterSearch[dataKey] || ""}
+                                  selections={tempAssignedSelections[dataKey] || []}
+                                  onSearch={handleAssignedFilterSearch}
+                                  onSort={handleSortAssigned}
+                                  allChecked={assignedAllChecked}
+                                  onToggleAll={toggleAssignedSelectAll}
+                                  onToggleOne={handleAssignedCheckboxToggle}
+                                  onApply={() => { applyAssignedFilter(dataKey); setOpenAssignedFilter(null); }}
+                                  onCancel={() => setOpenAssignedFilter(null)}
+                                />
+                              </span>
+                            </div>
+                          </th>
+                        );
+                      })}
+                      <th style={{ width: "10%", textAlign: "center" }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedAssignedLeads.length > 0 ? sortedAssignedLeads.map(lead => (
+                      <tr key={lead.id}>
+                        <td>{lead.id}</td>
+                        <td>{lead.description}</td>
+                        <td>{lead.dueDate || ""}</td>
+                        <td>{lead.priority || ""}</td>
+                        <td>{calculateRemainingDays(lead.dueDate)}</td>
+                        <td style={{ wordBreak: "break-word" }}>
+                          {lead.assignedOfficers?.length > 0 ? lead.assignedOfficers.join(", ") : "None"}
+                        </td>
+                        <td style={{ width: "9%", textAlign: "center" }}>
+                          <button className={styles['view-btn1']} onClick={() => handleLeadClick(lead)}>
+                            Manage
+                          </button>
+                          {lead.assignedOfficers?.includes(signedInOfficer) && (
+                            <button className={styles['accept-btn']} onClick={() => openConfirm(lead)}>
+                              Accept
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )) : (
                       <tr>
-                        {pendingLRColumns.map(col => {
-                          const dataKey = pendingLRColKey[col];
+                        <td colSpan="7" style={{ textAlign: 'center', padding: '8px' }}>No Assigned Leads Available</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* ── Pending (To Reassign) Leads tab ─────────────────────── */}
+            {activeTab === "pendingLeads" && (
+              <div className={styles['table-scroll-container']}>
+                <table className={styles['leads-table']} style={{ minWidth: "1000px" }}>
+                  <thead>
+                    <tr>
+                      {pendingColumns.map(col => {
+                        const dataKey = pendingColKey[col];
+                        return (
+                          <th key={col} className={styles['column-header1']} style={{ width: pendingColWidths[col], position: 'relative' }}>
+                            <div className={styles['header-title']}>
+                              {col}
+                              <span ref={el => (popupPendingRefs.current[dataKey] = el)}>
+                                <button onClick={() => setOpenPendingFilter(prev => prev === dataKey ? null : dataKey)}>
+                                  <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className={styles['icon-image']} alt="" />
+                                </button>
+                                <Filter
+                                  dataKey={dataKey}
+                                  distinctValues={distinctPending}
+                                  open={openPendingFilter === dataKey}
+                                  anchorRef={{ current: popupPendingRefs.current[dataKey] }}
+                                  searchValue={pendingFilterSearch[dataKey] || ""}
+                                  selections={tempPendingSelections[dataKey] || []}
+                                  onSearch={handlePendingFilterSearch}
+                                  allChecked={pendingAllChecked}
+                                  onToggleAll={togglePendingSelectAll}
+                                  onToggleOne={handlePendingCheckboxToggle}
+                                  onApply={() => { applyPendingFilter(dataKey); setOpenPendingFilter(null); }}
+                                  onCancel={() => setOpenPendingFilter(null)}
+                                  onSort={() => handleSortPending(dataKey)}
+                                />
+                              </span>
+                            </div>
+                          </th>
+                        );
+                      })}
+                      <th style={{ width: "11%", textAlign: "center" }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedPendingLeads.length > 0 ? paginatedPendingLeads.map(lead => (
+                      <tr key={lead.id}>
+                        <td>{lead.id}</td>
+                        <td>{lead.description}</td>
+                        <td>{lead.priority}</td>
+                        <td style={{ wordBreak: "break-word" }}>
+                          {lead.assignedOfficers?.length > 0 ? lead.assignedOfficers.join(", ") : "None"}
+                        </td>
+                        <td style={{ width: "9%", textAlign: "center" }}>
+                          <button
+                            className={styles['view-btn1']}
+                            onClick={() => navigate("/leadReview", { state: { caseDetails, leadId: lead.id, leadDescription: lead.summary } })}
+                          >
+                            Manage
+                          </button>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan="5" style={{ textAlign: 'center', padding: "8px" }}>No Leads Available</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* ── Lead Returns (In Review) tab ─────────────────────────── */}
+            {activeTab === "pendingLeadReturns" && (
+              <div className={styles['table-scroll-container']}>
+                <table className={styles['leads-table']} style={{ minWidth: "1000px" }}>
+                  <colgroup>
+                    <col style={{ width: "6%" }} />
+                    <col style={{ width: "30%" }} />
+                    <col style={{ width: "30%" }} />
+                    <col style={{ width: "10%" }} />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      {pendingLRColumns.map(col => {
+                        const dataKey = pendingLRColKey[col];
+                        return (
+                          <th key={col} className={styles['column-header1']} style={{ width: pendingLRColWidths[col], position: 'relative' }}>
+                            <div className={styles['header-title']}>
+                              {col}
+                              <span ref={el => (popupPendingLRRefs.current[dataKey] = el)}>
+                                <button onClick={() => setOpenPendingLRFilter(prev => prev === dataKey ? null : dataKey)}>
+                                  <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className={styles['icon-image']} alt="" />
+                                </button>
+                                <Filter
+                                  dataKey={dataKey}
+                                  distinctValues={distinctPendingLR}
+                                  open={openPendingLRFilter === dataKey}
+                                  anchorRef={{ current: popupPendingLRRefs.current[dataKey] }}
+                                  searchValue={pendingLRFilterSearch[dataKey] || ''}
+                                  selections={tempPendingLRSelections[dataKey] || []}
+                                  onSearch={handlePendingLRFilterSearch}
+                                  onSort={handleSortPendingLR}
+                                  allChecked={pendingLRAllChecked}
+                                  onToggleAll={togglePendingLRSelectAll}
+                                  onToggleOne={handlePendingLRCheckboxToggle}
+                                  onApply={() => { applyPendingLRFilter(dataKey); setOpenPendingLRFilter(null); }}
+                                  onCancel={() => setOpenPendingLRFilter(null)}
+                                />
+                              </span>
+                            </div>
+                          </th>
+                        );
+                      })}
+                      <th style={{ width: '11%', textAlign: "center" }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedPendingLRs.length > 0 ? paginatedPendingLRs.map(lead => (
+                      <tr key={lead.id}>
+                        <td>{lead.id}</td>
+                        <td>{lead.description}</td>
+                        <td>{lead.caseName}</td>
+                        <td style={{ width: "11%", textAlign: "center" }}>
+                          <button className={styles['continue-btn']} onClick={() => handleLRClick(lead)}>
+                            Continue
+                          </button>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan="4" style={{ textAlign: 'center', padding: '8px' }}>No Pending Lead Returns Available</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* ── All Leads tab ────────────────────────────────────────── */}
+            {activeTab === "allLeads" && (
+              <div className={styles['all-leads']}>
+                <div className={styles['table-scroll-container']}>
+                  <table className={styles['leads-table']} style={{ minWidth: "1000px" }}>
+                    <thead>
+                      <tr>
+                        {allColumns.map(col => {
+                          const dataKey = allColKey[col];
                           return (
                             <th
                               key={col}
                               className={styles['column-header1']}
-                              style={{ width: pendingLRColWidths[col] , position: 'relative'}}
+                              style={{ width: allColWidths[col], position: 'relative', textAlign: col === RIGHT_ALIGN_COL ? "right" : undefined }}
                             >
                               <div className={styles['header-title']}>
                                 {col}
-                                <span ref={el => (popupPendingLRRefs.current[dataKey] = el)}>
-                                  {/* FILTER */}
-                                  <button onClick={() =>
-                                    setOpenPendingLRFilter(prev =>
-                                      prev === dataKey ? null : dataKey
-                                    )
-                                  }>
-                                    <img
-                                      src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-                                      className={styles['icon-image']}
-                                    />
+                                <span ref={el => (popupAllRefs.current[dataKey] = el)}>
+                                  <button onClick={() => setOpenAllFilter(prev => prev === dataKey ? null : dataKey)}>
+                                    <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className={styles['icon-image']} alt="" />
                                   </button>
                                   <Filter
                                     dataKey={dataKey}
-                                    distinctValues={distinctPendingLR}
-                                    open={openPendingLRFilter === dataKey}
-                                    anchorRef={{ current: popupPendingLRRefs.current[dataKey] }}
-                                    searchValue={pendingLRFilterSearch[dataKey] || ''}
-                                    selections={tempPendingLRSelections[dataKey] || []}
-                                    onSearch={handlePendingLRFilterSearch}
-                                    onSort={handleSortPendingLR}
-                                    allChecked={pendingLRAllChecked}
-                                    onToggleAll={togglePendingLRSelectAll}
-                                    onToggleOne={handlePendingLRCheckboxToggle}
-                                    onApply={() => {
-                                      applyPendingLRFilter(dataKey);
-                                      setOpenPendingLRFilter(null);
-                                    }}
-                                    onCancel={() => setOpenPendingLRFilter(null)}
+                                    distinctValues={distinctAll}
+                                    open={openAllFilter === dataKey}
+                                    anchorRef={{ current: popupAllRefs.current[dataKey] }}
+                                    searchValue={allFilterSearch[dataKey] || ''}
+                                    selections={tempAllSelections[dataKey] || []}
+                                    onSearch={handleAllFilterSearch}
+                                    onSort={handleSortAll}
+                                    allChecked={allAllChecked}
+                                    onToggleAll={toggleAllSelectAll}
+                                    onToggleOne={handleAllCheckboxToggle}
+                                    onApply={() => { applyAllFilter(dataKey); setOpenAllFilter(null); }}
+                                    onCancel={() => setOpenAllFilter(null)}
                                   />
                                 </span>
                               </div>
                             </th>
                           );
                         })}
-                        {/* extra column for “Continue” */}
-                        <th style={{ width: '11%', textAlign: "center" }}> Actions</th>
+                        <th style={{ width: "9%", textAlign: "center" }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                {paginatedPendingLRs.length > 0 ? (
-                paginatedPendingLRs.map((lead) => (
-                    <tr key={lead.id}>
-                      <td>{lead.id}</td>
-                      <td>{lead.description}</td>
-                       <td>{lead.caseName}</td>
-                      <td style={{ width: "11%", textAlign: "center" }}>
-                        <button
-                              className={styles['continue-btn']}
-                              onClick={() => {
-                                handleLRClick(lead)
+                      {paginatedLeads.length > 0 ? paginatedLeads.map(lead => (
+                        <tr key={lead.id} style={{ backgroundColor: "#fff" }}>
+                          <td>{lead.id}</td>
+                          <td>{lead.description}</td>
+                          <td style={{
+                            color: ["Assigned", "Accepted", "Approved", "Returned", "Completed", "Reopened"].includes(lead.leadStatus)
+                              ? "green"
+                              : lead.leadStatus === "In Review" ? "red" : "black"
+                          }}>
+                            {lead.leadStatus === "In Review" ? "To review" : lead.leadStatus}
+                          </td>
+                          <td style={{ wordBreak: "break-word" }}>
+                            {lead.assignedOfficers?.length > 0 ? lead.assignedOfficers.join(", ") : "None"}
+                          </td>
+                          <td style={{ width: "9%", textAlign: "center" }}>
+                            <button
+                              className={styles['view-btn1']}
+                              onClick={() => !isDeletedStatus(lead.leadStatus) && handleLeadClick(lead)}
+                              disabled={isDeletedStatus(lead.leadStatus)}
+                              style={{
+                                opacity: isDeletedStatus(lead.leadStatus) ? 0.5 : 1,
+                                cursor: isDeletedStatus(lead.leadStatus) ? "not-allowed" : "pointer",
                               }}
                             >
-                              Continue
+                              Manage
                             </button>
-                      </td>
-                    </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan="4" style={{ textAlign: 'center', padding: '8px' }}>
-                          No Pending Lead Returns Available
-                        </td>
-                      </tr>
-                    )}
-              </tbody>
-            </table>
-            </div>
-)}  
-{activeTab === "allLeads" && (
-  <div className={styles['all-leads']}>
-    <div className={styles['table-scroll-container']}>
-      <table className={styles['leads-table']} style={{ minWidth: "1000px" }}>
-        <thead>
-               <tr>
-                 {allColumns.map(col => {
-                   const dataKey = allColKey[col];
-                   return (
-                     <th
-                       key={col}
-                       className={styles['column-header1']}
-                       style={{ width: allColWidths[col], position: 'relative' , textAlign: col === RIGHT_ALIGN_COL ? "right" : undefined }}
-                     >
-                       <div className={styles['header-title']}>
-                         {col}
-                         <span ref={el => (popupAllRefs.current[dataKey] = el)}>
-                           {/* FILTER button */}
-                           <button
-                             onClick={() =>
-                               setOpenAllFilter(prev =>
-                                 prev === dataKey ? null : dataKey
-                               )
-                             }
-                           >
-                             <img
-                               src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-                               className={styles['icon-image']}
-                             />
-                           </button>
-                           <Filter
-                             dataKey={dataKey}
-                             distinctValues={distinctAll}
-                             open={openAllFilter === dataKey}
-                             anchorRef={{ current: popupAllRefs.current[dataKey] }}
-                             searchValue={allFilterSearch[dataKey] || ''}
-                             selections={tempAllSelections[dataKey] || []}
-                             onSearch={handleAllFilterSearch}
-                             onSort={handleSortAll} 
-                             allChecked={allAllChecked}
-                             onToggleAll={toggleAllSelectAll}
-                             onToggleOne={handleAllCheckboxToggle}
-                             onApply={() => {
-                               applyAllFilter(dataKey);
-                               setOpenAllFilter(null);
-                             }}
-                             onCancel={() => setOpenAllFilter(null)}
-                           />
-                         </span>
-                       </div>
-                     </th>
-                   );
-                 })}
-                 {/* extra column for “View” */}
-                 <th style={{ width: "9%", textAlign: "center" }}>Actions</th>
-               </tr>
-             </thead>
-             <tbody>
-          {paginatedLeads.length>0 ? paginatedLeads.map(lead=>(
-            <tr key={lead.id} style={{ backgroundColor: "#fff" }}>
-              <td style={{ }}>{lead.id}</td>
-              <td>{lead.description}</td>
-              <td style={{ 
-  color:
-    ["Assigned", "Accepted", "Approved", "Returned", "Completed", "Reopened"].includes(lead.leadStatus)
-      ? "green"
-      : lead.leadStatus === "In Review"
-      ? "red"
-      : "black"
-}}>
-   {lead.leadStatus === "In Review" ? "To review" : lead.leadStatus}
-</td>
-
-
-             
-              {/* <td style={{ wordBreak:"break-word" }}>
-                 {lead.assignedOfficers && lead.assignedOfficers.length > 0
-    ? lead.assignedOfficers.map((officer, idx) => (
-        <div key={idx}>{officer}</div>
-      ))
-    : <em>None</em>
-  }
-              </td> */}
-              <td style={{ wordBreak: "break-word" }}>
-  {lead.assignedOfficers && lead.assignedOfficers.length > 0
-    ? lead.assignedOfficers.join(", ")
-    : "None"}
-</td>
-
-            <td style={{ width: "9%", textAlign: "center" }}>
-  <button
-    className={styles['view-btn1']}
-    onClick={() => !isDeletedStatus(lead.leadStatus) && handleLeadClick(lead)}
-    disabled={isDeletedStatus(lead.leadStatus)}
-    style={{
-      opacity: isDeletedStatus(lead.leadStatus) ? 0.5 : 1,
-      cursor: isDeletedStatus(lead.leadStatus) ? "not-allowed" : "pointer"
-    }}
-  >
-    Manage
-  </button>
-</td>
-
-
-            </tr>
-          )) : (
-            <tr>
-              <td colSpan={5} style={{ textAlign:"center", padding:"8px" }}>
-                No Leads Available
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-  </div>
-)}
-<Pagination
-  currentPage={currentPage}
-  totalEntries={totalEntries}
-  onPageChange={setCurrentPage}
-  pageSize={pageSize}
-  onPageSizeChange={setPageSize}
-/>
-                </div> 
+                          </td>
+                        </tr>
+                      )) : (
+                        <tr>
+                          <td colSpan={5} style={{ textAlign: "center", padding: "8px" }}>No Leads Available</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
+            )}
+
+            <Pagination
+              currentPage={currentPage}
+              totalEntries={totalEntries}
+              onPageChange={setCurrentPage}
+              pageSize={pageSize}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 };

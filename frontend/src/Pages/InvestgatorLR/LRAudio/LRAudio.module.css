@@ -1,9 +1,9 @@
 /* ============================================================
-   LRAudio – CSS Module (mirrors LREnclosures styling)
+   LRAudio – CSS Module
    Primary accent: #29298b (app navy)
    ============================================================ */
 
-/* ===== Page wrapper ===== */
+/* ── Page wrapper ────────────────────────────────────────────── */
 .personPage {
   height: 100vh;
   overflow: hidden;
@@ -11,7 +11,7 @@
   background-color: #f4f6f9;
 }
 
-/* ===== Main content area ===== */
+/* ── Main content area (offset for fixed sidebar + navbar) ────── */
 .LRIContent {
   display: flex;
   margin-left: 20%;
@@ -23,7 +23,7 @@
   box-sizing: border-box;
 }
 
-/* ===== Scrollable left column ===== */
+/* ── Scrollable left column ───────────────────────────────────── */
 .leftContentLI {
   position: relative;
   display: flex;
@@ -36,7 +36,7 @@
   overflow: hidden;
 }
 
-/* ===== Fixed menu bar 1 – page-level navigation ===== */
+/* ── Fixed menu bar 1: page-level navigation ──────────────────── */
 .topMenuNav {
   position: fixed;
   top: 110px;
@@ -44,18 +44,18 @@
   width: 80%;
   height: 56px;
   z-index: 1050;
-  box-sizing: border-box;
   background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   border-bottom: 2px solid #e8eaf0;
   box-shadow: 0 2px 6px rgba(41, 41, 139, 0.08);
+  box-sizing: border-box;
   overflow-x: auto;
   overflow-y: hidden;
 }
 
-/* ===== Fixed menu bar 2 – section tabs ===== */
+/* ── Fixed menu bar 2: section tabs ──────────────────────────── */
 .topMenuSections {
   position: fixed;
   top: 166px;
@@ -63,22 +63,27 @@
   width: 80%;
   height: 56px;
   z-index: 1050;
-  box-sizing: border-box;
   background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   border-bottom: 2px solid #e8eaf0;
   box-shadow: 0 2px 6px rgba(41, 41, 139, 0.08);
+  box-sizing: border-box;
   overflow-x: auto;
   overflow-y: hidden;
 }
 
-/* ===== Menu items row ===== */
+/* ── Menu item row ────────────────────────────────────────────── */
 .menuItems {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Secondary nav row uses slightly smaller text */
+.menuItemsSecondary {
+  font-size: 19px;
 }
 
 .menuItem {
@@ -97,6 +102,7 @@
   color: #29298b;
 }
 
+/* Active tab indicator */
 .menuItemActive {
   color: #29298b !important;
   font-weight: 700;
@@ -104,7 +110,12 @@
   border-radius: 0;
 }
 
-/* ===== Info bar: breadcrumb + status ===== */
+/* Secondary tabs have lighter weight */
+.menuItemSecondary {
+  font-weight: 400;
+}
+
+/* ── Info bar: breadcrumb + status ────────────────────────────── */
 .caseandleadinfo {
   display: flex;
   justify-content: space-between;
@@ -126,7 +137,7 @@
   margin: 0;
 }
 
-/* ===== Breadcrumb ===== */
+/* ── Breadcrumb ───────────────────────────────────────────────── */
 .ldHead {
   display: flex;
   align-items: center;
@@ -167,7 +178,7 @@
   margin: 0 2px;
 }
 
-/* ===== Page heading ===== */
+/* ── Page heading ─────────────────────────────────────────────── */
 .caseHeader {
   width: 100%;
   padding: 20px 24px 8px;
@@ -184,7 +195,7 @@
   text-transform: uppercase;
 }
 
-/* ===== Main scrollable content ===== */
+/* ── Scrollable content area ──────────────────────────────────── */
 .lriContentSection {
   display: flex;
   flex-direction: column;
@@ -198,7 +209,6 @@
   overflow-x: hidden;
 }
 
-/* ===== Content subsection card ===== */
 .contentSubsection {
   width: 100%;
   display: flex;
@@ -206,7 +216,7 @@
   gap: 12px;
 }
 
-/* ===== Section block wrapper ===== */
+/* ── Section card ─────────────────────────────────────────────── */
 .sectionBlock {
   width: 100%;
   background: #ffffff;
@@ -215,7 +225,6 @@
   overflow: hidden;
 }
 
-/* ===== Section heading with bottom border ===== */
 .sectionHeading {
   font-size: 20px;
   font-weight: 700;
@@ -225,15 +234,7 @@
   background: #ffffff;
 }
 
-/* ===== Form entry box ===== */
-.LREnteringContentBox {
-  width: 100%;
-  background: #ffffff;
-  padding: 20px 24px 24px;
-  box-sizing: border-box;
-}
-
-/* ===== Audio form (vertical layout) ===== */
+/* ── Audio form ───────────────────────────────────────────────── */
 .enclosureForm {
   display: flex;
   flex-direction: column;
@@ -243,14 +244,14 @@
   box-sizing: border-box;
 }
 
-/* ===== Vertical form row: label on top, control below ===== */
+/* Vertical form row: label above, control below */
 .formRowEvidence {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-/* ===== Two-column row for paired fields ===== */
+/* Two-column row for paired fields */
 .formRowPair {
   display: flex;
   gap: 16px;
@@ -295,14 +296,14 @@
   height: 100px;
 }
 
-/* ===== Current filename display ===== */
+/* Current filename display when editing */
 .currentFilename {
   font-size: 18px;
   color: #555;
   padding: 4px 0;
 }
 
-/* ===== Save button row ===== */
+/* ── Form action buttons ──────────────────────────────────────── */
 .formButtonsReturn {
   display: flex;
   gap: 10px;
@@ -333,7 +334,7 @@
   cursor: not-allowed;
 }
 
-/* ===== Records table ===== */
+/* ── Records table ────────────────────────────────────────────── */
 .leadsTable {
   width: 100%;
   border-collapse: collapse;
@@ -372,7 +373,13 @@
   background-color: #f7f8ff;
 }
 
-/* ===== Link / file anchor in table ===== */
+/* Empty-state table cell */
+.emptyRow {
+  text-align: center;
+  color: #888;
+}
+
+/* ── Table: file/URL link ─────────────────────────────────────── */
 .linkButton {
   color: #29298b;
   text-decoration: none;
@@ -387,7 +394,12 @@
   text-decoration: underline;
 }
 
-/* ===== Action buttons inside table ===== */
+/* Placeholder when no file exists */
+.noFile {
+  color: #888;
+}
+
+/* ── Table: action button group ───────────────────────────────── */
 .lrTableBtn {
   display: flex;
   flex-direction: row;
@@ -426,7 +438,7 @@
   display: block;
 }
 
-/* ===== Access dropdown ===== */
+/* ── Access level dropdown (case managers only) ───────────────── */
 .accessDropdown {
   padding: 6px 10px;
   font-size: 20px;
@@ -435,10 +447,10 @@
   background-color: #ffffff;
   color: #333;
   cursor: pointer;
-  transition: border-color 0.18s ease;
   width: 100%;
   min-width: 160px;
   outline: none;
+  transition: border-color 0.18s ease;
 }
 
 .accessDropdown:hover {
@@ -450,7 +462,7 @@
   box-shadow: 0 0 0 2px rgba(41, 41, 139, 0.12);
 }
 
-/* ===== Audio-specific: uploaded preview ===== */
+/* ── Audio preview gallery ────────────────────────────────────── */
 .uploadedAudio {
   padding: 0 24px 16px;
 }
