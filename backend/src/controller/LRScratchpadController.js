@@ -34,7 +34,7 @@ const createLRScratchpad = async (req, res) => {
 const getLRScratchpadByDetails = async (req, res) => {
     try {
         const { leadNo, leadName, caseNo, caseName } = req.params;
-        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName };
+        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
         const scratchpads = await LRScratchpad.find(query);
 
         if (scratchpads.length === 0) return res.status(404).json({ message: "No scratchpad entries found." });
@@ -48,7 +48,7 @@ const getLRScratchpadByDetails = async (req, res) => {
 const getLRScratchpadByDetailsAndId = async (req, res) => {
     try {
         const { leadNo, leadName, caseNo, caseName, id } = req.params;
-        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId: id };
+        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId: id, isDeleted: { $ne: true } };
         const scratchpads = await LRScratchpad.find(query);
 
         if (scratchpads.length === 0) return res.status(404).json({ message: "No scratchpad entries found for the given return ID." });

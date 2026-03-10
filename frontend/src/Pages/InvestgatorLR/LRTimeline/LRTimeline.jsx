@@ -275,6 +275,26 @@ export const LRTimeline = () => {
 
   // ── Fetch timeline entries from the API, applying access-level filtering ───
 
+  // ── Map a raw API entry to display format ─────────────────────────────────
+
+  const mapEntry = useCallback((e) => ({
+    id:               e._id,
+    rawEventDate:     e.eventDate,
+    rawStartDate:     e.eventStartDate,
+    rawEndDate:       e.eventEndDate,
+    rawStartTime:     e.eventStartTime,
+    rawEndTime:       e.eventEndTime,
+    leadReturnId:     e.leadReturnId,
+    eventLocation:    e.eventLocation,
+    eventDescription: e.eventDescription,
+    flags:            e.timelineFlag || [],
+    accessLevel:      e.accessLevel || 'Everyone',
+    date:             formatDate(e.eventDate),
+    timeRange:        formatTimeRangeNY(e.eventStartTime, e.eventEndTime),
+    location:         e.eventLocation,
+    description:      e.eventDescription,
+  }), [formatTimeRangeNY]);
+
   const fetchTimelineEntries = useCallback(async () => {
     const token   = localStorage.getItem('token');
     const encLead = encodeURIComponent(selectedLead.leadName);
@@ -286,25 +306,7 @@ export const LRTimeline = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const mapped = data.map(e => ({
-        id:               e._id,
-        // Raw values retained for pre-filling the edit form
-        rawEventDate:     e.eventDate,
-        rawStartDate:     e.eventStartDate,
-        rawEndDate:       e.eventEndDate,
-        rawStartTime:     e.eventStartTime,
-        rawEndTime:       e.eventEndTime,
-        leadReturnId:     e.leadReturnId,
-        eventLocation:    e.eventLocation,
-        eventDescription: e.eventDescription,
-        flags:            e.timelineFlag || [],
-        accessLevel:      e.accessLevel || 'Everyone',
-        // Display-formatted fields
-        date:             formatDate(e.eventDate),
-        timeRange:        formatTimeRangeNY(e.eventStartTime, e.eventEndTime),
-        location:         e.eventLocation,
-        description:      e.eventDescription,
-      }));
+      const mapped = data.map(mapEntry);
 
       // Non-case-managers only see records they are permitted to view
       const currentUser   = localStorage.getItem('loggedInUser')?.trim();
@@ -324,7 +326,7 @@ export const LRTimeline = () => {
     } catch (err) {
       console.error('Error fetching timeline entries:', err);
     }
-  }, [selectedLead, selectedCase, isCaseManager, leadData]);
+  }, [selectedLead, selectedCase, isCaseManager, leadData, mapEntry]);
 
   useEffect(() => {
     if (selectedLead?.leadNo && selectedLead?.leadName && selectedCase?.caseNo && selectedCase?.caseName) {
@@ -379,8 +381,8 @@ export const LRTimeline = () => {
       startTime, endTime, location, description, flag,
     } = newEntry;
 
-    // Fall back to today if the date field was somehow cleared
-    const finalDate = date?.trim() || new Date().toISOString().split('T')[0];
+    // Use eventStartDate as the canonical event date; fall back to the date field or today
+    const finalDate = eventStartDate?.trim() || date?.trim() || new Date().toISOString().split('T')[0];
     const token     = localStorage.getItem('token');
 
     const payload = {
@@ -408,18 +410,21 @@ export const LRTimeline = () => {
 
     try {
       if (!isEditing) {
-        // CREATE a new timeline entry
-        await api.post('/api/timeline/create', payload, {
+        // CREATE: use the response to update state immediately, no second round-trip
+        const { data } = await api.post('/api/timeline/create', payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        setTimelineEntries(prev => [...prev, mapEntry(data.timeline)]);
       } else {
-        // UPDATE an existing entry by its database ID
+        // UPDATE: use the response to update the row in place immediately
         const entry = timelineEntries[editingIndex];
-        await api.put(`/api/timeline/${entry.id}`, payload, {
+        const { data } = await api.put(`/api/timeline/${entry.id}`, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        setTimelineEntries(prev =>
+          prev.map((e, i) => (i === editingIndex ? mapEntry(data.timeline) : e))
+        );
       }
-      await fetchTimelineEntries();
       resetForm();
     } catch (err) {
       console.error('Timeline submit error:', err);
@@ -435,13 +440,15 @@ export const LRTimeline = () => {
   const handleEdit = (idx) => {
     const e = timelineEntries[idx];
     setEditingIndex(idx);
+    const toDateStr = (val) => { const d = new Date(val); return isNaN(d) ? '' : d.toISOString().slice(0, 10); };
+    const toTimeStr = (val) => { const d = new Date(val); return isNaN(d) ? '' : d.toISOString().slice(11, 16); };
     setNewEntry({
-      date:           new Date(e.rawEventDate).toISOString().slice(0, 10),
+      date:           toDateStr(e.rawEventDate),
       leadReturnId:   e.leadReturnId,
-      eventStartDate: new Date(e.rawStartDate).toISOString().slice(0, 10),
-      eventEndDate:   new Date(e.rawEndDate).toISOString().slice(0, 10),
-      startTime:      new Date(e.rawStartTime).toISOString().substr(11, 5),
-      endTime:        new Date(e.rawEndTime).toISOString().substr(11, 5),
+      eventStartDate: toDateStr(e.rawStartDate),
+      eventEndDate:   toDateStr(e.rawEndDate),
+      startTime:      toTimeStr(e.rawStartTime),
+      endTime:        toTimeStr(e.rawEndTime),
       location:       e.eventLocation,
       description:    e.eventDescription,
       flag:           e.flags[0] || '',
