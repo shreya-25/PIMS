@@ -103,7 +103,7 @@ const getLRPersonByDetails = async (req, res) => {
         const lrPersons = await LRPerson.find(query);
 
         if (lrPersons.length === 0) {
-            return res.status(404).json({ message: "No records found." });
+            return res.status(200).json([]);
         }
 
         const personsWithPhotos = await Promise.all(
@@ -130,7 +130,7 @@ const getLRPersonByDetailsandid = async (req, res) => {
         const lrPersons = await LRPerson.find(query);
 
         if (lrPersons.length === 0) {
-            return res.status(404).json({ message: "No records found." });
+            return res.status(200).json([]);
         }
 
         const personsWithPhotos = await Promise.all(
@@ -183,6 +183,40 @@ const updateLRPerson = async (req, res) => {
       res.status(200).json(updated);
     } catch (err) {
       console.error("Error updating person:", err);
+      res.status(500).json({ message: "Something went wrong." });
+    }
+};
+
+const updateLRPersonById = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+
+      if (!isPersonRecordValid(updateData)) {
+        return res.status(400).json({ message: "Cannot save an empty record. Please fill in at least one field." });
+      }
+
+      const existingPerson = await LRPerson.findById(id);
+      if (!existingPerson) {
+        return res.status(404).json({ message: "Person not found." });
+      }
+
+      const updated = await LRPerson.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+
+      await createAuditLog({
+        caseNo: updated.caseNo, caseName: updated.caseName,
+        leadNo: updated.leadNo, leadName: updated.description,
+        entityType: "LRPerson", entityId: `${updated.firstName}_${updated.leadReturnId}`, action: "UPDATE",
+        performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
+        oldValue: sanitizeForAudit(existingPerson.toObject()),
+        newValue: sanitizeForAudit(updated.toObject()),
+        metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent'), changedFields: Object.keys(updateData) },
+        accessLevel: updated.accessLevel || "Everyone"
+      });
+
+      res.status(200).json(updated);
+    } catch (err) {
+      console.error("Error updating person by id:", err);
       res.status(500).json({ message: "Something went wrong." });
     }
 };
@@ -295,4 +329,4 @@ const deletePersonPhoto = async (req, res) => {
     }
 };
 
-module.exports = { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, deleteLRPerson, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto };
+module.exports = { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, updateLRPersonById, deleteLRPerson, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto };

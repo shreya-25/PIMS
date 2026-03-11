@@ -1,5 +1,6 @@
 const LRScratchpad = require("../models/LRScratchpad");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
+const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 
 const createLRScratchpad = async (req, res) => {
     try {
@@ -24,6 +25,19 @@ const createLRScratchpad = async (req, res) => {
         });
 
         await newScratchpad.save();
+
+        await createAuditLog({
+          caseNo, caseName, leadNo, leadName: description,
+          entityType: "LRScratchpad",
+          entityId: `scratchpad_${newScratchpad._id}`,
+          action: "CREATE",
+          performedBy: { username: req.user?.name || enteredBy || "Unknown", role: req.user?.role || "Unknown" },
+          oldValue: null,
+          newValue: sanitizeForAudit(newScratchpad.toObject()),
+          metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent') },
+          accessLevel: accessLevel
+        });
+
         res.status(201).json(newScratchpad);
     } catch (err) {
         console.error("Error creating LRScratchpad entry:", err.message);
@@ -64,11 +78,28 @@ async function updateLRScratchpad(req, res) {
       const { id } = req.params;
       const { leadReturnId, text, type, accessLevel } = req.body;
 
+      const existing = await LRScratchpad.findById(id);
+      if (!existing) return res.status(404).json({ message: "Not found" });
+      const oldScratchpad = existing.toObject();
+
       const updateData = { leadReturnId, text, type };
       if (accessLevel !== undefined) updateData.accessLevel = accessLevel || "Everyone";
 
       const updated = await LRScratchpad.findByIdAndUpdate(id, updateData, { new: true });
-      if (!updated) return res.status(404).json({ message: "Not found" });
+
+      await createAuditLog({
+        caseNo: updated.caseNo, caseName: updated.caseName,
+        leadNo: updated.leadNo, leadName: updated.description,
+        entityType: "LRScratchpad",
+        entityId: `scratchpad_${id}`,
+        action: "UPDATE",
+        performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
+        oldValue: sanitizeForAudit(oldScratchpad),
+        newValue: sanitizeForAudit(updated.toObject()),
+        metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent'), changedFields: Object.keys(updateData) },
+        accessLevel: updated.accessLevel || "Everyone"
+      });
+
       res.json(updated);
     } catch (err) {
       console.error("Error updating scratchpad:", err);
@@ -79,8 +110,25 @@ async function updateLRScratchpad(req, res) {
 async function deleteLRScratchpad(req, res) {
     try {
       const { id } = req.params;
-      const removed = await LRScratchpad.findByIdAndDelete(id);
-      if (!removed) return res.status(404).json({ message: "Not found" });
+      const existing = await LRScratchpad.findById(id);
+      if (!existing) return res.status(404).json({ message: "Not found" });
+      const oldScratchpad = existing.toObject();
+
+      await LRScratchpad.findByIdAndDelete(id);
+
+      await createAuditLog({
+        caseNo: existing.caseNo, caseName: existing.caseName,
+        leadNo: existing.leadNo, leadName: existing.description,
+        entityType: "LRScratchpad",
+        entityId: `scratchpad_${id}`,
+        action: "DELETE",
+        performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
+        oldValue: sanitizeForAudit(oldScratchpad),
+        newValue: null,
+        metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent') },
+        accessLevel: existing.accessLevel || "Everyone"
+      });
+
       res.json({ message: "Deleted" });
     } catch (err) {
       console.error("Error deleting scratchpad:", err);

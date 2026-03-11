@@ -234,7 +234,7 @@ const updateLeadReturnResult = async (req, res) => {
             metadata: {
                 ip: req.ip || req.connection?.remoteAddress,
                 userAgent: req.get('user-agent'),
-                changedFields: Object.keys(updateData).join(', ')
+                changedFields: Object.keys(updateData)
             },
             accessLevel: updatedResult.accessLevel || "Everyone"
         });

@@ -2,6 +2,7 @@ const LRVideo = require("../models/LRVideo");
 const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
+const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 
 const createLRVideo = async (req, res) => {
   try {
@@ -57,6 +58,20 @@ const createLRVideo = async (req, res) => {
     });
 
     await newLRVideo.save();
+
+    await createAuditLog({
+      caseNo: req.body.caseNo, caseName: req.body.caseName,
+      leadNo: req.body.leadNo, leadName: req.body.description,
+      entityType: "LRVideo",
+      entityId: `video_${newLRVideo._id}`,
+      action: "CREATE",
+      performedBy: { username: req.user?.name || req.body.enteredBy || "Unknown", role: req.user?.role || "Unknown" },
+      oldValue: null,
+      newValue: sanitizeForAudit(newLRVideo.toObject()),
+      metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent') },
+      accessLevel: req.body.accessLevel || "Everyone"
+    });
+
     res.status(201).json({ message: "Video saved successfully", video: newLRVideo });
   } catch (err) {
     console.error("Error saving LRVideo:", err);
@@ -88,6 +103,7 @@ const updateLRVideo = async (req, res) => {
     const { id } = req.params;
     const video = await LRVideo.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!video) return res.status(404).json({ message: "Video not found" });
+    const oldVideo = video.toObject();
 
     const wantsLink = req.body.isLink === true || req.body.isLink === "true" || req.body.isLink === 1 || req.body.isLink === "1";
 
@@ -117,6 +133,20 @@ const updateLRVideo = async (req, res) => {
     if (typeof req.body.accessLevel !== "undefined") video.accessLevel = req.body.accessLevel || "Everyone";
 
     await video.save();
+
+    await createAuditLog({
+      caseNo: video.caseNo, caseName: video.caseName,
+      leadNo: video.leadNo, leadName: video.description,
+      entityType: "LRVideo",
+      entityId: `video_${video._id}`,
+      action: "UPDATE",
+      performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
+      oldValue: sanitizeForAudit(oldVideo),
+      newValue: sanitizeForAudit(video.toObject()),
+      metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent'), changedFields: Object.keys(req.body) },
+      accessLevel: video.accessLevel || "Everyone"
+    });
+
     res.json({ message: "Video updated", video });
   } catch (err) {
     console.error("Error updating LRVideo:", err);
@@ -130,10 +160,24 @@ const deleteLRVideo = async (req, res) => {
     const video = await LRVideo.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!video) return res.status(404).json({ message: "Video not found" });
 
+    const oldVideo = video.toObject();
     video.isDeleted = true;
     video.deletedAt = new Date();
     video.deletedBy = req.user?.name || "Unknown";
     await video.save();
+
+    await createAuditLog({
+      caseNo: video.caseNo, caseName: video.caseName,
+      leadNo: video.leadNo, leadName: video.description,
+      entityType: "LRVideo",
+      entityId: `video_${video._id}`,
+      action: "DELETE",
+      performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
+      oldValue: sanitizeForAudit(oldVideo),
+      newValue: null,
+      metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent') },
+      accessLevel: video.accessLevel || "Everyone"
+    });
 
     res.json({ message: "Video deleted" });
   } catch (err) {

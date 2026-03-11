@@ -2,6 +2,7 @@ const LRAudio = require("../models/LRAudio");
 const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
+const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 
 const toBool = (v) => v === true || v === "true" || v === "1";
 
@@ -57,6 +58,20 @@ const createLRAudio = async (req, res) => {
     });
 
     await newLRAudio.save();
+
+    await createAuditLog({
+      caseNo: req.body.caseNo, caseName: req.body.caseName,
+      leadNo: req.body.leadNo, leadName: req.body.description,
+      entityType: "LRAudio",
+      entityId: `audio_${newLRAudio._id}`,
+      action: "CREATE",
+      performedBy: { username: req.user?.name || req.body.enteredBy || "Unknown", role: req.user?.role || "Unknown" },
+      oldValue: null,
+      newValue: sanitizeForAudit(newLRAudio.toObject()),
+      metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent') },
+      accessLevel: req.body.accessLevel || "Everyone"
+    });
+
     res.status(201).json({ message: "Audio saved successfully", audio: newLRAudio });
   } catch (err) {
     console.error("Error saving LRAudio:", err);
@@ -91,6 +106,7 @@ const updateLRAudio = async (req, res) => {
     const { id } = req.params;
     const audio = await LRAudio.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!audio) return res.status(404).json({ message: "Audio not found" });
+    const oldAudio = audio.toObject();
 
     if (typeof req.body.audioDescription !== "undefined") audio.audioDescription = req.body.audioDescription;
     if (typeof req.body.dateAudioRecorded !== "undefined") audio.dateAudioRecorded = req.body.dateAudioRecorded;
@@ -114,6 +130,20 @@ const updateLRAudio = async (req, res) => {
     }
 
     await audio.save();
+
+    await createAuditLog({
+      caseNo: audio.caseNo, caseName: audio.caseName,
+      leadNo: audio.leadNo, leadName: audio.description,
+      entityType: "LRAudio",
+      entityId: `audio_${audio._id}`,
+      action: "UPDATE",
+      performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
+      oldValue: sanitizeForAudit(oldAudio),
+      newValue: sanitizeForAudit(audio.toObject()),
+      metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent'), changedFields: Object.keys(req.body) },
+      accessLevel: audio.accessLevel || "Everyone"
+    });
+
     res.json({ message: "Audio updated", audio });
   } catch (err) {
     console.error("Error updating LRAudio:", err);
@@ -128,10 +158,24 @@ const deleteLRAudio = async (req, res) => {
     const audio = await LRAudio.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!audio) return res.status(404).json({ message: "Audio not found" });
 
+    const oldAudio = audio.toObject();
     audio.isDeleted = true;
     audio.deletedAt = new Date();
     audio.deletedBy = req.user?.name || "Unknown";
     await audio.save();
+
+    await createAuditLog({
+      caseNo: audio.caseNo, caseName: audio.caseName,
+      leadNo: audio.leadNo, leadName: audio.description,
+      entityType: "LRAudio",
+      entityId: `audio_${audio._id}`,
+      action: "DELETE",
+      performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
+      oldValue: sanitizeForAudit(oldAudio),
+      newValue: null,
+      metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent') },
+      accessLevel: audio.accessLevel || "Everyone"
+    });
 
     res.status(200).json({ message: "Audio deleted" });
   } catch (err) {

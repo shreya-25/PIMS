@@ -1,5 +1,5 @@
 const express = require("express");
-const { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, deleteLRPerson, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto } = require("../controller/LRPersonController");
+const { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, updateLRPersonById, deleteLRPerson, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto } = require("../controller/LRPersonController");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
 const upload = require("../middleware/upload-disk");
@@ -22,6 +22,13 @@ router.put(
     '/:leadNo/:caseNo/:leadReturnId/:firstName',
     verifyToken,
     deleteLRPerson
+  );
+
+  // PUT by MongoDB _id  /api/lrperson/id/:id
+  router.put(
+    '/id/:id',
+    verifyToken,
+    updateLRPersonById
   );
 
   // DELETE by MongoDB _id  /api/lrperson/id/:id

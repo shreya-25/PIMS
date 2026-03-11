@@ -252,7 +252,9 @@ export const LRPerson = () => {
       showAlert('Could not find person record to edit.');
       return;
     }
-    navigate('/LRPerson1', { state: { caseDetails, leadDetails, person } });
+    const lead = selectedLead?.leadNo ? selectedLead : leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : caseDetails;
+    navigate('/LRPerson1', { state: { caseDetails: kase, leadDetails: lead, person } });
   };
 
   /** Open the deletion confirmation modal. */

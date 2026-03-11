@@ -1,5 +1,6 @@
 const LRTimeline = require("../models/LRTimeline");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
+const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 
 const createLRTimeline = async (req, res) => {
     try {
@@ -36,6 +37,20 @@ const createLRTimeline = async (req, res) => {
         });
 
         await newLRTimeline.save();
+
+        await createAuditLog({
+          caseNo: req.body.caseNo, caseName: req.body.caseName,
+          leadNo: req.body.leadNo, leadName: req.body.description,
+          entityType: "LRTimeline",
+          entityId: `timeline_${newLRTimeline._id}`,
+          action: "CREATE",
+          performedBy: { username: req.user?.name || req.body.enteredBy || "Unknown", role: req.user?.role || "Unknown" },
+          oldValue: null,
+          newValue: sanitizeForAudit(newLRTimeline.toObject()),
+          metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent') },
+          accessLevel: req.body.accessLevel || "Everyone"
+        });
+
         res.status(201).json({ message: "Timeline entry created successfully", timeline: newLRTimeline });
     } catch (err) {
         console.error("Error creating LRTimeline entry:", err.message);
@@ -88,8 +103,25 @@ const updateLRTimeline = async (req, res) => {
       if (req.body.timelineFlag !== undefined) updates.timelineFlag = req.body.timelineFlag;
       if (req.body.accessLevel !== undefined) updates.accessLevel = req.body.accessLevel;
 
+      const existing = await LRTimeline.findById(id);
+      if (!existing) return res.status(404).json({ message: "Timeline entry not found." });
+      const oldTimeline = existing.toObject();
+
       const updated = await LRTimeline.findByIdAndUpdate(id, updates, { new: true });
-      if (!updated) return res.status(404).json({ message: "Timeline entry not found." });
+
+      await createAuditLog({
+        caseNo: updated.caseNo, caseName: updated.caseName,
+        leadNo: updated.leadNo, leadName: updated.description,
+        entityType: "LRTimeline",
+        entityId: `timeline_${id}`,
+        action: "UPDATE",
+        performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
+        oldValue: sanitizeForAudit(oldTimeline),
+        newValue: sanitizeForAudit(updated.toObject()),
+        metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent'), changedFields: Object.keys(updates) },
+        accessLevel: updated.accessLevel || "Everyone"
+      });
+
       res.json({ message: "Timeline entry updated", timeline: updated });
     } catch (err) {
       console.error("Error updating timeline:", err);
@@ -100,8 +132,25 @@ const updateLRTimeline = async (req, res) => {
 const deleteLRTimeline = async (req, res) => {
     try {
       const { id } = req.params;
-      const removed = await LRTimeline.findByIdAndDelete(id);
-      if (!removed) return res.status(404).json({ message: "Timeline entry not found." });
+      const existing = await LRTimeline.findById(id);
+      if (!existing) return res.status(404).json({ message: "Timeline entry not found." });
+      const oldTimeline = existing.toObject();
+
+      await LRTimeline.findByIdAndDelete(id);
+
+      await createAuditLog({
+        caseNo: existing.caseNo, caseName: existing.caseName,
+        leadNo: existing.leadNo, leadName: existing.description,
+        entityType: "LRTimeline",
+        entityId: `timeline_${id}`,
+        action: "DELETE",
+        performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
+        oldValue: sanitizeForAudit(oldTimeline),
+        newValue: null,
+        metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent') },
+        accessLevel: existing.accessLevel || "Everyone"
+      });
+
       res.json({ message: "Timeline entry deleted" });
     } catch (err) {
       console.error("Error deleting timeline:", err);

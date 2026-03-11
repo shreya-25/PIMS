@@ -31,21 +31,29 @@ export const AuditLogViewer = ({ leadNo, caseNo }) => {
 
     try {
       const params = new URLSearchParams();
+      params.append('leadNo', leadNo);
+      if (caseNo) params.append('caseNo', caseNo);
       if (filters.action) params.append('action', filters.action);
-      if (filters.performedBy) params.append('performedBy', filters.performedBy);
       if (filters.entityType) params.append('entityType', filters.entityType);
-      if (filters.startDate) params.append('startDate', filters.startDate);
-      if (filters.endDate) params.append('endDate', filters.endDate);
 
-      const queryString = params.toString();
-      const url = queryString ? `/api/audit-logs/${leadNo}?${queryString}` : `/api/audit-logs/${leadNo}`;
-
-      const { data } = await api.get(url, {
+      const { data } = await api.get(`/api/audit/logs?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (data.success) {
-        setAuditLogs(data.data);
+        let logs = data.logs || [];
+        if (filters.performedBy) {
+          logs = logs.filter(l => l.performedBy?.username?.toLowerCase().includes(filters.performedBy.toLowerCase()));
+        }
+        if (filters.startDate) {
+          const start = new Date(filters.startDate);
+          logs = logs.filter(l => new Date(l.timestamp) >= start);
+        }
+        if (filters.endDate) {
+          const end = new Date(filters.endDate);
+          logs = logs.filter(l => new Date(l.timestamp) <= end);
+        }
+        setAuditLogs(logs);
       }
     } catch (err) {
       console.error('Error fetching audit logs:', err);
@@ -91,11 +99,11 @@ export const AuditLogViewer = ({ leadNo, caseNo }) => {
   };
 
   const getActionIcon = (action) => {
-    if (action.includes('CREATED') || action.includes('ADDED') || action.includes('UPLOADED')) {
+    if (action === 'CREATE' || action.includes('CREATED') || action.includes('ADDED') || action.includes('UPLOADED')) {
       return '➕';
-    } else if (action.includes('UPDATED')) {
+    } else if (action === 'UPDATE' || action.includes('UPDATED')) {
       return '✏️';
-    } else if (action.includes('DELETED')) {
+    } else if (action === 'DELETE' || action.includes('DELETED')) {
       return '🗑️';
     } else if (action.includes('VIEWED') || action.includes('COMPARED')) {
       return '👁️';
@@ -110,11 +118,11 @@ export const AuditLogViewer = ({ leadNo, caseNo }) => {
   };
 
   const getActionClass = (action) => {
-    if (action.includes('CREATED') || action.includes('ADDED') || action.includes('UPLOADED')) {
+    if (action === 'CREATE' || action.includes('CREATED') || action.includes('ADDED') || action.includes('UPLOADED')) {
       return 'action-created';
-    } else if (action.includes('UPDATED')) {
+    } else if (action === 'UPDATE' || action.includes('UPDATED')) {
       return 'action-updated';
-    } else if (action.includes('DELETED')) {
+    } else if (action === 'DELETE' || action.includes('DELETED')) {
       return 'action-deleted';
     } else if (action.includes('APPROVED')) {
       return 'action-approved';
@@ -268,43 +276,43 @@ export const AuditLogViewer = ({ leadNo, caseNo }) => {
               <span className="log-timestamp">{formatTimestamp(log.timestamp)}</span>
             </div>
 
-            <div className="log-description">{log.description}</div>
+            <div className="log-description">
+              <strong>{log.entityType}</strong> — {log.action}
+              {log.entityId && <span className="log-entity-id"> ({log.entityId})</span>}
+            </div>
 
             <div className="log-metadata">
               <span className="log-user">
-                <strong>By:</strong> {log.performedBy.username}
-                {log.performedBy.badge && ` (Badge: ${log.performedBy.badge})`}
+                <strong>By:</strong> {log.performedBy?.username || 'Unknown'}
+                {log.performedBy?.role && ` (${log.performedBy.role})`}
               </span>
-              {log.entityType && (
+              {log.metadata?.changedFields?.length > 0 && (
                 <span className="log-entity">
-                  <strong>Entity:</strong> {log.entityType}
-                </span>
-              )}
-              {log.metadata?.ipAddress && (
-                <span className="log-ip">
-                  <strong>IP:</strong> {log.metadata.ipAddress}
+                  <strong>Changed:</strong> {log.metadata.changedFields.join(', ')}
                 </span>
               )}
             </div>
 
-            {log.fieldChanges && log.fieldChanges.length > 0 && (
+            {(log.action === 'UPDATE' || log.action === 'DELETE') && (log.oldValue || log.newValue) && (
               <details className="log-changes">
-                <summary>View Changes ({log.fieldChanges.length} fields)</summary>
+                <summary>View {log.action === 'DELETE' ? 'Deleted Data' : 'Changes'}</summary>
                 <div className="changes-list">
-                  {log.fieldChanges.map((change, idx) => (
-                    <div key={idx} className="change-item">
-                      <div className="change-field">{change.field}:</div>
+                  {log.oldValue && (
+                    <div className="change-item">
+                      <div className="change-field">Before:</div>
                       <div className="change-values">
-                        <span className="old-value">
-                          {JSON.stringify(change.oldValue)}
-                        </span>
-                        <span className="arrow">→</span>
-                        <span className="new-value">
-                          {JSON.stringify(change.newValue)}
-                        </span>
+                        <span className="old-value">{JSON.stringify(log.oldValue, null, 2)}</span>
                       </div>
                     </div>
-                  ))}
+                  )}
+                  {log.newValue && log.action === 'UPDATE' && (
+                    <div className="change-item">
+                      <div className="change-field">After:</div>
+                      <div className="change-values">
+                        <span className="new-value">{JSON.stringify(log.newValue, null, 2)}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </details>
             )}

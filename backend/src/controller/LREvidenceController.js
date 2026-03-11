@@ -2,6 +2,7 @@ const LREvidence = require("../models/LREvidence");
 const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
+const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 
 const asBool = v => v === true || v === "true" || v === 1 || v === "1";
 
@@ -54,6 +55,20 @@ const createLREvidence = async (req, res) => {
     });
 
     await newLREvidence.save();
+
+    await createAuditLog({
+      caseNo: req.body.caseNo, caseName: req.body.caseName,
+      leadNo: req.body.leadNo, leadName: req.body.description,
+      entityType: "LREvidence",
+      entityId: `evidence_${newLREvidence._id}`,
+      action: "CREATE",
+      performedBy: { username: req.user?.name || req.body.enteredBy || "Unknown", role: req.user?.role || "Unknown" },
+      oldValue: null,
+      newValue: sanitizeForAudit(newLREvidence.toObject()),
+      metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent') },
+      accessLevel: accessLevel
+    });
+
     res.status(201).json({ message: "Evidence created successfully", evidence: newLREvidence });
   } catch (err) {
     console.error("Error creating LREvidence:", err);
@@ -94,6 +109,7 @@ const updateLREvidence = async (req, res) => {
     });
     if (!ev) return res.status(404).json({ message: "Evidence not found" });
 
+    const oldEvidence = ev.toObject();
     const isLink = asBool(req.body.isLink);
     const newLink = req.body.link?.trim();
 
@@ -124,6 +140,20 @@ const updateLREvidence = async (req, res) => {
     if (req.body.accessLevel !== undefined) ev.accessLevel = req.body.accessLevel || "Everyone";
 
     await ev.save();
+
+    await createAuditLog({
+      caseNo: ev.caseNo, caseName: ev.caseName,
+      leadNo: ev.leadNo, leadName: ev.description,
+      entityType: "LREvidence",
+      entityId: `evidence_${ev._id}`,
+      action: "UPDATE",
+      performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
+      oldValue: sanitizeForAudit(oldEvidence),
+      newValue: sanitizeForAudit(ev.toObject()),
+      metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent'), changedFields: Object.keys(req.body) },
+      accessLevel: ev.accessLevel || "Everyone"
+    });
+
     return res.json(ev);
   } catch (err) {
     console.error("Error updating LREvidence:", err);
@@ -141,10 +171,24 @@ const deleteLREvidence = async (req, res) => {
       });
       if (!ev) return res.status(404).json({ message: "Evidence not found" });
 
+      const oldEvidence = ev.toObject();
       ev.isDeleted = true;
       ev.deletedAt = new Date();
       ev.deletedBy = req.user?.name || "Unknown";
       await ev.save();
+
+      await createAuditLog({
+        caseNo: ev.caseNo, caseName: ev.caseName,
+        leadNo: ev.leadNo, leadName: ev.description,
+        entityType: "LREvidence",
+        entityId: `evidence_${ev._id}`,
+        action: "DELETE",
+        performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
+        oldValue: sanitizeForAudit(oldEvidence),
+        newValue: null,
+        metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent') },
+        accessLevel: ev.accessLevel || "Everyone"
+      });
 
       return res.json({ message: "Evidence deleted successfully" });
     } catch (err) {

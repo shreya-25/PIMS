@@ -2,6 +2,7 @@ const LRPicture = require("../models/LRPicture");
 const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
+const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 
 const createLRPicture = async (req, res) => {
   try {
@@ -48,6 +49,20 @@ const createLRPicture = async (req, res) => {
     });
 
     await newLRPicture.save();
+
+    await createAuditLog({
+      caseNo: req.body.caseNo, caseName: req.body.caseName,
+      leadNo: req.body.leadNo, leadName: req.body.description,
+      entityType: "LRPicture",
+      entityId: `picture_${newLRPicture._id}`,
+      action: "CREATE",
+      performedBy: { username: req.user?.name || req.body.enteredBy || "Unknown", role: req.user?.role || "Unknown" },
+      oldValue: null,
+      newValue: sanitizeForAudit(newLRPicture.toObject()),
+      metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent') },
+      accessLevel: accessLevel
+    });
+
     return res.status(201).json({ message: "Saved successfully", picture: newLRPicture });
   } catch (err) {
     console.error("Error creating LRPicture:", err.message);
@@ -90,6 +105,8 @@ const updateLRPicture = async (req, res) => {
     });
     if (!pic) return res.status(404).json({ message: "Picture not found" });
 
+    const oldPicture = pic.toObject();
+
     if (req.file) {
       if (pic.s3Key) await deleteFromS3(pic.s3Key);
       const { key } = await uploadToS3({ filePath: req.file.path, userId: caseNo, mimetype: req.file.mimetype });
@@ -106,6 +123,20 @@ const updateLRPicture = async (req, res) => {
     if (req.body.accessLevel !== undefined) pic.accessLevel = req.body.accessLevel || "Everyone";
 
     await pic.save();
+
+    await createAuditLog({
+      caseNo: pic.caseNo, caseName: pic.caseName,
+      leadNo: pic.leadNo, leadName: pic.description,
+      entityType: "LRPicture",
+      entityId: `picture_${pic._id}`,
+      action: "UPDATE",
+      performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
+      oldValue: sanitizeForAudit(oldPicture),
+      newValue: sanitizeForAudit(pic.toObject()),
+      metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent'), changedFields: Object.keys(req.body) },
+      accessLevel: pic.accessLevel || "Everyone"
+    });
+
     return res.json(pic);
   } catch (err) {
     console.error("Error updating LRPicture:", err);
@@ -123,10 +154,24 @@ const deleteLRPicture = async (req, res) => {
     });
     if (!pic) return res.status(404).json({ message: "Picture not found" });
 
+    const oldPicture = pic.toObject();
     pic.isDeleted = true;
     pic.deletedAt = new Date();
     pic.deletedBy = req.user?.name || "Unknown";
     await pic.save();
+
+    await createAuditLog({
+      caseNo: pic.caseNo, caseName: pic.caseName,
+      leadNo: pic.leadNo, leadName: pic.description,
+      entityType: "LRPicture",
+      entityId: `picture_${pic._id}`,
+      action: "DELETE",
+      performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
+      oldValue: sanitizeForAudit(oldPicture),
+      newValue: null,
+      metadata: { ip: req.ip || req.connection?.remoteAddress, userAgent: req.get('user-agent') },
+      accessLevel: pic.accessLevel || "Everyone"
+    });
 
     return res.json({ message: "Picture deleted successfully" });
   } catch (err) {

@@ -10,7 +10,7 @@ const AuditLog = require("../models/AuditLog");
  */
 router.get("/logs", verifyToken, async (req, res) => {
     try {
-        const { caseNo, caseName, leadNo, action, entityType, limit = 50 } = req.query;
+        const { caseNo, caseName, leadNo, action, entityType, limit = 200 } = req.query;
 
         // Build query - filter by both caseNo and leadNo if provided
         const query = {};

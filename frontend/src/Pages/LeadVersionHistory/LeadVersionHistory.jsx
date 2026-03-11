@@ -16,6 +16,7 @@ export const LeadVersionHistory = () => {
   const [comparisonResult, setComparisonResult] = useState(null);
   const [activityLog, setActivityLog] = useState([]);
   const [versionActivityLogs, setVersionActivityLogs] = useState({});
+  const [allAuditLogs, setAllAuditLogs] = useState([]);
 
   useEffect(() => {
     if (selectedLead?.leadNo) {
@@ -191,12 +192,157 @@ export const LeadVersionHistory = () => {
         console.log('All activity logs:', activityLogs);
         setVersionActivityLogs(activityLogs);
       }
+
+      // Fetch all audit logs for this lead
+      try {
+        const auditParams = new URLSearchParams();
+        auditParams.append('leadNo', selectedLead.leadNo);
+        const caseNo = selectedLead.caseNo || selectedCase?.caseNo;
+        if (caseNo) auditParams.append('caseNo', caseNo);
+        auditParams.append('limit', '500');
+        const { data: auditData } = await api.get(`/api/audit/logs?${auditParams.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (auditData.success) {
+          setAllAuditLogs(auditData.logs || []);
+        }
+      } catch (auditErr) {
+        console.error("Error fetching audit logs:", auditErr);
+      }
     } catch (err) {
       console.error("Error fetching version history:", err);
       setError(err.response?.data?.message || "Failed to load version history");
     } finally {
       setLoading(false);
     }
+  };
+
+  // Returns audit logs that fall within this version's time window.
+  // For the newest version (index 0) the window extends to now so that
+  // operations performed after the last snapshot are still visible.
+  const getVersionAuditLogs = (version, versionIndex, allVersions) => {
+    const isNewest = versionIndex === 0;
+    const versionEnd = isNewest ? new Date() : new Date(version.versionCreatedAt);
+    // The previous (older) version defines the start boundary
+    const prevVersion = allVersions[versionIndex + 1];
+    const versionStart = prevVersion ? new Date(prevVersion.versionCreatedAt) : null;
+
+    return allAuditLogs.filter(log => {
+      const ts = new Date(log.timestamp);
+      if (versionStart && ts <= versionStart) return false;
+      if (ts > versionEnd) return false;
+      return true;
+    });
+  };
+
+  // Human-readable field labels per entity type
+  const FIELD_LABELS = {
+    leadReturnResult: 'Narrative',
+    audioDescription: 'Audio Description',
+    dateAudioRecorded: 'Date Recorded',
+    videoDescription: 'Video Description',
+    dateVideoRecorded: 'Date Recorded',
+    evidenceDescription: 'Evidence Description',
+    evidenceType: 'Evidence Type',
+    dateEvidenceCollected: 'Date Collected',
+    pictureDescription: 'Picture Description',
+    datePictureTaken: 'Date Taken',
+    timelineEvent: 'Event',
+    timelineDate: 'Date',
+    timelineDescription: 'Description',
+    scratchpadText: 'Notes',
+    content: 'Content',
+    description: 'Description',
+    accessLevel: 'Access Level',
+    leadReturnId: 'Lead Return ID',
+    enteredDate: 'Entered Date',
+    isLink: 'Is Link',
+    link: 'Link URL',
+  };
+
+  const SKIP_FIELDS = new Set([
+    '_id', '__v', 'caseId', 'leadId', 'leadReturnObjectId', 'enteredByUserId',
+    'caseNo', 'caseName', 'leadNo', 'enteredBy', 'isDeleted', 'deletedAt',
+    'deletedBy', 'filename', 'filePath', 's3Key', 'originalName', 'mimetype',
+    'createdAt', 'updatedAt',
+  ]);
+
+  const formatFieldValue = (val) => {
+    if (val === null || val === undefined) return '(empty)';
+    if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+    if (val instanceof Date || (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(val))) {
+      const d = new Date(val);
+      return isNaN(d) ? val : d.toLocaleString();
+    }
+    if (typeof val === 'object') return JSON.stringify(val);
+    return String(val);
+  };
+
+  const renderHumanReadableDiff = (log) => {
+    const { action, oldValue, newValue, entityType } = log;
+    if (action === 'CREATE') return null;
+
+    const source = action === 'DELETE' ? oldValue : oldValue;
+    const target = action === 'UPDATE' ? newValue : null;
+
+    if (!source && !target) return null;
+
+    // For UPDATE: show only fields that actually changed
+    if (action === 'UPDATE' && source && target) {
+      const changedRows = [];
+      const allKeys = new Set([...Object.keys(source), ...Object.keys(target)]);
+      allKeys.forEach(key => {
+        if (SKIP_FIELDS.has(key)) return;
+        const oldVal = source[key];
+        const newVal = target[key];
+        const oldStr = formatFieldValue(oldVal);
+        const newStr = formatFieldValue(newVal);
+        if (oldStr === newStr) return; // unchanged
+        const label = FIELD_LABELS[key] || key;
+        changedRows.push({ label, oldStr, newStr });
+      });
+
+      if (changedRows.length === 0) return <div style={{ fontSize: '16px', color: '#888', marginTop: '4px' }}>No meaningful field changes detected.</div>;
+
+      return (
+        <div style={{ marginTop: '6px', fontSize: '16px' }}>
+          {changedRows.map(({ label, oldStr, newStr }) => (
+            <div key={label} style={{ marginBottom: '6px', borderLeft: '3px solid #e0a800', paddingLeft: '8px' }}>
+              <div style={{ fontWeight: 600, color: '#555', marginBottom: '2px' }}>{label}</div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, background: '#fff3f3', padding: '4px 6px', borderRadius: '3px', minWidth: '120px' }}>
+                  <span style={{ color: '#999' }}>Before: </span>
+                  <span style={{ color: '#c0392b', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{oldStr}</span>
+                </div>
+                <div style={{ flex: 1, background: '#f3fff3', padding: '4px 6px', borderRadius: '3px', minWidth: '120px' }}>
+                  <span style={{ color: '#999' }}>After: </span>
+                  <span style={{ color: '#27ae60', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{newStr}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // For DELETE: show meaningful fields of deleted record
+    if (action === 'DELETE' && source) {
+      const rows = Object.entries(source).filter(([key]) => !SKIP_FIELDS.has(key));
+      if (rows.length === 0) return null;
+      return (
+        <div style={{ marginTop: '6px', fontSize: '16px', background: '#fff3f3', padding: '8px', borderRadius: '4px' }}>
+          <div style={{ fontWeight: 600, color: '#c0392b', marginBottom: '4px' }}>Deleted record:</div>
+          {rows.map(([key, val]) => (
+            <div key={key} style={{ marginBottom: '2px' }}>
+              <span style={{ color: '#888' }}>{FIELD_LABELS[key] || key}: </span>
+              <span style={{ color: '#333', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{formatFieldValue(val)}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    return null;
   };
 
   const viewVersionDetails = async (versionId) => {
@@ -1111,7 +1257,7 @@ export const LeadVersionHistory = () => {
           </div>
         )}
 
-        {versions.map((version) => (
+        {versions.map((version, versionIndex) => (
           <div
             key={version.versionId}
             ref={(el) => { versionCardRefs.current[version.versionId] = el; }}
@@ -1177,14 +1323,15 @@ export const LeadVersionHistory = () => {
               </div>
             </div>
 
-            {/* Activity Log Section - Show what changed in this version */}
+            {/* Audit log count badge - always visible on card */}
             {(() => {
-              console.log(`Version ${version.versionId} activity check:`, {
-                hasLogs: !!versionActivityLogs[version.versionId],
-                logsLength: versionActivityLogs[version.versionId]?.length,
-                logs: versionActivityLogs[version.versionId]
-              });
-              return null;
+              const count = getVersionAuditLogs(version, versionIndex, versions).length;
+              if (count === 0) return null;
+              return (
+                <div style={{ marginTop: '8px', fontSize: '16px', color: '#0077cc' }}>
+                  📋 {count} audit log{count !== 1 ? 's' : ''} — click <strong>View Details</strong> to see Audit Trail
+                </div>
+              );
             })()}
             {versionActivityLogs[version.versionId] && versionActivityLogs[version.versionId].length > 0 && (
               <div className="activity-log-section">
@@ -1395,6 +1542,48 @@ export const LeadVersionHistory = () => {
                 )}
 
                 <h5>Full Details</h5>
+
+                {/* Audit Trail & Chain of Custody */}
+                {(() => {
+                  const versionAuditLogs = getVersionAuditLogs(version, versionIndex, versions);
+                  if (versionAuditLogs.length === 0) return null;
+                  return (
+                    <div className="details-section">
+                      <h6>Audit Trail &amp; Chain of Custody ({versionAuditLogs.length})</h6>
+                      <div className="activity-log-detailed">
+                        {versionAuditLogs.map((log, idx) => (
+                          <div key={log._id || idx} className={`activity-detail-item activity-${log.action === 'CREATE' ? 'created' : log.action === 'UPDATE' ? 'updated' : 'deleted'}`}>
+                            <div className="activity-summary">
+                              <span className={`activity-badge ${log.action === 'CREATE' ? 'created' : log.action === 'UPDATE' ? 'updated' : 'deleted'}`}>
+                                {log.action === 'CREATE' && '➕ Created'}
+                                {log.action === 'UPDATE' && '✏️ Updated'}
+                                {log.action === 'DELETE' && '🗑️ Deleted'}
+                              </span>
+                              <span className="activity-entity-type">{log.entityType}</span>
+                              <span className="activity-officer">by {log.performedBy?.username || 'Unknown'}</span>
+                              <span className="activity-timestamp">{formatDate(log.timestamp)}</span>
+                            </div>
+                            {log.metadata?.changedFields && (
+                              <div style={{ fontSize: '16px', color: '#555', marginTop: '4px' }}>
+                                Changed fields: {Array.isArray(log.metadata.changedFields)
+                                  ? log.metadata.changedFields.join(', ')
+                                  : log.metadata.changedFields}
+                              </div>
+                            )}
+                            {(log.action === 'UPDATE' || log.action === 'DELETE') && (log.oldValue || log.newValue) && (
+                              <details style={{ marginTop: '6px' }}>
+                                <summary style={{ cursor: 'pointer', fontSize: '16px', color: '#0077cc' }}>
+                                  {log.action === 'DELETE' ? 'View deleted data' : 'View changes'}
+                                </summary>
+                                {renderHumanReadableDiff(log)}
+                              </details>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Activity Log - Show what changed in this version */}
                 {versionActivityLogs[version.versionId] !== undefined && (
@@ -1658,6 +1847,7 @@ export const LeadVersionHistory = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };
