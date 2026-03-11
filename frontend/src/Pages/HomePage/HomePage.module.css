@@ -1,275 +1,77 @@
-
-
-.main-page-bodyhp
-{
-  width: 100%;
-  font-family: Arial, sans-serif;
-  overflow: hidden;
-
+:root {
+  --nav-h: 110px;
+  --sidebar-w: 300px;
 }
 
-:root{
-  /* these should already exist globally; keep them in one place app-wide */
-  --nav-h: 110px;     /* navbar height */
-  --sidebar-w: 300px; /* sidebar width */
-}
+/* ─── Page layout ─────────────────────────────────────────────────────────── */
 
-.main-page-contenthp
-{
+/* Root page wrapper */
+.case-page-manager {
   display: flex;
-  justify-content: center;
-  flex-direction:column;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-  flex: 1 1 auto;     /* fill remaining height under Navbar */
+  flex-direction: column;
+  min-height: 100dvh;
 }
 
-.main-page-abovepart
-{
+/* Main content area sits to the right of the fixed sidebar */
+.main-container {
+  margin-left: 20%;
+  width: 80%;
+  padding-left: 20px;
+  padding-top: var(--nav-h);
+  box-sizing: border-box;
+  min-height: 100dvh;
+  overflow-y: auto;
+}
+
+/* Scrollable column that holds all tab content */
+.left-content {
+  flex: 1;
+  overflow-y: auto;
   display: flex;
-  justify-content: center;
-  flex-direction:column;
+  flex-direction: column;
+}
+
+/* Upper section (notifications view) */
+.main-page-abovepart {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   width: 100%;
-  height: auto;
-  justify-content: center;
   flex: 0 0 auto;
   margin-top: 20px;
 }
 
-.main-page-content {
+/* Lower section (case management tables) */
+.main-page-belowpart {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
-  overflow: hidden;
-}
-
-.main-pagehp {
-  flex: 1 1 auto;
-  overflow-y: auto;
-}
-
-.main-pagehp {
+  align-items: center;
   width: 99%;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  font-family: Arial, sans-serif;
-  align-items: center;
-  flex: 1 1 auto;     /* take all leftover space */
+  box-sizing: border-box;
+  margin-top: 20px;
   overflow-y: auto;
+  max-height: calc(100dvh - var(--nav-h) - 20px);
 }
 
-/* logo section */
-.logo-sec
-{
-  display: flex;
-  align-items: center; /* Vertically centers content */
-  justify-content: center; /* Horizontally centers content */
-  gap: 10px; /* Add space between the logo and heading */
-  height: 25%;
-  margin-left: 2%;
-}
-.police-logo-main-page
-{
-  height: 200px;
-  margin: 2%;
-}
-.main-page-heading
-{
-  margin: 5%;
-  font-size: 60px;
-}
+/* ─── Tab navigation bar ──────────────────────────────────────────────────── */
 
-.add-case-section
-{
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin:8px;
-}
-.add-case-section h2{
-  margin: 8px 0px;
-}
-
-/* Sidebar styling */
-.SideBar {
-  background-color: #2c3e50; /* Example background color */
-  color: white;
-  padding: 20px;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-  height: 100%; /* Full height */
-  width: 100%;
-  overflow-y: auto; /* Scrollable if content overflows */
-}
-
-/* Content container styling */
-.content-container {
-  width: 100%;
-  /* flex: 1; */
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto; /* Scrollable content if necessary */
-  margin-left: -100%;
-  margin-top: 7%;
-  align-items: center;
-}
-
-.above-sec-MP {
-  height: 20%;
-  width:70%;
-  min-height: 150px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-left: 50px;
-
-}
-.top-controlsMP {
-  padding: 1%;
-  width: 25%;
-  height: 20%;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: flex-start;
-  gap: 20px;
-}
-
-.search-container
-{
-  width: 100%;
-  height: 20%;
-}
-
-.custom-add-case-btn1 {
-  background-color: rgb(41, 41, 139);
-  color: white;
-  border: none;
-  font-size: 20px;
-}
-
-.add-case-button:hover {
-  background-color: rgba(25, 58, 73, 0.795);
-}
-
-
-.police-logo {
-  width: 250px; /* Increased size for a larger logo */
-  height: auto; /* Maintain aspect ratio */
-  margin-bottom: 10px; /* Add some spacing below the logo */
-}
-
-.pims-heading {
-  font-size: 70px;
-  font-weight: bold;
-}
-
-.main-page .left-section .police-logo {
-  width: 150px;
-  height: auto;
-  margin-bottom: 10px;
-}
-
-.case-overview-sec
-{
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-}
-.content-area {
-  width: 80%;
-  padding: 20px;
-}
-
- .main-page-belowpart
- {
- display: flex;
- flex-direction: column;
-    align-items: center;
-    height: auto;
-    width: 99%;
-    box-sizing: border-box;
-    margin-top: 20px;
-  }
-
-/* Header bar styling */
 .stats-bar {
   display: flex;
   justify-content: space-around;
+  align-items: center;
   background-color: rgb(41, 41, 139);
   border-radius: 5px;
-  font-size: 18px;
-  width:95%;
-  align-items: center;
- margin-top: 8px;
-}
-
-/* Stats Bar */
-.stats-bar {
-  display: flex;
-  justify-content: space-around;
+  width: 95%;
+  margin-top: 8px;
   padding: 10px;
-  border-radius: 5px;
-  font-size: 14px;
-  align-items: center;
-  font-size: 18px;
 }
 
-.stats-bar .hoverable {
-  cursor: pointer;
-  font-weight: bold;
-  color: white; /* White text */
-  text-align: center;
-  padding: 5px 10px;
-  border-radius: 5px;
-  transition: all 0.3s ease-in-out;
-}
-
-/* Active Tab */
-.stats-bar .active {
-  color: white;
-  font-weight: bold;
-  padding: 5px 10px;
-  border-radius: 5px;
-}
-
-
-/* Header items (tabs) */
-.stats-bar .hoverable {
-  cursor: pointer;
-  font-weight: bold;
-  color: white; /* White text for contrast */
-  text-align: center;
-  padding: 5px;
-  border-radius: 5px;
-  transition: all 0.3s ease-in-out; /* Smooth hover and active transitions */
-  font-size: 18px;
-}
-
-/* Hover effect for header items */
-.stats-bar .hoverable:hover {
-  background-color: rgb(96, 96, 179); /* Darker grey for hover effect */
-}
-
-/* Active tab styling */
-.stats-bar .active {
-  background-color: rgb(96, 96, 179);
-  color: white; /* Consistent white text */
-  text-decoration: none; /* Remove underline */
-  font-weight: bold;
-  padding: 5px 10px;
-  border-radius: 5px;
-}
-
-/* Avoid layout shifting */
+/* Each tab item */
 .stats-bar span {
-  flex: 1 1 30%; /* Ensures equal spacing for all tabs */
-  text-align: center; /* Center-align text */
+  flex: 1 1 30%;
+  text-align: center;
 }
 
-/* CSS Modules: hoverable and active as standalone classes (used via template literals) */
 .hoverable {
   cursor: pointer;
   font-weight: bold;
@@ -277,8 +79,8 @@
   text-align: center;
   padding: 5px 10px;
   border-radius: 5px;
-  transition: all 0.3s ease-in-out;
   font-size: 18px;
+  transition: background-color 0.3s ease-in-out;
 }
 
 .hoverable:hover {
@@ -293,442 +95,61 @@
   border-radius: 5px;
 }
 
-/* Content sections container */
+/* ─── Content section ─────────────────────────────────────────────────────── */
+
 .content-section {
   padding: 8px;
-  margin-top: 8px;
   width: 95%;
-  margin: 0 auto; /* Centers horizontally */
+  margin: 0 auto;
 }
 
-.icon-image
-{
-  height: 20px;
-  width: 20px;
-  filter: brightness(0) saturate(100%);
-  opacity: 0.6;
-}
-.filter-sort-icons
-{
-  display: flex;
-  gap: 10px;
-}
+/* ─── Table ───────────────────────────────────────────────────────────────── */
 
-/* Case and lead items */
-.lead-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  border: 1px solid #ddd; /* Light grey border */
-  border-radius: 5px;
-  margin-bottom: 10px;
-  background-color: #fff; /* White background */
-  transition: background-color 0.2s ease-in-out; /* Smooth hover transition */
-  font-size: 20px;
-}
-
- .icon-button img {
-  width: 25px;
-  height: 25px;
-}
-
-.column-header {
-  position: relative;
-}
-
-/* column-header1 is used in JSX for th elements */
-.column-header1 {
-  position: relative;
-}
-
-/* Hover effect for case and lead items */
-.lead-item:hover {
-  background-color: rgba(22, 83, 87, 0.03); /* Light greenish tint for hover */
-}
-
+/* Horizontally scrollable table wrapper */
 .table-scroll-container {
-  max-height: 900px;      /* adjust height */
-  overflow-y: auto;
+  width: 100%;
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100dvh - var(--nav-h) - 20px);
+  -webkit-overflow-scrolling: touch;
 }
 
-.table-scroll-container table thead th {
+.table-scroll-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 4px;
+}
+
+/* Shared table used across all three tabs */
+.leads-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin-top: 8px;
+  min-width: 1000px;
+}
+
+.leads-table th,
+.leads-table td {
+  padding: 4px;
+  text-align: left;
+  border: 1px solid #ddd;
+  font-size: 18px;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.leads-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+  color: #333;
   position: sticky;
   top: 0;
 }
-
-.table-scroll-container table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-
-/* General Table Styling */
-.leads-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 8px;
-  table-layout: fixed;
-}
-
-.leads-table th,
-.leads-table td {
-  padding: 4px;
-  text-align: left;
-  border: 1px solid #ddd;
-  font-size: 18px;
-  word-wrap: break-word; /* Ensures text wraps inside the cell */
-  overflow-wrap: break-word; /* Helps break long words */
-  white-space: normal; /* Allows text to wrap */
-}
-
-.leads-table th {
-  color: #333;    /* or whatever dark colour you want */
-}
-
-.leads-table th {
-  background-color: #f2f2f2;
-  font-weight: bold;
-}
-
-.leads-table tr:nth-child(even) {
-  background-color: #f9f9f9;
-}
-
-.leads-table th:nth-child(1),
-.leads-table td:nth-child(1) {
-  min-width: 5px; /* Lead Name */
-  max-width: 5px;
-}
-
-.leads-table th:nth-child(2),
-.leads-table td:nth-child(2) {
-  min-width: 250px; /* Lead Name */
-  max-width: 250px;
-}
-
-.leads-table th:nth-child(3),
-.leads-table td:nth-child(3) {
-  min-width: 70px; /* Due Date */
-  max-width: 70px;
-}
-
-.leads-table th:nth-child(4),
-.leads-table td:nth-child(4) {
-  min-width: 40px; /* Priority */
-  max-width: 40px;
-}
-
-.leads-table th:nth-child(5),
-.leads-table td:nth-child(5) {
-  min-width: 40px; /* Remaining Days */
-  max-width: 40px;
-}
-
-.leads-table th:nth-child(6),
-.leads-table td:nth-child(6) {
-  min-width: 50px; /* Flags */
-  max-width: 50px;
-}
-
-.leads-table th:nth-child(7),
-.leads-table td:nth-child(7) {
-  min-width: 190px; /* Assigned Officers */
-  max-width: 190px;
-}
-
-.leads-table td:last-child {
-  min-width: 50px; /* Flags */
-  max-width: 50px;
-
-}
-
-.btn-sec-HP
-{
-  display: flex;
-}
-
-.manage-btn, .case-close-btn
-{
-     padding: 8px 16px;
-    margin-right: 10px;
-    border: none;
-    border-radius: 5px;
-    color: white;
-    cursor: pointer;
-}
-
-.manage-btn{
-  background-color: rgb(41, 41, 139);
-}
-
-
-
-/*  Ongoing case table  */
-/* General Table Styling */
-.ongoing-case-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-  table-layout: fixed;
-}
-
-.ongoing-case-table th,
-.ongoing-case-table td {
-  padding: 10px;
-  text-align: left;
-  border: 1px solid #ddd;
-  font-size: 20px;
-  word-wrap: break-word; /* Ensures text wraps inside the cell */
-  overflow-wrap: break-word; /* Helps break long words */
-  white-space: normal; /* Allows text to wrap */
-}
-
-.ongoing-case-table th {
-  background-color: #f2f2f2;
-  font-weight: bold;
-}
-
-.ongoing-case-table tr:nth-child(even) {
-  background-color: #f9f9f9;
-}
-
-.ongoing-case-table th:nth-child(1),
-.ongoing-case-table td:nth-child(1) {
-  min-width: 30px; /* Lead Name */
-  max-width: 30px;
-}
-
-.ongoing-case-table th:nth-child(2),
-.ongoing-case-table td:nth-child(2) {
-  min-width: 250px; /* Lead Name */
-  max-width: 250px;
-}
-
-.ongoing-case-table th:nth-child(3),
-.ongoing-case-table td:nth-child(3) {
-  min-width: 50px; /* Due Date */
-  max-width: 50px;
-}
-.ongoing-case-table th:last-child,
-.ongoing-case-table td:last-child {
-  width: auto;
-  text-align: center;
-}
-
-.ongoing-case-table td:last-child {
-  text-align: center;
-  display: flex;
-  flex-direction: column; /* Stack buttons vertically */
-  align-items: center; /* Center align buttons */
-  gap: 10px; /* Adds spacing between buttons */
-  padding: 10px;
-}
-
-
-/* ############################## */
-
-
-/*  Pending lr table  */
-/* General Table Styling */
-.pending-lr-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-
-.pending-lr-table th,
-.pending-lr-table td {
-  padding: 10px;
-  text-align: left;
-  border: 1px solid #ddd;
-  font-size: 20px;
-  word-wrap: break-word; /* Ensures text wraps inside the cell */
-  overflow-wrap: break-word; /* Helps break long words */
-  white-space: normal; /* Allows text to wrap */
-}
-
-
-.pending-lr-table th {
-  background-color: #f2f2f2;
-  font-weight: bold;
-}
-
-
-.pending-lr-table th{
-  background-color: #00000000; /* Darker grey */
-  color: rgb(39, 36, 36); /* Keep text visible on dark background */
-}
-
-.pending-lr-table tr:nth-child(even) {
-  background-color: #f9f9f9;
-}
-
-.pending-lr-table th:nth-child(1),
-.pending-lr-table td:nth-child(1) {
-  min-width: 40px;
-  max-width: 40px;
-}
-
- .pending-lr-table th:nth-child(3),
-.pending-lr-table td:nth-child(3) {
-  min-width: 50px;
-  max-width: 50px;
-}
-
-
-/* ############################## */
-
-/* General Table Styling */
-.all-lead-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-
-.all-lead-table th,
-.all-lead-table td {
-  padding: 10px;
-  text-align: left;
-  border: 1px solid #ddd;
-  font-size: 20px;
-  word-wrap: break-word; /* Ensures text wraps inside the cell */
-  overflow-wrap: break-word; /* Helps break long words */
-  white-space: normal; /* Allows text to wrap */
-}
-
-.all-lead-table th {
-  background-color: #f2f2f2;
-  font-weight: bold;
-}
-
-.all-lead-table tr:nth-child(even) {
-  background-color: #f9f9f9;
-}
-
-.all-lead-table th:nth-child(1),
-.all-lead-table td:nth-child(1) {
-  min-width: 60px;
-  max-width: 60px;
-}
-
- .all-lead-table th:nth-child(3),
-.all-lead-tabletd:nth-child(3) {
-  min-width: 20px;
-  max-width: 20px;
-}
-
-.all-lead-table th:nth-child(4),
-.all-lead-table td:nth-child(4) {
-  min-width: auto;
-  max-width: auto;
-}
-
-
-/* Buttons for actions */
-.accept-lead-button,
-.continue-lead-button {
-  margin-right: 10px;
-  padding: 5px 10px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.2s ease-in-out; /* Smooth hover effect */
-}
-
-/* Close button */
- .close-button {
-  background-color: #4e8543; /* Orange */
-  color: white;
-  font-size: 18px;
-}
-
-/* Delete button */
- .delete-button {
-  background-color: #f44336; /* Red */
-  color: white;
-}
-
-.delete-button:hover {
-  background-color: #d32f2f; /* Darker red for hover */
-}
-
-/* Accept button */
-.accept-lead-button {
-  background-color: #0D8790;
-  color: white;
-  font-size: 20px;
-}
-
-.accept-lead-button:hover {
-  background-color: #728d8f;
-  font-size: 20px;
-}
-
-/* Continue button */
-.continue-lead-button {
-  background-color: #4e8543;
-  color: white;
-  font-size: 20px;
-}
-
-.continue-lead-button:hover {
-  background-color: #4e8543;
-}
-
-/* Filter and Sort Controls */
-.filter-sort-controls {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 20px;
-  gap: 10px;
-}
-
-.filter-rule {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.filter-rule input,
-.filter-rule select {
-  padding: 5px;
-  font-size: 20px;
-}
-
-.filter-rule button {
-  padding: 5px 10px;
-  background-color: #f44336;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-.filter-rule button:hover {
-  background-color: #d32f2f;
-}
-
-/* Leads Table */
-.leads-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 8px;
-}
-
-.leads-table th,
-.leads-table td {
-  border: 1px solid #bbb;
-  padding: 4px;
-  text-align: left;
-  font-size: 18px;
-}
-
-.leads-table th {
-  background-color: #00000000; /* Darker grey */
-  color: rgb(39, 36, 36); /* Keep text visible on dark background */
-}
-
 
 .leads-table tr:nth-child(even) {
   background-color: #f9f9f9;
@@ -738,681 +159,87 @@
   background-color: rgba(87, 95, 95, 0.1);
 }
 
-/* Buttons */
-.accept-lead-button,
-.delete-button,
-.close-button,
-.view-lead-button {
-  margin: 5px;
-  padding: 8px 12px;
-  font-size: 18px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
+/* ─── Column headers with filter buttons ─────────────────────────────────── */
 
-.view-lead-button {
-  background-color: #2196f3;
-  color: white;
-}
-
-.view-lead-button:hover {
-  background-color: #1976d2;
-}
-
-.lead-list {
-  list-style-type: none;
-  padding: 0;
-}
-
-.lead-item {
-  margin-bottom: 10px;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  background-color: #f9f9f9;
-}
-
-.lead-list .lead-item span {
-  font-size: 18px; /* Adjust the size as needed */
-}
-
-.lead-item:hover {
-  background-color: rgba(52, 57, 58, 0.03);
-  cursor: pointer;
-}
-
-.filter-sort-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding: 10px;
-  background-color: #f5f5f5;
-  border-radius: 5px;
-}
-
-.filter-container,
-.sort-container {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.filter-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.filter-button,
-.clear-filter-button,
-.clear-sort-button,
-.close-filter-button {
-  background-color: #2196f3;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.filter-button:hover,
-.clear-filter-button:hover,
-.clear-sort-button:hover,
-.close-filter-button:hover {
-  background-color: #1976d2;
-}
-
-.leads-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 8px;
-}
-
-.leads-table th,
-.leads-table td {
-  border: 1px solid #ddd;
-  padding: 4px;
-  text-align: left;
-}
-
-.leads-table th {
-  background-color: #f2f2f2;
-}
-
-/* Popup Overlay */
-.popup-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.6); /* Slightly darker overlay */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-/* Close button styling */
-.close-popup-btn {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  background-color: transparent;
-  border: none;
-  font-size: 30px;
-  font-weight: bold;
-  color: #555;
-  cursor: pointer;
-  transition: color 0.3s ease;
-}
-
-.close-popup-btn:hover {
-  color: #323638; /* Red color on hover */
-}
-
-/* Flex behavior for the table */
-.leads-table th,
-.leads-table td {
-  flex: 1 1 100%; /* Allow full width by default */
-  max-width: 100%; /* Prevent overflow */
-}
-
-/* Popup Content */
-.popup-content {
-  background-color: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  width: 70%;
-  height:90%;
-  max-width: 900px;
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
-  font-family: Arial, sans-serif;
+.column-header1 {
   position: relative;
-  overflow-y: auto; /* Enables vertical scrolling */
-  overflow-x: hidden; /* Hides horizontal scrolling */
 }
 
-.filter-sort-section {
-  display: flex;
-  flex-wrap: wrap; /* Allow wrapping for smaller screens */
-  justify-content: space-evenly;
-  gap: 5px;
-}
-
-/* Filters and Sorting Containers */
-.filters,
-.sorting {
-  margin-bottom: 20px;
-  width: 50%;
-}
-
-.filters:hover,
-.sorting:hover {
-  transform: scale(1.02); /* Slight zoom on hover */
-}
-
-.sorting select {
-  width: 100%; /* Full width for dropdown */
-  padding: 10px;
-  font-size: 20px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  margin-bottom: 10px;
-}
-
-.filter-item button {
-  margin-top: 5px;
-}
-
-.filter-item {
-  display: flex;
-  flex-direction: column; /* Stack label and input/dropdown */
-  width: 100%; /* Ensure the container is full width */
-  max-width: 500px; /* Ensure a consistent max width for all items */
-  gap: 10px;
-  margin-bottom: 10px;
-
-}
-
-.filter-dropdown {
-  appearance: none; /* Removes default styling */
-  -webkit-appearance: none; /* For Safari */
-  -moz-appearance: none; /* For Firefox */
-}
-
-
-.filter-item label {
-  display: block;
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-
-.filter-input-group {
-  display: flex;
-  align-items: center;
-  gap: 10px; /* Add space between the input/dropdown and the button */
-  width: 100%; /* Ensure it takes the full width */
-}
-
-.filter-input,
-.filter-dropdown,
-.sort-dropdown {
-  display: block; /* Ensure consistent block display */
-  width: 100%; /* Use the full width of the container */
-  max-width: 600px; /* Increased maximum width */
-  padding: 12px; /* Add uniform padding */
-  font-size: 20px; /* Increase font size for better readability */
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  box-sizing: border-box; /* Include padding and border in the width */
-}
-
-/* Placeholder Text Styling */
-.filter-input::placeholder,
-.filter-dropdown::placeholder,
-.sort-dropdown::placeholder {
-  color: rgb(8, 8, 8, 0.575);
-}
-
-
-.clear-button {
-  background-color: #5c5f5c;
-  color: white;
-  padding: 10px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  width:100%;
-  font-size: 20px;
-}
-
-.close-btn
-{
-  background-color: rgb(160, 39, 39);
-  color:white;
-  height: 100px;
-  width:100px;
-}
-
-.clear-button:hover {
-  background-color: #b9beb9;
-}
-
-.apply-button {
-  background-color: #5c5f5c;
-  color: white;
-  width: 60%;
-  padding: 15px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 20px;
-  margin-left: 20%;
-}
-
-.apply-button:hover {
-  background-color: #b9beb9;
-}
-
-.filter-sort-button {
-  margin-bottom: 20px;
-  background-color: #2196f3;
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 20px;
-}
-
-.filter-sort-button:hover {
-  background-color: #1976d2;
-}
-.filter-label
-{
-  font-size: 20px;
-}
-
-/* General styling for the lead list */
-.lead-list {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-}
-
-.lead-item {
+/* Header cell layout: label + filter button side by side */
+.header-title {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px;
-  margin: 5px 0;
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  transition: box-shadow 0.3s ease;
+  position: relative;
 }
 
-.lead-item:hover {
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-/* Styling for the buttons */
-.view-btn1,
-.accept-btn {
-  padding: 8px;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  font-size: 18px;
-  width: 100px;
-}
-
-.view-btn1 {
-  background-color: rgb(41, 41, 139);
-  color: #fff;
-}
-
-.view-btn1:hover {
-  background-color: rgb(96, 96, 179);
-}
-
-.case-close-btn {
-  background-color: #7c2121de;
-  color: #fff;
-}
-
-.case-close-btn:hover {
-  background-color: #ad29296c;
-}
-
-
-.accept-btn {
-  background-color: rgba(25, 58, 73, 0.795);
-  color: #fff;
-}
-
-.accept-btn:hover {
-  background-color: rgba(25, 58, 73, 0.459);
-}
-
-/* Adding some spacing and alignment */
-.lead-item span {
-  flex-grow: 1;
-}
-
-
-
-
-/* General button styles */
-.button {
-  display: inline-block;
-  padding: 10px 20px;
-  font-size: 20px;
-  font-weight: bold;
-  text-align: center;
-  color: #fff;
-  background-color: #007bff;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  min-width: 100px;
-  min-height: 100px;
-
-}
-
-/* Button hover state */
-.button:hover {
-  background-color: #0056b3;
-}
-
-/* Button active state */
-.button:active {
-  transform: scale(0.98);
-}
-
-/* Secondary button styles */
-.button-secondary {
-  background-color: #6c757d;
-}
-
-.button-secondary:hover {
-  background-color: #5a6268;
-}
-
-/* Disabled button styles */
-.button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-.done-btn {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  padding: 8px 16px;
-  cursor: pointer;
-  font-size: 20px;
-  transition: background-color 0.3s ease;
-}
-
-.done-btn:hover {
-  background-color: #0056b3;
-}
-
-
-.continue-btn {
-  background-color: rgba(25, 58, 73, 0.795);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  cursor: pointer;
-  font-size: 20px;
-  transition: background-color 0.3s ease;
-}
-
-.continue-btn:hover {
-  background-color: rgba(25, 58, 73, 0.459);
-}
-
-/* Delete Button Specific Styling */
-.delete-btn {
-  background-color: #7a262f; /* Red */
-}
-
-.delete-btn:hover {
-  background-color: #794046; /* Darker Red */
-}
-
-/* General Styling for Navbar Buttons */
-.navbar-buttons {
-  display: flex;
-  align-items: center;
-  gap: 10px; /* Add spacing between icons and buttons */
-}
-
-
-
-/* Prevent Button Overlapping Icons */
-.navbar-icons {
-  display: inline-flex;
-  align-items: center;
-  margin-right: 10px; /* Add margin between icons */
-}
-
-/* Case details take up remaining space */
-.case-details {
-  flex-grow: 1;
-  font-size: 20px;
-}
-
-.case-item {
-  display: flex; /* Horizontal alignment for case details and actions */
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  margin-bottom: 10px;
-  background-color: #f9f9f9;
-}
-
-
-/* Buttons container for case actions */
-.case-actions {
-  display: flex; /* Arrange buttons horizontally */
-  gap: 10px; /* Space between buttons */
-  align-items: center; /* Ensure vertical alignment */
-  justify-content: flex-end; /* Align buttons to the end of the container */
-}
-
-.case-actions button {
-  padding: 8px 12px;
-  font-size: 20px;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-
-/* Close Button */
-.close-btn {
-  background-color: #0D8790; /* Green */
-}
-
-.close-btn:hover {
-  background-color: #0D8790; /* Darker green */
-}
-
-/* Delete Button */
-.delete-btn {
-  background-color: #a05252; /* Red */
-}
-
-.delete-btn:hover {
-  background-color: #a05252; /* Darker red */
-}
-
-@media (max-width: 480px) {
-  .leads-table {
-    display: none;
-  }
-
-  .lead-cards {
-    display: block;
-  }
-
-  .lead-card {
-    display: flex;
-    flex-direction: column;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    padding: 10px;
-    background-color: #fff;
-  }
-
-  .lead-card div {
-    margin-bottom: 5px;
-  }
-
-  .lead-card .card-title {
-    font-weight: bold;
-    font-size: 18px;
-  }
-
-  .lead-card .card-actions {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 10px;
-  }
-
-  .lead-card button {
-    padding: 8px 12px;
-    font-size: 14px;
-    border-radius: 5px;
-    cursor: pointer;
-  }
-
-  .view-btn1 {
-    color: white;
-  }
-
-  .accept-btn {
-    background-color: #0D8790;
-    color: white;
-  }
-}
-
-/* Scrollable table wrapper for small screens */
-.table-scroll-container {
-  width: 100%;
-  overflow-x: auto;
-}
-
-/* Optional: Better appearance for scrollbars */
-.table-scroll-container::-webkit-scrollbar {
-  height: 8px;
-}
-.table-scroll-container::-webkit-scrollbar-thumb {
-  background-color: #ccc;
-  border-radius: 4px;
-}
-
-
-/* #################### Responsive Table Design  ############################*/
-
-/* Scroll container */
-.table-scroll-container {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
-}
-
-.leads-table {
-  table-layout: fixed;
-  border-collapse: collapse;
-  width: 1000px;
-  min-width: 1000px;
-}
-
-
-/* Ensure wrapping inside columns */
-.leads-table th,
-.leads-table td {
-  padding: 4px;
-  border: 1px solid #ddd;
-  text-align: left;
-  font-size: 18px;
-  white-space: normal;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-}
-.header-title
-{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 .header-title button {
-  margin-left: 0;
   padding: 0;
   font-size: 20px;
   border: none;
   background: none;
+  margin-left: 0;
 }
 
-/* make the header cell a positioning context */
-.header-title {
-  position: relative;
+/* Filter/sort icon inside column headers */
+.icon-image {
+  height: 20px;
+  width: 20px;
+  filter: brightness(0) saturate(100%);
+  opacity: 0.6;
 }
 
+/* ─── Action buttons ──────────────────────────────────────────────────────── */
 
-/* New Changes  */
-
-/* Everything to the right of the fixed sidebar */
-.main-container,
-.main-page-contenthp,
-.main-page-content{
-  margin-left: 20%;
-  width: 80%;
-  padding-left: 20px;
-  padding-top: var(--nav-h);
-  box-sizing: border-box;
-  min-height: 100dvh;
-  overflow-y: auto;
-}
-
-/* The scroller area(s) inside your content */
-.table-scroll-container,
-.main-pagehp,
-.main-page-belowpart {
-  overflow-y: auto;
-  max-height: calc(100dvh - var(--nav-h) - 20px);
-}
-
-/* ── New classes used in JSX ── */
-
-.case-page-manager {
+/* Container for multiple buttons in one cell */
+.btn-sec-HP {
   display: flex;
-  flex-direction: column;
-  min-height: 100dvh;
 }
 
-.left-content {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+.manage-btn,
+.case-close-btn,
+.view-btn1,
+.continue-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
 }
 
-.assigned-leads {}
+.manage-btn,
+.view-btn1,
+.continue-btn {
+  background-color: #1a73e8;
+}
 
-.pending-leads {}
+.manage-btn:hover,
+.view-btn1:hover,
+.continue-btn:hover {
+  background-color: #1558b0;
+}
 
-.pending-lead-returns {}
+.manage-btn {
+  margin-right: 10px;
+}
+
+.case-close-btn {
+  background-color: #c0392b;
+}
+
+.case-close-btn:hover {
+  background-color: #a93226;
+}
+
+/* Add Case button passed as a className string to SlideBar */
+.custom-add-case-btn1 {
+  background-color: rgb(41, 41, 139);
+  color: white;
+  border: none;
+  font-size: 20px;
+}

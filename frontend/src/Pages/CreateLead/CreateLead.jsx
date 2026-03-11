@@ -1084,7 +1084,7 @@ useEffect(() => {
                       className={styles.inputField}
                       value={leadData.subCategory}
                       onChange={(e) => handleInputChange('subCategory', e.target.value)}
-                      placeholder="e.g. SUB-000001, SUB-000002"
+                      placeholder="e.g. suspect-info"
                     />
                   </td>
                 </tr>

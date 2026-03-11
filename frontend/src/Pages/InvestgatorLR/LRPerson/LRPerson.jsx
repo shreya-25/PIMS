@@ -1,966 +1,704 @@
-import React, { useContext, useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate, Link } from "react-router-dom";
-import { CaseContext } from "../../CaseContext";
-import axios from "axios";
-import PersonModal from "../../../components/PersonModal/PersonModel";
-import Comment from "../../../components/Comment/Comment";
-
+/**
+ * LRPerson.jsx
+ *
+ * Lead Persons Details page — displays all person records associated with
+ * a specific lead. Investigators can view, edit, and delete entries they
+ * own. Case managers additionally control access levels per record and
+ * can generate a full lead report as a PDF.
+ */
+import { useContext, useState, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { CaseContext } from '../../CaseContext';
+import PersonModal from '../../../components/PersonModal/PersonModel';
 import Navbar from '../../../components/Navbar/Navbar';
 import styles from './LRPerson.module.css';
-import api, { BASE_URL } from "../../../api";
-import {SideBar } from "../../../components/Sidebar/Sidebar";
-import { AlertModal } from "../../../components/AlertModal/AlertModal";
+import api from '../../../api';
+import { SideBar } from '../../../components/Sidebar/Sidebar';
+import { AlertModal } from '../../../components/AlertModal/AlertModal';
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
-import { ActivityLog } from '../../../components/ActivityLog/ActivityLog';
 
+// ─── Module-level utilities ───────────────────────────────────────────────────
 
-export const LRPerson = () => {
-    // useEffect(() => {
-    //     // Apply style when component mounts
-    //     document.body.style.overflow = "hidden";
-    
-    //     return () => {
-    //       // Reset to default when component unmounts
-    //       document.body.style.overflow = "auto";
-    //     };
-    //   }, []);
-    const navigate = useNavigate(); // Initialize useNavigate hook
-       const location = useLocation();
-
-        const { leadDetails, caseDetails } = location.state || {};
-          const [loading, setLoading] = useState(true);
-          const [error, setError] = useState("");
-          const [rawPersons, setRawPersons] = useState([]);
-          const [auditLogRefresh, setAuditLogRefresh] = useState(0);
-            const { selectedCase, selectedLead, setSelectedLead, setSelectedCase, leadStatus, setLeadPersons, setLeadStatus } = useContext(CaseContext);
-
-          const effectiveCase = selectedCase?.caseNo ? selectedCase : caseDetails;
-          const effectiveLead = selectedLead?.leadNo ? selectedLead : leadDetails;
-
-                const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
-                const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
-                const [alertOpen, setAlertOpen] = useState(false);
-                const [alertMessage, setAlertMessage] = useState("");
-                
-              
-                const onShowCaseSelector = (route) => {
-                  navigate(route, { state: { caseDetails } });
-              };
-
-               // State to control the modal
-                    const [showPersonModal, setShowPersonModal] = useState(false);
-                
-                    // We’ll store the leadReturn info we need for the modal
-                    const [personModalData, setPersonModalData] = useState({
-                      leadNo: "",
-                      description: "",
-                      caseNo: "",
-                      caseName: "",
-                      leadReturnId: "",
-                    });
-            
-                     // Function to open the modal, passing the needed data
-                const openPersonModal = (leadNo, description, caseNo, caseName, leadReturnId) => {
-                  setPersonModalData({ leadNo, description, caseNo, caseName, leadReturnId });
-                  setShowPersonModal(true);
-                };
-              
-                // Function to close the modal
-                const closePersonModal = () => {
-                  setShowPersonModal(false);
-                };
-
-    const [persons, setPersons] = useState([
-      // { returnId: 1,dateEntered: "01/01/2024", name: "John Doe", phoneNo: "123-456-7890", address: "123 Main St, NY" },
-      // {  returnId: 1, dateEntered: "01/05/2024", name: "Jane Smith", phoneNo: "987-654-3210", address: "456 Elm St, CA" },
-      // {  returnId: 2,dateEntered: "01/10/2024", name: "Mike Johnson", phoneNo: "555-789-1234", address: "789 Pine St, TX" },
-      // { returnId: 2,dateEntered: "01/15/2024", name: "Emily Davis", phoneNo: "111-222-3333", address: "321 Maple St, FL" },
-    ]);
-  
-    const [selectedRow, setSelectedRow] = useState(null);
-  
-    const handleAddPerson = () => {
-      setPersons([...persons, { dateEntered: "", name: "", phoneNo: "", address: "" }]);
-    };
-
-    useEffect(() => {
-      if (
-        selectedCase?.caseNo &&
-        selectedCase?.caseName &&
-        selectedLead?.leadNo &&
-        selectedLead?.leadName
-      ) {
-        fetchPersons();
-      }
-    }, [selectedCase, selectedLead]);
-    
-    useEffect(() => {
-      if (caseDetails && leadDetails) {
-        setSelectedCase(caseDetails);
-        setSelectedLead(leadDetails);
-      }
-    }, [caseDetails, leadDetails]);
-  
-  const [leadData, setLeadData] = useState({});
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-
-  const handleGenerateLead = () => {
-    const { leadNumber, leadSummary, assignedDate, assignedOfficer, assignedBy } = leadData;
-  
-    // Check if mandatory fields are filled
-    if (!leadNumber || !leadSummary || !assignedDate || !assignedOfficer || !assignedBy) {
-       setAlertMessage("Please fill in all the required fields before generating a lead.");
-                      setAlertOpen(true);
-      return;
-    }
-  
-    // Show confirmation alert before proceeding
-    if (window.confirm("Are you sure you want to generate this lead?")) {
-      // Navigate to the Lead Log page with relevant lead data
-      navigate("/leadlog", {
-        state: {
-          leadNumber,
-          leadSummary,
-          assignedDate,
-          assignedOfficer,
-        },
-      });
-    }
-  };
-
-  const handleNavigation = (route) => {
-    navigate(route); // Navigate to the respective page
-  };
-
-  // const handleNextPage = () => {
-  //   navigate('/LRReturn'); // Replace '/nextpage' with the actual next page route
-  // };
-
-    const handlePrevPage = () => {
-    navigate('/LRInstruction'); // Replace '/nextpage' with the actual next page route
-  };
-
-    useEffect(() => {
-    const fetchLeadData = async () => {
-      if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
-      const token = localStorage.getItem("token");
-
-      try {
-        const response = await api.get(
-          `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
-
-        if (response.data.length > 0) {
-          setLeadData({
-            ...response.data[0],
-            assignedTo: response.data[0].assignedTo || [],
-            leadStatus: response.data[0].leadStatus || ''
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch lead data:", error);
-      }
-    };
-
-    fetchLeadData();
-  }, [selectedLead, selectedCase]);
-
-     const { status, isReadOnly } = useLeadStatus({
-    caseNo: selectedCase.caseNo,
-    caseName: selectedCase.caseName,
-    leadNo: selectedLead.leadNo,
-    leadName: selectedLead.leadName,
-  });
-
-  // Confirm delete modal
-const [confirmOpen, setConfirmOpen] = useState(false);
-const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
-
-const requestDeletePerson = (idx) => {
-  setPendingDeleteIndex(idx);
-  setConfirmOpen(true);
-};
-
-const performDeletePerson = async () => {
-  const visibleIdx = pendingDeleteIndex;
-  if (visibleIdx == null) return;
-
-  try {
-    const vis = persons[visibleIdx];
-
-    // Use _id to reliably find the raw record
-    const rawIndex = rawPersons.findIndex(r => r._id === vis._id);
-    if (rawIndex < 0) {
-      throw new Error("Couldn't resolve the selected person in the raw list.");
-    }
-
-    const p = rawPersons[rawIndex];
-
-    // Delete by MongoDB _id for reliability
-    const token = localStorage.getItem("token");
-    await api.delete(`/api/lrperson/id/${p._id}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    // Remove from raw, then remap & refilter visible rows
-    const newRaw = rawPersons.filter((_, i) => i !== rawIndex);
-    setRawPersons(newRaw);
-
-    const remapped = newRaw.map((pp) => ({
-      _id:         pp._id,
-      returnId:    pp.leadReturnId,
-      dateEntered: new Date(pp.enteredDate).toLocaleDateString(),
-      name:        `${pp.firstName} ${pp.lastName}`,
-      phoneNo:     pp.cellNumber || "N/A",
-      address:     pp.address?.street1 &&
-                   `${pp.address.street1}, ${pp.address.city || ""}, ${pp.address.state || ""}`,
-      leadReturnId: pp.leadReturnId,
-      accessLevel:  pp.accessLevel || "Everyone",
-      enteredBy:    pp.enteredBy,
-      photoUrl:     pp.photoUrl || null,
-    }));
-
-    // Filter based on role and access level
-    let newVisible = remapped;
-    if (!isCaseManager) {
-      const currentUser = localStorage.getItem("loggedInUser")?.trim();
-      const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
-
-      newVisible = remapped.filter(r => {
-        if (r.accessLevel === "Everyone") return true;
-        if (r.accessLevel === "Case Manager and Assignees") {
-          const isAssignedToLead = leadAssignees.some(a => a === currentUser);
-          return isAssignedToLead;
-        }
-        return false; // "Case Manager" only - hide from investigators
-      });
-    }
-
-    setPersons(newVisible);
-    setAuditLogRefresh(prev => prev + 1);
-  } catch (err) {
-    console.error("Delete failed", err);
-    setAlertMessage("Failed to delete person.");
-    setAlertOpen(true);
-  } finally {
-    setConfirmOpen(false);
-    setPendingDeleteIndex(null);
-  }
-};
-
-
-  const attachFiles = async (items, idFieldName, filesEndpoint) => {
+/**
+ * Fetches attached files for each item in a collection and merges them
+ * into the item as a `files` array. Used when assembling the full report payload.
+ *
+ * @param {object[]} items         - Array of records to enrich
+ * @param {string}   idFieldName   - Field on each item that holds its file-lookup ID
+ * @param {string}   filesEndpoint - API base path for fetching files
+ */
+const attachFiles = async (items, idFieldName, filesEndpoint) => {
+  const token = localStorage.getItem('token');
   return Promise.all(
     (items || []).map(async (item) => {
-      const realId = item[idFieldName];
-      if (!realId) return { ...item, files: [] };
+      const id = item[idFieldName];
+      if (!id) return { ...item, files: [] };
       try {
-        const { data: filesArray } = await api.get(
-          `${filesEndpoint}/${realId}`,
-          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-        );
-        return { ...item, files: filesArray };
+        const { data: files } = await api.get(`${filesEndpoint}/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        return { ...item, files };
       } catch (err) {
-        console.error(`Error fetching files for ${filesEndpoint}/${realId}:`, err);
+        console.error(`Failed to fetch files from ${filesEndpoint}/${id}:`, err);
         return { ...item, files: [] };
       }
     })
   );
 };
 
+/**
+ * Maps a raw LRPerson API document to the flat display shape used by the table.
+ * Formatting (dates, full name, fallback values) is handled here so the
+ * component's render stays clean.
+ */
+const mapPersonToRow = (person) => ({
+  _id:          person._id,
+  returnId:     person.leadReturnId,
+  dateEntered:  new Date(person.enteredDate).toLocaleDateString(),
+  name:         `${person.firstName} ${person.lastName}`,
+  phoneNo:      person.cellNumber || 'N/A',
+  address:      person.address?.street1
+    ? `${person.address.street1}, ${person.address.city || ''}, ${person.address.state || ''}`
+    : '',
+  leadReturnId: person.leadReturnId,
+  accessLevel:  person.accessLevel || 'Everyone',
+  enteredBy:    person.enteredBy,
+  photoUrl:     person.photoUrl || null,
+});
 
-    const [isGenerating, setIsGenerating] = useState(false);
-    const handleViewLeadReturn = async () => {
-  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+/** Section-tab definitions; used to render the second menu bar declaratively. */
+const SECTION_TABS = [
+  { label: 'Instructions', route: '/LRInstruction' },
+  { label: 'Narrative',    route: '/LRReturn' },
+  { label: 'Person',       route: '/LRPerson',     active: true },
+  { label: 'Vehicles',     route: '/LRVehicle' },
+  { label: 'Enclosures',   route: '/LREnclosures' },
+  { label: 'Evidence',     route: '/LREvidence' },
+  { label: 'Pictures',     route: '/LRPictures' },
+  { label: 'Audio',        route: '/LRAudio' },
+  { label: 'Videos',       route: '/LRVideo' },
+  { label: 'Notes',        route: '/LRScratchpad' },
+  { label: 'Timeline',     route: '/LRTimeline' },
+];
 
-  if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
-    setAlertMessage("Please select a case and lead first.");
-    setAlertOpen(true);
-    return;
-  }
+// ─── Component ────────────────────────────────────────────────────────────────
 
-  if (isGenerating) return;
+export const LRPerson = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  try {
-    setIsGenerating(true);
+  // ─── Context & router state ─────────────────────────────────────────────────
+  const { leadDetails, caseDetails } = location.state || {};
+  const {
+    selectedCase,
+    selectedLead,
+    setSelectedCase,
+    setSelectedLead,
+    setLeadPersons,
+  } = useContext(CaseContext);
 
-    const token = localStorage.getItem("token");
-    const headers = { headers: { Authorization: `Bearer ${token}` } };
+  // ─── Derived values ─────────────────────────────────────────────────────────
+  const isCaseManager =
+    selectedCase?.role === 'Case Manager' || selectedCase?.role === 'Detective Supervisor';
 
-    const { leadNo } = lead;
-    const leadName = lead.leadName || lead.description;
-    const { caseNo, caseName } = kase;
-    const encLead = encodeURIComponent(leadName);
-    const encCase = encodeURIComponent(caseName);
+  const signedInOfficer = localStorage.getItem('loggedInUser');
 
-    // fetch everything we need for the report (same endpoints you use on LRFinish)
-    const [
-      instrRes,
-      returnsRes,
-      personsRes,
-      vehiclesRes,
-      enclosuresRes,
-      evidenceRes,
-      picturesRes,
-      audioRes,
-      videosRes,
-      scratchpadRes,
-      timelineRes,
-    ] = await Promise.all([
-      api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-    ]);
-
-    // add files where applicable (note the plural file endpoints)
-    const enclosuresWithFiles = await attachFiles(enclosuresRes.data, "_id", "/api/lrenclosures/files");
-    const evidenceWithFiles   = await attachFiles(evidenceRes.data,   "_id", "/api/lrevidences/files");
-    const picturesWithFiles   = await attachFiles(picturesRes.data,   "pictureId", "/api/lrpictures/files");
-    const audioWithFiles      = await attachFiles(audioRes.data,      "audioId",   "/api/lraudio/files");
-    const videosWithFiles     = await attachFiles(videosRes.data,     "videoId",   "/api/lrvideo/files");
-
-    const leadInstructions = instrRes.data?.[0] || {};
-    const leadReturns      = returnsRes.data || [];
-    const leadPersons      = personsRes.data || [];
-    const leadVehicles     = vehiclesRes.data || [];
-    const leadScratchpad   = scratchpadRes.data || [];
-    const leadTimeline     = timelineRes.data || [];
-
-    // make all sections true (Full Report)
-    const selectedReports = {
-      FullReport: true,
-      leadInstruction: true,
-      leadReturn: true,
-      leadPersons: true,
-      leadVehicles: true,
-      leadEnclosures: true,
-      leadEvidence: true,
-      leadPictures: true,
-      leadAudio: true,
-      leadVideos: true,
-      leadScratchpad: true,
-      leadTimeline: true,
-    };
-
-    const body = {
-      user: localStorage.getItem("loggedInUser") || "",
-      reportTimestamp: new Date().toISOString(),
-
-      // sections (values are the fetched arrays/objects)
-      leadInstruction: leadInstructions,
-      leadReturn:      leadReturns,
-      leadPersons,
-      leadVehicles,
-      leadEnclosures:  enclosuresWithFiles,
-      leadEvidence:    evidenceWithFiles,
-      leadPictures:    picturesWithFiles,
-      leadAudio:       audioWithFiles,
-      leadVideos:      videosWithFiles,
-      leadScratchpad,
-      leadTimeline,
-
-      // also send these two, since your backend expects them
-      selectedReports,
-      leadInstructions,
-      leadReturns,
-    };
-
-    const resp = await api.post("/api/report/generate", body, {
-      responseType: "blob",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    const file = new Blob([resp.data], { type: "application/pdf" });
-
-    navigate("/DocumentReview", {
-      state: {
-        pdfBlob: file,
-        filename: `Lead_${leadNo || "report"}.pdf`,
-      },
-    });
-  } catch (err) {
-    if (err?.response?.data instanceof Blob) {
-      const text = await err.response.data.text();
-      console.error("Report error:", text);
-      setAlertMessage("Error generating PDF:\n" + text);
-    } else {
-      console.error("Report error:", err);
-      setAlertMessage("Error generating PDF:\n" + (err.message || "Unknown error"));
-    }
-    setAlertOpen(true);
-  } finally {
-    setIsGenerating(false);
-  }
-};
-
-  const signedInOfficer = localStorage.getItem("loggedInUser");
- // who is primary for this lead?
-const primaryUsername =
-  leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
-
-// am I the primary investigator on this lead?
-const isPrimaryInvestigator =
-  selectedCase?.role === "Investigator" &&
-  !!signedInOfficer &&
-  signedInOfficer === primaryUsername;
-
-// primary goes to the interactive ViewLR page
-const goToViewLR = () => {
-  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-  if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-    setAlertMessage("Please select a case and lead first.");
-    setAlertOpen(true);
-    return;
-  }
-
-  navigate("/viewLR", {
-    state: { caseDetails: kase, leadDetails: lead }
+  // ─── Lead status / read-only hook ───────────────────────────────────────────
+  const { status, isReadOnly } = useLeadStatus({
+    caseNo:   selectedCase?.caseNo,
+    caseName: selectedCase?.caseName,
+    leadNo:   selectedLead?.leadNo,
+    leadName: selectedLead?.leadName,
   });
-};
 
-  
+  // ─── Local state ────────────────────────────────────────────────────────────
+  const [persons,     setPersons]     = useState([]);
+  const [rawPersons,  setRawPersons]  = useState([]);
+  const [leadData,    setLeadData]    = useState({});
+  const [selectedRow, setSelectedRow] = useState(null);
 
-  const fetchPersons = async () => {
-    const token = localStorage.getItem("token");
-  
-    const caseNo = selectedCase.caseNo;
-    const caseName = encodeURIComponent(selectedCase.caseName); // encode if contains spaces
-    const leadNo = selectedLead.leadNo;
-    const leadName = encodeURIComponent(selectedLead.leadName);
-  
-    console.log("About to hit");
-    try {
-      const res = await api.get(
-        `/api/lrperson/lrperson/${leadNo}/${leadName}/${caseNo}/${caseName}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+  // Person detail modal
+  const [showPersonModal,  setShowPersonModal]  = useState(false);
+  const [personModalData,  setPersonModalData]  = useState({
+    leadNo: '', description: '', caseNo: '', caseName: '', leadReturnId: '',
+  });
+
+  // Alert and confirmation modals
+  const [alertOpen,          setAlertOpen]          = useState(false);
+  const [alertMessage,       setAlertMessage]        = useState('');
+  const [confirmOpen,        setConfirmOpen]          = useState(false);
+  const [pendingDeleteIndex, setPendingDeleteIndex]   = useState(null);
+
+  // Report generation state
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // ─── Derived investigator-role values ───────────────────────────────────────
+  const primaryUsername = leadData?.primaryInvestigator || leadData?.primaryOfficer || '';
+  const isPrimaryInvestigator =
+    selectedCase?.role === 'Investigator' && !!signedInOfficer && signedInOfficer === primaryUsername;
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+  /** Show a notification alert modal. */
+  const showAlert = useCallback((msg) => {
+    setAlertMessage(msg);
+    setAlertOpen(true);
+  }, []);
+
+  /**
+   * Filters a mapped persons array based on the current user's role and
+   * each record's access level. Case managers see all records.
+   */
+  const applyAccessFilter = useCallback(
+    (mapped) => {
+      if (isCaseManager) return mapped;
+      const currentUser   = localStorage.getItem('loggedInUser')?.trim();
+      const leadAssignees = (leadData?.assignedTo || []).map((a) => a?.trim());
+
+      return mapped.filter((p) => {
+        if (p.accessLevel === 'Everyone') return true;
+        if (p.accessLevel === 'Case Manager and Assignees') {
+          return leadAssignees.some((a) => a === currentUser);
         }
+        return false; // 'Case Manager' only — hidden from investigators
+      });
+    },
+    [isCaseManager, leadData?.assignedTo]
+  );
+
+  // ─── Effects ─────────────────────────────────────────────────────────────────
+
+  // Sync context if the page was reached via deep-link with router state
+  useEffect(() => {
+    if (caseDetails && leadDetails) {
+      setSelectedCase(caseDetails);
+      setSelectedLead(leadDetails);
+    }
+  }, [caseDetails, leadDetails]);
+
+  /**
+   * Fetch lead metadata (assignees, primary investigator, current status).
+   * Used to derive access-filtering and role-based UI visibility.
+   */
+  useEffect(() => {
+    if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+
+    const fetchLeadData = async () => {
+      const token = localStorage.getItem('token');
+      try {
+        const { data } = await api.get(
+          `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (data.length > 0) {
+          setLeadData({ ...data[0], assignedTo: data[0].assignedTo || [], leadStatus: data[0].leadStatus || '' });
+        }
+      } catch (err) {
+        console.error('Failed to fetch lead data:', err);
+      }
+    };
+
+    fetchLeadData();
+  }, [selectedLead, selectedCase]);
+
+  /**
+   * Fetch all person records for the current lead from the API.
+   * Maps raw API documents to the display shape and applies access filtering.
+   * Wrapped in useCallback so it can be safely listed in the fetch trigger effect's deps.
+   */
+  const fetchPersons = useCallback(async () => {
+    if (!selectedCase?.caseNo || !selectedCase?.caseName || !selectedLead?.leadNo || !selectedLead?.leadName) return;
+
+    const token   = localStorage.getItem('token');
+    const encLead = encodeURIComponent(selectedLead.leadName);
+    const encCase = encodeURIComponent(selectedCase.caseName);
+
+    try {
+      const { data } = await api.get(
+        `/api/lrperson/lrperson/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log(res);
-      const personsFromApi = res.data;
-
-      const apiPersons = res.data;         // raw array of LRPerson docs
-      setRawPersons(apiPersons);
-  
-      // Map response to desired format
-      const mappedPersons = res.data.map((person) => ({
-        _id: person._id,
-        returnId: person.leadReturnId,
-        dateEntered: new Date(person.enteredDate).toLocaleDateString(),
-        name: `${person.firstName} ${person.lastName}`,
-        phoneNo: person.cellNumber || "N/A",
-        address:
-          person.address?.street1 &&
-          `${person.address.street1}, ${person.address.city || ""}, ${person.address.state || ""}`,
-        leadReturnId: person.leadReturnId,
-        accessLevel: person.accessLevel || "Everyone",
-        enteredBy: person.enteredBy,
-        photoUrl: person.photoUrl || null
-      }));
-
-      const withAccess = mappedPersons.map(r => ({
-        ...r,
-        accessLevel: r.accessLevel ?? "Everyone"
-      }));
-
-      // Filter based on role and access level
-      let visible = withAccess;
-      if (!isCaseManager) {
-        const currentUser = localStorage.getItem("loggedInUser")?.trim();
-        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
-
-        visible = withAccess.filter(p => {
-          if (p.accessLevel === "Everyone") return true;
-          if (p.accessLevel === "Case Manager and Assignees") {
-            const isAssignedToLead = leadAssignees.some(a => a === currentUser);
-            return isAssignedToLead;
-          }
-          return false; // "Case Manager" only - hide from investigators
-        });
-      }
-      setPersons(visible);
-      setLeadPersons(personsFromApi);
-      setError("");
-      setLoading(false);
-      console.log("map person", mappedPersons);
+      setRawPersons(data);
+      setPersons(applyAccessFilter(data.map(mapPersonToRow)));
+      setLeadPersons(data);
     } catch (err) {
-      console.error("Error fetching person records:", err);
-      setError("Failed to fetch persons.");
-      setLoading(false);
+      console.error('Error fetching person records:', err);
+    }
+  }, [selectedCase, selectedLead, applyAccessFilter, setLeadPersons]);
+
+  // Trigger person fetch when case/lead selection changes
+  useEffect(() => {
+    if (selectedCase?.caseNo && selectedCase?.caseName && selectedLead?.leadNo && selectedLead?.leadName) {
+      fetchPersons();
+    }
+  }, [selectedCase, selectedLead, fetchPersons]);
+
+  // ─── Handlers ────────────────────────────────────────────────────────────────
+
+  /** Open the person detail modal for the selected row. */
+  const openPersonModal = (leadNo, description, caseNo, caseName, leadReturnId) => {
+    setPersonModalData({ leadNo, description, caseNo, caseName, leadReturnId });
+    setShowPersonModal(true);
+  };
+
+  const closePersonModal = () => setShowPersonModal(false);
+
+  /** Navigate to the edit form (LRPerson1) for the selected person. */
+  const handleEditPerson = (idx) => {
+    const vis    = persons[idx];
+    const person = rawPersons.find((r) => r._id === vis._id);
+    if (!person) {
+      showAlert('Could not find person record to edit.');
+      return;
+    }
+    navigate('/LRPerson1', { state: { caseDetails, leadDetails, person } });
+  };
+
+  /** Open the deletion confirmation modal. */
+  const requestDeletePerson = (idx) => {
+    setPendingDeleteIndex(idx);
+    setConfirmOpen(true);
+  };
+
+  /**
+   * Confirmed deletion: remove the person from the API then update local state,
+   * re-mapping from the raw list to keep display and raw lists in sync.
+   */
+  const performDeletePerson = async () => {
+    if (pendingDeleteIndex == null) return;
+    try {
+      const vis      = persons[pendingDeleteIndex];
+      const rawIndex = rawPersons.findIndex((r) => r._id === vis._id);
+      if (rawIndex < 0) throw new Error("Couldn't resolve the selected person in the raw list.");
+
+      const token = localStorage.getItem('token');
+      await api.delete(`/api/lrperson/id/${rawPersons[rawIndex]._id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const newRaw = rawPersons.filter((_, i) => i !== rawIndex);
+      setRawPersons(newRaw);
+      setPersons(applyAccessFilter(newRaw.map(mapPersonToRow)));
+    } catch (err) {
+      console.error('Delete failed:', err);
+      showAlert('Failed to delete person.');
+    } finally {
+      setConfirmOpen(false);
+      setPendingDeleteIndex(null);
     }
   };
 
-  // Edit: send the raw object to LRPerson1
-const handleEditPerson = (idx) => {
-  const vis = persons[idx];
-  const person = rawPersons.find(r => r._id === vis._id);
-  if (!person) {
-    setAlertMessage("Could not find person record to edit.");
-    setAlertOpen(true);
-    return;
-  }
-  navigate("/LRPerson1", {
-    state: {
-      caseDetails,
-      leadDetails,
-      person
-    }
-  });
-};
-
-  
-
-  const isCaseManager = 
-    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
-
+  /**
+   * Persist an updated access level for a person entry (case managers only).
+   * Swaps the updated document into both rawPersons and the visible persons list.
+   */
   const handleAccessChange = async (idx, newAccess) => {
-  const vis   = persons[idx];
-  const rawIdx = rawPersons.findIndex(r => r._id === vis._id);
-  if (rawIdx < 0) {
-    setAlertMessage("Could not find person record.");
-    setAlertOpen(true);
-    return;
-  }
-  const p     = rawPersons[rawIdx];
-  const token = localStorage.getItem("token");
+    const vis      = persons[idx];
+    const rawIndex = rawPersons.findIndex((r) => r._id === vis._id);
+    if (rawIndex < 0) { showAlert('Could not find person record.'); return; }
 
-  try {
-    // 1) Persist to server
-    const { data: updatedDoc } = await api.put(
-      `/api/lrperson/${selectedLead.leadNo}/${selectedCase.caseNo}/` +
-        `${p.leadReturnId}/${p.firstName}`,
-      { accessLevel: newAccess },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    const p     = rawPersons[rawIndex];
+    const token = localStorage.getItem('token');
 
-    // 2) Swap it into rawPersons
-    const newRaw = rawPersons.map((r, i) =>
-      i === rawIdx ? updatedDoc : r
-    );
-    setRawPersons(newRaw);
+    try {
+      const { data: updatedDoc } = await api.put(
+        `/api/lrperson/${selectedLead.leadNo}/${selectedCase.caseNo}/${p.leadReturnId}/${p.firstName}`,
+        { accessLevel: newAccess },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-    // 3) Remap to your UI shape
-    const remapped = newRaw.map(p => ({
-      _id:          p._id,
-      returnId:    p.leadReturnId,
-      dateEntered: new Date(p.enteredDate).toLocaleDateString(),
-      name:         `${p.firstName} ${p.lastName}`,
-      phoneNo:      p.cellNumber || "N/A",
-      address:      `${p.address?.street1 || ""}, ${p.address?.city || ""}`,
-      accessLevel:  p.accessLevel || "Everyone",
-      enteredBy:    p.enteredBy,
-      photoUrl:     p.photoUrl || null
-    }));
-
-    // 4) Filter again for non-CMs
-    let visible = remapped;
-    if (!isCaseManager) {
-      const currentUser = localStorage.getItem("loggedInUser")?.trim();
-      const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
-
-      visible = remapped.filter(r => {
-        if (r.accessLevel === "Everyone") return true;
-        if (r.accessLevel === "Case Manager and Assignees") {
-          const isAssignedToLead = leadAssignees.some(a => a === currentUser);
-          return isAssignedToLead;
-        }
-        return false; // "Case Manager" only - hide from investigators
-      });
+      const newRaw = rawPersons.map((r, i) => (i === rawIndex ? updatedDoc : r));
+      setRawPersons(newRaw);
+      setPersons(applyAccessFilter(newRaw.map(mapPersonToRow)));
+    } catch (err) {
+      console.error('Failed to update access level:', err);
+      showAlert('Could not change access level. Please try again.');
     }
+  };
 
-    setPersons(visible);
+  /**
+   * Navigate to either Submit or Review Lead Return (ViewLR).
+   * Primary investigators submit; all others review.
+   */
+  const goToViewLR = () => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
+      showAlert('Please select a case and lead first.');
+      return;
+    }
+    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
+  };
 
-  } catch (err) {
-    console.error("Failed to update accessLevel", err);
-    setAlertMessage("Could not change access level. Please try again.");
-     setAlertOpen(true);
-  }
-};
+  /**
+   * Generate a full lead report as a PDF blob and navigate to the document viewer.
+   * All lead data sections are fetched in parallel; media sections also have their
+   * attached files fetched before the report payload is assembled.
+   */
+  const handleViewLeadReturn = async () => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
-  
+    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+      showAlert('Please select a case and lead first.');
+      return;
+    }
+    if (isGenerating) return;
+
+    try {
+      setIsGenerating(true);
+      const token   = localStorage.getItem('token');
+      const headers = { headers: { Authorization: `Bearer ${token}` } };
+      const { leadNo }             = lead;
+      const leadName               = lead.leadName || lead.description;
+      const { caseNo, caseName }   = kase;
+      const encLead = encodeURIComponent(leadName);
+      const encCase = encodeURIComponent(caseName);
+
+      // Fetch all lead data sections in parallel
+      const [
+        instrRes, returnsRes, personsRes, vehiclesRes, enclosuresRes,
+        evidenceRes, picturesRes, audioRes, videosRes, scratchpadRes, timelineRes,
+      ] = await Promise.all([
+        api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+      ]);
+
+      // Attach binary files to media/document sections in parallel
+      const [enclosuresWithFiles, evidenceWithFiles, picturesWithFiles, audioWithFiles, videosWithFiles] =
+        await Promise.all([
+          attachFiles(enclosuresRes.data, '_id',       '/api/lrenclosures/files'),
+          attachFiles(evidenceRes.data,   '_id',       '/api/lrevidences/files'),
+          attachFiles(picturesRes.data,   'pictureId', '/api/lrpictures/files'),
+          attachFiles(audioRes.data,      'audioId',   '/api/lraudio/files'),
+          attachFiles(videosRes.data,     'videoId',   '/api/lrvideo/files'),
+        ]);
+
+      const leadInstructions = instrRes.data?.[0] || {};
+      const leadReturns      = returnsRes.data     || [];
+
+      // All sections enabled → full report
+      const selectedReports = {
+        FullReport: true, leadInstruction: true, leadReturn: true,
+        leadPersons: true, leadVehicles: true, leadEnclosures: true,
+        leadEvidence: true, leadPictures: true, leadAudio: true,
+        leadVideos: true, leadScratchpad: true, leadTimeline: true,
+      };
+
+      const body = {
+        user:            localStorage.getItem('loggedInUser') || '',
+        reportTimestamp: new Date().toISOString(),
+        leadInstruction: leadInstructions,
+        leadReturn:      leadReturns,
+        leadPersons:     personsRes.data   || [],
+        leadVehicles:    vehiclesRes.data  || [],
+        leadEnclosures:  enclosuresWithFiles,
+        leadEvidence:    evidenceWithFiles,
+        leadPictures:    picturesWithFiles,
+        leadAudio:       audioWithFiles,
+        leadVideos:      videosWithFiles,
+        leadScratchpad:  scratchpadRes.data || [],
+        leadTimeline:    timelineRes.data   || [],
+        selectedReports,
+        leadInstructions,
+        leadReturns,
+      };
+
+      const { data: blobData } = await api.post('/api/report/generate', body, {
+        responseType: 'blob',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      navigate('/DocumentReview', {
+        state: {
+          pdfBlob:  new Blob([blobData], { type: 'application/pdf' }),
+          filename: `Lead_${leadNo || 'report'}.pdf`,
+        },
+      });
+    } catch (err) {
+      const msg = err?.response?.data instanceof Blob
+        ? await err.response.data.text()
+        : err.message || 'Unknown error';
+      console.error('Report generation error:', err);
+      showAlert(`Error generating PDF:\n${msg}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // ─── Render ───────────────────────────────────────────────────────────────────
   return (
     <div className={styles.personPage}>
-      {/* Navbar at the top */}
       <Navbar />
+
+      {/* Notification alert */}
       <AlertModal
-                                isOpen={alertOpen}
-                                title="Notification"
-                                message={alertMessage}
-                                onConfirm={() => setAlertOpen(false)}
-                                onClose={()   => setAlertOpen(false)}
-                              />
+        isOpen={alertOpen}
+        title="Notification"
+        message={alertMessage}
+        onConfirm={() => setAlertOpen(false)}
+        onClose={() => setAlertOpen(false)}
+      />
+
+      {/* Deletion confirmation modal */}
       <AlertModal
-  isOpen={confirmOpen}
-  title="Confirm Deletion"
-  message="Are you sure you want to delete this record?"
-  onConfirm={performDeletePerson} // proceed
-  onClose={() => {                // cancel
-    setConfirmOpen(false);
-    setPendingDeleteIndex(null);
-  }}
-/>
+        isOpen={confirmOpen}
+        title="Confirm Deletion"
+        message="Are you sure you want to delete this record?"
+        onConfirm={performDeletePerson}
+        onClose={() => { setConfirmOpen(false); setPendingDeleteIndex(null); }}
+      />
 
+      <div className={styles.LRIContent}>
+        <SideBar activePage="LeadReview" />
 
-      {/* <div className="top-menu">
-        <div className="menu-items">
-        <span className="menu-item" onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className="menu-item " onClick={() => handleNavigation('/LRReturn')}>
-            Returns
-          </span>
-          <span className="menu-item active" onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation("/LREvidence")}>Evidence</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRPictures")}>Pictures</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRAudio")}>Audio</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRVideos")}>Videos</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRScratchpad")}>Scratchpad</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRTimeline")}>Timeline</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRFinish")}>Finish</span>
-         </div>
-       </div> */}
-    
+        <div className={styles.leftContentLI}>
 
-       <div className={styles.LRIContent}>
-
-                 <SideBar  activePage="LeadReview" />
-
-                <div className={styles.leftContentLI}>
-
-                       <div className={styles.topMenuNav}>
-      <div className={styles.menuItems} >
-        <span className={styles.menuItem} onClick={() => {
+          {/* ── Page-level navigation bar ──────────────────────────────────── */}
+          <div className={styles.topMenuNav}>
+            <div className={styles.menuItems}>
+              <span
+                className={styles.menuItem}
+                onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                  if (lead && kase) navigate('/LeadReview', { state: { caseDetails: kase, leadDetails: lead } });
+                }}
+              >
+                Lead Information
+              </span>
 
-                  if (lead && kase) {
-                    navigate("/LeadReview", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } }} > Lead Information</span>
-                   <span className={`${styles.menuItem} ${styles.menuItemActive}`} >Add Lead Return</span>
-                    {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
-           <span
-              className={styles.menuItem}
-              onClick={handleViewLeadReturn}
-              title={isGenerating ? "Preparing report…" : "View Lead Return"}
-              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-            >
-              Manage Lead Return
-            </span>
+              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
+                Add Lead Return
+              </span>
+
+              {/* Case Manager / Supervisor: generate full report */}
+              {isCaseManager && (
+                <span
+                  className={`${styles.menuItem} ${isGenerating ? styles.menuItemDisabled : ''}`}
+                  onClick={handleViewLeadReturn}
+                  title={isGenerating ? 'Preparing report…' : 'View Lead Return'}
+                >
+                  Manage Lead Return
+                </span>
               )}
 
-            {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-  <span className={styles.menuItem} onClick={goToViewLR}>
-    Submit Lead Return
-  </span>
-)}
-  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-  <span className={styles.menuItem} onClick={goToViewLR}>
-   Review Lead Return
-  </span>
-)}
+              {/* Primary investigator: can submit */}
+              {selectedCase?.role === 'Investigator' && isPrimaryInvestigator && (
+                <span className={styles.menuItem} onClick={goToViewLR}>
+                  Submit Lead Return
+                </span>
+              )}
 
+              {/* Secondary investigator: review only */}
+              {selectedCase?.role === 'Investigator' && !isPrimaryInvestigator && (
+                <span className={styles.menuItem} onClick={goToViewLR}>
+                  Review Lead Return
+                </span>
+              )}
 
-                   <span className={styles.menuItem} onClick={() => {
+              <span
+                className={styles.menuItem}
+                onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
                   if (lead && kase) {
-                    navigate("/ChainOfCustody", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
+                    navigate('/ChainOfCustody', { state: { caseDetails: kase, leadDetails: lead } });
                   } else {
-                     setAlertMessage("Please select a case and lead first.");
-                      setAlertOpen(true);
+                    showAlert('Please select a case and lead first.');
                   }
-                }}>Lead Chain of Custody</span>
-          
-                  </div>
-        {/* <div className="menu-items">
-      
-        <span className="menu-item active" onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRReturn')}>
-            Returns
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRScratchpad')}>
-            Scratchpad
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span>
-         </div> */}
-       </div>
-              
-      <div className={styles.topMenuSections} >
-       <div className={styles.menuItems} style={{ fontSize: '19px' }}>
-
-        <span className={styles.menuItem} style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Narrative
-          </span>
-          <span className={`${styles.menuItem} ${styles.menuItemActive}`} style={{fontWeight: '600' }} onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRScratchpad')}>
-            Notes
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          {/* <span className="menu-item" style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span> */}
-         </div> </div>
-                {/* <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
-          <h5 className="side-title">
-  {selectedLead?.leadNo
-    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
-    : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
-</h5>
-
-          </div> */}
-
-            <div className={styles.caseandleadinfo}>
-          <h5 className={styles.sideTitle}>
-             <div className={styles.ldHead}>
-                                        <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
-                                        <span className={styles.sep}>{" >> "}</span>
-                                        <Link
-                                          to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
-                                          state={{ caseDetails: selectedCase }}
-                                          className={styles.crumb}
-                                        >
-                                          Case: {selectedCase.caseNo || ""}
-                                        </Link>
-                                        <span className={styles.sep}>{" >> "}</span>
-                                        <Link
-                                          to={"/LeadReview"}
-                                          state={{ leadDetails: selectedLead }}
-                                          className={styles.crumb}
-                                        >
-                                          Lead: {selectedLead.leadNo || ""}
-                                        </Link>
-                                        <span className={styles.sep}>{" >> "}</span>
-                                        <span className={styles.crumbCurrent} aria-current="page">Lead Persons</span>
-                                      </div>
-             </h5>
-          <h5 className={styles.sideTitle}>
-  {selectedLead?.leadNo
-    ? ` Lead Status:  ${status}`
-    : ` ${status}`}
-</h5>
-
+                }}
+              >
+                Lead Chain of Custody
+              </span>
+            </div>
           </div>
 
-        <div className={styles.caseHeader}>
-          <h2>LEAD PERSONS DETAILS</h2>
+          {/* ── Section tabs navigation ─────────────────────────────────────── */}
+          <div className={styles.topMenuSections}>
+            <div className={`${styles.menuItems} ${styles.sectionMenuItems}`}>
+              {SECTION_TABS.map(({ label, route, active }) => (
+                <span
+                  key={route}
+                  className={`${styles.menuItem} ${active ? styles.menuItemActive : styles.menuItemInactive}`}
+                  onClick={() => navigate(route)}
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Breadcrumb + lead status ────────────────────────────────────── */}
+          <div className={styles.caseandleadinfo}>
+            <h5 className={styles.sideTitle}>
+              <div className={styles.ldHead}>
+                <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+                <span className={styles.sep}>{' >> '}</span>
+                <Link
+                  to={selectedCase?.role === 'Investigator' ? '/Investigator' : '/CasePageManager'}
+                  state={{ caseDetails: selectedCase }}
+                  className={styles.crumb}
+                >
+                  Case: {selectedCase?.caseNo || ''}
+                </Link>
+                <span className={styles.sep}>{' >> '}</span>
+                <Link to="/LeadReview" state={{ leadDetails: selectedLead }} className={styles.crumb}>
+                  Lead: {selectedLead?.leadNo || ''}
+                </Link>
+                <span className={styles.sep}>{' >> '}</span>
+                <span className={styles.crumbCurrent} aria-current="page">Lead Persons</span>
+              </div>
+            </h5>
+            <h5 className={styles.sideTitle}>
+              {selectedLead?.leadNo ? `Lead Status: ${status}` : status}
+            </h5>
+          </div>
+
+          {/* ── Page heading ───────────────────────────────────────────────── */}
+          <div className={styles.caseHeader}>
+            <h2>LEAD PERSONS DETAILS</h2>
+          </div>
+
+          <div className={styles.lriContentSection}>
+            <div className={styles.contentSubsection}>
+
+              {/* ── Persons table ─────────────────────────────────────────── */}
+              <table className={styles.leadsTable}>
+                <thead>
+                  <tr>
+                    <th style={{ width: '9%' }}>Date</th>
+                    <th style={{ width: '9%' }}>Id</th>
+                    <th style={{ width: '12%' }}>Name</th>
+                    <th style={{ width: '12%' }}>Phone No</th>
+                    <th style={{ width: '9%' }}>More</th>
+                    <th style={{ width: '9%' }}>Actions</th>
+                    {isCaseManager && <th style={{ width: '15%', fontSize: '20px' }}>Access</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {persons.length > 0 ? (
+                    persons.map((person, index) => {
+                      const canModify = person.enteredBy?.trim() === signedInOfficer?.trim();
+                      const disableActions =
+                        selectedLead?.leadStatus === 'In Review' ||
+                        selectedLead?.leadStatus === 'Completed' ||
+                        selectedLead?.leadStatus === 'Closed' ||
+                        isReadOnly ||
+                        !canModify;
+
+                      return (
+                        <tr
+                          key={person._id || index}
+                          className={selectedRow === index ? styles.selectedRow : ''}
+                          onClick={() => setSelectedRow(index)}
+                        >
+                          <td>{person.dateEntered}</td>
+                          <td>{person.returnId}</td>
+                          <td>{person.name}</td>
+                          <td>{person.phoneNo}</td>
+                          <td>
+                            <button
+                              className={styles.viewPersonBtn}
+                              onClick={() =>
+                                openPersonModal(
+                                  selectedLead.leadNo,
+                                  selectedLead.leadName,
+                                  selectedCase.caseNo,
+                                  selectedCase.caseName,
+                                  person.leadReturnId
+                                )
+                              }
+                            >
+                              View
+                            </button>
+                          </td>
+                          <td>
+                            <div className={styles.lrTableBtn}>
+                              <button onClick={() => handleEditPerson(index)} disabled={disableActions}>
+                                <img
+                                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                                  alt="Edit"
+                                  className={styles.editIcon}
+                                />
+                              </button>
+                              <button onClick={() => requestDeletePerson(index)} disabled={disableActions}>
+                                <img
+                                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                                  alt="Delete"
+                                  className={styles.editIcon}
+                                />
+                              </button>
+                            </div>
+                          </td>
+                          {isCaseManager && (
+                            <td>
+                              <select
+                                className={styles.accessDropdown}
+                                value={person.accessLevel}
+                                onChange={(e) => handleAccessChange(index, e.target.value)}
+                              >
+                                <option value="Everyone">All</option>
+                                <option value="Case Manager">Case Manager</option>
+                                <option value="Case Manager and Assignees">Assignees</option>
+                              </select>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: 'center' }}>
+                        No Details Available
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+
+              {/* Person detail modal */}
+              <PersonModal
+                isOpen={showPersonModal}
+                onClose={closePersonModal}
+                leadNo={personModalData.leadNo}
+                description={personModalData.description}
+                caseNo={personModalData.caseNo}
+                caseName={personModalData.caseName}
+                leadReturnId={personModalData.leadReturnId}
+              />
+
+              {/* Add person button */}
+              <div className={styles.bottomButtons}>
+                <button
+                  className={styles.saveBtn1}
+                  disabled={
+                    selectedLead?.leadStatus === 'In Review' ||
+                    selectedLead?.leadStatus === 'Completed' ||
+                    selectedLead?.leadStatus === 'Closed' ||
+                    isReadOnly
+                  }
+                  onClick={() => navigate('/LRPerson1')}
+                >
+                  Add Person
+                </button>
+              </div>
+
+            </div>
+          </div>
+
         </div>
-        <div className={styles.lriContentSection}>
-
-<div className={styles.contentSubsection}>
-        <table className={styles.leadsTable}>
-          <thead>
-            <tr>
-              <th style={{ width: "9%" }}>Date</th>
-              <th style={{ width: "9%" }}>Id </th>
-              <th style={{ width: "12%" }}>Name</th>
-              <th style={{ width: "12%" }}>Phone No</th>
-              {/* <th>Address</th> */}
-              <th style={{ width: "9%" }}>More</th>
-              <th style={{ width: "9%" }}>Actions</th>
-              {isCaseManager && (
-              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
-            )}
-            </tr>
-          </thead>
-          <tbody>
-            {persons.length > 0 ? persons.map((person, index) => {
-              const canModify = person.enteredBy?.trim() === signedInOfficer?.trim();
-              const disableActions =
-                selectedLead?.leadStatus === "In Review" ||
-                selectedLead?.leadStatus === "Completed" ||
-                selectedLead?.leadStatus === "Closed" ||
-                isReadOnly ||
-                !canModify;
-
-              return (
-              <tr
-                key={index}
-                className={selectedRow === index ? styles.selectedRow : ""}
-                onClick={() => setSelectedRow(index)}
-              >
-                <td>{person.dateEntered}</td>
-                <td>{person.returnId}</td>
-                <td>{person.name}</td>
-                <td>{person.phoneNo}</td>
-                {/* <td>{person.address}</td> */}
-                <td>
-                  <button className={styles.viewPersonBtn} onClick={() =>
-                    openPersonModal(
-                      selectedLead.leadNo,
-                      selectedLead.leadName,
-                      selectedCase.caseNo,
-                      selectedCase.caseName,
-                      person.leadReturnId
-                    )
-                  }>View</button>
-                </td>
-                <td>
-                  <div className={styles.lrTableBtn}>
-                  <button
-                    onClick={() => handleEditPerson(index)}
-                    disabled={disableActions}
-                  >
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
-                  alt="Edit Icon"
-                  className={styles.editIcon}
-                />
-                  </button>
-                  <button
-                    onClick={() => requestDeletePerson(index)}
-                    disabled={disableActions}
-                  >
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
-                  alt="Delete Icon"
-                  className={styles.editIcon}
-                />
-                  </button>
-                  </div>
-                </td>
-                {isCaseManager && (
-          <td>
-            <select
-              className={styles.accessDropdown}
-              value={person.accessLevel}
-              onChange={e => handleAccessChange(index, e.target.value)}
-            >
-              <option value="Everyone">All</option>
-              <option value="Case Manager">Case Manager</option>
-              <option value="Case Manager and Assignees">Assignees</option>
-            </select>
-          </td>
-        )}
-      </tr>
-      );
-    }) : (
-        <tr>
-          <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign:'center' }}>
-            No Details Available
-          </td>
-        </tr>
-      )}
-          </tbody>
-        </table>
-
-        {/* Person Modal */}
-        <PersonModal
-          isOpen={showPersonModal}
-          onClose={closePersonModal}
-          leadNo={personModalData.leadNo}
-          description={personModalData.description}
-          caseNo={personModalData.caseNo}
-          caseName={personModalData.caseName}
-          leadReturnId={personModalData.leadReturnId}
-        />
-
-        {/* <button onClick={() => handleNavigation('/LRPerson1')} className="save-btn1
-        ">Add Person</button> */}
-
-      {/* Bottom Buttons */}
-      <div className={styles.bottomButtons}>
-      <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || selectedLead?.leadStatus === "Closed" || isReadOnly}
-
-      onClick={() => handleNavigation('/LRPerson1')} className={styles.saveBtn1}>Add Person</button>
       </div>
-
-      {/* <Comment tag = "Person"/> */}
-</div>
-</div>
-
     </div>
-    </div>
-</div>
-      
   );
 };

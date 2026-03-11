@@ -2,7 +2,7 @@ const express = require("express");
 // const { generateReport, generateTestReport } = require("../controller/reportController.js");
 // const { generateReport } = require("../controller/reportController.js");
 const { generateReport } = require("../controller/leadreportController.js");
-const { generateCaseReport } = require("../controller/leadreportCaseController .js");
+const { generateCaseReport, generateTimelineOnlyReport } = require("../controller/leadreportCaseController .js");
 const { generateCaseReportwithExecSummary } = require("../controller/leadreportCaseControllerExecSummary.js");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
@@ -24,6 +24,7 @@ router.post(
 );
 
 router.post("/generateCase", verifyToken, generateCaseReport);
+router.post("/generateTimeline", verifyToken, generateTimelineOnlyReport);
 
 // router.post("/generateCaseExecSummary", verifyToken, roleMiddleware("CaseManager"), generateCaseReportwithExecSummary);
 

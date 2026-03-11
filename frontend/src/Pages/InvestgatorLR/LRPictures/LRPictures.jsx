@@ -1,771 +1,597 @@
-import Navbar from "../../../components/Navbar/Navbar";
-import styles from './LRPictures.module.css';
-import axios from "axios";
-import { CaseContext } from "../../CaseContext";
-import React, { useContext, useState, useEffect, useRef} from 'react';
+/**
+ * LRPictures.jsx
+ *
+ * Manages the Pictures section of a Lead Return. Allows investigators and case
+ * managers to add, edit, and delete picture records (image uploads or external
+ * links) linked to specific narrative IDs within a case/lead context.
+ *
+ * Access control:
+ *  - Case Managers / Detective Supervisors see all records and may change
+ *    per-row access levels.
+ *  - Investigators and assignees see only records matching their access tier.
+ *  - Read-only mode is enforced when the lead status is "In Review" or
+ *    "Completed", or when useLeadStatus returns isReadOnly.
+ */
+
+import { useContext, useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import api, { BASE_URL } from "../../../api";
-import {SideBar } from "../../../components/Sidebar/Sidebar";
+
+import Navbar from "../../../components/Navbar/Navbar";
+import { SideBar } from "../../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../../components/AlertModal/AlertModal";
-import { useLeadStatus } from '../../../hooks/useLeadStatus';
+import { CaseContext } from "../../CaseContext";
+import { useLeadStatus } from "../../../hooks/useLeadStatus";
+import api from "../../../api";
+import styles from "../LR.module.css";
+import { formatDate, alphabetToNumber, buildLeadCasePath, isHttpUrl } from "../lrUtils";
+import { useLeadReport } from "../useLeadReport";
 
+// ─── Constants ────────────────────────────────────────────────────────────────
 
+// Section tab definitions — label + route + whether this tab is active here
+const SECTION_TABS = [
+  { label: "Instructions", path: "/LRInstruction" },
+  { label: "Narrative",    path: "/LRReturn"      },
+  { label: "Person",       path: "/LRPerson"      },
+  { label: "Vehicles",     path: "/LRVehicle"     },
+  { label: "Enclosures",   path: "/LREnclosures"  },
+  { label: "Evidence",     path: "/LREvidence"    },
+  { label: "Pictures",     path: "/LRPictures",   active: true },
+  { label: "Audio",        path: "/LRAudio"       },
+  { label: "Videos",       path: "/LRVideo"       },
+  { label: "Notes",        path: "/LRScratchpad"  },
+  { label: "Timeline",     path: "/LRTimeline"    },
+];
 
-export const LRPictures = () => {
-    // useEffect(() => {
-    //     // Apply style when component mounts
-    //     document.body.style.overflow = "hidden";
-    
-    //     return () => {
-    //       // Reset to default when component unmounts
-    //       document.body.style.overflow = "auto";
-    //     };
-    //   }, []);
-  const navigate = useNavigate();
-    const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
+// ─── Pure Helpers ─────────────────────────────────────────────────────────────
 
- const baseKey = React.useMemo(() => {
-  const c = selectedCase?.caseNo ?? "UNKC";
-  const l = selectedLead?.leadNo ?? "UNKL";
-  return `LRPictures:${c}:${l}`;
-}, [selectedCase?.caseNo, selectedLead?.leadNo]);
+/** Returns a blank picture form object. */
+const defaultPicture = () => ({
+  datePictureTaken: "",
+  description:      "",
+  image:            "",
+  leadReturnId:     "",
+  filename:         "",
+  isLink:           false,
+  link:             "",
+});
 
-const FORM_KEY = `${baseKey}:form`;
-const LIST_KEY = `${baseKey}:list`;
-    const location = useLocation();
-  const [file, setFile] = useState(null);
-const [leadData, setLeadData] = useState({});
-  const [isEditing, setIsEditing] = useState(false);
-const [editingIndex, setEditingIndex] = useState(null);
- const fileInputRef = useRef();
- const [alertOpen, setAlertOpen] = useState(false);
-     const [alertMessage, setAlertMessage] = useState("");
-     // Narrative Ids fetched from the server
-const [narrativeIds, setNarrativeIds] = useState([]);
-
-const [confirmOpen, setConfirmOpen] = useState(false);
-const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
-
-const requestDeletePicture = (idx) => {
-  setPendingDeleteIndex(idx);
-  setConfirmOpen(true);
-};
-
-const normalizeId = (id) => String(id ?? "").trim().toUpperCase();
-const alphabetToNumber = (str = "") => {
-  str = normalizeId(str);
-  let n = 0;
-  for (let i = 0; i < str.length; i++) n = n * 26 + (str.charCodeAt(i) - 64);
-  return n;
-};
-
-const isHttpUrl = (s) => /^https?:\/\/\S+$/i.test((s || "").trim());
-
-function getMissingPictureFields({ pictureData, file, isEditing }) {
+/**
+ * Validates the picture form and returns an array of missing field names.
+ *
+ * @param {Object}   pictureData - Current form state.
+ * @param {File|null} file       - Currently selected file (if any).
+ * @param {boolean}  isEditing   - true when updating an existing record.
+ * @returns {string[]}
+ */
+const getMissingFields = ({ pictureData, file, isEditing }) => {
   const missing = [];
 
-  // hard-required
   if (!pictureData.leadReturnId?.trim())     missing.push("Narrative Id");
   if (!pictureData.datePictureTaken?.trim()) missing.push("Date Picture Taken");
   if (!pictureData.description?.trim())      missing.push("Description");
 
-  // upload-mode rules
   if (pictureData.isLink) {
     if (!isHttpUrl(pictureData.link)) missing.push("Link (valid URL)");
-  } else {
-    // file mode: require file on create; optional on edit
-    if (!isEditing && !file) missing.push("Image File");
+  } else if (!isEditing && !file) {
+    missing.push("Image File");
   }
 
   return missing;
-}
-  
-    const formatDate = (dateString) => {
-      if (!dateString) return "";
-      const date = new Date(dateString);
-      if (isNaN(date)) return "";
-      const month = (date.getMonth() + 1).toString().padStart(2, "0");
-      const day = date.getDate().toString().padStart(2, "0");
-      const year = date.getFullYear().toString().slice(-2);
-      return `${month}/${day}/${year}`;
-    };
-  
-    const { leadDetails, caseDetails } = location.state || {};
-  
-   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
-                const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
-              
-                const onShowCaseSelector = (route) => {
-                  navigate(route, { state: { caseDetails } });
-              };
-
-  // Default pictures data
-  const [pictures, setPictures] = useState(() => {
-   const saved = sessionStorage.getItem(LIST_KEY);
-   return saved ? JSON.parse(saved) : [];
-  });
-
-  // State to manage form data
-  const [pictureData, setPictureData] = useState(() => {
-   const saved = sessionStorage.getItem(FORM_KEY);
-   return saved
-     ? JSON.parse(saved)
-     : {
-         datePictureTaken: "",
-         description: "",
-         image: "",
-         leadReturnId: "",
-         filename: ""
-       };
- });
-  const handleInputChange = (field, value) => {
-    setPictureData({ ...pictureData, [field]: value });
-  };
-
-const handleFileChange = (e) => {
-  const selectedFile = e.target.files?.[0];
-  if (!selectedFile) return;
-  // revoke previous preview
-  if (pictureData.image && pictureData.image.startsWith("blob:")) {
-    try { URL.revokeObjectURL(pictureData.image); } catch {}
-  }
-  const preview = URL.createObjectURL(selectedFile);
-  setFile(selectedFile);
-  setPictureData(prev => ({ ...prev, image: preview, filename: selectedFile.name, isLink: false, link: "" }));
 };
 
-// put this near your other handlers
-const handleUploadTypeChange = (e) => {
-  const nextIsLink = e.target.value === "link";
+// ─── Component ────────────────────────────────────────────────────────────────
 
-  setPictureData((prev) => {
-    // revoke old blob preview if any
-    if (prev.image && typeof prev.image === "string" && prev.image.startsWith("blob:")) {
-      try { URL.revokeObjectURL(prev.image); } catch {}
-    }
+export const LRPictures = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // ── Context ─────────────────────────────────────────────────────────────────
+  const { selectedCase, selectedLead, leadStatus } = useContext(CaseContext);
+
+  // ── Permission flags ────────────────────────────────────────────────────────
+  const isCaseManager =
+    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
+  const signedInOfficer = localStorage.getItem("loggedInUser");
+
+  // ── Lead status hook (read-only gate) ───────────────────────────────────────
+  const { status, isReadOnly } = useLeadStatus({
+    caseNo:   selectedCase.caseNo,
+    caseName: selectedCase.caseName,
+    leadNo:   selectedLead.leadNo,
+    leadName: selectedLead.leadName,
+  });
+
+  // ── Session-storage keys (memoized per case/lead) ───────────────────────────
+  const { formKey, listKey } = useMemo(() => {
+    const cn = selectedCase?.caseNo  ?? "UNKC";
+    const ln = selectedLead?.leadNo  ?? "UNKL";
     return {
-      ...prev,
-      isLink: nextIsLink,
-      link: "",
-      image: "",     // clear preview
-      filename: ""
+      formKey: `LRPictures:${cn}:${ln}:form`,
+      listKey: `LRPictures:${cn}:${ln}:list`,
     };
+  }, [selectedCase?.caseNo, selectedLead?.leadNo]);
+
+  // ── Core state ──────────────────────────────────────────────────────────────
+  const [pictureData, setPictureData] = useState(() => {
+    const saved = sessionStorage.getItem(formKey);
+    return saved ? JSON.parse(saved) : defaultPicture();
+  });
+  const [pictures, setPictures] = useState(() => {
+    const saved = sessionStorage.getItem(listKey);
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [file,          setFile]          = useState(null);
+  const [isEditing,     setIsEditing]     = useState(false);
+  const [editingIndex,  setEditingIndex]  = useState(null);
+  const [narrativeIds,  setNarrativeIds]  = useState([]);
+  const [leadData,      setLeadData]      = useState({});
+
+  // ── Alert / confirm modals ──────────────────────────────────────────────────
+  const [alertOpen,          setAlertOpen]          = useState(false);
+  const [alertMessage,       setAlertMessage]       = useState("");
+  const [confirmOpen,        setConfirmOpen]        = useState(false);
+  const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
+
+  const fileInputRef = useRef();
+
+  // ── Report generation (shared hook) ────────────────────────────────────────
+  const { isGenerating, handleViewLeadReturn } = useLeadReport({
+    selectedLead,
+    selectedCase,
+    location,
+    setAlertMessage,
+    setAlertOpen,
   });
 
-  setFile(null);
-  if (fileInputRef.current) fileInputRef.current.value = "";
-};
+  // ── Primary investigator check ──────────────────────────────────────────────
+  const primaryUsername = leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
+  const isPrimaryInvestigator =
+    selectedCase?.role === "Investigator" &&
+    !!signedInOfficer &&
+    signedInOfficer === primaryUsername;
 
+  // ── Derived: is the form / table locked from edits? ────────────────────────
+  const isLeadLocked =
+    selectedLead?.leadStatus === "In Review" ||
+    selectedLead?.leadStatus === "Completed"  ||
+    isReadOnly;
 
-  // whenever the draft changes, save it
-useEffect(() => {
-  sessionStorage.setItem(FORM_KEY, JSON.stringify(pictureData));
-}, [pictureData, FORM_KEY]);
+  // ── Session storage sync ────────────────────────────────────────────────────
 
-useEffect(() => {
-  sessionStorage.setItem(LIST_KEY, JSON.stringify(pictures));
-}, [pictures, LIST_KEY]);
+  // Reload form/list when the active case or lead changes
+  useEffect(() => {
+    const savedForm = sessionStorage.getItem(formKey);
+    const savedList = sessionStorage.getItem(listKey);
+    setPictureData(savedForm ? JSON.parse(savedForm) : defaultPicture());
+    setPictures(savedList ? JSON.parse(savedList) : []);
+    setIsEditing(false);
+    setEditingIndex(null);
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, [formKey, listKey]);
 
-useEffect(() => {
-  // When the case/lead changes, reset local state to what's in *new* keys
-  const savedForm = sessionStorage.getItem(FORM_KEY);
-  const savedList = sessionStorage.getItem(LIST_KEY);
+  // Persist form draft
+  useEffect(() => {
+    sessionStorage.setItem(formKey, JSON.stringify(pictureData));
+  }, [formKey, pictureData]);
 
-  setPictureData(savedForm ? JSON.parse(savedForm) : {
-    datePictureTaken: "",
-    description: "",
-    image: "",
-    leadReturnId: "",
-    filename: "",
-    isLink: false,
-    link: ""
-  });
-  setPictures(savedList ? JSON.parse(savedList) : []);
-  // also clear editing state
-  setIsEditing(false);
-  setEditingIndex(null);
-  setFile(null);
-  if (fileInputRef.current) fileInputRef.current.value = "";
-}, [FORM_KEY, LIST_KEY]);
+  // Persist pictures list
+  useEffect(() => {
+    sessionStorage.setItem(listKey, JSON.stringify(pictures));
+  }, [listKey, pictures]);
 
+  // ── API: Fetch narrative IDs for the dropdown ───────────────────────────────
+  useEffect(() => {
+    if (!selectedLead?.leadNo || !selectedLead?.leadName ||
+        !selectedCase?.caseNo || !selectedCase?.caseName) return;
 
-const attachFiles = async (items, idFieldName, filesEndpoint) => {
-  return Promise.all(
-    (items || []).map(async (item) => {
-      const realId = item[idFieldName];
-      if (!realId) return { ...item, files: [] };
+    const controller = new AbortController();
+    const token = localStorage.getItem("token");
+    const path  = buildLeadCasePath(
+      selectedLead.leadNo, selectedLead.leadName,
+      selectedCase.caseNo, selectedCase.caseName
+    );
+
+    (async () => {
       try {
-        const { data: filesArray } = await api.get(
-          `${filesEndpoint}/${realId}`,
-          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+        const resp = await api.get(`/api/leadReturnResult/${path}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal:  controller.signal,
+        });
+
+        const rawIds = (resp?.data || [])
+          .map(r => String(r?.leadReturnId ?? "").trim().toUpperCase())
+          .filter(Boolean);
+        const ids = [...new Set(rawIds)];
+        ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
+        setNarrativeIds(ids);
+
+        // Pre-select the latest narrative ID when creating a new record
+        setPictureData(prev =>
+          !isEditing && !prev.leadReturnId
+            ? { ...prev, leadReturnId: ids.at(-1) || "" }
+            : prev
         );
-        return { ...item, files: filesArray };
-      } catch (err) {
-        console.error(`Error fetching files for ${filesEndpoint}/${realId}:`, err);
-        return { ...item, files: [] };
+      } catch (e) {
+        if (!controller.signal.aborted) console.error("Failed to fetch Narrative Ids:", e);
       }
-    })
-  );
-};
+    })();
 
+    return () => controller.abort();
+  }, [
+    selectedLead?.leadNo, selectedLead?.leadName,
+    selectedCase?.caseNo, selectedCase?.caseName,
+    isEditing,
+  ]);
 
-    const [isGenerating, setIsGenerating] = useState(false);
-    const handleViewLeadReturn = async () => {
-  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-  if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
-    setAlertMessage("Please select a case and lead first.");
-    setAlertOpen(true);
-    return;
-  }
-
-  if (isGenerating) return;
-
-  try {
-    setIsGenerating(true);
+  // ── API: Fetch lead metadata (assignment info, primary investigator) ─────────
+  useEffect(() => {
+    if (!selectedLead?.leadNo || !selectedLead?.leadName ||
+        !selectedCase?.caseNo || !selectedCase?.caseName) return;
 
     const token = localStorage.getItem("token");
-    const headers = { headers: { Authorization: `Bearer ${token}` } };
+    const path  = buildLeadCasePath(
+      selectedLead.leadNo, selectedLead.leadName,
+      selectedCase.caseNo, selectedCase.caseName
+    );
 
-    const { leadNo } = lead;
-    const leadName = lead.leadName || lead.description;
-    const { caseNo, caseName } = kase;
-    const encLead = encodeURIComponent(leadName);
-    const encCase = encodeURIComponent(caseName);
+    api
+      .get(`/api/lead/lead/${path}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => {
+        if (res.data.length > 0) {
+          setLeadData({
+            ...res.data[0],
+            assignedTo: res.data[0].assignedTo || [],
+            leadStatus: res.data[0].leadStatus  || "",
+          });
+        }
+      })
+      .catch(err => console.error("Failed to fetch lead data:", err));
+  }, [selectedLead, selectedCase]);
 
-    // fetch everything we need for the report (same endpoints you use on LRFinish)
-    const [
-      instrRes,
-      returnsRes,
-      personsRes,
-      vehiclesRes,
-      enclosuresRes,
-      evidenceRes,
-      picturesRes,
-      audioRes,
-      videosRes,
-      scratchpadRes,
-      timelineRes,
-    ] = await Promise.all([
-      api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-    ]);
+  // ── API: Fetch pictures list ────────────────────────────────────────────────
+  /**
+   * Fetches the pictures list from the server and maps records to display shape.
+   * Normalises signed URLs and links for use in the table.
+   */
+  const fetchPictures = useCallback(async () => {
+    if (!selectedLead?.leadNo || !selectedCase?.caseNo) return;
 
-    // add files where applicable (note the plural file endpoints)
-    const enclosuresWithFiles = await attachFiles(enclosuresRes.data, "_id", "/api/lrenclosures/files");
-    const evidenceWithFiles   = await attachFiles(evidenceRes.data,   "_id", "/api/lrevidences/files");
-    const picturesWithFiles   = await attachFiles(picturesRes.data,   "pictureId", "/api/lrpictures/files");
-    const audioWithFiles      = await attachFiles(audioRes.data,      "audioId",   "/api/lraudio/files");
-    const videosWithFiles     = await attachFiles(videosRes.data,     "videoId",   "/api/lrvideo/files");
+    const token = localStorage.getItem("token");
+    const path  = buildLeadCasePath(
+      selectedLead.leadNo, selectedLead.leadName,
+      selectedCase.caseNo, selectedCase.caseName
+    );
 
-    const leadInstructions = instrRes.data?.[0] || {};
-    const leadReturns      = returnsRes.data || [];
-    const leadPersons      = personsRes.data || [];
-    const leadVehicles     = vehiclesRes.data || [];
-    const leadScratchpad   = scratchpadRes.data || [];
-    const leadTimeline     = timelineRes.data || [];
+    try {
+      const res = await api.get(`/api/lrpicture/${path}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    // make all sections true (Full Report)
-    const selectedReports = {
-      FullReport: true,
-      leadInstruction: true,
-      leadReturn: true,
-      leadPersons: true,
-      leadVehicles: true,
-      leadEnclosures: true,
-      leadEvidence: true,
-      leadPictures: true,
-      leadAudio: true,
-      leadVideos: true,
-      leadScratchpad: true,
-      leadTimeline: true,
-    };
+      const mapped = res.data.map(pic => ({
+        dateEntered:         formatDate(pic.enteredDate),
+        rawEnteredDate:      pic.enteredDate,
+        returnId:            pic.leadReturnId,
+        datePictureTaken:    formatDate(pic.datePictureTaken),
+        rawDatePictureTaken: pic.datePictureTaken,
+        originalName:        pic.originalName,
+        filename:            pic.filename,
+        description:         pic.pictureDescription,
+        image:               pic.signedUrl || pic.link || "",
+        link:                pic.link      || "",
+        accessLevel:         pic.accessLevel ?? "Everyone",
+        pictureId:           pic._id,
+      }));
 
-    const body = {
-      user: localStorage.getItem("loggedInUser") || "",
-      reportTimestamp: new Date().toISOString(),
-
-      // sections (values are the fetched arrays/objects)
-      leadInstruction: leadInstructions,
-      leadReturn:      leadReturns,
-      leadPersons,
-      leadVehicles,
-      leadEnclosures:  enclosuresWithFiles,
-      leadEvidence:    evidenceWithFiles,
-      leadPictures:    picturesWithFiles,
-      leadAudio:       audioWithFiles,
-      leadVideos:      videosWithFiles,
-      leadScratchpad,
-      leadTimeline,
-
-      // also send these two, since your backend expects them
-      selectedReports,
-      leadInstructions,
-      leadReturns,
-    };
-
-    const resp = await api.post("/api/report/generate", body, {
-      responseType: "blob",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    const file = new Blob([resp.data], { type: "application/pdf" });
-
-    navigate("/DocumentReview", {
-      state: {
-        pdfBlob: file,
-        filename: `Lead_${leadNo || "report"}.pdf`,
-      },
-    });
-  } catch (err) {
-    if (err?.response?.data instanceof Blob) {
-      const text = await err.response.data.text();
-      console.error("Report error:", text);
-      setAlertMessage("Error generating PDF:\n" + text);
-    } else {
-      console.error("Report error:", err);
-      setAlertMessage("Error generating PDF:\n" + (err.message || "Unknown error"));
+      setPictures(mapped);
+    } catch (err) {
+      console.error("Error fetching pictures:", err);
     }
-    setAlertOpen(true);
-  } finally {
-    setIsGenerating(false);
-  }
-};
+  }, [selectedLead, selectedCase]);
 
-  const signedInOfficer = localStorage.getItem("loggedInUser");
- // who is primary for this lead?
-const primaryUsername =
-  leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
+  useEffect(() => {
+    if (selectedLead?.leadNo && selectedLead?.leadName &&
+        selectedCase?.caseNo && selectedCase?.caseName) {
+      fetchPictures();
+    }
+  }, [selectedLead, selectedCase]);
 
-// am I the primary investigator on this lead?
-const isPrimaryInvestigator =
-  selectedCase?.role === "Investigator" &&
-  !!signedInOfficer &&
-  signedInOfficer === primaryUsername;
+  // ── Handlers: navigation ────────────────────────────────────────────────────
 
-// primary goes to the interactive ViewLR page
-const goToViewLR = () => {
-  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+  const navigateToLeadReview = () => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    if (lead && kase) navigate("/LeadReview", { state: { caseDetails: kase, leadDetails: lead } });
+  };
 
-  if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-    setAlertMessage("Please select a case and lead first.");
-    setAlertOpen(true);
-    return;
-  }
+  const navigateToChainOfCustody = () => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    if (lead && kase) {
+      navigate("/ChainOfCustody", { state: { caseDetails: kase, leadDetails: lead } });
+    } else {
+      setAlertMessage("Please select a case and lead first.");
+      setAlertOpen(true);
+    }
+  };
 
-  navigate("/viewLR", {
-    state: { caseDetails: kase, leadDetails: lead }
-  });
-};
+  const goToViewLR = useCallback(() => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
+      setAlertMessage("Please select a case and lead first.");
+      setAlertOpen(true);
+      return;
+    }
+    navigate("/viewLR", { state: { caseDetails: kase, leadDetails: lead } });
+  }, [selectedLead, selectedCase, location.state, navigate]);
 
+  // ── Handlers: form ──────────────────────────────────────────────────────────
 
-  // populate the form to edit a picture
-  const handleEditPicture = idx => {
+  const handleInputChange = (field, value) => {
+    setPictureData(prev => ({ ...prev, [field]: value }));
+  };
+
+  /**
+   * Handles image file selection. Revokes any existing blob preview URL to
+   * prevent memory leaks before creating a new one.
+   */
+  const handleFileChange = (e) => {
+    const selected = e.target.files?.[0];
+    if (!selected) return;
+
+    if (pictureData.image?.startsWith("blob:")) {
+      try { URL.revokeObjectURL(pictureData.image); } catch {}
+    }
+
+    const preview = URL.createObjectURL(selected);
+    setFile(selected);
+    setPictureData(prev => ({
+      ...prev,
+      image:    preview,
+      filename: selected.name,
+      isLink:   false,
+      link:     "",
+    }));
+  };
+
+  /**
+   * Switches between "file" and "link" upload modes.
+   * Revokes any existing blob preview URL before clearing state.
+   */
+  const handleUploadTypeChange = (e) => {
+    const nextIsLink = e.target.value === "link";
+
+    setPictureData(prev => {
+      if (prev.image?.startsWith("blob:")) {
+        try { URL.revokeObjectURL(prev.image); } catch {}
+      }
+      return { ...prev, isLink: nextIsLink, link: "", image: "", filename: "" };
+    });
+
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  /** Resets the form and exits edit mode. */
+  const resetForm = useCallback(() => {
+    setIsEditing(false);
+    setEditingIndex(null);
+    setPictureData(defaultPicture());
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }, []);
+
+  /** Populates the form with an existing picture record for editing. */
+  const handleEditPicture = useCallback((idx) => {
     const pic = pictures[idx];
     setPictureData({
-      datePictureTaken: new Date(pic.rawDatePictureTaken).toISOString().slice(0,10),
+      datePictureTaken: new Date(pic.rawDatePictureTaken).toISOString().slice(0, 10),
       leadReturnId:     pic.returnId,
       description:      pic.description,
       image:            pic.image,
       filename:         pic.filename,
       link:             pic.link || "",
       isLink:           !!pic.link,
-      accessLevel:      pic.accessLevel || "Everyone"
+      accessLevel:      pic.accessLevel || "Everyone",
     });
     setIsEditing(true);
     setEditingIndex(idx);
     setFile(null);
-  };
+  }, [pictures]);
 
-  useEffect(() => {
-  if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+  // ── Handlers: CRUD ──────────────────────────────────────────────────────────
 
-  const ac = new AbortController();
-
-  (async () => {
-    try {
-      const token   = localStorage.getItem("token");
-      const leadNo  = selectedLead.leadNo;
-      const caseNo  = selectedCase.caseNo;
-      const encLead = encodeURIComponent(selectedLead.leadName);
-      const encCase = encodeURIComponent(selectedCase.caseName);
-
-      const resp = await api.get(
-        `/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`,
-        { headers: { Authorization: `Bearer ${token}` }, signal: ac.signal }
+  /**
+   * Validates the form, then POSTs a new picture record.
+   * On success, refreshes the list and resets the form.
+   */
+  const handleAddPicture = async () => {
+    const missing = getMissingFields({ pictureData, file, isEditing: false });
+    if (missing.length) {
+      setAlertMessage(
+        `Please fill the required field${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}.`
       );
-
-      const ids = [...new Set((resp?.data || [])
-        .map(r => normalizeId(r?.leadReturnId))
-        .filter(Boolean))];
-
-      ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
-      setNarrativeIds(ids);
-
-      // If adding a NEW picture and no Id chosen yet, preselect the newest
-      setPictureData(prev =>
-        (!isEditing && !prev.leadReturnId)
-          ? { ...prev, leadReturnId: ids.at(-1) || "" }
-          : prev
-      );
-    } catch (e) {
-      if (!ac.signal.aborted) console.error("Failed to fetch Narrative Ids:", e);
+      setAlertOpen(true);
+      return;
     }
-  })();
 
-  return () => ac.abort();
-}, [
-  selectedLead?.leadNo,
-  selectedLead?.leadName,
-  selectedCase?.caseNo,
-  selectedCase?.caseName,
-  isEditing
-]);
+    const fd = new FormData();
+    if (!pictureData.isLink && file) fd.append("file", file);
 
-const performDeletePicture = async () => {
-  const idx = pendingDeleteIndex;
-  if (idx == null) return;
+    fd.append("leadNo",           selectedLead.leadNo);
+    fd.append("description",      selectedLead.leadName);
+    fd.append("enteredBy",        localStorage.getItem("loggedInUser"));
+    fd.append("caseName",         selectedCase.caseName);
+    fd.append("caseNo",           selectedCase.caseNo);
+    fd.append("leadReturnId",     pictureData.leadReturnId || "");
+    fd.append("enteredDate",      new Date().toISOString());
+    fd.append("datePictureTaken", pictureData.datePictureTaken);
+    fd.append("pictureDescription", pictureData.description);
+    fd.append("accessLevel",      "Everyone");
+    fd.append("isLink",           String(!!pictureData.isLink));
+    if (pictureData.isLink && pictureData.link?.trim()) {
+      fd.append("link", pictureData.link.trim());
+    }
 
-  const pic = pictures[idx];
-  const token = localStorage.getItem("token");
-  try {
-    await api.delete(
-      `/api/lrpicture/${selectedLead.leadNo}/` +
-      `${encodeURIComponent(selectedLead.leadName)}/` +
-      `${selectedCase.caseNo}/` +
-      `${encodeURIComponent(selectedCase.caseName)}/` +
-      `${pic.returnId}/` +
-      `${encodeURIComponent(pic.description)}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    setPictures(ps => ps.filter((_, i) => i !== idx));
-  } catch (e) {
-    console.error("Delete picture failed:", e);
-    setAlertMessage("Failed to delete picture.");
-    setAlertOpen(true);
-  } finally {
-    setConfirmOpen(false);
-    setPendingDeleteIndex(null);
-  }
-};
-
-
-// delete a picture
-const handleDeletePicture = async idx => {
-  if (!window.confirm("Delete this picture?")) return;
-  const pic = pictures[idx];
-  const token = localStorage.getItem("token");
-  await api.delete(
-    `/api/lrpicture/${selectedLead.leadNo}/` +
-    `${encodeURIComponent(selectedLead.leadName)}/` +
-    `${selectedCase.caseNo}/` +
-    `${encodeURIComponent(selectedCase.caseName)}/` +
-    `${pic.returnId}/` +
-    `${encodeURIComponent(pic.description)}`,
-    { headers:{ Authorization:`Bearer ${token}` } }
-  );
-  setPictures(ps => ps.filter((_, i) => i !== idx));
-};
-const handleAddPicture = async () => {
-
-  // ✅ Only the fields you truly want to require. Remove file/link requirement.
-   const missing = getMissingPictureFields({ pictureData, file, isEditing: false });
-  if (missing.length) {
-    setAlertMessage(
-      `Please fill the required field${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}.`
-    );
-    setAlertOpen(true);
-    return;
-  }
-
-  const fd = new FormData();
-  // attach file only if present
-  if (!pictureData.isLink && file) {
-    fd.append("file", file);
-  }
-  fd.append("leadNo", selectedLead.leadNo);
-  fd.append("description", selectedLead.leadName);
-  fd.append("enteredBy", localStorage.getItem("loggedInUser"));
-  fd.append("caseName", selectedCase.caseName);
-  fd.append("caseNo", selectedCase.caseNo);
-  fd.append("leadReturnId", pictureData.leadReturnId || "");
-  fd.append("enteredDate", new Date().toISOString());
-  fd.append("datePictureTaken", pictureData.datePictureTaken);
-  fd.append("pictureDescription", pictureData.description);
-  fd.append("accessLevel", "Everyone"); // Default access level
-
-  // link is optional
-  fd.append("isLink", !!pictureData.isLink);
-  if (pictureData.isLink && pictureData.link?.trim()) {
-    fd.append("link", pictureData.link.trim());
-  }
-
-  try {
-    const token = localStorage.getItem("token");
-    await api.post("/api/lrpicture/upload", fd, {
-      headers: { Authorization: `Bearer ${token}` },
-      transformRequest: [(data, headers) => { delete headers["Content-Type"]; return data; }]
-    });
-
-    await fetchPictures();
-    setPictureData({
-      datePictureTaken: "",
-      leadReturnId: "",
-      description: "",
-      isLink: false,
-      link: "",
-      originalName: "",
-      filename: ""
-    });
-    setFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    sessionStorage.removeItem(FORM_KEY);
-  } catch (err) {
-    console.error("Error uploading picture:", err);
-    setAlertMessage("Failed to save picture. See console for details.");
-    setAlertOpen(true);
-  }
-};
-
-
-  useEffect(() => {
-    const fetchLeadData = async () => {
-      if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
-      const token = localStorage.getItem("token");
-
-      try {
-        const response = await api.get(
-          `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
-
-        if (response.data.length > 0) {
-          setLeadData({
-            ...response.data[0],
-            assignedTo: response.data[0].assignedTo || [],
-            leadStatus: response.data[0].leadStatus || ''
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch lead data:", error);
-      }
+    // Let the browser set the correct multipart boundary
+    const multipartConfig = {
+      transformRequest: [(data, headers) => { delete headers["Content-Type"]; return data; }],
     };
 
-    fetchLeadData();
-  }, [selectedLead, selectedCase]);
-
-const handleUpdatePicture = async () => {
-  const pic = pictures[editingIndex];
-
-  // 1️⃣ Validation for description
-  if (!pictureData.description?.trim()) {
-    setAlertMessage("Please enter a description.");
-    setAlertOpen(true);
-    return;
-  }
-
-  // 2️⃣ Validation for link-mode
-  if (pictureData.isLink && !pictureData.link.trim()) {
-    setAlertMessage("Please enter a valid link.");
-    setAlertOpen(true);
-    return;
-  }
-
-  // 3️⃣ Build FormData
-  const fd = new FormData();
-  // only include a new file if user replaced it
-  if (!pictureData.isLink && file) {
-    fd.append("file", file);
-  }
-
-  // ● Required by your mongoose schema
-  fd.append("leadReturnId", pictureData.leadReturnId);
-
-  // ● All the rest of your fields
-  fd.append("datePictureTaken", pictureData.datePictureTaken);
-  fd.append("pictureDescription", pictureData.description);
-  fd.append("enteredBy", localStorage.getItem("loggedInUser"));
-  fd.append("accessLevel", pictureData.accessLevel || pic.accessLevel || "Everyone");
-  fd.append("isLink", pictureData.isLink);
-  if (pictureData.isLink) {
-    fd.append("link", pictureData.link.trim());
-  }
-
-  try {
-    const token = localStorage.getItem("token");
-    await api.put(
-      `/api/lrpicture/` +
-        `${selectedLead.leadNo}/` +
-        `${encodeURIComponent(selectedLead.leadName)}/` +
-        `${selectedCase.caseNo}/` +
-        `${encodeURIComponent(selectedCase.caseName)}/` +
-        `${pic.returnId}/` +
-        `${encodeURIComponent(pic.description)}`,
-      fd,
-      {
+    try {
+      const token = localStorage.getItem("token");
+      await api.post("/api/lrpicture/upload", fd, {
         headers: { Authorization: `Bearer ${token}` },
-        transformRequest: [(data, headers) => {
-          delete headers["Content-Type"];
-          return data;
-        }]
-      }
+        ...multipartConfig,
+      });
+
+      await fetchPictures();
+      sessionStorage.removeItem(formKey);
+      resetForm();
+    } catch (err) {
+      console.error("Error uploading picture:", err);
+      setAlertMessage("Failed to save picture. See console for details.");
+      setAlertOpen(true);
+    }
+  };
+
+  /**
+   * Validates the form, then PUTs an updated picture record.
+   * On success, refreshes the list and resets the form.
+   */
+  const handleUpdatePicture = async () => {
+    if (!pictureData.description?.trim()) {
+      setAlertMessage("Please enter a description.");
+      setAlertOpen(true);
+      return;
+    }
+    if (pictureData.isLink && !pictureData.link?.trim()) {
+      setAlertMessage("Please enter a valid link.");
+      setAlertOpen(true);
+      return;
+    }
+
+    const pic = pictures[editingIndex];
+    const fd  = new FormData();
+    if (!pictureData.isLink && file) fd.append("file", file);
+
+    fd.append("leadReturnId",     pictureData.leadReturnId);
+    fd.append("datePictureTaken", pictureData.datePictureTaken);
+    fd.append("pictureDescription", pictureData.description);
+    fd.append("enteredBy",        localStorage.getItem("loggedInUser"));
+    fd.append("accessLevel",      pictureData.accessLevel || pic.accessLevel || "Everyone");
+    fd.append("isLink",           String(!!pictureData.isLink));
+    if (pictureData.isLink) fd.append("link", pictureData.link.trim());
+
+    const multipartConfig = {
+      transformRequest: [(data, headers) => { delete headers["Content-Type"]; return data; }],
+    };
+
+    try {
+      const token = localStorage.getItem("token");
+      const path  = buildLeadCasePath(
+        selectedLead.leadNo, selectedLead.leadName,
+        selectedCase.caseNo, selectedCase.caseName
+      );
+      await api.put(
+        `/api/lrpicture/${path}/${pic.returnId}/${encodeURIComponent(pic.description)}`,
+        fd,
+        { headers: { Authorization: `Bearer ${token}` }, ...multipartConfig }
+      );
+
+      await fetchPictures();
+      resetForm();
+    } catch (err) {
+      console.error("Error updating picture:", err);
+      setAlertMessage("Failed to update picture. See console for details.");
+      setAlertOpen(true);
+    }
+  };
+
+  /** Opens the delete confirmation modal for the given row. */
+  const requestDeletePicture = (idx) => {
+    setPendingDeleteIndex(idx);
+    setConfirmOpen(true);
+  };
+
+  /** Executes the deletion after user confirmation. */
+  const performDeletePicture = async () => {
+    const idx = pendingDeleteIndex;
+    if (idx == null) return;
+
+    const pic   = pictures[idx];
+    const token = localStorage.getItem("token");
+    const path  = buildLeadCasePath(
+      selectedLead.leadNo, selectedLead.leadName,
+      selectedCase.caseNo, selectedCase.caseName
     );
 
-    // Refresh & reset
-    await fetchPictures();
-    setIsEditing(false);
-    setEditingIndex(null);
-    setPictureData({
-      datePictureTaken: "",
-      leadReturnId:     "",
-      description:      "",
-      isLink:           false,
-      link:             "",
-      originalName:     "",
-      filename:         ""
-    });
-    setFile(null);
-  } catch (err) {
-    console.error("Error updating LRPicture:", err);
-     setAlertMessage("Failed to update picture. See console for details.");
-                      setAlertOpen(true);
-  }
-};
-
-
-  
-
-  const handleNavigation = (route) => {
-    navigate(route);
-  };
-
-  useEffect(() => {
-    if (
-      selectedLead?.leadNo &&
-      selectedLead?.leadName &&
-      selectedCase?.caseNo &&
-      selectedCase?.caseName
-    ) {
-      fetchPictures();
-    }
-  }, [selectedLead, selectedCase]);
-  
-  const fetchPictures = async () => {
-    const token = localStorage.getItem("token");
-  
-    const leadNo = selectedLead.leadNo;
-    const leadName = encodeURIComponent(selectedLead.leadName);
-    const caseNo = selectedCase.caseNo;
-    const caseName = encodeURIComponent(selectedCase.caseName);
-  
     try {
-      const res = await api.get(
-        `/api/lrpicture/${leadNo}/${leadName}/${caseNo}/${caseName}`,
-        {
-          headers: {
-            "Content-Type": undefined,  
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      await api.delete(
+        `/api/lrpicture/${path}/${pic.returnId}/${encodeURIComponent(pic.description)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-  
-      const mappedPictures = res.data.map((pic) => ({
-        dateEntered: formatDate(pic.enteredDate),
-        rawEnteredDate:  pic.enteredDate,
-        returnId: pic.leadReturnId,
-        datePictureTaken: formatDate(pic.datePictureTaken),
-        rawDatePictureTaken: pic.datePictureTaken,
-        filename: pic.filename,
-  originalName: pic.originalName,
-        description: pic.pictureDescription,
-         image: pic.signedUrl || pic.link,
-          filename: pic.filename,
-          link: pic.link || "",
-          accessLevel: pic.accessLevel || "Everyone",
-          pictureId: pic._id
-      }));
-      const withAccess = mappedPictures.map(r => ({
-        ...r,
-        accessLevel: r.accessLevel ?? "Everyone"
-      }));
-  
-      setPictures(withAccess);
-    } catch (error) {
-      console.error("Error fetching pictures:", error);
+      setPictures(prev => prev.filter((_, i) => i !== idx));
+    } catch (e) {
+      console.error("Delete picture failed:", e);
+      setAlertMessage("Failed to delete picture.");
+      setAlertOpen(true);
+    } finally {
+      setConfirmOpen(false);
+      setPendingDeleteIndex(null);
     }
   };
 
-    const isCaseManager = 
-    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
-  // handler to change access per row
-const handleAccessChange = async (idx, newAccessLevel) => {
-  const picture = pictures[idx];
-  const token = localStorage.getItem("token");
+  /**
+   * Updates the access level of a single picture row.
+   * Sends a FormData PUT (matching the multer middleware), then updates local
+   * state to avoid a full refetch.
+   */
+  const handleAccessChange = async (idx, newAccessLevel) => {
+    const picture = pictures[idx];
+    const token   = localStorage.getItem("token");
+    const path    = buildLeadCasePath(
+      selectedLead.leadNo, selectedLead.leadName,
+      selectedCase.caseNo, selectedCase.caseName
+    );
 
-  const url =
-    `/api/lrpicture/` +
-    `${selectedLead.leadNo}/` +
-    `${encodeURIComponent(selectedLead.leadName)}/` +
-    `${selectedCase.caseNo}/` +
-    `${encodeURIComponent(selectedCase.caseName)}/` +
-    `${picture.returnId}/` +
-    `${encodeURIComponent(picture.description)}`;
-
-  try {
-    // Send as FormData to match the multer middleware expectation
     const fd = new FormData();
-    fd.append("leadReturnId", picture.returnId);
+    fd.append("leadReturnId",     picture.returnId);
     fd.append("datePictureTaken", picture.rawDatePictureTaken);
     fd.append("pictureDescription", picture.description);
-    fd.append("enteredBy", localStorage.getItem("loggedInUser"));
-    fd.append("accessLevel", newAccessLevel);
+    fd.append("enteredBy",        localStorage.getItem("loggedInUser"));
+    fd.append("accessLevel",      newAccessLevel);
 
-    await api.put(url, fd, {
-      headers: { Authorization: `Bearer ${token}` },
-      transformRequest: [(data, headers) => {
-        delete headers["Content-Type"];
-        return data;
-      }]
-    });
+    try {
+      await api.put(
+        `/api/lrpicture/${path}/${picture.returnId}/${encodeURIComponent(picture.description)}`,
+        fd,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          transformRequest: [(data, headers) => { delete headers["Content-Type"]; return data; }],
+        }
+      );
+      setPictures(prev => {
+        const next = [...prev];
+        next[idx] = { ...next[idx], accessLevel: newAccessLevel };
+        return next;
+      });
+    } catch (err) {
+      console.error("Failed to update accessLevel", err);
+      setAlertMessage("Could not change access level. Please try again.");
+      setAlertOpen(true);
+    }
+  };
 
-    // Update local state
-    setPictures(prev => {
-      const copy = [...prev];
-      copy[idx] = { ...copy[idx], accessLevel: newAccessLevel };
-      return copy;
-    });
-  } catch (err) {
-    console.error("Failed to update accessLevel", err);
-    setAlertMessage("Could not change access level. Please try again.");
-    setAlertOpen(true);
-  }
-};
-
-    const { status, isReadOnly } = useLeadStatus({
-    caseNo: selectedCase.caseNo,
-    caseName: selectedCase.caseName,
-    leadNo: selectedLead.leadNo,
-    leadName: selectedLead.leadName,
-  });
-
-
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div className={styles.evidencePage}>
       <Navbar />
+
+      {/* Notification modal */}
       <AlertModal
         isOpen={alertOpen}
         title="Notification"
@@ -773,32 +599,34 @@ const handleAccessChange = async (idx, newAccessLevel) => {
         onConfirm={() => setAlertOpen(false)}
         onClose={() => setAlertOpen(false)}
       />
+
+      {/* Delete confirmation modal */}
       <AlertModal
         isOpen={confirmOpen}
         title="Confirm Deletion"
         message="Are you sure you want to delete this record?"
         onConfirm={performDeletePicture}
-        onClose={() => {
-          setConfirmOpen(false);
-          setPendingDeleteIndex(null);
-        }}
+        onClose={() => { setConfirmOpen(false); setPendingDeleteIndex(null); }}
       />
 
       <div className={styles.LRIContent}>
         <SideBar activePage="LeadReview" />
+
         <div className={styles.leftContentLI}>
 
+          {/* ── Page-level navigation bar ── */}
           <div className={styles.topMenuNav}>
             <div className={styles.menuItems}>
-              <span className={styles.menuItem} onClick={() => {
-                const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                if (lead && kase) {
-                  navigate("/LeadReview", { state: { caseDetails: kase, leadDetails: lead } });
-                }
-              }}>Lead Information</span>
-              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>Add Lead Return</span>
-              {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
+              <span className={styles.menuItem} onClick={navigateToLeadReview}>
+                Lead Information
+              </span>
+
+              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
+                Add Lead Return
+              </span>
+
+              {/* Case Manager / Detective Supervisor: generate full lead return report */}
+              {["Case Manager", "Detective Supervisor"].includes(selectedCase?.role) && (
                 <span
                   className={styles.menuItem}
                   onClick={handleViewLeadReturn}
@@ -808,41 +636,37 @@ const handleAccessChange = async (idx, newAccessLevel) => {
                   Manage Lead Return
                 </span>
               )}
-              {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-                <span className={styles.menuItem} onClick={goToViewLR}>Submit Lead Return</span>
+
+              {/* Investigator: submit (primary) or review (non-primary) */}
+              {selectedCase?.role === "Investigator" && (
+                <span className={styles.menuItem} onClick={goToViewLR}>
+                  {isPrimaryInvestigator ? "Submit Lead Return" : "Review Lead Return"}
+                </span>
               )}
-              {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-                <span className={styles.menuItem} onClick={goToViewLR}>Review Lead Return</span>
-              )}
-              <span className={styles.menuItem} onClick={() => {
-                const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                if (lead && kase) {
-                  navigate("/ChainOfCustody", { state: { caseDetails: kase, leadDetails: lead } });
-                } else {
-                  setAlertMessage("Please select a case and lead first.");
-                  setAlertOpen(true);
-                }
-              }}>Lead Chain of Custody</span>
+
+              <span className={styles.menuItem} onClick={navigateToChainOfCustody}>
+                Lead Chain of Custody
+              </span>
             </div>
           </div>
 
+          {/* ── Section tab bar ── */}
           <div className={styles.topMenuSections}>
-            <div className={styles.menuItems} style={{ fontSize: '19px' }}>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>Instructions</span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>Narrative</span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')}>Person</span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRVehicle')}>Vehicles</span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LREnclosures')}>Enclosures</span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LREvidence')}>Evidence</span>
-              <span className={`${styles.menuItem} ${styles.menuItemActive}`} style={{ fontWeight: '600' }} onClick={() => handleNavigation('/LRPictures')}>Pictures</span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRAudio')}>Audio</span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRVideo')}>Videos</span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRScratchpad')}>Notes</span>
-              <span className={styles.menuItem} style={{ fontWeight: '400' }} onClick={() => handleNavigation('/LRTimeline')}>Timeline</span>
+            <div className={styles.menuItems} style={{ fontSize: "19px" }}>
+              {SECTION_TABS.map(({ label, path, active }) => (
+                <span
+                  key={path}
+                  className={`${styles.menuItem}${active ? ` ${styles.menuItemActive}` : ""}`}
+                  style={{ fontWeight: active ? "600" : "400" }}
+                  onClick={() => navigate(path)}
+                >
+                  {label}
+                </span>
+              ))}
             </div>
           </div>
 
+          {/* ── Breadcrumb + lead status ── */}
           <div className={styles.caseandleadinfo}>
             <h5 className={styles.sideTitle}>
               <div className={styles.ldHead}>
@@ -864,10 +688,11 @@ const handleAccessChange = async (idx, newAccessLevel) => {
               </div>
             </h5>
             <h5 className={styles.sideTitle}>
-              {selectedLead?.leadNo ? ` Lead Status:  ${status}` : ` ${leadStatus}`}
+              {selectedLead?.leadNo ? `Lead Status: ${status}` : leadStatus}
             </h5>
           </div>
 
+          {/* ── Page heading ── */}
           <div className={styles.caseHeader}>
             <h2>PICTURES INFORMATION</h2>
           </div>
@@ -875,17 +700,19 @@ const handleAccessChange = async (idx, newAccessLevel) => {
           <div className={styles.lriContentSection}>
             <div className={styles.contentSubsection}>
 
-              {/* Picture Form */}
+              {/* ── Picture entry form ── */}
               <div className={styles.sectionBlock}>
                 <div className={styles.sectionHeading}>Picture Entry</div>
                 <div className={styles.LREnteringContentBox}>
                   <div className={styles.evidenceForm}>
+
+                    {/* Row 1: Narrative Id + Date Picture Taken */}
                     <div className={styles.formRowPair}>
                       <div className={styles.formRowEvidence}>
                         <label>Narrative Id*</label>
                         <select
                           value={pictureData.leadReturnId}
-                          onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
+                          onChange={e => handleInputChange("leadReturnId", e.target.value)}
                         >
                           <option value="">Select Id</option>
                           {narrativeIds.map(id => (
@@ -898,19 +725,21 @@ const handleAccessChange = async (idx, newAccessLevel) => {
                         <input
                           type="date"
                           value={pictureData.datePictureTaken}
-                          onChange={(e) => handleInputChange("datePictureTaken", e.target.value)}
+                          onChange={e => handleInputChange("datePictureTaken", e.target.value)}
                         />
                       </div>
                     </div>
 
+                    {/* Row 2: Description */}
                     <div className={styles.formRowEvidence}>
                       <label>Description*</label>
                       <textarea
                         value={pictureData.description}
-                        onChange={(e) => handleInputChange("description", e.target.value)}
+                        onChange={e => handleInputChange("description", e.target.value)}
                       />
                     </div>
 
+                    {/* Row 3: Upload Type + File / Link input */}
                     <div className={styles.formRowPair}>
                       <div className={styles.formRowEvidence}>
                         <label>Upload Type</label>
@@ -923,6 +752,7 @@ const handleAccessChange = async (idx, newAccessLevel) => {
                         </select>
                       </div>
                       <div className={styles.formRowEvidence}>
+                        {/* Editing a file-mode record that already has a file: show current name */}
                         {isEditing && !pictureData.isLink && pictureData.originalName ? (
                           <>
                             <label>Current File:</label>
@@ -931,7 +761,12 @@ const handleAccessChange = async (idx, newAccessLevel) => {
                         ) : !pictureData.isLink ? (
                           <>
                             <label>{isEditing ? "Replace Image (optional)" : "Upload Image"}</label>
-                            <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              ref={fileInputRef}
+                              onChange={handleFileChange}
+                            />
                           </>
                         ) : (
                           <>
@@ -940,48 +775,41 @@ const handleAccessChange = async (idx, newAccessLevel) => {
                               type="text"
                               placeholder="https://..."
                               value={pictureData.link}
-                              onChange={e => setPictureData(prev => ({ ...prev, link: e.target.value }))}
+                              onChange={e => handleInputChange("link", e.target.value)}
                             />
                           </>
                         )}
                       </div>
                     </div>
 
+                    {/* Row 4 (edit only): Replace-file row for records that already have a file */}
                     {isEditing && !pictureData.isLink && pictureData.originalName && (
                       <div className={styles.formRowEvidence}>
                         <label>Replace Image (optional)</label>
-                        <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} />
+                        <input
+                          type="file"
+                          accept="image/*"
+                          ref={fileInputRef}
+                          onChange={handleFileChange}
+                        />
                       </div>
                     )}
                   </div>
 
+                  {/* Form action buttons */}
                   <div className={styles.formButtonsReturn}>
                     <button
-                      disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
                       className={styles.saveBtn1}
+                      disabled={isLeadLocked}
                       onClick={isEditing ? handleUpdatePicture : handleAddPicture}
                     >
                       {isEditing ? "Update Picture" : "Add Picture"}
                     </button>
                     {isEditing && (
                       <button
-                        disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
                         className={styles.saveBtn1}
-                        onClick={() => {
-                          setIsEditing(false);
-                          setEditingIndex(null);
-                          setPictureData({
-                            datePictureTaken: "",
-                            leadReturnId: "",
-                            description: "",
-                            image: "",
-                            filename: "",
-                            link: "",
-                            isLink: false
-                          });
-                          setFile(null);
-                          if (fileInputRef.current) fileInputRef.current.value = "";
-                        }}
+                        disabled={isLeadLocked}
+                        onClick={resetForm}
                       >
                         Cancel
                       </button>
@@ -990,7 +818,7 @@ const handleAccessChange = async (idx, newAccessLevel) => {
                 </div>
               </div>
 
-              {/* Pictures Table */}
+              {/* ── Pictures history table ── */}
               <div className={styles.sectionBlock}>
                 <div className={styles.sectionHeading}>Pictures History</div>
                 <table className={styles.leadsTable}>
@@ -1005,55 +833,65 @@ const handleAccessChange = async (idx, newAccessLevel) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {pictures.length > 0 ? pictures.map((picture, index) => (
-                      <tr key={index}>
-                        <td>{picture.dateEntered}</td>
-                        <td>{picture.returnId}</td>
-                        <td>
-                          {picture.link ? (
-                            <a href={picture.link} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
-                              {picture.link}
-                            </a>
-                          ) : (
-                            <a href={picture.image} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
-                              {picture.originalName}
-                            </a>
-                          )}
-                        </td>
-                        <td>{picture.description}</td>
-                        <td>
-                          <div className={styles.lrTableBtn}>
-                            <button
-                              disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
-                              onClick={() => handleEditPicture(index)}
-                            >
-                              <img src={`${process.env.PUBLIC_URL}/Materials/edit.png`} alt="Edit" className={styles.editIcon} />
-                            </button>
-                            <button
-                              disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
-                              onClick={() => requestDeletePicture(index)}
-                            >
-                              <img src={`${process.env.PUBLIC_URL}/Materials/delete.png`} alt="Delete" className={styles.editIcon} />
-                            </button>
-                          </div>
-                        </td>
-                        {isCaseManager && (
+                    {pictures.length > 0 ? (
+                      pictures.map((picture, index) => (
+                        <tr key={index}>
+                          <td>{picture.dateEntered}</td>
+                          <td>{picture.returnId}</td>
                           <td>
-                            <select
-                              value={picture.accessLevel}
-                              onChange={e => handleAccessChange(index, e.target.value)}
-                              className={styles.accessDropdown}
-                            >
-                              <option value="Everyone">All</option>
-                              <option value="Case Manager">Case Manager</option>
-                              <option value="Case Manager and Assignees">Assignees</option>
-                            </select>
+                            {picture.link ? (
+                              <a href={picture.link} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
+                                {picture.link}
+                              </a>
+                            ) : (
+                              <a href={picture.image} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
+                                {picture.originalName}
+                              </a>
+                            )}
                           </td>
-                        )}
-                      </tr>
-                    )) : (
+                          <td>{picture.description}</td>
+                          <td>
+                            <div className={styles.lrTableBtn}>
+                              <button
+                                disabled={isLeadLocked}
+                                onClick={() => handleEditPicture(index)}
+                              >
+                                <img
+                                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                                  alt="Edit"
+                                  className={styles.editIcon}
+                                />
+                              </button>
+                              <button
+                                disabled={isLeadLocked}
+                                onClick={() => requestDeletePicture(index)}
+                              >
+                                <img
+                                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                                  alt="Delete"
+                                  className={styles.editIcon}
+                                />
+                              </button>
+                            </div>
+                          </td>
+                          {isCaseManager && (
+                            <td>
+                              <select
+                                value={picture.accessLevel}
+                                onChange={e => handleAccessChange(index, e.target.value)}
+                                className={styles.accessDropdown}
+                              >
+                                <option value="Everyone">All</option>
+                                <option value="Case Manager">Case Manager</option>
+                                <option value="Case Manager and Assignees">Assignees</option>
+                              </select>
+                            </td>
+                          )}
+                        </tr>
+                      ))
+                    ) : (
                       <tr>
-                        <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign: 'center' }}>
+                        <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign: "center" }}>
                           No Pictures Available
                         </td>
                       </tr>
@@ -1064,7 +902,6 @@ const handleAccessChange = async (idx, newAccessLevel) => {
 
             </div>
           </div>
-
         </div>
       </div>
     </div>

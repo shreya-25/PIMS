@@ -1,17 +1,20 @@
 /* ============================================================
-   LRVehicle – CSS Module
-   Primary accent: #29298b (app navy)
+   LR.module.css – Shared styles for all Lead Return sub-pages
+   Primary accent colour: #29298b (app navy)
+   Used by: LREvidence, LRPictures, LRAudio, LRVideo, etc.
    ============================================================ */
 
-/* ===== Page wrapper ===== */
-.personPage {
+/* ─── Page Wrapper ──────────────────────────────────────────────────────────── */
+
+.evidencePage {
   height: 100vh;
   overflow: hidden;
   font-family: Arial, sans-serif;
   background-color: #f4f6f9;
 }
 
-/* ===== Main content area ===== */
+/* ─── Main Content Area ─────────────────────────────────────────────────────── */
+
 .LRIContent {
   display: flex;
   margin-left: 20%;
@@ -23,7 +26,8 @@
   box-sizing: border-box;
 }
 
-/* ===== Scrollable left column ===== */
+/* ─── Scrollable Left Column ────────────────────────────────────────────────── */
+
 .leftContentLI {
   position: relative;
   display: flex;
@@ -36,7 +40,8 @@
   overflow: hidden;
 }
 
-/* ===== Fixed menu bar 1 – page-level navigation ===== */
+/* ─── Fixed Menu Bar 1: Page-Level Navigation ───────────────────────────────── */
+
 .topMenuNav {
   position: fixed;
   top: 110px;
@@ -55,7 +60,8 @@
   overflow-y: hidden;
 }
 
-/* ===== Fixed menu bar 2 – section tabs ===== */
+/* ─── Fixed Menu Bar 2: Section Tabs ───────────────────────────────────────── */
+
 .topMenuSections {
   position: fixed;
   top: 166px;
@@ -74,7 +80,8 @@
   overflow-y: hidden;
 }
 
-/* ===== Menu items row ===== */
+/* ─── Menu Items Row ────────────────────────────────────────────────────────── */
+
 .menuItems {
   display: flex;
   align-items: center;
@@ -104,7 +111,8 @@
   border-radius: 0;
 }
 
-/* ===== Info bar: breadcrumb + status ===== */
+/* ─── Info Bar: Breadcrumb + Status ─────────────────────────────────────────── */
+
 .caseandleadinfo {
   display: flex;
   justify-content: space-between;
@@ -122,11 +130,8 @@
   color: #666;
 }
 
-.sideTitle p {
-  margin: 0;
-}
+/* ─── Breadcrumb ────────────────────────────────────────────────────────────── */
 
-/* ===== Breadcrumb ===== */
 .ldHead {
   display: flex;
   align-items: center;
@@ -167,7 +172,8 @@
   margin: 0 2px;
 }
 
-/* ===== Page heading ===== */
+/* ─── Page Heading ──────────────────────────────────────────────────────────── */
+
 .caseHeader {
   width: 100%;
   padding: 20px 24px 8px;
@@ -184,7 +190,8 @@
   text-transform: uppercase;
 }
 
-/* ===== Main scrollable content ===== */
+/* ─── Main Scrollable Content Area ─────────────────────────────────────────── */
+
 .lriContentSection {
   display: flex;
   flex-direction: column;
@@ -198,7 +205,6 @@
   overflow-x: hidden;
 }
 
-/* ===== Content subsection wrapper ===== */
 .contentSubsection {
   width: 100%;
   display: flex;
@@ -206,16 +212,16 @@
   gap: 12px;
 }
 
-/* ===== Section block card ===== */
+/* ─── Section Block Card ────────────────────────────────────────────────────── */
+
 .sectionBlock {
   width: 100%;
   background: #ffffff;
   border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(41, 41, 139, 0.10);
+  box-shadow: 0 4px 20px rgba(41, 41, 139, 0.1);
   overflow: hidden;
 }
 
-/* ===== Section heading ===== */
 .sectionHeading {
   font-size: 20px;
   font-weight: 700;
@@ -225,7 +231,8 @@
   background: #ffffff;
 }
 
-/* ===== Form entry box ===== */
+/* ─── Form Entry Box ────────────────────────────────────────────────────────── */
+
 .LREnteringContentBox {
   width: 100%;
   background: #ffffff;
@@ -233,112 +240,87 @@
   box-sizing: border-box;
 }
 
-/* ===== Three-column field rows ===== */
-.contentToAddFirstRow {
+.evidenceForm {
   display: flex;
-  align-items: flex-start;
-  gap: 20px;
+  flex-direction: column;
+  gap: 14px;
   width: 100%;
-  margin-bottom: 16px;
 }
 
-/* Column layout: label on top, input fills full column width */
-.formRow4 {
+/* ─── Form Field Rows ───────────────────────────────────────────────────────── */
+
+/* Single-column field: label stacked above the control */
+.formRowEvidence {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+/* Two-column row for paired fields */
+.formRowPair {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+}
+
+.formRowPair .formRowEvidence {
   flex: 1;
   min-width: 0;
 }
 
-.formRow4 label {
-  font-size: 18px;
-  font-weight: 600;
-  color: #555;
-  white-space: nowrap;
-}
-
-.formRow4 input {
-  width: 100%;
-  height: 42px;
-  padding: 0 10px;
-  font-size: 18px;
-  color: #333;
-  background-color: #f5f5f5;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  box-sizing: border-box;
-  outline: none;
-  cursor: text;
-}
-
-.formRow4 input:focus {
-  border-color: #888;
-  background-color: #fff;
-}
-
-.formRow4 select {
-  width: 100%;
-  height: 42px;
-  padding: 0 36px 0 10px;
-  font-size: 18px;
-  color: #333;
-  background-color: #f5f5f5;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23555' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  box-sizing: border-box;
-  outline: none;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-}
-
-.formRow4 select:focus {
-  border: 1.5px solid #000000;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.15);
-}
-
-/* ===== Information textarea label ===== */
-.returnFormH4 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #555;
-  margin: 8px 0 6px;
-}
-
-.returnForm {
-  margin-bottom: 16px;
-}
-
-.returnForm textarea {
-  width: 100%;
-  height: 120px;
-  padding: 12px 14px;
+.formRowEvidence label {
   font-size: 20px;
-  font-family: inherit;
+  font-weight: 600;
+  color: #666;
+}
+
+.formRowEvidence input,
+.formRowEvidence select,
+.formRowEvidence textarea {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 20px;
   color: #555;
   background-color: #f5f5f5;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
-  resize: vertical;
   box-sizing: border-box;
   outline: none;
+  font-family: inherit;
   transition: border-color 0.18s;
 }
 
-.returnForm textarea:focus {
-  border-color: #888;
-  background-color: #fff;
+.formRowEvidence input[type="file"] {
+  background-color: #f5f5f5;
+  padding: 6px 10px;
+  cursor: pointer;
 }
 
-/* ===== Button row ===== */
+.formRowEvidence input:focus,
+.formRowEvidence select:focus,
+.formRowEvidence textarea:focus {
+  border-color: #888;
+}
+
+.formRowEvidence textarea {
+  resize: vertical;
+  height: 100px;
+}
+
+/* Italic label for the currently-attached file when editing */
+.currentFilename {
+  font-size: 18px;
+  color: #444;
+  font-style: italic;
+}
+
+/* ─── Form Action Buttons ───────────────────────────────────────────────────── */
+
 .formButtonsReturn {
   display: flex;
   gap: 10px;
   justify-content: center;
+  margin-top: 8px;
 }
 
 .saveBtn1 {
@@ -363,32 +345,8 @@
   cursor: not-allowed;
 }
 
-.cancelBtn {
-  padding: 10px 36px;
-  font-size: 20px;
-  font-weight: 600;
-  background-color: #666;
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  letter-spacing: 0.2px;
-  transition: background-color 0.18s ease;
-}
+/* ─── Records Table ─────────────────────────────────────────────────────────── */
 
-.cancelBtn:hover {
-  background-color: #444;
-}
-
-/* ===== Fetch error message ===== */
-.errorMessage {
-  color: #c0392b;
-  text-align: center;
-  margin: 10px 0;
-  font-size: 16px;
-}
-
-/* ===== Records table ===== */
 .leadsTable {
   width: 100%;
   border-collapse: collapse;
@@ -427,44 +385,21 @@
   background-color: #f7f8ff;
 }
 
-/* ===== Color cell: label + swatch ===== */
-.colorCell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
+/* ─── File/Link Cell ────────────────────────────────────────────────────────── */
+
+.linkButton {
+  color: #29298b;
+  text-decoration: underline;
+  word-break: break-all;
+  font-size: 18px;
 }
 
-.colorLabel {
-  width: 60px;
-  display: inline-block;
+.linkButton:hover {
+  color: #1a3faa;
 }
 
-.colorSwatch {
-  width: 18px;
-  height: 18px;
-  border: 1px solid #000;
-  flex-shrink: 0;
-}
+/* ─── Table Action Buttons ──────────────────────────────────────────────────── */
 
-/* ===== View button in table ===== */
-.viewPersonBtn {
-  padding: 6px 16px;
-  font-size: 16px;
-  font-weight: 600;
-  background-color: #29298b;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.18s ease;
-}
-
-.viewPersonBtn:hover {
-  background-color: #1a1a6e;
-}
-
-/* ===== Action buttons inside table ===== */
 .lrTableBtn {
   display: flex;
   flex-direction: row;
@@ -503,7 +438,8 @@
   display: block;
 }
 
-/* ===== Access level dropdown ===== */
+/* ─── Access Level Dropdown ─────────────────────────────────────────────────── */
+
 .accessDropdown {
   padding: 6px 10px;
   font-size: 20px;

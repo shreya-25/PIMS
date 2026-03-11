@@ -732,6 +732,38 @@ const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = 
         caseManagers: teamResp.data.caseManagers,
         investigators: teamResp.data.investigators,
       });
+
+      // Send lead-assignment notifications for each newly added officer
+      const assignedToEntries = newlyAdded.map((u) => ({
+        username: u,
+        role: "Investigator",
+        status: "pending",
+        unread: true,
+      }));
+
+      const notificationPayload = {
+        notificationId: Date.now().toString(),
+        assignedBy: signedInOfficer,
+        assignedTo: assignedToEntries,
+        action1: "assigned you to a new lead",
+        post1: `${updatedLeadData.leadNo}: ${updatedLeadData.description}`,
+        action2: "related to the case",
+        post2: `${selectedCase.caseNo}: ${selectedCase.caseName}`,
+        leadNo: updatedLeadData.leadNo,
+        leadName: updatedLeadData.description,
+        caseNo: selectedCase.caseNo,
+        caseName: selectedCase.caseName,
+        caseStatus: selectedCase.caseStatus || "Open",
+        unread: true,
+        type: "Lead",
+        time: new Date().toISOString(),
+      };
+
+      await api.post(
+        "/api/notifications",
+        notificationPayload,
+        { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
+      );
     }
 
     // 3) Merge + persist LEAD
@@ -1202,21 +1234,6 @@ useEffect(() => {
   }
 }, [leadData?.associatedSubCategories]);
 
-// tiny helper to autosave field
-const saveField = async (partial) => {
- const next = { ...leadData, ...partial };
-  setLeadData(next);
-  try {
-   // Keep the current officer selection; only the changed fields are in `next`
-    await handleSave(assignedOfficers, next);
-  } catch (err) {
-    console.error("Auto-save failed", err);
-   setAlertMessage("Failed to save your changes. Please try again.");
-   setAlertOpen(true);
-  }
-};
-
-  
       const handleSelectLead = (lead) => {
         setSelectedLead({
           leadNo: lead.leadNo,
@@ -1350,9 +1367,9 @@ const isEditableByCaseManager = field => {
     "dueDate",             // Due Date
     "subCategory",           // Subcategory
     "associatedSubCategories", // Associated Subcategories
-    "primaryOfficer",      
+    "primaryOfficer",
   ];
-  return selectedCase?.role === "Case Manager" && editableFields.includes(field);
+  return (selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor") && editableFields.includes(field);
 };
 
 const declinedSet = new Set(
@@ -2174,13 +2191,7 @@ const assignmentHoverText = React.useMemo(() => {
                   <span className={`${styles.fieldLabel} ${styles.fieldLabelEditable}`}>Lead Origin</span>
                   <input type="text" className={styles.inputField} value={leadData.parentLeadNo} placeholder="NA"
                     readOnly={!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor")}
-                    onChange={async (e) => {
-                      const value = e.target.value;
-                      setLeadData((prev) => ({ ...prev, parentLeadNo: value }));
-                      if (selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") {
-                        await handleSave(assignedOfficers, { ...leadData, parentLeadNo: value });
-                      }
-                    }}
+                    onChange={(e) => setLeadData((prev) => ({ ...prev, parentLeadNo: e.target.value }))}
                   />
                 </div>
                 <div className={styles.fieldGroup}>
@@ -2280,14 +2291,6 @@ const assignmentHoverText = React.useMemo(() => {
     leadStatus: nextUsernames.length ? "Assigned" : prev.leadStatus,
   }));
 
-  // persist
-  await handleSave(nextUsernames, {
-    ...leadData,
-    assignedTo: nextAssignedTo,
-    primaryOfficer: nextPrimary,
-    primaryInvestigator: nextPrimary,
-    ...(nextUsernames.length ? { leadStatus: "Assigned" } : {}),
-  });
 }}
 
                       
@@ -2315,16 +2318,8 @@ const assignmentHoverText = React.useMemo(() => {
                     className={styles.inputField}
                     value={leadData.primaryOfficer}
                     disabled={!(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") || assignedOfficers.length === 0}
-                    onChange={async (e) => {
-                      const nextPrimary = e.target.value;
-                      setLeadData(prev => ({ ...prev, primaryOfficer: nextPrimary }));
-                      try {
-                        await handleSave(assignedOfficers, { ...leadData, primaryOfficer: nextPrimary });
-                      } catch (err) {
-                        console.error("Auto-save failed", err);
-                        setAlertMessage("Failed to save Primary Investigator. Please try again.");
-                        setAlertOpen(true);
-                      }
+                    onChange={(e) => {
+                      setLeadData(prev => ({ ...prev, primaryOfficer: e.target.value }));
                     }}
                   >
                     <option value="" disabled>{assignedOfficers.length ? 'Select Primary' : 'Assign officers first'}</option>
@@ -2338,8 +2333,15 @@ const assignmentHoverText = React.useMemo(() => {
               </div>
               <div className={styles.formRow}>
                 <div className={styles.fieldGroup}>
-                  <span className={styles.fieldLabel}>Subcategory</span>
-                  <input type="text" className={styles.inputField} value={leadData.subCategory} placeholder="" onChange={(e) => handleInputChange('subCategory', e.target.value)} readOnly={!isEditableByCaseManager("subCategory")} />
+                  <span className={`${styles.fieldLabel} ${isEditableByCaseManager("subCategory") ? styles.fieldLabelEditable : ""}`}>Subcategory</span>
+                  <input
+                    type="text"
+                    className={styles.inputField}
+                    value={leadData.subCategory}
+                    placeholder=""
+                    readOnly={!isEditableByCaseManager("subCategory")}
+                    onChange={(e) => handleInputChange('subCategory', e.target.value)}
+                  />
                 </div>
               </div>
               <div className={`${styles.formRow} ${styles.formRowEditable}`}>
@@ -2358,19 +2360,25 @@ const assignmentHoverText = React.useMemo(() => {
                       {subDropdownOpen && (
                         <div className={styles.dropdownOptions}>
                           {subcatsLoading && <div className={styles.dropdownItem}>Loading…</div>}
-                          {!subcatsLoading && caseSubCategories.length === 0 && (<div className={styles.dropdownItem}>No subcategories for this case</div>)}
-                          {!subcatsLoading && caseSubCategories.length > 0 && caseSubCategories.map((subNum) => (
-                            <div key={subNum} className={styles.dropdownItem}>
-                              <input type="checkbox" id={`assoc-${subNum}`} value={subNum} checked={associatedSubCategories.includes(subNum)}
-                                onChange={(e) => {
-                                  const updated = e.target.checked ? [...associatedSubCategories, subNum] : associatedSubCategories.filter((n) => n !== subNum);
-                                  setAssociatedSubCategories(updated);
-                                  saveField({ associatedSubCategories: updated });
-                                }}
-                              />
-                              <label htmlFor={`assoc-${subNum}`}>{subNum}</label>
-                            </div>
-                          ))}
+                          {!subcatsLoading && (() => {
+                            const opts = Array.from(new Set([
+                              ...(leadData.subCategory ? [leadData.subCategory] : []),
+                              ...caseSubCategories,
+                            ]));
+                            if (opts.length === 0) return <div className={styles.dropdownItem}>No subcategories for this case</div>;
+                            return opts.map((subNum) => (
+                              <div key={subNum} className={styles.dropdownItem}>
+                                <input type="checkbox" id={`assoc-${subNum}`} value={subNum} checked={associatedSubCategories.includes(subNum)}
+                                  onChange={(e) => {
+                                    const updated = e.target.checked ? [...associatedSubCategories, subNum] : associatedSubCategories.filter((n) => n !== subNum);
+                                    setAssociatedSubCategories(updated);
+                                    setLeadData(prev => ({ ...prev, associatedSubCategories: updated }));
+                                  }}
+                                />
+                                <label htmlFor={`assoc-${subNum}`}>{subNum}</label>
+                              </div>
+                            ));
+                          })()}
                         </div>
                       )}
                     </div>
@@ -2378,14 +2386,14 @@ const assignmentHoverText = React.useMemo(() => {
                 </div>
               </div>
             </div>
-             {/* {!isInvestigator && (
-  <div className="update-lead-btn">
-    <button className="save-btn1" onClick={handleSave}>
-      Save Changes
-    </button>
-    {error && <div className="error">{error}</div>}
-  </div>
-)} */}
+            {isEditableByCaseManager("parentLeadNo") && (
+              <div className={styles.updateLeadBtn}>
+                <button className={styles.saveBtn1} onClick={() => handleSave(assignedOfficers, leadData)}>
+                  Save Changes
+                </button>
+                {error && <div className={styles.error}>{error}</div>}
+              </div>
+            )}
           </div>
 
 

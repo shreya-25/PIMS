@@ -1,1045 +1,667 @@
-import React, { useContext, useState, useEffect} from 'react';
-import { useLocation, useNavigate, Link } from "react-router-dom";
+/**
+ * LRScratchpad.jsx
+ *
+ * Manages the notes (scratchpad) sub-section of the Lead Return workflow.
+ * Allows investigators to add, edit, and delete free-text notes tied to
+ * a specific narrative ID (lead return).
+ *
+ * Features:
+ *  - Add / edit / delete note records
+ *  - Access-level control for Case Managers
+ *  - Session storage persistence scoped per case + lead
+ *  - Read-only enforcement based on lead status
+ */
 
-import Navbar from "../../../components/Navbar/Navbar";
-import styles from "./LRScratchpad.module.css";
-import Comment from "../../../components/Comment/Comment";
-import axios from "axios";
-import { CaseContext } from "../../CaseContext";
-import api, { BASE_URL } from "../../../api";
-import {SideBar } from "../../../components/Sidebar/Sidebar";
-import { AlertModal } from "../../../components/AlertModal/AlertModal";
+import { useContext, useState, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+import Navbar from '../../../components/Navbar/Navbar';
+import { SideBar } from '../../../components/Sidebar/Sidebar';
+import { AlertModal } from '../../../components/AlertModal/AlertModal';
+import { CaseContext } from '../../CaseContext';
+import api from '../../../api';
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
+import { useLeadReport } from '../useLeadReport';
+import { formatDate, normalizeId, alphabetToNumber } from '../lrUtils';
 
+// Merge shared LR stylesheet with component-specific overrides
+import lrStyles    from '../LR.module.css';
+import localStyles from './LRScratchpad.module.css';
 
+const styles = { ...lrStyles, ...localStyles };
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const DEFAULT_NOTE = { text: '', returnId: '', accessLevel: 'Everyone' };
+
+// Section tabs shared across all LR sub-pages
+const SECTION_TABS = [
+  { label: 'Instructions', route: '/LRInstruction' },
+  { label: 'Narrative',    route: '/LRReturn' },
+  { label: 'Person',       route: '/LRPerson' },
+  { label: 'Vehicles',     route: '/LRVehicle' },
+  { label: 'Enclosures',   route: '/LREnclosures' },
+  { label: 'Evidence',     route: '/LREvidence' },
+  { label: 'Pictures',     route: '/LRPictures' },
+  { label: 'Audio',        route: '/LRAudio' },
+  { label: 'Videos',       route: '/LRVideo' },
+  { label: 'Notes',        route: '/LRScratchpad', active: true },
+  { label: 'Timeline',     route: '/LRTimeline' },
+];
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export const LRScratchpad = () => {
-    // useEffect(() => {
-    //     // Apply style when component mounts
-    //     document.body.style.overflow = "hidden";
-    
-    //     return () => {
-    //       // Reset to default when component unmounts
-    //       document.body.style.overflow = "auto";
-    //     };
-    //   }, []);
   const navigate = useNavigate();
-  const FORM_KEY = "LRScratchpad:form";
-const LIST_KEY = "LRScratchpad:list";
-// Narrative Ids from API
-const [narrativeIds, setNarrativeIds] = useState([]);
+  const location = useLocation();
 
-const normalizeId = (id) => String(id ?? "").trim().toUpperCase();
-const alphabetToNumber = (str = "") => {
-  str = normalizeId(str);
-  let n = 0;
-  for (let i = 0; i < str.length; i++) n = n * 26 + (str.charCodeAt(i) - 64);
-  return n;
-};
+  const { selectedCase, selectedLead, leadStatus } = useContext(CaseContext);
 
+  // ── State ──────────────────────────────────────────────────────────────────
 
+  const [notes, setNotes]                           = useState([]);
+  const [noteData, setNoteData]                     = useState(DEFAULT_NOTE);
+  const [narrativeIds, setNarrativeIds]             = useState([]);
+  const [leadData, setLeadData]                     = useState({});
+  const [editingIndex, setEditingIndex]             = useState(null);
+  const [alertOpen, setAlertOpen]                   = useState(false);
+  const [alertMessage, setAlertMessage]             = useState('');
+  const [confirmOpen, setConfirmOpen]               = useState(false);
+  const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
 
+  const isEditing = editingIndex !== null;
 
-   const location = useLocation();
-       const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);  
-    const [leadData, setLeadData] = useState({});
-        
-          const formatDate = (dateString) => {
-            if (!dateString) return "";
-            const date = new Date(dateString);
-            if (isNaN(date)) return "";
-            const month = (date.getMonth() + 1).toString().padStart(2, "0");
-            const day = date.getDate().toString().padStart(2, "0");
-            const year = date.getFullYear().toString().slice(-2);
-            return `${month}/${day}/${year}`;
-          };
-        
-          const { leadDetails, caseDetails } = location.state || {};
-           const [alertOpen, setAlertOpen] = useState(false);
-            const [alertMessage, setAlertMessage] = useState("");
+  // ── Role / permission checks ───────────────────────────────────────────────
 
-          const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
-                              const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
-                            
-                              const onShowCaseSelector = (route) => {
-                                navigate(route, { state: { caseDetails } });
-                            };
-        
-const [editingIndex, setEditingIndex] = useState(null);
-const isEditing = editingIndex !== null;
+  const isCaseManager =
+    selectedCase?.role === 'Case Manager' || selectedCase?.role === 'Detective Supervisor';
 
-useEffect(() => {
-  if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+  const signedInOfficer = localStorage.getItem('loggedInUser');
+  const primaryUsername = leadData?.primaryInvestigator || leadData?.primaryOfficer || '';
+  const isPrimaryInvestigator =
+    selectedCase?.role === 'Investigator' &&
+    !!signedInOfficer &&
+    signedInOfficer === primaryUsername;
 
-  const ac = new AbortController();
+  // ── Lead status and read-only guard ───────────────────────────────────────
 
-  (async () => {
-    try {
-      const token   = localStorage.getItem("token");
-      const { leadNo } = selectedLead;
-      const { caseNo } = selectedCase;
-      const encLead = encodeURIComponent(selectedLead.leadName);
-      const encCase = encodeURIComponent(selectedCase.caseName);
+  const { status, isReadOnly } = useLeadStatus({
+    caseNo:   selectedCase.caseNo,
+    caseName: selectedCase.caseName,
+    leadNo:   selectedLead.leadNo,
+    leadName: selectedLead.leadName,
+  });
 
-      const resp = await api.get(
-        `/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`,
-        { headers: { Authorization: `Bearer ${token}` }, signal: ac.signal }
-      );
+  // Consolidated disable flag for all form controls
+  const isFormDisabled =
+    selectedLead?.leadStatus === 'In Review' ||
+    selectedLead?.leadStatus === 'Completed'  ||
+    isReadOnly;
 
-      // unique, cleaned, non-empty IDs
-      const ids = [...new Set((resp?.data || [])
-        .map(r => normalizeId(r?.leadReturnId))
-        .filter(Boolean))];
+  // ── Session-storage keys (scoped to the active case + lead) ───────────────
 
-      // sort A…Z…AA…AB…
-      ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
-      setNarrativeIds(ids);
+  const { formKey, listKey } = useMemo(() => {
+    const cn   = selectedCase?.caseNo   ?? 'NA';
+    const cNam = encodeURIComponent(selectedCase?.caseName ?? 'NA');
+    const ln   = selectedLead?.leadNo   ?? 'NA';
+    const lNam = encodeURIComponent(selectedLead?.leadName ?? 'NA');
+    return {
+      formKey: `LRScratchpad:form:${cn}:${cNam}:${ln}:${lNam}`,
+      listKey: `LRScratchpad:list:${cn}:${cNam}:${ln}:${lNam}`,
+    };
+  }, [selectedCase?.caseNo, selectedCase?.caseName, selectedLead?.leadNo, selectedLead?.leadName]);
 
-      // if ADDING (not editing) and nothing selected yet, preselect latest
-      setNoteData(prev =>
-        (!isEditing && !prev.returnId)
-          ? { ...prev, returnId: ids.at(-1) || "" }
-          : prev
-      );
-    } catch (err) {
-      if (!ac.signal.aborted) console.error("Failed to fetch Narrative Ids:", err);
-    }
-  })();
+  // ── Shared report generation hook (Case Manager "Manage Lead Return" button) ──
 
-  return () => ac.abort();
-}, [
-  selectedLead?.leadNo,
-  selectedLead?.leadName,
-  selectedCase?.caseNo,
-  selectedCase?.caseName,
-  isEditing
-]);
+  const { isGenerating, handleViewLeadReturn } = useLeadReport({
+    selectedLead,
+    selectedCase,
+    location,
+    setAlertMessage,
+    setAlertOpen,
+  });
 
+  // ── Session storage: restore form + list when the active case/lead changes ──
 
-   useEffect(() => {
-    const fetchLeadData = async () => {
-      if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
-      const token = localStorage.getItem("token");
+  useEffect(() => {
+    const savedForm = sessionStorage.getItem(formKey);
+    setNoteData(savedForm ? JSON.parse(savedForm) : DEFAULT_NOTE);
+    const savedList = sessionStorage.getItem(listKey);
+    setNotes(savedList ? JSON.parse(savedList) : []);
+    setEditingIndex(null);
+  }, [formKey, listKey]);
 
-      try {
-        const response = await api.get(
-          `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
+  // Persist state on every change so navigation doesn't lose data
+  useEffect(() => { sessionStorage.setItem(formKey, JSON.stringify(noteData)); }, [formKey, noteData]);
+  useEffect(() => { sessionStorage.setItem(listKey, JSON.stringify(notes)); },   [listKey, notes]);
 
-        if (response.data.length > 0) {
+  // ── Fetch lead metadata (assignees, primary officer) ──────────────────────
+
+  useEffect(() => {
+    if (!selectedLead?.leadNo || !selectedCase?.caseNo) return;
+    const token = localStorage.getItem('token');
+    api
+      .get(
+        `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      .then(({ data }) => {
+        if (data.length > 0) {
           setLeadData({
-            ...response.data[0],
-            assignedTo: response.data[0].assignedTo || [],
-            leadStatus: response.data[0].leadStatus || ''
+            ...data[0],
+            assignedTo: data[0].assignedTo || [],
+            leadStatus: data[0].leadStatus || '',
           });
         }
-      } catch (error) {
-        console.error("Failed to fetch lead data:", error);
-      }
-    };
-
-    fetchLeadData();
+      })
+      .catch(err => console.error('Failed to fetch lead data:', err));
   }, [selectedLead, selectedCase]);
 
-  // Sample scratchpad data
-  const [notes, setNotes] = useState(() => {
-   const saved = sessionStorage.getItem(LIST_KEY);
-   return saved ? JSON.parse(saved) : [];
- });
-
-  // State to manage form data
- const [noteData, setNoteData] = useState(() => {
-   const saved = sessionStorage.getItem(FORM_KEY);
-   return saved
-     ? JSON.parse(saved)
-     : { text: "", returnId: "", accessLevel: "Everyone" };
- });
-
-  const handleInputChange = (field, value) => {
-    setNoteData({ ...noteData, [field]: value });
-  };
-
-  const handleAddNote = async () => {
-    if (!noteData.text) {
-       setAlertMessage("Please enter a note.");
-                      setAlertOpen(true);
-      return;
-    }
-  
-    const newNote = {
-      leadNo: selectedLead?.leadNo,
-      description: selectedLead?.leadName,
-      assignedTo: {},
-      assignedBy: {},
-      enteredBy: localStorage.getItem("loggedInUser"),
-      caseName: selectedCase?.caseName,
-      caseNo: selectedCase?.caseNo,
-      leadReturnId: noteData.returnId, // Default or fetched
-      enteredDate: new Date().toISOString(),
-      text: noteData.text,
-      type: "Lead",
-      accessLevel: noteData.accessLevel || "Everyone"
-    };
-  
-    const token = localStorage.getItem("token");
-  
-    try {
-      const res = await api.post("/api/scratchpad/create", newNote, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-  
-      setNotes((prev) => [
-        ...prev,
-        {
-          ...res.data,
-          dateEntered: formatDate(res.data.enteredDate),
-          returnId: res.data.leadReturnId,
-          accessLevel: res.data.accessLevel || "Everyone",
-        },
-      ]);
-
-      setNoteData({ text: "", returnId: "", accessLevel: "Everyone" });
-      sessionStorage.removeItem(FORM_KEY);
-    } catch (err) {
-      console.error("Error saving scratchpad note:", err.message);
-      setAlertMessage("Failed to save note.");
-      setAlertOpen(true);
-    }
-  };
-
-  const [confirmOpen, setConfirmOpen] = useState(false);
-const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
-
-const requestDeleteNote = (idx) => {
-  setPendingDeleteIndex(idx);
-  setConfirmOpen(true);
-};
-
-const performDeleteNote = async () => {
-  const idx = pendingDeleteIndex;
-  if (idx == null) return;
-
-  const note = notes[idx];
-  const token = localStorage.getItem("token");
-
-  try {
-    await api.delete(`/api/scratchpad/${note._id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setNotes(prev => prev.filter((_, i) => i !== idx));
-  } catch (err) {
-    console.error("Delete failed", err);
-    setAlertMessage("Failed to delete note.");
-    setAlertOpen(true);
-  } finally {
-    setConfirmOpen(false);
-    setPendingDeleteIndex(null);
-  }
-};
-
-  
+  // ── Fetch narrative IDs for the return-ID dropdown ────────────────────────
 
   useEffect(() => {
-  sessionStorage.setItem(FORM_KEY, JSON.stringify(noteData));
-}, [noteData]);
+    if (!selectedLead?.leadNo || !selectedCase?.caseNo) return;
+    const ac = new AbortController();
 
-useEffect(() => {
-  sessionStorage.setItem(LIST_KEY, JSON.stringify(notes));
-}, [notes]);
+    (async () => {
+      try {
+        const token   = localStorage.getItem('token');
+        const encLead = encodeURIComponent(selectedLead.leadName);
+        const encCase = encodeURIComponent(selectedCase.caseName);
 
+        const { data } = await api.get(
+          `/api/leadReturnResult/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
+          { headers: { Authorization: `Bearer ${token}` }, signal: ac.signal }
+        );
 
-  const handleNavigation = (route) => {
-    navigate(route);
-  };
+        // Deduplicate, normalise, and sort in alphabetical (A→Z→AA→AB…) order
+        const ids = [...new Set((data || []).map(r => normalizeId(r?.leadReturnId)).filter(Boolean))];
+        ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
+        setNarrativeIds(ids);
+
+        // Pre-select the latest ID when the user is adding a new record
+        setNoteData(prev =>
+          !isEditing && !prev.returnId
+            ? { ...prev, returnId: ids.at(-1) || '' }
+            : prev
+        );
+      } catch (err) {
+        if (!ac.signal.aborted) console.error('Failed to fetch narrative IDs:', err);
+      }
+    })();
+
+    return () => ac.abort();
+  }, [
+    selectedLead?.leadNo,
+    selectedLead?.leadName,
+    selectedCase?.caseNo,
+    selectedCase?.caseName,
+    isEditing,
+  ]);
+
+  // ── Fetch notes from the API, applying access-level filtering ─────────────
 
   const fetchNotes = async () => {
-    const token = localStorage.getItem("token");
-  
-    const leadNo = selectedLead?.leadNo;
-    const leadName = encodeURIComponent(selectedLead?.leadName);
-    const caseNo = selectedCase?.caseNo;
-    const caseName = encodeURIComponent(selectedCase?.caseName);
-  
+    const token   = localStorage.getItem('token');
+    const encLead = encodeURIComponent(selectedLead?.leadName);
+    const encCase = encodeURIComponent(selectedCase?.caseName);
+
     try {
-      const res = await api.get(
-        `/api/scratchpad/${leadNo}/${leadName}/${caseNo}/${caseName}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      const { data } = await api.get(
+        `/api/scratchpad/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-  
-    
-      const formatted = res.data
-      .filter((note) => note.type === "Lead") // ✅ Filter by type === 'Lead'
-      .map((note) => ({
-        ...note,
-        dateEntered: formatDate(note.enteredDate),
-        returnId: note.leadReturnId || "",
-        accessLevel: note.accessLevel ?? "Everyone"
-      }));
 
-      // Filter based on role and access level
-      let visible = formatted;
-      if (!isCaseManager) {
-        const currentUser = localStorage.getItem("loggedInUser")?.trim();
-        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+      // Filter to Lead-type notes only, then map to display shape
+      const formatted = data
+        .filter(note => note.type === 'Lead')
+        .map(note => ({
+          ...note,
+          dateEntered: formatDate(note.enteredDate),
+          returnId:    note.leadReturnId || '',
+          accessLevel: note.accessLevel ?? 'Everyone',
+        }));
 
-        visible = formatted.filter(note => {
-          if (note.accessLevel === "Everyone") return true;
-          if (note.accessLevel === "Case Manager and Assignees") {
-            const isAssignedToLead = leadAssignees.some(a => a === currentUser);
-            return isAssignedToLead;
-          }
-          return false; // "Case Manager" only
-        });
-      }
+      // Non-case-managers only see records they are permitted to view
+      const currentUser   = localStorage.getItem('loggedInUser')?.trim();
+      const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+
+      const visible = isCaseManager
+        ? formatted
+        : formatted.filter(note => {
+            if (note.accessLevel === 'Everyone') return true;
+            if (note.accessLevel === 'Case Manager and Assignees') {
+              return leadAssignees.some(a => a === currentUser);
+            }
+            return false;
+          });
 
       setNotes(visible);
-
-    } catch (error) {
-      console.error("Error fetching scratchpad notes:", error);
+    } catch (err) {
+      console.error('Error fetching scratchpad notes:', err);
     }
   };
-  
+
   useEffect(() => {
-    if (
-      selectedLead?.leadNo &&
-      selectedLead?.leadName &&
-      selectedCase?.caseNo &&
-      selectedCase?.caseName
-    ) {
+    if (selectedLead?.leadNo && selectedLead?.leadName && selectedCase?.caseNo && selectedCase?.caseName) {
       fetchNotes();
     }
   }, [selectedLead, selectedCase]);
 
-   const attachFiles = async (items, idFieldName, filesEndpoint) => {
-  return Promise.all(
-    (items || []).map(async (item) => {
-      const realId = item[idFieldName];
-      if (!realId) return { ...item, files: [] };
-      try {
-        const { data: filesArray } = await api.get(
-          `${filesEndpoint}/${realId}`,
-          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-        );
-        return { ...item, files: filesArray };
-      } catch (err) {
-        console.error(`Error fetching files for ${filesEndpoint}/${realId}:`, err);
-        return { ...item, files: [] };
-      }
-    })
-  );
-};
+  // ── Form handlers ──────────────────────────────────────────────────────────
 
+  const handleInputChange = (field, value) => {
+    setNoteData(prev => ({ ...prev, [field]: value }));
+  };
 
-    const [isGenerating, setIsGenerating] = useState(false);
-    const handleViewLeadReturn = async () => {
-  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+  /** Resets the form and clears edit context. */
+  const resetForm = () => {
+    setEditingIndex(null);
+    setNoteData(DEFAULT_NOTE);
+    sessionStorage.removeItem(formKey);
+  };
 
-  if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
-    setAlertMessage("Please select a case and lead first.");
-    setAlertOpen(true);
-    return;
-  }
+  // ── Add note ───────────────────────────────────────────────────────────────
 
-  if (isGenerating) return;
-
-  try {
-    setIsGenerating(true);
-
-    const token = localStorage.getItem("token");
-    const headers = { headers: { Authorization: `Bearer ${token}` } };
-
-    const { leadNo } = lead;
-    const leadName = lead.leadName || lead.description;
-    const { caseNo, caseName } = kase;
-    const encLead = encodeURIComponent(leadName);
-    const encCase = encodeURIComponent(caseName);
-
-    // fetch everything we need for the report (same endpoints you use on LRFinish)
-    const [
-      instrRes,
-      returnsRes,
-      personsRes,
-      vehiclesRes,
-      enclosuresRes,
-      evidenceRes,
-      picturesRes,
-      audioRes,
-      videosRes,
-      scratchpadRes,
-      timelineRes,
-    ] = await Promise.all([
-      api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-    ]);
-
-    // add files where applicable (note the plural file endpoints)
-    const enclosuresWithFiles = await attachFiles(enclosuresRes.data, "_id", "/api/lrenclosures/files");
-    const evidenceWithFiles   = await attachFiles(evidenceRes.data,   "_id", "/api/lrevidences/files");
-    const picturesWithFiles   = await attachFiles(picturesRes.data,   "pictureId", "/api/lrpictures/files");
-    const audioWithFiles      = await attachFiles(audioRes.data,      "audioId",   "/api/lraudio/files");
-    const videosWithFiles     = await attachFiles(videosRes.data,     "videoId",   "/api/lrvideo/files");
-
-    const leadInstructions = instrRes.data?.[0] || {};
-    const leadReturns      = returnsRes.data || [];
-    const leadPersons      = personsRes.data || [];
-    const leadVehicles     = vehiclesRes.data || [];
-    const leadScratchpad   = scratchpadRes.data || [];
-    const leadTimeline     = timelineRes.data || [];
-
-    // make all sections true (Full Report)
-    const selectedReports = {
-      FullReport: true,
-      leadInstruction: true,
-      leadReturn: true,
-      leadPersons: true,
-      leadVehicles: true,
-      leadEnclosures: true,
-      leadEvidence: true,
-      leadPictures: true,
-      leadAudio: true,
-      leadVideos: true,
-      leadScratchpad: true,
-      leadTimeline: true,
-    };
-
-    const body = {
-      user: localStorage.getItem("loggedInUser") || "",
-      reportTimestamp: new Date().toISOString(),
-
-      // sections (values are the fetched arrays/objects)
-      leadInstruction: leadInstructions,
-      leadReturn:      leadReturns,
-      leadPersons,
-      leadVehicles,
-      leadEnclosures:  enclosuresWithFiles,
-      leadEvidence:    evidenceWithFiles,
-      leadPictures:    picturesWithFiles,
-      leadAudio:       audioWithFiles,
-      leadVideos:      videosWithFiles,
-      leadScratchpad,
-      leadTimeline,
-
-      // also send these two, since your backend expects them
-      selectedReports,
-      leadInstructions,
-      leadReturns,
-    };
-
-    const resp = await api.post("/api/report/generate", body, {
-      responseType: "blob",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    const file = new Blob([resp.data], { type: "application/pdf" });
-
-    navigate("/DocumentReview", {
-      state: {
-        pdfBlob: file,
-        filename: `Lead_${leadNo || "report"}.pdf`,
-      },
-    });
-  } catch (err) {
-    if (err?.response?.data instanceof Blob) {
-      const text = await err.response.data.text();
-      console.error("Report error:", text);
-      setAlertMessage("Error generating PDF:\n" + text);
-    } else {
-      console.error("Report error:", err);
-      setAlertMessage("Error generating PDF:\n" + (err.message || "Unknown error"));
+  const handleAddNote = async () => {
+    if (!noteData.text) {
+      setAlertMessage('Please enter a note.');
+      setAlertOpen(true);
+      return;
     }
-    setAlertOpen(true);
-  } finally {
-    setIsGenerating(false);
-  }
-};
 
-  const signedInOfficer = localStorage.getItem("loggedInUser");
- // who is primary for this lead?
-const primaryUsername =
-  leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
-
-// am I the primary investigator on this lead?
-const isPrimaryInvestigator =
-  selectedCase?.role === "Investigator" &&
-  !!signedInOfficer &&
-  signedInOfficer === primaryUsername;
-
-// primary goes to the interactive ViewLR page
-const goToViewLR = () => {
-  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-  if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-    setAlertMessage("Please select a case and lead first.");
-    setAlertOpen(true);
-    return;
-  }
-
-  navigate("/viewLR", {
-    state: { caseDetails: kase, leadDetails: lead }
-  });
-};
-  
-  
-   const isCaseManager = 
-    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
-
-  const handleAccessChange = async (idx, newAccess) => {
-    const note = notes[idx];
-    const token = localStorage.getItem("token");
+    const payload = {
+      leadNo:       selectedLead?.leadNo,
+      description:  selectedLead?.leadName,
+      assignedTo:   {},
+      assignedBy:   {},
+      enteredBy:    localStorage.getItem('loggedInUser'),
+      caseName:     selectedCase?.caseName,
+      caseNo:       selectedCase?.caseNo,
+      leadReturnId: noteData.returnId,
+      enteredDate:  new Date().toISOString(),
+      text:         noteData.text,
+      type:         'Lead',
+      accessLevel:  noteData.accessLevel || 'Everyone',
+    };
 
     try {
-      await api.put(
-        `/api/scratchpad/${note._id}`,
-        { accessLevel: newAccess },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      // Update local state
-      setNotes(prev => {
-        const copy = [...prev];
-        copy[idx] = { ...copy[idx], accessLevel: newAccess };
-        return copy;
+      const { data } = await api.post('/api/scratchpad/create', payload, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
+
+      setNotes(prev => [
+        ...prev,
+        {
+          ...data,
+          dateEntered: formatDate(data.enteredDate),
+          returnId:    data.leadReturnId,
+          accessLevel: data.accessLevel || 'Everyone',
+        },
+      ]);
+      resetForm();
     } catch (err) {
-      console.error("Failed to update accessLevel", err);
-      setAlertMessage("Could not change access level. Please try again.");
+      console.error('Error saving scratchpad note:', err);
+      setAlertMessage('Failed to save note.');
       setAlertOpen(true);
     }
   };
 
-  function handleEditClick(idx) {
+  // ── Edit / update existing note ────────────────────────────────────────────
+
+  const handleEditClick = (idx) => {
     const n = notes[idx];
     setEditingIndex(idx);
     setNoteData({
-      text: n.text,
-      returnId: n.leadReturnId || "",
-      accessLevel: n.accessLevel || "Everyone",
+      text:        n.text,
+      returnId:    n.leadReturnId || '',
+      accessLevel: n.accessLevel || 'Everyone',
     });
-  }
+  };
 
-  async function handleUpdateNote() {
+  const handleUpdateNote = async () => {
     if (editingIndex === null) return;
     const note = notes[editingIndex];
-    const token = localStorage.getItem("token");
+
     try {
       await api.put(
         `/api/scratchpad/${note._id}`,
         {
           leadReturnId: noteData.returnId,
-          text: noteData.text,
-          type: "Lead",
-          accessLevel: noteData.accessLevel || "Everyone"
+          text:         noteData.text,
+          type:         'Lead',
+          accessLevel:  noteData.accessLevel || 'Everyone',
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );
       await fetchNotes();
-      // reset form
-      setEditingIndex(null);
-      setNoteData({ text: "", returnId: "", accessLevel: "Everyone" });
-      sessionStorage.removeItem(FORM_KEY);
+      resetForm();
     } catch (err) {
-      console.error("Update failed", err);
-      setAlertMessage("Failed to update note.");
+      console.error('Update failed:', err);
+      setAlertMessage('Failed to update note.');
       setAlertOpen(true);
     }
-  }
+  };
 
-  async function handleDeleteNote(idx) {
-    if (!window.confirm("Delete this note?")) return;
-    const note = notes[idx];
-    const token = localStorage.getItem("token");
+  // ── Delete note (guarded by a confirmation modal) ─────────────────────────
+
+  const requestDeleteNote = (idx) => { setPendingDeleteIndex(idx); setConfirmOpen(true); };
+
+  const performDeleteNote = async () => {
+    const idx = pendingDeleteIndex;
+    if (idx == null) return;
+
     try {
-      await api.delete(
-        `/api/scratchpad/${note._id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setNotes(n => n.filter((_,i) => i !== idx));
+      await api.delete(`/api/scratchpad/${notes[idx]._id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      setNotes(prev => prev.filter((_, i) => i !== idx));
     } catch (err) {
-      console.error("Delete failed", err);
-      setAlertMessage("Failed to delete note.");
+      console.error('Delete failed:', err);
+      setAlertMessage('Failed to delete note.');
+      setAlertOpen(true);
+    } finally {
+      setConfirmOpen(false);
+      setPendingDeleteIndex(null);
+    }
+  };
+
+  // ── Access-level change (Case Manager only) ────────────────────────────────
+
+  const handleAccessChange = async (idx, newAccess) => {
+    const note = notes[idx];
+
+    try {
+      await api.put(
+        `/api/scratchpad/${note._id}`,
+        { accessLevel: newAccess },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+      setNotes(prev => {
+        const copy = [...prev];
+        copy[idx]  = { ...copy[idx], accessLevel: newAccess };
+        return copy;
+      });
+    } catch (err) {
+      console.error('Failed to update accessLevel:', err);
+      setAlertMessage('Could not change access level. Please try again.');
       setAlertOpen(true);
     }
-  }
-  
-const { status, isReadOnly } = useLeadStatus({
-    caseNo: selectedCase.caseNo,
-    caseName: selectedCase.caseName,
-    leadNo: selectedLead.leadNo,
-    leadName: selectedLead.leadName,
-  });
+  };
+
+  // ── Navigation helpers ─────────────────────────────────────────────────────
+
+  const goToLeadReview = () => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    if (lead && kase) navigate('/LeadReview', { state: { caseDetails: kase, leadDetails: lead } });
+  };
+
+  const goToChainOfCustody = () => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    if (lead && kase) {
+      navigate('/ChainOfCustody', { state: { caseDetails: kase, leadDetails: lead } });
+    } else {
+      setAlertMessage('Please select a case and lead first.');
+      setAlertOpen(true);
+    }
+  };
+
+  const goToViewLR = () => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
+      setAlertMessage('Please select a case and lead first.');
+      setAlertOpen(true);
+      return;
+    }
+    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
+  };
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  const casePageRoute = selectedCase?.role === 'Investigator' ? '/Investigator' : '/CasePageManager';
+
   return (
     <div className={styles.scratchpadPage}>
-      {/* Navbar */}
       <Navbar />
+
+      {/* Notification alert */}
       <AlertModal
-                          isOpen={alertOpen}
-                          title="Notification"
-                          message={alertMessage}
-                          onConfirm={() => setAlertOpen(false)}
-                          onClose={()   => setAlertOpen(false)}
-                        />
-                        <AlertModal
-  isOpen={confirmOpen}
-  title="Confirm Deletion"
-  message="Are you sure you want to delete this record?"
-  onConfirm={performDeleteNote}
-  onClose={() => {
-    setConfirmOpen(false);
-    setPendingDeleteIndex(null);
-  }}
-/>
+        isOpen={alertOpen}
+        title="Notification"
+        message={alertMessage}
+        onConfirm={() => setAlertOpen(false)}
+        onClose={() => setAlertOpen(false)}
+      />
 
+      {/* Delete confirmation dialog */}
+      <AlertModal
+        isOpen={confirmOpen}
+        title="Confirm Deletion"
+        message="Are you sure you want to delete this note?"
+        onConfirm={performDeleteNote}
+        onClose={() => { setConfirmOpen(false); setPendingDeleteIndex(null); }}
+      />
 
-      {/* Top Menu */}
-      {/* <div className="top-menu">
-        <div className="menu-items">
-          <span className="menu-item" onClick={() => handleNavigation("/LRInstruction")}>Instructions</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRReturn")}>Returns</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRPerson")}>Person</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRVehicle")}>Vehicles</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LREnclosures")}>Enclosures</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LREvidence")}>Evidence</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRPictures")}>Pictures</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRAudio")}>Audio</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRVideo")}>Videos</span>
-          <span className="menu-item active" onClick={() => handleNavigation("/LRScratchpad")}>Scratchpad</span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRFinish")}>Finish</span>
-        </div>
-      </div> */}
- 
       <div className={styles.LRIContent}>
-      {/* <div className="sideitem">
-       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+        <SideBar activePage="LeadReview" />
 
-       <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
-        </li>
-        {caseDropdownOpen && (
-      <ul >
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>  
+        <div className={styles.leftContentLI}>
 
-                  <li
-  className="sidebar-item"
-  onClick={() =>
-    selectedCase.role === "Investigator"
-      ? navigate("/Investigator")
-      : navigate("/CasePageManager")
-  }
->
-Case Page
-</li>
+          {/* ── Top navigation bar (page-level) ── */}
+          <div className={styles.topMenuNav}>
+            <div className={styles.menuItems}>
+              <span className={styles.menuItem} onClick={goToLeadReview}>
+                Lead Information
+              </span>
 
+              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
+                Add Lead Return
+              </span>
 
-            {selectedCase.role !== "Investigator" && (
-<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-          
-              {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
-            </li>)}
-          
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-
-            </ul>
-        )}
-          <li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
-          </li>
-        {leadDropdownOpen && (
-          <ul>
-              <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-              View Lead Chain of Custody
-            </li>
-             )}
-          </ul>
-
-            )}
-
-                </div> */}
-                  <SideBar  activePage="LeadReview" />
-                <div className={styles.leftContentLI}>
-
-                         <div className={styles.topMenuNav}>
-      <div className={styles.menuItems}>
-        <span className={styles.menuItem} onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/LeadReview", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } }} > Lead Information</span>
-                   <span className={`${styles.menuItem} ${styles.menuItemActive}`}>Add Lead Return</span>
-
-                       {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
-           <span
-              className={styles.menuItem}
-              onClick={handleViewLeadReturn}
-              title={isGenerating ? "Preparing report…" : "View Lead Return"}
-              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-            >
-              Manage Lead Return
-            </span>
+              {/* Case Manager: generate / view the full lead-return report */}
+              {isCaseManager && (
+                <span
+                  className={styles.menuItem}
+                  onClick={handleViewLeadReturn}
+                  title={isGenerating ? 'Preparing report…' : 'View Lead Return'}
+                  style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? 'none' : 'auto' }}
+                >
+                  Manage Lead Return
+                </span>
               )}
 
-              
-            {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-  <span className={styles.menuItem} onClick={goToViewLR}>
-    Submit Lead Return
-  </span>
-)}
-  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-  <span className={styles.menuItem} onClick={goToViewLR}>
-   Review Lead Return
-  </span>
-)}
+              {/* Investigator: label changes based on whether they are the primary */}
+              {selectedCase?.role === 'Investigator' && (
+                <span className={styles.menuItem} onClick={goToViewLR}>
+                  {isPrimaryInvestigator ? 'Submit Lead Return' : 'Review Lead Return'}
+                </span>
+              )}
 
-                   <span className={styles.menuItem} onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/ChainOfCustody", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } else {
-                     setAlertMessage("Please select a case and lead first.");
-                      setAlertOpen(true);
-                  }
-                }}>Lead Chain of Custody</span>
-          
-                  </div>
-        {/* <div className="menu-items">
-      
-        <span className="menu-item active" onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRReturn')}>
-            Returns
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRScratchpad')}>
-            Scratchpad
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span>
-         </div> */}
-       </div>
-
-                <div className={styles.topMenuSections}>
-       <div className={styles.menuItems} style={{ fontSize: '19px' }}>
-
-        <span className={styles.menuItem} style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Narrative
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className={`${styles.menuItem} ${styles.menuItemActive}`} style={{fontWeight: '600' }}  onClick={() => handleNavigation('/LRScratchpad')}>
-            Notes
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          {/* <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span> */}
-         </div> </div>
-     
-                {/* <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
-          <h5 className="side-title">
-  {selectedLead?.leadNo
-    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
-    : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
-</h5>
-
-
-          </div> */}
-               <div className={styles.caseandleadinfo}>
-          <h5 className={styles.sideTitle}>
-             <div className={styles.ldHead}>
-                                        <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
-                                        <span className={styles.sep}>{" >> "}</span>
-                                        <Link
-                                          to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
-                                          state={{ caseDetails: selectedCase }}
-                                          className={styles.crumb}
-                                        >
-                                          Case: {selectedCase.caseNo || ""}
-                                        </Link>
-                                        <span className={styles.sep}>{" >> "}</span>
-                                        <Link
-                                          to={"/LeadReview"}
-                                          state={{ leadDetails: selectedLead }}
-                                          className={styles.crumb}
-                                        >
-                                          Lead: {selectedLead.leadNo || ""}
-                                        </Link>
-                                        <span className={styles.sep}>{" >> "}</span>
-                                        <span className={styles.crumbCurrent} aria-current="page">Lead Notes</span>
-                                      </div>
-             </h5>
-          <h5 className={styles.sideTitle}>
-  {selectedLead?.leadNo
-        ? ` Lead Status:  ${status}`
-    : ` ${leadStatus}`}
-</h5>
-
+              <span className={styles.menuItem} onClick={goToChainOfCustody}>
+                Lead Chain of Custody
+              </span>
+            </div>
           </div>
 
-        {/* Center Section */}
-        <div className={styles.caseHeader}>
-          <h2>NOTES</h2>
-        </div>
-
-        <div className={styles.lriContentSection}>
-
-<div className={styles.contentSubsection}>
-        {/* Scratchpad Form */}
-        <div className={styles.timelineFormSec}>
-        <div className={styles.formRowEvidence}>
-            <label>Narrative Id*</label>
-             <select
-    value={noteData.returnId}
-    onChange={(e) => handleInputChange("returnId", e.target.value)}
-  >
-    <option value="">Select Id</option>
-
-    {/* Keep current value visible even if it’s not in latest API list (editing/legacy) */}
-    {noteData.returnId &&
-      !narrativeIds.includes(normalizeId(noteData.returnId)) && (
-        <option value={noteData.returnId}>{noteData.returnId}</option>
-      )
-    }
-
-    {narrativeIds.map(id => (
-      <option key={id} value={id}>{id}</option>
-    ))}
-  </select>
-          </div>
-        <h4 className={styles.evidenceFormH4}>Add New Note*</h4>
-        <div className={styles.formRowEvidence}>
-          <textarea
-            value={noteData.text}
-            onChange={(e) => handleInputChange("text", e.target.value)}
-            placeholder="Write your note here"
-          ></textarea>
-        </div>
-        <div className={styles.formButtonsReturn}>
-        {/* <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
-
-        className="save-btn1" onClick={handleAddNote}>Add Note</button> */}
-
-{editingIndex === null ? (
-              <button 
-              disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
-              onClick={handleAddNote} className={styles.saveBtn1}>
-                Add Note
-              </button>
-            ) : (
-              <>
-                <button
-                 disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
-                onClick={handleUpdateNote} className={styles.saveBtn1}>
-                  Update Note
-                </button>
-                <button
-                 disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
-                  onClick={() => {
-                    setEditingIndex(null);
-                    setNoteData({ text: "", returnId: "", accessLevel: "Everyone" });
-                  }}
-                  className={styles.saveBtn1}
+          {/* ── Section tabs (sub-page navigation) ── */}
+          <div className={styles.topMenuSections}>
+            <div className={styles.menuItems} style={{ fontSize: '19px' }}>
+              {SECTION_TABS.map(({ label, route, active }) => (
+                <span
+                  key={route}
+                  className={`${styles.menuItem}${active ? ` ${styles.menuItemActive}` : ''}`}
+                  style={{ fontWeight: active ? '600' : '400' }}
+                  onClick={() => navigate(route)}
                 >
-                  Cancel
-                </button>
-              </>
-            )}
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Breadcrumb + lead status bar ── */}
+          <div className={styles.caseandleadinfo}>
+            <h5 className={styles.sideTitle}>
+              <div className={styles.ldHead}>
+                <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+                <span className={styles.sep}>{' >> '}</span>
+                <Link to={casePageRoute} state={{ caseDetails: selectedCase }} className={styles.crumb}>
+                  Case: {selectedCase.caseNo || ''}
+                </Link>
+                <span className={styles.sep}>{' >> '}</span>
+                <Link to="/LeadReview" state={{ leadDetails: selectedLead }} className={styles.crumb}>
+                  Lead: {selectedLead.leadNo || ''}
+                </Link>
+                <span className={styles.sep}>{' >> '}</span>
+                <span className={styles.crumbCurrent} aria-current="page">Lead Notes</span>
+              </div>
+            </h5>
+            <h5 className={styles.sideTitle}>
+              {selectedLead?.leadNo ? `Lead Status: ${status}` : leadStatus}
+            </h5>
+          </div>
+
+          {/* ── Page heading ── */}
+          <div className={styles.caseHeader}>
+            <h2>NOTES</h2>
+          </div>
+
+          {/* ── Main scrollable content area ── */}
+          <div className={styles.lriContentSection}>
+            <div className={styles.contentSubsection}>
+
+              {/* ── Note entry form ── */}
+              <div className={styles.timelineFormSec}>
+                <div className={styles.formRowEvidence}>
+                  <label>Narrative Id*</label>
+                  <select
+                    value={noteData.returnId}
+                    onChange={e => handleInputChange('returnId', e.target.value)}
+                  >
+                    <option value="">Select Id</option>
+                    {/* Keep the current value visible even if absent from the latest API list (edit/legacy) */}
+                    {noteData.returnId && !narrativeIds.includes(normalizeId(noteData.returnId)) && (
+                      <option value={noteData.returnId}>{noteData.returnId}</option>
+                    )}
+                    {narrativeIds.map(id => (
+                      <option key={id} value={id}>{id}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <h4 className={styles.evidenceFormH4}>
+                  {isEditing ? 'Edit Note' : 'Add New Note*'}
+                </h4>
+
+                <div className={styles.formRowEvidence}>
+                  <textarea
+                    value={noteData.text}
+                    onChange={e => handleInputChange('text', e.target.value)}
+                    placeholder="Write your note here"
+                  />
+                </div>
+
+                {/* Form action buttons */}
+                <div className={styles.formButtonsReturn}>
+                  {isEditing ? (
+                    <>
+                      <button
+                        disabled={isFormDisabled}
+                        onClick={handleUpdateNote}
+                        className={styles.saveBtn1}
+                      >
+                        Update Note
+                      </button>
+                      <button
+                        disabled={isFormDisabled}
+                        onClick={resetForm}
+                        className={styles.saveBtn1}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      disabled={isFormDisabled}
+                      onClick={handleAddNote}
+                      className={styles.saveBtn1}
+                    >
+                      Add Note
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Notes history table ── */}
+              <table className={styles.leadsTable}>
+                <thead>
+                  <tr>
+                    <th>Date Entered</th>
+                    <th>Narrative Id</th>
+                    <th>Entered By</th>
+                    <th>Text</th>
+                    <th>Actions</th>
+                    {isCaseManager && <th style={{ width: '15%' }}>Access</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {notes.length > 0 ? notes.map((note, idx) => (
+                    <tr key={note._id || idx}>
+                      <td>{note.dateEntered}</td>
+                      <td>{note.returnId || '(none)'}</td>
+                      <td>{note.enteredBy}</td>
+                      <td>{note.text}</td>
+                      <td>
+                        <div className={styles.lrTableBtn}>
+                          <button disabled={isFormDisabled} onClick={() => handleEditClick(idx)}>
+                            <img
+                              src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                              alt="Edit"
+                              className={styles.editIcon}
+                            />
+                          </button>
+                          <button disabled={isFormDisabled} onClick={() => requestDeleteNote(idx)}>
+                            <img
+                              src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                              alt="Delete"
+                              className={styles.editIcon}
+                            />
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Access level dropdown — visible to Case Managers only */}
+                      {isCaseManager && (
+                        <td>
+                          <select
+                            value={note.accessLevel}
+                            onChange={e => handleAccessChange(idx, e.target.value)}
+                            className={styles.accessDropdown}
+                          >
+                            <option value="Everyone">All</option>
+                            <option value="Case Manager">Case Manager</option>
+                            <option value="Case Manager and Assignees">Assignees</option>
+                          </select>
+                        </td>
+                      )}
+                    </tr>
+                  )) : (
+                    <tr>
+                      <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign: 'center' }}>
+                        No Notes Added
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+
+            </div>
+          </div>
+
         </div>
-        </div>
-
-           {/* Scratchpad Table */}
-           <table className={styles.leadsTable}>
-          <thead>
-            <tr>
-              <th>Date Entered</th>
-              <th>Narrative Id </th>
-              <th>Entered By</th>
-              <th>Text</th>
-              <th>Actions</th>
-              {isCaseManager && (
-              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
-            )}
-            </tr>
-          </thead>
-          <tbody>
-            {notes.length > 0 ? notes.map((note, index) => (
-              <tr key={index}>
-                <td>{note.dateEntered}</td>
-              <td>{note.returnId || "(none)"}</td>
-
-                <td>{note.enteredBy}</td>
-                <td>{note.text}</td>
-                <td>
-                  <div className={styles.lrTableBtn}>
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
-                  alt="Edit Icon"
-                  className={styles.editIcon}
-                  onClick={() => handleEditClick(index)}
-                />
-                  </button>
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
-                  alt="Delete Icon"
-                  className={styles.editIcon}
-                  onClick={() => requestDeleteNote(index)}
-                />
-                  </button>
-                  </div>
-                </td>
-            
-                {isCaseManager && (
-          <td>
-            <select
-              value={note.accessLevel}
-              onChange={e => handleAccessChange(index, e.target.value)}
-              className={styles.accessDropdown}
-            >
-              <option value="Everyone">All</option>
-              <option value="Case Manager">Case Manager</option>
-              <option value="Case Manager and Assignees">Assignees</option>
-            </select>
-          </td>
-        )}
-      </tr>
-       )) : (
-        <tr>
-          <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign:'center' }}>
-            No Notes Added
-          </td>
-        </tr>
-      )}
-          </tbody>
-        </table>
-
-        
-         {/* {selectedLead?.leadStatus !== "Completed" && !isCaseManager && (
-  <div className="form-buttons-finish">
-    <h4> Click here to submit the lead</h4>
-    <button
-      disabled={selectedLead?.leadStatus === "In Review"}
-      className="save-btn1"
-      onClick={handleSubmitReport}
-    >
-      Submit 
-    </button>
-  </div>
-)} */}
-        {/* <Comment tag= "Scratchpad"/> */}
-
-</div>
-
-        {/* Action Buttons */}
-        {/* <div className="form-buttons-scratchpad">
-          <button className="add-btn" onClick={handleAddNote}>Add Note</button>
-          <button className="back-btn" onClick={() => handleNavigation("/LRVideos")}>Back</button>
-          <button className="next-btn" onClick={() => handleNavigation("/LRFinish")}>Next</button>
-          <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button>
-        </div> */}
       </div>
-
-    </div>
-    </div>
     </div>
   );
 };
