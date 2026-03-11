@@ -178,7 +178,7 @@ router.get("/:id/subCategories", async (req, res) => {
     }
   });
 
-  router.get("/:caseNo/team", caseController.getCaseTeam);
+  router.get("/:caseNo/team", verifyToken, caseController.getCaseTeam);
 
 
 

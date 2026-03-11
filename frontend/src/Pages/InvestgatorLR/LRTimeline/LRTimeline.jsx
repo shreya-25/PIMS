@@ -1,1308 +1,863 @@
-import React, { useContext, useState, useEffect, useMemo} from 'react';
-import { useLocation, useNavigate, Link } from "react-router-dom";
+/**
+ * LRTimeline.jsx
+ *
+ * Manages the timeline sub-section of the Lead Return workflow.
+ * Allows investigators to add, edit, and delete chronological event entries
+ * linked to a specific narrative ID (lead return).
+ *
+ * Features:
+ *  - Add / edit / delete timeline entries (date, time range, location,
+ *    description, optional flag)
+ *  - Custom flags can be created on the fly
+ *  - Access-level control for Case Managers
+ *  - Session storage persistence scoped per case + lead
+ *  - Chronological validation (start must be before end)
+ *  - Read-only enforcement based on lead status
+ */
 
+import { useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import Navbar from '../../../components/Navbar/Navbar';
-import styles from './LRTimeline.module.css';
-import Comment from "../../../components/Comment/Comment";
-import axios from "axios";
-import { CaseContext } from "../../CaseContext";
-import api, { BASE_URL } from "../../../api";
-import {SideBar } from "../../../components/Sidebar/Sidebar";
-import { AlertModal } from "../../../components/AlertModal/AlertModal";
+import { SideBar } from '../../../components/Sidebar/Sidebar';
+import { AlertModal } from '../../../components/AlertModal/AlertModal';
+import { CaseContext } from '../../CaseContext';
+import api from '../../../api';
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
+import { useLeadReport } from '../useLeadReport';
+import { formatDate, normalizeId, alphabetToNumber } from '../lrUtils';
 
+// Merge shared LR stylesheet with component-specific overrides
+import lrStyles    from '../LR.module.css';
+import localStyles from './LRTimeline.module.css';
 
+const styles = { ...lrStyles, ...localStyles };
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const DEFAULT_FLAGS = ['High Priority', 'Investigation', 'Evidence Collected'];
+
+// Section tabs shared across all LR sub-pages
+const SECTION_TABS = [
+  { label: 'Instructions', route: '/LRInstruction' },
+  { label: 'Narrative',    route: '/LRReturn' },
+  { label: 'Person',       route: '/LRPerson' },
+  { label: 'Vehicles',     route: '/LRVehicle' },
+  { label: 'Enclosures',   route: '/LREnclosures' },
+  { label: 'Evidence',     route: '/LREvidence' },
+  { label: 'Pictures',     route: '/LRPictures' },
+  { label: 'Audio',        route: '/LRAudio' },
+  { label: 'Videos',       route: '/LRVideo' },
+  { label: 'Notes',        route: '/LRScratchpad' },
+  { label: 'Timeline',     route: '/LRTimeline', active: true },
+];
+
+/** Returns a fresh default timeline entry for the form. */
+const getDefaultEntry = () => ({
+  date:           new Date().toISOString().split('T')[0],
+  leadReturnId:   '',
+  eventStartDate: '',
+  eventEndDate:   '',
+  startTime:      '',
+  endTime:        '',
+  location:       '',
+  description:    '',
+  flag:           '',
+  accessLevel:    'Everyone',
+});
+
+// ─── Pure Helpers ─────────────────────────────────────────────────────────────
+
+/**
+ * Combines a date string (YYYY-MM-DD) and time string (HH:MM) into a UTC ISO
+ * timestamp. Used to construct event time payloads sent to the API.
+ */
+const combineDateTime = (dateStr, timeStr) => new Date(`${dateStr}T${timeStr}`);
+
+/**
+ * Combines date + time strings into a UTC ISO string for chronological
+ * validation (avoids local timezone surprises during comparison).
+ */
+const combineDateTimeISO = (dateStr, timeStr) => {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const [H, MM]   = timeStr.split(':').map(Number);
+  return new Date(Date.UTC(y, m - 1, d, H, MM)).toISOString();
+};
+
+/**
+ * Validates event chronology: start time must be before end time, and event
+ * start date must be on or before event end date.
+ * Returns an error string, or an empty string if valid.
+ */
+function assertChronology(entry) {
+  if (entry.date && entry.startTime && entry.endTime) {
+    const start = new Date(combineDateTimeISO(entry.date, entry.startTime));
+    const end   = new Date(combineDateTimeISO(entry.date, entry.endTime));
+    if (start > end) return 'Start Time must be before End Time.';
+  }
+  if (entry.eventStartDate && entry.eventEndDate) {
+    if (new Date(entry.eventStartDate) > new Date(entry.eventEndDate)) {
+      return 'Event Start Date must be on/before Event End Date.';
+    }
+  }
+  return '';
+}
+
+/** Returns a list of required field labels that are empty or invalid. */
+function getMissingFields(entry) {
+  const missing = [];
+  if (!String(entry.leadReturnId ?? '').trim()) missing.push('Narrative Id');
+  if (!String(entry.description  ?? '').trim()) missing.push('Description');
+  return missing;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export const LRTimeline = () => {
-    // useEffect(() => {
-    //     // Apply style when component mounts
-    //     document.body.style.overflow = "hidden";
-    
-    //     return () => {
-    //       // Reset to default when component unmounts
-    //       document.body.style.overflow = "auto";
-    //     };
-    //   }, []);
   const navigate = useNavigate();
-  const { selectedCase, selectedLead, setSelectedLead,  leadStatus, setLeadStatus } = useContext(CaseContext);
-
-  const { formKey, listKey } = useMemo(() => {
-  const cn   = selectedCase?.caseNo ?? "NA";
-  const cNam = encodeURIComponent(selectedCase?.caseName ?? "NA");
-  const ln   = selectedLead?.leadNo ?? "NA";
-  const lNam = encodeURIComponent(selectedLead?.leadName ?? "NA");
-  return {
-    formKey: `LRTimeline:form:${cn}:${cNam}:${ln}:${lNam}`,
-    listKey: `LRTimeline:list:${cn}:${cNam}:${ln}:${lNam}`,
-  };
-}, [
-  selectedCase?.caseNo,
-  selectedCase?.caseName,
-  selectedLead?.leadNo,
-  selectedLead?.leadName,
-]);
-
   const location = useLocation();
-  const [leadData, setLeadData] = useState({});
-  const [entries, setEntries] = useState([]);
-  const [alertOpen, setAlertOpen] = useState(false);
-  const [alertMessage, setAlertMessage] = useState("");
 
-  const [narrativeIds, setNarrativeIds] = useState([]);
+  const { selectedCase, selectedLead, leadStatus } = useContext(CaseContext);
 
-const normalizeId = (id) => String(id ?? "").trim().toUpperCase();
-const alphabetToNumber = (str = "") => {
-  str = normalizeId(str);
-  let n = 0;
-  for (let i = 0; i < str.length; i++) n = n * 26 + (str.charCodeAt(i) - 64);
-  return n;
-};
+  // ── State ──────────────────────────────────────────────────────────────────
 
+  const [timelineEntries, setTimelineEntries]       = useState([]);
+  const [newEntry, setNewEntry]                     = useState(getDefaultEntry);
+  const [narrativeIds, setNarrativeIds]             = useState([]);
+  const [leadData, setLeadData]                     = useState({});
+  const [timelineFlags, setTimelineFlags]           = useState(DEFAULT_FLAGS);
+  const [newFlag, setNewFlag]                       = useState('');
+  const [editingIndex, setEditingIndex]             = useState(null);
+  const [alertOpen, setAlertOpen]                   = useState(false);
+  const [alertMessage, setAlertMessage]             = useState('');
+  const [confirmOpen, setConfirmOpen]               = useState(false);
+  const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
 
-const [confirmOpen, setConfirmOpen] = useState(false);
-const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
-
-const requestDelete = (idx) => {
-  setPendingDeleteIndex(idx);
-  setConfirmOpen(true);
-};
-
-const performDelete = async () => {
-  const idx = pendingDeleteIndex;
-  if (idx == null) return;
-
-  const token = localStorage.getItem("token");
-  const e = timelineEntries[idx];
-
-  try {
-    await api.delete(`/api/timeline/${e.id}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    setTimelineEntries(list => list.filter((_, i) => i !== idx));
-  } catch (err) {
-    console.error(err);
-    setAlertMessage("Failed to delete entry");
-    setAlertOpen(true);
-  } finally {
-    setConfirmOpen(false);
-    setPendingDeleteIndex(null);
-  }
-};
-
-
-        
-          const formatDate = (dateString) => {
-            if (!dateString) return "";
-            const date = new Date(dateString);
-            if (isNaN(date)) return "";
-            const month = (date.getMonth() + 1).toString().padStart(2, "0");
-            const day = date.getDate().toString().padStart(2, "0");
-            const year = date.getFullYear().toString().slice(-2);
-            return `${month}/${day}/${year}`;
-          };
-        
-          const { leadDetails, caseDetails } = location.state || {};
-        
-  
-    const handleNavigation = (route) => {
-      navigate(route); // Navigate to the respective page
-    };
-  
-   const [timelineEntries, setTimelineEntries] = useState(() => {
-  const saved = sessionStorage.getItem(listKey);
-  return saved ? JSON.parse(saved) : [];
-});
-
-const getDefaultEntry = () => ({
-  date: new Date().toISOString().split('T')[0],
-  leadReturnId: "",
-  eventStartDate: "",
-  eventEndDate: "",
-  startTime: "",
-  endTime: "",
-  location: "",
-  description: "",
-  flag: "",
-  accessLevel: "Everyone",
-});
-
-
-const [newEntry, setNewEntry] = useState(() => {
-  const saved = sessionStorage.getItem(formKey);
-  if (saved) {
-    const parsed = JSON.parse(saved);
-    // Ensure date is set even if not in saved data
-    return { ...getDefaultEntry(), ...parsed };
-  }
-  return getDefaultEntry();
-});
-
-useEffect(() => {
-  setNewEntry(() => {
-    const saved = sessionStorage.getItem(formKey);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Ensure date is set even if not in saved data
-      return { ...getDefaultEntry(), ...parsed };
-    }
-    return getDefaultEntry();
-  });
-  setTimelineEntries(() => {
-    const saved = sessionStorage.getItem(listKey);
-    return saved ? JSON.parse(saved) : [];
-  });
-  setEditingIndex(null);
-}, [formKey, listKey]);
-
-
-  const [timelineFlags, setTimelineFlags] = useState([
-    'High Priority',
-    'Investigation',
-    'Evidence Collected',
-  ]);
-
-  const [newFlag, setNewFlag] = useState('');
-  const [editingIndex, setEditingIndex] = useState(null);
   const isEditing = editingIndex !== null;
 
-  useEffect(() => { sessionStorage.setItem(formKey, JSON.stringify(newEntry)); }, [formKey, newEntry]);
-useEffect(() => { sessionStorage.setItem(listKey, JSON.stringify(timelineEntries)); }, [listKey, timelineEntries]);
+  // ── Role / permission checks ───────────────────────────────────────────────
 
+  const isCaseManager =
+    selectedCase?.role === 'Case Manager' || selectedCase?.role === 'Detective Supervisor';
 
-const required = (s) => !!String(s ?? "").trim();
+  const signedInOfficer = localStorage.getItem('loggedInUser');
+  const primaryUsername = leadData?.primaryInvestigator || leadData?.primaryOfficer || '';
+  const isPrimaryInvestigator =
+    selectedCase?.role === 'Investigator' &&
+    !!signedInOfficer &&
+    signedInOfficer === primaryUsername;
 
-// put this near other handlers, after isPrimaryInvestigator is defined
+  // ── Lead status and read-only guard ───────────────────────────────────────
 
+  const { status, isReadOnly } = useLeadStatus({
+    caseNo:   selectedCase.caseNo,
+    caseName: selectedCase.caseName,
+    leadNo:   selectedLead.leadNo,
+    leadName: selectedLead.leadName,
+  });
 
+  // Consolidated disable flag for all form controls
+  const isFormDisabled =
+    selectedLead?.leadStatus === 'In Review' ||
+    selectedLead?.leadStatus === 'Completed'  ||
+    isReadOnly;
 
-function getMissingTimelineFields(ne, { isEditing = false } = {}) {
-  const miss = [];
-  if (!required(ne.leadReturnId))  miss.push("Narrative Id");
-  if (!required(ne.description))   miss.push("Description");
-  return miss;
-}
+  // ── Session-storage keys (scoped to the active case + lead) ───────────────
 
-// Build an ISO timestamp safely in local date context (avoids TZ surprises)
-function combineDateTimeISO(dateStr, timeStr) {
-  // dateStr: "YYYY-MM-DD", timeStr: "HH:MM"
-  const [y,m,d] = dateStr.split("-").map(Number);
-  const [H,MM]  = timeStr.split(":").map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d, H, MM)); // store as UTC ISO
-  return dt.toISOString();
-}
+  const { formKey, listKey } = useMemo(() => {
+    const cn   = selectedCase?.caseNo   ?? 'NA';
+    const cNam = encodeURIComponent(selectedCase?.caseName ?? 'NA');
+    const ln   = selectedLead?.leadNo   ?? 'NA';
+    const lNam = encodeURIComponent(selectedLead?.leadName ?? 'NA');
+    return {
+      formKey: `LRTimeline:form:${cn}:${cNam}:${ln}:${lNam}`,
+      listKey: `LRTimeline:list:${cn}:${cNam}:${ln}:${lNam}`,
+    };
+  }, [selectedCase?.caseNo, selectedCase?.caseName, selectedLead?.leadNo, selectedLead?.leadName]);
 
-function assertChronology(ne) {
-  // Only validate if all fields are provided
-  if (ne.date && ne.startTime && ne.endTime) {
-    const startISO = combineDateTimeISO(ne.date, ne.startTime);
-    const endISO   = combineDateTimeISO(ne.date, ne.endTime);
-    if (new Date(startISO) > new Date(endISO)) {
-      return "Start Time must be before End Time.";
-    }
-  }
-  if (ne.eventStartDate && ne.eventEndDate) {
-    if (new Date(ne.eventStartDate) > new Date(ne.eventEndDate)) {
-      return "Event Start Date must be on/before Event End Date.";
-    }
-  }
-  return "";
-}
+  // ── Shared report generation hook (Case Manager "Manage Lead Return" button) ──
 
+  const { isGenerating, handleViewLeadReturn } = useLeadReport({
+    selectedLead,
+    selectedCase,
+    location,
+    setAlertMessage,
+    setAlertOpen,
+  });
 
+  // ── Session storage: restore form + list when the active case/lead changes ──
 
-  const handleInputChange = (field, value) => {
-    setNewEntry({ ...newEntry, [field]: value });
+  useEffect(() => {
+    const savedForm = sessionStorage.getItem(formKey);
+    setNewEntry(savedForm ? { ...getDefaultEntry(), ...JSON.parse(savedForm) } : getDefaultEntry());
+    const savedList = sessionStorage.getItem(listKey);
+    setTimelineEntries(savedList ? JSON.parse(savedList) : []);
+    setEditingIndex(null);
+  }, [formKey, listKey]);
+
+  // Persist state on every change so navigation doesn't lose data
+  useEffect(() => { sessionStorage.setItem(formKey, JSON.stringify(newEntry)); },          [formKey, newEntry]);
+  useEffect(() => { sessionStorage.setItem(listKey, JSON.stringify(timelineEntries)); },   [listKey, timelineEntries]);
+
+  // ── Fetch lead metadata (assignees, primary officer) ──────────────────────
+
+  useEffect(() => {
+    if (!selectedLead?.leadNo || !selectedCase?.caseNo) return;
+    const token = localStorage.getItem('token');
+    api
+      .get(
+        `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      .then(({ data }) => {
+        if (data.length > 0) {
+          setLeadData({
+            ...data[0],
+            assignedTo: data[0].assignedTo || [],
+            leadStatus: data[0].leadStatus || '',
+          });
+        }
+      })
+      .catch(err => console.error('Failed to fetch lead data:', err));
+  }, [selectedLead, selectedCase]);
+
+  // ── Fetch narrative IDs for the return-ID dropdown ────────────────────────
+
+  useEffect(() => {
+    if (!selectedLead?.leadNo || !selectedCase?.caseNo) return;
+    const ac = new AbortController();
+
+    (async () => {
+      try {
+        const token   = localStorage.getItem('token');
+        const encLead = encodeURIComponent(selectedLead.leadName);
+        const encCase = encodeURIComponent(selectedCase.caseName);
+
+        const { data } = await api.get(
+          `/api/leadReturnResult/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
+          { headers: { Authorization: `Bearer ${token}` }, signal: ac.signal }
+        );
+
+        // Deduplicate, normalise, and sort in alphabetical (A→Z→AA→AB…) order
+        const ids = [...new Set((data || []).map(r => normalizeId(r?.leadReturnId)).filter(Boolean))];
+        ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
+        setNarrativeIds(ids);
+
+        // Pre-select the latest ID when the user is adding a new record
+        setNewEntry(prev =>
+          !isEditing && !prev.leadReturnId
+            ? { ...prev, leadReturnId: ids.at(-1) || '' }
+            : prev
+        );
+      } catch (err) {
+        if (!ac.signal.aborted) console.error('Failed to fetch narrative IDs:', err);
+      }
+    })();
+
+    return () => ac.abort();
+  }, [
+    selectedLead?.leadNo,
+    selectedLead?.leadName,
+    selectedCase?.caseNo,
+    selectedCase?.caseName,
+    isEditing,
+  ]);
+
+  // ── Format a start/end time pair for table display (New York timezone) ────
+
+  const formatTimeRangeNY = (startTime, endTime) => {
+    if (!startTime || !endTime) return '';
+    const opts  = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/New_York' };
+    const start = new Date(startTime);
+    const end   = new Date(endTime);
+    if (isNaN(start) || isNaN(end)) return '';
+    return `${start.toLocaleTimeString('en-US', opts)} - ${end.toLocaleTimeString('en-US', opts)}`;
   };
 
-  async function fetchTimelineEntries() {
-    const token = localStorage.getItem("token");
-    const url = `/api/timeline/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`;
+  // ── Fetch timeline entries from the API, applying access-level filtering ───
+
+  // ── Map a raw API entry to display format ─────────────────────────────────
+
+  const mapEntry = useCallback((e) => ({
+    id:               e._id,
+    rawEventDate:     e.eventDate,
+    rawStartDate:     e.eventStartDate,
+    rawEndDate:       e.eventEndDate,
+    rawStartTime:     e.eventStartTime,
+    rawEndTime:       e.eventEndTime,
+    leadReturnId:     e.leadReturnId,
+    eventLocation:    e.eventLocation,
+    eventDescription: e.eventDescription,
+    flags:            e.timelineFlag || [],
+    accessLevel:      e.accessLevel || 'Everyone',
+    date:             formatDate(e.eventDate),
+    timeRange:        formatTimeRangeNY(e.eventStartTime, e.eventEndTime),
+    location:         e.eventLocation,
+    description:      e.eventDescription,
+  }), [formatTimeRangeNY]);
+
+  const fetchTimelineEntries = useCallback(async () => {
+    const token   = localStorage.getItem('token');
+    const encLead = encodeURIComponent(selectedLead.leadName);
+    const encCase = encodeURIComponent(selectedCase.caseName);
+
     try {
-      const res = await api.get(url, { headers: { Authorization: `Bearer ${token}` } });
-      const mappedEntries = res.data.map(e => ({
-        id: e._id,
-        rawEventDate: e.eventDate,
-        rawStartDate: e.eventStartDate,
-        rawEndDate: e.eventEndDate,
-        rawStartTime: e.eventStartTime,
-        rawEndTime: e.eventEndTime,
-        leadReturnId: e.leadReturnId,
-        eventLocation: e.eventLocation,
-        eventDescription: e.eventDescription,
-        flags: e.timelineFlag || [],
-        accessLevel: e.accessLevel || "Everyone",
-        // for display:
-        date: formatDate(e.eventDate),
-        timeRange: formatTimeRangeNY(e.eventStartTime, e.eventEndTime),
-        location: e.eventLocation,
-        description: e.eventDescription,
-      }));
+      const { data } = await api.get(
+        `/api/timeline/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-      // Filter based on role and access level
-      const isCaseManager =
-        selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
+      const mapped = data.map(mapEntry);
 
-      let visible = mappedEntries;
-      if (!isCaseManager) {
-        const currentUser = localStorage.getItem("loggedInUser")?.trim();
-        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+      // Non-case-managers only see records they are permitted to view
+      const currentUser   = localStorage.getItem('loggedInUser')?.trim();
+      const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
 
-        visible = mappedEntries.filter(entry => {
-          if (entry.accessLevel === "Everyone") return true;
-          if (entry.accessLevel === "Case Manager and Assignees") {
-            const isAssignedToLead = leadAssignees.some(a => a === currentUser);
-            return isAssignedToLead;
-          }
-          return false; // "Case Manager" only
-        });
-      }
+      const visible = isCaseManager
+        ? mapped
+        : mapped.filter(entry => {
+            if (entry.accessLevel === 'Everyone') return true;
+            if (entry.accessLevel === 'Case Manager and Assignees') {
+              return leadAssignees.some(a => a === currentUser);
+            }
+            return false;
+          });
 
       setTimelineEntries(visible);
     } catch (err) {
-      console.error("Error fetching timeline entries:", err);
+      console.error('Error fetching timeline entries:', err);
     }
-  }
-  
-  const handleChange = (field, val) => {
-    setNewEntry(ne => ({ ...ne, [field]: val }));
-  };
-
+  }, [selectedLead, selectedCase, isCaseManager, leadData, mapEntry]);
 
   useEffect(() => {
-    if (
-      selectedLead?.leadNo &&
-      selectedLead?.leadName &&
-      selectedCase?.caseNo &&
-      selectedCase?.caseName
-    ) {
+    if (selectedLead?.leadNo && selectedLead?.leadName && selectedCase?.caseNo && selectedCase?.caseName) {
       fetchTimelineEntries();
     }
   }, [selectedLead, selectedCase]);
-  
-  const formatTimeRangeNY = (startTime, endTime) => {
-    if (!startTime || !endTime) return "";
 
-    const options = {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: "America/New_York",
-    };
+  // ── Form handlers ──────────────────────────────────────────────────────────
 
-    const startDate = new Date(startTime);
-    const endDate = new Date(endTime);
-
-    if (isNaN(startDate) || isNaN(endDate)) return "";
-
-    const start = startDate.toLocaleTimeString("en-US", options);
-    const end = endDate.toLocaleTimeString("en-US", options);
-
-    return `${start} - ${end}`;
-  };
-  
-    useEffect(() => {
-    const fetchLeadData = async () => {
-      if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
-      const token = localStorage.getItem("token");
-
-      try {
-        const response = await api.get(
-          `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
-
-        if (response.data.length > 0) {
-          setLeadData({
-            ...response.data[0],
-            assignedTo: response.data[0].assignedTo || [],
-            leadStatus: response.data[0].leadStatus || ''
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch lead data:", error);
-      }
-    };
-
-    fetchLeadData();
-  }, [selectedLead, selectedCase]);
-
-  useEffect(() => {
-  if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
-
-  const ac = new AbortController();
-
-  (async () => {
-    try {
-      const token   = localStorage.getItem("token");
-      const { leadNo } = selectedLead;
-      const { caseNo } = selectedCase;
-      const encLead = encodeURIComponent(selectedLead.leadName);
-      const encCase = encodeURIComponent(selectedCase.caseName);
-
-      const resp = await api.get(
-        `/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`,
-        { headers: { Authorization: `Bearer ${token}` }, signal: ac.signal }
-      );
-
-      // unique, cleaned, non-empty IDs
-      const ids = [...new Set((resp?.data || [])
-        .map(r => normalizeId(r?.leadReturnId))
-        .filter(Boolean))];
-
-      // sort like A, B, …, Z, AA, AB, …
-      ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
-      setNarrativeIds(ids);
-
-      // if ADDING (not editing) and none chosen → preselect latest
-      setNewEntry(prev =>
-        (!isEditing && !prev.leadReturnId)
-          ? { ...prev, leadReturnId: ids.at(-1) || "" }
-          : prev
-      );
-    } catch (err) {
-      if (!ac.signal.aborted) console.error("Failed to fetch Narrative Ids:", err);
-    }
-  })();
-
-  return () => ac.abort();
-}, [
-  selectedLead?.leadNo,
-  selectedLead?.leadName,
-  selectedCase?.caseNo,
-  selectedCase?.caseName,
-  isEditing
-]);
-
-
-   const attachFiles = async (items, idFieldName, filesEndpoint) => {
-  return Promise.all(
-    (items || []).map(async (item) => {
-      const realId = item[idFieldName];
-      if (!realId) return { ...item, files: [] };
-      try {
-        const { data: filesArray } = await api.get(
-          `${filesEndpoint}/${realId}`,
-          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-        );
-        return { ...item, files: filesArray };
-      } catch (err) {
-        console.error(`Error fetching files for ${filesEndpoint}/${realId}:`, err);
-        return { ...item, files: [] };
-      }
-    })
-  );
-};
-
-    const [isGenerating, setIsGenerating] = useState(false);
-    const handleViewLeadReturn = async () => {
-  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-  if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
-    setAlertMessage("Please select a case and lead first.");
-    setAlertOpen(true);
-    return;
-  }
-
-  if (isGenerating) return;
-
-  try {
-    setIsGenerating(true);
-
-    const token = localStorage.getItem("token");
-    const headers = { headers: { Authorization: `Bearer ${token}` } };
-
-    const { leadNo } = lead;
-    const leadName = lead.leadName || lead.description;
-    const { caseNo, caseName } = kase;
-    const encLead = encodeURIComponent(leadName);
-    const encCase = encodeURIComponent(caseName);
-
-    // fetch everything we need for the report (same endpoints you use on LRFinish)
-    const [
-      instrRes,
-      returnsRes,
-      personsRes,
-      vehiclesRes,
-      enclosuresRes,
-      evidenceRes,
-      picturesRes,
-      audioRes,
-      videosRes,
-      scratchpadRes,
-      timelineRes,
-    ] = await Promise.all([
-      api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-    ]);
-
-    // add files where applicable (note the plural file endpoints)
-    const enclosuresWithFiles = await attachFiles(enclosuresRes.data, "_id", "/api/lrenclosures/files");
-    const evidenceWithFiles   = await attachFiles(evidenceRes.data,   "_id", "/api/lrevidences/files");
-    const picturesWithFiles   = await attachFiles(picturesRes.data,   "pictureId", "/api/lrpictures/files");
-    const audioWithFiles      = await attachFiles(audioRes.data,      "audioId",   "/api/lraudio/files");
-    const videosWithFiles     = await attachFiles(videosRes.data,     "videoId",   "/api/lrvideo/files");
-
-    const leadInstructions = instrRes.data?.[0] || {};
-    const leadReturns      = returnsRes.data || [];
-    const leadPersons      = personsRes.data || [];
-    const leadVehicles     = vehiclesRes.data || [];
-    const leadScratchpad   = scratchpadRes.data || [];
-    const leadTimeline     = timelineRes.data || [];
-
-    // make all sections true (Full Report)
-    const selectedReports = {
-      FullReport: true,
-      leadInstruction: true,
-      leadReturn: true,
-      leadPersons: true,
-      leadVehicles: true,
-      leadEnclosures: true,
-      leadEvidence: true,
-      leadPictures: true,
-      leadAudio: true,
-      leadVideos: true,
-      leadScratchpad: true,
-      leadTimeline: true,
-    };
-
-    const body = {
-      user: localStorage.getItem("loggedInUser") || "",
-      reportTimestamp: new Date().toISOString(),
-
-      // sections (values are the fetched arrays/objects)
-      leadInstruction: leadInstructions,
-      leadReturn:      leadReturns,
-      leadPersons,
-      leadVehicles,
-      leadEnclosures:  enclosuresWithFiles,
-      leadEvidence:    evidenceWithFiles,
-      leadPictures:    picturesWithFiles,
-      leadAudio:       audioWithFiles,
-      leadVideos:      videosWithFiles,
-      leadScratchpad,
-      leadTimeline,
-
-      // also send these two, since your backend expects them
-      selectedReports,
-      leadInstructions,
-      leadReturns,
-    };
-
-    const resp = await api.post("/api/report/generate", body, {
-      responseType: "blob",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    const file = new Blob([resp.data], { type: "application/pdf" });
-
-    navigate("/DocumentReview", {
-      state: {
-        pdfBlob: file,
-        filename: `Lead_${leadNo || "report"}.pdf`,
-      },
-    });
-  } catch (err) {
-    if (err?.response?.data instanceof Blob) {
-      const text = await err.response.data.text();
-      console.error("Report error:", text);
-      setAlertMessage("Error generating PDF:\n" + text);
-    } else {
-      console.error("Report error:", err);
-      setAlertMessage("Error generating PDF:\n" + (err.message || "Unknown error"));
-    }
-    setAlertOpen(true);
-  } finally {
-    setIsGenerating(false);
-  }
-};
-
-  const signedInOfficer = localStorage.getItem("loggedInUser");
- // who is primary for this lead?
-const primaryUsername =
-  leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
-
-// am I the primary investigator on this lead?
-const isPrimaryInvestigator =
-  selectedCase?.role === "Investigator" &&
-  !!signedInOfficer &&
-  signedInOfficer === primaryUsername;
-
-// primary goes to the interactive ViewLR page
-const goToViewLR = () => {
-  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-  if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-    setAlertMessage("Please select a case and lead first.");
-    setAlertOpen(true);
-    return;
-  }
-
-  navigate("/viewLR", {
-    state: { caseDetails: kase, leadDetails: lead }
-  });
-};
-
-  const handleAddEntry = async () => {
-    if (!newEntry.date || !newEntry.eventStartDate || !newEntry.eventEndDate ||  !newEntry.startTime || !newEntry.endTime || !newEntry.location || !newEntry.description) {
-       setAlertMessage("Please fill in all required fields.");
-                      setAlertOpen(true);
-      return;
-    }
-  
-    const token = localStorage.getItem("token");
-  
-    const payload = {
-      leadNo: selectedLead?.leadNo,
-      description: selectedLead?.leadName,
-      assignedTo: selectedLead?.assignedTo || {},
-      assignedBy: selectedLead?.assignedBy || {},
-      enteredBy: localStorage.getItem("loggedInUser"),
-      caseName: selectedCase?.caseName,
-      caseNo: selectedCase?.caseNo,
-      leadReturnId: newEntry.leadReturnId,
-      enteredDate: new Date().toISOString(),
-      eventDate: newEntry.date,
-      eventStartDate: newEntry.eventStartDate,
-      eventEndDate: newEntry.eventEndDate,
-      eventStartTime: combineDateTime(newEntry.date, newEntry.startTime),
-      eventEndTime: combineDateTime(newEntry.date, newEntry.endTime),
-      eventLocation: newEntry.location,
-      eventDescription: newEntry.description,
-      timelineFlag: newEntry.flag ? [newEntry.flag] : [],
-    };
-  
-    try {
-      const res = await api.post("/api/timeline/create", payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-  
-      const saved = res.data.timeline;
-      setTimelineEntries((prev) => [
-        ...prev,
-        {
-          date: formatDate(saved.eventDate),
-          returnId: saved.leadReturnId,
-          timeRange: formatTimeRangeNY(saved.eventStartTime, saved.eventEndTime),
-          location: saved.eventLocation,
-          description: saved.eventDescription,
-          flags: saved.timelineFlag || [],
-        },
-      ]);
-  
-      // Reset form
-      setNewEntry({
-        date: "",
-        startTime: "",
-        endTime: "",
-        location: "",
-        description: "",
-        flag: "",
-      });
-      sessionStorage.removeItem(formKey);
-    } catch (err) {
-      console.error("Error saving timeline entry:", err);
-       setAlertMessage("Failed to add timeline entry.");
-       setAlertOpen(true);
-    }
-  };
-  
-
-  const handleDeleteEntry = (index) => {
-    const updatedEntries = timelineEntries.filter((_, i) => i !== index);
-    setTimelineEntries(updatedEntries);
-  };
-  const combineDateTime = (dateStr, timeStr) => {
-    return new Date(`${dateStr}T${timeStr}`);
+  const handleInputChange = (field, value) => {
+    setNewEntry(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleEditEntry = (index) => {
-    const entryToEdit = timelineEntries[index];
-    setNewEntry({
-      date: entryToEdit.date,
-      startTime: entryToEdit.timeRange.split(' - ')[0],
-      endTime: entryToEdit.timeRange.split(' - ')[1],
-      location: entryToEdit.location,
-      description: entryToEdit.description,
-      flag: entryToEdit.flags[0] || ''
-    });
-    handleDeleteEntry(index);
+  /** Resets the form and clears edit context. */
+  const resetForm = () => {
+    setEditingIndex(null);
+    setNewEntry(getDefaultEntry());
+    sessionStorage.removeItem(formKey);
   };
 
+  /** Adds a custom flag to the dropdown if it doesn't already exist. */
   const handleAddFlag = () => {
     if (newFlag && !timelineFlags.includes(newFlag)) {
-      setTimelineFlags([...timelineFlags, newFlag]);
+      setTimelineFlags(prev => [...prev, newFlag]);
       setNewFlag('');
     }
   };
 
-     const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
-                      const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
-                    
-                      const onShowCaseSelector = (route) => {
-                        navigate(route, { state: { caseDetails } });
-                    };
-      const isCaseManager = 
-    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
+  // ── Add / update timeline entry ────────────────────────────────────────────
 
-    // handler to change access per row
-const handleAccessChange = async (idx, newAccess) => {
-  const entry = timelineEntries[idx];
-  const token = localStorage.getItem("token");
+  const handleSubmit = async () => {
+    // Validate required fields
+    const missing = getMissingFields(newEntry);
+    if (missing.length) {
+      setAlertMessage(
+        `Please fill the required field${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}.`
+      );
+      setAlertOpen(true);
+      return;
+    }
 
-  try {
-    await api.put(`/api/timeline/${entry.id}`,
-      { accessLevel: newAccess },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    // Validate chronology (start before end)
+    const chronoErr = assertChronology(newEntry);
+    if (chronoErr) {
+      setAlertMessage(chronoErr);
+      setAlertOpen(true);
+      return;
+    }
 
-    // Update local state
-    setTimelineEntries(prev => {
-      const copy = [...prev];
-      copy[idx] = { ...copy[idx], accessLevel: newAccess };
-      return copy;
-    });
-  } catch (err) {
-    console.error("Failed to update accessLevel", err);
-    setAlertMessage("Could not change access level. Please try again.");
-    setAlertOpen(true);
-  }
-};
+    const {
+      date, leadReturnId, eventStartDate, eventEndDate,
+      startTime, endTime, location, description, flag,
+    } = newEntry;
 
-async function handleSubmit() {
-  const missing = getMissingTimelineFields(newEntry, { isEditing: editingIndex !== null });
-  if (missing.length) {
-    setAlertMessage(`Please fill the required field${missing.length>1?"s":""}: ${missing.join(", ")}.`);
-    setAlertOpen(true);
-    return;
-  }
-  const chronoErr = assertChronology(newEntry);
-  if (chronoErr) {
-    setAlertMessage(chronoErr);
-    setAlertOpen(true);
-    return;
-  }
+    // Use eventStartDate as the canonical event date; fall back to the date field or today
+    const finalDate = eventStartDate?.trim() || date?.trim() || new Date().toISOString().split('T')[0];
+    const token     = localStorage.getItem('token');
 
-  const {
-    date, leadReturnId, eventStartDate, eventEndDate,
-    startTime, endTime, location, description, flag
-  } = newEntry;
-  const token = localStorage.getItem("token");
+    const payload = {
+      leadNo:           selectedLead.leadNo,
+      description:      selectedLead.leadName,
+      assignedTo:       selectedLead.assignedTo || {},
+      assignedBy:       selectedLead.assignedBy || {},
+      enteredBy:        localStorage.getItem('loggedInUser'),
+      caseName:         selectedCase.caseName,
+      caseNo:           selectedCase.caseNo,
+      leadReturnId,
+      enteredDate:      new Date().toISOString(),
+      eventDate:        finalDate,
+      eventDescription: description,
+      timelineFlag:     flag ? [flag] : [],
+      accessLevel:      newEntry.accessLevel || 'Everyone',
+    };
 
-  // Ensure date is set, use today's date if not
-  const finalDate = date && date.trim() ? date : new Date().toISOString().split('T')[0];
+    // Only include optional fields when they have values
+    if (eventStartDate)             payload.eventStartDate = eventStartDate;
+    if (eventEndDate)               payload.eventEndDate   = eventEndDate;
+    if (finalDate && startTime)     payload.eventStartTime = combineDateTime(finalDate, startTime);
+    if (finalDate && endTime)       payload.eventEndTime   = combineDateTime(finalDate, endTime);
+    if (location)                   payload.eventLocation  = location;
 
-  const payload = {
-    leadNo: selectedLead.leadNo,
-    description: selectedLead.leadName,
-    assignedTo: selectedLead.assignedTo || {},
-    assignedBy: selectedLead.assignedBy || {},
-    enteredBy: localStorage.getItem("loggedInUser"),
-    caseName: selectedCase.caseName,
-    caseNo: selectedCase.caseNo,
-    leadReturnId,
-    enteredDate: new Date().toISOString(),
-    eventDate: finalDate,
-    eventDescription: description,
-    timelineFlag: flag ? [flag] : [],
-    accessLevel: newEntry.accessLevel || "Everyone",
+    try {
+      if (!isEditing) {
+        // CREATE: use the response to update state immediately, no second round-trip
+        const { data } = await api.post('/api/timeline/create', payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setTimelineEntries(prev => [...prev, mapEntry(data.timeline)]);
+      } else {
+        // UPDATE: use the response to update the row in place immediately
+        const entry = timelineEntries[editingIndex];
+        const { data } = await api.put(`/api/timeline/${entry.id}`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setTimelineEntries(prev =>
+          prev.map((e, i) => (i === editingIndex ? mapEntry(data.timeline) : e))
+        );
+      }
+      resetForm();
+    } catch (err) {
+      console.error('Timeline submit error:', err);
+      setAlertMessage(
+        `Failed to ${!isEditing ? 'add' : 'update'} entry: ${err.response?.data?.message || err.message}`
+      );
+      setAlertOpen(true);
+    }
   };
 
-  // Only include optional fields if they have values
-  if (eventStartDate) payload.eventStartDate = eventStartDate;
-  if (eventEndDate) payload.eventEndDate = eventEndDate;
-  if (finalDate && startTime) payload.eventStartTime = combineDateTime(finalDate, startTime);
-  if (finalDate && endTime) payload.eventEndTime = combineDateTime(finalDate, endTime);
-  if (location) payload.eventLocation = location;
+  // ── Prefill form for editing ───────────────────────────────────────────────
 
-  try {
-    console.log("Submitting payload:", payload);
-    if (editingIndex === null) {
-      // CREATE
-      await api.post("/api/timeline/create", payload, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-    } else {
-      // UPDATE
-      const e = timelineEntries[editingIndex];
-      await api.put(`/api/timeline/${e.id}`, payload, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-    }
-    // refresh, reset form
-    await fetchTimelineEntries();
-    setEditingIndex(null);
-    setNewEntry(getDefaultEntry());
-  } catch (err) {
-    console.error("Error details:", err);
-    console.error("Error response:", err.response?.data);
-    setAlertMessage(`Failed to ${editingIndex===null? 'add':'update'} entry: ${err.response?.data?.message || err.message}`);
-       setAlertOpen(true);
-  }
-}
-
-// Delete
-async function handleDelete(idx) {
-  if (!window.confirm("Delete this entry?")) return;
-  const token = localStorage.getItem("token");
-  const e = timelineEntries[idx];
-  try {
-    await api.delete(`/api/timeline/${e.id}`, {
-      headers: { Authorization: `Bearer ${token}` }
+  const handleEdit = (idx) => {
+    const e = timelineEntries[idx];
+    setEditingIndex(idx);
+    const toDateStr = (val) => { const d = new Date(val); return isNaN(d) ? '' : d.toISOString().slice(0, 10); };
+    const toTimeStr = (val) => { const d = new Date(val); return isNaN(d) ? '' : d.toISOString().slice(11, 16); };
+    setNewEntry({
+      date:           toDateStr(e.rawEventDate),
+      leadReturnId:   e.leadReturnId,
+      eventStartDate: toDateStr(e.rawStartDate),
+      eventEndDate:   toDateStr(e.rawEndDate),
+      startTime:      toTimeStr(e.rawStartTime),
+      endTime:        toTimeStr(e.rawEndTime),
+      location:       e.eventLocation,
+      description:    e.eventDescription,
+      flag:           e.flags[0] || '',
+      accessLevel:    e.accessLevel || 'Everyone',
     });
-    setTimelineEntries(te => te.filter((_,i)=>i!==idx));
-  } catch (err) {
-    console.error(err);
-      setAlertMessage("Failed to delete entry");
-       setAlertOpen(true);
-  }
-}
+  };
 
-// Prefill form for edit
-function handleEdit(idx) {
-  const e = timelineEntries[idx];
-  setEditingIndex(idx);
-  setNewEntry({
-    date:   new Date(e.rawEventDate).toISOString().slice(0,10),
-    leadReturnId: e.leadReturnId,
-    eventStartDate: new Date(e.rawStartDate).toISOString().slice(0,10),
-    eventEndDate:   new Date(e.rawEndDate).toISOString().slice(0,10),
-    startTime:      new Date(e.rawStartTime).toISOString().substr(11,5),
-    endTime:        new Date(e.rawEndTime).toISOString().substr(11,5),
-    location: e.eventLocation,
-    description: e.eventDescription,
-    flag: e.flags[0] || '',
-    accessLevel: e.accessLevel || "Everyone"
-  });
-}
-const { status, isReadOnly } = useLeadStatus({
-    caseNo: selectedCase.caseNo,
-    caseName: selectedCase.caseName,
-    leadNo: selectedLead.leadNo,
-    leadName: selectedLead.leadName,
-  });
+  // ── Delete timeline entry (guarded by a confirmation modal) ───────────────
+
+  const requestDelete = (idx) => { setPendingDeleteIndex(idx); setConfirmOpen(true); };
+
+  const performDelete = async () => {
+    const idx = pendingDeleteIndex;
+    if (idx == null) return;
+
+    try {
+      await api.delete(`/api/timeline/${timelineEntries[idx].id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      setTimelineEntries(prev => prev.filter((_, i) => i !== idx));
+    } catch (err) {
+      console.error('Delete failed:', err);
+      setAlertMessage('Failed to delete entry.');
+      setAlertOpen(true);
+    } finally {
+      setConfirmOpen(false);
+      setPendingDeleteIndex(null);
+    }
+  };
+
+  // ── Access-level change (Case Manager only) ────────────────────────────────
+
+  const handleAccessChange = async (idx, newAccess) => {
+    const entry = timelineEntries[idx];
+
+    try {
+      await api.put(
+        `/api/timeline/${entry.id}`,
+        { accessLevel: newAccess },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      );
+      setTimelineEntries(prev => {
+        const copy = [...prev];
+        copy[idx]  = { ...copy[idx], accessLevel: newAccess };
+        return copy;
+      });
+    } catch (err) {
+      console.error('Failed to update accessLevel:', err);
+      setAlertMessage('Could not change access level. Please try again.');
+      setAlertOpen(true);
+    }
+  };
+
+  // ── Navigation helpers ─────────────────────────────────────────────────────
+
+  const goToLeadReview = () => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    if (lead && kase) navigate('/LeadReview', { state: { caseDetails: kase, leadDetails: lead } });
+  };
+
+  const goToChainOfCustody = () => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    if (lead && kase) {
+      navigate('/ChainOfCustody', { state: { caseDetails: kase, leadDetails: lead } });
+    } else {
+      setAlertMessage('Please select a case and lead first.');
+      setAlertOpen(true);
+    }
+  };
+
+  const goToViewLR = () => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
+      setAlertMessage('Please select a case and lead first.');
+      setAlertOpen(true);
+      return;
+    }
+    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
+  };
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  const casePageRoute = selectedCase?.role === 'Investigator' ? '/Investigator' : '/CasePageManager';
 
   return (
     <div className={styles.timelinePage}>
       <Navbar />
+
+      {/* Notification alert */}
       <AlertModal
         isOpen={alertOpen}
         title="Notification"
         message={alertMessage}
         onConfirm={() => setAlertOpen(false)}
-        onClose={()   => setAlertOpen(false)}
+        onClose={() => setAlertOpen(false)}
       />
 
+      {/* Delete confirmation dialog */}
       <AlertModal
-  isOpen={confirmOpen}
-  title="Confirm Deletion"
-  message="Are you sure you want to delete this record?"
-  onConfirm={performDelete}               // acts as “Delete”
-  onClose={() => {                        // acts as “Cancel”
-    setConfirmOpen(false);
-    setPendingDeleteIndex(null);
-  }}
-/>
-
-
-      {/* <div className="top-menu">
-        <div className="menu-items">
-          {[
-            'Instructions', 'Returns', 'Person', 'Vehicles', 'Enclosures', 'Evidence',
-            'Pictures', 'Audio', 'Videos', 'Scratchpad', 'Timeline', 'Finish'
-          ].map((item, index) => (
-            <span
-              key={index}
-              className={`menu-item ${item === 'Timeline' ? 'active' : ''}`}
-              onClick={() => navigate(`/LR${item}`)}
-            >
-              {item}
-            </span>
-          ))}
-        </div>
-      </div> */}
+        isOpen={confirmOpen}
+        title="Confirm Deletion"
+        message="Are you sure you want to delete this record?"
+        onConfirm={performDelete}
+        onClose={() => { setConfirmOpen(false); setPendingDeleteIndex(null); }}
+      />
 
       <div className={styles.LRIContent}>
-      {/* <div className="sideitem">
-       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+        <SideBar activePage="LeadReview" />
 
-       <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
-        </li>
-        {caseDropdownOpen && (
-      <ul >
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>  
-           
+        <div className={styles.leftContentLI}>
 
-                  <li
-  className="sidebar-item"
-  onClick={() =>
-    selectedCase.role === "Investigator"
-      ? navigate("/Investigator")
-      : navigate("/CasePageManager")
-  }
->
-Case Page
-</li>
+          {/* ── Top navigation bar (page-level) ── */}
+          <div className={styles.topMenuNav}>
+            <div className={styles.menuItems}>
+              <span className={styles.menuItem} onClick={goToLeadReview}>
+                Lead Information
+              </span>
 
+              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
+                Add Lead Return
+              </span>
 
-            {selectedCase.role !== "Investigator" && (
-<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-          
-              {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
-            </li>)}
-         
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-
-            </ul>
-        )}
-          <li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
-          </li>
-        {leadDropdownOpen && (
-          <ul>
-              <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-              View Lead Chain of Custody
-            </li>
-             )}
-          </ul>
-
-            )}
-
-                </div> */}
-                 <SideBar  activePage="LeadReview" />
-                <div className={styles.leftContentLI}>
-
-                       <div className={styles.topMenuNav}>
-      <div className={styles.menuItems}>
-        <span className={styles.menuItem} onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/LeadReview", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } }} > Lead Information</span>
-                   <span className={`${styles.menuItem} ${styles.menuItemActive}`}>Add Lead Return</span>
-                    {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
-           <span
-              className={styles.menuItem}
-              onClick={handleViewLeadReturn}
-              title={isGenerating ? "Preparing report…" : "View Lead Return"}
-              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-            >
-              Manage Lead Return
-            </span>
-              )}
-
-            {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-  <span className={styles.menuItem} onClick={goToViewLR}>
-    Submit Lead Return
-  </span>
-)}
-  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-  <span className={styles.menuItem} onClick={goToViewLR}>
-   Review Lead Return
-  </span>
-)}
-
-                   <span className={styles.menuItem} onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/ChainOfCustody", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } else {
-                     setAlertMessage("Please select a case and lead first.");
-                      setAlertOpen(true);
-                  }
-                }}>Lead Chain of Custody</span>
-
-                  </div>
-        {/* <div className="menu-items">
-      
-        <span className="menu-item active" onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRReturn')}>
-            Returns
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRScratchpad')}>
-            Scratchpad
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span>
-         </div> */}
-       </div>
-                <div className={styles.topMenuSections}>
-       <div className={styles.menuItems} style={{ fontSize: '19px' }}>
-        <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LRReturn')}>
-            Narrative
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LRPerson')}>
-            Person
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LRVehicle')}>
-            Vehicles
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LREnclosures')}>
-            Enclosures
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LREvidence')}>
-            Evidence
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LRPictures')}>
-            Pictures
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LRAudio')}>
-            Audio
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400'}} onClick={() => handleNavigation('/LRScratchpad')}>
-            Notes
-          </span>
-          <span className={`${styles.menuItem} ${styles.menuItemActive}`} style={{fontWeight: '600'}} onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-         </div>
-        </div>
-                {/* <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
-          <h5 className="side-title">
-  {selectedLead?.leadNo
-    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
-    : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
-</h5>
-
-
-
-          </div> */}
-
-               <div className={styles.caseandleadinfo}>
-          <h5 className={styles.sideTitle}>
-            <div className={styles.ldHead}>
-              <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
-              <span className={styles.sep}>{" >> "}</span>
-              <Link
-                to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
-                state={{ caseDetails: selectedCase }}
-                className={styles.crumb}
-              >
-                Case: {selectedCase.caseNo || ""}
-              </Link>
-              <span className={styles.sep}>{" >> "}</span>
-              <Link
-                to={"/LeadReview"}
-                state={{ leadDetails: selectedLead }}
-                className={styles.crumb}
-              >
-                Lead: {selectedLead.leadNo || ""}
-              </Link>
-              <span className={styles.sep}>{" >> "}</span>
-              <span className={styles.crumbCurrent} aria-current="page">Lead Timeline</span>
-            </div>
-          </h5>
-          <h5 className={styles.sideTitle}>
-            {selectedLead?.leadNo ? ` Lead Status:  ${status}` : ` ${leadStatus}`}
-          </h5>
-        </div>
-
-        <div className={styles.caseHeader}>
-          <h2>TIMELINE INFORMATION</h2>
-        </div>
-        <div className={styles.lriContentSection}>
-
-<div className={styles.contentSubsection}>
-
-        <div className={styles.sectionBlock}>
-          <div className={styles.sectionHeading}>Add/Edit Entry</div>
-          <div className={styles.LREnteringContentBox}>
-            <div className={styles.timelineForm}>
-              {/* Row 1: Narrative Id + Location */}
-              <div className={styles.formRowPair}>
-                <div className={styles.formRow}>
-                  <label>Narrative Id *</label>
-                  <select
-                    value={newEntry.leadReturnId}
-                    onChange={(e) => handleInputChange('leadReturnId', e.target.value)}
-                  >
-                    <option value="">Select Id</option>
-                    {newEntry.leadReturnId &&
-                      !narrativeIds.includes(normalizeId(newEntry.leadReturnId)) && (
-                        <option value={newEntry.leadReturnId}>{newEntry.leadReturnId}</option>
-                      )
-                    }
-                    {narrativeIds.map(id => (
-                      <option key={id} value={id}>{id}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className={styles.formRow}>
-                  <label>Location</label>
-                  <input
-                    type="text"
-                    value={newEntry.location}
-                    onChange={(e) => handleInputChange('location', e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Row 2: Event Start Date + Event End Date */}
-              <div className={styles.formRowPair}>
-                <div className={styles.formRow}>
-                  <label>Event Start Date</label>
-                  <input
-                    type="date"
-                    value={newEntry.eventStartDate}
-                    onChange={(e) => handleInputChange('eventStartDate', e.target.value)}
-                  />
-                </div>
-                <div className={styles.formRow}>
-                  <label>Event End Date</label>
-                  <input
-                    type="date"
-                    value={newEntry.eventEndDate}
-                    onChange={(e) => handleInputChange('eventEndDate', e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Row 3: Start Time + End Time */}
-              <div className={styles.formRowPair}>
-                <div className={styles.formRow}>
-                  <label>Start Time</label>
-                  <input
-                    type="time"
-                    value={newEntry.startTime}
-                    onChange={(e) => handleInputChange('startTime', e.target.value)}
-                  />
-                </div>
-                <div className={styles.formRow}>
-                  <label>End Time</label>
-                  <input
-                    type="time"
-                    value={newEntry.endTime}
-                    onChange={(e) => handleInputChange('endTime', e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Row 4: Description */}
-              <div className={styles.formRow}>
-                <label>Description *</label>
-                <textarea
-                  rows="3"
-                  value={newEntry.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                />
-              </div>
-
-              {/* Row 5: Assign Flag + Create New Flag */}
-              <div className={styles.formRowPair}>
-                <div className={styles.formRow}>
-                  <label>Assign Flag</label>
-                  <select value={newEntry.flag} onChange={(e) => handleInputChange('flag', e.target.value)}>
-                    <option value="">Select Flag</option>
-                    {timelineFlags.map((flag, index) => (
-                      <option key={index} value={flag}>{flag}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className={styles.formRow}>
-                  <label>Create New Flag</label>
-                  <div className={styles.addFlag}>
-                    <input
-                      type="text"
-                      placeholder="Enter new flag name"
-                      value={newFlag}
-                      onChange={(e) => setNewFlag(e.target.value)}
-                    />
-                    <button className={styles.saveBtn1} onClick={handleAddFlag}>Add</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className={styles.formButtonsReturn}>
-              <button
-                disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}
-                className={styles.saveBtn1}
-                onClick={handleSubmit}
-              >
-                {editingIndex === null ? "Add Entry" : "Update Entry"}
-              </button>
-              {editingIndex !== null && (
-                <button
-                  className={styles.saveBtn1}
-                  onClick={() => {
-                    setEditingIndex(null);
-                    setNewEntry(getDefaultEntry());
-                  }}
+              {/* Case Manager: generate / view the full lead-return report */}
+              {isCaseManager && (
+                <span
+                  className={styles.menuItem}
+                  onClick={handleViewLeadReturn}
+                  title={isGenerating ? 'Preparing report…' : 'View Lead Return'}
+                  style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? 'none' : 'auto' }}
                 >
-                  Cancel
-                </button>
+                  Manage Lead Return
+                </span>
               )}
+
+              {/* Investigator: label changes based on whether they are the primary */}
+              {selectedCase?.role === 'Investigator' && (
+                <span className={styles.menuItem} onClick={goToViewLR}>
+                  {isPrimaryInvestigator ? 'Submit Lead Return' : 'Review Lead Return'}
+                </span>
+              )}
+
+              <span className={styles.menuItem} onClick={goToChainOfCustody}>
+                Lead Chain of Custody
+              </span>
             </div>
           </div>
-        </div>
 
-          <div className={styles.sectionBlock}>
-            <div className={styles.sectionHeading}>Timeline History</div>
-            <table className={styles.leadsTable}>
-              <thead>
-                <tr>
-                  <th style={{ width: "10%" }}>Event Date</th>
-                  <th style={{ width: "12%" }}>Narrative Id</th>
-                  <th style={{ width: "17%" }}>Event Time Range</th>
-                  <th style={{ width: "15%" }}>Event Location</th>
-                  <th style={{ width: "11%" }}>Description</th>
-                  <th style={{ width: "11%" }}>Actions</th>
-                  {isCaseManager && (
-                    <th style={{ width: "15%" }}>Access</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {timelineEntries.length > 0 ? (
-                  timelineEntries.map((entry, index) => (
-                    <tr key={index}>
-                      <td>{entry.date}</td>
-                      <td>{entry.leadReturnId}</td>
-                      <td>{entry.timeRange}</td>
-                      <td>{entry.location}</td>
-                      <td>{entry.description}</td>
-                      <td>
-                        <div className={styles.lrTableBtn}>
-                          <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-                            <img
-                              src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
-                              alt="Edit Icon"
-                              className={styles.editIcon}
-                              onClick={() => handleEdit(index)}
-                            />
-                          </button>
-                          <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-                            <img
-                              src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
-                              alt="Delete Icon"
-                              className={styles.editIcon}
-                              onClick={() => requestDelete(index)}
-                            />
-                          </button>
-                        </div>
-                      </td>
-                      {isCaseManager && (
-                        <td>
-                          <select
-                            value={entry.accessLevel || "Everyone"}
-                            onChange={e => handleAccessChange(index, e.target.value)}
-                            className={styles.accessDropdown}
-                          >
-                            <option value="Everyone">All</option>
-                            <option value="Case Manager">Case Manager</option>
-                            <option value="Case Manager and Assignees">Assignees</option>
-                          </select>
-                        </td>
-                      )}
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: 'center' }}>
-                      No Timeline Entry Available
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          {/* ── Section tabs (sub-page navigation) ── */}
+          <div className={styles.topMenuSections}>
+            <div className={styles.menuItems} style={{ fontSize: '19px' }}>
+              {SECTION_TABS.map(({ label, route, active }) => (
+                <span
+                  key={route}
+                  className={`${styles.menuItem}${active ? ` ${styles.menuItemActive}` : ''}`}
+                  style={{ fontWeight: active ? '600' : '400' }}
+                  onClick={() => navigate(route)}
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
           </div>
 
-                  {/* {selectedLead?.leadStatus !== "Completed" && !isCaseManager && (
-  <div className="form-buttons-finish">
-    <h4> Click here to submit the lead</h4>
-    <button
-      disabled={selectedLead?.leadStatus === "In Review"}
-      className="save-btn1"
-      onClick={handleSubmitReport}
-    >
-      Submit 
-    </button>
-  </div>
-)} */}
+          {/* ── Breadcrumb + lead status bar ── */}
+          <div className={styles.caseandleadinfo}>
+            <h5 className={styles.sideTitle}>
+              <div className={styles.ldHead}>
+                <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+                <span className={styles.sep}>{' >> '}</span>
+                <Link to={casePageRoute} state={{ caseDetails: selectedCase }} className={styles.crumb}>
+                  Case: {selectedCase.caseNo || ''}
+                </Link>
+                <span className={styles.sep}>{' >> '}</span>
+                <Link to="/LeadReview" state={{ leadDetails: selectedLead }} className={styles.crumb}>
+                  Lead: {selectedLead.leadNo || ''}
+                </Link>
+                <span className={styles.sep}>{' >> '}</span>
+                <span className={styles.crumbCurrent} aria-current="page">Lead Timeline</span>
+              </div>
+            </h5>
+            <h5 className={styles.sideTitle}>
+              {selectedLead?.leadNo ? `Lead Status: ${status}` : leadStatus}
+            </h5>
+          </div>
 
-          {/* <Comment tag= "Timeline"/> */}
+          {/* ── Page heading ── */}
+          <div className={styles.caseHeader}>
+            <h2>TIMELINE INFORMATION</h2>
+          </div>
+
+          {/* ── Main scrollable content area ── */}
+          <div className={styles.lriContentSection}>
+            <div className={styles.contentSubsection}>
+
+              {/* ── Timeline entry form ── */}
+              <div className={styles.sectionBlock}>
+                <div className={styles.sectionHeading}>
+                  {isEditing ? 'Edit Entry' : 'Add Entry'}
+                </div>
+
+                <div className={styles.LREnteringContentBox}>
+                  <div className={styles.timelineForm}>
+
+                    {/* Row 1: Narrative ID + Location */}
+                    <div className={styles.formRowPair}>
+                      <div className={styles.formRow}>
+                        <label>Narrative Id *</label>
+                        <select
+                          value={newEntry.leadReturnId}
+                          onChange={e => handleInputChange('leadReturnId', e.target.value)}
+                        >
+                          <option value="">Select Id</option>
+                          {/* Keep current value visible even if absent from the latest API list */}
+                          {newEntry.leadReturnId &&
+                            !narrativeIds.includes(normalizeId(newEntry.leadReturnId)) && (
+                              <option value={newEntry.leadReturnId}>{newEntry.leadReturnId}</option>
+                            )}
+                          {narrativeIds.map(id => (
+                            <option key={id} value={id}>{id}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className={styles.formRow}>
+                        <label>Location</label>
+                        <input
+                          type="text"
+                          value={newEntry.location}
+                          onChange={e => handleInputChange('location', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 2: Event Start Date + Event End Date */}
+                    <div className={styles.formRowPair}>
+                      <div className={styles.formRow}>
+                        <label>Event Start Date</label>
+                        <input
+                          type="date"
+                          value={newEntry.eventStartDate}
+                          onChange={e => handleInputChange('eventStartDate', e.target.value)}
+                        />
+                      </div>
+                      <div className={styles.formRow}>
+                        <label>Event End Date</label>
+                        <input
+                          type="date"
+                          value={newEntry.eventEndDate}
+                          onChange={e => handleInputChange('eventEndDate', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 3: Start Time + End Time */}
+                    <div className={styles.formRowPair}>
+                      <div className={styles.formRow}>
+                        <label>Start Time</label>
+                        <input
+                          type="time"
+                          value={newEntry.startTime}
+                          onChange={e => handleInputChange('startTime', e.target.value)}
+                        />
+                      </div>
+                      <div className={styles.formRow}>
+                        <label>End Time</label>
+                        <input
+                          type="time"
+                          value={newEntry.endTime}
+                          onChange={e => handleInputChange('endTime', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Row 4: Description */}
+                    <div className={styles.formRow}>
+                      <label>Description *</label>
+                      <textarea
+                        rows="3"
+                        value={newEntry.description}
+                        onChange={e => handleInputChange('description', e.target.value)}
+                      />
+                    </div>
+
+                    {/* Row 5: Assign Flag + Create New Flag */}
+                    <div className={styles.formRowPair}>
+                      <div className={styles.formRow}>
+                        <label>Assign Flag</label>
+                        <select
+                          value={newEntry.flag}
+                          onChange={e => handleInputChange('flag', e.target.value)}
+                        >
+                          <option value="">Select Flag</option>
+                          {timelineFlags.map((flag, i) => (
+                            <option key={i} value={flag}>{flag}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className={styles.formRow}>
+                        <label>Create New Flag</label>
+                        <div className={styles.addFlag}>
+                          <input
+                            type="text"
+                            placeholder="Enter new flag name"
+                            value={newFlag}
+                            onChange={e => setNewFlag(e.target.value)}
+                          />
+                          <button className={styles.saveBtn1} onClick={handleAddFlag}>Add</button>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Form action buttons */}
+                  <div className={styles.formButtonsReturn}>
+                    <button
+                      disabled={isFormDisabled}
+                      className={styles.saveBtn1}
+                      onClick={handleSubmit}
+                    >
+                      {isEditing ? 'Update Entry' : 'Add Entry'}
+                    </button>
+
+                    {isEditing && (
+                      <button className={styles.saveBtn1} onClick={resetForm}>
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Timeline history table ── */}
+              <div className={styles.sectionBlock}>
+                <div className={styles.sectionHeading}>Timeline History</div>
+                <table className={styles.leadsTable}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: '10%' }}>Event Date</th>
+                      <th style={{ width: '12%' }}>Narrative Id</th>
+                      <th style={{ width: '17%' }}>Event Time Range</th>
+                      <th style={{ width: '15%' }}>Event Location</th>
+                      <th style={{ width: '11%' }}>Description</th>
+                      <th style={{ width: '11%' }}>Actions</th>
+                      {isCaseManager && <th style={{ width: '15%' }}>Access</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {timelineEntries.length > 0 ? timelineEntries.map((entry, idx) => (
+                      <tr key={entry.id || idx}>
+                        <td>{entry.date}</td>
+                        <td>{entry.leadReturnId}</td>
+                        <td>{entry.timeRange}</td>
+                        <td>{entry.location}</td>
+                        <td>{entry.description}</td>
+                        <td>
+                          <div className={styles.lrTableBtn}>
+                            <button disabled={isFormDisabled} onClick={() => handleEdit(idx)}>
+                              <img
+                                src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+                                alt="Edit"
+                                className={styles.editIcon}
+                              />
+                            </button>
+                            <button disabled={isFormDisabled} onClick={() => requestDelete(idx)}>
+                              <img
+                                src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+                                alt="Delete"
+                                className={styles.editIcon}
+                              />
+                            </button>
+                          </div>
+                        </td>
+
+                        {/* Access level dropdown — visible to Case Managers only */}
+                        {isCaseManager && (
+                          <td>
+                            <select
+                              value={entry.accessLevel || 'Everyone'}
+                              onChange={e => handleAccessChange(idx, e.target.value)}
+                              className={styles.accessDropdown}
+                            >
+                              <option value="Everyone">All</option>
+                              <option value="Case Manager">Case Manager</option>
+                              <option value="Case Manager and Assignees">Assignees</option>
+                            </select>
+                          </td>
+                        )}
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: 'center' }}>
+                          No Timeline Entry Available
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+
         </div>
-        </div>
-      {/* <div className="form-buttons-timeline">
-          <button className="back-btn" onClick={() => handleNavigation("/LRScratchpad")}>Back</button>
-          <button className="next-btn" onClick={() => handleNavigation("/LRFinish")}>Next</button>
-          <button className="cancel-btn">Cancel</button>
-        </div> */}
-    </div>
-    </div>
+      </div>
     </div>
   );
 };

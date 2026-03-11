@@ -1,0 +1,327 @@
+.drShell {
+  height: 100vh;
+  display: flex;
+  width: 100%;
+  /* grid-template-columns: minmax(520px, 1fr) 360px; */
+  background: #fff;
+  justify-content: space-between;
+}
+
+.drLeft {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;         /* grow to fill */
+  min-width: 0;           /* allows children to shrink without overflow */
+  border-right: 1px solid #e5e7eb;
+}
+
+.drToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fafafa;
+}
+
+.drTitle {
+  font-weight: 600;
+}
+
+.drZoom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drZoom button {
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  color: black;
+}
+
+.drPdfArea {
+  flex: 1;
+  overflow: auto;
+  /* padding: 16px; */
+  width: 100%;
+}
+
+.drPage {
+  margin: 0 auto 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06);
+}
+
+.drRight {
+  display: flex;
+  flex-direction: column;
+  /* min-width: 0; */
+  height: 100%;
+}
+
+.commentBox {
+  width: 100%;
+}
+
+.drCommentsHeader {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fafafa;
+  font-weight: 600;
+}
+
+.drCommentsList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.drEmpty {
+  color: #6b7280;
+}
+
+.drComment {
+  border: 1px solid #e5e7eb;
+  background: #fcfcfc;
+  border-radius: 10px;
+  padding: 10px;
+  line-height: 1.35;
+}
+
+.drTs {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.drComposer {
+  border-top: 1px solid #e5e7eb;
+  padding: 10px;
+  background: #fafafa;
+  display: grid;
+  gap: 8px;
+}
+
+.drTextarea {
+  width: 100%;
+  min-height: 80px;
+  resize: vertical;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  outline: none;
+}
+
+.drActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.drBtn {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  cursor: pointer;
+}
+
+.drBtnPrimary {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #111827;
+  background: #111827;
+  color: #fff;
+  cursor: pointer;
+}
+
+.drDownload {
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-right: 8px; /* spaces it from the zoom buttons */
+  color: black;
+}
+
+.approveBtnLr, .returnBtnLr, .closeBtnLr {
+  font-size: 20px;
+  width: 105px;
+  height: 40px;
+  color: black;
+  border-radius: 0.5;
+  border: 2px solid black;
+  display: flex;
+  text-align: center;
+  justify-content: center;
+  padding: 5px 0px;
+  margin: 0px;
+}
+
+.approveBtnLr {
+  color: green;
+  border: 2px solid green;
+}
+
+.returnBtnLr {
+  color: rgba(122, 12, 12, 0.874);
+  border: 2px solid rgba(122, 12, 12, 0.874);
+}
+
+.btnSecDr {
+  width: 26%;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* ===== Close Lead Modal ===== */
+.clModalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clModalBox {
+  background: #fff;
+  border-radius: 10px;
+  width: 780px;
+  max-width: 97vw;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.22);
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+}
+
+.clModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 32px 18px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.clModalTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #000000;
+}
+
+.clModalClose {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: #aaa;
+  line-height: 1;
+  padding: 2px 6px;
+}
+
+.clModalBody {
+  padding: 22px 32px 28px;
+}
+
+.clModalSubtitle {
+  font-size: 18px;
+  color: #000000;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.clChipGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.clChip {
+  padding: 10px 20px;
+  font-size: 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+  font-weight: 500;
+  background: #ffffff;
+  color: #1a1a2e;
+  border: 1.5px solid #000000;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.clChip:hover {
+  border-color: #c0392b;
+  color: #c0392b;
+}
+
+.clChipActive {
+  color: #c0392b;
+  border: 2px solid #c0392b;
+}
+
+.clModalTextarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px 14px;
+  font-size: 18px;
+  border: 1.5px solid #c8cad8;
+  border-radius: 6px;
+  box-sizing: border-box;
+  resize: vertical;
+  font-family: Arial, sans-serif;
+  outline: none;
+  color: #333;
+}
+
+.clModalTextarea:focus {
+  border-color: #29298b;
+}
+
+.clModalActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
+.clModalCancelBtn {
+  padding: 10px 28px;
+  font-size: 18px;
+  border-radius: 6px;
+  border: 2px solid #ccc;
+  background: #f0f0f0;
+  color: #333;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+}
+
+.clModalSubmitBtn {
+  padding: 10px 28px;
+  font-size: 18px;
+  border-radius: 6px;
+  border: none;
+  background: #c0392b;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+  transition: background 0.15s;
+}
+
+.clModalSubmitBtn:hover {
+  background: #a93226;
+}
+
+.clModalSubmitBtnDisabled {
+  background: #e8a0a0;
+  cursor: not-allowed;
+}

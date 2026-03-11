@@ -37,6 +37,11 @@ exports.createCase = async (req, res) => {
     if (!caseNo || !caseName) {
       return res.status(400).json({ message: "caseNo and caseName are required" });
     }
+
+    // --- validate caseNo format (letters, digits, and hyphens only) ---
+    if (!/^[A-Za-z0-9-]+$/.test(caseNo)) {
+      return res.status(400).json({ message: "Case number can only contain letters, digits, and hyphens (-)." });
+    }
     if (!Array.isArray(managers) || managers.length === 0) {
       return res.status(400).json({ message: "At least one Case Manager is required." });
     }
@@ -72,9 +77,9 @@ exports.createCase = async (req, res) => {
       return res.status(400).json({ message: `Detective Supervisor '${dsUsername}' not found.` });
     }
 
-    const investigatorUsernames = selectedOfficers.map(o => o.username || o.name || o);
+    const investigatorUsernames = selectedOfficers.map(o => o.username || o.name || o).map(u => u.trim());
     const investigatorUsers = await User.find({
-      username: { $in: investigatorUsernames.map(u => u.toLowerCase().trim()) },
+      username: { $in: investigatorUsernames },
     });
 
     const newCase = new Case({
@@ -455,7 +460,20 @@ exports.getCaseSummaryByCaseNo = async (req, res) => {
 };
 
 exports.updateExecutiveCaseSummary = async (req, res) => {
-  return res.status(200).json({ message: "Executive case summary field removed from schema" });
+  try {
+    const { caseNo, caseName, executiveCaseSummary } = req.body;
+    if (!caseNo) return res.status(400).json({ message: "caseNo is required" });
+    const updated = await Case.findOneAndUpdate(
+      { caseNo },
+      { executiveCaseSummary: executiveCaseSummary ?? "" },
+      { new: true }
+    );
+    if (!updated) return res.status(404).json({ message: "Case not found" });
+    return res.status(200).json({ message: "Executive summary updated", executiveCaseSummary: updated.executiveCaseSummary });
+  } catch (err) {
+    console.error("Error updating executive case summary:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
 };
 
 exports.updateCaseSummary = async (req, res) => {
@@ -481,7 +499,7 @@ exports.getExecutiveCaseSummary = async (req, res) => {
     if (!caseNo) return res.status(400).json({ message: "caseNo is required" });
     const caseDoc = await Case.findOne({ caseNo }).lean();
     if (!caseDoc) return res.status(404).json({ message: "Case not found" });
-    return res.status(200).json({ caseNo: caseDoc.caseNo, executiveCaseSummary: "" });
+    return res.status(200).json({ caseNo: caseDoc.caseNo, executiveCaseSummary: caseDoc.executiveCaseSummary ?? "" });
   } catch (err) {
     console.error("Error fetching executive summary:", err);
     return res.status(500).json({ message: "Server error", error: err.message });

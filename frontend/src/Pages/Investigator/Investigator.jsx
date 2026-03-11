@@ -1,1732 +1,409 @@
-import React, { useContext, useState, useEffect, useRef, useMemo, useCallback} from 'react';
+import { useContext, useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import { CaseContext } from '../CaseContext';
 import Navbar from '../../components/Navbar/Navbar';
-import Searchbar from '../../components/Searchbar/Searchbar';
-import Button from '../../components/Button/Button';
-import Filter from "../../components/Filter/Filter";
-import Sort from "../../components/Sort/Sort";
+import Pagination from '../../components/Pagination/Pagination';
+import { AlertModal } from '../../components/AlertModal/AlertModal';
+import { SideBar } from '../../components/Sidebar/Sidebar';
+import api from '../../api';
+
+import { useLeads } from './hooks/useLeads';
+import { useTableFilter } from './hooks/useTableFilter';
+import { CollapsibleSection } from './components/CollapsibleSection';
+import { LeadsTable } from './components/LeadsTable';
+import { toTitleCase, isDeletedStatus, statusColor } from './utils';
+
 import styles from './Investigator.module.css';
-import { useLocation, useNavigate } from 'react-router-dom';
-import axios from "axios";
-import { CaseContext } from "../CaseContext";
-import Pagination from "../../components/Pagination/Pagination";
-import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
-import api from "../../api";
-import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
-import { AlertModal } from "../../components/AlertModal/AlertModal"
-import {SideBar } from "../../components/Sidebar/Sidebar";
 
+// ─── Table column definitions (module-level constants for stable memoization) ──
 
+const ASSIGNED_COLUMNS   = ['Lead No.', 'Lead Name', 'Due Date', 'Priority', 'Days Left', 'Assigned Officers'];
+const ASSIGNED_COL_KEY   = { 'Lead No.': 'id', 'Lead Name': 'description', 'Due Date': 'dueDate', 'Priority': 'priority', 'Days Left': 'remainingDays', 'Assigned Officers': 'assignedOfficers' };
+const ASSIGNED_COL_WIDTHS = { 'Lead No.': '12%', 'Lead Name': '20%', 'Due Date': '13%', 'Priority': '10%', 'Days Left': '13%', 'Assigned Officers': '21%' };
+
+const PENDING_COLUMNS    = ['Lead No.', 'Lead Name', 'Due Date', 'Priority', 'Days Left', 'Assigned Officers'];
+const PENDING_COL_KEY    = { 'Lead No.': 'id', 'Lead Name': 'description', 'Due Date': 'dueDate', 'Priority': 'priority', 'Days Left': 'remainingDays', 'Assigned Officers': 'assignedOfficers' };
+const PENDING_COL_WIDTHS = { 'Lead No.': '12%', 'Lead Name': '20%', 'Due Date': '13%', 'Priority': '10%', 'Days Left': '11%', 'Assigned Officers': '21%' };
+
+const PENDING_LR_COLUMNS    = ['Lead No.', 'Lead Name', 'Case Name'];
+const PENDING_LR_COL_KEY    = { 'Lead No.': 'id', 'Lead Name': 'description', 'Case Name': 'caseName' };
+const PENDING_LR_COL_WIDTHS = { 'Lead No.': '15%', 'Lead Name': '35%', 'Case Name': '30%' };
+
+const ALL_COLUMNS    = ['Lead No.', 'Lead Log Summary', 'Lead Status', 'Assigned Officers'];
+const ALL_COL_KEY    = { 'Lead No.': 'id', 'Lead Log Summary': 'description', 'Lead Status': 'leadStatus', 'Assigned Officers': 'assignedOfficers' };
+const ALL_COL_WIDTHS = { 'Lead No.': '13%', 'Lead Log Summary': '40%', 'Lead Status': '17%', 'Assigned Officers': '22%' };
+
+// Filter key arrays — kept at module level so useTableFilter deps stay stable
+const LEAD_FILTER_KEYS    = ['id', 'description', 'dueDate', 'priority', 'remainingDays', 'flags', 'assignedOfficers'];
+const PENDING_LR_FILTER_KEYS = ['id', 'description', 'caseName'];
+const ALL_FILTER_KEYS     = ['id', 'description', 'leadStatus', 'assignedOfficers'];
+
+// ─── Component ──────────────────────────────────────────────────────────────
 
 export const Investigator = () => {
-    const navigate = useNavigate();
-    const location = useLocation();
-    const { caseDetails } = location.state || {};
-    const [sortField, setSortField] = useState(""); // Sorting field
-    const [filterText, setFilterText] = useState(""); // Filter text
-    const [filterPopupVisible, setFilterPopupVisible] = useState(false);
-    const [filterSortPopupVisible, setFilterSortPopupVisible] = useState(false); // State for popup visibility
-    const [selectedPriority, setSelectedPriority] = useState(""); // State for priority filter
-    const [sortOrder, setSortOrder] = useState(""); // State for sort order
-    const [remainingDaysFilter, setRemainingDaysFilter] = useState("");
-  const [flagsFilter, setFlagsFilter] = useState("");
-  const [assignedOfficersFilter, setAssignedOfficersFilter] = useState("");
-  const { setSelectedCase, selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus} = useContext(CaseContext);
-   const [showSelectModal, setShowSelectModal] = useState(false);
-    const [pendingRoute, setPendingRoute]   = useState(null);
-    const [showAlert, setShowAlert] = useState(false);
-       const [caseSummary, setCaseSummary] = useState('');
-       const [isEditing, setIsEditing] = useState(false);
-         const [summary, setSummary] = useState('');
-         const [isSaving, setIsSaving] = useState(false);
-         const [error, setError] = useState('');
-         const saveTimer = useRef(null);
-         const isFirstLoad = useRef(true);
-         const toTitleCase = (s = "") =>
-  s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
+  const navigate = useNavigate();
+  const { setSelectedCase, selectedCase, setSelectedLead, setLeadStatus } = useContext(CaseContext);
 
-const isDeletedStatus = (s) => String(s || "").toLowerCase() === "deleted";
+  const signedInOfficer = localStorage.getItem('loggedInUser');
 
-const formatUser = (username) => {
-  if (!username) return "—";
-  const u = allUsers?.find(x => x.username === username);
-  return u ? `${u.firstName} ${u.lastName} (${u.username})` : username; // fallback
-};
+  // ─── UI state ────────────────────────────────────────────────────────────
+  const [activeTab,          setActiveTab]          = useState('allLeads');
+  const [currentPage,        setCurrentPage]        = useState(1);
+  const [pageSize,           setPageSize]           = useState(10);
+  const [isCaseSummaryOpen,  setIsCaseSummaryOpen]  = useState(true);
+  const [isCaseTeamOpen,     setIsCaseTeamOpen]     = useState(true);
+  // Confirm-accept modal state
+  const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, lead: null });
 
+  // ─── Case info state ─────────────────────────────────────────────────────
+  const [summary,  setSummary]  = useState('');
+  const [team,     setTeam]     = useState({ detectiveSupervisor: '', caseManagers: [], investigators: [] });
+  const [allUsers, setAllUsers] = useState([]);
 
-         const isNavDisabled = lead => lead.leadStatus === 'Assigned';
-const disabledStyle = { opacity: 0.5, cursor: 'not-allowed' };
-const [isCaseSummaryOpen, setIsCaseSummaryOpen] = useState(true);
-const [isCaseTeamOpen, setIsCaseTeamOpen] = useState(true);
+  // ─── Data hooks ───────────────────────────────────────────────────────────
+  const { leads, acceptLead } = useLeads(selectedCase?.caseNo, selectedCase?.caseName, signedInOfficer);
 
-  console.log("case context", selectedCase);
-  const handleSaveClick = () => {
-    setIsEditing(false);
-    // You can add logic here to update the backend with the new summary if needed
-};
-const [team, setTeam] = useState({
-  detectiveSupervisor: "",
-  caseManagers: [],
-  investigators: []
-});
+  // ─── One-time setup ───────────────────────────────────────────────────────
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
-const [allUsers, setAllUsers] = useState([]);
-
-useEffect(() => {
-  async function fetchUsers() {
-    try {
-      const token = localStorage.getItem("token");
-      const { data } = await api.get("/api/users/usernames", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      // Assume data.users is an array of { username, firstName, lastName, role, … }
-      setAllUsers(data.users || []);
-    } catch (err) {
-      console.error("Could not load user list:", err);
-    }
-  }
-  fetchUsers();
-}, []);
-
-useEffect(() => {
-    async function load() {
-      if (!selectedCase?.caseNo) return;
+  // Fetch the full user list once for the formatUser helper
+  useEffect(() => {
+    async function fetchUsers() {
       try {
         const token = localStorage.getItem('token');
-        const { data } = await api.get(
-          `/api/cases/case-summary/${selectedCase.caseNo}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setSummary(data.caseSummary);
+        const { data } = await api.get('/api/users/usernames', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setAllUsers(data.users || []);
       } catch (err) {
-        console.error('Failed to load summary', err);
+        console.error('Could not load user list:', err);
       }
     }
-    load();
-  }, [selectedCase.caseNo]);
+    fetchUsers();
+  }, []);
 
-useEffect(() => {
-  if (!selectedCase?.caseNo) return;
-  api.get(`/api/cases/${selectedCase.caseNo}/team`)
-    .then(({ data }) => setTeam(data))
-    .catch(console.error);
-}, [selectedCase.caseNo]);
+  // Fetch case summary whenever the active case changes
+  useEffect(() => {
+    if (!selectedCase?.caseNo) return;
+    async function fetchSummary() {
+      try {
+        const token = localStorage.getItem('token');
+        const { data } = await api.get(`/api/cases/case-summary/${selectedCase.caseNo}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setSummary(data.caseSummary);
+      } catch (err) {
+        console.error('Failed to load summary:', err);
+      }
+    }
+    fetchSummary();
+  }, [selectedCase?.caseNo]);
 
+  // Fetch case team composition whenever the active case changes
+  useEffect(() => {
+    if (!selectedCase?.caseNo) return;
+    api.get(`/api/cases/${selectedCase.caseNo}/team`)
+      .then(({ data }) => setTeam(data))
+      .catch(console.error);
+  }, [selectedCase?.caseNo]);
 
-  // modal state
-  const [confirmConfig, setConfirmConfig] = useState({
-    isOpen:    false,
-    lead:    null,
-  });
-  const [alertConfig, setAlertConfig] = useState({
-    isOpen: false,
-    title:  "",
-    message:"",
-  });
+  // ─── Helpers ─────────────────────────────────────────────────────────────
 
-  const openConfirm  = (lead) => setConfirmConfig({ isOpen: true, lead });
-  const closeConfirm = ()      => setConfirmConfig({ isOpen: false, lead: null });
+  /** Formats a username as "First Last (username)", falling back to the raw username. */
+  const formatUser = username => {
+    if (!username) return '—';
+    const u = allUsers.find(x => x.username === username);
+    return u ? `${u.firstName} ${u.lastName} (${u.username})` : username;
+  };
+
+  // ─── Navigation handlers ─────────────────────────────────────────────────
+
+  /** Opens lead review page with full lead context loaded into the store. */
+  const handleLeadClick = lead => {
+    setSelectedLead({
+      leadNo:           lead.leadNo || lead.id,
+      incidentNo:       lead.incidentNo,
+      leadName:         lead.description,
+      dueDate:          lead.dueDate || 'N/A',
+      priority:         lead.priority || 'Medium',
+      flags:            lead.flags || [],
+      assignedOfficers: lead.assignedOfficers || [],
+      leadStatus:       lead.leadStatus,
+      caseName:         lead.caseName,
+      caseNo:           lead.caseNo,
+    });
+    setLeadStatus(lead.leadStatus);
+    navigate('/leadReview', { state: { leadDetails: lead, caseDetails: selectedCase } });
+  };
+
+  /** Opens the Lead Return instruction page for an in-review lead. */
+  const handleLRClick = lead => {
+    const caseDetails = { _id: lead.caseId || lead.caseNo, caseNo: lead.caseNo, caseName: lead.caseName, role: 'Investigator' };
+    const leadDetails = { leadNo: lead.id, leadName: lead.description };
+    setSelectedCase(caseDetails);
+    setSelectedLead(leadDetails);
+    localStorage.setItem('role', 'Investigator');
+    navigate('/LRInstruction', { state: { caseDetails, leadDetails } });
+  };
+
+  // ─── Accept-lead modal ────────────────────────────────────────────────────
+  const openConfirm  = lead => setConfirmConfig({ isOpen: true, lead });
+  const closeConfirm = ()   => setConfirmConfig({ isOpen: false, lead: null });
 
   const handleConfirmAccept = () => {
     acceptLead(confirmConfig.lead.id, confirmConfig.lead.description);
     closeConfirm();
   };
 
-  const [leads, setLeads] = useState({
-    assignedLeads: [
-      // { id: 1, description: "Collect Audio Records from Dispatcher",dueDate: "12/25/2024",
-      //   priority: "High",
-      //   flags: ["Important"],
-      //   assignedOfficers: ["Officer 1", "Officer 3"], },
-      // { id: 2, description: "Interview Mr. John",dueDate: "12/31/2024",
-      //   priority: "Medium",
-      //   flags: [],
-      //   assignedOfficers: ["Officer 2"] },
-      // { id: 3, description: "Collect Evidence from 63 Mudray Street",dueDate: "12/29/2024",
-      //   priority: "Low",
-      //   flags: [],
-      //   assignedOfficers: ["Officer 4"] },
-    ],
-    pendingLeads: [
-      // {
-      //   id: 4,
-      //   description: "Interview Witness",
-      //   dueDate: "12/26/2024",
-      //   priority: "High",
-      //   flags: ["Important"],
-      //   assignedOfficers: ["Officer 1", "Officer 3"],
-      // },
-      // {
-      //   id: 6,
-      //   description: "Interview Neighbours",
-      //   dueDate: "12/23/2024",
-      //   priority: "Medium",
-      //   flags: [],
-      //   assignedOfficers: ["Officer 2"],
-      // },
-      // {
-      //   id: 7,
-      //   description: "Collect Evidence",
-      //   dueDate: "12/22/2024",
-      //   priority: "Low",
-      //   flags: [],
-      //   assignedOfficers: ["Officer 4"],
-      // },
-    ],
-    pendingLeadReturns: [
-        // { id: 5, description: "Submit Crime Scene Photos" },
-        // { id: 8, description: "Collect Evidence", dueDate: "12/30/2024" },
-        // { id: 9, description: "Interview Witness", dueDate: "12/31/2024" },
-    ],
-    allLeads: [
-        // { id: 1, description: "Collect Audio Records from Dispatcher", status: "Assigned" },
-        // { id: 2, description: "Interview Mr. John", status: "Assigned" },
-        // { id: 3, description: "Collect Evidence from 63 Mudray Street", status: "Completed" },
-        // { id: 4, description: "Interview Witness", status: "Pending" },
-        // { id: 5, description: "Submit Crime Scene Photos", status: "Completed" },
-    ],
-});
+  // ─── Filter / sort state — one instance per table ─────────────────────────
+  const assignedFilter  = useTableFilter(leads.assignedLeads,      LEAD_FILTER_KEYS);
+  const pendingFilter   = useTableFilter(leads.pendingLeads,       LEAD_FILTER_KEYS);
+  const pendingLRFilter = useTableFilter(leads.pendingLeadReturns, PENDING_LR_FILTER_KEYS);
+  const allFilter       = useTableFilter(leads.allLeads,           ALL_FILTER_KEYS);
 
-const handleLeadClick = (lead) => {
-  setSelectedLead({
-    leadNo: lead.leadNo || lead.id,
-    incidentNo: lead.incidentNo,
-    leadName: lead.description,
-    dueDate: lead.dueDate || "N/A",
-    priority: lead.priority || "Medium",
-    flags: lead.flags || [],
-    assignedOfficers: lead.assignedOfficers || [],
-    leadStatus: lead.leadStatus,
-    caseName: lead.caseName,
-    caseNo: lead.caseNo
-});
-setLeadStatus(lead.leadStatus);  
+  // ─── Pagination ───────────────────────────────────────────────────────────
 
-  // Navigate to Lead Review Page
-  navigate("/leadReview", { state: { leadDetails: lead, caseDetails: selectedCase } });
-};
+  /** Slices a sorted array to the current page window. */
+  const paginate = data => data.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-    const [activeTab, setActiveTab] = useState("allLeads"); // Default to All Leads tab
-    const handleViewAssignedLead = (lead) => {
-    };
-    const handleCaseClick = (caseDetails) => {
-      navigate("/CasePageManager", { state: { caseDetails } }); // Pass case details via state
-    };
-  const handleLRClick = (lead) => {
-  // 1. Build caseDetails and leadDetails
-  const caseDetails = {
-    _id: lead.caseId || lead.caseNo,
-    caseNo:   lead.caseNo,
-    caseName: lead.caseName,
-    role: "Investigator"
-  };
-  const leadDetails = {
-    leadNo:   lead.id,
-    leadName: lead.description
-  };
+  const totalEntries = useMemo(() => ({
+    assignedLeads:      assignedFilter.sortedData.length,
+    pendingLeads:       pendingFilter.sortedData.length,
+    pendingLeadReturns: pendingLRFilter.sortedData.length,
+    allLeads:           allFilter.sortedData.length,
+  }[activeTab] ?? 0), [activeTab, assignedFilter.sortedData, pendingFilter.sortedData, pendingLRFilter.sortedData, allFilter.sortedData]);
 
-  // 2. Update context
-  setSelectedCase(caseDetails);
-  setSelectedLead(leadDetails);
-
-  // 3. Persist role if needed (e.g. "Case Manager")
-  localStorage.setItem("role", "Investigator");
-
-  // 4. Navigate to LRInstruction, passing both objects via state
-  navigate("/LRInstruction", {
-    state: {
-      caseDetails,
-      leadDetails
-    }
-  });
-};
-
-
-    const handleNavigation = (route) => {
-      navigate(route); // Navigate to respective page
-    };
-
-    const signedInOfficer = localStorage.getItem("loggedInUser");
-    const token = localStorage.getItem("token");
-
-       const [currentPage, setCurrentPage] = useState(1);
-      const [pageSize, setPageSize] = useState(10);
-    
-
-
-
+  // Reset to page 1 whenever the tab or any filter/sort changes
   useEffect(() => {
-  // 1) define your async fetch:
-  const fetchLeads = async () => {
-    if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+    setCurrentPage(1);
+  }, [activeTab, assignedFilter.sortedData, pendingFilter.sortedData, pendingLRFilter.sortedData, allFilter.sortedData]);
 
-    try {
-      const token = localStorage.getItem("token");
-      const response = await api.get(
-        `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const data = Array.isArray(response.data) ? response.data : [];
+  // ─── Row renderers ────────────────────────────────────────────────────────
 
-
-      const filtered = data.filter(
-  lead => lead.assignedTo?.some(o => o.username === signedInOfficer)
-);
-
-
-    //   const mapLead = lead => ({
-    //     id: lead.leadNo,
-    //     description: lead.description,
-    //     dueDate: lead.dueDate
-    //       ? new Date(lead.dueDate).toISOString().slice(0,10)
-    //       : "N/A",
-    //     priority: lead.priority || "Medium",
-    //     flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [],
-    //      assignedOfficers: Array.isArray(lead.assignedTo)
-    // ? lead.assignedTo.map(a => a.username)
-    // : [],
-
-    //     leadStatus: lead.leadStatus,
-    //     caseName: lead.caseName,
-    //     caseNo: String(lead.caseNo),
-    //   });
-
-    const mapLead = (lead) => {
-  const activeAssignees = Array.isArray(lead.assignedTo)
-    ? lead.assignedTo
-        .filter(a => a && a.status !== "declined")
-        .map(a => a.username)
-    : [];
-
-  return {
-    id: Number(lead.leadNo),
-    description: lead.description,
-    summary: lead.summary,
-    dueDate: lead.dueDate
-      ? new Date(lead.dueDate).toISOString().split("T")[0]
-      : "N/A",
-    priority: lead.priority || "Medium",
-    flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [],
-    assignedOfficers: activeAssignees,
-    leadStatus: lead.leadStatus,
-    caseName: lead.caseName,
-    caseNo: String(lead.caseNo),
-  };
-};
-
-
-      const allLeads = filtered.map(mapLead).sort((a, b) => Number(b.id) - Number(a.id));;
-      console.log("🔍 mapped leads:", allLeads);
-      const assignedLeads = filtered.filter(l => l.leadStatus === "Assigned").map(mapLead);
-      const pendingLeads  = filtered.filter(l => l.leadStatus === "Accepted" ).map(mapLead);
-      const inReview      = filtered.filter(l => l.leadStatus === "In Review").map(mapLead);
-
-      setLeads({
-        allLeads,
-        assignedLeads,
-        pendingLeads,
-        pendingLeadReturns: inReview,
-      });
-    } catch (err) {
-      console.error("Error fetching leads:", err);
-    }
-  };
-
-  // 2) fire once now...
-  fetchLeads();
-
-  // 3) ...then every 15s
-  const intervalId = setInterval(fetchLeads, 15_000);
-
-  // 4) cleanup on unmount / deps change
-  return () => clearInterval(intervalId);
-}, [
-  selectedCase?.caseNo,
-  selectedCase?.caseName,
-  signedInOfficer
-]);
-
-    
-    // Handler to accept the assigned lead
-    const handleAcceptAssignedLead = (lead) => {
-      const confirmAccept = window.confirm(
-        `Are you sure you want to accept this lead?`
-      );
-      if (confirmAccept) {
-        // Remove lead from assignedLeads and add it to pendingLeads
-        setLeads((prevLeads) => {
-          const updatedAssignedLeads = prevLeads.assignedLeads.filter(
-            (l) => l.id !== lead.id
-          );
-          const updatedPendingLeads = [...prevLeads.pendingLeads, lead];
-          return {
-            ...prevLeads,
-            assignedLeads: updatedAssignedLeads,
-            pendingLeads: updatedPendingLeads,
-          };
-        });
-      }
-    };
-
-    const acceptLead = async (leadNo, description) => {
-      console.log("Accept button clicked for lead:", leadNo);
-    
-      try {
-        const token = localStorage.getItem("token");
-        const url = `/api/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`;
-        console.log("PUT request URL:", url);
-    
-        // Call the database update endpoint via a PUT request.
-        const response = await api.put(
-          url,
-          {}, // No payload; the backend sets the status to "Pending" automatically.
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        console.log("PUT request succeeded. Response data:", response.data);
-    
-        // Build a new pending lead object from the function parameters and default values.
-        const newPendingLead = {
-          id: leadNo,
-          leadNo: leadNo,
-          description: description,
-          leadStatus: "Accepted",
-          dueDate: "NA",          // Default due date (adjust if needed)
-          priority: "NA",         // Default priority (adjust if needed)
-          flags: [],              // Defaults to empty array
-          assignedOfficers: ["Unassigned"], // Default assigned officer
-        };
-    
-        // Update your local state: remove the accepted lead from assignedLeads and add it to pendingLeads.
-        setLeads((prevLeads) => {
-          const updatedAssignedLeads = prevLeads.assignedLeads.filter(
-            (lead) => Number(lead.id) !== Number(leadNo)
-          );
-          const updatedPendingLeads = [...prevLeads.pendingLeads, newPendingLead];
-          console.log(
-            "Updating leads state. New assignedLeads length:",
-            updatedAssignedLeads.length,
-            "New pendingLeads length:",
-            updatedPendingLeads.length
-          );
-          return {
-            ...prevLeads,
-            assignedLeads: updatedAssignedLeads,
-            pendingLeads: updatedPendingLeads,
-          };
-        });
-      } catch (error) {
-        console.error("Error updating lead status:", error.response?.data || error);
-        alert("Failed to accept lead.");
-      }
-    };
-    
-
-const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
-const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
-const [leadDropdownOpen1, setLeadDropdownOpen1] = useState(true);
-
-   const [showFilter, setShowFilter] = useState(false);
-    const [showSort, setShowSort] = useState(false);
-
-  
-      useEffect(() => {
-        // Scroll to the top when the component mounts
-        window.scrollTo(0, 0);
-      }, []); // Empty dependency array ensures it runs only once on mount
-        
-  
-  
-  
-
-    const handleTabClick = (tab) => {
-        setActiveTab(tab);
-    };
-
-    const handleSelectLead = (lead) => {
-      setSelectedLead({
-        leadNo: lead.leadNo,
-        leadName: lead.description,
-        caseName: lead.caseName,
-        caseNo: lead.caseNo,
-      });
-    
-      setShowSelectModal(false);
-      navigate(pendingRoute, {
-        state: {
-          caseDetails: selectedCase,
-          leadDetails: lead
-        }
-      });
-      
-      setPendingRoute(null);
-    };
-
-    const handleGenerateLead = () => {
-        navigate('/createlead', { state: { caseDetails } }); // Pass caseDetails as state
-    };
-
-  const addPendingLead = (newLead) => {
-    setLeads((prevLeads) => ({
-      ...prevLeads,
-      pendingLeads: [
-        ...prevLeads.pendingLeads,
-        {
-          ...newLead,
-          dueDate: newLead.dueDate, // Default due date
-          priority: newLead.priority, // Default priority
-          flags: newLead.flags || [],
-          assignedOfficers: newLead.assignedOfficers, // Default officer
-        },
-      ],
-    }));
-  };
-  
-
-  // Calculate remaining days from the due date
-  const calculateRemainingDays = (dueDate) => {
-    const currentDate = new Date();
-    const targetDate = new Date(dueDate);
-    const timeDifference = targetDate - currentDate;
-    return Math.max(0, Math.ceil(timeDifference / (1000 * 60 * 60 * 24))); // Return 0 if negative
-  };
-  
-
-  
-  
-    // Continue a pending lead return
-    const continueLead = (leadId) => {
-        const leadToContinue = leads.pendingLeadReturns.find(
-          (lead) => lead.id === leadId
-        );
-        if (!leadToContinue) return;
-        setLeads((prevLeads) => ({
-          ...prevLeads,
-          pendingLeadReturns: prevLeads.pendingLeadReturns.filter(
-            (lead) => lead.id !== leadId
-          ),
-          pendingLeads: [...prevLeads.pendingLeads, leadToContinue],
-        }));
-      };
-
-
-
-  
-   
-    const onShowCaseSelector = (route) => {
-      navigate(route, { state: { caseDetails } });
-  };
-// Filter and sort for assigned leads- 
-// ─── Assigned Leads filter/sort setup ──────────────────────────────────────
-// columns + mapping
-const assignedColumns   = ["Lead No.","Lead Name","Due Date","Priority","Days Left","Assigned Officers"];
-const assignedColKey    = {
-  "Lead No.":          "id",
-  "Lead Name":         "description",
-  "Due Date":          "dueDate",
-  "Priority":          "priority",
-  "Days Left":         "remainingDays",
-  "Assigned Officers": "assignedOfficers",
-};
-const assignedColWidths = {
-   "Lead No.":           "12%",
-  "Lead Name":          "20%",
-  "Due Date":           "13%",
-  "Priority":           "10%",
-  "Days Left":          "13%",
-  "Assigned Officers":  "21%",
-};
-
-// refs + state
-const popupAssignedRefs    = useRef({});
-const [openAssignedFilter,    setOpenAssignedFilter]    = useState(null);
-const [assignedFilterConfig,  setAssignedFilterConfig]  = useState({
-  id:[], description:[], dueDate:[], priority:[], remainingDays:[], flags:[], assignedOfficers:[]
-});
-const [tempAssignedSelections,setTempAssignedSelections]= useState({});
-const [assignedFilterSearch,  setAssignedFilterSearch]  = useState({});
-const [assignedSortConfig,    setAssignedSortConfig]    = useState({ key:null, direction:'asc' });
-
-// helpers
-const handleAssignedFilterSearch = (dk, txt) =>
-  setAssignedFilterSearch(fs => ({ ...fs, [dk]: txt }));
-
-const assignedAllChecked = dk => {
-  const sel = tempAssignedSelections[dk]||[];
-  return sel.length === (distinctAssigned[dk]||[]).length;
-};
-
-const toggleAssignedSelectAll = dk => {
-  const all = distinctAssigned[dk]||[];
-  setTempAssignedSelections(ts => ({
-    ...ts,
-    [dk]: ts[dk]?.length===all.length ? [] : [...all]
-  }));
-};
-
-const handleAssignedCheckboxToggle = (dk, v) =>
-  setTempAssignedSelections(ts => {
-    const sel = ts[dk]||[];
-    return { ...ts,
-      [dk]: sel.includes(v) ? sel.filter(x=>x!==v) : [...sel, v]
-    };
-  });
-
-const applyAssignedFilter = dk =>
-  setAssignedFilterConfig(fc => ({
-    ...fc,
-    [dk]: tempAssignedSelections[dk]||[]
-  }));
-
-const handleAssignedSort = (dk, dir) => {
-  setAssignedSortConfig({ key: dk, direction: dir });
-  setOpenAssignedFilter(null);
-};
-
-// compute distinct values for each column
-const distinctAssigned = useMemo(() => {
-  const map = {
-    id: new Set(), description: new Set(), dueDate: new Set(),
-    priority: new Set(), remainingDays: new Set(),
-    flags: new Set(), assignedOfficers: new Set()
-  };
-  leads.assignedLeads.forEach(lead => {
-    map.id.add(String(lead.id));
-    map.description.add(lead.description);
-    map.dueDate.add(lead.dueDate);
-    map.priority.add(lead.priority);
-    map.remainingDays.add(String(calculateRemainingDays(lead.dueDate)));
-    lead.flags.forEach(f => map.flags.add(f));
-    lead.assignedOfficers.forEach(o => map.assignedOfficers.add(o));
-  });
-  return Object.fromEntries(
-    Object.entries(map).map(([k,s])=>[k,Array.from(s)])
+  const renderAssignedRow = lead => (
+    <tr key={lead.id}>
+      <td>{lead.id}</td>
+      <td>{lead.description}</td>
+      <td>{lead.dueDate}</td>
+      <td>{lead.priority}</td>
+      <td>{lead.remainingDays}</td>
+      <td>{(lead.assignedOfficers || []).join(', ')}</td>
+      <td style={{ textAlign: 'center' }}>
+        <button className={styles['view-btn1']}  onClick={() => handleLeadClick(lead)}>Manage</button>
+        <button className={styles['accept-btn']} onClick={() => openConfirm(lead)}>Accept</button>
+      </td>
+    </tr>
   );
-}, [leads.assignedLeads]);
 
-// apply filters then sort
-const sortedAssignedLeads = useMemo(() => {
-  let data = leads.assignedLeads.filter(lead =>
-    Object.entries(assignedFilterConfig).every(([key,sel]) => {
-      if (!sel.length) return true;
-      let cell = lead[key];
-      if (key==="remainingDays") cell = calculateRemainingDays(lead.dueDate);
-      if (Array.isArray(cell)) return cell.some(v=>sel.includes(v));
-      return sel.includes(String(cell));
-    })
+  const renderPendingRow = lead => (
+    <tr key={lead.id}>
+      <td>{lead.id}</td>
+      <td>{lead.description}</td>
+      <td>{lead.dueDate}</td>
+      <td>{lead.priority}</td>
+      <td>{lead.remainingDays}</td>
+      <td>{(lead.assignedOfficers || []).join(', ')}</td>
+      <td style={{ textAlign: 'center' }}>
+        <button className={styles['view-btn1']} onClick={() => handleLeadClick(lead)}>Manage</button>
+      </td>
+    </tr>
   );
-  const { key, direction } = assignedSortConfig;
-  if (key) {
-    data = data.slice().sort((a,b) => {
-      let aV = key==="remainingDays"
-        ? calculateRemainingDays(a.dueDate)
-        : Array.isArray(a[key]) ? a[key][0] : a[key];
-      let bV = key==="remainingDays"
-        ? calculateRemainingDays(b.dueDate)
-        : Array.isArray(b[key]) ? b[key][0] : b[key];
-      return direction==='asc'
-        ? String(aV).localeCompare(String(bV))
-        : String(bV).localeCompare(String(aV));
-    });
-  }
-  return data;
-}, [leads.assignedLeads, assignedFilterConfig, assignedSortConfig]);
 
-//  Pending / Accepted Leads 
-
-// ─── Pending Leads filter/sort setup ──────────────────────────────────────
-
-// Columns + mapping
-const pendingColumns   = [
-  "Lead No.",
-  "Lead Name",
-  "Due Date",
-  "Priority",
-  "Days Left",
-  "Assigned Officers"
-];
-const pendingColKey    = {
-  "Lead No.":          "id",
-  "Lead Name":         "description",
-  "Due Date":          "dueDate",
-  "Priority":          "priority",
-  "Days Left":         "remainingDays",
-  "Assigned Officers": "assignedOfficers",
-};
-const pendingColWidths = {
-   "Lead No.":           "12%",
-  "Lead Name":          "20%",
-  "Due Date":           "13%",
-  "Priority":           "10%",
-  "Days Left":          "11%",
-  "Assigned Officers":  "21%",
-};
-
-// Refs + state
-const popupPendingRefs     = useRef({});
-const [openPendingFilter,     setOpenPendingFilter]    = useState(null);
-const [pendingFilterConfig,   setPendingFilterConfig]  = useState({
-  id: [], description: [], dueDate: [], priority: [], remainingDays: [], flags: [], assignedOfficers: []
-});
-const [tempPendingSelections, setTempPendingSelections]= useState({});
-const [pendingFilterSearch,   setPendingFilterSearch]  = useState({});
-const [pendingSortConfig,     setPendingSortConfig]    = useState({ key:null, direction:'asc' });
-
-// Helper functions
-const handlePendingFilterSearch = (dataKey, text) =>
-  setPendingFilterSearch(fs => ({ ...fs, [dataKey]: text }));
-
-const pendingAllChecked = dataKey => {
-  const sel = tempPendingSelections[dataKey] || [];
-  return sel.length === (distinctPending[dataKey] || []).length;
-};
-
-const togglePendingSelectAll = dataKey => {
-  const all = distinctPending[dataKey] || [];
-  setTempPendingSelections(ts => ({
-    ...ts,
-    [dataKey]: ts[dataKey]?.length === all.length ? [] : [...all]
-  }));
-};
-
-const handlePendingCheckboxToggle = (dataKey, v) =>
-  setTempPendingSelections(ts => {
-    const sel = ts[dataKey] || [];
-    return {
-      ...ts,
-      [dataKey]: sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v]
-    };
-  });
-
-const applyPendingFilter = dataKey =>
-  setPendingFilterConfig(fc => ({
-    ...fc,
-    [dataKey]: tempPendingSelections[dataKey] || []
-  }));
-
-const handlePendingSort = (dk, dir) => {
-  setPendingSortConfig({ key: dk, direction: dir });
-  setOpenPendingFilter(null);
-};
-
-// Compute distinct values
-const distinctPending = useMemo(() => {
-  const map = {
-    id: new Set(), description: new Set(), dueDate: new Set(),
-    priority: new Set(), remainingDays: new Set(),
-    flags: new Set(), assignedOfficers: new Set()
-  };
-  leads.pendingLeads.forEach(lead => {
-    map.id.add(String(lead.id));
-    map.description.add(lead.description);
-    map.dueDate.add(lead.dueDate);
-    map.priority.add(lead.priority);
-    map.remainingDays.add(String(calculateRemainingDays(lead.dueDate)));
-    lead.flags.forEach(f => map.flags.add(f));
-    lead.assignedOfficers.forEach(o => map.assignedOfficers.add(o));
-  });
-  return Object.fromEntries(
-    Object.entries(map).map(([k,s])=>[k,Array.from(s)])
+  const renderPendingLRRow = lead => (
+    <tr key={lead.id}>
+      <td>{lead.id}</td>
+      <td>{lead.description}</td>
+      <td>{lead.caseName}</td>
+      <td style={{ textAlign: 'center' }}>
+        <button className={styles['continue-btn']} onClick={() => handleLRClick(lead)}>Continue</button>
+      </td>
+    </tr>
   );
-}, [leads.pendingLeads]);
 
-// Apply filters + sort
-const sortedPendingLeads = useMemo(() => {
-  let data = leads.pendingLeads.filter(lead =>
-    Object.entries(pendingFilterConfig).every(([key, sel]) => {
-      if (!sel.length) return true;
-      let cell = key === "remainingDays"
-        ? calculateRemainingDays(lead.dueDate)
-        : lead[key];
-      if (Array.isArray(cell)) return cell.some(v => sel.includes(v));
-      return sel.includes(String(cell));
-    })
+  const renderAllRow = lead => (
+    <tr key={lead.id}>
+      <td>{lead.id}</td>
+      <td>{lead.description}</td>
+      <td style={{ color: statusColor(lead.leadStatus) }}>
+        {lead.leadStatus === 'In Review' ? 'Under review' : lead.leadStatus}
+      </td>
+      <td>{(lead.assignedOfficers || []).join(', ') || <em>None</em>}</td>
+      <td style={{ textAlign: 'center' }}>
+        <button
+          className={styles['view-btn1']}
+          onClick={() => !isDeletedStatus(lead.leadStatus) && handleLeadClick(lead)}
+          disabled={isDeletedStatus(lead.leadStatus)}
+          style={{ opacity: isDeletedStatus(lead.leadStatus) ? 0.5 : 1, cursor: isDeletedStatus(lead.leadStatus) ? 'not-allowed' : 'pointer' }}
+        >
+          Manage
+        </button>
+      </td>
+    </tr>
   );
-  const { key, direction } = pendingSortConfig;
-  if (key) {
-    data = data.slice().sort((a,b) => {
-      let aV = key==="remainingDays"
-        ? calculateRemainingDays(a.dueDate)
-        : Array.isArray(a[key]) ? a[key][0] : a[key];
-      let bV = key==="remainingDays"
-        ? calculateRemainingDays(b.dueDate)
-        : Array.isArray(b[key]) ? b[key][0] : b[key];
-      return direction==='asc'
-        ? String(aV).localeCompare(String(bV))
-        : String(bV).localeCompare(String(aV));
-    });
-  }
-  return data;
-}, [leads.pendingLeads, pendingFilterConfig, pendingSortConfig]);
- 
-// ─── Pending Lead Returns filter/sort setup ───────────────────────────────
 
-// Columns + mapping
-const pendingLRColumns   = ["Lead No.", "Lead Name", "Case Name"];
-const pendingLRColKey    = {
-  "Lead No.":  "id",
-  "Lead Name": "description",
-  "Case Name": "caseName",
-};
-const pendingLRColWidths = {
-  "Lead No.":  "15%",
-  "Lead Name": "35%",
-  "Case Name": "30%",
-};
+  // ─── Render ───────────────────────────────────────────────────────────────
 
-// Refs + state
-const popupPendingLRRefs      = useRef({});
-const [openPendingLRFilter,    setOpenPendingLRFilter]     = useState(null);
-const [pendingLRFilterConfig,  setPendingLRFilterConfig]   = useState({
-  id: [], description: [], caseName: []
-});
-const [tempPendingLRSelections, setTempPendingLRSelections]= useState({});
-const [pendingLRFilterSearch,  setPendingLRFilterSearch]   = useState({});
-const [pendingLRSortConfig,    setPendingLRSortConfig]     = useState({ key: null, direction: 'asc' });
+  return (
+    <div className={styles['case-page-manager']}>
+      <Navbar />
 
-// Helper functions
-const handlePendingLRFilterSearch = (dataKey, text) =>
-  setPendingLRFilterSearch(fs => ({ ...fs, [dataKey]: text }));
+      <div className={styles['main-container']}>
+        {/* Sidebar with tab navigation and lead counts */}
+        <SideBar
+          activePage="Investigator"
+          leads={leads}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
 
-const pendingLRAllChecked = dataKey => {
-  const sel = tempPendingLRSelections[dataKey] || [];
-  return sel.length === (distinctPendingLR[dataKey]?.length ?? 0);
-};
-
-const togglePendingLRSelectAll = dataKey => {
-  const all = distinctPendingLR[dataKey] || [];
-  setTempPendingLRSelections(ts => ({
-    ...ts,
-    [dataKey]: ts[dataKey]?.length === all.length ? [] : [...all]
-  }));
-};
-
-const handlePendingLRCheckboxToggle = (dataKey, v) =>
-  setTempPendingLRSelections(ts => {
-    const sel = ts[dataKey] || [];
-    return {
-      ...ts,
-      [dataKey]: sel.includes(v) ? sel.filter(x => x !== v) : [...sel, v]
-    };
-  });
-
-const applyPendingLRFilter = dataKey =>
-  setPendingLRFilterConfig(fc => ({
-    ...fc,
-    [dataKey]: tempPendingLRSelections[dataKey] || []
-  }));
-
-const handlePendingLRSort = (dk, dir) => {
-  setPendingLRSortConfig({ key: dk, direction: dir });
-  setOpenPendingLRFilter(null);
-};
-
-// Distinct values for each column
-const distinctPendingLR = useMemo(() => {
-  const map = {
-    id: new Set(),
-    description: new Set(),
-    caseName: new Set()
-  };
-  leads.pendingLeadReturns.forEach(lead => {
-    map.id.add(String(lead.id));
-    map.description.add(lead.description);
-    map.caseName.add(lead.caseName);
-  });
-  return Object.fromEntries(
-    Object.entries(map).map(([k,s]) => [k, Array.from(s)])
-  );
-}, [leads.pendingLeadReturns]);
-
-// Filter + sort the pending lead returns
-const sortedPendingLRs = useMemo(() => {
-  let data = leads.pendingLeadReturns.filter(lead =>
-    Object.entries(pendingLRFilterConfig).every(([key, sel]) => {
-      if (!sel.length) return true;
-      const cell = String(lead[key]);
-      return sel.includes(cell);
-    })
-  );
-  const { key, direction } = pendingLRSortConfig;
-  if (key) {
-    data = data.slice().sort((a,b) => {
-      const aV = String(a[key]), bV = String(b[key]);
-      return direction === 'asc'
-        ? aV.localeCompare(bV)
-        : bV.localeCompare(aV);
-    });
-  }
-  return data;
-}, [leads.pendingLeadReturns, pendingLRFilterConfig, pendingLRSortConfig]);
-
-// ─── All Leads filter/sort setup ──────────────────────────────────────────
-
-// Columns + mapping
-const allColumns   = [
-  "Lead No.",
-  "Lead Log Summary",
-  "Lead Status",
-  "Assigned Officers"
-];
-const allColKey    = {
-  "Lead No.":           "id",
-  "Lead Log Summary":   "description",
-  "Lead Status":        "leadStatus",
-  "Assigned Officers":  "assignedOfficers"
-};
-const allColWidths = {
-  "Lead No.":           "13%",
-  "Lead Log Summary":   "40%",
-  "Lead Status":        "17%",
-  "Assigned Officers":  "22%"
-};
-
-// Refs & state
-const popupAllRefs     = useRef({});
-const [openAllFilter,   setOpenAllFilter]   = useState(null);
-const [allFilterConfig, setAllFilterConfig] = useState({
-  id: [], description: [], leadStatus: [], assignedOfficers: []
-});
-const [allFilterSearch, setAllFilterSearch] = useState({});
-const [tempAllSelections, setTempAllSelections] = useState({});
-const [allSortConfig,   setAllSortConfig]   = useState({ key:null, direction:'asc' });
-
-// Build distinct values for each column
-const distinctAll = useMemo(() => {
-  const map = {
-    id: new Set(),
-    description: new Set(),
-    leadStatus: new Set(),
-    assignedOfficers: new Set(),
-  };
-  leads.allLeads.forEach(lead => {
-    map.id.add(String(lead.id));
-    map.description.add(lead.description);
-    map.leadStatus.add(lead.leadStatus);
-    (lead.assignedOfficers || []).forEach(o => map.assignedOfficers.add(o));
-  });
-  return Object.fromEntries(
-    Object.entries(map).map(([k, set]) => [k, Array.from(set)])
-  );
-}, [leads.allLeads]);
-
-
-const handleAllFilterSearch = (key, txt) =>
-  setAllFilterSearch(fs => ({ ...fs, [key]: txt }));
-
-const allAllChecked = key =>
-  (tempAllSelections[key] || []).length === (distinctAll[key] || []).length;
-
-const toggleAllSelectAll = key => {
-  const all = distinctAll[key] || [];
-  setTempAllSelections(ts => ({
-    ...ts,
-    [key]: ts[key]?.length === all.length ? [] : [...all]
-  }));
-};
-
-const caseTeamStyles = {
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-  },
-  th: {
-    padding: "8px"
-  },
-  td: {
-    padding: "8px",
-    verticalAlign: "center",
-  },
-};
-
-const handleAllCheckboxToggle = (key, v) =>
-  setTempAllSelections(ts => {
-    const sel = ts[key] || [];
-    return {
-      ...ts,
-      [key]: sel.includes(v)
-        ? sel.filter(x => x !== v)
-        : [...sel, v]
-    };
-  });
-
-const applyAllFilter = key =>
-  setAllFilterConfig(cfg => ({
-    ...cfg,
-    [key]: tempAllSelections[key] || []
-  }));
-
-const handleAllSort = (dk, dir) => {
-  setAllSortConfig({ key: dk, direction: dir });
-  setOpenAllFilter(null);
-};
-
-
-// Apply filters + sort
-const sortedAllLeads = useMemo(() => {
-  let data = leads.allLeads.filter(lead =>
-    Object.entries(allFilterConfig).every(([key, sel]) => {
-      if (!sel || !sel.length) return true;
-      let cell = lead[key];
-      if (Array.isArray(cell)) return cell.some(v => sel.includes(v));
-      return sel.includes(String(cell));
-    })
-  );
-  const { key, direction } = allSortConfig;
-  if (key) {
-    data = data.slice().sort((a, b) => {
-      const aV = Array.isArray(a[key]) ? a[key][0] : String(a[key]);
-      const bV = Array.isArray(b[key]) ? b[key][0] : String(b[key]);
-      return direction === 'asc'
-        ? aV.localeCompare(bV)
-        : bV.localeCompare(aV);
-    });
-  }
-  return data;
-}, [leads.allLeads, allFilterConfig, allSortConfig]);
-
-// Paginate the sorted leads based on active tab
-const totalEntries = useMemo(() => {
-  switch (activeTab) {
-    case "assignedLeads": return sortedAssignedLeads.length;
-    case "pendingLeads": return sortedPendingLeads.length;
-    case "pendingLeadReturns": return sortedPendingLRs.length;
-    case "allLeads":
-    default: return sortedAllLeads.length;
-  }
-}, [activeTab, sortedAssignedLeads, sortedPendingLeads, sortedPendingLRs, sortedAllLeads]);
-
-const paginatedLeads = useMemo(() => {
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  return sortedAllLeads.slice(startIndex, endIndex);
-}, [sortedAllLeads, currentPage, pageSize]);
-
-const paginatedAssignedLeads = useMemo(() => {
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  return sortedAssignedLeads.slice(startIndex, endIndex);
-}, [sortedAssignedLeads, currentPage, pageSize]);
-
-const paginatedPendingLeads = useMemo(() => {
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  return sortedPendingLeads.slice(startIndex, endIndex);
-}, [sortedPendingLeads, currentPage, pageSize]);
-
-const paginatedPendingLRs = useMemo(() => {
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  return sortedPendingLRs.slice(startIndex, endIndex);
-}, [sortedPendingLRs, currentPage, pageSize]);
-
-// Reset to page 1 when filters change or tab changes
-React.useEffect(() => {
-  setCurrentPage(1);
-}, [allFilterConfig, allSortConfig, assignedFilterConfig, assignedSortConfig, pendingFilterConfig, pendingSortConfig, pendingLRFilterConfig, pendingLRSortConfig, activeTab]);
-
-    return (
-        <div className={styles['case-page-manager']}>
-            {/* Navbar */}
-            <Navbar />
-
-            {/* Main Container */}
-            <div className={styles['main-container']}>
-        
-
-                {/* <div className="sideitem">
-                
-                    <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-
-                    <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
-        </li>
-        {caseDropdownOpen && (
-      <ul >
-                    <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>   
-                                 <li className="sidebar-item active" onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Case Page {leadDropdownOpen ?  "▼" : "▲"}
-        </li>
-        {leadDropdownOpen && (
-          <ul className="dropdown-list1">
-            {["assignedLeads", "pendingLeads", "pendingLeadReturns", "allLeads"].map((tab) => (
-  <li
-    key={tab}
-    className={`sidebar-item ${activeTab === tab ? "active" : ""}`}
-    onClick={() => handleTabClick(tab)}
-  >
-    <div className="sidebar-content">
-            <span className="sidebar-text">
-              {tab === "assignedLeads" && "My Assigned Leads"}
-              {tab === "pendingLeads" && "My Pending Leads"}
-              {tab === "pendingLeadReturns" && "My Pending Lead Returns"}
-              {tab === "allLeads" && "All Leads"}
-            </span>
-            <span className="sidebar-number">
-              {tab === "assignedLeads" && leads.assignedLeads.length}
-              {tab === "pendingLeads" && leads.pendingLeads.length}
-              {tab === "pendingLeadReturns" && leads.pendingLeadReturns.length}
-              {tab === "allLeads" && leads.allLeads.length}
-            </span>
-          </div>
-  </li>
-))}          </ul>
-        )} 
-
-{selectedCase.role !== "Investigator" && (
-<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item"
-             onClick={() => onShowCaseSelector("/SearchLead")}
-          >Search Lead</li>
-            <li className="sidebar-item"    
-            onClick={() => {
-              setPendingRoute("/lrInstruction");
-              setShowSelectModal(true);
-            }} >View Lead Return</li>
-
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-       
-              {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
-            </li>)}
-      
-             <li className="sidebar-item"    
-            onClick={() => navigate("/FlaggedLead")}>
-              View Flagged Leads
-            </li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>
-            View Timeline Entries
-            </li>
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-            
-            </ul>)}
-            
-            <li className="sidebar-item"  style={{ fontWeight: 'bold' }}onClick={() => setLeadDropdownOpen1(!leadDropdownOpen1)}>
-          Lead Related Tabs {leadDropdownOpen1 ?  "▲": "▼"}
-          </li>
-        {leadDropdownOpen1 && (
-          <ul>
-            <li className="sidebar-item" 
-             onClick={() => {
-              setPendingRoute("/leadReview");
-              setShowSelectModal(true);
-            }}>Lead Information</li>
-            {selectedCase.role !== "Investigator" && (
-              <li className="sidebar-item"
-                onClick={() => {
-                  setPendingRoute("/ChainOfCustody");
-                  setShowSelectModal(true);
-                }}
-
-          
-              >View Lead Chain of Custody</li>
-              )}
-
-                    
-                    {showSelectModal && (
-      <SelectLeadModal
-        leads={leads.allLeads}
-        onSelect={handleSelectLead}
-        onClose={() => setShowSelectModal(false)}
-      />
-    )}
-    </ul>)}
-                </div> */}
-              
-
-                    <SideBar
-                  activePage="Investigator"
-                  leads={leads}
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                />
-               
-                <div className={styles['left-content']}>
-
-   {/* <div className="caseandleadinfo-cl">
-          <h5 className = "side-title-cl"> 
-               <p> PIMS &gt; Cases </p>
-             </h5>
-          <h5 className="side-title-cl">
-  {selectedCase?.role
-        ? `Your Role: ${selectedCase.role || ""}`
-    : ` ${leadStatus}`}
-</h5>
-
-          </div> */}
-                   {/* Display Case Number and Name */}
-                <div className={styles['case-header-cp']}>
-                  <div className={styles['cp-head']}>
-                {
-                 <h2>Case: {selectedCase?.caseName ? toTitleCase(selectedCase.caseName) : "Unknown Case"}</h2>
-
-                }
-                </div>
-                  
-                </div>
-
-                   {/* <div className="cp-case-status">
-                 
-      <div className="pill">{selectedCase.role || ""}</div>
-      <div className="pill">Ongoing</div>
-      <div className="muted">Last updated 2h ago</div>
-                </div> */}
-
-      {/* <div className="summary-box">
-        <div className={styles['case-summary']}>
-      <div className="cp-summ-head">
-  <label className="cp-label" htmlFor="case-summary">Case Summary</label>
-</div>
-      <textarea
-        className='cp-textarea'
-        rows={6}
-        style={{ width: '100%', fontSize: 20 }}
-        value={summary}
-          readOnly
-      />
-    </div>
-    </div> */}
-
-<section className={styles['collapsible-section']}>
-  <button
-    type="button"
-    className={styles['collapse-header']}
-    onClick={() => setIsCaseSummaryOpen(o => !o)}
-    aria-expanded={isCaseSummaryOpen}
-  >
-    <span className={styles['collapse-title']}>Case Summary</span>
-    <span>
-      <img
-        src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-        className={styles['icon-image']}
-        alt="" /* decorative */
-      />
-    </span>
-  </button>
-
-  {isCaseSummaryOpen && (
-      <div
-        className={styles['case-summary']}
-        style={{
-          maxHeight: "150px",
-          overflowY: "auto",
-          paddingLeft: "20px",
-          border: "1px solid #ccc",
-          borderRadius: "4px",
-          fontSize: "20px",
-          whiteSpace: "pre-wrap",       // keep line breaks/formatting
-        }}
-      >
-        {summary && summary.trim() ? summary : "No summary available"}
-      </div>
-
-  )}
-</section>
-
-<section className={styles['collapsible-section']}>
-  <button
-    type="button"
-    className={styles['collapse-header']}
-    onClick={() => setIsCaseTeamOpen(o => !o)}
-    aria-expanded={isCaseTeamOpen}
-  >
-    <span className={styles['collapse-title']}>Case Team</span>
-    <span className="">
-      <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-      className={styles['icon-image']}
-       />
-    </span>
-  </button>
-                
-                {isCaseTeamOpen && (
-
-            <div className={styles['case-team']}>
-        <table className={styles['leads-table']} style={caseTeamStyles.table}>
-          <thead>
-            <tr><th style={{...caseTeamStyles.th, width: "20%" }}>Role</th>
-            <th style={caseTeamStyles.th}>Name(s)</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style={caseTeamStyles.td}>Detective Supervisor</td>
-              <td style={caseTeamStyles.td}>{formatUser(team.detectiveSupervisor)}</td>
-              </tr>
-            <tr>
-              <td style={caseTeamStyles.td}>Case Manager</td>
-              <td style={caseTeamStyles.td}>{(team.caseManagers||[]).map(formatUser).join(", ") || "—"}</td>
-            </tr>
-            <tr>
-              <td style={caseTeamStyles.td}>Investigator{team.investigators.length > 1 ? "s" : ""}</td>
-              <td style={caseTeamStyles.td}>
-                {team.investigators.length
-                  ? team.investigators.map(formatUser).join(", ")
-                  : "None assigned"}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-        )}
-</section>
-                {/* Content Area */}
-                {/* <div className="content"> */}
-              
-                    <div className={styles['stats-bar']}>
-                       <span
-                            className={`${styles.hoverable} ${activeTab === "allLeads" ? styles.active : ""}`}
-                            onClick={() => handleTabClick("allLeads")}
-                        >
-                            My Leads: {leads.allLeads.length}
-                        </span>
-                        
-                        <span
-                            className={`${styles.hoverable} ${activeTab === "assignedLeads" ? styles.active : ""}`}
-                            onClick={() => handleTabClick("assignedLeads")}
-                        >
-                            Assigned Leads: {leads.assignedLeads.length}
-                        </span>
-                        <span
-                            className={`${styles.hoverable} ${activeTab === "pendingLeads" ? styles.active : ""}`}
-                            onClick={() => handleTabClick("pendingLeads")}
-                          >
-                            Accepted Leads: {leads.pendingLeads.length}
-                          </span>
-                        <span
-                            className={`${styles.hoverable} ${activeTab === "pendingLeadReturns" ? styles.active : ""}`}
-                            onClick={() => handleTabClick("pendingLeadReturns")}
-                        >
-                            Lead Returns In Review: {leads.pendingLeadReturns.length}
-                        </span>
-                       
-                    </div>
-
-                       {/* Tab Content */}
-                       <div className={styles['content-section']}>
-                         {activeTab === "assignedLeads" && (
-  <div className={styles['table-scroll-container']}>
-    <table className={styles['leads-table']}>
-      <thead>
-        <tr>
-          {assignedColumns.map(col => {
-            const dataKey = assignedColKey[col];
-            return (
-              <th
-                key={col}
-                className={styles['column-header1']}
-                style={{ width: assignedColWidths[col] }}
-              >
-                <div className={styles['header-title']}>
-                  {col}
-                  <span ref={el => (popupAssignedRefs.current[dataKey] = el)}>
-                    {/* Filter button */}
-                    <button
-                      onClick={() =>
-                        setOpenAssignedFilter(prev =>
-                          prev === dataKey ? null : dataKey
-                        )
-                      }
-                    >
-                      <img
-                        src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-                        className={styles['icon-image']}
-                      />
-                    </button>
-                    <Filter
-                      dataKey={dataKey}
-                      distinctValues={distinctAssigned}
-                      open={openAssignedFilter === dataKey}
-                      anchorRef={{ current: popupAssignedRefs.current[dataKey] }}
-                      searchValue={assignedFilterSearch[dataKey] || ""}
-                      selections={tempAssignedSelections[dataKey] || []}
-                      onSearch={handleAssignedFilterSearch}
-                      onSort={handleAssignedSort}
-                      allChecked={assignedAllChecked}
-                      onToggleAll={toggleAssignedSelectAll}
-                      onToggleOne={handleAssignedCheckboxToggle}
-                      onApply={() => {
-                        applyAssignedFilter(dataKey);
-                        setOpenAssignedFilter(null);
-                      }}
-                      onCancel={() => setOpenAssignedFilter(null)}
-                    />
-                  </span>
-                </div>
-              </th>
-            );
-          })}
-          {/* extra column for “View” button */}
-          <th style={{ width: "11%", textAlign:"center" }}>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {paginatedAssignedLeads.length > 0 ? (
-          paginatedAssignedLeads.map(lead => (
-            <tr key={lead.id}>
-              <td>{lead.id}</td>
-              <td>{lead.description}</td>
-              <td>{lead.dueDate}</td>
-              <td>{lead.priority}</td>
-              <td>{calculateRemainingDays(lead.dueDate)}</td>
-              <td>{(lead.assignedOfficers || []).join(", ")}</td>
-              <td style={{ width: "9%", textAlign: "center" }}>
-                <button
-                  className={styles['view-btn1']}
-                  onClick={() => handleLeadClick(lead)}
-                >
-                  Manage
-                </button>
-                <button
-                  className={styles['accept-btn']}
-                  onClick={() => openConfirm(lead)}
-                >
-                  Accept
-                </button>
-              </td>
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td
-              colSpan={assignedColumns.length + 2}
-              style={{ textAlign: "center", padding: "8px" }}
-            >
-              No assigned leads available
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
-  </div>
-)}
-
-<AlertModal
-  isOpen={confirmConfig.isOpen}
-  title="Confirm Acceptance"
-  message={`Are you sure you want to accept Lead #${confirmConfig.lead?.id} – ${confirmConfig.lead?.description}?`}
-  onClose={closeConfirm}
-  onConfirm={handleConfirmAccept}
->
-  <div className="alert-footer">
-    <button className="alert-button" onClick={handleConfirmAccept}>
-      Yes
-    </button>
-    <button className="alert-button" onClick={closeConfirm}>
-      No
-    </button>
-  </div>
-</AlertModal>
-
-{activeTab === "pendingLeads" && (
-  <div className={styles['table-scroll-container']}>
-    <table className={styles['leads-table']}>
-      <thead>
-        <tr>
-          {pendingColumns.map(col => {
-            const dataKey = pendingColKey[col];
-            return (
-              <th
-                key={col}
-                className={styles['column-header1']}
-                style={{ width: pendingColWidths[col] }}
-              >
-                <div className={styles['header-title']}>
-                  {col}
-                  <span ref={el => (popupPendingRefs.current[dataKey] = el)}>
-                    {/* FILTER */}
-                    <button onClick={() =>
-                      setOpenPendingFilter(prev =>
-                        prev === dataKey ? null : dataKey
-                      )
-                    }>
-                      <img
-                        src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-                        className={styles['icon-image']}
-                      />
-                    </button>
-                    <Filter
-                      dataKey={dataKey}
-                      distinctValues={distinctPending}
-                      open={openPendingFilter === dataKey}
-                      anchorRef={{ current: popupPendingRefs.current[dataKey] }}
-                      searchValue={pendingFilterSearch[dataKey] || ""}
-                      selections={tempPendingSelections[dataKey] || []}
-                      onSearch={handlePendingFilterSearch}
-                      onSort={handlePendingSort}
-                      allChecked={pendingAllChecked}
-                      onToggleAll={togglePendingSelectAll}
-                      onToggleOne={handlePendingCheckboxToggle}
-                      onApply={() => {
-                        applyPendingFilter(dataKey);
-                        setOpenPendingFilter(null);
-                      }}
-                      onCancel={() => setOpenPendingFilter(null)}
-                    />
-                   
-                  </span>
-                </div>
-              </th>
-            );
-          })}
-          {/* extra column for “View” */}
-          <th style={{ width: "10%", textAlign:"center" }}>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {paginatedPendingLeads.length > 0 ? (
-          paginatedPendingLeads.map(lead => (
-            <tr key={lead.id}>
-              <td>{lead.id}</td>
-              <td>{lead.description}</td>
-              <td>{lead.dueDate}</td>
-              <td>{lead.priority}</td>
-              <td>{calculateRemainingDays(lead.dueDate)}</td>
-              <td>{(lead.assignedOfficers || []).join(", ")}</td>
-              <td style={{ width: "9%", textAlign: "center" }}>
-                <button
-                  className={styles['view-btn1']}
-                  onClick={() => handleLeadClick(lead)}
-                >
-                  Manage
-                </button>
-              </td>
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td
-              colSpan={pendingColumns.length + 1}
-              style={{ textAlign: "center", padding: "8px" }}
-            >
-              No accepted leads available
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
-  </div>
-)}
-
-{activeTab === "pendingLeadReturns" && (
-  <div className={styles['table-scroll-container']}>
-    <table className={styles['leads-table']}>
-      <thead>
-        <tr>
-          {pendingLRColumns.map(col => {
-            const dataKey = pendingLRColKey[col];
-            return (
-              <th
-                key={col}
-                className={styles['column-header1']}
-                style={{ width: pendingLRColWidths[col] }}
-              >
-                <div className={styles['header-title']}>
-                  {col}
-                  <span ref={el => (popupPendingLRRefs.current[dataKey] = el)}>
-                    {/* FILTER */}
-                    <button onClick={() =>
-                      setOpenPendingLRFilter(prev =>
-                        prev === dataKey ? null : dataKey
-                      )
-                    }>
-                      <img
-                        src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-                        className={styles['icon-image']}
-                      />
-                    </button>
-                    <Filter
-                      dataKey={dataKey}
-                      distinctValues={distinctPendingLR}
-                      open={openPendingLRFilter === dataKey}
-                      anchorRef={{ current: popupPendingLRRefs.current[dataKey] }}
-                      searchValue={pendingLRFilterSearch[dataKey] || ''}
-                      selections={tempPendingLRSelections[dataKey] || []}
-                      onSearch={handlePendingLRFilterSearch}
-                      onSort={handlePendingLRSort}
-                      allChecked={pendingLRAllChecked}
-                      onToggleAll={togglePendingLRSelectAll}
-                      onToggleOne={handlePendingLRCheckboxToggle}
-                      onApply={() => {
-                        applyPendingLRFilter(dataKey);
-                        setOpenPendingLRFilter(null);
-                      }}
-                      onCancel={() => setOpenPendingLRFilter(null)}
-                    />
-                  </span>
-                </div>
-              </th>
-            );
-          })}
-          {/* extra column for “Continue” */}
-          <th style={{ width: '10%', textAlign: "center" }}>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {paginatedPendingLRs.length > 0 ? (
-          paginatedPendingLRs.map(lead => (
-            <tr key={lead.id}>
-              <td>{lead.id}</td>
-              <td>{lead.description}</td>
-              <td>{lead.caseName}</td>
-              <td style={{ width: "9%", textAlign: "center" }}>
-                <button
-                  className={styles['continue-btn']}
-                  onClick={() => handleLRClick(lead)}
-                >
-                  Continue
-                </button>
-              </td>
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td
-              colSpan={pendingLRColumns.length + 1}
-              style={{ textAlign: 'center', padding: "8px" }}
-            >
-              No Pending Lead Returns Available
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
-  </div>
-)}
-
-{/* <td style={{ width: "14%", wordBreak: "break-word", overflowWrap: "break-word", whiteSpace: "normal" }}>        
-{lead.assignedOfficers.map((officer, index) => (
- <span key={index} style={{ display: "block", marginBottom: "4px", padding: "8px 0px 0px 8px" }}>{officer}</span>
-))}
-</td> */}
-{activeTab === "allLeads" && (
-  <div className={styles['table-scroll-container']}>
-    <table className={styles['leads-table']}>
-      <thead>
-        <tr>
-          {allColumns.map(col => {
-            const dataKey = allColKey[col];
-            return (
-              <th
-                key={col}
-                className={styles['column-header1']}
-                style={{ width: allColWidths[col], position: 'relative'  }}
-              >
-                <div className={styles['header-title']}>
-                  {col}
-                  <span ref={el => (popupAllRefs.current[dataKey] = el)}>
-                    {/* FILTER button */}
-                    <button
-                      onClick={() =>
-                        setOpenAllFilter(prev =>
-                          prev === dataKey ? null : dataKey
-                        )
-                      }
-                    >
-                      <img
-                        src={`${process.env.PUBLIC_URL}/Materials/fs.png`}
-                        className={styles['icon-image']}
-                      />
-                    </button>
-                    <Filter
-                      dataKey={dataKey}
-                      distinctValues={distinctAll}
-                      open={openAllFilter === dataKey}
-                      anchorRef={{ current: popupAllRefs.current[dataKey] }}
-                      searchValue={allFilterSearch[dataKey] || ''}
-                      selections={tempAllSelections[dataKey] || []}
-                      onSearch={handleAllFilterSearch}
-                      onSort={handleAllSort}
-                      allChecked={allAllChecked}
-                      onToggleAll={toggleAllSelectAll}
-                      onToggleOne={handleAllCheckboxToggle}
-                      onApply={() => {
-                        applyAllFilter(dataKey);
-                        setOpenAllFilter(null);
-                      }}
-                      onCancel={() => setOpenAllFilter(null)}
-                    />
-                  </span>
-                </div>
-              </th>
-            );
-          })}
-          {/* extra column for “View” */}
-          <th style={{ width: '11%', textAlign:"center" }}> Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {paginatedLeads.length > 0 ? (
-          paginatedLeads.map(lead => (
-            <tr key={lead.id}>
-              <td>{lead.id}</td>
-              <td>{lead.description}</td>
-              <td
-                style={{
-                  color: ['Assigned','Accepted','Returned', 'Reopened'].includes(
-                    lead.leadStatus
-                  )
-                    ? 'red'
-                    : ['In Review','Approved','Completed'].includes(
-                        lead.leadStatus
-                      )
-                    ? 'green'
-                    : 'black'
-                }}
-              >
-                {lead.leadStatus === 'In Review'
-                  ? 'Under review'
-                  : lead.leadStatus}
-              </td>
-              <td>{(lead.assignedOfficers || []).join(', ') || <em>None</em>}</td>
-             
-                       <td style={{ width: "9%", textAlign: "center" }}>
-  <button
-    className={styles['view-btn1']}
-    onClick={() => !isDeletedStatus(lead.leadStatus) && handleLeadClick(lead)}
-    disabled={isDeletedStatus(lead.leadStatus)}
-    style={{
-      opacity: isDeletedStatus(lead.leadStatus) ? 0.5 : 1,
-      cursor: isDeletedStatus(lead.leadStatus) ? "not-allowed" : "pointer"
-    }}
-  >
-    Manage
-  </button>
-</td>
-
-            </tr>
-          ))
-        ) : (
-          <tr>
-            <td
-              colSpan={allColumns.length + 1}
-              style={{ textAlign: 'center', padding: "8px" }}
-            >
-              No Leads Available
-            </td>
-          </tr>
-        )}
-      </tbody>
-    </table>
-  </div>
-)}
-
-    <Pagination
-  currentPage={currentPage}
-  totalEntries={totalEntries}
-  onPageChange={setCurrentPage}
-  pageSize={pageSize}
-  onPageSizeChange={setPageSize}
-/>
-
-                    </div>
-                {/* </div> */}
-                </div>
+        <div className={styles['left-content']}>
+          {/* Case title */}
+          <div className={styles['case-header-cp']}>
+            <div className={styles['cp-head']}>
+              <h2>Case: {selectedCase?.caseName ? toTitleCase(selectedCase.caseName) : 'Unknown Case'}</h2>
             </div>
+          </div>
+
+          {/* Collapsible case summary */}
+          <CollapsibleSection
+            title="Case Summary"
+            isOpen={isCaseSummaryOpen}
+            onToggle={() => setIsCaseSummaryOpen(o => !o)}
+          >
+            <div className={styles['case-summary-content']}>
+              {summary?.trim() ? summary : 'No summary available'}
+            </div>
+          </CollapsibleSection>
+
+          {/* Collapsible case team roster */}
+          <CollapsibleSection
+            title="Case Team"
+            isOpen={isCaseTeamOpen}
+            onToggle={() => setIsCaseTeamOpen(o => !o)}
+          >
+            <div className={styles['case-team']}>
+              <table className={styles['leads-table']}>
+                <thead>
+                  <tr>
+                    <th style={{ width: '20%' }}>Role</th>
+                    <th>Name(s)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Detective Supervisor</td>
+                    <td>{formatUser(team.detectiveSupervisor)}</td>
+                  </tr>
+                  <tr>
+                    <td>Case Manager</td>
+                    <td>{(team.caseManagers || []).map(formatUser).join(', ') || '—'}</td>
+                  </tr>
+                  <tr>
+                    <td>Investigator{team.investigators.length > 1 ? 's' : ''}</td>
+                    <td>
+                      {team.investigators.length
+                        ? team.investigators.map(formatUser).join(', ')
+                        : 'None assigned'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </CollapsibleSection>
+
+          {/* Tab bar showing lead counts per category */}
+          <div className={styles['stats-bar']}>
+            {[
+              { tab: 'allLeads',           label: 'My Leads',               count: leads.allLeads.length },
+              { tab: 'assignedLeads',      label: 'Assigned Leads',         count: leads.assignedLeads.length },
+              { tab: 'pendingLeads',       label: 'Accepted Leads',         count: leads.pendingLeads.length },
+              { tab: 'pendingLeadReturns', label: 'Lead Returns In Review', count: leads.pendingLeadReturns.length },
+            ].map(({ tab, label, count }) => (
+              <span
+                key={tab}
+                className={`${styles.hoverable} ${activeTab === tab ? styles.active : ''}`}
+                onClick={() => setActiveTab(tab)}
+              >
+                {label}: {count}
+              </span>
+            ))}
+          </div>
+
+          {/* Table area — renders only the active tab's table */}
+          <div className={styles['content-section']}>
+            {activeTab === 'assignedLeads' && (
+              <LeadsTable
+                columns={ASSIGNED_COLUMNS}
+                colKey={ASSIGNED_COL_KEY}
+                colWidths={ASSIGNED_COL_WIDTHS}
+                rows={paginate(assignedFilter.sortedData)}
+                filter={assignedFilter}
+                renderRow={renderAssignedRow}
+                emptyMessage="No assigned leads available"
+              />
+            )}
+
+            {activeTab === 'pendingLeads' && (
+              <LeadsTable
+                columns={PENDING_COLUMNS}
+                colKey={PENDING_COL_KEY}
+                colWidths={PENDING_COL_WIDTHS}
+                rows={paginate(pendingFilter.sortedData)}
+                filter={pendingFilter}
+                renderRow={renderPendingRow}
+                emptyMessage="No accepted leads available"
+              />
+            )}
+
+            {activeTab === 'pendingLeadReturns' && (
+              <LeadsTable
+                columns={PENDING_LR_COLUMNS}
+                colKey={PENDING_LR_COL_KEY}
+                colWidths={PENDING_LR_COL_WIDTHS}
+                rows={paginate(pendingLRFilter.sortedData)}
+                filter={pendingLRFilter}
+                renderRow={renderPendingLRRow}
+                emptyMessage="No pending lead returns available"
+              />
+            )}
+
+            {activeTab === 'allLeads' && (
+              <LeadsTable
+                columns={ALL_COLUMNS}
+                colKey={ALL_COL_KEY}
+                colWidths={ALL_COL_WIDTHS}
+                rows={paginate(allFilter.sortedData)}
+                filter={allFilter}
+                renderRow={renderAllRow}
+                emptyMessage="No leads available"
+              />
+            )}
+
+            {/* Confirm-accept modal */}
+            <AlertModal
+              isOpen={confirmConfig.isOpen}
+              title="Confirm Acceptance"
+              message={`Are you sure you want to accept Lead #${confirmConfig.lead?.id} – ${confirmConfig.lead?.description}?`}
+              onClose={closeConfirm}
+              onConfirm={handleConfirmAccept}
+            >
+              <div className="alert-footer">
+                <button className="alert-button" onClick={handleConfirmAccept}>Yes</button>
+                <button className="alert-button" onClick={closeConfirm}>No</button>
+              </div>
+            </AlertModal>
+
+            <Pagination
+              currentPage={currentPage}
+              totalEntries={totalEntries}
+              onPageChange={setCurrentPage}
+              pageSize={pageSize}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 };

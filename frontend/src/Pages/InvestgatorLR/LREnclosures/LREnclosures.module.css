@@ -1,5 +1,5 @@
 /* ============================================================
-   LREnclosures – CSS Module (mirrors LRResult styling)
+   LREnclosures – CSS Module
    Primary accent: #29298b (app navy)
    ============================================================ */
 
@@ -198,7 +198,7 @@
   overflow-x: hidden;
 }
 
-/* ===== Content subsection card ===== */
+/* ===== Content subsection wrapper ===== */
 .contentSubsection {
   width: 100%;
   display: flex;
@@ -206,7 +206,7 @@
   gap: 12px;
 }
 
-/* ===== Section block wrapper ===== */
+/* ===== Section block card ===== */
 .sectionBlock {
   width: 100%;
   background: #ffffff;
@@ -215,7 +215,7 @@
   overflow: hidden;
 }
 
-/* ===== Section heading with bottom border ===== */
+/* ===== Section heading ===== */
 .sectionHeading {
   font-size: 20px;
   font-weight: 700;
@@ -233,7 +233,7 @@
   box-sizing: border-box;
 }
 
-/* ===== Enclosure form (vertical layout) ===== */
+/* ===== Enclosure form – vertical stack layout ===== */
 .enclosureForm {
   display: flex;
   flex-direction: column;
@@ -293,14 +293,14 @@
   height: 100px;
 }
 
-/* ===== Current filename display ===== */
+/* ===== Current filename display (edit mode) ===== */
 .currentFilename {
   font-size: 18px;
   color: #555;
   padding: 4px 0;
 }
 
-/* ===== Save button row ===== */
+/* ===== Button row ===== */
 .formButtonsReturn {
   display: flex;
   gap: 10px;
@@ -423,7 +423,7 @@
   display: block;
 }
 
-/* ===== Access dropdown ===== */
+/* ===== Access level dropdown ===== */
 .accessDropdown {
   padding: 6px 10px;
   font-size: 20px;

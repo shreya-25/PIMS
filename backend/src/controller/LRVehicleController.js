@@ -49,9 +49,8 @@ const createLRVehicle = async (req, res) => {
 const getLRVehicleByDetails = async (req, res) => {
     try {
         const { leadNo, leadName, caseNo, caseName } = req.params;
-        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName };
+        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
         const lrVehicles = await LRVehicle.find(query);
-        if (lrVehicles.length === 0) return res.status(404).json({ message: "No vehicle records found." });
         res.status(200).json(lrVehicles);
     } catch (err) {
         console.error("Error fetching LRVehicle records:", err.message);
@@ -62,9 +61,8 @@ const getLRVehicleByDetails = async (req, res) => {
 const getLRVehicleByDetailsandid = async (req, res) => {
     try {
         const { leadNo, leadName, caseNo, caseName, id } = req.params;
-        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId: id };
+        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId: id, isDeleted: { $ne: true } };
         const lrVehicles = await LRVehicle.find(query);
-        if (lrVehicles.length === 0) return res.status(404).json({ message: "No records found." });
         res.status(200).json(lrVehicles);
     } catch (err) {
         console.error("Error fetching LRVehicles records:", err.message);

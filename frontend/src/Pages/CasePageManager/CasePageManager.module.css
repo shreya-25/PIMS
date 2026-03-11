@@ -326,45 +326,38 @@
 /* ─── Action buttons ────────────────────────────────────────────────────── */
 .view-btn1,
 .accept-btn {
-  padding: 8px;
+  padding: 8px 12px;
   border: none;
-  border-radius: 3px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+  color: #fff;
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  font-size: 18px;
-  width: 100px;
+  transition: background-color 0.3s ease;
+  background-color: #1a73e8;
 }
 
-.view-btn1 {
-  background-color: rgb(41, 41, 139);
-  color: #fff;
-}
-
-.view-btn1:hover {
-  background-color: rgb(96, 96, 179);
-}
-
-.accept-btn {
-  background-color: rgba(25, 58, 73, 0.795);
-  color: #fff;
-}
-
+.view-btn1:hover,
 .accept-btn:hover {
-  background-color: rgba(25, 58, 73, 0.459);
+  background-color: #1558b0;
 }
 
 .continue-btn {
-  background-color: rgba(25, 58, 73, 0.795);
-  color: white;
+  padding: 8px 12px;
   border: none;
-  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+  color: #fff;
   cursor: pointer;
-  font-size: 20px;
   transition: background-color 0.3s ease;
+  background-color: #1a73e8;
 }
 
 .continue-btn:hover {
-  background-color: rgba(25, 58, 73, 0.459);
+  background-color: #1558b0;
 }
 
 /* ─── Misc existing styles ──────────────────────────────────────────────── */
@@ -574,20 +567,6 @@
 
 /* ─── Media queries ─────────────────────────────────────────────────────── */
 @media (min-width: 768px) {
-  .case-header h2,
-  .case-header h1 {
-    margin: 4px 0;
-  }
-}
-
-@media (min-width: 1024px) {
-  .case-header h2,
-  .case-header h1 {
-    margin: 4px 0;
-  }
-}
-
-@media (min-width: 1440px) {
   .case-header h2,
   .case-header h1 {
     margin: 4px 0;

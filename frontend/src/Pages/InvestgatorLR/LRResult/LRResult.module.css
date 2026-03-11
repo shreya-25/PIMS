@@ -1,9 +1,10 @@
 /* ============================================================
-   LRResult – Professional CSS Module
+   LRResult.module.css
+   Lead Narrative page styles.
    Primary accent: #29298b (app navy)
    ============================================================ */
 
-/* ===== Page wrapper ===== */
+/* ─── Page wrapper ─────────────────────────────────────────── */
 .personPage {
   height: 100vh;
   overflow: hidden;
@@ -11,7 +12,7 @@
   background-color: #f4f6f9;
 }
 
-/* ===== Main content area ===== */
+/* ─── Main content area (offset for the fixed left sidebar) ── */
 .LRIContent {
   display: flex;
   margin-left: 20%;
@@ -23,7 +24,7 @@
   box-sizing: border-box;
 }
 
-/* ===== Scrollable left column ===== */
+/* ─── Scrollable right column ───────────────────────────────── */
 .leftContentLI {
   position: relative;
   display: flex;
@@ -31,12 +32,12 @@
   align-items: center;
   box-sizing: border-box;
   width: 100%;
-  padding-top: 112px; /* two menu bars: 56px + 56px */
+  padding-top: 112px; /* accounts for two stacked 56px menu bars */
   height: calc(100dvh - 110px);
   overflow: hidden;
 }
 
-/* ===== Fixed menu bar 1 – page-level navigation ===== */
+/* ─── Fixed menu bar 1: page-level navigation ────────────────── */
 .topMenuNav {
   position: fixed;
   top: 110px;
@@ -55,7 +56,7 @@
   overflow-y: hidden;
 }
 
-/* ===== Fixed menu bar 2 – section tabs ===== */
+/* ─── Fixed menu bar 2: section tabs ────────────────────────── */
 .topMenuSections {
   position: fixed;
   top: 166px;
@@ -74,11 +75,16 @@
   overflow-y: hidden;
 }
 
-/* ===== Menu items row ===== */
+/* ─── Menu items row ─────────────────────────────────────────── */
 .menuItems {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Section tabs use a slightly smaller font than the page-nav bar */
+.sectionMenuItems {
+  font-size: 19px;
 }
 
 .menuItem {
@@ -97,6 +103,7 @@
   color: #29298b;
 }
 
+/* Active section tab */
 .menuItemActive {
   color: #29298b !important;
   font-weight: 700;
@@ -104,7 +111,18 @@
   border-radius: 0;
 }
 
-/* ===== Info bar: breadcrumb + status ===== */
+/* Inactive section tabs */
+.menuItemInactive {
+  font-weight: 400;
+}
+
+/* Disabled state for actions in progress (e.g. report generation) */
+.menuItemDisabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* ─── Info bar: breadcrumb + status ──────────────────────────── */
 .caseandleadinfo {
   display: flex;
   justify-content: space-between;
@@ -126,7 +144,7 @@
   margin: 0;
 }
 
-/* ===== Breadcrumb ===== */
+/* ─── Breadcrumb ─────────────────────────────────────────────── */
 .ldHead {
   display: flex;
   align-items: center;
@@ -167,7 +185,7 @@
   margin: 0 2px;
 }
 
-/* ===== Page heading ===== */
+/* ─── Page heading ───────────────────────────────────────────── */
 .caseHeader {
   width: 100%;
   padding: 20px 24px 8px;
@@ -184,7 +202,7 @@
   text-transform: uppercase;
 }
 
-/* ===== Main scrollable content ===== */
+/* ─── Main scrollable content area ──────────────────────────── */
 .lriContentSection {
   display: flex;
   flex-direction: column;
@@ -198,7 +216,7 @@
   overflow-x: hidden;
 }
 
-/* ===== Content subsection card ===== */
+/* ─── Content subsection card ────────────────────────────────── */
 .contentSubsection {
   width: 100%;
   display: flex;
@@ -206,7 +224,7 @@
   gap: 12px;
 }
 
-/* ===== Section block wrapper ===== */
+/* ─── Section block (white card with shadow) ─────────────────── */
 .sectionBlock {
   width: 100%;
   background: #ffffff;
@@ -215,7 +233,7 @@
   overflow: hidden;
 }
 
-/* ===== Section heading with bottom border ===== */
+/* ─── Section heading with bottom divider ────────────────────── */
 .sectionHeading {
   font-size: 20px;
   font-weight: 700;
@@ -225,11 +243,7 @@
   background: #ffffff;
 }
 
-/* ===== Form entry box ===== */
-.timelineFormSec {
-  width: 100%;
-}
-
+/* ─── Narrative entry form ───────────────────────────────────── */
 .LREnteringContentBox {
   width: 100%;
   background: #ffffff;
@@ -237,7 +251,7 @@
   box-sizing: border-box;
 }
 
-/* ===== First-row metadata fields ===== */
+/* Metadata row (ID, date, officer) */
 .contentToAddFirstRow {
   display: flex;
   justify-content: flex-start;
@@ -278,7 +292,7 @@
   min-width: 0;
 }
 
-/* ===== Narrative form ===== */
+/* Narrative textarea label */
 .returnFormH4 {
   font-size: 20px;
   font-weight: 600;
@@ -310,7 +324,7 @@
   border-color: #888;
 }
 
-/* ===== Save button row ===== */
+/* ─── Save / Update button row ───────────────────────────────── */
 .formButtonsReturn {
   display: flex;
   gap: 10px;
@@ -339,7 +353,15 @@
   cursor: not-allowed;
 }
 
-/* ===== Records table ===== */
+/* ─── Inline error message ───────────────────────────────────── */
+.errorMessage {
+  color: #d32f2f;
+  text-align: center;
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+/* ─── Narrative history table ────────────────────────────────── */
 .leadsTable {
   width: 100%;
   border-collapse: collapse;
@@ -378,7 +400,12 @@
   background-color: #f7f8ff;
 }
 
-/* ===== Narrative cell ===== */
+/* Flexible-width narrative column */
+.resultsCol {
+  min-width: 200px;
+}
+
+/* ─── Narrative cell: expand / collapse ──────────────────────── */
 .narrativeCell {
   max-width: 500px;
   position: relative;
@@ -411,7 +438,6 @@
   font-weight: 500;
   padding: 4px 0;
   margin-top: 4px;
-  text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -423,7 +449,7 @@
   text-decoration: underline;
 }
 
-/* ===== Action buttons inside table ===== */
+/* ─── Action icon buttons inside table cells ─────────────────── */
 .lrTableBtn {
   display: flex;
   flex-direction: row;
@@ -462,7 +488,7 @@
   display: block;
 }
 
-/* ===== Access dropdown ===== */
+/* ─── Access level dropdown (case managers only) ─────────────── */
 .accessDropdown {
   padding: 6px 10px;
   font-size: 20px;

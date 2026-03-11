@@ -1,1370 +1,999 @@
+/**
+ * LRAudio – Lead Return Audio section
+ *
+ * Allows investigators and case managers to upload, edit, delete,
+ * and manage access levels for audio files associated with a lead.
+ */
+
+import { useContext, useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+
 import Navbar from '../../../components/Navbar/Navbar';
-import styles from './LRAudio.module.css';
-import Comment from "../../../components/Comment/Comment";
-import axios from "axios";
-import { CaseContext } from "../../CaseContext";
-import React, { useContext, useState, useEffect, useRef, useMemo } from 'react';
-import { useLocation, useNavigate, Link } from "react-router-dom";
-import api, { BASE_URL } from "../../../api";
-import {SideBar } from "../../../components/Sidebar/Sidebar";
-import { AlertModal } from "../../../components/AlertModal/AlertModal";
+import { SideBar } from '../../../components/Sidebar/Sidebar';
+import { AlertModal } from '../../../components/AlertModal/AlertModal';
+import { CaseContext } from '../../CaseContext';
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
+import api from '../../../api';
+import styles from './LRAudio.module.css';
 
-
-export const LRAudio = () => {
-    // useEffect(() => {
-    //     // Apply style when component mounts
-    //     document.body.style.overflow = "hidden";
-    
-    //     return () => {
-    //       // Reset to default when component unmounts
-    //       document.body.style.overflow = "auto";
-    //     };
-    //   }, []);
-  const navigate = useNavigate();
-  
-  const location = useLocation();
-  const [leadData, setLeadData] = useState({});
-  const { selectedCase, selectedLead, setSelectedLead , leadStatus, setLeadStatus} = useContext(CaseContext);
-  const { formKey, listKey } = useMemo(() => {
-  const cn   = selectedCase?.caseNo ?? "NA";
- const cNam = encodeURIComponent(selectedCase?.caseName ?? "NA");
-  const ln   = selectedLead?.leadNo ?? "NA";
-  const lNam = encodeURIComponent(selectedLead?.leadName ?? "NA");
-  return {
-    formKey: `LRAudio:form:${cn}:${cNam}:${ln}:${lNam}`,
-    listKey: `LRAudio:list:${cn}:${cNam}:${ln}:${lNam}`,
-  };
-}, [
-  selectedCase?.caseNo,
-  selectedCase?.caseName,
-  selectedLead?.leadNo,
-  selectedLead?.leadName,
-]);
-  const [file, setFile] = useState(null);
-  const fileInputRef = useRef(null);
-  const [alertOpen, setAlertOpen] = useState(false);
-  const [alertMessage, setAlertMessage] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    if (isNaN(date)) return "";
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const day = date.getDate().toString().padStart(2, "0");
-    const year = date.getFullYear().toString().slice(-2);
-    return `${month}/${day}/${year}`;
-  };
-  const [deleteOpen, setDeleteOpen] = useState(false);
-const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
-
-// Open the modal for a given row
-const requestDeleteAudio = (idx) => {
-  setPendingDeleteIndex(idx);
-  setDeleteOpen(true);
-};
-
-// Cancel from modal
-const cancelDeleteAudio = () => {
-  setDeleteOpen(false);
-  setPendingDeleteIndex(null);
-};
-
-// Actually delete (no window.confirm here)
-const confirmDeleteAudio = async () => {
-  const idx = pendingDeleteIndex;
-  setDeleteOpen(false);
-  setPendingDeleteIndex(null);
-  if (idx == null) return;
-
-  try {
-    const a = audioFiles[idx];
-    await api.delete(`/api/lraudio/${a.id}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-    });
-    setAudioFiles(prev => prev.filter((_, i) => i !== idx));
-  } catch (error) {
-    console.error("Error deleting audio:", error);
-    setAlertMessage("Failed to delete audio: " + (error.response?.data?.message || error.message));
-    setAlertOpen(true);
-  }
-};
-
-// basic URL check
-const isHttpUrl = (s) => /^https?:\/\/\S+$/i.test((s || "").trim());
-
-function getMissingAudioFields({ audioData, file, isEditing }) {
-  const missing = [];
-
-  // hard-required
-  if (!audioData.leadReturnId?.trim())     missing.push("Narrative Id");
-  if (!audioData.dateAudioRecorded?.trim()) missing.push("Date Audio Recorded");
-  if (!audioData.description?.trim())      missing.push("Description");
-
-  // upload-mode rules
-  if (audioData.isLink) {
-    if (!isHttpUrl(audioData.link)) missing.push("Link (valid URL)");
-  } else {
-    // file mode: require file on create; optional on edit
-    if (!isEditing && !file) missing.push("Audio File");
-  }
-
-  return missing;
-}
-
-    
-  const { leadDetails, caseDetails } = location.state || {};
-  const [editingId, setEditingId] = useState(null);
-  const isEditing   = editingId !== null;
-// const formState   = isEditing ? editData : audioData;
-// const onField     = isEditing ? handleEditInput : handleInputChange;
-// const onFileField = isEditing ? handleEditFileChange : handleFileChange;
-// const onSubmit    = isEditing ? handleUpdateAudio : handleAddAudio;
-
-      // const [editData, setEditData] = useState({
-      //   dateAudioRecorded: "",
-      //   description: "",
-      //   leadReturnId: "",
-      //   file: null,
-      // });
-
- // Narrative Ids from API
-const [narrativeIds, setNarrativeIds] = useState([]);
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
 
 const DEFAULT_AUDIO = {
-  dateAudioRecorded: "",
-  description: "",
-  audioSrc: "",
-  leadReturnId: "",
+  dateAudioRecorded: '',
+  description: '',
+  audioSrc: '',
+  leadReturnId: '',
   isLink: false,
-  link: "",
-  filename: "",
-  accessLevel: "Everyone",   // ✅ default that matches your schema enum
+  link: '',
+  filename: '',
+  accessLevel: 'Everyone',
 };
 
-const [audioData, setAudioData] = useState(DEFAULT_AUDIO);
-const [audioFiles, setAudioFiles] = useState([]);
+/** Section tabs shown in the secondary navigation bar. */
+const SECTION_TABS = [
+  { label: 'Instructions', route: '/LRInstruction' },
+  { label: 'Narrative',    route: '/LRReturn' },
+  { label: 'Person',       route: '/LRPerson' },
+  { label: 'Vehicles',     route: '/LRVehicle' },
+  { label: 'Enclosures',   route: '/LREnclosures' },
+  { label: 'Evidence',     route: '/LREvidence' },
+  { label: 'Pictures',     route: '/LRPictures' },
+  { label: 'Audio',        route: '/LRAudio', active: true },
+  { label: 'Videos',       route: '/LRVideo' },
+  { label: 'Notes',        route: '/LRScratchpad' },
+  { label: 'Timeline',     route: '/LRTimeline' },
+];
 
-useEffect(() => {
-  const savedForm = sessionStorage.getItem(formKey);
-  setAudioData(savedForm ? { ...DEFAULT_AUDIO, ...JSON.parse(savedForm) } : DEFAULT_AUDIO);
+// ---------------------------------------------------------------------------
+// Pure utility functions
+// ---------------------------------------------------------------------------
 
-  const savedList = sessionStorage.getItem(listKey);
-  setAudioFiles(savedList ? JSON.parse(savedList) : []);
+/** Format an ISO date string to MM/DD/YY for display. */
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date)) return '';
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day   = String(date.getDate()).padStart(2, '0');
+  const year  = date.getFullYear().toString().slice(-2);
+  return `${month}/${day}/${year}`;
+};
 
-  // reset edit/file when switching context
-  setEditingId(null);
-  setFile(null);
-  if (fileInputRef.current) fileInputRef.current.value = "";
-}, [formKey, listKey]);
+/** Normalise a narrative ID to an uppercase trimmed string. */
+const normalizeId = (id) => String(id ?? '').trim().toUpperCase();
 
-
-const normalizeId = (id) => String(id ?? "").trim().toUpperCase();
-const alphabetToNumber = (str = "") => {
-  str = normalizeId(str);
+/** Convert an alphabetic string (A–Z, AA–AZ…) to a numeric sort key. */
+const alphabetToNumber = (str = '') => {
+  const s = normalizeId(str);
   let n = 0;
-  for (let i = 0; i < str.length; i++) n = n * 26 + (str.charCodeAt(i) - 64);
+  for (let i = 0; i < s.length; i++) n = n * 26 + (s.charCodeAt(i) - 64);
   return n;
 };
 
-useEffect(() => {
-  if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+/** Basic HTTPS URL validation. */
+const isHttpUrl = (s) => /^https?:\/\/\S+$/i.test((s || '').trim());
 
-  const ac = new AbortController();
+/**
+ * Returns an array of missing required field names for the audio form.
+ * Used to gate submission and display a single consolidated error message.
+ */
+const getMissingAudioFields = ({ audioData, file, isEditing }) => {
+  const missing = [];
 
-  (async () => {
-    try {
-      const token   = localStorage.getItem("token");
-      const leadNo  = selectedLead.leadNo;
-      const caseNo  = selectedCase.caseNo;
-      const encLead = encodeURIComponent(selectedLead.leadName);
-      const encCase = encodeURIComponent(selectedCase.caseName);
+  if (!audioData.leadReturnId?.trim())      missing.push('Narrative Id');
+  if (!audioData.dateAudioRecorded?.trim()) missing.push('Date Audio Recorded');
+  if (!audioData.description?.trim())       missing.push('Description');
 
-      // Get all narrative rows for this lead/case
-      const resp = await api.get(
-        `/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`,
-        { headers: { Authorization: `Bearer ${token}` }, signal: ac.signal }
-      );
+  if (audioData.isLink) {
+    if (!isHttpUrl(audioData.link)) missing.push('Link (valid URL)');
+  } else if (!isEditing && !file) {
+    // File is required when creating; optional when editing (keeps existing file)
+    missing.push('Audio File');
+  }
 
-      // Unique, cleaned ids (skip blanks)
-      const ids = [...new Set((resp?.data || [])
-        .map(r => normalizeId(r?.leadReturnId))
-        .filter(Boolean))];
+  return missing;
+};
 
-      // Sort in a predictable way (A..Z..AA..AB..)
-      ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
-
-      setNarrativeIds(ids);
-
-      // If ADDING a new audio (not editing) and no id chosen yet → preselect latest
-      setAudioData(prev =>
-        (!isEditing && !prev.leadReturnId)
-          ? { ...prev, leadReturnId: ids.at(-1) || "" }
-          : prev
-      );
-    } catch (err) {
-      if (!ac.signal.aborted) console.error("Failed to fetch Narrative Ids:", err);
-    }
-  })();
-
-  return () => ac.abort();
-}, [
-  selectedLead?.leadNo,
-  selectedLead?.leadName,
-  selectedCase?.caseNo,
-  selectedCase?.caseName,
-  isEditing
-]);
-
-
-  // State to manage form data
-//  const [audioData, setAudioData] = useState(() => {
-//    const saved = sessionStorage.getItem(FORM_KEY);
-//    return saved
-//      ? JSON.parse(saved)
-//      : {
-//          dateAudioRecorded: "",
-//          description: "",
-//          audioSrc: "",
-//          leadReturnId: "",
-//          isLink: false,
-//          link: "",
-//          accessLevel: "Everyone"
-//        };
-//  });
-
-  const handleInputChange = (field, value) => {
-    setAudioData({ ...audioData, [field]: value });
-  };
-
-  // Persist draft form whenever it changes
-useEffect(() => {
-    sessionStorage.setItem(formKey, JSON.stringify(audioData));
-}, [formKey, audioData]);
-
-// Persist list whenever it changes
-useEffect(() => {
- sessionStorage.setItem(listKey, JSON.stringify(audioFiles));
-}, [listKey, audioFiles]);
-
-
-  const handleFileChange = (event) => {
-    const selectedFile = event.target.files[0];
-    if (selectedFile) {
-      const audioUrl = URL.createObjectURL(selectedFile);
-      setFile(selectedFile); // ✅ This was missing
-      setAudioData({ ...audioData, audioSrc: audioUrl, filename: selectedFile.name });
-    }
-  };
-
-    useEffect(() => {
-    const fetchLeadData = async () => {
-      if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
-      const token = localStorage.getItem("token");
-
-      try {
-        const response = await api.get(
-          `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
-
-        if (response.data.length > 0) {
-          setLeadData({
-            ...response.data[0],
-            assignedTo: response.data[0].assignedTo || [],
-            leadStatus: response.data[0].leadStatus || ''
-          });
-        }
-      } catch (error) {
-        console.error("Failed to fetch lead data:", error);
-      }
-    };
-
-    fetchLeadData();
-  }, [selectedLead, selectedCase]);
-
-   const attachFiles = async (items, idFieldName, filesEndpoint) => {
+/**
+ * For each item, fetch associated files from `{filesEndpoint}/{item[idFieldName]}`
+ * and attach them as `item.files`. Fails gracefully with an empty array.
+ */
+const attachFiles = async (items, idFieldName, filesEndpoint) => {
   return Promise.all(
     (items || []).map(async (item) => {
-      const realId = item[idFieldName];
-      if (!realId) return { ...item, files: [] };
+      const recordId = item[idFieldName];
+      if (!recordId) return { ...item, files: [] };
       try {
-        const { data: filesArray } = await api.get(
-          `${filesEndpoint}/${realId}`,
-          { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-        );
-        return { ...item, files: filesArray };
-      } catch (err) {
-        console.error(`Error fetching files for ${filesEndpoint}/${realId}:`, err);
+        const { data } = await api.get(`${filesEndpoint}/${recordId}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+        return { ...item, files: data };
+      } catch {
         return { ...item, files: [] };
       }
-    })
+    }),
   );
 };
 
+// ---------------------------------------------------------------------------
+// Sub-component: AudioTableRow
+// ---------------------------------------------------------------------------
 
-    const [isGenerating, setIsGenerating] = useState(false);
-    const handleViewLeadReturn = async () => {
-  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+/**
+ * A single row in the audio records table.
+ * Extracted to keep the parent render function concise.
+ */
+const AudioTableRow = ({ audio, index, isCaseManager, isReadOnly, leadStatus, onEdit, onDelete, onAccessChange }) => {
+  const isLocked = leadStatus === 'In Review' || leadStatus === 'Completed' || isReadOnly;
 
-  if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
-    setAlertMessage("Please select a case and lead first.");
-    setAlertOpen(true);
-    return;
-  }
+  return (
+    <tr>
+      <td>{audio.dateEntered}</td>
+      <td>{audio.returnId}</td>
 
-  if (isGenerating) return;
+      {/* File name column: renders a link for files/URLs, or a placeholder */}
+      <td>
+        {audio.isLink ? (
+          <a href={audio.link} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
+            {audio.link}
+          </a>
+        ) : audio.signedUrl ? (
+          <a href={audio.signedUrl} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
+            {audio.originalName || 'Download'}
+          </a>
+        ) : (
+          <span className={styles.noFile}>No File Available</span>
+        )}
+      </td>
 
-  try {
-    setIsGenerating(true);
+      <td>{audio.description}</td>
 
-    const token = localStorage.getItem("token");
-    const headers = { headers: { Authorization: `Bearer ${token}` } };
+      {/* Action buttons: edit and delete */}
+      <td>
+        <div className={styles.lrTableBtn}>
+          <button disabled={isLocked} onClick={() => onEdit(index)} aria-label="Edit audio">
+            <img
+              src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
+              alt="Edit"
+              className={styles.editIcon}
+            />
+          </button>
+          <button disabled={isLocked} onClick={() => onDelete(index)} aria-label="Delete audio">
+            <img
+              src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
+              alt="Delete"
+              className={styles.editIcon}
+            />
+          </button>
+        </div>
+      </td>
 
-    const { leadNo } = lead;
-    const leadName = lead.leadName || lead.description;
-    const { caseNo, caseName } = kase;
-    const encLead = encodeURIComponent(leadName);
-    const encCase = encodeURIComponent(caseName);
+      {/* Access level dropdown: visible to case managers only */}
+      {isCaseManager && (
+        <td>
+          <select
+            className={styles.accessDropdown}
+            value={audio.accessLevel}
+            onChange={(e) => onAccessChange(index, e.target.value)}
+          >
+            <option value="Everyone">All</option>
+            <option value="Case Manager Only">Case Manager</option>
+            <option value="Case Manager and Assignees">Assignees</option>
+          </select>
+        </td>
+      )}
+    </tr>
+  );
+};
 
-    // fetch everything we need for the report (same endpoints you use on LRFinish)
-    const [
-      instrRes,
-      returnsRes,
-      personsRes,
-      vehiclesRes,
-      enclosuresRes,
-      evidenceRes,
-      picturesRes,
-      audioRes,
-      videosRes,
-      scratchpadRes,
-      timelineRes,
-    ] = await Promise.all([
-      api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-    ]);
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 
-    // add files where applicable (note the plural file endpoints)
-    const enclosuresWithFiles = await attachFiles(enclosuresRes.data, "_id", "/api/lrenclosures/files");
-    const evidenceWithFiles   = await attachFiles(evidenceRes.data,   "_id", "/api/lrevidences/files");
-    const picturesWithFiles   = await attachFiles(picturesRes.data,   "pictureId", "/api/lrpictures/files");
-    const audioWithFiles      = await attachFiles(audioRes.data,      "audioId",   "/api/lraudio/files");
-    const videosWithFiles     = await attachFiles(videosRes.data,     "videoId",   "/api/lrvideo/files");
+export const LRAudio = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-    const leadInstructions = instrRes.data?.[0] || {};
-    const leadReturns      = returnsRes.data || [];
-    const leadPersons      = personsRes.data || [];
-    const leadVehicles     = vehiclesRes.data || [];
-    const leadScratchpad   = scratchpadRes.data || [];
-    const leadTimeline     = timelineRes.data || [];
+  // ── Context ──────────────────────────────────────────────────────────────
+  const { selectedCase, selectedLead } = useContext(CaseContext);
 
-    // make all sections true (Full Report)
-    const selectedReports = {
-      FullReport: true,
-      leadInstruction: true,
-      leadReturn: true,
-      leadPersons: true,
-      leadVehicles: true,
-      leadEnclosures: true,
-      leadEvidence: true,
-      leadPictures: true,
-      leadAudio: true,
-      leadVideos: true,
-      leadScratchpad: true,
-      leadTimeline: true,
+  // ── Session-storage cache keys (memoised by case/lead identifiers) ────────
+  const { formKey, listKey } = useMemo(() => {
+    const cn   = selectedCase?.caseNo  ?? 'NA';
+    const cNam = encodeURIComponent(selectedCase?.caseName ?? 'NA');
+    const ln   = selectedLead?.leadNo  ?? 'NA';
+    const lNam = encodeURIComponent(selectedLead?.leadName ?? 'NA');
+    return {
+      formKey: `LRAudio:form:${cn}:${cNam}:${ln}:${lNam}`,
+      listKey: `LRAudio:list:${cn}:${cNam}:${ln}:${lNam}`,
     };
+  }, [selectedCase?.caseNo, selectedCase?.caseName, selectedLead?.leadNo, selectedLead?.leadName]);
 
-    const body = {
-      user: localStorage.getItem("loggedInUser") || "",
-      reportTimestamp: new Date().toISOString(),
-
-      // sections (values are the fetched arrays/objects)
-      leadInstruction: leadInstructions,
-      leadReturn:      leadReturns,
-      leadPersons,
-      leadVehicles,
-      leadEnclosures:  enclosuresWithFiles,
-      leadEvidence:    evidenceWithFiles,
-      leadPictures:    picturesWithFiles,
-      leadAudio:       audioWithFiles,
-      leadVideos:      videosWithFiles,
-      leadScratchpad,
-      leadTimeline,
-
-      // also send these two, since your backend expects them
-      selectedReports,
-      leadInstructions,
-      leadReturns,
-    };
-
-    const resp = await api.post("/api/report/generate", body, {
-      responseType: "blob",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    const file = new Blob([resp.data], { type: "application/pdf" });
-
-    navigate("/DocumentReview", {
-      state: {
-        pdfBlob: file,
-        filename: `Lead_${leadNo || "report"}.pdf`,
-      },
-    });
-  } catch (err) {
-    if (err?.response?.data instanceof Blob) {
-      const text = await err.response.data.text();
-      console.error("Report error:", text);
-      setAlertMessage("Error generating PDF:\n" + text);
-    } else {
-      console.error("Report error:", err);
-      setAlertMessage("Error generating PDF:\n" + (err.message || "Unknown error"));
-    }
-    setAlertOpen(true);
-  } finally {
-    setIsGenerating(false);
-  }
-};
-
-  const signedInOfficer = localStorage.getItem("loggedInUser");
- // who is primary for this lead?
-const primaryUsername =
-  leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
-
-// am I the primary investigator on this lead?
-const isPrimaryInvestigator =
-  selectedCase?.role === "Investigator" &&
-  !!signedInOfficer &&
-  signedInOfficer === primaryUsername;
-
-// primary goes to the interactive ViewLR page
-const goToViewLR = () => {
-  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-  if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-    setAlertMessage("Please select a case and lead first.");
-    setAlertOpen(true);
-    return;
-  }
-
-  navigate("/viewLR", {
-    state: { caseDetails: kase, leadDetails: lead }
+  // ── Lead read-only status ─────────────────────────────────────────────────
+  const { status: leadStatusLabel, isReadOnly } = useLeadStatus({
+    caseNo:   selectedCase?.caseNo,
+    caseName: selectedCase?.caseName,
+    leadNo:   selectedLead?.leadNo,
+    leadName: selectedLead?.leadName,
   });
-};
-  
-  
-  
 
-  const handleAddAudio = async () => {
-  if (isSubmitting) return; // Prevent multiple submissions
+  // ── Role helpers ──────────────────────────────────────────────────────────
+  const isCaseManager   = ['Case Manager', 'Detective Supervisor'].includes(selectedCase?.role);
+  const signedInOfficer = localStorage.getItem('loggedInUser');
 
-  const missing = getMissingAudioFields({ audioData, file, isEditing: false });
-  if (missing.length) {
-    setAlertMessage(
-      `Please fill the required field${missing.length > 1 ? "s" : ""}: ${missing.join(", ")}.`
-    );
+  // ── Local state ───────────────────────────────────────────────────────────
+  const [leadData, setLeadData]         = useState({});
+  const [audioData, setAudioData]       = useState(DEFAULT_AUDIO);
+  const [audioFiles, setAudioFiles]     = useState([]);
+  const [narrativeIds, setNarrativeIds] = useState([]);
+  const [file, setFile]                 = useState(null);
+  const fileInputRef                    = useRef(null);
+
+  const [editingId, setEditingId]       = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Alert modal
+  const [alertOpen, setAlertOpen]       = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+
+  // Delete-confirm modal
+  const [deleteOpen, setDeleteOpen]               = useState(false);
+  const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
+
+  const isEditing = editingId !== null;
+
+  // Derived: is the current user the primary investigator on this lead?
+  const primaryUsername = leadData?.primaryInvestigator || leadData?.primaryOfficer || '';
+  const isPrimaryInvestigator =
+    selectedCase?.role === 'Investigator' && !!signedInOfficer && signedInOfficer === primaryUsername;
+
+  // Derived: is the lead locked against edits?
+  const isLeadLocked =
+    selectedLead?.leadStatus === 'In Review' || selectedLead?.leadStatus === 'Completed';
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  /** Display a message in the alert modal. */
+  const showAlert = useCallback((message) => {
+    setAlertMessage(message);
     setAlertOpen(true);
-    return;
-  }
+  }, []);
 
-  setIsSubmitting(true);
-  // 2️⃣ Build FormData
-  const formData = new FormData();
-    if (!audioData.isLink && file) {
-   formData.append("file", file);
-  }
-  formData.append("leadNo", selectedLead.leadNo);
-  formData.append("description", selectedLead.leadName);
-  formData.append("enteredBy", localStorage.getItem("loggedInUser"));
-  formData.append("caseName", selectedCase.caseName);
-  formData.append("caseNo", selectedCase.caseNo);
-  formData.append("leadReturnId", audioData.leadReturnId);
-  formData.append("enteredDate", new Date().toISOString());
-  formData.append("dateAudioRecorded", audioData.dateAudioRecorded);
-  formData.append("audioDescription", audioData.description);
-  formData.append("accessLevel", "Everyone");
-
-  // 3️⃣ Link fields
-  formData.append("isLink", audioData.isLink);
-  if (audioData.isLink) {
-    formData.append("link", audioData.link.trim());
-  }
-
-  try {
-    const token = localStorage.getItem("token");
-    const response = await api.post("/api/lraudio/upload", formData, {
-  headers: { Authorization: `Bearer ${token}` },
-  transformRequest: [(data, headers) => {
-    delete headers["Content-Type"];
-    return data;
-  }],
-});
-
-    // 4️⃣ On success, append to your state and/or re-fetch
-    await fetchAudioFiles();
-
-    // 5️⃣ Reset form state
-    setAudioData({
-      dateAudioRecorded: "",
-      description: "",
-      leadReturnId: "",
-      isLink: false,
-      link: "",
-      audioSrc: "",
-      filename: ""
-    });
-    setFile(null);
-    
-    // after resetting audioData and file...
-    sessionStorage.removeItem(formKey);
-
-    setAlertMessage("Audio added successfully!");
-    setAlertOpen(true);
-  } catch (error) {
-    console.error("Error uploading audio:", error);
-    setAlertMessage("Failed to upload audio: " + (error.response?.data?.message || error.message));
-    setAlertOpen(true);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
-
-  const handleNavigation = (route) => {
-    navigate(route);
-  };
-    const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
-                  const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
-                
-                  const onShowCaseSelector = (route) => {
-                    navigate(route, { state: { caseDetails } });
-                };
-
-                const fetchAudioFiles = async () => {
-  const token = localStorage.getItem("token");
-  const leadNo = selectedLead.leadNo;
-  const leadName = encodeURIComponent(selectedLead.leadName);
-  const caseNo = selectedCase.caseNo;
-  const caseName = encodeURIComponent(selectedCase.caseName);
-
-  try {
-    const res = await api.get(`/api/lraudio/${leadNo}/${leadName}/${caseNo}/${caseName}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    const mappedAudios = res.data.map(a => ({
-      dateEntered: formatDate(a.enteredDate),
-      returnId: a.leadReturnId,
-      dateAudioRecorded: formatDate(a.dateAudioRecorded),
-      rawDateAudioRecorded: a.dateAudioRecorded,
-      description: a.audioDescription,
-      id: a._id,
-      originalName: a.originalName || "",
-       accessLevel: a.accessLevel || "Everyone" ,
-       filename: a.filename || "", 
-
-      // If server returns a 'link' field, use that. Otherwise build file URL:
-      isLink: a.isLink,
-      link: a.link || "",
-      signedUrl: a.signedUrl || "",
-      audioSrc: a.isLink ? a.link : (a.signedUrl || ""),
-    }));
-
-    // Default access:
-    const withAccess = mappedAudios.map(r => ({
-      ...r,
-      accessLevel: r.accessLevel ?? "Everyone"
-    }));
-
-    // Filter based on role and access level
-    let visible = withAccess;
-    if (!isCaseManager) {
-      const currentUser = localStorage.getItem("loggedInUser")?.trim();
-      const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
-
-      visible = withAccess.filter(audio => {
-        if (audio.accessLevel === "Everyone") return true;
-        if (audio.accessLevel === "Case Manager and Assignees") {
-          const isAssignedToLead = leadAssignees.some(a => a === currentUser);
-          return isAssignedToLead;
-        }
-        return false; // "Case Manager Only"
-      });
-    }
-
-    setAudioFiles(visible);
-  } catch (error) {
-    console.error("Error fetching audios:", error);
-  }
-};
-
-
-                useEffect(() => {
-                  if (
-                    selectedLead?.leadNo &&
-                    selectedLead?.leadName &&
-                    selectedCase?.caseNo &&
-                    selectedCase?.caseName
-                  ) {
-                    fetchAudioFiles();
-                  }
-                }, [selectedLead, selectedCase]);
-                  const isCaseManager = 
-    selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
-                
-    const handleAccessChange = async (idx, newAccessLevel) => {
-  const audio = audioFiles[idx];
-  const token = localStorage.getItem("token");
-
-  try {
-    // Send as FormData since backend expects multipart due to upload.single("file") middleware
-    const fd = new FormData();
-    fd.append("accessLevel", newAccessLevel);
-
-    await api.put(`/api/lraudio/${audio.id}`,
-      fd,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-        transformRequest: [(data, headers) => {
-          delete headers["Content-Type"]; // Let browser set correct boundary
-          return data;
-        }]
-      }
-    );
-
-    // Update local state
-    setAudioFiles(rs => {
-      const copy = [...rs];
-      copy[idx] = { ...copy[idx], accessLevel: newAccessLevel };
-      return copy;
-    });
-  } catch (err) {
-    console.error("Failed to update accessLevel", err);
-    setAlertMessage("Could not change access level. Please try again.");
-    setAlertOpen(true);
-  }
-};
-
-
-
-                const handleDeleteAudio = async idx => {
-                   if (!window.confirm("Delete this audio?")) return;
-                     const a = audioFiles[idx];
-                    const leadNo   = selectedLead.leadNo;
-                     const leadName = encodeURIComponent(selectedLead.leadName);
-                      const caseNo   = selectedCase.caseNo;
-                      const caseName = encodeURIComponent(selectedCase.caseName);
-                      await api.delete(
-                        `/api/lraudio/${a.id}`,
-                        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-                      );
-             
-                  setAudioFiles(prev => prev.filter((_, i) => i !== idx));
-                  };
-
-
-  // const handleEditInput = (field, value) => {
-  //   setEditData(prev => ({ ...prev, [field]: value }));
-  // };
-
-  // const handleEditFileChange = (e) => {
-  //   const f = e.target.files[0];
-  //   if (f) setEditData(prev => ({ ...prev, file: f }));
-  // };
-
-// Populate form from an existing row
-const handleEditAudio = idx => {
-  const a = audioFiles[idx];
-  setEditingId(idx);
-    if (fileInputRef.current) {
-    fileInputRef.current.value = "";
-  }
-  setFile(null);
-
-  setAudioData({
-    dateAudioRecorded: new Date(a.rawDateAudioRecorded).toISOString().slice(0,10),
-    leadReturnId: a.returnId,
-    description: a.description,
-    // NEW: populate isLink & link
-    isLink: a.isLink,
-    link: a.isLink ? a.link : "",
-    // existing file data
-    audioSrc: a.isLink ? "" : a.audioSrc,
-    filename: a.isLink ? "" : a.originalName
-  });
-};
-
-// const handleUpdateAudio = async () => {
-//   const idx = editingId;
-//   const a   = audioFiles[idx];
-//   const fd  = new FormData();
-
-//   fd.append("leadReturnId", audioData.leadReturnId);
-//   fd.append("dateAudioRecorded", audioData.dateAudioRecorded);
-//   fd.append("audioDescription", audioData.description);
-//     fd.append("accessLevel", audioData.accessLevel);
-
-
-  
-//   fd.append("isLink", audioData.isLink);
-//   if (audioData.isLink) {
-//     fd.append("link", audioData.link.trim());
-//   } else if (file) {
-//     fd.append("file", file);
-//   }
-
-//   try {
-//     const token = localStorage.getItem("token");
-//     await api.put(`/api/lraudio/${a.id}`, fd, {
-//       headers: {
-//         Authorization: `Bearer ${token}`
-//       }
-//     });
-
-//     await fetchAudioFiles();
-//     setEditingId(null);
-//     setAudioData({
-//       dateAudioRecorded: "",
-//       leadReturnId: "",
-//       description: "",
-//       isLink: false,
-//       link: "",
-//       audioSrc: "",
-//       filename: ""
-//     });
-//     setFile(null);
-//   } catch (error) {
-//     console.error("Error updating audio:", error);
-//     alert("Failed to update audio.");
-//   }
-// };
-
-const handleUpdateAudio = async () => {
-  if (isSubmitting) return; // Prevent multiple submissions
-
-  const idx = editingId;
-  const a   = audioFiles[idx];
-  const fd  = new FormData();
-
-  setIsSubmitting(true);
-
-  // 1️⃣ Always send these fields:
-  fd.append("leadReturnId", audioData.leadReturnId);
-  fd.append("dateAudioRecorded", audioData.dateAudioRecorded);
-  fd.append("audioDescription", audioData.description);
-  fd.append("accessLevel", "Everyone");
-
-  // 2️⃣ Indicate link-mode or file-mode
-  fd.append("isLink", audioData.isLink);
-  if (audioData.isLink) {
-    fd.append("link", audioData.link.trim());
-  } else if (file) {
-    // only append a new file if the user chose a replacement
-    fd.append("file", file);
-  }
-
-  try {
-    const token = localStorage.getItem("token");
-    await api.put(
-      `/api/lraudio/${a.id}`,
-      fd,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-          // ⇢ No Content-Type here!
-        },
-        transformRequest: [(data, headers) => {
-          // ← UPDATED: remove any default Content-Type so the browser sets
-          //     multipart/form-data; boundary=… automatically
-          delete headers["Content-Type"];
-          return data;
-        }]
-      }
-    );
-
-    // 3️⃣ Re-fetch the list from the server
-    await fetchAudioFiles();
-
-    // 4️⃣ Clear editing state
-    setEditingId(null);
+  /** Reset form fields, file selection, and editing state. */
+  const resetForm = useCallback(() => {
     setAudioData(DEFAULT_AUDIO);
     setFile(null);
+    setEditingId(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, []);
 
-    if (fileInputRef.current) fileInputRef.current.value = ""; // clear filename display
+  // ── Session-storage: restore cached data on context switch ────────────────
+  useEffect(() => {
+    const savedForm = sessionStorage.getItem(formKey);
+    setAudioData(savedForm ? { ...DEFAULT_AUDIO, ...JSON.parse(savedForm) } : DEFAULT_AUDIO);
 
-    // 5️⃣ Clear the file <input>
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+    const savedList = sessionStorage.getItem(listKey);
+    setAudioFiles(savedList ? JSON.parse(savedList) : []);
+
+    // Reset transient editing state when the lead/case context changes
+    setEditingId(null);
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [formKey, listKey]);
+
+  /** Persist form draft to sessionStorage on every change. */
+  useEffect(() => {
+    sessionStorage.setItem(formKey, JSON.stringify(audioData));
+  }, [formKey, audioData]);
+
+  /** Persist audio list to sessionStorage on every change. */
+  useEffect(() => {
+    sessionStorage.setItem(listKey, JSON.stringify(audioFiles));
+  }, [listKey, audioFiles]);
+
+  // ── API: fetch lead metadata (assignees, primary investigator) ────────────
+  useEffect(() => {
+    if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+
+    const encLead = encodeURIComponent(selectedLead.leadName);
+    const encCase = encodeURIComponent(selectedCase.caseName);
+
+    api
+      .get(`/api/lead/lead/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      })
+      .then(({ data }) => {
+        if (data.length > 0) {
+          setLeadData({
+            ...data[0],
+            assignedTo: data[0].assignedTo || [],
+            leadStatus: data[0].leadStatus || '',
+          });
+        }
+      })
+      .catch((err) => console.error('Failed to fetch lead data:', err));
+  }, [selectedLead, selectedCase]);
+
+  // ── API: fetch narrative IDs for the form select dropdown ─────────────────
+  useEffect(() => {
+    if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+
+    const ac      = new AbortController();
+    const encLead = encodeURIComponent(selectedLead.leadName);
+    const encCase = encodeURIComponent(selectedCase.caseName);
+
+    (async () => {
+      try {
+        const { data } = await api.get(
+          `/api/leadReturnResult/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
+          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }, signal: ac.signal },
+        );
+
+        // Deduplicate, normalise, and sort IDs in alphabetical-numeric order (A, B…Z, AA, AB…)
+        const ids = [...new Set((data || []).map((r) => normalizeId(r?.leadReturnId)).filter(Boolean))];
+        ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
+        setNarrativeIds(ids);
+
+        // Pre-select the latest narrative ID when creating a new record
+        setAudioData((prev) =>
+          !isEditing && !prev.leadReturnId ? { ...prev, leadReturnId: ids.at(-1) || '' } : prev,
+        );
+      } catch (err) {
+        if (!ac.signal.aborted) console.error('Failed to fetch Narrative Ids:', err);
+      }
+    })();
+
+    return () => ac.abort();
+  }, [selectedLead?.leadNo, selectedLead?.leadName, selectedCase?.caseNo, selectedCase?.caseName, isEditing]);
+
+  // ── API: fetch audio records from the server ──────────────────────────────
+  const fetchAudioFiles = useCallback(async () => {
+    const encLead = encodeURIComponent(selectedLead.leadName);
+    const encCase = encodeURIComponent(selectedCase.caseName);
+
+    try {
+      const { data } = await api.get(
+        `/api/lraudio/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } },
+      );
+
+      const mapped = data.map((a) => ({
+        dateEntered:          formatDate(a.enteredDate),
+        returnId:             a.leadReturnId,
+        dateAudioRecorded:    formatDate(a.dateAudioRecorded),
+        rawDateAudioRecorded: a.dateAudioRecorded,
+        description:          a.audioDescription,
+        id:                   a._id,
+        originalName:         a.originalName || '',
+        filename:             a.filename || '',
+        accessLevel:          a.accessLevel ?? 'Everyone',
+        isLink:               a.isLink,
+        link:                 a.link || '',
+        signedUrl:            a.signedUrl || '',
+        audioSrc:             a.isLink ? a.link : (a.signedUrl || ''),
+      }));
+
+      // Non-managers only see records they have access to
+      let visible = mapped;
+      if (!isCaseManager) {
+        const currentUser   = signedInOfficer?.trim();
+        const leadAssignees = (leadData?.assignedTo || []).map((a) => a?.trim());
+
+        visible = mapped.filter((audio) => {
+          if (audio.accessLevel === 'Everyone') return true;
+          if (audio.accessLevel === 'Case Manager and Assignees') return leadAssignees.includes(currentUser);
+          return false; // 'Case Manager Only'
+        });
+      }
+
+      setAudioFiles(visible);
+    } catch (err) {
+      console.error('Error fetching audios:', err);
     }
-    // after resetting audioData and file...
-sessionStorage.removeItem(formKey);
+  }, [selectedLead, selectedCase, isCaseManager, signedInOfficer, leadData?.assignedTo]);
 
-    setAlertMessage("Audio updated successfully!");
-    setAlertOpen(true);
-  } catch (error) {
-    console.error("Error updating audio:", error);
-    setAlertMessage("Failed to update audio: " + (error.response?.data?.message || error.message));
-    setAlertOpen(true);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  useEffect(() => {
+    if (selectedLead?.leadNo && selectedLead?.leadName && selectedCase?.caseNo && selectedCase?.caseName) {
+      fetchAudioFiles();
+    }
+  }, [selectedLead, selectedCase, fetchAudioFiles]);
 
-    const { status, isReadOnly } = useLeadStatus({
-    caseNo: selectedCase.caseNo,
-    caseName: selectedCase.caseName,
-    leadNo: selectedLead.leadNo,
-    leadName: selectedLead.leadName,
-  });
+  // ── Form field handlers ───────────────────────────────────────────────────
 
-                      
+  const handleInputChange = useCallback((field, value) => {
+    setAudioData((prev) => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleFileChange = useCallback((e) => {
+    const selected = e.target.files[0];
+    if (selected) {
+      setFile(selected);
+      setAudioData((prev) => ({
+        ...prev,
+        audioSrc: URL.createObjectURL(selected),
+        filename: selected.name,
+      }));
+    }
+  }, []);
+
+  // ── CRUD: Add ─────────────────────────────────────────────────────────────
+
+  /** POST: upload a new audio record. */
+  const handleAddAudio = async () => {
+    if (isSubmitting) return;
+
+    const missing = getMissingAudioFields({ audioData, file, isEditing: false });
+    if (missing.length) {
+      showAlert(`Please fill the required field${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}.`);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const fd = new FormData();
+    if (!audioData.isLink && file) fd.append('file', file);
+    fd.append('leadNo',            selectedLead.leadNo);
+    fd.append('description',       selectedLead.leadName);
+    fd.append('enteredBy',         localStorage.getItem('loggedInUser'));
+    fd.append('caseName',          selectedCase.caseName);
+    fd.append('caseNo',            selectedCase.caseNo);
+    fd.append('leadReturnId',      audioData.leadReturnId);
+    fd.append('enteredDate',       new Date().toISOString());
+    fd.append('dateAudioRecorded', audioData.dateAudioRecorded);
+    fd.append('audioDescription',  audioData.description);
+    fd.append('accessLevel',       'Everyone');
+    fd.append('isLink',            audioData.isLink);
+    if (audioData.isLink) fd.append('link', audioData.link.trim());
+
+    try {
+      await api.post('/api/lraudio/upload', fd, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        // Let the browser set the correct multipart/form-data boundary
+        transformRequest: [(data, headers) => { delete headers['Content-Type']; return data; }],
+      });
+
+      await fetchAudioFiles();
+      sessionStorage.removeItem(formKey);
+      resetForm();
+    } catch (err) {
+      showAlert('Failed to upload audio: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ── CRUD: Update ──────────────────────────────────────────────────────────
+
+  /** PUT: update metadata and optionally the file for an existing audio record. */
+  const handleUpdateAudio = async () => {
+    if (isSubmitting) return;
+
+    const a  = audioFiles[editingId];
+    const fd = new FormData();
+
+    setIsSubmitting(true);
+
+    fd.append('leadReturnId',      audioData.leadReturnId);
+    fd.append('dateAudioRecorded', audioData.dateAudioRecorded);
+    fd.append('audioDescription',  audioData.description);
+    fd.append('accessLevel',       'Everyone');
+    fd.append('isLink',            audioData.isLink);
+
+    if (audioData.isLink) {
+      fd.append('link', audioData.link.trim());
+    } else if (file) {
+      // Only replace the file when the user explicitly selects a new one
+      fd.append('file', file);
+    }
+
+    try {
+      await api.put(`/api/lraudio/${a.id}`, fd, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        transformRequest: [(data, headers) => { delete headers['Content-Type']; return data; }],
+      });
+
+      await fetchAudioFiles();
+      sessionStorage.removeItem(formKey);
+      resetForm();
+    } catch (err) {
+      showAlert('Failed to update audio: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ── CRUD: Edit (populate form) ────────────────────────────────────────────
+
+  /** Populate form fields from a table row to begin editing. */
+  const handleEditAudio = useCallback((idx) => {
+    const a = audioFiles[idx];
+    setEditingId(idx);
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    setAudioData({
+      dateAudioRecorded: new Date(a.rawDateAudioRecorded).toISOString().slice(0, 10),
+      leadReturnId:      a.returnId,
+      description:       a.description,
+      isLink:            a.isLink,
+      link:              a.isLink ? a.link : '',
+      audioSrc:          a.isLink ? '' : a.audioSrc,
+      filename:          a.isLink ? '' : a.originalName,
+    });
+  }, [audioFiles]);
+
+  // ── CRUD: Delete ──────────────────────────────────────────────────────────
+
+  /** Open the delete-confirmation modal for a given row index. */
+  const requestDeleteAudio = useCallback((idx) => {
+    setPendingDeleteIndex(idx);
+    setDeleteOpen(true);
+  }, []);
+
+  const cancelDeleteAudio = useCallback(() => {
+    setDeleteOpen(false);
+    setPendingDeleteIndex(null);
+  }, []);
+
+  /** DELETE: confirmed removal of an audio record. */
+  const confirmDeleteAudio = async () => {
+    const idx = pendingDeleteIndex;
+    setDeleteOpen(false);
+    setPendingDeleteIndex(null);
+    if (idx == null) return;
+
+    try {
+      await api.delete(`/api/lraudio/${audioFiles[idx].id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
+      setAudioFiles((prev) => prev.filter((_, i) => i !== idx));
+    } catch (err) {
+      showAlert('Failed to delete audio: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  // ── CRUD: Access level ────────────────────────────────────────────────────
+
+  /** PUT: update the access level of a single audio record inline. */
+  const handleAccessChange = async (idx, newAccessLevel) => {
+    const fd = new FormData();
+    fd.append('accessLevel', newAccessLevel);
+
+    try {
+      await api.put(`/api/lraudio/${audioFiles[idx].id}`, fd, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        transformRequest: [(data, headers) => { delete headers['Content-Type']; return data; }],
+      });
+
+      setAudioFiles((prev) => {
+        const updated = [...prev];
+        updated[idx]  = { ...updated[idx], accessLevel: newAccessLevel };
+        return updated;
+      });
+    } catch {
+      showAlert('Could not change access level. Please try again.');
+    }
+  };
+
+  // ── Report generation ─────────────────────────────────────────────────────
+
+  /**
+   * Collect data from all lead return sections, generate a full PDF report
+   * via the backend, and navigate to the document viewer.
+   */
+  const handleViewLeadReturn = async () => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+      showAlert('Please select a case and lead first.');
+      return;
+    }
+    if (isGenerating) return;
+
+    setIsGenerating(true);
+
+    try {
+      const token   = localStorage.getItem('token');
+      const headers = { headers: { Authorization: `Bearer ${token}` } };
+      const encLead = encodeURIComponent(lead.leadName || lead.description);
+      const encCase = encodeURIComponent(kase.caseName);
+
+      // Fetch all lead return sections in parallel; individual failures return empty arrays
+      const [
+        instrRes, returnsRes, personsRes, vehiclesRes,
+        enclosuresRes, evidenceRes, picturesRes,
+        audioRes, videosRes, scratchpadRes, timelineRes,
+      ] = await Promise.all([
+        api.get(`/api/lead/lead/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,            headers).catch(() => ({ data: [] })),
+        api.get(`/api/leadReturnResult/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,     headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrperson/lrperson/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,   headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvehicle/lrvehicle/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrenclosure/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,         headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrevidence/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,          headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrpicture/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,           headers).catch(() => ({ data: [] })),
+        api.get(`/api/lraudio/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,             headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvideo/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,             headers).catch(() => ({ data: [] })),
+        api.get(`/api/scratchpad/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,          headers).catch(() => ({ data: [] })),
+        api.get(`/api/timeline/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,            headers).catch(() => ({ data: [] })),
+      ]);
+
+      // Enrich media sections with their associated binary files
+      const enclosuresWithFiles = await attachFiles(enclosuresRes.data, '_id',       '/api/lrenclosures/files');
+      const evidenceWithFiles   = await attachFiles(evidenceRes.data,   '_id',       '/api/lrevidences/files');
+      const picturesWithFiles   = await attachFiles(picturesRes.data,   'pictureId', '/api/lrpictures/files');
+      const audioWithFiles      = await attachFiles(audioRes.data,      'audioId',   '/api/lraudio/files');
+      const videosWithFiles     = await attachFiles(videosRes.data,     'videoId',   '/api/lrvideo/files');
+
+      const leadInstructions = instrRes.data?.[0] || {};
+      const leadReturns      = returnsRes.data    || [];
+
+      const selectedReports = {
+        FullReport: true, leadInstruction: true, leadReturn: true,
+        leadPersons: true, leadVehicles: true, leadEnclosures: true,
+        leadEvidence: true, leadPictures: true, leadAudio: true,
+        leadVideos: true, leadScratchpad: true, leadTimeline: true,
+      };
+
+      const body = {
+        user:            localStorage.getItem('loggedInUser') || '',
+        reportTimestamp: new Date().toISOString(),
+        leadInstruction: leadInstructions,
+        leadReturn:      leadReturns,
+        leadPersons:     personsRes.data  || [],
+        leadVehicles:    vehiclesRes.data || [],
+        leadEnclosures:  enclosuresWithFiles,
+        leadEvidence:    evidenceWithFiles,
+        leadPictures:    picturesWithFiles,
+        leadAudio:       audioWithFiles,
+        leadVideos:      videosWithFiles,
+        leadScratchpad:  scratchpadRes.data || [],
+        leadTimeline:    timelineRes.data   || [],
+        selectedReports,
+        leadInstructions,
+        leadReturns,
+      };
+
+      const resp = await api.post('/api/report/generate', body, {
+        responseType: 'blob',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      navigate('/DocumentReview', {
+        state: {
+          pdfBlob:  new Blob([resp.data], { type: 'application/pdf' }),
+          filename: `Lead_${lead.leadNo || 'report'}.pdf`,
+        },
+      });
+    } catch (err) {
+      if (err?.response?.data instanceof Blob) {
+        const text = await err.response.data.text();
+        showAlert('Error generating PDF:\n' + text);
+      } else {
+        showAlert('Error generating PDF:\n' + (err.message || 'Unknown error'));
+      }
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  /** Navigate to the interactive ViewLR page (submit/review lead return). */
+  const goToViewLR = useCallback(() => {
+    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+
+    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
+      showAlert('Please select a case and lead first.');
+      return;
+    }
+    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
+  }, [selectedLead, selectedCase, location.state, navigate, showAlert]);
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className={styles.personPage}>
-      {/* Navbar */}
       <Navbar />
-       <AlertModal
-          isOpen={alertOpen}
-          title="Notification"
-          message={alertMessage}
-          onConfirm={() => setAlertOpen(false)}
-          onClose={()   => setAlertOpen(false)}
-        />
-        <AlertModal
-  isOpen={deleteOpen}
-  title="Confirm Delete"
-  message="Are you sure you want to delete this audio? This action cannot be undone."
-  onConfirm={confirmDeleteAudio}
-  onClose={cancelDeleteAudio}
-/>
 
+      {/* General notification modal */}
+      <AlertModal
+        isOpen={alertOpen}
+        title="Notification"
+        message={alertMessage}
+        onConfirm={() => setAlertOpen(false)}
+        onClose={() => setAlertOpen(false)}
+      />
 
-      {/* Top Menu */}
-      {/* <div className="top-menu">
-        <div className="menu-items">
-          <span className="menu-item" onClick={() => handleNavigation("/LRInstruction")}>Instructions</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRReturn")}>Returns</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRPerson")}>Person</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRVehicle")}>Vehicles</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LREnclosures")}>Enclosures</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LREvidence")}>Evidence</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRPictures")}>Pictures</span>
-          <span className="menu-item active" onClick={() => handleNavigation("/LRAudio")}>Audio</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRVideo")}>Videos</span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRScratchpad")}>Scratchpad</span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation("/LRFinish")}>Finish</span>
-        </div>
-      </div> */}
-      
+      {/* Delete confirmation modal */}
+      <AlertModal
+        isOpen={deleteOpen}
+        title="Confirm Delete"
+        message="Are you sure you want to delete this audio? This action cannot be undone."
+        onConfirm={confirmDeleteAudio}
+        onClose={cancelDeleteAudio}
+      />
 
       <div className={styles.LRIContent}>
-      {/* <div className="sideitem">
-       <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
+        <SideBar activePage="LeadReview" />
 
-       <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
-        </li>
-        {caseDropdownOpen && (
-      <ul >
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>  
+        <div className={styles.leftContentLI}>
 
+          {/* ── Top navigation bar: page-level actions ── */}
+          <div className={styles.topMenuNav}>
+            <div className={styles.menuItems}>
 
-
-                  <li
-  className="sidebar-item"
-  onClick={() =>
-    selectedCase.role === "Investigator"
-      ? navigate("/Investigator")
-      : navigate("/CasePageManager")
-  }
->
-Case Page
-</li>
-
-
-            {selectedCase.role !== "Investigator" && (
-<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item"onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item active" onClick={() => navigate('/CMInstruction')}>View Lead Return</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-           
-              {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
-            </li>)}
-         
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-
-            </ul>
-        )}
-          <li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
-          </li>
-        {leadDropdownOpen && (
-          <ul>
-              <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/ChainOfCustody", { state: { caseDetails } } )}>
-              View Lead Chain of Custody
-            </li>
-             )}
-          </ul>
-
-            )}
-
-                </div> */}
-               
-                <SideBar  activePage="LeadReview" />
-                <div className={styles.leftContentLI}>
-
-                    <div className={styles.topMenuNav}>
-      <div className={styles.menuItems} >
-        <span className={styles.menuItem} onClick={() => {
+              <span
+                className={styles.menuItem}
+                onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                  if (lead && kase) navigate('/LeadReview', { state: { caseDetails: kase, leadDetails: lead } });
+                }}
+              >
+                Lead Information
+              </span>
 
-                  if (lead && kase) {
-                    navigate("/LeadReview", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } }} > Lead Information</span>
-                   <span className={`${styles.menuItem} ${styles.menuItemActive}`} >Add Lead Return</span>
+              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
+                Add Lead Return
+              </span>
 
-                       {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
-           <span
-              className={styles.menuItem}
-              onClick={handleViewLeadReturn}
-              title={isGenerating ? "Preparing report…" : "View Lead Return"}
-              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-            >
-              Manage Lead Return
-            </span>
+              {isCaseManager && (
+                <span
+                  className={styles.menuItem}
+                  onClick={handleViewLeadReturn}
+                  title={isGenerating ? 'Preparing report…' : 'Manage Lead Return'}
+                  style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? 'none' : 'auto' }}
+                >
+                  Manage Lead Return
+                </span>
               )}
 
+              {selectedCase?.role === 'Investigator' && (
+                <span className={styles.menuItem} onClick={goToViewLR}>
+                  {isPrimaryInvestigator ? 'Submit Lead Return' : 'Review Lead Return'}
+                </span>
+              )}
 
-            {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-  <span className={styles.menuItem} onClick={goToViewLR}>
-    Submit Lead Return
-  </span>
-)}
-  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-  <span className={styles.menuItem} onClick={goToViewLR}>
-   Review Lead Return
-  </span>
-)}
-
-                   <span className={styles.menuItem} onClick={() => {
+              <span
+                className={styles.menuItem}
+                onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
                   if (lead && kase) {
-                    navigate("/ChainOfCustody", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
+                    navigate('/ChainOfCustody', { state: { caseDetails: kase, leadDetails: lead } });
                   } else {
-                    setAlertMessage("Please select a case and lead first.");
-                    setAlertOpen(true);
+                    showAlert('Please select a case and lead first.');
                   }
-                }}>Lead Chain of Custody</span>
-          
+                }}
+              >
+                Lead Chain of Custody
+              </span>
+
+            </div>
+          </div>
+
+          {/* ── Section tabs navigation ── */}
+          <div className={styles.topMenuSections}>
+            <div className={`${styles.menuItems} ${styles.menuItemsSecondary}`}>
+              {SECTION_TABS.map(({ label, route, active }) => (
+                <span
+                  key={route}
+                  className={`${styles.menuItem} ${active ? styles.menuItemActive : styles.menuItemSecondary}`}
+                  onClick={() => navigate(route)}
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Breadcrumb + lead status bar ── */}
+          <div className={styles.caseandleadinfo}>
+            <h5 className={styles.sideTitle}>
+              <div className={styles.ldHead}>
+                <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
+                <span className={styles.sep}>{' >> '}</span>
+                <Link
+                  to={selectedCase?.role === 'Investigator' ? '/Investigator' : '/CasePageManager'}
+                  state={{ caseDetails: selectedCase }}
+                  className={styles.crumb}
+                >
+                  Case: {selectedCase?.caseNo || ''}
+                </Link>
+                <span className={styles.sep}>{' >> '}</span>
+                <Link to="/LeadReview" state={{ leadDetails: selectedLead }} className={styles.crumb}>
+                  Lead: {selectedLead?.leadNo || ''}
+                </Link>
+                <span className={styles.sep}>{' >> '}</span>
+                <span className={styles.crumbCurrent} aria-current="page">Lead Audio</span>
+              </div>
+            </h5>
+            <h5 className={styles.sideTitle}>
+              {selectedLead?.leadNo ? `Lead Status: ${leadStatusLabel}` : ''}
+            </h5>
+          </div>
+
+          <div className={styles.caseHeader}>
+            <h2>AUDIO INFORMATION</h2>
+          </div>
+
+          {/* ── Scrollable content area ── */}
+          <div className={styles.lriContentSection}>
+            <div className={styles.contentSubsection}>
+
+              {/* ── Audio entry / edit form ── */}
+              <div className={styles.sectionBlock}>
+                <div className={styles.enclosureForm}>
+
+                  <div className={styles.formRowPair}>
+                    {/* Narrative ID selector */}
+                    <div className={styles.formRowEvidence}>
+                      <label>Narrative Id*</label>
+                      <select
+                        value={audioData.leadReturnId}
+                        onChange={(e) => handleInputChange('leadReturnId', e.target.value)}
+                      >
+                        <option value="">Select Id</option>
+                        {/* Preserve a stale editing value not yet in the fetched list */}
+                        {audioData.leadReturnId && !narrativeIds.includes(normalizeId(audioData.leadReturnId)) && (
+                          <option value={audioData.leadReturnId}>{audioData.leadReturnId}</option>
+                        )}
+                        {narrativeIds.map((id) => (
+                          <option key={id} value={id}>{id}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Recording date */}
+                    <div className={styles.formRowEvidence}>
+                      <label>Date Audio Recorded*</label>
+                      <input
+                        type="date"
+                        value={audioData.dateAudioRecorded}
+                        onChange={(e) => handleInputChange('dateAudioRecorded', e.target.value)}
+                      />
+                    </div>
                   </div>
-        {/* <div className="menu-items">
-      
-        <span className="menu-item active" onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRReturn')}>
-            Returns
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRScratchpad')}>
-            Scratchpad
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span>
-         </div> */}
-       </div>
-                <div className={styles.topMenuSections} >
-       <div className={styles.menuItems} style={{ fontSize: '19px' }}>
 
-        <span className={styles.menuItem} style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRInstruction')}>
-            Instructions
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRReturn')}>
-            Narrative
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }} onClick={() => handleNavigation('/LRPerson')} >
-            Person
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVehicle')} >
-            Vehicles
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREnclosures')} >
-            Enclosures
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LREvidence')} >
-            Evidence
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRPictures')} >
-            Pictures
-          </span>
-          <span className={`${styles.menuItem} ${styles.menuItemActive}`} style={{fontWeight: '600' }}  onClick={() => handleNavigation('/LRAudio')} >
-            Audio
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRVideo')}>
-            Videos
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRScratchpad')}>
-            Notes
-          </span>
-          <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRTimeline')}>
-            Timeline
-          </span>
-          {/* <span className={styles.menuItem} style={{fontWeight: '400' }}  onClick={() => handleNavigation('/LRFinish')}>
-            Finish
-          </span> */}
-         </div> </div>
+                  {/* Description */}
+                  <div className={styles.formRowEvidence}>
+                    <label>Description*</label>
+                    <textarea
+                      value={audioData.description}
+                      onChange={(e) => handleInputChange('description', e.target.value)}
+                    />
+                  </div>
 
-                {/* <div className="caseandleadinfo">
-          <h5 className = "side-title">  Case: {selectedCase.caseName || "Unknown Case"} | {selectedCase.role || ""}</h5>
-          <h5 className="side-title">
-  {selectedLead?.leadNo
-    ? `Lead: ${selectedLead.leadNo} | ${selectedLead.leadName} | ${selectedLead.leadStatus || leadStatus || "Unknown Status"}`
-    : `LEAD DETAILS | ${selectedLead?.leadStatus || leadStatus || "Unknown Status"}`}
-</h5>
+                  <div className={styles.formRowPair}>
+                    {/* Upload type toggle: file vs. external URL */}
+                    <div className={styles.formRowEvidence}>
+                      <label>Upload Type</label>
+                      <select
+                        value={audioData.isLink ? 'link' : 'file'}
+                        onChange={(e) =>
+                          setAudioData((prev) => ({ ...prev, isLink: e.target.value === 'link', link: '' }))
+                        }
+                      >
+                        <option value="file">File</option>
+                        <option value="link">Link</option>
+                      </select>
+                    </div>
 
+                    {/* Conditional: file picker or URL input */}
+                    {audioData.isLink ? (
+                      <div className={styles.formRowEvidence}>
+                        <label>Paste Link*</label>
+                        <input
+                          type="text"
+                          placeholder="https://..."
+                          value={audioData.link}
+                          onChange={(e) => setAudioData((prev) => ({ ...prev, link: e.target.value }))}
+                        />
+                      </div>
+                    ) : (
+                      <div className={styles.formRowEvidence}>
+                        <label>{isEditing ? 'Replace Audio (optional)' : 'Upload Audio*'}</label>
+                        <input
+                          type="file"
+                          accept="audio/*"
+                          ref={fileInputRef}
+                          onChange={handleFileChange}
+                        />
+                        {isEditing && audioData.filename && (
+                          <div className={styles.currentFilename}>
+                            Current File: {audioData.filename}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
-          </div> */}
-               <div className={styles.caseandleadinfo}>
-          <h5 className={styles.sideTitle}>
-            <div className={styles.ldHead}>
-                                       <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
-                                       <span className={styles.sep}>{" >> "}</span>
-                                       <Link
-                                         to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
-                                         state={{ caseDetails: selectedCase }}
-                                         className={styles.crumb}
-                                       >
-                                         Case: {selectedCase.caseNo || ""}
-                                       </Link>
-                                       <span className={styles.sep}>{" >> "}</span>
-                                       <Link
-                                         to={"/LeadReview"}
-                                         state={{ leadDetails: selectedLead }}
-                                         className={styles.crumb}
-                                       >
-                                         Lead: {selectedLead.leadNo || ""}
-                                       </Link>
-                                       <span className={styles.sep}>{" >> "}</span>
-                                       <span className={styles.crumbCurrent} aria-current="page">Lead Audio</span>
-                                     </div>
-             </h5>
-          <h5 className={styles.sideTitle}>
-  {selectedLead?.leadNo
-        ? ` Lead Status:  ${status}`
-    : ` ${leadStatus}`}
-</h5>
+                </div>
 
-          </div>
+                {/* ── Form action buttons ── */}
+                <div className={styles.formButtonsReturn}>
+                  <button
+                    className={styles.saveBtn1}
+                    disabled={isLeadLocked || isReadOnly || isSubmitting}
+                    onClick={isEditing ? handleUpdateAudio : handleAddAudio}
+                  >
+                    {isSubmitting
+                      ? isEditing ? 'Updating…' : 'Adding…'
+                      : isEditing ? 'Update Audio' : 'Add Audio'}
+                  </button>
 
-        <div className={styles.caseHeader}>
-          <h2>AUDIO INFORMATION</h2>
-        </div>
+                  {isEditing && (
+                    <button className={styles.saveBtn1} disabled={isSubmitting} onClick={resetForm}>
+                      Cancel
+                    </button>
+                  )}
+                </div>
 
-        <div className={styles.lriContentSection}>
-
-<div className={styles.contentSubsection}>
-
-        {/* Audio Form */}
-        <div className={styles.sectionBlock}>
-        <div className={styles.enclosureForm}>
-          <div className={styles.formRowPair}>
-            <div className={styles.formRowEvidence}>
-              <label>Narrative Id*</label>
-              <select
-                value={audioData.leadReturnId}
-                onChange={(e) => handleInputChange("leadReturnId", e.target.value)}
-              >
-                <option value="">Select Id</option>
-                {audioData.leadReturnId &&
-                  !narrativeIds.includes(normalizeId(audioData.leadReturnId)) && (
-                    <option value={audioData.leadReturnId}>
-                      {audioData.leadReturnId}
-                    </option>
-                  )
-                }
-                {narrativeIds.map(id => (
-                  <option key={id} value={id}>{id}</option>
-                ))}
-              </select>
-            </div>
-            <div className={styles.formRowEvidence}>
-              <label>Date Audio Recorded*</label>
-              <input
-                type="date"
-                value={audioData.dateAudioRecorded}
-                onChange={(e) => handleInputChange("dateAudioRecorded", e.target.value)}
-              />
-            </div>
-          </div>
-          <div className={styles.formRowEvidence}>
-            <label>Description*</label>
-            <textarea
-              value={audioData.description}
-              onChange={(e) => handleInputChange("description", e.target.value)}
-            ></textarea>
-          </div>
-          <div className={styles.formRowPair}>
-            <div className={styles.formRowEvidence}>
-              <label>Upload Type</label>
-              <select
-                value={audioData.isLink ? "link" : "file"}
-                onChange={e =>
-                  setAudioData(prev => ({
-                    ...prev,
-                    isLink: e.target.value === "link",
-                    link: ""
-                  }))
-                }
-              >
-                <option value="file">File</option>
-                <option value="link">Link</option>
-              </select>
-            </div>
-            {!audioData.isLink ? (
-              <div className={styles.formRowEvidence}>
-                <label>{isEditing ? "Replace Audio (optional)" : "Upload Audio*"}</label>
-                <input
-                  type="file"
-                  accept="audio/*"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                />
-                {isEditing && audioData.filename && (
-                  <div className={styles.currentFilename}>
-                    Current File: {audioData.filename}
+                {/* ── Inline audio preview gallery (shown only when playable sources exist) ── */}
+                {audioFiles.some((a) => a.audioSrc) && (
+                  <div className={styles.uploadedAudio}>
+                    <div className={styles.audioGallery}>
+                      {audioFiles
+                        .filter((a) => a.audioSrc)
+                        .map((audio, index) => (
+                          <div key={index} className={styles.audioCard}>
+                            <audio controls>
+                              <source src={audio.audioSrc} type="audio/mp3" />
+                              Your browser does not support the audio element.
+                            </audio>
+                            <p>{audio.description}</p>
+                          </div>
+                        ))}
+                    </div>
                   </div>
                 )}
               </div>
-            ) : (
-              <div className={styles.formRowEvidence}>
-                <label>Paste Link*:</label>
-                <input
-                  type="text"
-                  placeholder="https://..."
-                  value={audioData.link}
-                  onChange={e =>
-                    setAudioData(prev => ({ ...prev, link: e.target.value }))
-                  }
-                />
-              </div>
-            )}
+
+              {/* ── Audio records table ── */}
+              <table className={styles.leadsTable}>
+                <thead>
+                  <tr>
+                    <th style={{ width: '14%' }}>Date Entered</th>
+                    <th style={{ width: '12%' }}>Narrative Id</th>
+                    <th>File Name</th>
+                    <th>Description</th>
+                    <th style={{ width: '13%' }}>Actions</th>
+                    {isCaseManager && <th style={{ width: '15%' }}>Access</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {audioFiles.length > 0 ? (
+                    audioFiles.map((audio, index) => (
+                      <AudioTableRow
+                        key={audio.id || index}
+                        audio={audio}
+                        index={index}
+                        isCaseManager={isCaseManager}
+                        isReadOnly={isReadOnly}
+                        leadStatus={selectedLead?.leadStatus}
+                        onEdit={handleEditAudio}
+                        onDelete={requestDeleteAudio}
+                        onAccessChange={handleAccessChange}
+                      />
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={isCaseManager ? 6 : 5} className={styles.emptyRow}>
+                        No Audio Data Available
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+
+            </div>
           </div>
 
         </div>
-        <div className={styles.formButtonsReturn}>
-        {/* <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed"}
-
-          className={styles.saveBtn1} onClick={handleAddAudio}>Add Audio</button> */}
-
-  <button
-  disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly || isSubmitting}
-   onClick={ isEditing ? handleUpdateAudio : handleAddAudio }
-    className={styles.saveBtn1}
- >
-   {isSubmitting ? (isEditing ? "Updating..." : "Adding...") : (isEditing ? "Update Audio" : "Add Audio")}
-  </button>
-  {isEditing && (
-    <button
-     className={styles.saveBtn1}
-     disabled={isSubmitting}
-     onClick={() => {
-        setEditingId(null);
- setAudioData(DEFAULT_AUDIO);
-  setFile(null);
- if (fileInputRef.current) fileInputRef.current.value = "";
-    }}
-   >Cancel</button>
-  )}
-         </div>
-         {/* Uploaded Audio Preview */}
-        <div className={styles.uploadedAudio}>
-          <div className={styles.audioGallery}>
-            {audioFiles.map((audio, index) => (
-              <div key={index} className={styles.audioCard}>
-                <audio controls>
-                  <source src={audio.audioSrc} type="audio/mp3" />
-                  Your browser does not support the audio element.
-                </audio>
-                <p>{audio.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-        </div>
-
-           {/* Audio Files Table */}
-           <table className={styles.leadsTable}>
-          <thead>
-            <tr>
-              <th style={{ width: "14%" }}>Date Entered</th>
-              <th style={{ width: "12%" }}>Narrative Id </th>
-              {/* <th>Date Audio Recorded</th> */}
-              <th>File Name</th>
-              <th>Description</th>
-              <th style={{ width: "13%" }}>Actions</th>
-              {isCaseManager && (
-              <th style={{ width: "15%", fontSize: "20px" }}>Access</th>
-            )}
-            </tr>
-          </thead>
-          <tbody>
-            {audioFiles.length > 0 ? audioFiles.map((audio, index) => (
-              <tr key={index}>
-                <td>{audio.dateEntered}</td>
-                <td>{audio.returnId}</td>
-                {/* <td>{audio.dateAudioRecorded}</td> */}
-                 <td>
-  {audio.isLink ? (
-    <a href={audio.link} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
-      {audio.link}
-    </a>
-  ) : audio.signedUrl ? (
-    <a href={audio.signedUrl} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
-      {audio.originalName || "Download"}
-    </a>
-  ) : (
-    <span style={{ color: "gray" }}>No File Available</span>
-  )}
-</td>
-
-                <td>{audio.description}</td>
-                <td>
-                  <div className={styles.lrTableBtn}>
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
-                  alt="Edit Icon"
-                  className={styles.editIcon}
-                  onClick={() => handleEditAudio(index)}
-                />
-                  </button>
-                  <button disabled={selectedLead?.leadStatus === "In Review" || selectedLead?.leadStatus === "Completed" || isReadOnly}>
-
-                  <img
-                  src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
-                  alt="Delete Icon"
-                  className={styles.editIcon}
-                  onClick={() => requestDeleteAudio(index)}
-                />
-                  </button>
-                  </div>
-                </td>
-                {isCaseManager && (
-          <td>
-            <select
-              className={styles.accessDropdown}
-              value={audio.accessLevel}
-              onChange={e => handleAccessChange(index, e.target.value)}
-            >
-              <option value="Everyone">All</option>
-              <option value="Case Manager Only">Case Manager</option>
-              <option value="Case Manager and Assignees">Assignees</option>
-            </select>
-          </td>
-        )}
-      </tr>
-       )) : (
-        <tr>
-          <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign:'center' }}>
-            No Audio Data Available
-          </td>
-        </tr>
-      )}
-          </tbody>
-        </table>
-
-         {/* {selectedLead?.leadStatus !== "Completed" && !isCaseManager && (
-  <div className="form-buttons-finish">
-    <h4> Click here to submit the lead</h4>
-    <button
-      disabled={selectedLead?.leadStatus === "In Review"}
-      className="save-btn1"
-      onClick={handleSubmitReport}
-    >
-      Submit 
-    </button>
-  </div>
-)} */}
-
-        {/* <Comment tag="Audio" /> */}
       </div>
-      </div>
-
-       
-
-        {/* Action Buttons */}
-        {/* <div className="form-buttons-audio">
-          <button className="add-btn" onClick={handleAddAudio}>Add Audio</button>
-          <button className="back-btn" onClick={() => handleNavigation("/LRPictures")}>Back</button>
-          <button className="next-btn" onClick={() => handleNavigation("/LRVideos")}>Next</button>
-          <button className="save-btn">Save</button>
-          <button className="cancel-btn">Cancel</button>
-        </div> */}
-      
-    </div>
-    </div>
     </div>
   );
 };
