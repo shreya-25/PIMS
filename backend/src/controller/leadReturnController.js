@@ -186,9 +186,7 @@ const updateLRStatusToSubmitted = async (req, res) => {
         return res.status(400).json({ message: "All fields are required." });
       }
 
-      let leadReturn = await LeadReturn.findOne({
-        leadNo, description, caseName, caseNo,
-      });
+      let leadReturn = await LeadReturn.findOne({ leadNo, caseNo });
 
       if (!leadReturn) {
         // Create lead return WITHOUT creating a "Created" snapshot

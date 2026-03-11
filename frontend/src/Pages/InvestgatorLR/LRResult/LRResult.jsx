@@ -383,6 +383,7 @@ export const LRResult = () => {
 
     (async () => {
       try {
+        setError('');
         const token = localStorage.getItem('token');
         const { data } = await api.get(
           `/api/leadReturnResult/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${effectiveCase.caseNo}/${encodeURIComponent(effectiveCase.caseName)}`,
@@ -404,7 +405,9 @@ export const LRResult = () => {
         let visible = withDefaults;
         if (!isCaseManager) {
           const currentUser   = localStorage.getItem('loggedInUser')?.trim();
-          const leadAssignees = (leadData?.assignedTo || []).map((a) => a?.trim());
+          const leadAssignees = (leadData?.assignedTo || []).map((a) =>
+            typeof a === 'string' ? a.trim() : String(a ?? '').trim()
+          );
 
           visible = withDefaults.filter((r) => {
             if (r.accessLevel === 'Everyone') return true;
@@ -423,8 +426,14 @@ export const LRResult = () => {
         setLeadReturns(visible);
       } catch (err) {
         if (!ac.signal.aborted) {
-          console.error('Error fetching narrative returns:', err);
-          setError('Failed to fetch narrative data.');
+          console.error('Error fetching narrative returns:', err?.response?.status, err?.message);
+          // Treat any server/auth error as empty data; only surface genuine network failures
+          if (err?.response) {
+            setReturns([]);
+            setLeadReturns([]);
+          } else {
+            setError('Failed to fetch narrative data.');
+          }
         }
       }
     })();

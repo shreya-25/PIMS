@@ -308,14 +308,14 @@ const actuallyDoSubmitReport = async () => {
      assignedBy: { assignee: managerUser || me, lRStatus: "Pending" }
       };
 
-      const response = await api.post("/api/leadReturn/create", body, {
+      const response = await api.put("/api/leadReturn/set-lrstatus-submitted", body, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         }
       });
 
-      if (response.status === 201) {
+      if (response.status === 200 || response.status === 201) {
         const statusResponse = await api.put(
           "/api/lead/status/in-review",
           {
