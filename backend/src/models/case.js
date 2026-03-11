@@ -61,6 +61,8 @@ const caseSchema = new mongoose.Schema(
     characterOfCase: { type: String, default: "" },
 
     caseSummary: { type: String, default: "" },
+
+    executiveCaseSummary: { type: String, default: "" },
   },
   { timestamps: true }
 );

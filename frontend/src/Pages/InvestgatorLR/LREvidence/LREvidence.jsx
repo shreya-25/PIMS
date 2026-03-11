@@ -460,6 +460,26 @@ export const LREvidence = () => {
 
       if (editIndex === null) {
         await api.post("/api/lrevidence/upload", fd, { headers: authHdr, ...multipartConfig });
+
+        // Optimistically show the new entry immediately
+        setEvidences(prev => [
+          ...prev,
+          {
+            dateEntered:         formatDate(new Date().toISOString()),
+            type:                evidenceData.type,
+            evidenceDescription: evidenceData.evidenceDescription,
+            returnId:            evidenceData.leadReturnId,
+            originalName:        file?.name || "",
+            collectionDate:      formatDate(evidenceData.collectionDate),
+            disposedDate:        formatDate(evidenceData.disposedDate || ""),
+            disposition:         evidenceData.disposition || "",
+            filename:            "",
+            link:                evidenceData.uploadMode === "link" ? evidenceData.link : "",
+            signedUrl:           "",
+            accessLevel:         evidenceData.accessLevel || "Everyone",
+            enteredBy:           localStorage.getItem("loggedInUser"),
+          },
+        ]);
       } else {
         const ev   = evidences[editIndex];
         const path = buildLeadCasePath(
@@ -471,9 +491,28 @@ export const LREvidence = () => {
           fd,
           { headers: authHdr, ...multipartConfig }
         );
+
+        // Optimistically update the edited row
+        setEvidences(prev => prev.map((e, i) =>
+          i === editIndex
+            ? {
+                ...e,
+                type:                evidenceData.type,
+                evidenceDescription: evidenceData.evidenceDescription,
+                returnId:            evidenceData.leadReturnId,
+                collectionDate:      formatDate(evidenceData.collectionDate),
+                disposedDate:        formatDate(evidenceData.disposedDate || ""),
+                disposition:         evidenceData.disposition || "",
+                originalName:        file ? file.name : e.originalName,
+                link:                evidenceData.uploadMode === "link" ? evidenceData.link : e.link,
+                accessLevel:         evidenceData.accessLevel || e.accessLevel,
+              }
+            : e
+        ));
       }
 
-      await fetchEvidences();
+      // Background refresh to get accurate signedUrls from server
+      fetchEvidences().catch(() => {});
       sessionStorage.removeItem(formKey);
       resetForm();
     } catch (err) {
@@ -821,12 +860,12 @@ export const LREvidence = () => {
                               <a href={item.link} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
                                 {item.link}
                               </a>
-                            ) : item.signedUrl ? (
+                            ) : item.originalName ? (
                               <a href={item.signedUrl} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
                                 {item.originalName}
                               </a>
                             ) : (
-                              <span style={{ color: "gray" }}>No File Available</span>
+                              <span>—</span>
                             )}
                           </td>
                           <td>{item.evidenceDescription}</td>

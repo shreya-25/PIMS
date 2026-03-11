@@ -1,10 +1,11 @@
-import { useMemo, useContext, useState, useEffect, useRef } from "react";
+import { useMemo, useContext, useState, useEffect, useRef, memo } from "react";
+import { createPortal } from "react-dom";
 import Navbar from '../../components/Navbar/Navbar';
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { Document, Page, pdfjs } from "react-pdf";
 import CommentBar from "../../components/CommentBar/CommentBar";
 import { CaseContext } from "../CaseContext";
-import "./DocumentReview.css";
+import s from "./DocumentReview.module.css";
 import { AlertModal } from "../../components/AlertModal/AlertModal";
 import api, { BASE_URL } from "../../api";
 import { useLeadStatus } from '../../hooks/useLeadStatus';
@@ -12,131 +13,83 @@ import { useLeadStatus } from '../../hooks/useLeadStatus';
 pdfjs.GlobalWorkerOptions.workerSrc =
   `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.mjs`;
 
+const CLOSE_REASON_CHIPS = [
+  "Investigation completed - all leads exhausted",
+  "Insufficient evidence to proceed",
+  "Case resolved through other means",
+  "Duplicate of another lead",
+  "No longer relevant to case objectives",
+];
+
 // Close Reason Modal Component
-const CloseReasonModal = ({ open, onCancel, onSubmit }) => {
-  const [localReason, setLocalReason] = useState("");
-  const textareaRef = useRef(null);
+const CloseReasonModal = memo(function CloseReasonModal({ open, onCancel, onSubmit }) {
+  const [text, setText] = useState("");
 
-  const presetReasons = [
-    "Investigation completed - all leads exhausted",
-    "Insufficient evidence to proceed",
-    "Case resolved through other means",
-    "Duplicate of another lead",
-    "No longer relevant to case objectives"
-  ];
-
-  // Reset when modal opens/closes
   useEffect(() => {
-    if (!open) {
-      setLocalReason("");
-    }
+    if (open) setText("");
   }, [open]);
 
   if (!open) return null;
 
-  return (
-    <div className="elog-backdrop" onClick={onCancel}>
-      <div className="elog-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="elog-header">
-          <h3>Close Lead</h3>
-          <button className="elog-close" onClick={onCancel} aria-label="Close">✕</button>
+  const canSubmit = (text || "").trim().length >= 5;
+
+  const body = (
+    <div className={s.clModalBackdrop} onClick={onCancel}>
+      <div className={s.clModalBox} onClick={(e) => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className={s.clModalHeader}>
+          <h3 className={s.clModalTitle}>Close Lead</h3>
+          <button onClick={onCancel} aria-label="Close" className={s.clModalClose}>✕</button>
         </div>
 
-        <section className="elog-block">
-          <div className="elog-title">Please provide a reason for closing</div>
+        {/* Body */}
+        <div className={s.clModalBody}>
+          <div className={s.clModalSubtitle}>Please provide a reason for closing</div>
 
-          {/* Quick chips */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
-            {presetReasons.map(r => (
-              <button
-                key={r}
-                type="button"
-                className="elog-chip"
-                onClick={() => {
-                  const textarea = textareaRef.current;
-                  if (!textarea) {
-                    const current = localReason.trim();
-                    if (!current) {
-                      setLocalReason(r);
-                    } else {
-                      const needsPeriod = !current.endsWith('.');
-                      setLocalReason(`${current}${needsPeriod ? '.' : ''} ${r}`);
-                    }
-                    return;
-                  }
-
-                  const start = textarea.selectionStart;
-                  const end = textarea.selectionEnd;
-                  const currentValue = localReason;
-
-                  const before = currentValue.substring(0, start);
-                  const after = currentValue.substring(end);
-                  
-                  const needsSpaceBefore = before.length > 0 && !before.endsWith(' ') && !before.endsWith('.');
-                  const needsPeriodBefore = before.length > 0 && !before.endsWith('.') && !before.endsWith(' ');
-                  
-                  let insertion = r;
-                  if (before.length > 0) {
-                    if (needsPeriodBefore) {
-                      insertion = `. ${r}`;
-                    } else if (needsSpaceBefore) {
-                      insertion = ` ${r}`;
-                    }
-                  }
-
-                  const newValue = before + insertion + after;
-                  setLocalReason(newValue);
-
-                  setTimeout(() => {
-                    const newCursorPos = before.length + insertion.length;
-                    textarea.setSelectionRange(newCursorPos, newCursorPos);
-                    textarea.focus();
-                  }, 0);
-                }}
-                title="Click to insert this reason"
-                style={{ backgroundColor: "#ccc", color: "#000", cursor: "pointer" }}
-              >
-                {r}
-              </button>
-            ))}
+          {/* Preset chips */}
+          <div className={s.clChipGroup}>
+            {CLOSE_REASON_CHIPS.map((chip) => {
+              const active = text === chip;
+              return (
+                <button
+                  key={chip}
+                  onClick={() => setText(active ? "" : chip)}
+                  className={`${s.clChip}${active ? ` ${s.clChipActive}` : ""}`}
+                >
+                  {chip}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Textarea */}
+          {/* Free-text */}
           <textarea
-            ref={textareaRef}
-            className="input-field"
+            className={s.clModalTextarea}
             placeholder="Type a brief reason for closing this lead (required)…"
-            value={localReason}
-            onChange={(e) => setLocalReason(e.target.value)}
-            style={{ minHeight: 120 }}
-            autoFocus
+            value={text}
+            onChange={(e) => setText(e.target.value)}
           />
 
-          <div className="elog-actions" style={{ display: "flex", gap: 12, marginTop: 12, justifyContent: "flex-end" }}>
-            <button className="save-btn1" onClick={onCancel} style={{ background: "#ccc", color: "#000" }}>
-              Cancel
-            </button>
+          {/* Actions */}
+          <div className={s.clModalActions}>
+            <button onClick={onCancel} className={s.clModalCancelBtn}>Cancel</button>
             <button
-              className="save-btn1"
-              onClick={() => {
-                const trimmedReason = localReason.trim();
-                if (trimmedReason.length < 5) {
-                  alert("Please provide a reason for closing (at least 5 characters).");
-                  return;
-                }
-                onSubmit(trimmedReason);
-              }}
-              style={{ background: "#e74c3c" }}
-              title="Close lead with reason"
+              onClick={() => { const reason = text.trim(); if (reason.length < 5) return; onSubmit(reason); }}
+              disabled={!canSubmit}
+              className={`${s.clModalSubmitBtn}${!canSubmit ? ` ${s.clModalSubmitBtnDisabled}` : ""}`}
             >
               Close Lead
             </button>
           </div>
-        </section>
+        </div>
       </div>
     </div>
   );
-};
+
+  const root = document.getElementById("modal-root") || document.body;
+  return createPortal(body, root);
+});
 
 export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
   const { state } = useLocation();
@@ -416,10 +369,10 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
   const isPublicPhase = true;
 
   return (
-    <div className="dr-shell">
-      <section className="dr-left">
-        <header className="dr-toolbar">
-          <div className="dr-title">
+    <div className={s.drShell}>
+      <section className={s.drLeft}>
+        <header className={s.drToolbar}>
+          <div className={s.drTitle}>
             <div className="ld-head">
               <Link to="/HomePage" className="crumb">PIMS Home</Link>
               <span className="sep">{" >> "}</span>
@@ -442,29 +395,29 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
               <span className="crumb-current" aria-current="page">Document Review</span>
             </div>
           </div>
-          <div className="dr-zoom">
-            <button className="dr-download" onClick={handleDownload}>Download PDF</button>
+          <div className={s.drZoom}>
+            <button className={s.drDownload} onClick={handleDownload}>Download PDF</button>
             <button onClick={() => setScale((s) => Math.max(0.6, +(s - 0.1).toFixed(2)))}>−</button>
             <div aria-live="polite" style={styles.zoomLabel}>{(scale * 100).toFixed(0)}%</div>
             <button onClick={() => setScale((s) => Math.min(2, +(s + 0.1).toFixed(2)))}>+</button>
           </div>
           {(isCompleted || isClosed) ? (
-            <button className="approve-btn-lr" onClick={handleReopen}>Reopen</button>
+            <button className={s.approveBtnLr} onClick={handleReopen}>Reopen</button>
           ) : isReturned ? (
-            <div className="btn-sec-dr">
-              <button className="approve-btn-lr" onClick={handleApprove}>Approve</button>
-              <button className="close-btn-lr" onClick={() => setShowCloseModal(true)}>Close</button>
+            <div className={s.btnSecDr}>
+              <button className={s.approveBtnLr} onClick={handleApprove}>Approve</button>
+              <button className={s.closeBtnLr} onClick={() => setShowCloseModal(true)}>Close</button>
             </div>
           ) : (
-            <div className="btn-sec-dr">
-              <button className="approve-btn-lr" onClick={handleApprove}>Approve</button>
-              <button className="return-btn-lr" onClick={handleReturn}>Return</button>
-              <button className="close-btn-lr" onClick={() => setShowCloseModal(true)}>Close</button>
+            <div className={s.btnSecDr}>
+              <button className={s.approveBtnLr} onClick={handleApprove}>Approve</button>
+              <button className={s.returnBtnLr} onClick={handleReturn}>Return</button>
+              <button className={s.closeBtnLr} onClick={() => setShowCloseModal(true)}>Close</button>
             </div>
           )}
         </header>
 
-        <div className="dr-pdfArea">
+        <div className={s.drPdfArea}>
           {!!errorMsg && (
             <div style={{ color: "#b91c1c", marginBottom: 12 }}>
               Failed to load PDF: {errorMsg}{" "}
@@ -487,7 +440,7 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
                 key={i}
                 pageNumber={i + 1}
                 scale={scale}
-                className="dr-page"
+                className={s.drPage}
                 renderTextLayer={false}
                 renderAnnotationLayer={false}
               />
@@ -496,8 +449,8 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
         </div>
       </section>
 
-      <aside className="dr-right" aria-label="Comments">
-        <div className="dr-commentsBody">
+      <aside className={s.drRight} aria-label="Comments">
+        <div className={s.drCommentsBody}>
           <CommentBar
             tag={activeTag}
             threadKey={activeThreadKey}

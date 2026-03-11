@@ -197,58 +197,43 @@
 }
 
 .manage-btn,
-.case-close-btn {
-  padding: 8px 16px;
-  margin-right: 10px;
+.case-close-btn,
+.view-btn1,
+.continue-btn {
+  padding: 8px 12px;
   border: none;
-  border-radius: 5px;
-  color: white;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+  color: #fff;
   cursor: pointer;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.manage-btn,
+.view-btn1,
+.continue-btn {
+  background-color: #1a73e8;
+}
+
+.manage-btn:hover,
+.view-btn1:hover,
+.continue-btn:hover {
+  background-color: #1558b0;
 }
 
 .manage-btn {
-  background-color: rgb(41, 41, 139);
+  margin-right: 10px;
 }
 
 .case-close-btn {
-  background-color: #7c2121de;
-  color: #fff;
+  background-color: #c0392b;
 }
 
 .case-close-btn:hover {
-  background-color: #ad29296c;
-}
-
-/* "Manage" button in assigned leads table */
-.view-btn1 {
-  padding: 8px;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 18px;
-  width: 100px;
-  background-color: rgb(41, 41, 139);
-  color: #fff;
-  transition: background-color 0.3s ease;
-}
-
-.view-btn1:hover {
-  background-color: rgb(96, 96, 179);
-}
-
-/* "Continue" button in lead returns table */
-.continue-btn {
-  background-color: rgba(25, 58, 73, 0.795);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  cursor: pointer;
-  font-size: 20px;
-  transition: background-color 0.3s ease;
-}
-
-.continue-btn:hover {
-  background-color: rgba(25, 58, 73, 0.459);
+  background-color: #a93226;
 }
 
 /* Add Case button passed as a className string to SlideBar */

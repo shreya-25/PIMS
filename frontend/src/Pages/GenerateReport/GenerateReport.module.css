@@ -293,8 +293,13 @@
   border-radius: 6px;
   padding: 10px;
   font-size: 20px;
+  font-family: Arial, sans-serif;
   resize: none;
   box-sizing: border-box;
+}
+.summary-input::placeholder {
+  color: #aaa;
+  font-family: Arial, sans-serif;
 }
 
 /* ===== Pagination wrapper ===== */

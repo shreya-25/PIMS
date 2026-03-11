@@ -6,6 +6,7 @@ import { CaseContext } from "../CaseContext";
 import PersonModal from "../../components/PersonModal/PersonModel";
 import VehicleModal from "../../components/VehicleModal/VehicleModal";
 import Pagination from "../../components/Pagination/Pagination";
+import { AlertModal } from "../../components/AlertModal/AlertModal";
 import api from "../../api";
 import styles from "./GenerateReport.module.css";
 
@@ -153,11 +154,36 @@ async function fetchLeadAllSectionsLikeViewLR({ leadNo, leadName, caseNo, caseNa
     return { ...ret, ...g };
   });
 
+  // Identify returns that existed before the lead was reopened (pre-reopen snapshot).
+  //
+  // Two cases:
+  //   1. leadStatus === "Reopened"  → lead just reopened, no new returns filed yet.
+  //      ALL existing returns are pre-reopen; capture them immediately.
+  //   2. reopenedDate set but status moved on (e.g. "In Review", "Approved") →
+  //      lead was reopened and then worked again.  Filter by createdAt (immutable
+  //      MongoDB timestamp) so that returns whose *content* was edited after the
+  //      reopen are NOT mistakenly pulled in via lastModifiedDate.
+  let preReopenReturns = [];
+  if (leadDoc.leadStatus === "Reopened") {
+    // Case 1: currently reopened — all current returns are the pre-reopen snapshot
+    preReopenReturns = [...leadReturns];
+  } else if (leadDoc.reopenedDate) {
+    // Case 2: was reopened and has since progressed — filter by creation timestamp
+    const reopenedAt = new Date(leadDoc.reopenedDate).getTime();
+    preReopenReturns = leadReturns.filter((ret) => {
+      // createdAt is set by MongoDB on document creation and never changes.
+      // Fall back to enteredDate only if createdAt is absent.
+      const retDate = new Date(ret.createdAt || ret.enteredDate || 0).getTime();
+      return retDate < reopenedAt;
+    });
+  }
+
   return {
     ...leadDoc,
     leadNo: String(leadNo),
     description: leadDoc?.description ?? leadName,
     leadReturns,
+    preReopenReturns,
     notes,
     timelineForLead: timeline,
   };
@@ -392,6 +418,11 @@ export const GenerateReport = () => {
   const [useFileUpload, setUseFileUpload] = useState(false);
   const [execSummaryFile, setExecSummaryFile] = useState(null);
 
+  // Alert modal
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+  const showAlert = (msg) => { setAlertMessage(msg); setAlertOpen(true); };
+
   // Modals
   const [showPersonModal, setShowPersonModal] = useState(false);
   const [personModalData, setPersonModalData] = useState({ leadNo: "", description: "", caseNo: "", caseName: "", leadReturnId: "" });
@@ -620,7 +651,7 @@ export const GenerateReport = () => {
     const leadsForReport = Array.isArray(explicitLeads) && explicitLeads.length ? explicitLeads : computed;
 
     if (!leadsForReport || leadsForReport.length === 0) {
-      alert("No leads selected to include.");
+      showAlert("No leads selected to include.");
       return;
     }
 
@@ -689,7 +720,7 @@ export const GenerateReport = () => {
       setIsGeneratingReport(false);
     } catch (error) {
       console.error("Failed to generate report", error);
-      alert("Error generating PDF");
+      showAlert("Error generating PDF");
       setIsGeneratingReport(false);
     }
   };
@@ -713,7 +744,7 @@ export const GenerateReport = () => {
   // Show only the matching lead card for "single lead" mode
   const handleShowSingleLead = () => {
     const n = toNum(selectStartLead1);
-    if (!Number.isFinite(n)) { alert("Please enter a valid lead number."); return; }
+    if (!Number.isFinite(n)) { showAlert("Please enter a valid lead number."); return; }
     setHierarchyLeadsData(leadsData.filter(l => String(toNum(l.leadNo)) === String(n)));
     setHierarchyChains([]);
     setSelectedSingleLeadNo(String(n));
@@ -753,7 +784,7 @@ export const GenerateReport = () => {
   const handleShowLeadsInRange = () => {
     const min = parseInt(selectStartLead1, 10);
     const max = parseInt(selectEndLead2, 10);
-    if (isNaN(min) || isNaN(max)) { alert("Please enter valid numeric lead numbers."); return; }
+    if (isNaN(min) || isNaN(max)) { showAlert("Please enter valid numeric lead numbers."); return; }
     setHierarchyLeadsData(leadsData.filter(lead => {
       const n = parseInt(lead.leadNo, 10);
       return n >= min && n <= max;
@@ -1187,6 +1218,7 @@ export const GenerateReport = () => {
   // ------------------ JSX ------------------
 
   return (
+    <>
     <div ref={pdfRef} className={styles['lead-desk-page']}>
       <Navbar />
 
@@ -1216,7 +1248,7 @@ export const GenerateReport = () => {
                 <h3 style={{ marginTop: 0 }}>Executive Summary</h3>
                 <textarea
                   className={styles['summary-input']}
-                  placeholder="Type here..."
+                  placeholder="Type your executive summary here… (auto-saved)"
                   value={typedSummary}
                   onChange={e => setTypedSummary(e.target.value)}
                 />
@@ -1322,7 +1354,7 @@ export const GenerateReport = () => {
                           className={`${styles.btn} ${styles['btn-primary']}`}
                           onClick={() => {
                             const lead = getSingleLeadForReport();
-                            if (!lead) { alert("Selected lead not found."); return; }
+                            if (!lead) { showAlert("Selected lead not found."); return; }
                             handleRunReportWithSummary([lead]);
                           }}
                           disabled={!selectedSingleLeadNo || isGeneratingReport}
@@ -1381,7 +1413,7 @@ export const GenerateReport = () => {
                           className={`${styles.btn} ${styles['btn-primary']}`}
                           onClick={() => {
                             const flaggedLeads = getLeadsForSelectedFlags();
-                            if (!flaggedLeads.length) { alert("No leads found with the selected flag(s)."); return; }
+                            if (!flaggedLeads.length) { showAlert("No leads found with the selected flag(s)."); return; }
                             handleRunReportWithSummary(flaggedLeads);
                           }}
                           disabled={!selectedFlags.length || isGeneratingReport}
@@ -1419,7 +1451,7 @@ export const GenerateReport = () => {
                                 openPdfBlob(response.data);
                               } catch (err) {
                                 console.error("Timeline report error:", err);
-                                alert("Failed to generate timeline report.");
+                                showAlert("Failed to generate timeline report.");
                               } finally {
                                 setIsGeneratingReport(false);
                               }
@@ -1621,6 +1653,15 @@ export const GenerateReport = () => {
         </div>
       </div>
     </div>
+
+    <AlertModal
+      isOpen={alertOpen}
+      title="Alert"
+      message={alertMessage}
+      onConfirm={() => setAlertOpen(false)}
+      onClose={() => setAlertOpen(false)}
+    />
+    </>
   );
 };
 

@@ -458,7 +458,6 @@ export const LRAudio = () => {
       await fetchAudioFiles();
       sessionStorage.removeItem(formKey);
       resetForm();
-      showAlert('Audio added successfully!');
     } catch (err) {
       showAlert('Failed to upload audio: ' + (err.response?.data?.message || err.message));
     } finally {
@@ -499,7 +498,6 @@ export const LRAudio = () => {
       await fetchAudioFiles();
       sessionStorage.removeItem(formKey);
       resetForm();
-      showAlert('Audio updated successfully!');
     } catch (err) {
       showAlert('Failed to update audio: ' + (err.response?.data?.message || err.message));
     } finally {

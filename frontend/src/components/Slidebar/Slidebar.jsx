@@ -205,6 +205,12 @@ useEffect(() => {
        setAlertOpen(true);
        return;
      }
+
+    if (!/^[A-Za-z0-9-]+$/.test(number)) {
+      setAlertMessage("Case number can only contain letters, digits, and hyphens (-). No spaces or other special characters allowed.");
+      setAlertOpen(true);
+      return;
+    }
   
     setLoading(true);
     setError(null);

@@ -827,7 +827,7 @@ function drawHeader(doc, leadInstruction) {
   const logoW = 70, logoH = 70;
   const logoX = padX;
 
-  const logoPath = path.join(__dirname, "../../../frontend/public/Materials/newpolicelogo.png");
+  const logoPath = path.join(__dirname, "../assets/newpolicelogo.png");
 
   // Text box (everything to the right of the logo)
   const textX = logoX + logoW + 16;                // start AFTER logo

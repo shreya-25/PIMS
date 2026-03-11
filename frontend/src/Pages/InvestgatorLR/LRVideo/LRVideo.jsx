@@ -232,14 +232,13 @@ export const LRVideo = () => {
   // ── Fetch videos from the API, applying access-level filtering ─────────────
 
   const fetchVideos = useCallback(async () => {
-    const token   = localStorage.getItem('token');
     const encLead = encodeURIComponent(selectedLead?.leadName);
     const encCase = encodeURIComponent(selectedCase?.caseName);
 
     try {
       const { data } = await api.get(
         `/api/lrvideo/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );
 
       const mapped = data.map(v => ({
@@ -258,31 +257,28 @@ export const LRVideo = () => {
         accessLevel:          v.accessLevel || 'Everyone',
       }));
 
-      // Non-case-managers only see records they are permitted to view
-      const currentUser   = localStorage.getItem('loggedInUser')?.trim();
-      const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
-
-      const visible = isCaseManager
-        ? mapped
-        : mapped.filter(v => {
-            if (v.accessLevel === 'Everyone') return true;
-            if (v.accessLevel === 'Case Manager and Assignees') {
-              return leadAssignees.some(a => a === currentUser);
-            }
-            return false;
-          });
+      let visible = mapped;
+      if (!isCaseManager) {
+        const currentUser   = signedInOfficer?.trim();
+        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+        visible = mapped.filter(v => {
+          if (v.accessLevel === 'Everyone') return true;
+          if (v.accessLevel === 'Case Manager and Assignees') return leadAssignees.includes(currentUser);
+          return false;
+        });
+      }
 
       setVideos(visible);
     } catch (err) {
       console.error('Error fetching videos:', err);
     }
-  }, [selectedLead, selectedCase, isCaseManager, leadData]);
+  }, [selectedLead, selectedCase, isCaseManager, signedInOfficer, leadData?.assignedTo]);
 
   useEffect(() => {
     if (selectedLead?.leadNo && selectedLead?.leadName && selectedCase?.caseNo && selectedCase?.caseName) {
       fetchVideos();
     }
-  }, [selectedLead, selectedCase]);
+  }, [selectedLead, selectedCase, fetchVideos]);
 
   // ── Form field handler ─────────────────────────────────────────────────────
 
@@ -354,8 +350,6 @@ export const LRVideo = () => {
       await fetchVideos();
       sessionStorage.removeItem(formKey);
       resetForm();
-      setAlertMessage('Video added successfully!');
-      setAlertOpen(true);
     } catch (err) {
       setAlertMessage(err?.response?.data?.message || err?.message || 'Failed to upload video.');
       setAlertOpen(true);
@@ -415,8 +409,6 @@ export const LRVideo = () => {
       await fetchVideos();
       sessionStorage.removeItem(formKey);
       resetForm();
-      setAlertMessage('Video updated successfully!');
-      setAlertOpen(true);
     } catch (err) {
       console.error('Error updating video:', err);
       setAlertMessage('Failed to update video: ' + (err.response?.data?.message || err.message));

@@ -65,6 +65,7 @@ const buildEmptyForm = (todayISO) => ({
   sex: '', race: '', ethnicity: '', skinTone: '',
   eyeColor: '', glasses: '', hairColor: '',
   tattoo: '', scar: '', mark: '',
+  heightFt: '', heightIn: '', weight: '',
 });
 
 /** Returns a form state pre-filled from an existing person record (edit mode). */
@@ -102,6 +103,9 @@ const buildFormFromPerson = (person) => ({
   tattoo:       person?.tattoo                    || '',
   scar:         person?.scar                      || '',
   mark:         person?.mark                      || '',
+  heightFt:     person?.height?.feet    != null ? String(person.height.feet)   : '',
+  heightIn:     person?.height?.inches  != null ? String(person.height.inches) : '',
+  weight:       person?.weight          != null ? String(person.weight)         : '',
 });
 
 /**
@@ -565,6 +569,11 @@ export const LRPerson1 = () => {
       tattoo:       formData.tattoo,
       scar:         formData.scar,
       mark:         formData.mark,
+      height: {
+        feet:   formData.heightFt !== '' ? Number(formData.heightFt)  : undefined,
+        inches: formData.heightIn !== '' ? Number(formData.heightIn)  : undefined,
+      },
+      weight: formData.weight !== '' ? Number(formData.weight) : undefined,
       additionalData: miscDetails,
     };
 
@@ -660,10 +669,9 @@ export const LRPerson1 = () => {
               {/* Case managers can generate / manage the full lead return report */}
               {isCaseManager && (
                 <span
-                  className={styles.menuItem}
+                  className={`${styles.menuItem} ${isGenerating ? styles.menuItemDisabled : ''}`}
                   onClick={handleViewLeadReturn}
                   title={isGenerating ? 'Preparing report…' : 'View Lead Return'}
-                  style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? 'none' : 'auto' }}
                 >
                   Manage Lead Return
                 </span>
@@ -684,9 +692,9 @@ export const LRPerson1 = () => {
 
           {/* ── Section tabs: LR form sub-sections ── */}
           <nav className={styles.topMenuSections}>
-            <div className={styles.menuItems}>
+            <div className={`${styles.menuItems} ${styles.sectionMenuItems}`}>
               {SECTION_TABS_BEFORE.map(({ label, route }) => (
-                <span key={route} className={styles.menuItem} onClick={() => handleNavigation(route)}>
+                <span key={route} className={`${styles.menuItem} ${styles.menuItemInactive}`} onClick={() => handleNavigation(route)}>
                   {label}
                 </span>
               ))}
@@ -697,7 +705,7 @@ export const LRPerson1 = () => {
               </span>
 
               {SECTION_TABS_AFTER.map(({ label, route }) => (
-                <span key={route} className={styles.menuItem} onClick={() => handleNavigation(route)}>
+                <span key={route} className={`${styles.menuItem} ${styles.menuItemInactive}`} onClick={() => handleNavigation(route)}>
                   {label}
                 </span>
               ))}
@@ -961,15 +969,32 @@ export const LRPerson1 = () => {
                     </td>
                   </tr>
 
-                  {/* Height / Weight — not yet wired to formData in the original */}
+                  {/* Height / Weight */}
                   <tr>
                     <td>Height</td>
                     <td>
-                      <input type="text" className={styles.inputNarrow} /> '
-                      <input type="text" className={styles.inputNarrow} /> "
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <input type="number" min="0" placeholder="ft"
+                          value={formData.heightFt}
+                          onChange={(e) => handleChange('heightFt', e.target.value)}
+                          style={{ width: '60px' }} />
+                        <span style={{ color: '#888' }}>ft</span>
+                        <input type="number" min="0" max="11" placeholder="in"
+                          value={formData.heightIn}
+                          onChange={(e) => handleChange('heightIn', e.target.value)}
+                          style={{ width: '60px' }} />
+                        <span style={{ color: '#888' }}>in</span>
+                      </div>
                     </td>
                     <td>Weight</td>
-                    <td><input type="text" /></td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <input type="number" min="0" placeholder="lbs"
+                          value={formData.weight}
+                          onChange={(e) => handleChange('weight', e.target.value)} />
+                        <span style={{ color: '#888', whiteSpace: 'nowrap' }}>lbs</span>
+                      </div>
+                    </td>
                   </tr>
 
                   {/* ── Distinguishing marks ── */}

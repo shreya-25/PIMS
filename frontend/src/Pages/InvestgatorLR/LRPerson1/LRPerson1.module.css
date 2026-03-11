@@ -54,6 +54,13 @@
   box-shadow: 0 2px 6px rgba(41, 41, 139, 0.08);
   overflow-x: auto;
   overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.topMenuNav::-webkit-scrollbar,
+.topMenuSections::-webkit-scrollbar {
+  display: none;
 }
 
 /* ===== Top bar 1 – page-level navigation (Lead Info, Add Lead Return, …) ===== */
@@ -64,6 +71,7 @@
 /* ===== Top bar 2 – LR section tabs (Instructions, Narrative, Person, …) ===== */
 .topMenuSections {
   top: 166px;
+  justify-content: center;
 }
 
 /* ===== Menu items row ===== */
@@ -77,7 +85,7 @@
   color: #111;
   cursor: pointer;
   font-size: 18px;
-  font-weight: 400;
+  font-weight: 500;
   padding: 6px 14px;
   border-radius: 4px;
   white-space: nowrap;
@@ -94,6 +102,27 @@
   font-weight: 700;
   border-bottom: 2px solid #29298b;
   border-radius: 0;
+}
+
+/* Inactive section tabs */
+.menuItemInactive {
+  font-weight: 400;
+}
+
+/* Disabled state for actions in progress (e.g. report generation) */
+.menuItemDisabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Section tabs use a slightly smaller font and tighter spacing than the page-nav bar */
+.sectionMenuItems {
+  font-size: 16px;
+  gap: 2px;
+}
+
+.sectionMenuItems .menuItem {
+  padding: 6px 8px;
 }
 
 /* ===== Scrollable form content ===== */
@@ -144,7 +173,7 @@
 
 /* Label cells */
 .personTable td:first-child {
-  font-weight: 600;
+  font-weight: 400;
   color: #555;
   background-color: #f8f9fc;
   width: 15%;
@@ -156,16 +185,18 @@
   width: 100%;
   padding: 6px 8px;
   box-sizing: border-box;
-  border: 1px solid #ccc;
+  border: 1px solid #e0e0e0;
   border-radius: 4px;
   font-size: 18px;
   outline: none;
+  background-color: #f5f5f5;
+  color: #555;
   transition: border-color 0.18s;
 }
 
 .personTable input:focus,
 .personTable select:focus {
-  border-color: #29298b;
+  border-color: #888;
 }
 
 /* ===== Shared large input / select (date, narrative ID) ===== */
@@ -173,15 +204,17 @@
   width: 100%;
   padding: 6px 8px;
   box-sizing: border-box;
-  border: 1px solid #ccc;
+  border: 1px solid #e0e0e0;
   border-radius: 4px;
   font-size: 18px;
   outline: none;
+  background-color: #f5f5f5;
+  color: #555;
   transition: border-color 0.18s;
 }
 
 .inputLarge:focus {
-  border-color: #29298b;
+  border-color: #888;
 }
 
 /* ===== Narrow input for Height feet / inches fields ===== */
@@ -189,16 +222,18 @@
   width: 40px;
   padding: 6px 4px;
   box-sizing: border-box;
-  border: 1px solid #ccc;
+  border: 1px solid #e0e0e0;
   border-radius: 4px;
   font-size: 18px;
   outline: none;
   text-align: center;
+  background-color: #f5f5f5;
+  color: #555;
   transition: border-color 0.18s;
 }
 
 .inputNarrow:focus {
-  border-color: #29298b;
+  border-color: #888;
 }
 
 /* ===== Photo upload / preview widget ===== */
@@ -268,9 +303,11 @@
   width: 100%;
   padding: 5px 8px;
   box-sizing: border-box;
-  border: 1px solid #ccc;
+  border: 1px solid #e0e0e0;
   border-radius: 4px;
   font-size: 18px;
+  background-color: #f5f5f5;
+  color: #555;
 }
 
 /* ===== Form action buttons row ===== */
@@ -284,7 +321,7 @@
 /* ===== Primary action button (Save, Add Row) ===== */
 .saveBtn {
   padding: 10px 36px;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   background-color: #1a73e8;
   color: #ffffff;

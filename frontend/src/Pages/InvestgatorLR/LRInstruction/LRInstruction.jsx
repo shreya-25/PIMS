@@ -267,7 +267,12 @@ const LeadDetailTable = ({ leadData }) => {
     },
     { label: 'Assigned Officers',        value: formatOfficers(leadData.assignedTo) },
     { label: 'Lead Origin',              value: leadData.parentLeadNo || '—' },
-    { label: 'Subcategory',              value: leadData.subCategory || '—' },
+    {
+      label: 'Subcategory',
+      value: Array.isArray(leadData.subCategory)
+        ? leadData.subCategory.join(', ') || '—'
+        : leadData.subCategory || '—',
+    },
     {
       label: 'Associated Subcategories',
       value: Array.isArray(leadData.associatedSubCategories)
