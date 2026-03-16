@@ -152,7 +152,7 @@ return (
           ["State",             person.address?.state],
           ["Zip Code",          person.address?.zipCode],
           ["SSN",               person.ssn],
-          ["Age",               person.age],
+          ["Date of Birth",      person.dateOfBirth ? new Date(person.dateOfBirth).toLocaleDateString() : undefined],
           ["Email",             person.email],
           ["Occupation",        person.occupation],
           ["Person Type",       person.personType],

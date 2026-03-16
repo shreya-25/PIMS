@@ -60,7 +60,7 @@ const buildEmptyForm = (todayISO) => ({
   cellNumber: '', alias: '', businessName: '',
   street1: '', street2: '', building: '', apartment: '',
   city: '', state: '', zipCode: '',
-  age: '', ssn: '', occupation: '', email: '',
+  dateOfBirth: '', ssn: '', occupation: '', email: '',
   personType: '', condition: '', cautionType: '',
   sex: '', race: '', ethnicity: '', skinTone: '',
   eyeColor: '', glasses: '', hairColor: '',
@@ -86,7 +86,7 @@ const buildFormFromPerson = (person) => ({
   city:         person?.address?.city             || '',
   state:        person?.address?.state            || '',
   zipCode:      person?.address?.zipCode          || '',
-  age:          person?.age                       || '',
+  dateOfBirth:  person?.dateOfBirth?.slice(0, 10)  || '',
   ssn:          person?.ssn                       || '',
   occupation:   person?.occupation                || '',
   email:        person?.email                     || '',
@@ -552,7 +552,7 @@ export const LRPerson1 = () => {
         state:     formData.state,
         zipCode:   formData.zipCode,
       },
-      age:          formData.age,
+      dateOfBirth:  formData.dateOfBirth || undefined,
       ssn:          formData.ssn,
       occupation:   formData.occupation,
       email:        formData.email,
@@ -827,9 +827,9 @@ export const LRPerson1 = () => {
                       <input type="text" value={formData.zipCode}
                         onChange={(e) => handleChange('zipCode', e.target.value)} />
                     </td>
-                    <td>Age</td>
-                    {/* Age not yet wired to formData in the original */}
-                    <td><input type="text" /></td>
+                    <td>Date of Birth</td>
+                    <td><input type="date" value={formData.dateOfBirth}
+                      onChange={(e) => handleChange('dateOfBirth', e.target.value)} /></td>
                   </tr>
 
                   {/* ── Identity / contact ── */}

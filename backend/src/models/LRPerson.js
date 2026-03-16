@@ -37,7 +37,7 @@ const lrPersonSchema = new mongoose.Schema(
             zipCode:   { type: String },
         },
         ssn:          { type: String },
-        age:          { type: Number },
+        dateOfBirth:  { type: Date },
         email:        { type: String },
         occupation:   { type: String },
         personType:   { type: String },
