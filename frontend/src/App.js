@@ -32,13 +32,7 @@ import { FlaggedLead } from './Pages/FlaggedLead/FlaggedLead';
 import { SearchLead } from './Pages/SearchLead/SearchLead';
 import { ViewTimeline } from './Pages/ViewTimeline/ViewTimeline';
 import { ViewLR } from './Pages/ViewLR/ViewLR';
-import { AdminCM } from './Pages/Admin/AdminCM';
-import { AdminCM1 } from './Pages/Admin/AdminCM1';
 import { AdminUR } from './Pages/Admin/AdminUR';
-import { AdminSC } from './Pages/Admin/AdminSC';
-import { AdminSP } from './Pages/Admin/AdminSP';
-import { AdminDB } from './Pages/Admin/AdminDB';
-import { AdminDashboard } from './Pages/Admin/Dashboard/AdminDashboard';
 import {LeadReview} from './Pages/LeadReview/LeadReview';
 import { LeadsDesk } from './Pages/LeadsDesk/LeadsDesk';
 import { ChainOfCustody } from './Pages/ChainOfCustody/ChainOfCustody';
@@ -103,14 +97,8 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/SearchLead" element={<ProtectedLayout>   <SearchLead /> </ProtectedLayout>} />
         <Route path="/LRTimeline" element={<ProtectedLayout><LRTimeline /> </ProtectedLayout>} />
         <Route path="/ViewTimeline" element={<ProtectedLayout> <ViewTimeline /> </ProtectedLayout>} />
-        <Route path="/AdminCM" element={<ProtectedLayout> <AdminCM /> </ProtectedLayout>} />
-        <Route path="/AdminCM1" element={<ProtectedLayout>  <AdminCM1 />  </ProtectedLayout>} />
         <Route path="/AdminUR" element={<ProtectedLayout> <AdminUR /> </ProtectedLayout>} />
-        <Route path="/AdminSC" element={<ProtectedLayout>  <AdminSC />  </ProtectedLayout>} />
-        <Route path="/AdminSP" element={<ProtectedLayout> <AdminSP />  </ProtectedLayout>} />
-        <Route path="/AdminDB" element={<ProtectedLayout> <AdminDB /> </ProtectedLayout>} />
         <Route path="/ViewLR" element={<ProtectedLayout> <ViewLR /> </ProtectedLayout>} />
-        <Route path="/AdminDashboard" element={<ProtectedLayout> <AdminDashboard /> </ProtectedLayout>} />
         <Route path="/LeadReview" element = {<ProtectedLayout> <LeadReview /> </ProtectedLayout> } />
         <Route path="/LeadsDesk" element= {<ProtectedLayout>  <LeadsDesk /> </ProtectedLayout> } />
         <Route path="/LeadsDeskTestExecSummary" element= {<ProtectedLayout>  <GenerateReport /> </ProtectedLayout> } />

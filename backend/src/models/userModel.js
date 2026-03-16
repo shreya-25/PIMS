@@ -31,14 +31,14 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
-      minlength: 8,
+      minlength: 6,
       select: false, // don't return password by default
     },
 
     role: {
       type: String,
       required: true,
-      enum: ["admin", "CaseManager", "Investigator", "Detective Supervisor"],
+      enum: ["Admin", "CaseManager", "Investigator", "Detective Supervisor"],
       index: true,
     },
 

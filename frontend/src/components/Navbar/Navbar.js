@@ -28,8 +28,8 @@ const Navbar = () => {
   const [emailList, setEmailList] = useState([]);
 
   const roleFromCase = selectedCase?.role?.trim();
-  const roleFromStorage = localStorage.getItem("userRole") || ""; // optional fallback
-  const role = roleFromCase || roleFromStorage;
+  const roleFromStorage = localStorage.getItem("role") || "";
+  const role = roleFromStorage || roleFromCase;
   const onHome = location.pathname === "/HomePage" || location.pathname === "/";
   const showRole = !!role && !onHome;
 

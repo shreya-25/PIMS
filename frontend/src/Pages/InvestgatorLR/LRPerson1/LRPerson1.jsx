@@ -582,7 +582,7 @@ export const LRPerson1 = () => {
       if (person) {
         // Update existing record
         response = await api.put(
-          `/api/lrperson/${selectedLead.leadNo}/${selectedCase.caseNo}/${person.leadReturnId}/${person.firstName}`,
+          `/api/lrperson/id/${person._id}`,
           payload,
           { headers: { Authorization: `Bearer ${token}` } }
         );

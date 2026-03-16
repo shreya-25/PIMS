@@ -43,16 +43,20 @@ export function Login() {
         // Save token and user details to localStorage
         localStorage.setItem("token", token);
         localStorage.setItem("userId", userId);
-        localStorage.setItem("loggedInUser", name);  // Trim to avoid space issues
-        // localStorage.setItem("role", role);
+        localStorage.setItem("loggedInUser", name);
+        localStorage.setItem("role", role);
 
         console.log("Stored in localStorage:", {
             token: localStorage.getItem("token"),
             loggedInUser: localStorage.getItem("loggedInUser"),
-            // role: localStorage.getItem("role"),
+            role: localStorage.getItem("role"),
         });
 
-        navigate("/HomePage");
+        if (role === "Admin") {
+            navigate("/AdminUR");
+        } else {
+            navigate("/HomePage");
+        }
 
         // // Navigate based on role
         // if (role === "Investigator" || role === "CaseManager") {

@@ -1,160 +1,212 @@
 import React, { useState } from "react";
-import "./AdminUR.css";
+import styles from "./AdminUR.module.css";
 import Navbar from "../../components/Navbar/Navbar";
-import Searchbar from "../../components/Searchbar/Searchbar";
-import { SlideBar } from "../../components/Slidebar/Slidebar";
 import { SideBar } from "../../components/Sidebar/Sidebar";
-import { CaseSelector } from "../../components/CaseSelector/CaseSelector";
-import { useNavigate } from "react-router-dom";
+import { SlideBar } from "../../components/Slidebar/Slidebar";
+import { AlertModal } from "../../components/AlertModal/AlertModal";
+import api from "../../api";
 
 export const AdminUR = () => {
-  
-
-  const navigate = useNavigate();
-
-  const handleNavigation = (route) => {
-    navigate(route); // Navigate to the respective page
-  };
-
+  const [showAddCase, setShowAddCase] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
+    role: "",
+    username: "",
     password: "",
     confirmPassword: "",
-    agreeToTerms: false,
   });
+  const [alert, setAlert] = useState({ isOpen: false, title: "", message: "" });
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match!");
-      return;
-    }
-    if (!formData.agreeToTerms) {
-      alert("You must agree to the terms of service.");
-      return;
-    }
-    console.log("Form submitted", formData);
-    // Add further form submission logic here
-  };
 
+    if (formData.password.length < 6) {
+      setAlert({ isOpen: true, title: "Invalid Password", message: "Password must be at least 6 characters long." });
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setAlert({ isOpen: true, title: "Password Mismatch", message: "The passwords you entered do not match. Please try again." });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      await api.post(
+        "/api/auth/register",
+        {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          role: formData.role,
+          username: formData.username,
+          password: formData.password,
+        },
+        { headers: { Authorization: `Bearer ${token}` }, suppressGlobalError: true }
+      );
+      setAlert({ isOpen: true, title: "Success", message: "User created successfully." });
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        role: "",
+        username: "",
+        password: "",
+        confirmPassword: "",
+      });
+    } catch (err) {
+      const data = err?.response?.data;
+      const details = data?.details ? Object.values(data.details).join(" ") : null;
+      setAlert({
+        isOpen: true,
+        title: "User Registration Failed",
+        message: details || data?.message || "An unexpected error occurred. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="whole-content">
-    <div className="admin-container1">
+    <div className={styles["page-wrapper"]}>
       <Navbar />
 
-      <div className="top-menu">
-        <div className="menu-items">
-        <span className="menu-item active" onClick={() => handleNavigation('/AdminUR')}>
-            User Registration
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/AdminCM')}>
-           Case Management
-          </span>
-          <span className="menu-item"onClick={() => handleNavigation('/AdminSC')} >
-            Search Cases
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
-            Search People
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
-            Calendar
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/AdminDashboard')} >
-            Dashboard
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/AdminSP')} >
-            Discussion
-          </span>
-          <span className="menu-item" onClick={() => handleNavigation('/AdminDB')} >
-           Database Backup
-          </span>
-         </div>
-       </div>
-       
+      <div className={styles["main-container"]}>
+        <SideBar variant="admin" onShowCaseSelector={setShowAddCase} />
+        {showAddCase && (
+          <SlideBar
+            isOpen={showAddCase}
+            hideTrigger
+            onClose={() => setShowAddCase(false)}
+            onAddCase={() => setShowAddCase(false)}
+          />
+        )}
 
-      <div className="registration-form">
-        <h1>Create Account</h1>
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            name="firstname"
-            placeholder="First Name"
-            value={formData.name}
-            onChange={handleInputChange}
-            required
-          />
-          <input
-            type="text"
-            name="lastname"
-            placeholder="Last Name"
-            value={formData.name}
-            onChange={handleInputChange}
-            required
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Email ID"
-            value={formData.email}
-            onChange={handleInputChange}
-            required
-          />
-           <input
-            type="role"
-            name="role"
-            placeholder="Role"
-            value={formData.role}
-            onChange={handleInputChange}
-            required
-          />
-          <input
-            type="username"
-            name="username"
-            placeholder="Username"
-            value={formData.email}
-            onChange={handleInputChange}
-            required
-          />
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleInputChange}
-            required
-          />
-          <input
-            type="password"
-            name="confirmPassword"
-            placeholder="Repeat password"
-            value={formData.confirmPassword}
-            onChange={handleInputChange}
-            required
-          />
-          {/* Allow User to Create Case Checkbox */}
-          <div className="checkbox-container">
-            <input
-              type="checkbox"
-              name="canCreateCase"
-              checked={formData.canCreateCase}
-              onChange={handleInputChange}
-            />
-            <label>Allow user to create a case</label>
+        <div className={styles["content"]}>
+          <div className={styles["card"]}>
+            <div className={styles["card-header"]}>
+              <h2>Create Account</h2>
+              <span className={styles["chip"]}>User Registration</span>
+            </div>
+
+            <form onSubmit={handleSubmit} className={styles["form-grid"]}>
+              <div className={styles["form-row"]}>
+                <div className={styles["form-group"]}>
+                  <label>First Name</label>
+                  <input
+                    type="text"
+                    name="firstName"
+                    placeholder="First Name"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className={styles["form-group"]}>
+                  <label>Last Name</label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    placeholder="Last Name"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className={styles["form-row"]}>
+                <div className={styles["form-group"]}>
+                  <label>Email ID <span className={styles["required"]}>*</span></label>
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Email ID"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className={styles["form-group"]}>
+                  <label>Role <span className={styles["required"]}>*</span></label>
+                  <select
+                    name="role"
+                    value={formData.role}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="" disabled>Select Role</option>
+                    <option value="Admin">Admin</option>
+                    <option value="CaseManager">Case Manager</option>
+                    <option value="Investigator">Investigator</option>
+                    <option value="Detective Supervisor">Detective Supervisor</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className={styles["form-group"]}>
+                <label>Username <span className={styles["required"]}>*</span></label>
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="Username"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+
+              <div className={styles["form-row"]}>
+                <div className={styles["form-group"]}>
+                  <label>Password <span className={styles["required"]}>*</span></label>
+                  <input
+                    type="password"
+                    name="password"
+                    placeholder="Password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  <span className={styles["field-hint"]}>Minimum 6 characters</span>
+                </div>
+                <div className={styles["form-group"]}>
+                  <label>Repeat Password <span className={styles["required"]}>*</span></label>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    placeholder="Repeat Password"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className={styles["form-footer"]}>
+                <button type="submit" className={styles["add-user-btn"]} disabled={loading}>
+                  {loading ? "Creating..." : "Add User"}
+                </button>
+              </div>
+            </form>
           </div>
-          <button type="submit" className = "Add-user">Add User</button>
-        </form>
+        </div>
       </div>
-    </div>
+      <AlertModal
+        isOpen={alert.isOpen}
+        title={alert.title}
+        message={alert.message}
+        onClose={() => setAlert({ isOpen: false, title: "", message: "" })}
+        onConfirm={() => setAlert({ isOpen: false, title: "", message: "" })}
+      />
     </div>
   );
 };

@@ -264,7 +264,9 @@ api.interceptors.response.use(
       online, code: error?.code, errorMessage: error?.message
     };
 
-    emitGlobalError({ title, message, summary, debug, sig: `${method} ${url}` });
+    if (!cfg.suppressGlobalError) {
+      emitGlobalError({ title, message, summary, debug, sig: `${method} ${url}` });
+    }
     return Promise.reject(error);
   }
 );

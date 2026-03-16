@@ -282,6 +282,38 @@ export const SideBar = ({
     navigate(dest, { state: { caseDetails: c } });
   };
 
+  // Admin variant
+  if (variant === "admin") {
+    const adminItems = [
+      { label: "User Registration", route: "/AdminUR" },
+      { label: "Case Management",   route: "/AdminCM" },
+    ];
+    return (
+      <aside className="sidebar">
+        <ul className="sidebar-list">
+          {adminItems.map(({ label, route }) => (
+            <li
+              key={route}
+              className={`sidebar-item ${location.pathname === route ? "active" : ""}`}
+              onClick={() => navigate(route)}
+            >
+              <img src={folderIcon} className="sidebar-icon" alt="" />
+              <span>{label}</span>
+            </li>
+          ))}
+          <li
+            className="sidebar-item"
+            style={{ paddingLeft: 32 }}
+            onClick={() => onShowCaseSelector?.(true)}
+          >
+            <img src={addIcon} className="sidebar-icon" alt="" />
+            <span>Add Case</span>
+          </li>
+        </ul>
+      </aside>
+    );
+  }
+
   // Home variant (kept minimal)
   if (variant === "home") {
     return (
