@@ -23,6 +23,11 @@ const caseSchema = new mongoose.Schema(
       default: [],
     },
 
+    timelineFlags: {
+      type: [String],
+      default: [],
+    },
+
     // Membership (stable references)
     caseManagerUserIds: [
       {

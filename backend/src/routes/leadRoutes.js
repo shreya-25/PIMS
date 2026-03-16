@@ -1,7 +1,8 @@
 const express = require("express");
 const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy, updateLeadStatus, getAssociatedSubCategories, searchLeadsByKeyword, setLeadStatusToInReview,
   updateLead, removeAssignedOfficer, getAssignedLeadsForOfficer, deleteLead,setLeadStatusToReturned,setLeadStatusToReopened,
-  setLeadStatusToComplete, setLeadStatusToPending, updateAssignedToStatus, getLRForCM, getLeadStatus,setLeadStatusToClosed
+  setLeadStatusToComplete, setLeadStatusToPending, updateAssignedToStatus, getLRForCM, getLeadStatus,setLeadStatusToClosed,
+  updateLeadFlags, getCaseFlaggedLeads, getCaseAllLeadsWithFlags
  } = require("../controller/leadController");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
@@ -113,5 +114,10 @@ router.put(
   verifyToken,
   updateAssignedToStatus
 );
+
+// Flag routes
+router.get("/flagged/:caseNo/:caseName", verifyToken, getCaseFlaggedLeads);
+router.get("/all-with-flags/:caseNo/:caseName", verifyToken, getCaseAllLeadsWithFlags);
+router.patch("/flags/:leadNo/:leadName/:caseNo/:caseName", verifyToken, updateLeadFlags);
 
 module.exports = router;

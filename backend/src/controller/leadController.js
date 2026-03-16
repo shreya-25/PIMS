@@ -1018,6 +1018,58 @@ const setLeadStatusToClosed = async (req, res) => {
 
 
 
+const updateLeadFlags = async (req, res) => {
+  try {
+    const { leadNo, leadName, caseNo, caseName } = req.params;
+    const { associatedFlags } = req.body;
+
+    if (!Array.isArray(associatedFlags)) {
+      return res.status(400).json({ message: "associatedFlags must be an array" });
+    }
+
+    const lead = await Lead.findOneAndUpdate(
+      { leadNo: Number(leadNo), description: leadName, caseNo, caseName },
+      { $set: { associatedFlags } },
+      { new: true }
+    );
+
+    if (!lead) return res.status(404).json({ message: "Lead not found" });
+    return res.status(200).json(lead);
+  } catch (err) {
+    console.error("Error updating lead flags:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getCaseFlaggedLeads = async (req, res) => {
+  try {
+    const { caseNo, caseName } = req.params;
+    const leads = await Lead.find({
+      caseNo, caseName,
+      isDeleted: { $ne: true },
+      "associatedFlags.0": { $exists: true }
+    }).select("leadNo description associatedFlags accessLevel leadStatus").lean();
+    res.status(200).json(leads);
+  } catch (err) {
+    console.error("Error fetching flagged leads:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getCaseAllLeadsWithFlags = async (req, res) => {
+  try {
+    const { caseNo, caseName } = req.params;
+    const leads = await Lead.find({ caseNo, caseName, isDeleted: { $ne: true } })
+      .select("leadNo description associatedFlags accessLevel leadStatus")
+      .lean();
+    res.status(200).json(leads);
+  } catch (err) {
+    console.error("Error fetching leads with flags:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubCategories, updateLRStatusToPending, searchLeadsByKeyword , setLeadStatusToInReview,
-  setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM, getLeadStatus, setLeadStatusToClosed,  deleteLead, setLeadStatusToReturned, setLeadStatusToReopened
+  setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM, getLeadStatus, setLeadStatusToClosed,  deleteLead, setLeadStatusToReturned, setLeadStatusToReopened,
+  updateLeadFlags, getCaseFlaggedLeads, getCaseAllLeadsWithFlags
 };

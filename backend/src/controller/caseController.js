@@ -545,3 +545,36 @@ exports.updateCharacterOfCase = async (req, res) => {
     return res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+
+
+exports.getTimelineFlags = async (req, res) => {
+  try {
+    const { caseNo } = req.params;
+    const caseDoc = await Case.findOne({ caseNo }).select('timelineFlags');
+    if (!caseDoc) return res.status(404).json({ message: 'Case not found' });
+    return res.json({ timelineFlags: caseDoc.timelineFlags || [] });
+  } catch (err) {
+    console.error('Error fetching timeline flags:', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+exports.addTimelineFlag = async (req, res) => {
+  try {
+    const { caseNo } = req.params;
+    const { flag } = req.body;
+    if (!flag || !flag.trim()) return res.status(400).json({ message: 'flag is required' });
+
+    const caseDoc = await Case.findOneAndUpdate(
+      { caseNo },
+      { $addToSet: { timelineFlags: flag.trim() } },
+      { new: true }
+    ).select('timelineFlags');
+
+    if (!caseDoc) return res.status(404).json({ message: 'Case not found' });
+    return res.json({ timelineFlags: caseDoc.timelineFlags });
+  } catch (err) {
+    console.error('Error adding timeline flag:', err);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};

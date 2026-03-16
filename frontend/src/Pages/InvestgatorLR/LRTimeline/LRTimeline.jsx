@@ -334,6 +334,22 @@ export const LRTimeline = () => {
     }
   }, [selectedLead, selectedCase]);
 
+  // ── Fetch custom timeline flags for this case from the DB ─────────────────
+
+  useEffect(() => {
+    if (!selectedCase?.caseNo) return;
+    const token = localStorage.getItem('token');
+    api
+      .get(`/api/cases/${selectedCase.caseNo}/timeline-flags`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then(({ data }) => {
+        const custom = data.timelineFlags || [];
+        setTimelineFlags(Array.from(new Set([...DEFAULT_FLAGS, ...custom])));
+      })
+      .catch(err => console.error('Failed to fetch timeline flags:', err));
+  }, [selectedCase?.caseNo]);
+
   // ── Form handlers ──────────────────────────────────────────────────────────
 
   const handleInputChange = (field, value) => {
@@ -347,11 +363,26 @@ export const LRTimeline = () => {
     sessionStorage.removeItem(formKey);
   };
 
-  /** Adds a custom flag to the dropdown if it doesn't already exist. */
-  const handleAddFlag = () => {
-    if (newFlag && !timelineFlags.includes(newFlag)) {
-      setTimelineFlags(prev => [...prev, newFlag]);
-      setNewFlag('');
+  /** Adds a custom flag to the dropdown and persists it to the database. */
+  const handleAddFlag = async () => {
+    const trimmed = newFlag.trim();
+    if (!trimmed || timelineFlags.includes(trimmed)) return;
+
+    // Optimistic update
+    setTimelineFlags(prev => [...prev, trimmed]);
+    setNewFlag('');
+
+    try {
+      const token = localStorage.getItem('token');
+      await api.patch(
+        `/api/cases/${selectedCase.caseNo}/timeline-flags`,
+        { flag: trimmed },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (err) {
+      console.error('Failed to save timeline flag:', err);
+      // Roll back optimistic update on failure
+      setTimelineFlags(prev => prev.filter(f => f !== trimmed));
     }
   };
 
@@ -734,6 +765,18 @@ export const LRTimeline = () => {
                         onChange={e => handleInputChange('description', e.target.value)}
                       />
                     </div>
+                        <div className={styles.formRow}>
+                        <label>Create New Flag</label>
+                        <div className={styles.addFlag}>
+                          <input
+                            type="text"
+                            placeholder="Enter new flag name"
+                            value={newFlag}
+                            onChange={e => setNewFlag(e.target.value)}
+                          />
+                          <button className={styles.saveBtn1} onClick={handleAddFlag}>Add</button>
+                        </div>
+                      </div>
 
                     {/* Row 5: Assign Flag + Create New Flag */}
                     <div className={styles.formRowPair}>
@@ -750,18 +793,6 @@ export const LRTimeline = () => {
                         </select>
                       </div>
 
-                      <div className={styles.formRow}>
-                        <label>Create New Flag</label>
-                        <div className={styles.addFlag}>
-                          <input
-                            type="text"
-                            placeholder="Enter new flag name"
-                            value={newFlag}
-                            onChange={e => setNewFlag(e.target.value)}
-                          />
-                          <button className={styles.saveBtn1} onClick={handleAddFlag}>Add</button>
-                        </div>
-                      </div>
                     </div>
 
                   </div>

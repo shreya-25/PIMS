@@ -139,7 +139,7 @@
 
 .add-user-btn {
   padding: 10px 32px;
-  background-color: #29298b;
+  background-color: #1a73e8;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -151,7 +151,7 @@
 }
 
 .add-user-btn:hover:not(:disabled) {
-  background-color: #1e1e6e;
+  background-color: #1558b0;
 }
 
 .add-user-btn:disabled {

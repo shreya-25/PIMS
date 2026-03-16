@@ -180,6 +180,10 @@ router.get("/:id/subCategories", async (req, res) => {
 
   router.get("/:caseNo/team", verifyToken, caseController.getCaseTeam);
 
+// Timeline flags for a case
+router.get("/:caseNo/timeline-flags", verifyToken, caseController.getTimelineFlags);
+router.patch("/:caseNo/timeline-flags", verifyToken, caseController.addTimelineFlag);
+
 
 
 module.exports = router;
