@@ -285,8 +285,10 @@ export const SideBar = ({
   // Admin variant
   if (variant === "admin") {
     const adminItems = [
-      { label: "User Registration", route: "/AdminUR" },
-      { label: "Case Management",   route: "/AdminCM" },
+      { label: "User Registration",   route: "/AdminUR" },
+      { label: "User Registration 2", route: "/AdminUR2" },
+      { label: "Registered Users",    route: "/AdminUserList" },
+      { label: "Case Management",     route: "/AdminCM" },
     ];
     return (
       <aside className="sidebar">
