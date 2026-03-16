@@ -219,15 +219,17 @@ export const LRPerson1 = () => {
 
   // ── Form state – lazily initialised from sessionStorage or person prop ───
   const [formData, setFormData] = useState(() => {
+    if (person) return buildFormFromPerson(person); // edit mode: always use passed record
     const saved = sessionStorage.getItem(FORM_KEY);
     if (saved) return JSON.parse(saved);
-    return person ? buildFormFromPerson(person) : buildEmptyForm(todayISO);
+    return buildEmptyForm(todayISO);
   });
 
   // ── Miscellaneous additional data rows ───────────────────────────────────
   const [miscDetails, setMiscDetails] = useState(() => {
+    if (person) return person?.additionalData || []; // edit mode: always use passed record
     const saved = sessionStorage.getItem(MISC_KEY);
-    return saved ? JSON.parse(saved) : (person?.additionalData || []);
+    return saved ? JSON.parse(saved) : [];
   });
 
   // ── Photo state ──────────────────────────────────────────────────────────
@@ -249,14 +251,16 @@ export const LRPerson1 = () => {
     if (loggedInUser) setUsername(loggedInUser);
   }, []);
 
-  // ── Persist form data to sessionStorage on every change ─────────────────
+  // ── Persist form data to sessionStorage on every change (add mode only) ──
   useEffect(() => {
+    if (person) return;
     sessionStorage.setItem(FORM_KEY, JSON.stringify(formData));
-  }, [formData]);
+  }, [formData, person]);
 
   useEffect(() => {
+    if (person) return;
     sessionStorage.setItem(MISC_KEY, JSON.stringify(miscDetails));
-  }, [miscDetails]);
+  }, [miscDetails, person]);
 
   // ── Pre-fill defaults for new records once narrative IDs have loaded ─────
   useEffect(() => {

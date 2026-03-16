@@ -112,7 +112,7 @@ export const SearchLead = () => {
       try {
         const token = localStorage.getItem("token");
         const resp = await api.get(
-          `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
+          `/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

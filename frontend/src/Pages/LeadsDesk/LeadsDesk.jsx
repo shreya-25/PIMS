@@ -191,8 +191,12 @@ export const LeadsDesk = () => {
   // ------------------ State ------------------
   const [leadsData, setLeadsData] = useState([]);
   const [hierarchyLeadsData, setHierarchyLeadsData] = useState([]);
+  const [leadSortOrder, setLeadSortOrder] = useState("asc");
   const [hierarchyChains, setHierarchyChains] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSubCategories, setSelectedSubCategories] = useState([]);
+  const [subCategoryDropdownOpen, setSubCategoryDropdownOpen] = useState(false);
+  const subCategoryDropdownRef = useRef(null);
   const [showExecFileModal, setShowExecFileModal] = useState(false);
   const [execSummaryFile, setExecSummaryFile] = useState(null);
 
@@ -546,6 +550,17 @@ const toggleLeadForReport = (leadNo) => {
 
   // Reset to page 1 whenever the displayed data changes
   useEffect(() => { setCurrentPage(1); }, [leadsData, hierarchyLeadsData]);
+
+  // Close subcategory dropdown on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (subCategoryDropdownRef.current && !subCategoryDropdownRef.current.contains(e.target)) {
+        setSubCategoryDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
   const [selectStartLead1, setSelectStartLead1] = useState("");
 const [selectEndLead2, setSelectEndLead2] = useState("");
@@ -1169,8 +1184,21 @@ useEffect(() => {
 
 
   const activeLeads = hierarchyLeadsData.length > 0 ? hierarchyLeadsData : leadsData;
-  const totalEntries = activeLeads.length;
-  const pagedLeads = activeLeads.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  // All unique subcategories across all loaded leads
+  const allSubCategories = [...new Set(leadsData.flatMap((l) => l.subCategory || []))].sort();
+
+  const sortedLeads = [...activeLeads]
+    .filter((lead) => {
+      if (selectedSubCategories.length === 0) return true;
+      const cats = lead.subCategory || [];
+      return selectedSubCategories.every((sc) => cats.includes(sc));
+    })
+    .sort((a, b) =>
+      leadSortOrder === "asc" ? Number(a.leadNo) - Number(b.leadNo) : Number(b.leadNo) - Number(a.leadNo)
+    );
+  const totalEntries = sortedLeads.length;
+  const pagedLeads = sortedLeads.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div ref={pdfRef} className={styles["lead-desk-page"]}>
@@ -1580,10 +1608,136 @@ useEffect(() => {
 </div>
 
 
+                <div className={styles["sort-bar"]}>
+                  <span className={styles["sort-bar__label"]}>Sort by creation:</span>
+                  <button
+                    className={styles["sort-bar__btn"]}
+                    onClick={() => setLeadSortOrder(leadSortOrder === "asc" ? "desc" : "asc")}
+                  >
+                    {leadSortOrder === "asc" ? "Oldest First ↑" : "Newest First ↓"}
+                  </button>
+                  <span className={styles["sort-bar__label"]}>Filter by subcategory:</span>
+                  <div className={styles["subcat-dropdown"]} ref={subCategoryDropdownRef}>
+                    <button
+                      className={styles["subcat-dropdown__toggle"]}
+                      onClick={() => setSubCategoryDropdownOpen((o) => !o)}
+                    >
+                      {selectedSubCategories.length === 0
+                        ? "All subcategories"
+                        : selectedSubCategories.join(", ")}
+                      {" ▾"}
+                    </button>
+                    {subCategoryDropdownOpen && (
+                      <div className={styles["subcat-dropdown__menu"]}>
+                        {allSubCategories.length === 0 ? (
+                          <div className={styles["subcat-dropdown__empty"]}>No subcategories</div>
+                        ) : (
+                          <>
+                            <label className={styles["subcat-dropdown__item"]}>
+                              <input
+                                type="checkbox"
+                                checked={selectedSubCategories.length === 0}
+                                onChange={() => setSelectedSubCategories([])}
+                              />
+                              All
+                            </label>
+                            {allSubCategories.map((sc) => (
+                              <label key={sc} className={styles["subcat-dropdown__item"]}>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedSubCategories.includes(sc)}
+                                  onChange={() =>
+                                    setSelectedSubCategories((prev) =>
+                                      prev.includes(sc)
+                                        ? prev.filter((x) => x !== sc)
+                                        : [...prev, sc]
+                                    )
+                                  }
+                                />
+                                {sc}
+                              </label>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {selectedSubCategories.length > 0 && (
+                    <button
+                      className={styles["subcat-clear-btn"]}
+                      onClick={() => setSelectedSubCategories([])}
+                    >
+                      Clear filter
+                    </button>
+                  )}
+                </div>
                 {renderLeads(pagedLeads)}
               </>
             ) : (
               <>
+                <div className={styles["sort-bar"]}>
+                  <span className={styles["sort-bar__label"]}>Sort by creation:</span>
+                  <button
+                    className={styles["sort-bar__btn"]}
+                    onClick={() => setLeadSortOrder(leadSortOrder === "asc" ? "desc" : "asc")}
+                  >
+                    {leadSortOrder === "asc" ? "Oldest First ↑" : "Newest First ↓"}
+                  </button>
+                  <span className={styles["sort-bar__label"]}>Filter by subcategory:</span>
+                  <div className={styles["subcat-dropdown"]} ref={subCategoryDropdownRef}>
+                    <button
+                      className={styles["subcat-dropdown__toggle"]}
+                      onClick={() => setSubCategoryDropdownOpen((o) => !o)}
+                    >
+                      {selectedSubCategories.length === 0
+                        ? "All subcategories"
+                        : selectedSubCategories.join(", ")}
+                      {" ▾"}
+                    </button>
+                    {subCategoryDropdownOpen && (
+                      <div className={styles["subcat-dropdown__menu"]}>
+                        {allSubCategories.length === 0 ? (
+                          <div className={styles["subcat-dropdown__empty"]}>No subcategories</div>
+                        ) : (
+                          <>
+                            <label className={styles["subcat-dropdown__item"]}>
+                              <input
+                                type="checkbox"
+                                checked={selectedSubCategories.length === 0}
+                                onChange={() => setSelectedSubCategories([])}
+                              />
+                              All
+                            </label>
+                            {allSubCategories.map((sc) => (
+                              <label key={sc} className={styles["subcat-dropdown__item"]}>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedSubCategories.includes(sc)}
+                                  onChange={() =>
+                                    setSelectedSubCategories((prev) =>
+                                      prev.includes(sc)
+                                        ? prev.filter((x) => x !== sc)
+                                        : [...prev, sc]
+                                    )
+                                  }
+                                />
+                                {sc}
+                              </label>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {selectedSubCategories.length > 0 && (
+                    <button
+                      className={styles["subcat-clear-btn"]}
+                      onClick={() => setSelectedSubCategories([])}
+                    >
+                      Clear filter
+                    </button>
+                  )}
+                </div>
                 {renderLeads(pagedLeads)}
                 {/* <div className="p-6">
                   <Pagination

@@ -70,23 +70,17 @@ export const SideBar = ({
     const fetchCases = async () => {
       try {
         const token = localStorage.getItem("token");
-        const { data } = await api.get("/api/cases", {
+        const { data } = await api.get("/api/cases-by-officer", {
           headers: { Authorization: `Bearer ${token}` },
           params: { officerName: signedInOfficer },
         });
 
         const ongoing = (data || [])
-          .filter(
-            (c) =>
-              c.caseStatus === "Ongoing" &&
-              c.assignedOfficers?.some((o) => o.name === signedInOfficer)
-          )
+          .filter((c) => c.caseStatus === "ONGOING")
           .map((c) => ({
             id: c.caseNo,
             title: c.caseName,
-            role:
-              c.assignedOfficers.find((o) => o.name === signedInOfficer)?.role ||
-              "Unknown",
+            role: c.role || "Unknown",
           }));
 
         setCaseList(ongoing);

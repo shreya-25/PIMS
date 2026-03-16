@@ -64,7 +64,7 @@ export const FlaggedLead = () => {
       setLoading(true);
       try {
         const resp = await api.get(
-          `/api/lead/all-with-flags/${selectedCase.caseNo}/${selectedCase.caseName}`
+          `/api/lead/all-with-flags/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`
         );
         let leads = Array.isArray(resp.data) ? resp.data : [];
 
@@ -145,7 +145,7 @@ export const FlaggedLead = () => {
     if (!flagModalLead) return;
     try {
       await api.patch(
-        `/api/lead/flags/${flagModalLead.leadNo}/${encodeURIComponent(flagModalLead.description)}/${selectedCase.caseNo}/${selectedCase.caseName}`,
+        `/api/lead/flags/${flagModalLead.leadNo}/${encodeURIComponent(flagModalLead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
         { associatedFlags: tempFlags }
       );
       setAllLeads(prev =>

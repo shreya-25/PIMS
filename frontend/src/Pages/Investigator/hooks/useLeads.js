@@ -52,7 +52,7 @@ export function useLeads(caseNo, caseName, signedInOfficer) {
     const fetchLeads = async () => {
       try {
         const token = localStorage.getItem('token');
-        const { data } = await api.get(`/api/lead/case/${caseNo}/${caseName}`, {
+        const { data } = await api.get(`/api/lead/case/${caseNo}/${encodeURIComponent(caseName)}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

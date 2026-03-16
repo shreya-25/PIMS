@@ -395,6 +395,10 @@ export const GenerateReport = () => {
   const [hierarchyLeadsData, setHierarchyLeadsData] = useState([]);
   const [hierarchyChains, setHierarchyChains] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [leadSortOrder, setLeadSortOrder] = useState("asc");
+  const [selectedSubCategories, setSelectedSubCategories] = useState([]);
+  const [subCategoryDropdownOpen, setSubCategoryDropdownOpen] = useState(false);
+  const subCategoryDropdownRef = useRef(null);
 
   // Report targeting
   const [reportType, setReportType] = useState(null); // 'all'|'single'|'selected'|'hierarchy'|'timeline'|'flagged'
@@ -510,6 +514,17 @@ export const GenerateReport = () => {
     }
     setAvailableFlags([...uniq].sort((a, b) => a.localeCompare(b)));
   }, [timelineEntries]);
+
+  // Close subcategory dropdown on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (subCategoryDropdownRef.current && !subCategoryDropdownRef.current.contains(e.target)) {
+        setSubCategoryDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
   // Sync summaryMode into useWebpageSummary / useFileUpload flags
   useEffect(() => {
@@ -1612,40 +1627,125 @@ export const GenerateReport = () => {
                   />
                 </div>
 
-                {/* ===== Lead cards ===== */}
-                {hierarchyLeadsData.length > 0 ? (
-                  <>
-                    <div style={{ width: "100%", alignSelf: "flex-start", textAlign: "left" }}>
-                      <h3 style={{ textAlign: "left" }}>Hierarchy for Lead {hierarchyLeadInput}:</h3>
-                      {hierarchyChains.slice(0, visibleChainsCount).map((chain, idx) => (
-                        <HierarchyChain key={idx} chain={chain} chainIndex={idx} />
-                      ))}
-                      <div style={{ marginTop: "10px", textAlign: "left" }}>
-                        {visibleChainsCount < hierarchyChains.length && (
+                {/* ===== Sort / Filter toolbar ===== */}
+                {(() => {
+                  const allSubCategories = [...new Set(leadsData.flatMap((l) => l.subCategory || []))].sort();
+                  const activeLeads = hierarchyLeadsData.length > 0 ? hierarchyLeadsData : leadsData;
+                  const displayLeads = [...activeLeads]
+                    .filter((lead) => {
+                      if (selectedSubCategories.length === 0) return true;
+                      const cats = lead.subCategory || [];
+                      return selectedSubCategories.every((sc) => cats.includes(sc));
+                    })
+                    .sort((a, b) =>
+                      leadSortOrder === "asc"
+                        ? Number(a.leadNo) - Number(b.leadNo)
+                        : Number(b.leadNo) - Number(a.leadNo)
+                    );
+
+                  return (
+                    <>
+                      <div className={styles["sort-bar"]}>
+                        <span className={styles["sort-bar__label"]}>Sort by creation:</span>
+                        <button
+                          className={styles["sort-bar__btn"]}
+                          onClick={() => setLeadSortOrder(leadSortOrder === "asc" ? "desc" : "asc")}
+                        >
+                          {leadSortOrder === "asc" ? "Oldest First ↑" : "Newest First ↓"}
+                        </button>
+                        <span className={styles["sort-bar__label"]}>Filter by subcategory:</span>
+                        <div className={styles["subcat-dropdown"]} ref={subCategoryDropdownRef}>
                           <button
-                            className={styles['show-more-chains-btn']}
-                            onClick={() => setVisibleChainsCount(prev => prev + 5)}
-                            style={{ marginLeft: "-20px", color: "grey", background: "none", border: "none", cursor: "pointer" }}
+                            className={styles["subcat-dropdown__toggle"]}
+                            onClick={() => setSubCategoryDropdownOpen((o) => !o)}
                           >
-                            Load More Chains
+                            {selectedSubCategories.length === 0
+                              ? "All subcategories"
+                              : selectedSubCategories.join(", ")}
+                            {" ▾"}
                           </button>
-                        )}
-                        {visibleChainsCount > 2 && (
+                          {subCategoryDropdownOpen && (
+                            <div className={styles["subcat-dropdown__menu"]}>
+                              {allSubCategories.length === 0 ? (
+                                <div className={styles["subcat-dropdown__empty"]}>No subcategories</div>
+                              ) : (
+                                <>
+                                  <label className={styles["subcat-dropdown__item"]}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedSubCategories.length === 0}
+                                      onChange={() => setSelectedSubCategories([])}
+                                    />
+                                    All
+                                  </label>
+                                  {allSubCategories.map((sc) => (
+                                    <label key={sc} className={styles["subcat-dropdown__item"]}>
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedSubCategories.includes(sc)}
+                                        onChange={() =>
+                                          setSelectedSubCategories((prev) =>
+                                            prev.includes(sc)
+                                              ? prev.filter((x) => x !== sc)
+                                              : [...prev, sc]
+                                          )
+                                        }
+                                      />
+                                      {sc}
+                                    </label>
+                                  ))}
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        {selectedSubCategories.length > 0 && (
                           <button
-                            className={styles['show-more-chains-btn']}
-                            onClick={() => setVisibleChainsCount(2)}
-                            style={{ marginLeft: "-20px", color: "grey", background: "none", border: "none", cursor: "pointer" }}
+                            className={styles["subcat-clear-btn"]}
+                            onClick={() => setSelectedSubCategories([])}
                           >
-                            Load Less Chains
+                            Clear filter
                           </button>
                         )}
                       </div>
-                    </div>
-                    {renderLeads(hierarchyLeadsData)}
-                  </>
-                ) : (
-                  renderLeads(leadsData)
-                )}
+
+                      {/* ===== Lead cards ===== */}
+                      {hierarchyLeadsData.length > 0 ? (
+                        <>
+                          <div style={{ width: "100%", alignSelf: "flex-start", textAlign: "left" }}>
+                            <h3 style={{ textAlign: "left" }}>Hierarchy for Lead {hierarchyLeadInput}:</h3>
+                            {hierarchyChains.slice(0, visibleChainsCount).map((chain, idx) => (
+                              <HierarchyChain key={idx} chain={chain} chainIndex={idx} />
+                            ))}
+                            <div style={{ marginTop: "10px", textAlign: "left" }}>
+                              {visibleChainsCount < hierarchyChains.length && (
+                                <button
+                                  className={styles['show-more-chains-btn']}
+                                  onClick={() => setVisibleChainsCount(prev => prev + 5)}
+                                  style={{ marginLeft: "-20px", color: "grey", background: "none", border: "none", cursor: "pointer" }}
+                                >
+                                  Load More Chains
+                                </button>
+                              )}
+                              {visibleChainsCount > 2 && (
+                                <button
+                                  className={styles['show-more-chains-btn']}
+                                  onClick={() => setVisibleChainsCount(2)}
+                                  style={{ marginLeft: "-20px", color: "grey", background: "none", border: "none", cursor: "pointer" }}
+                                >
+                                  Load Less Chains
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          {renderLeads(displayLeads)}
+                        </>
+                      ) : (
+                        renderLeads(displayLeads)
+                      )}
+                    </>
+                  );
+                })()}
 
               </div>
             </div>

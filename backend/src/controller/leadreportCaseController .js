@@ -1013,6 +1013,7 @@ async function generateCaseReport(req, res) {
 
     // ---------- Iterate Over Leads ----------
     if (leadsData && leadsData.length > 0) {
+      leadsData.sort((a, b) => (parseInt(a.leadNo) || 0) - (parseInt(b.leadNo) || 0));
       for (const lead of leadsData) {
         // Page check
         currentY = ensureSpace(doc, currentY, 60);
@@ -1087,99 +1088,101 @@ if (leadState) {
                   }
                   const personTables = [
                     {
-                      headers: ["Date Entered", "Name", "Phone #", "Address"],
-                      widths: [128, 128, 128, 128],
-                      row: {
-                        "Date Entered": formatDate(person.enteredDate),
-                        "Name": person.firstName
-                          ? `${person.firstName}, ${person.lastName}`
-                          : "N/A",
-                        "Phone #": person.cellNumber || "N/A",
-                        "Address": person.address
-                          ? `${person.address.street1 || ""}, ${person.address.city || ""}, ` +
-                            `${person.address.state || ""}, ${person.address.zipCode || ""}`
-                          : "N/A",
-                      },
-                    },
-                    {
-                      headers: ["Last Name", "First Name", "Middle Initial", "Cell Number"],
+                      headers: ["Last Name", "First Name", "Middle Initial", "Date of Birth"],
                       widths: [128, 128, 128, 128],
                       row: {
                         "Last Name": person.lastName || "N/A",
                         "First Name": person.firstName || "N/A",
                         "Middle Initial": person.middleInitial || "",
-                        "Cell Number": person.cellNumber || "N/A",
+                        "Date of Birth": person.dateOfBirth ? formatDate(person.dateOfBirth) : "N/A",
                       },
                     },
                     {
-                      headers: ["Business Name", "Street 1", "Street 2", "Building"],
+                      headers: ["Sex", "Address", "Phone No"],
+                      widths: [90, 252, 170],
+                      row: {
+                        "Sex": person.sex || "N/A",
+                        "Address": person.address
+                          ? [
+                              person.address.building,
+                              person.address.apartment && `Apt ${person.address.apartment}`,
+                              person.address.street1,
+                              person.address.street2,
+                              person.address.city,
+                              person.address.state,
+                              person.address.zipCode,
+                            ].filter(Boolean).join(", ")
+                          : "N/A",
+                        "Phone No": person.cellNumber || "N/A",
+                      },
+                    },
+                    {
+                      headers: ["Street 1", "Street 2", "Building", "Apartment"],
                       widths: [128, 128, 128, 128],
                       row: {
-                        "Business Name": person.businessName || "N/A",
                         "Street 1": person.address?.street1 || "N/A",
                         "Street 2": person.address?.street2 || "N/A",
                         "Building": person.address?.building || "N/A",
+                        "Apartment": person.address?.apartment || "N/A",
                       },
                     },
                     {
-                      headers: ["Apartment", "City", "State", "Zip Code"],
+                      headers: ["City", "State", "Zip Code", "Email"],
                       widths: [128, 128, 128, 128],
                       row: {
-                        "Apartment": person.address?.apartment || "N/A",
                         "City": person.address?.city || "N/A",
                         "State": person.address?.state || "N/A",
                         "Zip Code": person.address?.zipCode || "N/A",
+                        "Email": person.email || "N/A",
                       },
                     },
                     {
-                      headers: ["SSN", "Age", "Email", "Occupation"],
-                      widths: [128, 128, 128, 128],
+                      headers: ["Business Name", "SSN", "Occupation"],
+                      widths: [171, 171, 170],
                       row: {
+                        "Business Name": person.businessName || "N/A",
                         "SSN": person.ssn || "N/A",
-                        "Age": person.age != null ? person.age.toString() : "N/A",
-                        "Email": person.email || "N/A",
                         "Occupation": person.occupation || "N/A",
                       },
                     },
                     {
-                      headers: ["Person Type", "Condition", "Caution Type", "Sex"],
-                      widths: [128, 128, 128, 128],
+                      headers: ["Person Type", "Condition", "Caution Type"],
+                      widths: [171, 171, 170],
                       row: {
                         "Person Type": person.personType || "N/A",
                         "Condition": person.condition || "N/A",
                         "Caution Type": person.cautionType || "N/A",
-                        "Sex": person.sex || "N/A",
                       },
                     },
                     {
-                      headers: ["Race", "Ethnicity", "Skin Tone", "Eye Color"],
+                      headers: ["Suffix", "Race", "Ethnicity", "Skin Tone"],
                       widths: [128, 128, 128, 128],
                       row: {
+                        "Suffix": person.suffix || "N/A",
                         "Race": person.race || "N/A",
                         "Ethnicity": person.ethnicity || "N/A",
                         "Skin Tone": person.skinTone || "N/A",
-                        "Eye Color": person.eyeColor || "N/A",
                       },
                     },
                     {
-                      headers: ["Glasses", "Hair Color", "Height", "Weight"],
+                      headers: ["Eye Color", "Glasses", "Hair Color", "Height"],
                       widths: [128, 128, 128, 128],
                       row: {
+                        "Eye Color": person.eyeColor || "N/A",
                         "Glasses": person.glasses || "N/A",
                         "Hair Color": person.hairColor || "N/A",
                         "Height": person.height
                           ? `${person.height.feet || 0}'${person.height.inches || 0}"`
                           : "N/A",
-                        "Weight": person.weight != null ? person.weight.toString() : "N/A",
                       },
                     },
                     {
-                      headers: ["Alias", "Suffix", "Scar / Tattoo / Mark"],
-                      widths: [170, 170, 172],
+                      headers: ["Weight", "Alias", "Scars, Marks, Tattoos"],
+                      widths: [128, 128, 256],
                       row: {
+                        "Weight": person.weight != null ? person.weight.toString() : "N/A",
                         "Alias": person.alias || "N/A",
-                        "Suffix": person.suffix || "N/A",
-                        "Scar / Tattoo / Mark": [person.scar, person.tattoo, person.mark]
+                        "Scars, Marks, Tattoos": [person.scar, person.tattoo, person.mark]
                           .filter(Boolean).join("; ") || "N/A",
                       },
                     },
@@ -1589,45 +1592,102 @@ if (timeline && timeline.length > 0) {
                 }
                 const personTables = [
                   {
-                    headers: ["Date Entered", "Name", "Phone #", "Address"],
-                    widths: [128, 128, 128, 128],
-                    row: {
-                      "Date Entered": formatDate(person.enteredDate),
-                      "Name": person.firstName ? `${person.firstName}, ${person.lastName}` : "N/A",
-                      "Phone #": person.cellNumber || "N/A",
-                      "Address": person.address
-                        ? `${person.address.street1 || ""}, ${person.address.city || ""}, ${person.address.state || ""}, ${person.address.zipCode || ""}`
-                        : "N/A",
-                    },
-                  },
-                  {
-                    headers: ["Last Name", "First Name", "Middle Initial", "Cell Number"],
+                    headers: ["Last Name", "First Name", "Middle Initial", "Date of Birth"],
                     widths: [128, 128, 128, 128],
                     row: {
                       "Last Name": person.lastName || "N/A",
                       "First Name": person.firstName || "N/A",
                       "Middle Initial": person.middleInitial || "",
-                      "Cell Number": person.cellNumber || "N/A",
+                      "Date of Birth": person.dateOfBirth ? formatDate(person.dateOfBirth) : "N/A",
                     },
                   },
                   {
-                    headers: ["Business Name", "Street 1", "Street 2", "Building"],
+                    headers: ["Sex", "Address", "Phone No"],
+                    widths: [90, 252, 170],
+                    row: {
+                      "Sex": person.sex || "N/A",
+                      "Address": person.address
+                        ? [
+                            person.address.building,
+                            person.address.apartment && `Apt ${person.address.apartment}`,
+                            person.address.street1,
+                            person.address.street2,
+                            person.address.city,
+                            person.address.state,
+                            person.address.zipCode,
+                          ].filter(Boolean).join(", ")
+                        : "N/A",
+                      "Phone No": person.cellNumber || "N/A",
+                    },
+                  },
+                  {
+                    headers: ["Street 1", "Street 2", "Building", "Apartment"],
                     widths: [128, 128, 128, 128],
                     row: {
-                      "Business Name": person.businessName || "N/A",
                       "Street 1": person.address?.street1 || "N/A",
                       "Street 2": person.address?.street2 || "N/A",
                       "Building": person.address?.building || "N/A",
+                      "Apartment": person.address?.apartment || "N/A",
                     },
                   },
                   {
-                    headers: ["Apartment", "City", "State", "Zip Code"],
+                    headers: ["City", "State", "Zip Code", "Email"],
                     widths: [128, 128, 128, 128],
                     row: {
-                      "Apartment": person.address?.apartment || "N/A",
                       "City": person.address?.city || "N/A",
                       "State": person.address?.state || "N/A",
                       "Zip Code": person.address?.zipCode || "N/A",
+                      "Email": person.email || "N/A",
+                    },
+                  },
+                  {
+                    headers: ["Business Name", "SSN", "Occupation"],
+                    widths: [171, 171, 170],
+                    row: {
+                      "Business Name": person.businessName || "N/A",
+                      "SSN": person.ssn || "N/A",
+                      "Occupation": person.occupation || "N/A",
+                    },
+                  },
+                  {
+                    headers: ["Person Type", "Condition", "Caution Type"],
+                    widths: [171, 171, 170],
+                    row: {
+                      "Person Type": person.personType || "N/A",
+                      "Condition": person.condition || "N/A",
+                      "Caution Type": person.cautionType || "N/A",
+                    },
+                  },
+                  {
+                    headers: ["Suffix", "Race", "Ethnicity", "Skin Tone"],
+                    widths: [128, 128, 128, 128],
+                    row: {
+                      "Suffix": person.suffix || "N/A",
+                      "Race": person.race || "N/A",
+                      "Ethnicity": person.ethnicity || "N/A",
+                      "Skin Tone": person.skinTone || "N/A",
+                    },
+                  },
+                  {
+                    headers: ["Eye Color", "Glasses", "Hair Color", "Height"],
+                    widths: [128, 128, 128, 128],
+                    row: {
+                      "Eye Color": person.eyeColor || "N/A",
+                      "Glasses": person.glasses || "N/A",
+                      "Hair Color": person.hairColor || "N/A",
+                      "Height": person.height
+                        ? `${person.height.feet || 0}'${person.height.inches || 0}"`
+                        : "N/A",
+                    },
+                  },
+                  {
+                    headers: ["Weight", "Alias", "Scars, Marks, Tattoos"],
+                    widths: [128, 128, 256],
+                    row: {
+                      "Weight": person.weight != null ? person.weight.toString() : "N/A",
+                      "Alias": person.alias || "N/A",
+                      "Scars, Marks, Tattoos": [person.scar, person.tattoo, person.mark]
+                        .filter(Boolean).join("; ") || "N/A",
                     },
                   },
                 ];

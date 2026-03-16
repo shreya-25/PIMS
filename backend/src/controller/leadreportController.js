@@ -1147,58 +1147,55 @@ let currentY = headerHeight + 20;
     
         // How we’ll group fields into small tables
         const personTables = [
-          ["Date Entered", "Name", "Phone #", "Address"],
-          ["Last Name", "First Name", "Middle Initial", "Suffix"],
-          ["Cell Number", "Business Name", "SSN", "Age"],
-          ["Email", "Occupation", "Person Type", "Condition"],
-          ["Caution Type", "Sex", "Race", "Ethnicity"],
+          ["Last Name", "First Name", "Middle Initial", "Date of Birth"],
+          ["Sex", "Address", "Phone No"],
+          ["Person Type", "Condition", "Caution Type"],
+          ["Email", "Suffix", "Race", "Ethnicity"],
+          ["Business Name", "SSN", "Occupation"],
           ["Skin Tone", "Eye Color", "Glasses", "Hair Color"],
-          ["Height", "Weight", "Scar", "Tattoo"],
-          ["Mark", "Additional Data"]
+          ["Height", "Weight", "Scars, Marks, Tattoos"],
+          ["Additional Data"]
         ];
         // You can tweak these widths to taste
         const personWidths = {
-          "Date Entered": 90, "Name": 100,      "Phone #": 100,    "Address": 222,
-          "Last Name": 90,     "First Name": 100,  "Middle Initial": 100,"Suffix": 222,
-          "Cell Number": 90,  "Business Name": 100,"SSN": 100,       "Age": 222,
-          "Email": 90,        "Occupation": 100,  "Person Type": 100, "Condition": 222,
-          "Caution Type": 90, "Sex": 100,          "Race": 100,       "Ethnicity": 222,
-          "Skin Tone": 90,     "Eye Color": 100,    "Glasses": 100,    "Hair Color": 222,
-          "Height": 90,        "Weight": 100,       "Scar": 100,       "Tattoo": 222,
-          "Mark": 90,          "Additional Data": 422
+          "Last Name": 90,     "First Name": 100,  "Middle Initial": 100, "Date of Birth": 222,
+          "Sex": 90,           "Address": 222,     "Phone No": 200,
+          "Business Name": 171, "SSN": 171,         "Occupation": 170,
+          "Person Type": 171,  "Condition": 171,   "Caution Type": 170,
+          "Email": 90,         "Suffix": 100,      "Race": 100,           "Ethnicity": 222,
+          "Skin Tone": 90,     "Eye Color": 100,   "Glasses": 100,        "Hair Color": 222,
+          "Height": 90,        "Weight": 100,      "Scars, Marks, Tattoos": 322,
+          "Additional Data": 512
         };
     
         // Helper to pull the right field off your model
         function getPersonValue(person, header) {
           switch (header) {
-            case "Date Entered":   return formatDate(person.enteredDate);
-            case "Name":           return `${person.lastName||""}, ${person.firstName||""}`.trim();
-            case "Phone #":        return person.cellNumber || "";
-            case "Address":          return [
-              person.address.building,
-              person.address.apartment && `Apt ${person.address.apartment}`,
-              person.address.street1,
-              person.address.street2,
-              person.address.city,
-              person.address.state,
-              person.address.zipCode
-            ]
-            .filter(Boolean)    // remove undefined or ""
-            .join(", ");
             case "Last Name":      return person.lastName || "";
             case "First Name":     return person.firstName || "";
             case "Middle Initial": return person.middleInitial || "";
-            case "Suffix":         return person.suffix || "";
+            case "Date of Birth":  return formatDate(person.dateOfBirth);
+            case "Sex":            return person.sex || "";
+            case "Address":        return [
+              person.address?.building,
+              person.address?.apartment && `Apt ${person.address.apartment}`,
+              person.address?.street1,
+              person.address?.street2,
+              person.address?.city,
+              person.address?.state,
+              person.address?.zipCode
+            ].filter(Boolean).join(", ");
+            case "Phone No":       return person.cellNumber || "";
+            case "Date Entered":   return formatDate(person.enteredDate);
             case "Cell Number":    return person.cellNumber || "";
             case "Business Name":  return person.businessName || "";
             case "SSN":            return person.ssn || "";
-            case "Age":            return person.age?.toString() || "";
             case "Email":          return person.email || "";
             case "Occupation":     return person.occupation || "";
             case "Person Type":    return person.personType || "";
             case "Condition":      return person.condition || "";
             case "Caution Type":   return person.cautionType || "";
-            case "Sex":            return person.sex || "";
+            case "Suffix":         return person.suffix || "";
             case "Race":           return person.race || "";
             case "Ethnicity":      return person.ethnicity || "";
             case "Skin Tone":      return person.skinTone || "";
@@ -1207,12 +1204,11 @@ let currentY = headerHeight + 20;
             case "Hair Color":     return person.hairColor || "";
             case "Height":         return person.height || "";
             case "Weight":         return person.weight || "";
-            case "Scar":           return person.scar || "";
-            case "Tattoo":         return person.tattoo || "";
-            case "Mark":           return person.mark || "";
+            case "Scars, Marks, Tattoos": return [person.scar, person.tattoo, person.mark]
+              .filter(Boolean).join("; ");
             case "Additional Data": return (person.additionalData || [])
-            .map(d => [d.description, d.details].filter(Boolean).join(": "))
-            .join("; ");
+              .map(d => [d.description, d.details].filter(Boolean).join(": "))
+              .join("; ");
             default:               return "";
           }
         }
