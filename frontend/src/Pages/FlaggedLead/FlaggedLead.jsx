@@ -1,457 +1,439 @@
-import React, { useContext, useState, useEffect} from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import './FlaggedLead.css';
 import { useLocation, useNavigate } from 'react-router-dom';
-import axios from "axios";
 import { CaseContext } from "../CaseContext";
-import Pagination from "../../components/Pagination/Pagination";
-import Filter from "../../components/Filter/Filter";
-import Sort from "../../components/Sort/Sort";
-import api from "../../api"; // adjust the path as needed
-import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
-import {SideBar } from "../../components/Sidebar/Sidebar";
+import api from "../../api";
+import { SideBar } from "../../components/Sidebar/Sidebar";
+
+const DEFAULT_FLAGS = ['Critical', 'Moderate', 'Low', 'Urgent', 'Follow Up'];
+
+const FLAG_COLORS = {
+  Critical: '#dc3545',
+  Urgent: '#fd7e14',
+  Moderate: '#ffc107',
+  'Follow Up': '#0d6efd',
+  Low: '#6c757d',
+};
+
+function getFlagColor(flag) {
+  return FLAG_COLORS[flag] || '#495057';
+}
 
 export const FlaggedLead = () => {
   const location = useLocation();
-  const newLead = location.state || null; 
-   const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
-    const { caseDetails } = location.state || {};
-      const { selectedCase, setSelectedLead } = useContext(CaseContext);
-            const [showSelectModal, setShowSelectModal] = useState(false);
-              const [pendingRoute, setPendingRoute]   = useState(null);
-      
-             const [showFilter, setShowFilter] = useState(false);
-            const [showSort, setShowSort] = useState(false);
-        
-          const [currentPage, setCurrentPage] = useState(1);
-          const [pageSize, setPageSize] = useState(50);
-          const totalPages = 10; // Change based on your data
-          const totalEntries = 100;
-        
-      
-        const navigate = useNavigate(); // Initialize the navigate function
+  const navigate = useNavigate();
+  const { caseDetails } = location.state || {};
+  const { selectedCase } = useContext(CaseContext);
 
-          const handleFilterApply = (filters) => {
-            console.log("Applied Filters:", filters);
-            // Perform filtering logic here (e.g., API call, state update)
-          };
-        
-            const [sortField, setSortField] = useState(""); // Sorting field
-          
-        
-           // Sort leads
-           const handleSort = (field, order) => {
-           
-          };
-      
+  const [allLeads, setAllLeads] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const defaultEntries = [
-    {
-      leadNumber: "1",
-      leadSummary: "Investigate missing person case on 5th Avenue.",
-      flag:"Critical"
-    },
-    {
-      leadNumber: "2",
-      leadSummary: "Check surveillance footage for recent robbery.",
-      flag:"Moderate"
-    },
-    {
-      leadNumber: "5",
-      leadSummary: "Interview witnesses for car accident on Main Street.",
-      flag:"Low"
-    },
-  ];
+  // Flag types for this case (stored in localStorage per case)
+  const [caseFlags, setCaseFlags] = useState([]);
 
-  const filtersConfig = [
-    {
-      name: "leadNumber",
-      label: "Lead Number",
-      options: ["45", "23", "14"],
-    },
-    {
-      name: "leadSummary",
-      label: "Lead Log Summary",
-      options: [
-        "Collect Audio from Dispatcher",
-        "Interview Mr. John",
-        "Collect evidence from 63 Mudray Street",
-      ],
-    },
-    {
-      name: "Flag",
-      label: "Flag",
-      options: ["Critical", "Moderate", "Low"],
-    },
-  ];
+  // Manage flags modal
+  const [flagModalLead, setFlagModalLead] = useState(null);
+  const [tempFlags, setTempFlags] = useState([]);
+  const [inlineNewFlag, setInlineNewFlag] = useState('');
+  const [inlineNewFlagError, setInlineNewFlagError] = useState('');
 
+  // Create new flag modal
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newFlagInput, setNewFlagInput] = useState('');
+  const [createError, setCreateError] = useState('');
 
-  // State to maintain a list of lead entries
-  const [leadEntries, setLeadEntries] = useState(() => {
-    // Retrieve from local storage if available
-    const savedEntries = localStorage.getItem('leadEntries');
-    const parsedEntries = savedEntries ? JSON.parse(savedEntries) : [];
-    // Combine default entries with saved entries, ensuring no duplicates
-    const combinedEntries = [
-      ...defaultEntries,
-      ...parsedEntries.filter(
-        (entry) =>
-          !defaultEntries.some((defaultEntry) => defaultEntry.leadNumber === entry.leadNumber)
-      ),
-    ];
-    return combinedEntries;
-  });
+  // Search
+  const [search, setSearch] = useState('');
 
-  const [filterStatus, setFilterStatus] = useState("all"); // State for status filter
-  const [sortOption, setSortOption] = useState(""); // State for sort option
+  const isInvestigator = selectedCase?.role === 'Investigator';
+  const caseKey = `caseFlags_${selectedCase?.caseNo}`;
 
-
-  // Effect to handle new lead data
-  useEffect(() => {
-    if (newLead && newLead.leadNumber) {
-      // Append the new lead to the existing entries if not already present
-      setLeadEntries((prevEntries) => {
-        const isDuplicate = prevEntries.some(
-          (entry) => entry.leadNumber === newLead.leadNumber
-        );
-
-        if (!isDuplicate) {
-          const updatedEntries = [...prevEntries, { ...newLead, status: 'Pending' }];
-          localStorage.setItem('leadEntries', JSON.stringify(updatedEntries)); // Save to local storage
-          return updatedEntries;
-        }
-
-        return prevEntries;
-      });
-    }
-  }, [newLead]);
-
-   // Effect to save entries to local storage whenever they change
-   useEffect(() => {
-    localStorage.setItem("leadEntries", JSON.stringify(leadEntries));
-  }, [leadEntries]);
-
-  // Filter entries based on status
-  const filteredEntries = leadEntries.filter((entry) => {
-    if (filterStatus === "all") return true;
-    return entry.status.toLowerCase() === filterStatus.toLowerCase();
-  });
-
-  // Sort entries based on selected option
-  const sortedEntries = [...filteredEntries].sort((a, b) => {
-    if (sortOption === "leadNumber") {
-      return new Date(a.assignedDate) - new Date(b.assignedDate);
-    }
-    if (sortOption === "flag") {
-      return a.status.localeCompare(b.status);
-    }
-    return 0;
-  });
-
-  
-  const handleLeadClick = (lead) => {
-    navigate("/LeadReview", { state: { lead } }); // Navigate to lead details page with lead data
+  // Load case flags from localStorage and merge with flags from leads
+  const buildCaseFlags = (leads, stored) => {
+    const fromLeads = leads.flatMap(l => l.associatedFlags || []);
+    const merged = Array.from(new Set([...DEFAULT_FLAGS, ...stored, ...fromLeads]));
+    return merged;
   };
 
-    // Function to format dates as MM/DD/YY
-const formatDate = (dateString) => {
-  if (!dateString) return ""; // Handle empty dates
-  const date = new Date(dateString);
-  if (isNaN(date)) return ""; // Handle invalid dates
-
-  const month = (date.getMonth() + 1).toString().padStart(2, "0");
-  const day = date.getDate().toString().padStart(2, "0");
-  const year = date.getFullYear().toString().slice(-2); // Get last two digits of the year
-
-  return `${month}/${day}/${year}`;
-};
-
-   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
-    const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
-  
-    const onShowCaseSelector = (route) => {
-      navigate(route, { state: { caseDetails } });
-  };
-
-  const [leads, setLeads] = useState({
-    assignedLeads: [],
-    pendingLeads: [],
-    pendingLeadReturns: [],
-    allLeads: [],
-  } );
   useEffect(() => {
-    const fetchAllLeads = async () => {
-      if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
-  
+    if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+
+    const fetchLeads = async () => {
+      setLoading(true);
       try {
-        const token = localStorage.getItem("token");
         const resp = await api.get(
-          `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          `/api/lead/all-with-flags/${selectedCase.caseNo}/${selectedCase.caseName}`
         );
-  
-        // assume resp.data is an array
-        let leadsArray = Array.isArray(resp.data) ? resp.data : [];
-  
-        // if user is _not_ a Case Manager, strip out CM-only leads:
-        if (selectedCase.role !== "Case Manager") {
-          leadsArray = leadsArray.filter(
-            (l) => l.accessLevel !== "Only Case Manager and Assignees"
-          );
+        let leads = Array.isArray(resp.data) ? resp.data : [];
+
+        // Non-case-managers can't see CM-only leads
+        if (selectedCase.role !== 'Case Manager') {
+          leads = leads.filter(l => l.accessLevel !== 'Only Case Manager and Assignees');
         }
-  
-        setLeads((prev) => ({
-          ...prev,
-          allLeads: leadsArray.map((lead) => ({
-            leadNo: lead.leadNo,
-            description: lead.description,
-            leadStatus: lead.leadStatus,
-            // any other fields you need...
-          })),
-        }));
+
+        setAllLeads(leads);
+
+        const stored = JSON.parse(localStorage.getItem(caseKey) || '[]');
+        setCaseFlags(buildCaseFlags(leads, stored));
       } catch (err) {
-        console.error("Error fetching all leads:", err);
+        console.error(err);
+        setError('Failed to load leads.');
+      } finally {
+        setLoading(false);
       }
     };
-  
-    fetchAllLeads();
-  }, [selectedCase])
 
-  const handleSelectLead = (lead) => {
-    setSelectedLead({
-      leadNo: lead.leadNo,
-      leadName: lead.description,
-      caseName: lead.caseName,
-      caseNo: lead.caseNo,
-    });
-  
-    setShowSelectModal(false);
-    navigate(pendingRoute, {
-      state: {
-        caseDetails: selectedCase,
-        leadDetails: lead
-      }
-    });
-    
-    setPendingRoute(null);
+    fetchLeads();
+  }, [selectedCase]);
+
+  // Persist custom flags to localStorage whenever caseFlags changes
+  // (only the non-default ones go to localStorage)
+  const saveCustomFlags = (flags) => {
+    const custom = flags.filter(f => !DEFAULT_FLAGS.includes(f));
+    localStorage.setItem(caseKey, JSON.stringify(custom));
   };
+
+  // Create a new flag type
+  const handleCreateFlag = () => {
+    const trimmed = newFlagInput.trim();
+    if (!trimmed) { setCreateError('Flag name cannot be empty.'); return; }
+    if (caseFlags.map(f => f.toLowerCase()).includes(trimmed.toLowerCase())) {
+      setCreateError('This flag already exists.');
+      return;
+    }
+    const updated = [...caseFlags, trimmed];
+    setCaseFlags(updated);
+    saveCustomFlags(updated);
+    setNewFlagInput('');
+    setCreateError('');
+    setShowCreateModal(false);
+  };
+
+  // Open flag management modal for a lead
+  const openFlagModal = (lead) => {
+    setFlagModalLead(lead);
+    setTempFlags([...(lead.associatedFlags || [])]);
+    setInlineNewFlag('');
+    setInlineNewFlagError('');
+  };
+
+  const handleInlineCreateFlag = () => {
+    const trimmed = inlineNewFlag.trim();
+    if (!trimmed) { setInlineNewFlagError('Flag name cannot be empty.'); return; }
+    if (caseFlags.map(f => f.toLowerCase()).includes(trimmed.toLowerCase())) {
+      setInlineNewFlagError('This flag already exists.');
+      return;
+    }
+    const updated = [...caseFlags, trimmed];
+    setCaseFlags(updated);
+    saveCustomFlags(updated);
+    setTempFlags(prev => [...prev, trimmed]);
+    setInlineNewFlag('');
+    setInlineNewFlagError('');
+  };
+
+  const toggleFlag = (flag) => {
+    setTempFlags(prev =>
+      prev.includes(flag) ? prev.filter(f => f !== flag) : [...prev, flag]
+    );
+  };
+
+  // Save flags for lead
+  const saveFlagsForLead = async () => {
+    if (!flagModalLead) return;
+    try {
+      await api.patch(
+        `/api/lead/flags/${flagModalLead.leadNo}/${encodeURIComponent(flagModalLead.description)}/${selectedCase.caseNo}/${selectedCase.caseName}`,
+        { associatedFlags: tempFlags }
+      );
+      setAllLeads(prev =>
+        prev.map(l =>
+          l.leadNo === flagModalLead.leadNo && l.description === flagModalLead.description
+            ? { ...l, associatedFlags: tempFlags }
+            : l
+        )
+      );
+      // Update caseFlags to include any new flags from tempFlags
+      const stored = JSON.parse(localStorage.getItem(caseKey) || '[]');
+      const updated = buildCaseFlags(
+        allLeads.map(l =>
+          l.leadNo === flagModalLead.leadNo ? { ...l, associatedFlags: tempFlags } : l
+        ),
+        stored
+      );
+      setCaseFlags(updated);
+      saveCustomFlags(updated);
+      setFlagModalLead(null);
+    } catch (err) {
+      console.error('Failed to save flags:', err);
+    }
+  };
+
+  // Leads with at least one flag
+  const flaggedLeads = allLeads.filter(l => (l.associatedFlags || []).length > 0);
+
+  // All unique flags currently applied to leads in this case
+  const usedFlags = Array.from(new Set(allLeads.flatMap(l => l.associatedFlags || [])));
+
+  const filteredLeads = allLeads.filter(l => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return (
+      String(l.leadNo).includes(s) ||
+      (l.description || '').toLowerCase().includes(s) ||
+      (l.associatedFlags || []).some(f => f.toLowerCase().includes(s))
+    );
+  });
 
   return (
     <div className="lead-log-page">
       <Navbar />
-
       <div className="main-container">
-            {/* Sidebar */}
-            {/* <div className="sideitem">
-                    <ul className="sidebar-list">
-                    
-                    <li className="sidebar-item" onClick={() => navigate("/HomePage", { state: { caseDetails } } )} >Go to Home Page</li>
-                    <li className="sidebar-item active" onClick={() => setCaseDropdownOpen(!caseDropdownOpen)}>
-          Case Related Tabs {caseDropdownOpen ?  "▲": "▼"}
-        </li>
-        {caseDropdownOpen && (
-      <ul >
-            <li className="sidebar-item" onClick={() => navigate('/caseInformation')}>Case Information</li>        
-            <li className="sidebar-item" onClick={() => navigate('/CasePageManager')}>Case Page</li>            
-            {selectedCase.role !== "Investigator" && (
-<li className="sidebar-item " onClick={() => onShowCaseSelector("/CreateLead")}>New Lead </li>)}
-            <li className="sidebar-item "onClick={() => navigate('/SearchLead')}>Search Lead</li>
-            <li className="sidebar-item" 
-             onClick={() => {
-              selectedCase.role === "Investigator"
-              ? setPendingRoute("/LRInstruction")
-              : setPendingRoute("/CMInstruction")
-              // setPendingRoute("/CMInstruction");
-              setShowSelectModal(true);
-            }}>View Lead Return</li>
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/LeadLog")}>View Lead Log</li>
-         
-              {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/CaseScratchpad")}>
-              Add/View Case Notes
-            </li>)}
-        
-            <li className="sidebar-item" onClick={() => onShowCaseSelector("/FlaggedLead")}>View Flagged Leads</li>
-            <li className="sidebar-item active" onClick={() => onShowCaseSelector("/ViewTimeline")}>View Timeline Entries</li>
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )} >View Leads Desk</li>
-            {selectedCase.role !== "Investigator" && (
-            <li className="sidebar-item" onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )} >Generate Report</li>)}
-           </ul>
-        )}
-
-<li className="sidebar-item" style={{ fontWeight: 'bold' }} onClick={() => setLeadDropdownOpen(!leadDropdownOpen)}>
-          Lead Related Tabs {leadDropdownOpen ?  "▲": "▼"}
-</li>
-        {leadDropdownOpen && (
-          <ul>
-               <li className="sidebar-item" onClick={() => navigate('/leadReview')}>Lead Information</li>
-           
-           {selectedCase.role !== "Investigator" && (
- <li
- className="sidebar-item"
- onClick={() => {
-   setPendingRoute("/ChainOfCustody", { state: { caseDetails } });
-   setShowSelectModal(true);
- }}
->    View Lead Chain of Custody
-  </li> )}
-  </ul>)}
-       
-
-                    </ul>
-
-                    {showSelectModal && (
-      <SelectLeadModal
-        leads={leads.allLeads}
-        onSelect={handleSelectLead}
-        onClose={() => setShowSelectModal(false)}
-      />
-    )}
-                </div> */}
-
-                 <SideBar  activePage="LeadsDesk" />
-
+        <SideBar activePage="FlaggedLead" />
 
         <div className="left-content">
-
-           <div className="top-menu">
-        <div className="menu-items">
-           <span className="menu-item " onClick={() => navigate("/LeadsDesk", { state: { caseDetails } } )}>
-            Leads Desk
-          </span>
-        <span className="menu-item " onClick={() => navigate("/LeadsDeskTestExecSummary", { state: { caseDetails } } )}>
-            Generate Report
-          </span>
-          <span className="menu-item" onClick={() => navigate("/CaseScratchpad", { state: { caseDetails } } )}>
-            Add/View Case Notes
-          </span>
-          <span className="menu-item" onClick={() => navigate('/SearchLead', { state: { caseDetails } } )} >
-            Search Leads
-          </span>
-          <span className="menu-item" onClick={() => navigate("/ViewTimeline", { state: { caseDetails } } )}>
-          View Timelines
-          </span>
-          <span className="menu-item active" onClick={() => navigate("/FlaggedLead", { state: { caseDetails } } )}>
-          View Flagged Leads
-          </span>
-         </div>
-       </div>
-
-       
-        <div className="case-header">
-          <h2 className="">WEBPAGE UNDER CONSTRUCTION</h2>
-        </div>
-        
-      {/* {showFilter && (
-        <div className="popup-overlay">
-          <div className="popup-content">
-            <button className="close-popup-btn" onClick={() => setShowFilter(false)}>
-              &times;
-            </button>
-            <Filter filtersConfig={filtersConfig} onApply={handleFilterApply} />
-            </div>
-        </div>
-      )} */}
-
-{/*   
-      {showSort && (
-        <div className="popup-overlay">
-          <div className="popup-content">
-            <button className="close-popup-btn" onClick={() => setShowSort(false)}>
-              &times;
-            </button>
-            <Sort columns={["Lead Number", "Lead Name", "Due Date", "Priority", "Flag", "Assigned Officers", "Days Left"]} onApplySort={handleSort} />
+          {/* Top menu */}
+          <div className="top-menu">
+            <div className="menu-items">
+              <span className="menu-item" onClick={() => navigate('/LeadsDesk', { state: { caseDetails } })}>
+                Leads Desk
+              </span>
+              <span className="menu-item" onClick={() => navigate('/LeadsDeskTestExecSummary', { state: { caseDetails } })}>
+                Generate Report
+              </span>
+              <span className="menu-item" onClick={() => navigate('/CaseScratchpad', { state: { caseDetails } })}>
+                Add/View Case Notes
+              </span>
+              <span className="menu-item" onClick={() => navigate('/SearchLead', { state: { caseDetails } })}>
+                Search Leads
+              </span>
+              <span className="menu-item" onClick={() => navigate('/ViewTimeline', { state: { caseDetails } })}>
+                View Timelines
+              </span>
+              <span className="menu-item active" onClick={() => navigate('/FlaggedLead', { state: { caseDetails } })}>
+                View Flagged Leads
+              </span>
             </div>
           </div>
-      )} */}
 
-{/* <div className="table-section1">
-      <div className="table-section">
-      <div className="table-controls">
-      <div className="search-bar">
-      <div className="search-container1">
-      <i className="fa-solid fa-magnifying-glass"></i>
-      <input
-        type="text"
-        className="search-input1"
-        placeholder="Search Lead"
-      />
+          <div className="flags-page-body">
+
+            {/* ── Case Flags Section ── */}
+            <div className="flags-section">
+              <div className="flags-section-header">
+                <h3 className="flags-section-title">
+                  Case Flags
+                  <span className="flags-count-badge">{caseFlags.length}</span>
+                </h3>
+                {!isInvestigator && (
+                  <button className="create-flag-btn" onClick={() => { setShowCreateModal(true); setCreateError(''); setNewFlagInput(''); }}>
+                    + Create New Flag
+                  </button>
+                )}
+              </div>
+
+              <div className="flag-chips-row">
+                {caseFlags.map(flag => (
+                  <span
+                    key={flag}
+                    className="flag-chip"
+                    style={{ backgroundColor: getFlagColor(flag) }}
+                  >
+                    {flag}
+                    {usedFlags.includes(flag) && (
+                      <span className="flag-chip-count">
+                        {allLeads.filter(l => (l.associatedFlags || []).includes(flag)).length}
+                      </span>
+                    )}
+                  </span>
+                ))}
+                {caseFlags.length === 0 && (
+                  <span className="no-flags-msg">No flags created yet. Click "Create New Flag" to get started.</span>
+                )}
+              </div>
+
+              {usedFlags.length > 0 && (
+                <p className="flags-summary-text">
+                  {flaggedLeads.length} lead{flaggedLeads.length !== 1 ? 's' : ''} flagged across {usedFlags.length} flag type{usedFlags.length !== 1 ? 's' : ''}.
+                </p>
+              )}
+            </div>
+
+            {/* ── Leads Table ── */}
+            <div className="flags-table-section">
+              <div className="flags-table-toolbar">
+                <h3 className="flags-section-title">All Leads</h3>
+                <div className="flags-search-wrap">
+                  <i className="fa-solid fa-magnifying-glass" />
+                  <input
+                    type="text"
+                    placeholder="Search by lead #, description, or flag..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="flags-search-input"
+                  />
+                </div>
+              </div>
+
+              {loading && <p className="flags-loading">Loading leads...</p>}
+              {error && <p className="flags-error">{error}</p>}
+
+              {!loading && !error && (
+                <table className="flags-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '8%' }}>Lead #</th>
+                      <th>Description</th>
+                      <th style={{ width: '32%' }}>Flags</th>
+                      {!isInvestigator && <th style={{ width: '10%' }}>Actions</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLeads.length === 0 ? (
+                      <tr>
+                        <td colSpan={isInvestigator ? 3 : 4} style={{ textAlign: 'center', padding: '20px' }}>
+                          No leads found.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredLeads.map((lead, idx) => (
+                        <tr key={idx} className={(lead.associatedFlags || []).length > 0 ? 'flagged-row' : ''}>
+                          <td>{lead.leadNo}</td>
+                          <td>{lead.description}</td>
+                          <td>
+                            <div className="flag-chips-cell">
+                              {(lead.associatedFlags || []).length === 0 ? (
+                                <span className="no-flag-text">—</span>
+                              ) : (
+                                (lead.associatedFlags || []).map(f => (
+                                  <span
+                                    key={f}
+                                    className="flag-chip flag-chip-sm"
+                                    style={{ backgroundColor: getFlagColor(f) }}
+                                  >
+                                    {f}
+                                  </span>
+                                ))
+                              )}
+                            </div>
+                          </td>
+                          {!isInvestigator && (
+                            <td>
+                              <button className="manage-flags-btn" onClick={() => openFlagModal(lead)}>
+                                Manage
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
-      </div>
-    <div className="empty-space"></div>
-    <div className="control-buttons">
-    <button onClick={() => setShowFilter(true)} className="icon-button">
-                      <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/filter.png`}
-                        alt="Filter Icon"
-                        className="icon-image"
-                      />
+
+      {/* ── Create New Flag Modal ── */}
+      {showCreateModal && (
+        <div className="flag-modal-overlay" onClick={() => setShowCreateModal(false)}>
+          <div className="flag-modal" onClick={e => e.stopPropagation()}>
+            <div className="flag-modal-header">
+              <h4>Create New Flag</h4>
+              <button className="flag-modal-close" onClick={() => setShowCreateModal(false)}>&times;</button>
+            </div>
+            <div className="flag-modal-body">
+              <label className="flag-modal-label">Flag Name</label>
+              <input
+                type="text"
+                className="flag-modal-input"
+                placeholder="e.g. Evidence Collected"
+                value={newFlagInput}
+                onChange={e => { setNewFlagInput(e.target.value); setCreateError(''); }}
+                onKeyDown={e => e.key === 'Enter' && handleCreateFlag()}
+                autoFocus
+              />
+              {createError && <p className="flag-modal-error">{createError}</p>}
+              <div className="flag-modal-preview">
+                {newFlagInput.trim() && (
+                  <span className="flag-chip" style={{ backgroundColor: getFlagColor(newFlagInput.trim()) }}>
+                    {newFlagInput.trim()}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flag-modal-footer">
+              <button className="flag-btn-cancel" onClick={() => setShowCreateModal(false)}>Cancel</button>
+              <button className="flag-btn-save" onClick={handleCreateFlag}>Create Flag</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Manage Lead Flags Modal ── */}
+      {flagModalLead && (
+        <div className="flag-modal-overlay" onClick={() => setFlagModalLead(null)}>
+          <div className="flag-modal flag-modal-lg" onClick={e => e.stopPropagation()}>
+            <div className="flag-modal-header">
+              <h4>Manage Flags — Lead #{flagModalLead.leadNo}</h4>
+              <button className="flag-modal-close" onClick={() => setFlagModalLead(null)}>&times;</button>
+            </div>
+            <div className="flag-modal-body">
+              <p className="flag-modal-desc">{flagModalLead.description}</p>
+
+              {/* Create New Flag — appears before Assign a Flag */}
+              <div className="inline-create-flag-section">
+                <p className="flag-modal-label">Create New Flag</p>
+                <div className="inline-create-flag-row">
+                  <input
+                    type="text"
+                    className="flag-modal-input inline-flag-input"
+                    placeholder="e.g. Evidence Collected"
+                    value={inlineNewFlag}
+                    onChange={e => { setInlineNewFlag(e.target.value); setInlineNewFlagError(''); }}
+                    onKeyDown={e => e.key === 'Enter' && handleInlineCreateFlag()}
+                  />
+                  <button className="create-flag-btn" onClick={handleInlineCreateFlag}>+ Add</button>
+                </div>
+                {inlineNewFlagError && <p className="flag-modal-error">{inlineNewFlagError}</p>}
+              </div>
+
+              <p className="flag-modal-label">Assign a Flag</p>
+              <div className="flag-toggle-grid">
+                {caseFlags.map(flag => {
+                  const active = tempFlags.includes(flag);
+                  return (
+                    <button
+                      key={flag}
+                      className={`flag-toggle-btn ${active ? 'active' : ''}`}
+                      style={active ? { backgroundColor: getFlagColor(flag), borderColor: getFlagColor(flag) } : {}}
+                      onClick={() => toggleFlag(flag)}
+                    >
+                      {active && <span className="flag-check">✓ </span>}
+                      {flag}
                     </button>
-                    <button onClick={() => setShowSort(true)} className="icon-button">
-                      <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/sort1.png`}
-                        alt="Sort Icon"
-                        className="icon-image"
-                      />
-                    </button>
-                    <button onClick={() => setShowSort(true)} className="icon-button">
-                      <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/download.png`}
-                        alt="Sort Icon"
-                        className="icon-image"
-                      />
-                    </button>
-                    <button onClick={() => setShowSort(true)} className="icon-button">
-                      <img 
-                        src={`${process.env.PUBLIC_URL}/Materials/printer.png`}
-                        alt="Sort Icon"
-                        className="icon-image"
-                      />
-                    </button>
-    </div>
-  </div>
-        <table className="leads-table">
-          <thead>
-            <tr>
-              <th style={{ width: "10%" }}>Lead #</th>
-              <th>Lead Log Summary</th>
-              <th style={{ width: "14%" }}>Flags</th>
-            </tr>
-          </thead>
-          <tbody>
-          {sortedEntries.length > 0 ? (
-              sortedEntries.map((entry, index) => (
-                <tr key={index}>
-                  <td>{entry.leadNumber}</td>
-                  <td 
-          className="clickable-description" 
-          onClick={() => handleLeadClick(entry)}
-          style={{ color: "blue", cursor: "pointer", textDecoration: "underline" }}
-        >{entry.leadSummary}</td>
-                  <td>{entry.flag}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="6" style={{ textAlign: 'center' }}>
-                  No Leads Available
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-        <Pagination
-  currentPage={currentPage}
-  totalEntries={totalEntries}  
-  onPageChange={setCurrentPage} 
-  pageSize={pageSize}
-  onPageSizeChange={setPageSize} 
-/>
-      </div>
-    </div> */}
-    </div>
-      </div>
+                  );
+                })}
+              </div>
+              {tempFlags.length > 0 && (
+                <div className="flag-modal-selected">
+                  <span className="flag-modal-label">Selected: </span>
+                  {tempFlags.map(f => (
+                    <span key={f} className="flag-chip flag-chip-sm" style={{ backgroundColor: getFlagColor(f) }}>{f}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flag-modal-footer">
+              <button className="flag-btn-cancel" onClick={() => setFlagModalLead(null)}>Cancel</button>
+              <button className="flag-btn-save" onClick={saveFlagsForLead}>Save Flags</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
