@@ -61,27 +61,22 @@ const leadActivePages     = new Set(["LeadReview", "LeadInformation"]); // which
   const fetchClosedCases = async () => {
     try {
       const token = localStorage.getItem("token");
-      const { data } = await api.get("/api/cases", {
+      const { data } = await api.get("/api/cases-by-officer", {
         headers: { Authorization: `Bearer ${token}` },
-        params: { officerName: signedInOfficer },
+        params: { officerName: signedInOfficer, status: "COMPLETED" },
       });
 
       // Only cases where this officer is assigned AND their role is CM or DS
-      const closed = data
+      const closed = (data || [])
         .filter(
           (c) =>
-            c.caseStatus === "Completed" &&
-            c.assignedOfficers.some((o) => o.name === signedInOfficer) &&
-            ["Case Manager", "Detective Supervisor"].includes(
-              c.assignedOfficers.find((o) => o.name === signedInOfficer)?.role
-            )
+            c.caseStatus === "COMPLETED" &&
+            ["Case Manager", "Detective Supervisor"].includes(c.role)
         )
         .map((c) => ({
           id: c.caseNo,
           title: c.caseName,
-          role:
-            c.assignedOfficers.find((o) => o.name === signedInOfficer)?.role ||
-            "Unknown",
+          role: c.role || "Unknown",
         }));
 
       setClosedCaseList(closed);
@@ -183,23 +178,17 @@ const leadCountByCase = useMemo(() => {
     const fetchCases = async () => {
       try {
         const token = localStorage.getItem("token");
-        const { data } = await api.get("/api/cases", {
+        const { data } = await api.get("/api/cases-by-officer", {
           headers: { Authorization: `Bearer ${token}` },
           params: { officerName: signedInOfficer },
         });
 
-        const ongoing = data
-          .filter(
-            (c) =>
-              c.caseStatus === "Ongoing" &&
-              c.assignedOfficers.some((o) => o.name === signedInOfficer)
-          )
+        const ongoing = (data || [])
+          .filter((c) => c.caseStatus === "ONGOING")
           .map((c) => ({
             id: c.caseNo,
             title: c.caseName,
-            role:
-              c.assignedOfficers.find((o) => o.name === signedInOfficer)?.role ||
-              "Unknown",
+            role: c.role || "Unknown",
           }));
 
         setCaseList(ongoing);

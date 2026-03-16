@@ -155,9 +155,10 @@ exports.getCasesByOfficer = async (req, res) => {
       return res.status(404).json({ message: "Officer not found" });
     }
 
+    const statusFilter = req.query.status || "ONGOING";
     const cases = await Case.find({
       isDeleted: { $ne: true },
-      status: "ONGOING",
+      status: statusFilter,
       $or: [
         { caseManagerUserIds: user._id },
         { detectiveSupervisorUserId: user._id },

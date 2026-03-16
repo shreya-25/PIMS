@@ -248,7 +248,7 @@ export const CasePageManager = () => {
       try {
         const token = localStorage.getItem("token");
         const response = await api.get(
-          `/api/lead/case/${selectedCase.caseNo}/${selectedCase.caseName}`,
+          `/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -259,7 +259,7 @@ export const CasePageManager = () => {
           if (isSupervisor) return true;
           if (
             lead.accessLevel === "Only Case Manager and Assignees" &&
-            !lead.assignedTo?.includes(signedInOfficer) &&
+            !lead.assignedTo?.some(a => a.username === signedInOfficer) &&
             lead.assignedBy !== signedInOfficer
           ) return false;
           return true;
