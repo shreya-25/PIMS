@@ -1725,15 +1725,17 @@ function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
   let currentX = startX;
 
   // Draw header row
-  headers.forEach((header, i) => {
-    doc.strokeColor("#999999");
-    doc.rect(currentX, currentY, colWidths[i], headerHeight).stroke();
-    doc.text(header, currentX + padding, currentY + padding, {
-      width: colWidths[i] - 2 * padding,
-      align: "left",
-    });
+  for (let i = 0; i < headers.length; i++) {
+    doc.rect(currentX, currentY, colWidths[i], headerHeight).fillAndStroke("#e0e0e0", "#bbb");
+    doc.fillColor("#000")
+      .font("Helvetica-Bold")
+      .fontSize(11)
+      .text(headers[i], currentX + padding, currentY + 5, {
+        width: colWidths[i] - 2 * padding,
+        align: "left",
+      });
     currentX += colWidths[i];
-  });
+  }
   currentY += headerHeight;
 
   // Body rows
@@ -2003,18 +2005,19 @@ function measureRowHeight(doc, row, headers, colWidths, padding = 5) {
 }
 
 function drawHeaderRow(doc, startX, startY, headers, colWidths, padding = 5) {
-  doc.font("Helvetica-Bold").fontSize(10);
-  let currentX = startX;
   const headerHeight = 20;
-  headers.forEach((header, i) => {
-    doc.strokeColor("#999999");
-    doc.rect(currentX, startY, colWidths[i], headerHeight).stroke();
-    doc.text(header, currentX + padding, startY + padding, {
-      width: colWidths[i] - 2 * padding,
-      align: "left",
-    });
+  let currentX = startX;
+  for (let i = 0; i < headers.length; i++) {
+    doc.rect(currentX, startY, colWidths[i], headerHeight).fillAndStroke("#e0e0e0", "#bbb");
+    doc.fillColor("#000")
+      .font("Helvetica-Bold")
+      .fontSize(11)
+      .text(headers[i], currentX + padding, startY + 5, {
+        width: colWidths[i] - 2 * padding,
+        align: "left",
+      });
     currentX += colWidths[i];
-  });
+  }
   return startY + headerHeight;
 }
 
@@ -2139,7 +2142,7 @@ function drawStructuredLeadDetails(doc, x, y, lead, characterOfCase) {
 
   // Grey background cells
   for (let i = 0; i < headers.length; i++) {
-    doc.rect(currX, y, colWidths[i], rowHeight).fillAndStroke("#f5f5f5", "#ccc");
+    doc.rect(currX, y, colWidths[i], rowHeight).fillAndStroke("#e0e0e0", "#bbb");
     doc.fillColor("#000")
       .font("Helvetica-Bold")
       .fontSize(11)

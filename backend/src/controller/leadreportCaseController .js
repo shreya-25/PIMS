@@ -180,14 +180,14 @@ function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
 
   const drawHeader = () => {
     let x = startX;
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("black");
-    headers.forEach((h, i) => {
-      const w = colWidths[i];
-      doc.strokeColor("#999999").rect(x, y, w, headerHeight).stroke();
-      const dy = Math.max(0, (headerHeight - doc.currentLineHeight()) / 2 - 1);
-      doc.text(h, x + padding, y + dy, { width: w - 2 * padding, align: "left" });
-      x += w;
-    });
+    for (let i = 0; i < headers.length; i++) {
+      doc.rect(x, y, colWidths[i], headerHeight).fillAndStroke("#e0e0e0", "#bbb");
+      doc.fillColor("#000")
+        .font("Helvetica-Bold")
+        .fontSize(11)
+        .text(headers[i], x + padding, y + 5, { width: colWidths[i] - 2 * padding, align: "left" });
+      x += colWidths[i];
+    }
     y += headerHeight;
     doc.font("Helvetica").fontSize(10).fillColor("black");
   };
@@ -412,18 +412,19 @@ function drawLabelValueRow(doc, x, y, label, value, totalWidth) {
 
 
 function drawHeaderRow(doc, startX, startY, headers, colWidths, padding = 5) {
-  doc.font("Helvetica-Bold").fontSize(10);
-  let currentX = startX;
   const headerHeight = 20;
-  headers.forEach((header, i) => {
-    doc.strokeColor("#999999");
-    doc.rect(currentX, startY, colWidths[i], headerHeight).stroke();
-    doc.text(header, currentX + padding, startY + padding, {
-      width: colWidths[i] - 2 * padding,
-      align: "left",
-    });
+  let currentX = startX;
+  for (let i = 0; i < headers.length; i++) {
+    doc.rect(currentX, startY, colWidths[i], headerHeight).fillAndStroke("#e0e0e0", "#bbb");
+    doc.fillColor("#000")
+      .font("Helvetica-Bold")
+      .fontSize(11)
+      .text(headers[i], currentX + padding, startY + 5, {
+        width: colWidths[i] - 2 * padding,
+        align: "left",
+      });
     currentX += colWidths[i];
-  });
+  }
   return startY + headerHeight;
 }
 
@@ -583,15 +584,17 @@ function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
   let currentX = startX;
 
   // Draw header row
-  headers.forEach((header, i) => {
-    doc.strokeColor("#999999");
-    doc.rect(currentX, currentY, colWidths[i], headerHeight).stroke();
-    doc.text(header, currentX + padding, currentY + padding, {
-      width: colWidths[i] - 2 * padding,
-      align: "left",
-    });
+  for (let i = 0; i < headers.length; i++) {
+    doc.rect(currentX, currentY, colWidths[i], headerHeight).fillAndStroke("#e0e0e0", "#bbb");
+    doc.fillColor("#000")
+      .font("Helvetica-Bold")
+      .fontSize(11)
+      .text(headers[i], currentX + padding, currentY + 5, {
+        width: colWidths[i] - 2 * padding,
+        align: "left",
+      });
     currentX += colWidths[i];
-  });
+  }
   currentY += headerHeight;
 
   // Body rows
@@ -781,7 +784,7 @@ function drawStructuredLeadDetails(doc, x, y, lead, characterOfCase) {
 
   // Grey background cells
   for (let i = 0; i < headers.length; i++) {
-    doc.rect(currX, y, colWidths[i], rowHeight).fillAndStroke("#f5f5f5", "#ccc");
+    doc.rect(currX, y, colWidths[i], rowHeight).fillAndStroke("#e0e0e0", "#bbb");
     doc.fillColor("#000")
       .font("Helvetica-Bold")
       .fontSize(11)
