@@ -762,27 +762,42 @@ export const LRPerson1 = () => {
                     </td>
                   </tr>
                   <tr>
-                    <td>MI</td>
-                    <td>
-                      <input type="text" value={formData.mi}
-                        onChange={(e) => handleChange('mi', e.target.value)} />
-                    </td>
                     <td>Suffix</td>
                     <td>
                       <input type="text" value={formData.suffix}
                         onChange={(e) => handleChange('suffix', e.target.value)} />
                     </td>
+                    <td>MI</td>
+                    <td>
+                      <input type="text" value={formData.mi}
+                        onChange={(e) => handleChange('mi', e.target.value)} />
+                    </td>
                   </tr>
                   <tr>
-                    <td>Cell Number</td>
-                    <td>
-                      <input type="text" value={formData.cellNumber}
-                        onChange={(e) => handleChange('cellNumber', e.target.value)} />
-                    </td>
                     <td>Alias</td>
                     <td>
                       <input type="text" value={formData.alias}
                         onChange={(e) => handleChange('alias', e.target.value)} />
+                    </td>
+                    <td>Sex</td>
+                    <td>
+                      <select value={formData.sex}
+                        onChange={(e) => handleChange('sex', e.target.value)}>
+                        <option value="">Select Sex</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Date of Birth</td>
+                    <td><input type="date" value={formData.dateOfBirth}
+                      onChange={(e) => handleChange('dateOfBirth', e.target.value)} /></td>
+                    <td>Cell Number</td>
+                    <td>
+                      <input type="text" value={formData.cellNumber}
+                        onChange={(e) => handleChange('cellNumber', e.target.value)} />
                     </td>
                   </tr>
 
@@ -796,58 +811,59 @@ export const LRPerson1 = () => {
                   </tr>
                   <tr>
                     <td>Street 2</td>
-                    <td colSpan="3">
+                    <td>
                       <input type="text" value={formData.street2}
                         onChange={(e) => handleChange('street2', e.target.value)} />
                     </td>
+                    <td>Building</td>
+                    <td>
+                      <input type="text" value={formData.building}
+                        onChange={(e) => handleChange('building', e.target.value)} />
+                    </td>
                   </tr>
                   <tr>
-                    <td>Business Name</td>
-                    <td>
-                      <input type="text" value={formData.businessName}
-                        onChange={(e) => handleChange('businessName', e.target.value)} />
-                    </td>
                     <td>Apartment</td>
                     <td>
                       <input type="text" value={formData.apartment}
                         onChange={(e) => handleChange('apartment', e.target.value)} />
                     </td>
-                  </tr>
-                  <tr>
                     <td>City</td>
                     <td>
                       <input type="text" value={formData.city}
                         onChange={(e) => handleChange('city', e.target.value)} />
                     </td>
+                  </tr>
+                  <tr>
                     <td>State</td>
                     <td>
                       <input type="text" value={formData.state}
                         onChange={(e) => handleChange('state', e.target.value)} />
                     </td>
-                  </tr>
-                  <tr>
                     <td>Zip Code</td>
                     <td>
                       <input type="text" value={formData.zipCode}
                         onChange={(e) => handleChange('zipCode', e.target.value)} />
                     </td>
-                    <td>Date of Birth</td>
-                    <td><input type="date" value={formData.dateOfBirth}
-                      onChange={(e) => handleChange('dateOfBirth', e.target.value)} /></td>
                   </tr>
 
                   {/* ── Identity / contact ── */}
                   <tr>
-                    {/* SSN and Occupation not yet wired to formData in the original */}
                     <td>SSN</td>
-                    <td><input type="text" /></td>
-                    <td>Occupation</td>
-                    <td><input type="text" /></td>
+                    <td><input type="text" value={formData.ssn}
+                      onChange={(e) => handleChange('ssn', e.target.value)} /></td>
+                    <td>Email</td>
+                    <td><input type="email" value={formData.email}
+                      onChange={(e) => handleChange('email', e.target.value)} /></td>
                   </tr>
                   <tr>
-                    {/* Email not yet wired to formData in the original */}
-                    <td>Email</td>
-                    <td colSpan="3"><input type="email" /></td>
+                    <td>Occupation</td>
+                    <td><input type="text" value={formData.occupation}
+                      onChange={(e) => handleChange('occupation', e.target.value)} /></td>
+                    <td>Business Name</td>
+                    <td>
+                      <input type="text" value={formData.businessName}
+                        onChange={(e) => handleChange('businessName', e.target.value)} />
+                    </td>
                   </tr>
 
                   {/* ── Classification dropdowns ── */}
@@ -878,22 +894,12 @@ export const LRPerson1 = () => {
                   </tr>
                   <tr>
                     <td>Caution Type</td>
-                    <td>
+                    <td colSpan="3">
                       <select value={formData.cautionType}
                         onChange={(e) => handleChange('cautionType', e.target.value)}>
                         <option value="">Select Type</option>
                         <option value="Armed">Armed</option>
                         <option value="Unarmed">Unarmed</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </td>
-                    <td>Sex</td>
-                    <td>
-                      <select value={formData.sex}
-                        onChange={(e) => handleChange('sex', e.target.value)}>
-                        <option value="">Select Sex</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
                         <option value="Other">Other</option>
                       </select>
                     </td>

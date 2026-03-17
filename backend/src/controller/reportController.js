@@ -163,6 +163,117 @@ function renderSectionBulletPoints(doc, title, data, startX) {
   doc.moveDown(1);
 }
 
+function renderPersonDetails(doc, title, persons, startX, pageWidth) {
+  doc.font("Helvetica-Bold").fontSize(12).text(title, startX, doc.y, { underline: true });
+  doc.moveDown(0.5);
+
+  if (!Array.isArray(persons) || persons.length === 0) {
+    doc.font("Helvetica").fontSize(10).text("No data available", startX, doc.y);
+    doc.moveDown(1);
+    return;
+  }
+
+  const availableWidth = pageWidth - startX * 2;
+
+  const drawGroup = (headers, values) => {
+    if (doc.y > doc.page.height - doc.options.margin - 60) doc.addPage();
+    const colWidth = availableWidth / headers.length;
+    const columnWidths = Array(headers.length).fill(colWidth);
+    const row = Object.fromEntries(headers.map((h, i) => [h, values[i] != null ? String(values[i]) : ""]));
+    drawDynamicTable(doc, startX, headers, [row], columnWidths);
+    doc.moveDown(0.2);
+  };
+
+  persons.forEach((person, index) => {
+    if (doc.y > doc.page.height - doc.options.margin - 100) doc.addPage();
+
+    if (index > 0) {
+      doc.moveDown(0.3);
+      doc.font("Helvetica").fontSize(10).text("─".repeat(60), startX, doc.y);
+      doc.moveDown(0.3);
+    }
+
+    doc.font("Helvetica-Bold").fontSize(10).text(`Person #${index + 1}`, startX, doc.y);
+    doc.moveDown(0.3);
+
+    // Derived values
+    const dob = person["Date of Birth"] || (person.dateOfBirth ? new Date(person.dateOfBirth).toLocaleDateString("en-US") : "");
+    const addr = person.address || {};
+    const fullAddress = [addr.street1, addr.city, addr.state, addr.zipCode].filter(Boolean).join(", ");
+    const heightDisplay = (person.height && (person.height.feet != null || person.height.inches != null))
+      ? `${person.height.feet ?? 0}ft ${person.height.inches ?? 0}in`
+      : "";
+    const scarsMarks = [
+      person.scar   ? `Scar: ${person.scar}`     : null,
+      person.mark   ? `Mark: ${person.mark}`     : null,
+      person.tattoo ? `Tattoo: ${person.tattoo}` : null,
+    ].filter(Boolean).join("; ");
+
+    // Row 1: Last Name | First Name | Middle Initial | Suffix | Alias
+    drawGroup(
+      ["Last Name", "First Name", "Middle Initial", "Suffix", "Alias"],
+      [person.lastName, person.firstName, person.mi || person.middleInitial, person.suffix, person.alias]
+    );
+
+    // Row 2: Sex | Date Of Birth | Address | Phone No | Email
+    drawGroup(
+      ["Sex", "Date Of Birth", "Address", "Phone No", "Email"],
+      [person.sex, dob, fullAddress, person.cellNumber, person.email]
+    );
+
+    // Row 3: Race | Ethnicity | Person Type | Condition | Caution Type
+    drawGroup(
+      ["Race", "Ethnicity", "Person Type", "Condition", "Caution Type"],
+      [person.race, person.ethnicity, person.personType, person.condition, person.cautionType]
+    );
+
+    // Row 4: Skin Tone | Eye Color | Glasses | Hair Color | Height
+    drawGroup(
+      ["Skin Tone", "Eye Color", "Glasses", "Hair Color", "Height"],
+      [person.skinTone, person.eyeColor, person.glasses, person.hairColor, heightDisplay]
+    );
+
+    // Row 5: Weight | Scars | Marks | Tattoo
+    drawGroup(
+      ["Weight", "Scars", "Marks", "Tattoo"],
+      [person.weight != null && person.weight !== "" ? `${person.weight} lbs` : "", person.scar || "", person.mark || "", person.tattoo || ""]
+    );
+
+    // Row 6: SSN | Occupation | Business Name
+    drawGroup(
+      ["SSN", "Occupation", "Business Name"],
+      [person.ssn, person.occupation, person.businessName]
+    );
+
+    // Row 7: Street 1 | Street 2 | Building
+    drawGroup(
+      ["Street 1", "Street 2", "Building"],
+      [addr.street1, addr.street2, addr.building]
+    );
+
+    // Row 8: Apartment | City | State | Zip Code
+    drawGroup(
+      ["Apartment", "City", "State", "Zip Code"],
+      [addr.apartment, addr.city, addr.state, addr.zipCode]
+    );
+
+    // Additional Data
+    if (Array.isArray(person.additionalData) && person.additionalData.length > 0) {
+      if (doc.y > doc.page.height - doc.options.margin - 60) doc.addPage();
+      doc.font("Helvetica-Bold").fontSize(10).text("Additional Data", startX, doc.y);
+      doc.moveDown(0.2);
+      const addRows = person.additionalData.map(item => ({
+        "Category": item.category || "",
+        "Value":    item.value    || "",
+      }));
+      drawDynamicTable(doc, startX, ["Category", "Value"], addRows, [availableWidth / 2, availableWidth / 2]);
+      doc.moveDown(0.2);
+    }
+  });
+
+  doc.moveDown(1);
+}
+
 function renderKeyValueTable(doc, title, data, startX, pageWidth) {
   // Section title with underline
   doc.font("Helvetica-Bold").fontSize(12).text(title, startX, doc.y, { underline: true });
@@ -367,6 +478,8 @@ if (leadInstruction) {
               firstName: person.firstName || '',
               mi: person.mi || '',
               suffix: person.suffix || '',
+              sex: person.sex || '',
+              "Date of Birth": person.dateOfBirth ? new Date(person.dateOfBirth).toLocaleDateString('en-US') : '',
               cellNumber: person.cellNumber || '',
               businessName: person.businessName || '',
               street1: person.street1 || '',
@@ -377,13 +490,11 @@ if (leadInstruction) {
               state: person.state || '',
               zipCode: person.zipCode || '',
               ssn: person.ssn || '',
-              "Date of Birth": person.dateOfBirth ? new Date(person.dateOfBirth).toLocaleDateString('en-US') : '',
               email: person.email || '',
               occupation: person.occupation || '',
               personType: person.personType || '',
               condition: person.condition || '',
               cautionType: person.cautionType || '',
-              sex: person.sex || '',
               race: person.race || '',
               ethnicity: person.ethnicity || '',
               skinTone: person.skinTone || '',
@@ -395,7 +506,7 @@ if (leadInstruction) {
               miscInfo: person.miscInfo || ''
             };
           });
-          renderSectionBulletPoints(doc, "Lead Persons", enhancedPersons, startX);
+          renderPersonDetails(doc, "Lead Persons", enhancedPersons, startX, pageWidth);
         }
         
         if (relatedVehicles.length) {
