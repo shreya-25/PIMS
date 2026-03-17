@@ -119,9 +119,7 @@ export const LRPerson = () => {
 
   // Person detail modal
   const [showPersonModal,  setShowPersonModal]  = useState(false);
-  const [personModalData,  setPersonModalData]  = useState({
-    leadNo: '', description: '', caseNo: '', caseName: '', leadReturnId: '',
-  });
+  const [personModalData,  setPersonModalData]  = useState({ person: null });
 
   // Alert and confirmation modals
   const [alertOpen,          setAlertOpen]          = useState(false);
@@ -237,8 +235,8 @@ export const LRPerson = () => {
   // ─── Handlers ────────────────────────────────────────────────────────────────
 
   /** Open the person detail modal for the selected row. */
-  const openPersonModal = (leadNo, description, caseNo, caseName, leadReturnId) => {
-    setPersonModalData({ leadNo, description, caseNo, caseName, leadReturnId });
+  const openPersonModal = (rawPerson) => {
+    setPersonModalData({ person: rawPerson });
     setShowPersonModal(true);
   };
 
@@ -591,7 +589,7 @@ export const LRPerson = () => {
                 <tbody>
                   {persons.length > 0 ? (
                     persons.map((person, index) => {
-                      const canModify = person.enteredBy?.trim() === signedInOfficer?.trim();
+                      const canModify = isCaseManager || person.enteredBy?.trim() === signedInOfficer?.trim();
                       const disableActions =
                         selectedLead?.leadStatus === 'In Review' ||
                         selectedLead?.leadStatus === 'Completed' ||
@@ -612,15 +610,10 @@ export const LRPerson = () => {
                           <td>
                             <button
                               className={styles.viewPersonBtn}
-                              onClick={() =>
-                                openPersonModal(
-                                  selectedLead.leadNo,
-                                  selectedLead.leadName,
-                                  selectedCase.caseNo,
-                                  selectedCase.caseName,
-                                  person.leadReturnId
-                                )
-                              }
+                              onClick={() => {
+                                const raw = rawPersons.find((r) => r._id === person._id);
+                                if (raw) openPersonModal(raw);
+                              }}
                             >
                               View
                             </button>
@@ -673,11 +666,9 @@ export const LRPerson = () => {
               <PersonModal
                 isOpen={showPersonModal}
                 onClose={closePersonModal}
-                leadNo={personModalData.leadNo}
-                description={personModalData.description}
-                caseNo={personModalData.caseNo}
-                caseName={personModalData.caseName}
-                leadReturnId={personModalData.leadReturnId}
+                personData={personModalData.person}
+                caseName={selectedCase?.caseName}
+                leadNo={selectedLead?.leadNo}
               />
 
               {/* Add person button */}

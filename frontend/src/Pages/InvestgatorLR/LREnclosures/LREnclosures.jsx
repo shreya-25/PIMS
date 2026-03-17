@@ -939,7 +939,9 @@ export const LREnclosures = () => {
                   </thead>
                   <tbody>
                     {enclosures.length > 0 ? (
-                      enclosures.map((enclosure, index) => (
+                      enclosures.map((enclosure, index) => {
+                        const canModify = isCaseManager || enclosure.enteredBy?.trim() === signedInOfficer?.trim();
+                        return (
                         <tr key={index}>
                           <td>{enclosure.dateEntered}</td>
                           <td>{enclosure.returnId}</td>
@@ -972,7 +974,7 @@ export const LREnclosures = () => {
                           <td>
                             <div className={styles.lrTableBtn}>
                               <button
-                                disabled={isLeadReadOnly}
+                                disabled={isLeadReadOnly || !canModify}
                                 onClick={() => handleEdit(index)}
                               >
                                 <img
@@ -982,7 +984,7 @@ export const LREnclosures = () => {
                                 />
                               </button>
                               <button
-                                disabled={isLeadReadOnly}
+                                disabled={isLeadReadOnly || !canModify}
                                 onClick={() => requestDeleteEnclosure(index)}
                               >
                                 <img
@@ -1007,7 +1009,8 @@ export const LREnclosures = () => {
                             </td>
                           )}
                         </tr>
-                      ))
+                        );
+                      })
                     ) : (
                       <tr>
                         <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: 'center' }}>

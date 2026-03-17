@@ -944,7 +944,7 @@ export const LRVehicle = () => {
                     {vehicles.length > 0 ? (
                       vehicles.map((vehicle, index) => {
                         // Only the record's author can edit/delete it
-                        const canModify      = vehicle.enteredBy?.trim() === signedInOfficer?.trim();
+                        const canModify      = isCaseManager || vehicle.enteredBy?.trim() === signedInOfficer?.trim();
                         const disableActions = isLeadReadOnly || !canModify;
 
                         return (

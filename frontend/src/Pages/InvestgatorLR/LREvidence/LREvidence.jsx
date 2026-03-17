@@ -850,7 +850,9 @@ export const LREvidence = () => {
                   </thead>
                   <tbody>
                     {evidences.length > 0 ? (
-                      evidences.map((item, index) => (
+                      evidences.map((item, index) => {
+                        const canModify = isCaseManager || item.enteredBy?.trim() === signedInOfficer?.trim();
+                        return (
                         <tr key={index}>
                           <td>{item.dateEntered}</td>
                           <td>{item.returnId}</td>
@@ -871,14 +873,14 @@ export const LREvidence = () => {
                           <td>{item.evidenceDescription}</td>
                           <td>
                             <div className={styles.lrTableBtn}>
-                              <button disabled={isLeadLocked} onClick={() => handleEdit(index)}>
+                              <button disabled={isLeadLocked || !canModify} onClick={() => handleEdit(index)}>
                                 <img
                                   src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                                   alt="Edit"
                                   className={styles.editIcon}
                                 />
                               </button>
-                              <button disabled={isLeadLocked} onClick={() => requestDelete(index)}>
+                              <button disabled={isLeadLocked || !canModify} onClick={() => requestDelete(index)}>
                                 <img
                                   src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                                   alt="Delete"
@@ -901,7 +903,8 @@ export const LREvidence = () => {
                             </td>
                           )}
                         </tr>
-                      ))
+                        );
+                      })
                     ) : (
                       <tr>
                         <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: "center" }}>

@@ -307,13 +307,7 @@ const toggleLeadForReport = (leadNo) => {
   
   // Modal states
   const [showPersonModal, setShowPersonModal] = useState(false);
-  const [personModalData, setPersonModalData] = useState({
-    leadNo: "",
-    description: "",
-    caseNo: "",
-    caseName: "",
-    leadReturnId: "",
-  });
+  const [personModalData, setPersonModalData] = useState({ person: null, caseName: "", leadNo: "" });
   const [showVehicleModal, setShowVehicleModal] = useState(false);
   const [vehicleModalData, setVehicleModalData] = useState({
     leadNo: "",
@@ -338,8 +332,8 @@ const toggleLeadForReport = (leadNo) => {
   const caseSummarySaveTimer = useRef(null);
 
   // ------------------ Modal Handlers ------------------
-  const openPersonModal = (leadNo, description, caseNo, caseName, leadReturnId) => {
-    setPersonModalData({ leadNo, description, caseNo, caseName, leadReturnId });
+  const openPersonModal = (person, leadNo, caseName) => {
+    setPersonModalData({ person, leadNo, caseName });
     setShowPersonModal(true);
   };
   const closePersonModal = () => setShowPersonModal(false);
@@ -1049,15 +1043,7 @@ useEffect(() => {
                                     <td>
                                       <button
                                         className={styles["download-btn"]}
-                                        onClick={() =>
-                                          openPersonModal(
-                                            lead.leadNo,
-                                            lead.description,
-                                            selectedCase.caseNo,
-                                            selectedCase.caseName,
-                                            returnItem.leadReturnId
-                                          )
-                                        }
+                                        onClick={() => openPersonModal(person, lead.leadNo, selectedCase.caseName)}
                                       >
                                         View
                                       </button>
@@ -1071,11 +1057,9 @@ useEffect(() => {
                       <PersonModal
                         isOpen={showPersonModal}
                         onClose={closePersonModal}
-                        leadNo={personModalData.leadNo}
-                        description={personModalData.description}
-                        caseNo={personModalData.caseNo}
+                        personData={personModalData.person}
                         caseName={personModalData.caseName}
-                        leadReturnId={personModalData.leadReturnId}
+                        leadNo={personModalData.leadNo}
                       />
                     </tr>
                     )}

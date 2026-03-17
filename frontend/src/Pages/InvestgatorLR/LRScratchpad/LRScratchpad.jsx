@@ -607,7 +607,9 @@ export const LRScratchpad = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {notes.length > 0 ? notes.map((note, idx) => (
+                  {notes.length > 0 ? notes.map((note, idx) => {
+                    const canModify = isCaseManager || note.enteredBy?.trim() === signedInOfficer?.trim();
+                    return (
                     <tr key={note._id || idx}>
                       <td>{note.dateEntered}</td>
                       <td>{note.returnId || '(none)'}</td>
@@ -615,14 +617,14 @@ export const LRScratchpad = () => {
                       <td>{note.text}</td>
                       <td>
                         <div className={styles.lrTableBtn}>
-                          <button disabled={isFormDisabled} onClick={() => handleEditClick(idx)}>
+                          <button disabled={isFormDisabled || !canModify} onClick={() => handleEditClick(idx)}>
                             <img
                               src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                               alt="Edit"
                               className={styles.editIcon}
                             />
                           </button>
-                          <button disabled={isFormDisabled} onClick={() => requestDeleteNote(idx)}>
+                          <button disabled={isFormDisabled || !canModify} onClick={() => requestDeleteNote(idx)}>
                             <img
                               src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                               alt="Delete"
@@ -647,7 +649,8 @@ export const LRScratchpad = () => {
                         </td>
                       )}
                     </tr>
-                  )) : (
+                    );
+                  }) : (
                     <tr>
                       <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign: 'center' }}>
                         No Notes Added

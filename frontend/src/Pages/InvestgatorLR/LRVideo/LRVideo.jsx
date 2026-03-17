@@ -255,6 +255,7 @@ export const LRVideo = () => {
         link:                 v.link || '',
         isLink:               v.isLink,
         accessLevel:          v.accessLevel || 'Everyone',
+        enteredBy:            v.enteredBy,
       }));
 
       let visible = mapped;
@@ -745,7 +746,9 @@ export const LRVideo = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {videos.length > 0 ? videos.map((video, idx) => (
+                    {videos.length > 0 ? videos.map((video, idx) => {
+                      const canModify = isCaseManager || video.enteredBy?.trim() === signedInOfficer?.trim();
+                      return (
                       <tr key={video.id || idx}>
                         <td>{video.dateEntered}</td>
                         <td>{video.returnId}</td>
@@ -775,7 +778,7 @@ export const LRVideo = () => {
                         <td>
                           <div className={styles.lrTableBtn}>
                             <button
-                              disabled={isFormDisabled}
+                              disabled={isFormDisabled || !canModify}
                               onClick={() => handleEditVideo(idx)}
                             >
                               <img
@@ -785,7 +788,7 @@ export const LRVideo = () => {
                               />
                             </button>
                             <button
-                              disabled={isFormDisabled}
+                              disabled={isFormDisabled || !canModify}
                               onClick={() => requestDeleteVideo(idx)}
                             >
                               <img
@@ -812,7 +815,8 @@ export const LRVideo = () => {
                           </td>
                         )}
                       </tr>
-                    )) : (
+                      );
+                    }) : (
                       <tr>
                         <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign: 'center' }}>
                           No Video Data Available

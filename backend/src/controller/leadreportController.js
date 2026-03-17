@@ -1147,33 +1147,35 @@ let currentY = headerHeight + 20;
     
         // How we’ll group fields into small tables
         const personTables = [
-          ["Last Name", "First Name", "Middle Initial", "Date of Birth"],
-          ["Sex", "Address", "Phone No"],
-          ["Person Type", "Condition", "Caution Type"],
-          ["Email", "Suffix", "Race", "Ethnicity"],
-          ["Business Name", "SSN", "Occupation"],
-          ["Skin Tone", "Eye Color", "Glasses", "Hair Color"],
-          ["Height", "Weight", "Scars, Marks, Tattoos"],
-          ["Additional Data"]
+          ["Last Name", "First Name", "Middle Initial", "Suffix", "Alias"],
+          ["Sex", "Date of Birth", "Address", "Phone No", "Email"],
+          ["Race", "Ethnicity", "Person Type", "Condition", "Caution Type"],
+          ["Skin Tone", "Eye Color", "Glasses", "Hair Color", "Height"],
+          ["Weight", "Scars", "Marks", "Tattoo"],
+          ["SSN", "Occupation", "Business Name"],
+          ["Street 1", "Street 2", "Building"],
+          ["Apartment", "City", "State", "Zip Code"],
         ];
         // You can tweak these widths to taste
         const personWidths = {
-          "Last Name": 90,     "First Name": 100,  "Middle Initial": 100, "Date of Birth": 222,
-          "Sex": 90,           "Address": 222,     "Phone No": 200,
-          "Business Name": 171, "SSN": 171,         "Occupation": 170,
-          "Person Type": 171,  "Condition": 171,   "Caution Type": 170,
-          "Email": 90,         "Suffix": 100,      "Race": 100,           "Ethnicity": 222,
-          "Skin Tone": 90,     "Eye Color": 100,   "Glasses": 100,        "Hair Color": 222,
-          "Height": 90,        "Weight": 100,      "Scars, Marks, Tattoos": 322,
-          "Additional Data": 512
+          "Last Name": 103,    "First Name": 102,    "Middle Initial": 102, "Suffix": 102,    "Alias": 103,
+          "Sex": 103,          "Date of Birth": 102, "Address": 102,        "Phone No": 102,  "Email": 103,
+          "Race": 103,         "Ethnicity": 102,     "Person Type": 102,    "Condition": 102, "Caution Type": 103,
+          "Skin Tone": 103,    "Eye Color": 102,     "Glasses": 102,        "Hair Color": 102,  "Height": 103,
+          "Weight": 128,       "Scars": 128,         "Marks": 128,          "Tattoo": 128,
+          "SSN": 171,          "Occupation": 170,    "Business Name": 171,
+          "Street 1": 171,     "Street 2": 170,      "Building": 171,
+          "Apartment": 128,    "City": 128,          "State": 128,          "Zip Code": 128,
         };
-    
+
         // Helper to pull the right field off your model
         function getPersonValue(person, header) {
           switch (header) {
             case "Last Name":      return person.lastName || "";
             case "First Name":     return person.firstName || "";
             case "Middle Initial": return person.middleInitial || "";
+            case "Suffix":         return person.suffix || "";
+            case "Alias":          return person.alias || "";
             case "Date of Birth":  return formatDate(person.dateOfBirth);
             case "Sex":            return person.sex || "";
             case "Address":        return [
@@ -1195,20 +1197,26 @@ let currentY = headerHeight + 20;
             case "Person Type":    return person.personType || "";
             case "Condition":      return person.condition || "";
             case "Caution Type":   return person.cautionType || "";
-            case "Suffix":         return person.suffix || "";
             case "Race":           return person.race || "";
             case "Ethnicity":      return person.ethnicity || "";
             case "Skin Tone":      return person.skinTone || "";
             case "Eye Color":      return person.eyeColor || "";
             case "Glasses":        return person.glasses || "";
             case "Hair Color":     return person.hairColor || "";
-            case "Height":         return person.height || "";
-            case "Weight":         return person.weight || "";
+            case "Height":         return person.height && (person.height.feet != null || person.height.inches != null) ? `${person.height.feet ?? 0}ft ${person.height.inches ?? 0}in` : (person.height || "");
+            case "Weight":         return person.weight != null && person.weight !== "" ? `${person.weight} lbs` : "";
+            case "Scars":          return person.scar || "";
+            case "Marks":          return person.mark || "";
+            case "Tattoo":         return person.tattoo || "";
             case "Scars, Marks, Tattoos": return [person.scar, person.tattoo, person.mark]
               .filter(Boolean).join("; ");
-            case "Additional Data": return (person.additionalData || [])
-              .map(d => [d.description, d.details].filter(Boolean).join(": "))
-              .join("; ");
+            case "Street 1":       return person.address?.street1 || "";
+            case "Street 2":       return person.address?.street2 || "";
+            case "Building":       return person.address?.building || "";
+            case "Apartment":      return person.address?.apartment || "";
+            case "City":           return person.address?.city || "";
+            case "State":          return person.address?.state || "";
+            case "Zip Code":       return person.address?.zipCode || "";
             default:               return "";
           }
         }
@@ -1284,7 +1292,22 @@ let currentY = headerHeight + 20;
             currentY = drawTable(doc, 50, currentY, headers, [row], colWidths);
           });
 
-          currentY = currentY +5;
+          // Additional Data
+          if (Array.isArray(person.additionalData) && person.additionalData.length > 0) {
+            if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
+              doc.addPage();
+              currentY = doc.page.margins.top;
+            }
+            const addHeaders = ["Category", "Value"];
+            const addWidths = [256, 256];
+            const addRows = person.additionalData.map(d => ({
+              "Category": d.category || d.description || "",
+              "Value":    d.value    || d.details    || "",
+            }));
+            currentY = drawTable(doc, 50, currentY, addHeaders, addRows, addWidths);
+          }
+
+          currentY = currentY + 5;
         }
       }
     }

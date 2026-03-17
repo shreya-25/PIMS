@@ -289,6 +289,7 @@ export const LRTimeline = () => {
     eventDescription: e.eventDescription,
     flags:            e.timelineFlag || [],
     accessLevel:      e.accessLevel || 'Everyone',
+    enteredBy:        e.enteredBy,
     date:             formatDate(e.eventDate),
     timeRange:        formatTimeRangeNY(e.eventStartTime, e.eventEndTime),
     location:         e.eventLocation,
@@ -832,7 +833,9 @@ export const LRTimeline = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {timelineEntries.length > 0 ? timelineEntries.map((entry, idx) => (
+                    {timelineEntries.length > 0 ? timelineEntries.map((entry, idx) => {
+                      const canModify = isCaseManager || entry.enteredBy?.trim() === signedInOfficer?.trim();
+                      return (
                       <tr key={entry.id || idx}>
                         <td>{entry.date}</td>
                         <td>{entry.leadReturnId}</td>
@@ -841,14 +844,14 @@ export const LRTimeline = () => {
                         <td>{entry.description}</td>
                         <td>
                           <div className={styles.lrTableBtn}>
-                            <button disabled={isFormDisabled} onClick={() => handleEdit(idx)}>
+                            <button disabled={isFormDisabled || !canModify} onClick={() => handleEdit(idx)}>
                               <img
                                 src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                                 alt="Edit"
                                 className={styles.editIcon}
                               />
                             </button>
-                            <button disabled={isFormDisabled} onClick={() => requestDelete(idx)}>
+                            <button disabled={isFormDisabled || !canModify} onClick={() => requestDelete(idx)}>
                               <img
                                 src={`${process.env.PUBLIC_URL}/Materials/delete.png`}
                                 alt="Delete"
@@ -873,7 +876,8 @@ export const LRTimeline = () => {
                           </td>
                         )}
                       </tr>
-                    )) : (
+                      );
+                    }) : (
                       <tr>
                         <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: 'center' }}>
                           No Timeline Entry Available

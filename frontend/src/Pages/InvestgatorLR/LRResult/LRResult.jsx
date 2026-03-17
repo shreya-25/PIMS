@@ -899,7 +899,7 @@ export const LRResult = () => {
                   <tbody>
                     {returns.length > 0 ? (
                       returns.map((ret, idx) => {
-                        const canModify    = ret.enteredBy.trim() === officerName.trim();
+                        const canModify    = isCaseManager || ret.enteredBy.trim() === officerName.trim();
                         const isExpanded   = expandedRows.has(ret.leadReturnId);
                         const shouldTruncate = (ret.leadReturnResult || '').length > 150;
                         const disableActions =

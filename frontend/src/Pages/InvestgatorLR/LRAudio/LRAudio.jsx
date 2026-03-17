@@ -125,8 +125,8 @@ const attachFiles = async (items, idFieldName, filesEndpoint) => {
  * A single row in the audio records table.
  * Extracted to keep the parent render function concise.
  */
-const AudioTableRow = ({ audio, index, isCaseManager, isReadOnly, leadStatus, onEdit, onDelete, onAccessChange }) => {
-  const isLocked = leadStatus === 'In Review' || leadStatus === 'Completed' || isReadOnly;
+const AudioTableRow = ({ audio, index, isCaseManager, isReadOnly, leadStatus, canModify, onEdit, onDelete, onAccessChange }) => {
+  const isLocked = leadStatus === 'In Review' || leadStatus === 'Completed' || isReadOnly || !canModify;
 
   return (
     <tr>
@@ -374,6 +374,7 @@ export const LRAudio = () => {
         link:                 a.link || '',
         signedUrl:            a.signedUrl || '',
         audioSrc:             a.isLink ? a.link : (a.signedUrl || ''),
+        enteredBy:            a.enteredBy,
       }));
 
       // Non-managers only see records they have access to
@@ -974,6 +975,7 @@ export const LRAudio = () => {
                         isCaseManager={isCaseManager}
                         isReadOnly={isReadOnly}
                         leadStatus={selectedLead?.leadStatus}
+                        canModify={isCaseManager || audio.enteredBy?.trim() === signedInOfficer?.trim()}
                         onEdit={handleEditAudio}
                         onDelete={requestDeleteAudio}
                         onAccessChange={handleAccessChange}

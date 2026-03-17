@@ -282,6 +282,7 @@ export const LRPictures = () => {
         link:                pic.link      || "",
         accessLevel:         pic.accessLevel ?? "Everyone",
         pictureId:           pic._id,
+        enteredBy:           pic.enteredBy,
       }));
 
       setPictures(mapped);
@@ -834,7 +835,9 @@ export const LRPictures = () => {
                   </thead>
                   <tbody>
                     {pictures.length > 0 ? (
-                      pictures.map((picture, index) => (
+                      pictures.map((picture, index) => {
+                        const canModify = isCaseManager || picture.enteredBy?.trim() === signedInOfficer?.trim();
+                        return (
                         <tr key={index}>
                           <td>{picture.dateEntered}</td>
                           <td>{picture.returnId}</td>
@@ -853,7 +856,7 @@ export const LRPictures = () => {
                           <td>
                             <div className={styles.lrTableBtn}>
                               <button
-                                disabled={isLeadLocked}
+                                disabled={isLeadLocked || !canModify}
                                 onClick={() => handleEditPicture(index)}
                               >
                                 <img
@@ -863,7 +866,7 @@ export const LRPictures = () => {
                                 />
                               </button>
                               <button
-                                disabled={isLeadLocked}
+                                disabled={isLeadLocked || !canModify}
                                 onClick={() => requestDeletePicture(index)}
                               >
                                 <img
@@ -888,7 +891,8 @@ export const LRPictures = () => {
                             </td>
                           )}
                         </tr>
-                      ))
+                        );
+                      })
                     ) : (
                       <tr>
                         <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign: "center" }}>
