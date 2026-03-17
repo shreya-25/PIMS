@@ -490,17 +490,16 @@ function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
 
   const drawHeader = () => {
     let x = startX;
-    doc.font("Helvetica-Bold").fontSize(10).fillColor("black");
-    headers.forEach((h, i) => {
-      const w = colWidths[i];
-      doc.strokeColor("#999999").rect(x, y, w, headerHeight).stroke();
-      // vertically center header text a bit
-      const dy = Math.max(0, (headerHeight - doc.currentLineHeight()) / 2 - 1);
-      doc.text(h, x + padding, y + dy, { width: w - 2 * padding, align: "left" });
-      x += w;
-    });
+    for (let i = 0; i < headers.length; i++) {
+      doc.rect(x, y, colWidths[i], headerHeight).fillAndStroke("#e0e0e0", "#bbb");
+      doc.fillColor("#000")
+        .font("Helvetica-Bold")
+        .fontSize(11)
+        .text(headers[i], x + padding, y + 5, { width: colWidths[i] - 2 * padding, align: "left" });
+      x += colWidths[i];
+    }
     y += headerHeight;
-    doc.font("Helvetica").fontSize(10);
+    doc.font("Helvetica").fontSize(10).fillColor("black");
   };
 
   // Ensure header + at least one row fits; otherwise start on a new page
@@ -595,7 +594,7 @@ function drawStructuredLeadDetails(doc, x, y, lead) {
 
   // Grey background cells
   for (let i = 0; i < headers.length; i++) {
-    doc.rect(currX, y, colWidths[i], rowHeight).fillAndStroke("#f5f5f5", "#ccc");
+    doc.rect(currX, y, colWidths[i], rowHeight).fillAndStroke("#e0e0e0", "#bbb");
     doc.fillColor("#000")
       .font("Helvetica-Bold")
       .fontSize(11)
