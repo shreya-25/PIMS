@@ -551,6 +551,8 @@ export const LRResult = () => {
         setReturns((rs) => rs.map((r) => (r.leadReturnId === editId ? updated : r)));
         setEditMode(false);
         setEditId(null);
+        setReturnData(buildDefaultForm(officer));
+        try { sessionStorage.removeItem(FORM_KEY); } catch { /* noop */ }
       } else {
         // ── Create new entry ─────────────────────────────────────────────────
         const payload = {
