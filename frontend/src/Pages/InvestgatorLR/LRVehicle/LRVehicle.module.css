@@ -449,19 +449,26 @@
 
 /* ===== View button in table ===== */
 .viewPersonBtn {
-  padding: 6px 16px;
-  font-size: 16px;
-  font-weight: 600;
-  background-color: #29298b;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
+  background: none;
+  border: 1px solid #0c0c0c;
+  color: #000000;
   cursor: pointer;
-  transition: background-color 0.18s ease;
+  font-size: 16px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .viewPersonBtn:hover {
-  background-color: #1a1a6e;
+  background-color: #eef0fa;
+  border-color: #29298b;
+  color: #29298b;
+}
+
+.viewPersonBtn:active {
+  transform: scale(0.98);
 }
 
 /* ===== Action buttons inside table ===== */

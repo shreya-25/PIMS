@@ -1,3 +1,4 @@
+
 .vehicle-modal-overlay {
   position: fixed;
   top: 0;
@@ -5,28 +6,123 @@
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 .vehicle-modal-content {
-  background: white;
-  padding: 20px;
+  background: #fff;
+  padding: 20px 24px;
   border-radius: 8px;
-  position: relative;
-  width: 50%;
-  max-height: 80vh;
+  width: 95%;
+  max-width: 1100px;
+  max-height: 90vh;
   overflow-y: auto;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  font-size: 16px !important;
 }
 
+.vehicle-modal-content h2 {
+  font-size: 16px !important;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 4px 0;
+  padding-right: 36px;
+}
+
+.vehicle-modal-content > p {
+  margin: 1px 0 8px 0;
+  font-size: 16px !important;
+  color: #444;
+}
+
+/* Close button */
 .vehicle-modal-close {
   position: absolute;
-  top: 10px;
-  right: 15px;
-  background: none;
+  top: 14px;
+  right: 18px;
   border: none;
-  font-size: 24px;
+  background: transparent;
+  font-size: 24px !important;
+  line-height: 1;
   cursor: pointer;
-  color: #333;
+  color: #555;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.vehicle-modal-close:hover {
+  background: #f0f0f0;
+  color: #111;
+}
+
+/* Divider between vehicles */
+.vehicle-modal-content hr {
+  border: none;
+  border-top: 1px solid #e0e0e0;
+  margin: 16px 0;
+}
+
+/* Group table — fixed layout so all columns share width equally */
+.vehicle-group-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin-bottom: 4px;
+}
+
+.vehicle-group-table th {
+  border: 1px solid #d0d5dd !important;
+  padding: 6px 10px !important;
+  background-color: #eef0f5 !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #444 !important;
+  text-align: left !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vehicle-group-table td {
+  border: 1px solid #d0d5dd !important;
+  padding: 6px 10px !important;
+  font-size: 16px !important;
+  vertical-align: middle !important;
+  color: #222 !important;
+  background: #fff !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Additional data table */
+.vehicle-details-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+
+.vehicle-details-table th {
+  border: 1px solid #3a3a9a !important;
+  padding: 7px 10px !important;
+  background-color: #3a3a9a !important;
+  color: #fff !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  text-align: left !important;
+}
+
+.vehicle-details-table td {
+  border: 1px solid #d0d5dd !important;
+  padding: 6px 10px !important;
+  font-size: 16px !important;
+  vertical-align: middle !important;
+  background: #fff !important;
 }
