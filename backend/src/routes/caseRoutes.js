@@ -1,189 +1,43 @@
 const express = require("express");
 const router = express.Router();
+const Case = require("../models/case");
 const caseController = require("../controller/caseController");
-const verifyToken = require("../middleware/authMiddleware"); // Import the middleware
-const { addOfficerToCase } = require("../controller/caseController");
-const { updateCaseOfficers } = require("../controller/caseController");
-const { getCasesByOfficer } = require("../controller/caseController");
+const verifyToken = require("../middleware/authMiddleware");
 
+// ── Static/prefix routes (must come before /:id wildcards) ──────────────────
 
-// Case Routes
+router.post("/", verifyToken, caseController.createCase);
+router.get("/", verifyToken, caseController.getAllCases);
+router.get("/cases-by-officer", verifyToken, caseController.getCasesByOfficer);
 
-// Create a new case (Authenticated)
-router.post("/", verifyToken, async (req, res) => {
-    try {
-        await caseController.createCase(req, res);
-    } catch (error) {
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-});
+// ── Routes with case ID ──────────────────────────────────────────────────────
 
-router.get(
-  "/cases-by-officer",
-  verifyToken,
-  getCasesByOfficer
-);
+router.get("/:id/team", verifyToken, caseController.getCaseTeam);
+router.put("/:id/close", verifyToken, caseController.closeCase);
+router.put("/:id/officers", verifyToken, caseController.updateCaseOfficers);
+router.put("/:id/character", verifyToken, caseController.updateCharacterOfCase);
+router.get("/:id/case-summary", verifyToken, caseController.getCaseSummary);
+router.put("/:id/case-summary", verifyToken, caseController.updateCaseSummary);
+router.get("/:id/executive-summary", verifyToken, caseController.getExecutiveCaseSummary);
+router.put("/:id/executive-summary", verifyToken, caseController.updateExecutiveCaseSummary);
+router.get("/:id/timeline-flags", verifyToken, caseController.getTimelineFlags);
+router.patch("/:id/timeline-flags", verifyToken, caseController.addTimelineFlag);
+router.put("/:id/reject", verifyToken, caseController.rejectCase);
 
-// Get all cases (Authenticated)
-router.get("/", verifyToken, async (req, res) => {
-    try {
-        await caseController.getAllCases(req, res);
-    } catch (error) {
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-});
-
-router.put(
-  "/:caseNo/:caseName/officers",
-  verifyToken,
-  caseController.updateCaseOfficers
-);
-
-router.put(
-  "/:caseNo/close",
-  verifyToken,
-  async (req, res) => {
-    try {
-      await caseController.closeCase(req, res);
-    } catch (error) {
-      console.error("Router error closing case:", error);
-      res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-  }
-);
-
-router.put(
-  "/executive-summary",
-  verifyToken,
-  async (req, res) => {
-    try {
-      await caseController.updateExecutiveCaseSummary(req, res);
-    } catch (error) {
-      console.error("Router error in executive-summary:", error);
-      res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-  }
-);
-
-router.put(
-  "/case-summary",
-  verifyToken,
-  async (req, res) => {
-    try {
-      await caseController.updateCaseSummary(req, res);
-    } catch (error) {
-      console.error("Router error in case-summary:", error);
-      res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-  }
-);
-
-router.put(
-  "/:caseNo/:caseName/officers",
-  verifyToken,
-  addOfficerToCase
-);
-
-// routes/caseRoutes.js
-
-// … other imports …
-router.get(
-  "/executive-summary/:caseNo",
-  verifyToken,
-  (req, res) => caseController.getExecutiveCaseSummary(req, res)
-);
-
-router.get(
-  "/case-summary/:caseNo",
-  verifyToken,
-  (req, res) => caseController.getCaseSummary(req, res)
-);
-
-// Get cases assigned to a specific officer (Authenticated)
-router.get("/cases-by-officer", verifyToken, async (req, res) => {
+router.get("/:id/subCategories", verifyToken, async (req, res) => {
   try {
-      await caseController.getCasesByOfficer(req, res);
-  } catch (error) {
-      res.status(500).json({ message: "Internal Server Error", error: error.message });
+    const caseDoc = await Case.findById(req.params.id);
+    if (!caseDoc) {
+      return res.status(404).json({ message: "Case not found" });
+    }
+    res.status(200).json({ subCategories: caseDoc.subCategories });
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching subcategories" });
   }
 });
 
-router.get("/summary/:caseNo", verifyToken, async (req, res) => {
-  try {
-    await caseController.getCaseSummaryByCaseNo(req, res);
-  } catch (error) {
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
-  }
-});
-
-  // Update status of an assigned officer in a case (Authenticated)
-router.put("/update-officer-status", verifyToken, async (req, res) => {
-  try {
-    await caseController.updateOfficerStatus(req, res);
-  } catch (error) {
-    res.status(500).json({ message: "Internal Server Error", error: error.message });
-  }
-});
-
-
-// Update characterOfCase for a case by caseNo
-router.put("/:caseNo/character", verifyToken, caseController.updateCharacterOfCase);
-
-// Get a specific case by ID (Authenticated)
-router.get("/:id", verifyToken, async (req, res) => {
-    try {
-        await caseController.getCaseById(req, res);
-    } catch (error) {
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-});
-
-// Update a case (Authenticated)
-router.put("/:id", verifyToken, async (req, res) => {
-    try {
-        await caseController.updateCase(req, res);
-    } catch (error) {
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-});
-
-// Delete a case (Authenticated)
-router.delete("/:id", verifyToken, async (req, res) => {
-    try {
-        await caseController.deleteCase(req, res);
-    } catch (error) {
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-});
-
-// Reject a case => sets Case Manager to "Admin"
-router.put("/:id/reject", verifyToken, async (req, res) => {
-    try {
-      await caseController.rejectCase(req, res);
-    } catch (error) {
-      res.status(500).json({ message: "Internal Server Error", error: error.message });
-    }
-  });
-
-  // GET all subcategories for a given case by its ID
-router.get("/:id/subCategories", async (req, res) => {
-    try {
-      const caseDoc = await Case.findById(req.params.id);
-      if (!caseDoc) {
-        return res.status(404).json({ message: "Case not found" });
-      }
-      res.status(200).json({ subCategories: caseDoc.subCategories });
-    } catch (err) {
-      res.status(500).json({ message: "Error fetching subcategories" });
-    }
-  });
-
-  router.get("/:caseNo/team", verifyToken, caseController.getCaseTeam);
-
-// Timeline flags for a case
-router.get("/:caseNo/timeline-flags", verifyToken, caseController.getTimelineFlags);
-router.patch("/:caseNo/timeline-flags", verifyToken, caseController.addTimelineFlag);
-
-
+router.get("/:id", verifyToken, caseController.getCaseById);
+router.put("/:id", verifyToken, caseController.updateCase);
+router.delete("/:id", verifyToken, caseController.deleteCase);
 
 module.exports = router;

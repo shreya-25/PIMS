@@ -54,11 +54,66 @@ export const CasePageManager = () => {
   const invRef = useRef(null);
 
   // ─── Collapsible section state ────────────────────────────────────────────
-  const [isCaseSummaryOpen, setIsCaseSummaryOpen] = useState(true);
-  const [isCaseTeamOpen, setIsCaseTeamOpen] = useState(true);
+
+  // ─── Case info edit state ─────────────────────────────────────────────────
+  const [editCaseNo, setEditCaseNo] = useState(selectedCase?.caseNo ?? "");
+  const [editCaseName, setEditCaseName] = useState(selectedCase?.caseName ?? "");
+  const [caseInfoSaving, setCaseInfoSaving] = useState(false);
+  const [confirmDeleteCase, setConfirmDeleteCase] = useState(false);
+  const [confirmCloseCase, setConfirmCloseCase] = useState(false);
+
+  const handleSaveCaseInfo = async () => {
+    if (!editCaseName.trim()) return;
+    setCaseInfoSaving(true);
+    try {
+      const token = localStorage.getItem("token");
+      await api.put(`/api/cases/${selectedCase._id}`, { caseName: editCaseName.trim(), caseNo: editCaseNo.trim() }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAlertMessage("Case information updated successfully.");
+      setAlertOpen(true);
+    } catch (err) {
+      setAlertMessage("Failed to update case information.");
+      setAlertOpen(true);
+    } finally {
+      setCaseInfoSaving(false);
+    }
+  };
+
+  const handleDeleteCase = async () => {
+    setConfirmDeleteCase(false);
+    try {
+      const token = localStorage.getItem("token");
+      await api.delete(`/api/cases/${selectedCase._id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      navigate("/");
+    } catch (err) {
+      setAlertMessage("Failed to delete case.");
+      setAlertOpen(true);
+    }
+  };
+
+  const handleCloseCase = async () => {
+    setConfirmCloseCase(false);
+    try {
+      const token = localStorage.getItem("token");
+      await api.put(`/api/cases/${selectedCase._id}/close`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAlertMessage("Case closed successfully.");
+      setAlertOpen(true);
+    } catch (err) {
+      setAlertMessage("Failed to close case.");
+      setAlertOpen(true);
+    }
+  };
 
   // ─── Case summary state ───────────────────────────────────────────────────
   const [summary, setSummary] = useState(null);
+  const [isCaseDetailsOpen, setIsCaseDetailsOpen] = useState(true);
+  const [isSummaryOpen, setIsSummaryOpen] = useState(true);
+  const [isTeamOpen, setIsTeamOpen] = useState(true);
   const saveTimer = useRef(null);
   const isFirstLoad = useRef(true);
 
@@ -153,7 +208,7 @@ export const CasePageManager = () => {
   // ─── Effect: fetch current case team ─────────────────────────────────────
   useEffect(() => {
     if (!selectedCase?.caseNo) return;
-    api.get(`/api/cases/${selectedCase.caseNo}/team`)
+    api.get(`/api/cases/${selectedCase._id}/team`)
       .then(({ data }) => setTeam(data))
       .catch(console.error);
   }, [selectedCase.caseNo]);
@@ -207,7 +262,7 @@ export const CasePageManager = () => {
       try {
         const token = localStorage.getItem('token');
         const { data } = await api.get(
-          `/api/cases/case-summary/${selectedCase.caseNo}`,
+          `/api/cases/${selectedCase._id}/case-summary`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setSummary(data.caseSummary ?? '');
@@ -229,8 +284,8 @@ export const CasePageManager = () => {
       try {
         const token = localStorage.getItem('token');
         await api.put(
-          '/api/cases/case-summary',
-          { caseNo: selectedCase.caseNo, caseName: selectedCase.caseName, caseSummary: summary },
+          `/api/cases/${selectedCase._id}/case-summary`,
+          { caseSummary: summary },
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } catch (err) {
@@ -442,7 +497,7 @@ export const CasePageManager = () => {
       ];
 
       await api.put(
-        `/api/cases/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/officers`,
+        `/api/cases/${selectedCase._id}/officers`,
         { officers },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -760,6 +815,24 @@ export const CasePageManager = () => {
         onClose={() => setAlertOpen(false)}
       />
 
+      {/* Confirm delete case */}
+      <AlertModal
+        isOpen={confirmDeleteCase}
+        title="Delete Case"
+        message={`Are you sure you want to delete Case ${selectedCase?.caseNo}? This will also delete all leads and related records.`}
+        onClose={() => setConfirmDeleteCase(false)}
+        onConfirm={handleDeleteCase}
+      />
+
+      {/* Confirm close case */}
+      <AlertModal
+        isOpen={confirmCloseCase}
+        title="Close Case"
+        message={`Are you sure you want to close Case ${selectedCase?.caseNo}?`}
+        onClose={() => setConfirmCloseCase(false)}
+        onConfirm={handleCloseCase}
+      />
+
       {/* Banner: other users currently viewing this page */}
       {presenceOthers.length > 0 && (
         <div className={styles['presence-alert']}>
@@ -773,249 +846,277 @@ export const CasePageManager = () => {
         <div className={styles['left-content']}>
 
           {/* Case header */}
-          <div className={styles['case-header-cp']}>
+          {/* <div className={styles['case-header-cp']}>
             <div className={styles['cp-head']}>
               <h2>Case: {selectedCase?.caseName ? toTitleCase(selectedCase.caseName) : "Unknown Case"}</h2>
             </div>
-          </div>
+          </div> */}
 
-          {/* ── Case Summary ────────────────────────────────────────────── */}
+          {/* ── Case Details ─────────────────────────────────────────────── */}
           <section className={styles['collapsible-section']}>
-            <button
-              type="button"
-              className={styles['collapse-header']}
-              onClick={() => setIsCaseSummaryOpen(o => !o)}
-              aria-expanded={isCaseSummaryOpen}
-            >
-              <span className={styles['collapse-title']}>Case Summary</span>
-              <span>
-                <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className={styles['icon-image']} alt="" />
+            <div className={styles['collapse-header']} style={{cursor:'pointer'}} onClick={() => setIsCaseDetailsOpen(o => !o)}>
+              <span className={styles['collapse-title']}>
+                Case #{editCaseNo}: {editCaseName}
+                 <span className={`${styles['chevron']} ${isCaseDetailsOpen ? '' : styles['chevron-up']}`} />
               </span>
-            </button>
-            {isCaseSummaryOpen && (
-              <div className={styles['summary-body']}>
-                <textarea
-                  className={styles['summary-textarea']}
-                  value={summary ?? ""}
-                  onChange={e => setSummary(e.target.value.replace(/^Case Summary:\s?/, ""))}
-                  rows={6}
-                />
+              <div className={styles['case-info-actions']} onClick={e => e.stopPropagation()}>
+                <button
+                  className={styles['case-action-btn']}
+                  onClick={handleSaveCaseInfo}
+                  disabled={caseInfoSaving}
+                >
+                  {caseInfoSaving ? "Saving…" : "Save"}
+                </button>
+                <button
+                  className={`${styles['case-action-btn']} ${styles['case-close-btn']}`}
+                  onClick={() => setConfirmCloseCase(true)}
+                >
+                  Close Case
+                </button>
               </div>
-            )}
-          </section>
+            </div>
+            {isCaseDetailsOpen && <div className={styles['case-details-body']}>
+                {/* Case No. & Case Name */}
+                <div className={styles['case-details-subsection']}>
+                  <div className={styles['case-info-inline']}>
+                    <label className={styles['case-info-label']}>Case No.</label>
+                    <input
+                      className={`${styles['case-info-input']} ${styles['case-info-input-no']}`}
+                      type="text"
+                      value={editCaseNo}
+                      onChange={e => setEditCaseNo(e.target.value)}
+                    />
+                    <label className={styles['case-info-label']}>Case Name</label>
+                    <input
+                      className={`${styles['case-info-input']} ${styles['case-info-input-name']}`}
+                      type="text"
+                      value={editCaseName}
+                      onChange={e => setEditCaseName(e.target.value)}
+                    />
+                  </div>
+                </div>
 
-          {/* ── Case Team ───────────────────────────────────────────────── */}
-          <section className={styles['collapsible-section']}>
-            <button
-              type="button"
-              className={styles['collapse-header']}
-              onClick={() => setIsCaseTeamOpen(o => !o)}
-              aria-expanded={isCaseTeamOpen}
-            >
-              <span className={styles['collapse-title']}>Case Team</span>
-              <span>
-                <img src={`${process.env.PUBLIC_URL}/Materials/fs.png`} className={styles['icon-image']} alt="" />
-              </span>
-            </button>
+                {/* Case Summary */}
+                <div className={styles['case-details-subsection']}>
+                  <div className={styles['case-details-subheading']} style={{cursor:'pointer', userSelect:'none'}} onClick={() => setIsSummaryOpen(o => !o)}>
+                    Case Summary
+                    <span className={`${styles['chevron']} ${styles['chevron-sm']} ${isSummaryOpen ? '' : styles['chevron-up']}`} />
+                  </div>
+                  {isSummaryOpen && (
+                    <textarea
+                      className={styles['case-details-textarea']}
+                      value={summary ?? ""}
+                      onChange={e => setSummary(e.target.value.replace(/^Case Summary:\s?/, ""))}
+                      rows={5}
+                    />
+                  )}
+                </div>
 
-            {isCaseTeamOpen && (
-              <div className={styles['case-team']}>
-                <table className={styles['case-team-table']}>
-                  <colgroup>
-                    <col className={styles['case-team-col-role']} />
-                    <col />
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th className={`${styles['case-team-th']} ${styles['case-team-th-role']}`}>Role</th>
-                      <th className={styles['case-team-th']}>Name(s)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                {/* Case Team */}
+                <div className={styles['case-details-subsection']}>
+                  <div className={styles['case-details-subheading']} style={{cursor:'pointer', userSelect:'none'}} onClick={e => { e.stopPropagation(); setIsTeamOpen(o => !o); }}>
+                    Case Team
+                    <span className={`${styles['chevron']} ${styles['chevron-sm']} ${isTeamOpen ? '' : styles['chevron-up']}`} />
 
-                    {/* Detective Supervisor */}
-                    <tr>
-                      <td className={styles['case-team-td']}>Detective Supervisor</td>
-                      <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
-                        {selectedCase.role === "Detective Supervisor" ? (
-                          <div ref={dsRef} className={styles['custom-dropdown']}>
-                            <div
-                              className={styles['dropdown-head']}
-                              onClick={() => setDetectiveSupervisorDropdownOpen(prev => !prev)}
-                            >
-                              <span className={styles['dh-text']}>
-                                {selectedDetectiveSupervisor ? displayName(selectedDetectiveSupervisor) : "Select Detective Supervisor"}
-                              </span>
-                              <span className={styles['dropdown-icon']} aria-hidden="true">
-                                <img src={detectiveSupervisorDropdownOpen ? downIcon : upIcon} className={styles['caret-icon']} alt="" />
-                              </span>
-                            </div>
-                            {detectiveSupervisorDropdownOpen && (
-                              <div className={styles['dropdown-options']}>
-                                <input
-                                  type="text"
-                                  className={styles['dropdown-search']}
-                                  placeholder="Search officer..."
-                                  value={dsSearch}
-                                  onChange={e => setDsSearch(e.target.value)}
-                                  onClick={e => e.stopPropagation()}
-                                  autoFocus
-                                />
-                                {allUsers
-                                  .filter(user => !dsSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(dsSearch.toLowerCase()))
-                                  .map(user => (
-                                    <div key={user.username} className={styles['dropdown-item']}>
-                                      <input
-                                        type="radio"
-                                        name="detectiveSupervisor"
-                                        id={`ds-${user.username}`}
-                                        value={user.username}
-                                        checked={selectedDetectiveSupervisor === user.username}
-                                        onChange={() => {
-                                          setSelectedDetectiveSupervisor(user.username);
-                                          saveInvestigators(selectedInvestigators, selectedCaseManagers, user.username);
-                                        }}
-                                      />
-                                      <label htmlFor={`ds-${user.username}`}>
-                                        {user.firstName} {user.lastName} ({user.username})
-                                      </label>
-                                    </div>
-                                  ))}
+                  </div>
+                  {isTeamOpen && <div className={styles['case-team']}>
+                    <table className={styles['case-team-table']}>
+                      <colgroup>
+                        <col className={styles['case-team-col-role']} />
+                        <col />
+                      </colgroup>
+                      <thead>
+                        <tr>
+                          <th className={`${styles['case-team-th']} ${styles['case-team-th-role']}`}>Role</th>
+                          <th className={styles['case-team-th']}>Name(s)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+
+                        {/* Detective Supervisor */}
+                        <tr>
+                          <td className={styles['case-team-td']}>Detective Supervisor</td>
+                          <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
+                            {selectedCase.role === "Detective Supervisor" ? (
+                              <div ref={dsRef} className={styles['custom-dropdown']}>
+                                <div
+                                  className={styles['dropdown-head']}
+                                  onClick={() => setDetectiveSupervisorDropdownOpen(prev => !prev)}
+                                >
+                                  <span className={styles['dh-text']}>
+                                    {selectedDetectiveSupervisor ? displayName(selectedDetectiveSupervisor) : "Select Detective Supervisor"}
+                                  </span>
+                                  <span className={styles['dropdown-icon']} aria-hidden="true">
+                                    <img src={detectiveSupervisorDropdownOpen ? downIcon : upIcon} className={styles['caret-icon']} alt="" />
+                                  </span>
+                                </div>
+                                {detectiveSupervisorDropdownOpen && (
+                                  <div className={styles['dropdown-options']}>
+                                    <input
+                                      type="text"
+                                      className={styles['dropdown-search']}
+                                      placeholder="Search officer..."
+                                      value={dsSearch}
+                                      onChange={e => setDsSearch(e.target.value)}
+                                      onClick={e => e.stopPropagation()}
+                                      autoFocus
+                                    />
+                                    {allUsers
+                                      .filter(user => !dsSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(dsSearch.toLowerCase()))
+                                      .map(user => (
+                                        <div key={user.username} className={styles['dropdown-item']}>
+                                          <input
+                                            type="radio"
+                                            name="detectiveSupervisor"
+                                            id={`ds-${user.username}`}
+                                            value={user.username}
+                                            checked={selectedDetectiveSupervisor === user.username}
+                                            onChange={() => {
+                                              setSelectedDetectiveSupervisor(user.username);
+                                              saveInvestigators(selectedInvestigators, selectedCaseManagers, user.username);
+                                            }}
+                                          />
+                                          <label htmlFor={`ds-${user.username}`}>
+                                            {user.firstName} {user.lastName} ({user.username})
+                                          </label>
+                                        </div>
+                                      ))}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              formatUser(team.detectiveSupervisor) || "—"
+                            )}
+                          </td>
+                        </tr>
+
+                        {/* Case Manager(s) */}
+                        <tr>
+                          <td className={styles['case-team-td']}>Case Manager{team.caseManagers.length > 1 ? "s" : ""}</td>
+                          <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
+                            {(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") ? (
+                              <div ref={cmRef} className={styles['custom-dropdown']}>
+                                <div
+                                  className={styles['dropdown-head']}
+                                  onClick={() => setCaseManagersDropdownOpen(prev => !prev)}
+                                >
+                                  <span className={styles['dh-text']}>
+                                    {selectedCaseManagers.length > 0 ? displayNames(selectedCaseManagers) : "Select Case Manager(s)"}
+                                  </span>
+                                  <span className={styles['dropdown-icon']} aria-hidden="true">
+                                    <img src={caseManagersDropdownOpen ? downIcon : upIcon} className={styles['caret-icon']} alt="" />
+                                  </span>
+                                </div>
+                                {caseManagersDropdownOpen && (
+                                  <div className={styles['dropdown-options']}>
+                                    <input
+                                      type="text"
+                                      className={styles['dropdown-search']}
+                                      placeholder="Search officer..."
+                                      value={cmSearch}
+                                      onChange={e => setCmSearch(e.target.value)}
+                                      onClick={e => e.stopPropagation()}
+                                      autoFocus
+                                    />
+                                    {allUsers
+                                      .filter(user => !cmSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(cmSearch.toLowerCase()))
+                                      .map(user => (
+                                        <div key={user.username} className={styles['dropdown-item']}>
+                                          <input
+                                            type="checkbox"
+                                            id={`cm-${user.username}`}
+                                            value={user.username}
+                                            checked={selectedCaseManagers.includes(user.username)}
+                                            onChange={e => {
+                                              const next = e.target.checked
+                                                ? [...selectedCaseManagers, user.username]
+                                                : selectedCaseManagers.filter(u => u !== user.username);
+                                              setSelectedCaseManagers(next);
+                                              saveInvestigators(selectedInvestigators, next, selectedDetectiveSupervisor);
+                                            }}
+                                          />
+                                          <label htmlFor={`cm-${user.username}`}>
+                                            {user.firstName} {user.lastName} ({user.username})
+                                          </label>
+                                        </div>
+                                      ))}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              (team.caseManagers || []).map(formatUser).join(", ") || "—"
+                            )}
+                          </td>
+                        </tr>
+
+                        {/* Investigator(s) */}
+                        <tr>
+                          <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
+                            Investigator{team.investigators.length > 1 ? "s" : ""}
+                          </td>
+                          <td className={styles['case-team-td']}>
+                            {(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") ? (
+                              <div ref={invRef} className={styles['custom-dropdown']}>
+                                <div
+                                  className={styles['dropdown-head']}
+                                  onClick={() => setInvestigatorsDropdownOpen(prev => !prev)}
+                                >
+                                  <span className={styles['dh-text']}>
+                                    {selectedInvestigators.length ? displayNames(selectedInvestigators) : "Select Investigators"}
+                                  </span>
+                                  <span className={styles['dropdown-icon']} aria-hidden="true">
+                                    <img src={investigatorsDropdownOpen ? downIcon : upIcon} className={styles['caret-icon']} alt="" />
+                                  </span>
+                                </div>
+                                {investigatorsDropdownOpen && (
+                                  <div className={styles['dropdown-options']}>
+                                    <input
+                                      type="text"
+                                      className={styles['dropdown-search']}
+                                      placeholder="Search officer..."
+                                      value={invSearch}
+                                      onChange={e => setInvSearch(e.target.value)}
+                                      onClick={e => e.stopPropagation()}
+                                      autoFocus
+                                    />
+                                    {allUsers
+                                      .filter(user => !invSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(invSearch.toLowerCase()))
+                                      .map(user => (
+                                        <div key={user.username} className={styles['dropdown-item']}>
+                                          <input
+                                            type="checkbox"
+                                            id={`inv-${user.username}`}
+                                            value={user.username}
+                                            checked={selectedInvestigators.includes(user.username)}
+                                            onChange={e => {
+                                              const next = e.target.checked
+                                                ? [...selectedInvestigators, user.username]
+                                                : selectedInvestigators.filter(u => u !== user.username);
+                                              setSelectedInvestigators(next);
+                                              saveInvestigators(next, selectedCaseManagers, selectedDetectiveSupervisor);
+                                            }}
+                                          />
+                                          <label htmlFor={`inv-${user.username}`}>
+                                            {user.firstName} {user.lastName} ({user.username})
+                                          </label>
+                                        </div>
+                                      ))}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div>
+                                {team.investigators.length ? team.investigators.map(formatUser).join(", ") : "None assigned"}
                               </div>
                             )}
-                          </div>
-                        ) : (
-                          formatUser(team.detectiveSupervisor) || "—"
-                        )}
-                      </td>
-                    </tr>
+                          </td>
+                        </tr>
 
-                    {/* Case Manager(s) */}
-                    <tr>
-                      <td className={styles['case-team-td']}>Case Manager{team.caseManagers.length > 1 ? "s" : ""}</td>
-                      <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
-                        {(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") ? (
-                          <div ref={cmRef} className={styles['custom-dropdown']}>
-                            <div
-                              className={styles['dropdown-head']}
-                              onClick={() => setCaseManagersDropdownOpen(prev => !prev)}
-                            >
-                              <span className={styles['dh-text']}>
-                                {selectedCaseManagers.length > 0 ? displayNames(selectedCaseManagers) : "Select Case Manager(s)"}
-                              </span>
-                              <span className={styles['dropdown-icon']} aria-hidden="true">
-                                <img src={caseManagersDropdownOpen ? downIcon : upIcon} className={styles['caret-icon']} alt="" />
-                              </span>
-                            </div>
-                            {caseManagersDropdownOpen && (
-                              <div className={styles['dropdown-options']}>
-                                <input
-                                  type="text"
-                                  className={styles['dropdown-search']}
-                                  placeholder="Search officer..."
-                                  value={cmSearch}
-                                  onChange={e => setCmSearch(e.target.value)}
-                                  onClick={e => e.stopPropagation()}
-                                  autoFocus
-                                />
-                                {allUsers
-                                  .filter(user => !cmSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(cmSearch.toLowerCase()))
-                                  .map(user => (
-                                    <div key={user.username} className={styles['dropdown-item']}>
-                                      <input
-                                        type="checkbox"
-                                        id={`cm-${user.username}`}
-                                        value={user.username}
-                                        checked={selectedCaseManagers.includes(user.username)}
-                                        onChange={e => {
-                                          const next = e.target.checked
-                                            ? [...selectedCaseManagers, user.username]
-                                            : selectedCaseManagers.filter(u => u !== user.username);
-                                          setSelectedCaseManagers(next);
-                                          saveInvestigators(selectedInvestigators, next, selectedDetectiveSupervisor);
-                                        }}
-                                      />
-                                      <label htmlFor={`cm-${user.username}`}>
-                                        {user.firstName} {user.lastName} ({user.username})
-                                      </label>
-                                    </div>
-                                  ))}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          (team.caseManagers || []).map(formatUser).join(", ") || "—"
-                        )}
-                      </td>
-                    </tr>
-
-                    {/* Investigator(s) */}
-                    <tr>
-                      <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
-                        Investigator{team.investigators.length > 1 ? "s" : ""}
-                      </td>
-                      <td className={styles['case-team-td']}>
-                        {(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") ? (
-                          <div ref={invRef} className={styles['custom-dropdown']}>
-                            <div
-                              className={styles['dropdown-head']}
-                              onClick={() => setInvestigatorsDropdownOpen(prev => !prev)}
-                            >
-                              <span className={styles['dh-text']}>
-                                {selectedInvestigators.length ? displayNames(selectedInvestigators) : "Select Investigators"}
-                              </span>
-                              <span className={styles['dropdown-icon']} aria-hidden="true">
-                                <img src={investigatorsDropdownOpen ? downIcon : upIcon} className={styles['caret-icon']} alt="" />
-                              </span>
-                            </div>
-                            {investigatorsDropdownOpen && (
-                              <div className={styles['dropdown-options']}>
-                                <input
-                                  type="text"
-                                  className={styles['dropdown-search']}
-                                  placeholder="Search officer..."
-                                  value={invSearch}
-                                  onChange={e => setInvSearch(e.target.value)}
-                                  onClick={e => e.stopPropagation()}
-                                  autoFocus
-                                />
-                                {allUsers
-                                  .filter(user => !invSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(invSearch.toLowerCase()))
-                                  .map(user => (
-                                    <div key={user.username} className={styles['dropdown-item']}>
-                                      <input
-                                        type="checkbox"
-                                        id={`inv-${user.username}`}
-                                        value={user.username}
-                                        checked={selectedInvestigators.includes(user.username)}
-                                        onChange={e => {
-                                          const next = e.target.checked
-                                            ? [...selectedInvestigators, user.username]
-                                            : selectedInvestigators.filter(u => u !== user.username);
-                                          setSelectedInvestigators(next);
-                                          saveInvestigators(next, selectedCaseManagers, selectedDetectiveSupervisor);
-                                        }}
-                                      />
-                                      <label htmlFor={`inv-${user.username}`}>
-                                        {user.firstName} {user.lastName} ({user.username})
-                                      </label>
-                                    </div>
-                                  ))}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div>
-                            {team.investigators.length ? team.investigators.map(formatUser).join(", ") : "None assigned"}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-
-                  </tbody>
-                </table>
-              </div>
-            )}
+                      </tbody>
+                    </table>
+                  </div>}
+                </div>
+            </div>}
           </section>
 
           {/* ── Tab navigation bar ──────────────────────────────────────── */}

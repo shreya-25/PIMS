@@ -256,12 +256,8 @@ const toggleLeadForReport = (leadNo) => {
     const token = localStorage.getItem("token");
     try {
       await api.put(
-        "/api/cases/executive-summary",
-        {
-          caseNo: selectedCase.caseNo,
-          caseName: selectedCase.caseName,
-          executiveCaseSummary: typedSummary,
-        },
+        `/api/cases/${selectedCase._id}/executive-summary`,
+        { executiveCaseSummary: typedSummary },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       console.log("Executive summary saved");
@@ -295,7 +291,7 @@ const toggleLeadForReport = (leadNo) => {
   
     api
       .get(
-        `/api/cases/executive-summary/${selectedCase.caseNo}`,
+        `/api/cases/${selectedCase._id}/executive-summary`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       .then(({ data }) => {

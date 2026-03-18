@@ -10,7 +10,6 @@ import api from '../../api';
 
 import { useLeads } from './hooks/useLeads';
 import { useTableFilter } from './hooks/useTableFilter';
-import { CollapsibleSection } from './components/CollapsibleSection';
 import { LeadsTable } from './components/LeadsTable';
 import { toTitleCase, isDeletedStatus, statusColor } from './utils';
 
@@ -53,6 +52,7 @@ export const Investigator = () => {
   const [pageSize,           setPageSize]           = useState(10);
   const [isCaseSummaryOpen,  setIsCaseSummaryOpen]  = useState(true);
   const [isCaseTeamOpen,     setIsCaseTeamOpen]     = useState(true);
+  const [isTeamOpen,         setIsTeamOpen]         = useState(true);
   // Confirm-accept modal state
   const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, lead: null });
 
@@ -89,7 +89,7 @@ export const Investigator = () => {
     async function fetchSummary() {
       try {
         const token = localStorage.getItem('token');
-        const { data } = await api.get(`/api/cases/case-summary/${selectedCase.caseNo}`, {
+        const { data } = await api.get(`/api/cases/${selectedCase._id}/case-summary`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setSummary(data.caseSummary);
@@ -103,7 +103,7 @@ export const Investigator = () => {
   // Fetch case team composition whenever the active case changes
   useEffect(() => {
     if (!selectedCase?.caseNo) return;
-    api.get(`/api/cases/${selectedCase.caseNo}/team`)
+    api.get(`/api/cases/${selectedCase._id}/team`)
       .then(({ data }) => setTeam(data))
       .catch(console.error);
   }, [selectedCase?.caseNo]);
@@ -258,59 +258,76 @@ export const Investigator = () => {
         />
 
         <div className={styles['left-content']}>
-          {/* Case title */}
-          <div className={styles['case-header-cp']}>
-            <div className={styles['cp-head']}>
-              <h2>Case: {selectedCase?.caseName ? toTitleCase(selectedCase.caseName) : 'Unknown Case'}</h2>
+          {/* Case info box */}
+          <section className={styles['collapsible-section']}>
+            <div className={styles['collapse-header']} style={{ cursor: 'pointer' }} onClick={() => setIsCaseSummaryOpen(o => !o)}>
+              <span className={styles['collapse-title']}>
+                Case #{selectedCase?.caseNo}: {selectedCase?.caseName ? toTitleCase(selectedCase.caseName) : 'Unknown Case'}
+                <span className={`${styles['chevron']} ${isCaseSummaryOpen ? '' : styles['chevron-up']}`} />
+              </span>
             </div>
-          </div>
-
-          {/* Collapsible case summary */}
-          <CollapsibleSection
-            title="Case Summary"
-            isOpen={isCaseSummaryOpen}
-            onToggle={() => setIsCaseSummaryOpen(o => !o)}
-          >
-            <div className={styles['case-summary-content']}>
-              {summary?.trim() ? summary : 'No summary available'}
-            </div>
-          </CollapsibleSection>
-
-          {/* Collapsible case team roster */}
-          <CollapsibleSection
-            title="Case Team"
-            isOpen={isCaseTeamOpen}
-            onToggle={() => setIsCaseTeamOpen(o => !o)}
-          >
-            <div className={styles['case-team']}>
-              <table className={styles['leads-table']}>
-                <thead>
-                  <tr>
-                    <th style={{ width: '20%' }}>Role</th>
-                    <th>Name(s)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Detective Supervisor</td>
-                    <td>{formatUser(team.detectiveSupervisor)}</td>
-                  </tr>
-                  <tr>
-                    <td>Case Manager</td>
-                    <td>{(team.caseManagers || []).map(formatUser).join(', ') || '—'}</td>
-                  </tr>
-                  <tr>
-                    <td>Investigator{team.investigators.length > 1 ? 's' : ''}</td>
-                    <td>
-                      {team.investigators.length
-                        ? team.investigators.map(formatUser).join(', ')
-                        : 'None assigned'}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </CollapsibleSection>
+            {isCaseSummaryOpen && (
+              <div className={styles['case-details-body']}>
+                {/* Case Summary */}
+                <div className={styles['case-details-subsection']}>
+                  <div
+                    className={styles['case-details-subheading']}
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                    onClick={() => setIsCaseTeamOpen(o => !o)}
+                  >
+                    Case Summary
+                    <span className={`${styles['chevron']} ${styles['chevron-sm']} ${isCaseTeamOpen ? '' : styles['chevron-up']}`} />
+                  </div>
+                  {isCaseTeamOpen && (
+                    <div className={styles['case-summary-content']}>
+                      {summary?.trim() ? summary : 'No summary available'}
+                    </div>
+                  )}
+                </div>
+                {/* Case Team */}
+                <div className={styles['case-details-subsection']}>
+                  <div
+                    className={styles['case-details-subheading']}
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                    onClick={() => setIsTeamOpen(o => !o)}
+                  >
+                    Case Team
+                    <span className={`${styles['chevron']} ${styles['chevron-sm']} ${isTeamOpen ? '' : styles['chevron-up']}`} />
+                  </div>
+                  {isTeamOpen && (
+                    <div className={styles['case-team']}>
+                      <table className={styles['leads-table']}>
+                        <thead>
+                          <tr>
+                            <th style={{ width: '20%' }}>Role</th>
+                            <th>Name(s)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>Detective Supervisor</td>
+                            <td>{formatUser(team.detectiveSupervisor)}</td>
+                          </tr>
+                          <tr>
+                            <td>Case Manager</td>
+                            <td>{(team.caseManagers || []).map(formatUser).join(', ') || '—'}</td>
+                          </tr>
+                          <tr>
+                            <td>Investigator{team.investigators.length > 1 ? 's' : ''}</td>
+                            <td>
+                              {team.investigators.length
+                                ? team.investigators.map(formatUser).join(', ')
+                                : 'None assigned'}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
 
           {/* Tab bar showing lead counts per category */}
           <div className={styles['stats-bar']}>

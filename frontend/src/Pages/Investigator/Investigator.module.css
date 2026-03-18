@@ -48,7 +48,7 @@
 
 /* ─── Collapsible sections ──────────────────────────────────────────────── */
 .collapsible-section {
-  margin: 4px 0;
+  margin: 8px;
   border: 1px solid rgba(0, 0, 0, 0.164);
   border-radius: 10px;
   background: #fff;
@@ -58,9 +58,10 @@
 
 .collapse-header {
   width: 100%;
+  box-sizing: border-box;
   padding: 10px 8px;
   border: 0;
-  background: #f8fafc;
+  background-color: #fff;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -69,11 +70,58 @@
   font-weight: 600;
   color: black;
   font-size: 20px;
-  background-color: #25262710;
 }
 
 .collapse-title {
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chevron {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-right: 2.5px solid currentColor;
+  border-bottom: 2.5px solid currentColor;
+  transform: rotate(45deg) translate(-1px, -1px);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.chevron-up {
+  transform: rotate(-135deg) translate(-1px, -1px);
+}
+
+.chevron-sm {
+  width: 7px;
+  height: 7px;
+  border-right-width: 2px;
+  border-bottom-width: 2px;
+}
+
+.case-details-body {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.case-details-subsection {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+}
+
+.case-details-subheading {
   font-size: 18px;
+  font-weight: 600;
+  color: #000;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  font-family: Arial, sans-serif;
+  gap: 6px;
 }
 
 /* ─── Icon image ────────────────────────────────────────────────────────── */

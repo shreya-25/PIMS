@@ -33,12 +33,10 @@ exports.createCase = async (req, res) => {
       characterOfCase = "",
     } = req.body;
 
-    // --- validate required fields ---
     if (!caseNo || !caseName) {
       return res.status(400).json({ message: "caseNo and caseName are required" });
     }
 
-    // --- validate caseNo format (letters, digits, and hyphens only) ---
     if (!/^[A-Za-z0-9-]+$/.test(caseNo)) {
       return res.status(400).json({ message: "Case number can only contain letters, digits, and hyphens (-)." });
     }
@@ -49,7 +47,6 @@ exports.createCase = async (req, res) => {
       return res.status(400).json({ message: "Detective Supervisor is required" });
     }
 
-    // --- ensure unique caseNo ---
     const existingCase = await Case.findOne({ caseNo });
     if (existingCase) {
       return res.status(400).json({ message: "Case number already exists. Please use a unique caseNo." });
@@ -60,7 +57,6 @@ exports.createCase = async (req, res) => {
       return res.status(409).json({ message: "Case name already exists. Please choose a different name." });
     }
 
-    // --- resolve usernames to ObjectIds ---
     const managerUsers = [];
     for (const m of managers) {
       const uname = m.username || m.name || m;
@@ -78,9 +74,7 @@ exports.createCase = async (req, res) => {
     }
 
     const investigatorUsernames = selectedOfficers.map(o => o.username || o.name || o).map(u => u.trim());
-    const investigatorUsers = await User.find({
-      username: { $in: investigatorUsernames },
-    });
+    const investigatorUsers = await User.find({ username: { $in: investigatorUsernames } });
 
     const newCase = new Case({
       caseNo,
@@ -94,7 +88,6 @@ exports.createCase = async (req, res) => {
     });
 
     await newCase.save();
-
     res.status(201).json({ message: "Case created successfully", data: newCase });
   } catch (err) {
     console.error("Error creating case:", err);
@@ -174,7 +167,6 @@ exports.getCasesByOfficer = async (req, res) => {
       return res.status(404).json({ message: "No cases assigned to this officer" });
     }
 
-    // Format response to include the officer's role per case
     const formattedCases = cases.map((c) => {
       let role = "Unknown";
       if ((c.caseManagerUserIds || []).some(cm => cm._id.equals(user._id))) {
@@ -239,14 +231,12 @@ exports.deleteCase = async (req, res) => {
     const now = new Date();
     const deletedByUserId = req.user?.userId || null;
 
-    // Step 1 — Soft delete the case
     await Case.findByIdAndUpdate(caseId, {
       isDeleted: true,
       deletedAt: now,
       deletedByUserId,
     });
 
-    // Match by caseId OR caseNo (for older records missing caseId)
     const childFilter = {
       $or: [{ caseId }, { caseNo: caseDoc.caseNo }],
       isDeleted: { $ne: true },
@@ -258,27 +248,20 @@ exports.deleteCase = async (req, res) => {
       deletedBy: req.user?.username || "system",
     };
 
-    // Step 2 — Soft delete all leads in this case
     await Lead.updateMany(childFilter, {
       ...deleteFields,
       deletedReason: "Parent case deleted",
       leadStatus: "Deleted",
     });
 
-    // Step 3 — Soft delete all lead returns in this case
     await LeadReturn.updateMany(childFilter, deleteFields);
-
-    // Step 4 — Soft delete lead return results in this case
     await LeadReturnResult.updateMany(childFilter, deleteFields);
 
-    // Step 5 — Soft delete all LR* tables linked to this case
     const lrModels = [
       LRPerson, LRVehicle, LRTimeline, LREvidence,
       LRPicture, LRAudio, LRVideo, LREnclosure, LRScratchpad,
     ];
-    await Promise.all(
-      lrModels.map((Model) => Model.updateMany(childFilter, deleteFields))
-    );
+    await Promise.all(lrModels.map((Model) => Model.updateMany(childFilter, deleteFields)));
 
     res.status(200).json({ message: "Case and all related records soft-deleted successfully" });
   } catch (err) {
@@ -287,20 +270,15 @@ exports.deleteCase = async (req, res) => {
   }
 };
 
-// PUT /api/cases/:caseNo/close
+// PUT /api/cases/:id/close
 exports.closeCase = async (req, res) => {
   try {
-    const { caseNo } = req.params;
-    if (!caseNo) {
-      return res.status(400).json({ message: "caseNo is required" });
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid case ID format" });
     }
 
-    const updated = await Case.findOneAndUpdate(
-      { caseNo },
-      { status: "COMPLETED" },
-      { new: true }
-    );
-
+    const updated = await Case.findByIdAndUpdate(id, { status: "COMPLETED" }, { new: true });
     if (!updated) {
       return res.status(404).json({ message: "Case not found" });
     }
@@ -316,13 +294,15 @@ exports.closeCase = async (req, res) => {
 exports.rejectCase = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid case ID format" });
+    }
 
-    const existingCase = await Case.findOne({ caseNo: id });
+    const existingCase = await Case.findById(id);
     if (!existingCase) {
       return res.status(404).json({ message: "Case not found" });
     }
 
-    // Find the admin user
     const adminUser = await User.findOne({ role: "admin" });
     if (!adminUser) {
       return res.status(500).json({ message: "Admin user not found in system" });
@@ -338,15 +318,15 @@ exports.rejectCase = async (req, res) => {
   }
 };
 
-// GET case team by caseNo
+// GET case team by case ID
 exports.getCaseTeam = async (req, res) => {
   try {
-    const { caseNo } = req.params;
-    if (!caseNo) {
-      return res.status(400).json({ message: "caseNo is required" });
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid case ID format" });
     }
 
-    const c = await Case.findOne({ caseNo })
+    const c = await Case.findById(id)
       .populate("caseManagerUserIds", "username firstName lastName displayName")
       .populate("detectiveSupervisorUserId", "username firstName lastName displayName")
       .populate("investigatorUserIds", "username firstName lastName displayName")
@@ -367,47 +347,24 @@ exports.getCaseTeam = async (req, res) => {
   }
 };
 
-// Add an officer (investigator) to a case
-exports.addOfficerToCase = async (req, res) => {
-  try {
-    const { caseNo, caseName } = req.params;
-    const { officerName } = req.body;
-
-    const caseDoc = await Case.findOne({ caseNo, caseName });
-    if (!caseDoc) return res.status(404).json({ message: "Case not found" });
-
-    const user = await findUserByUsername(officerName);
-    if (!user) return res.status(400).json({ message: `Officer '${officerName}' not found.` });
-
-    // Don't add duplicate
-    if (!caseDoc.investigatorUserIds.some(id => id.equals(user._id))) {
-      caseDoc.investigatorUserIds.push(user._id);
-      await caseDoc.save();
-    }
-
-    return res.status(200).json({ message: "Officer added (or already present)", data: caseDoc });
-  } catch (err) {
-    console.error("Error adding officer:", err);
-    return res.status(500).json({ message: "Server error", error: err.message });
-  }
-};
-
 // Update case officers (replace the full team by role)
 exports.updateCaseOfficers = async (req, res) => {
   try {
-    const { caseNo } = req.params;
+    const { id } = req.params;
     const { officers } = req.body;
 
-    if (!caseNo || !Array.isArray(officers)) {
-      return res.status(400).json({ message: "caseNo and an array of officers are required" });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid case ID format" });
+    }
+    if (!Array.isArray(officers)) {
+      return res.status(400).json({ message: "An array of officers is required" });
     }
 
-    const caseDoc = await Case.findOne({ caseNo });
+    const caseDoc = await Case.findById(id);
     if (!caseDoc) {
       return res.status(404).json({ message: "Case not found" });
     }
 
-    // Resolve each officer to a userId, respecting their role
     const caseManagerIds = [];
     let detectiveSupervisorId = caseDoc.detectiveSupervisorUserId;
     const investigatorIds = [];
@@ -439,33 +396,65 @@ exports.updateCaseOfficers = async (req, res) => {
   }
 };
 
-// Update officer status - no longer applicable with new schema
-// Keeping as a no-op for backward compatibility
-exports.updateOfficerStatus = async (req, res) => {
-  return res.status(200).json({ message: "Officer status concept removed in new schema" });
-};
-
-// Summary endpoints - these fields were removed from the Case schema.
-// Return empty strings for backward compatibility.
-exports.getCaseSummaryByCaseNo = async (req, res) => {
+// GET case summary by case ID
+exports.getCaseSummary = async (req, res) => {
   try {
-    const { caseNo } = req.params;
-    if (!caseNo) return res.status(400).json({ message: "Case number is required" });
-    const caseData = await Case.findOne({ caseNo }).lean();
-    if (!caseData) return res.status(404).json({ message: "Case not found" });
-    res.status(200).json({ summary: caseData.caseSummary ?? "" });
-  } catch (error) {
-    console.error("Error fetching case summary:", error);
-    res.status(500).json({ message: "Error fetching case summary", error: error.message });
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid case ID format" });
+    }
+    const caseDoc = await Case.findById(id).lean();
+    if (!caseDoc) return res.status(404).json({ message: "Case not found" });
+    return res.status(200).json({ caseSummary: caseDoc.caseSummary ?? "" });
+  } catch (err) {
+    console.error("Error fetching case summary:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
+// PUT /api/cases/:id/case-summary
+exports.updateCaseSummary = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { caseSummary } = req.body;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid case ID format" });
+    }
+    const updated = await Case.findByIdAndUpdate(id, { caseSummary }, { new: true });
+    if (!updated) return res.status(404).json({ message: "Case not found" });
+    return res.status(200).json({ message: "Case summary updated", caseSummary: updated.caseSummary });
+  } catch (err) {
+    console.error("Error updating case summary:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// GET executive case summary by case ID
+exports.getExecutiveCaseSummary = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid case ID format" });
+    }
+    const caseDoc = await Case.findById(id).lean();
+    if (!caseDoc) return res.status(404).json({ message: "Case not found" });
+    return res.status(200).json({ executiveCaseSummary: caseDoc.executiveCaseSummary ?? "" });
+  } catch (err) {
+    console.error("Error fetching executive summary:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// PUT /api/cases/:id/executive-summary
 exports.updateExecutiveCaseSummary = async (req, res) => {
   try {
-    const { caseNo, caseName, executiveCaseSummary } = req.body;
-    if (!caseNo) return res.status(400).json({ message: "caseNo is required" });
-    const updated = await Case.findOneAndUpdate(
-      { caseNo },
+    const { id } = req.params;
+    const { executiveCaseSummary } = req.body;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid case ID format" });
+    }
+    const updated = await Case.findByIdAndUpdate(
+      id,
       { executiveCaseSummary: executiveCaseSummary ?? "" },
       { new: true }
     );
@@ -477,65 +466,20 @@ exports.updateExecutiveCaseSummary = async (req, res) => {
   }
 };
 
-exports.updateCaseSummary = async (req, res) => {
-  try {
-    const { caseNo, caseSummary } = req.body;
-    if (!caseNo) return res.status(400).json({ message: "caseNo is required" });
-    const updated = await Case.findOneAndUpdate(
-      { caseNo },
-      { caseSummary },
-      { new: true }
-    );
-    if (!updated) return res.status(404).json({ message: "Case not found" });
-    return res.status(200).json({ message: "Case summary updated", caseSummary: updated.caseSummary });
-  } catch (err) {
-    console.error("Error updating case summary:", err);
-    return res.status(500).json({ message: "Server error", error: err.message });
-  }
-};
-
-exports.getExecutiveCaseSummary = async (req, res) => {
-  try {
-    const { caseNo } = req.params;
-    if (!caseNo) return res.status(400).json({ message: "caseNo is required" });
-    const caseDoc = await Case.findOne({ caseNo }).lean();
-    if (!caseDoc) return res.status(404).json({ message: "Case not found" });
-    return res.status(200).json({ caseNo: caseDoc.caseNo, executiveCaseSummary: caseDoc.executiveCaseSummary ?? "" });
-  } catch (err) {
-    console.error("Error fetching executive summary:", err);
-    return res.status(500).json({ message: "Server error", error: err.message });
-  }
-};
-
-exports.getCaseSummary = async (req, res) => {
-  try {
-    const { caseNo } = req.params;
-    if (!caseNo) return res.status(400).json({ message: "caseNo is required" });
-    const caseDoc = await Case.findOne({ caseNo }).lean();
-    if (!caseDoc) return res.status(404).json({ message: "Case not found" });
-    return res.status(200).json({ caseNo: caseDoc.caseNo, caseSummary: caseDoc.caseSummary ?? "" });
-  } catch (err) {
-    console.error("Error fetching case summary:", err);
-    return res.status(500).json({ message: "Server error", error: err.message });
-  }
-};
-
-// Update characterOfCase for a case
+// PUT /api/cases/:id/character
 exports.updateCharacterOfCase = async (req, res) => {
   try {
-    const { caseNo } = req.params;
+    const { id } = req.params;
     const { characterOfCase } = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid case ID format" });
+    }
     if (characterOfCase === undefined) {
       return res.status(400).json({ message: "characterOfCase is required" });
     }
 
-    const updated = await Case.findOneAndUpdate(
-      { caseNo },
-      { characterOfCase },
-      { new: true }
-    );
-
+    const updated = await Case.findByIdAndUpdate(id, { characterOfCase }, { new: true });
     if (!updated) {
       return res.status(404).json({ message: "Case not found" });
     }
@@ -547,35 +491,42 @@ exports.updateCharacterOfCase = async (req, res) => {
   }
 };
 
-
+// GET /api/cases/:id/timeline-flags
 exports.getTimelineFlags = async (req, res) => {
   try {
-    const { caseNo } = req.params;
-    const caseDoc = await Case.findOne({ caseNo }).select('timelineFlags');
-    if (!caseDoc) return res.status(404).json({ message: 'Case not found' });
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid case ID format" });
+    }
+    const caseDoc = await Case.findById(id).select("timelineFlags");
+    if (!caseDoc) return res.status(404).json({ message: "Case not found" });
     return res.json({ timelineFlags: caseDoc.timelineFlags || [] });
   } catch (err) {
-    console.error('Error fetching timeline flags:', err);
-    return res.status(500).json({ message: 'Server error' });
+    console.error("Error fetching timeline flags:", err);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
+// PATCH /api/cases/:id/timeline-flags
 exports.addTimelineFlag = async (req, res) => {
   try {
-    const { caseNo } = req.params;
+    const { id } = req.params;
     const { flag } = req.body;
-    if (!flag || !flag.trim()) return res.status(400).json({ message: 'flag is required' });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid case ID format" });
+    }
+    if (!flag || !flag.trim()) return res.status(400).json({ message: "flag is required" });
 
-    const caseDoc = await Case.findOneAndUpdate(
-      { caseNo },
+    const caseDoc = await Case.findByIdAndUpdate(
+      id,
       { $addToSet: { timelineFlags: flag.trim() } },
       { new: true }
-    ).select('timelineFlags');
+    ).select("timelineFlags");
 
-    if (!caseDoc) return res.status(404).json({ message: 'Case not found' });
+    if (!caseDoc) return res.status(404).json({ message: "Case not found" });
     return res.json({ timelineFlags: caseDoc.timelineFlags });
   } catch (err) {
-    console.error('Error adding timeline flag:', err);
-    return res.status(500).json({ message: 'Server error' });
+    console.error("Error adding timeline flag:", err);
+    return res.status(500).json({ message: "Server error" });
   }
 };

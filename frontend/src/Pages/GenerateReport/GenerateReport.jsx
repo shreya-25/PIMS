@@ -551,7 +551,7 @@ export const GenerateReport = () => {
     if (!selectedCase?.caseNo) return;
     const token = localStorage.getItem("token");
     api
-      .get(`/api/cases/executive-summary/${selectedCase.caseNo}`, { headers: { Authorization: `Bearer ${token}` } })
+      .get(`/api/cases/${selectedCase._id}/executive-summary`, { headers: { Authorization: `Bearer ${token}` } })
       .then(({ data }) => { setTypedSummary(data.executiveCaseSummary); setUseWebpageSummary(true); })
       .catch((err) => console.error("Failed to load exec summary", err));
   }, [selectedCase?.caseNo]);
@@ -638,8 +638,8 @@ export const GenerateReport = () => {
     const token = localStorage.getItem("token");
     try {
       await api.put(
-        "/api/cases/executive-summary",
-        { caseNo: selectedCase.caseNo, caseName: selectedCase.caseName, executiveCaseSummary: typedSummary },
+        `/api/cases/${selectedCase._id}/executive-summary`,
+        { executiveCaseSummary: typedSummary },
         { headers: { Authorization: `Bearer ${token}` } }
       );
     } catch (err) {
