@@ -26,6 +26,7 @@ export const SideBar = ({
 
   const signedInOfficer = localStorage.getItem("loggedInUser");
   const signedInRole = selectedCase?.role;
+  const systemRole = localStorage.getItem("role");
 
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
   const [caseList, setCaseList] = useState(initialCases);
@@ -297,14 +298,16 @@ export const SideBar = ({
               <span>{label}</span>
             </li>
           ))}
-          <li
-            className="sidebar-item"
-            style={{ paddingLeft: 32 }}
-            onClick={() => onShowCaseSelector?.(true)}
-          >
-            <img src={addIcon} className="sidebar-icon" alt="" />
-            <span>Add Case</span>
-          </li>
+          {systemRole !== "Investigator" && (
+            <li
+              className="sidebar-item"
+              style={{ paddingLeft: 32 }}
+              onClick={() => onShowCaseSelector?.(true)}
+            >
+              <img src={addIcon} className="sidebar-icon" alt="" />
+              <span>Add Case</span>
+            </li>
+          )}
         </ul>
       </aside>
     );
@@ -331,17 +334,19 @@ export const SideBar = ({
             <span>Case Management</span>
           </li>
 
-          <li
-            className="sidebar-item"
-            style={{ paddingLeft: 32 }}
-            onClick={() => {
-              setActiveTab?.("cases");
-              onShowCaseSelector?.(true);
-            }}
-          >
-            <img src={addIcon} className="sidebar-icon" alt="" />
-            <span>Add Case</span>
-          </li>
+          {systemRole !== "Investigator" && (
+            <li
+              className="sidebar-item"
+              style={{ paddingLeft: 32 }}
+              onClick={() => {
+                setActiveTab?.("cases");
+                onShowCaseSelector?.(true);
+              }}
+            >
+              <img src={addIcon} className="sidebar-icon" alt="" />
+              <span>Add Case</span>
+            </li>
+          )}
         </ul>
       </aside>
     );
