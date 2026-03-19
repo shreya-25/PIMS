@@ -530,6 +530,13 @@
   color: #555;
 }
 
+.lead-table2 a {
+  word-break: break-all;
+  white-space: normal;
+  display: inline-block;
+  max-width: 100%;
+}
+
 /* ===== Utility / misc ===== */
 .download-btn {
   background-color: #fff;
