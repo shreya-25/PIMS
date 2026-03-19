@@ -12,7 +12,7 @@
  *  - Read-only enforcement based on lead status
  */
 
-import { useContext, useState, useEffect, useMemo } from 'react';
+import { useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import Navbar from '../../../components/Navbar/Navbar';
 import { SideBar } from '../../../components/Sidebar/Sidebar';
@@ -67,6 +67,7 @@ export const LRScratchpad = () => {
   const [alertMessage, setAlertMessage]             = useState('');
   const [confirmOpen, setConfirmOpen]               = useState(false);
   const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
+  const [expandedRows, setExpandedRows]             = useState(new Set());
 
   const isEditing = editingIndex !== null;
 
@@ -388,6 +389,14 @@ export const LRScratchpad = () => {
     }
   };
 
+  const toggleRowExpand = useCallback((idx) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
+      return next;
+    });
+  }, []);
+
   // ── Navigation helpers ─────────────────────────────────────────────────────
 
   const goToLeadReview = () => {
@@ -577,7 +586,7 @@ export const LRScratchpad = () => {
                       <button
                         disabled={isFormDisabled}
                         onClick={resetForm}
-                        className={styles.saveBtn1}
+                        className={styles.cancelBtn}
                       >
                         Cancel
                       </button>
@@ -598,23 +607,33 @@ export const LRScratchpad = () => {
               <table className={styles.leadsTable}>
                 <thead>
                   <tr>
-                    <th>Date Entered</th>
-                    <th>Narrative Id</th>
-                    <th>Entered By</th>
-                    <th>Text</th>
-                    <th>Actions</th>
+                    <th style={{ width: '5%' }}>Id</th>
+                    <th style={{ width: '8%' }}>Date</th>
+                    <th style={{ width: '12%' }}>Entered By</th>
+                    <th>Notes</th>
+                    <th style={{ width: '10%' }}>Actions</th>
                     {isCaseManager && <th style={{ width: '15%' }}>Access</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {notes.length > 0 ? notes.map((note, idx) => {
-                    const canModify = isCaseManager || note.enteredBy?.trim() === signedInOfficer?.trim();
+                    const canModify  = isCaseManager || note.enteredBy?.trim() === signedInOfficer?.trim();
+                    const isExpanded = expandedRows.has(idx);
                     return (
                     <tr key={note._id || idx}>
+                      <td>{note.returnId || ''}</td>
                       <td>{note.dateEntered}</td>
-                      <td>{note.returnId || '(none)'}</td>
                       <td>{note.enteredBy}</td>
-                      <td>{note.text}</td>
+                      <td className={styles.descriptionCell}>
+                        <div className={isExpanded ? styles.narrativeContentExpanded : styles.narrativeContentCollapsed}>
+                          {note.text}
+                        </div>
+                        {note.text && (
+                          <button className={styles.viewToggleBtn} onClick={() => toggleRowExpand(idx)}>
+                            {isExpanded ? 'View Less ▲' : 'View ▶'}
+                          </button>
+                        )}
+                      </td>
                       <td>
                         <div className={styles.lrTableBtn}>
                           <button disabled={isFormDisabled || !canModify} onClick={() => handleEditClick(idx)}>

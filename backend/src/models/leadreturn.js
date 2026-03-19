@@ -7,7 +7,7 @@ const leadReturnSchema = new mongoose.Schema(
         caseId:  { type: mongoose.Schema.Types.ObjectId, ref: "Case", required: true },
         leadId:  { type: mongoose.Schema.Types.ObjectId, ref: "Lead", required: true },
 
-        assignedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+        assignedByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
         assignedToUserIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 
         // ── Existing fields (kept as-is) ──────────────────────────

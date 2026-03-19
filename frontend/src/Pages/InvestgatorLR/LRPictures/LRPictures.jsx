@@ -126,6 +126,7 @@ export const LRPictures = () => {
   const [editingIndex,  setEditingIndex]  = useState(null);
   const [narrativeIds,  setNarrativeIds]  = useState([]);
   const [leadData,      setLeadData]      = useState({});
+  const [expandedRows,  setExpandedRows]  = useState(new Set());
 
   // ── Alert / confirm modals ──────────────────────────────────────────────────
   const [alertOpen,          setAlertOpen]          = useState(false);
@@ -375,6 +376,14 @@ export const LRPictures = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const toggleRowExpand = useCallback((idx) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
+      return next;
+    });
+  }, []);
+
   /** Resets the form and exits edit mode. */
   const resetForm = useCallback(() => {
     setIsEditing(false);
@@ -393,6 +402,7 @@ export const LRPictures = () => {
       description:      pic.description,
       image:            pic.image,
       filename:         pic.filename,
+      originalName:     pic.originalName,
       link:             pic.link || "",
       isLink:           !!pic.link,
       accessLevel:      pic.accessLevel || "Everyone",
@@ -753,15 +763,14 @@ export const LRPictures = () => {
                         </select>
                       </div>
                       <div className={styles.formRowEvidence}>
-                        {/* Editing a file-mode record that already has a file: show current name */}
-                        {isEditing && !pictureData.isLink && pictureData.originalName ? (
+                        {!pictureData.isLink ? (
                           <>
-                            <label>Current File:</label>
-                            <span className={styles.currentFilename}>{pictureData.originalName}</span>
-                          </>
-                        ) : !pictureData.isLink ? (
-                          <>
-                            <label>{isEditing ? "Replace Image (optional)" : "Upload Image"}</label>
+                            <div className={styles.uploadLabelRow}>
+                              <label>Upload Image</label>
+                              {!file && isEditing && pictureData.originalName && (
+                                <span className={styles.currentFilenameInline}>{pictureData.originalName}</span>
+                              )}
+                            </div>
                             <input
                               type="file"
                               accept="image/*"
@@ -782,19 +791,6 @@ export const LRPictures = () => {
                         )}
                       </div>
                     </div>
-
-                    {/* Row 4 (edit only): Replace-file row for records that already have a file */}
-                    {isEditing && !pictureData.isLink && pictureData.originalName && (
-                      <div className={styles.formRowEvidence}>
-                        <label>Replace Image (optional)</label>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          ref={fileInputRef}
-                          onChange={handleFileChange}
-                        />
-                      </div>
-                    )}
                   </div>
 
                   {/* Form action buttons */}
@@ -804,11 +800,11 @@ export const LRPictures = () => {
                       disabled={isLeadLocked}
                       onClick={isEditing ? handleUpdatePicture : handleAddPicture}
                     >
-                      {isEditing ? "Update Picture" : "Add Picture"}
+                      {isEditing ? "Update" : "Add Picture"}
                     </button>
                     {isEditing && (
                       <button
-                        className={styles.saveBtn1}
+                        className={styles.cancelBtn}
                         disabled={isLeadLocked}
                         onClick={resetForm}
                       >
@@ -825,11 +821,12 @@ export const LRPictures = () => {
                 <table className={styles.leadsTable}>
                   <thead>
                     <tr>
-                      <th>Date Entered</th>
-                      <th>Narrative Id</th>
-                      <th>File Name</th>
-                      <th>Description</th>
-                      <th>Actions</th>
+                      <th style={{ width: '5%'  }}>Id</th>
+                      <th style={{ width: '8%'  }}>Date</th>
+                      <th style={{ width: '12%' }}>Entered By</th>
+                      <th style={{ width: '23%' }}>Description</th>
+                      <th style={{ width: '18%' }}>File Link</th>
+                      <th style={{ width: '10%' }}>Actions</th>
                       {isCaseManager && <th style={{ width: "15%" }}>Access</th>}
                     </tr>
                   </thead>
@@ -839,8 +836,19 @@ export const LRPictures = () => {
                         const canModify = isCaseManager || picture.enteredBy?.trim() === signedInOfficer?.trim();
                         return (
                         <tr key={index}>
-                          <td>{picture.dateEntered}</td>
                           <td>{picture.returnId}</td>
+                          <td>{picture.dateEntered}</td>
+                          <td>{picture.enteredBy}</td>
+                          <td className={styles.descriptionCell}>
+                            <div className={expandedRows.has(index) ? styles.narrativeContentExpanded : styles.narrativeContentCollapsed}>
+                              {picture.description}
+                            </div>
+                            {picture.description && (
+                              <button className={styles.viewToggleBtn} onClick={() => toggleRowExpand(index)}>
+                                {expandedRows.has(index) ? 'View Less ▲' : 'View ▶'}
+                              </button>
+                            )}
+                          </td>
                           <td>
                             {picture.link ? (
                               <a href={picture.link} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
@@ -852,7 +860,6 @@ export const LRPictures = () => {
                               </a>
                             )}
                           </td>
-                          <td>{picture.description}</td>
                           <td>
                             <div className={styles.lrTableBtn}>
                               <button
@@ -895,7 +902,7 @@ export const LRPictures = () => {
                       })
                     ) : (
                       <tr>
-                        <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign: "center" }}>
+                        <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: "center" }}>
                           No Pictures Available
                         </td>
                       </tr>

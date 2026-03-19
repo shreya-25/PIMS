@@ -139,6 +139,7 @@ export const LREvidence = () => {
   const [file,         setFile]         = useState(null);
   const [editIndex,    setEditIndex]    = useState(null);
   const [originalDesc, setOriginalDesc] = useState("");
+  const [expandedRows, setExpandedRows] = useState(new Set());
   const [narrativeIds, setNarrativeIds] = useState([]);
   const [leadData,     setLeadData]     = useState({});
 
@@ -379,6 +380,14 @@ export const LREvidence = () => {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
+  const toggleRowExpand = useCallback((idx) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
+      return next;
+    });
+  }, []);
 
   /** Resets the form and exits edit mode. */
   const resetForm = useCallback(() => {
@@ -777,15 +786,14 @@ export const LREvidence = () => {
                         </select>
                       </div>
                       <div className={styles.formRowEvidence}>
-                        {/* Editing a file-mode record that already has a file: show current name */}
-                        {editIndex !== null && evidenceData.uploadMode === "file" && evidenceData.originalName ? (
+                        {evidenceData.uploadMode === "file" ? (
                           <>
-                            <label>Current File:</label>
-                            <span className={styles.currentFilename}>{evidenceData.originalName}</span>
-                          </>
-                        ) : evidenceData.uploadMode === "file" ? (
-                          <>
-                            <label>{editIndex === null ? "Upload File" : "Replace File (optional)"}</label>
+                            <div className={styles.uploadLabelRow}>
+                              <label>Upload File</label>
+                              {!file && editIndex !== null && evidenceData.originalName && (
+                                <span className={styles.currentFilenameInline}>{evidenceData.originalName}</span>
+                              )}
+                            </div>
                             <input type="file" ref={fileInputRef} onChange={handleFileChange} />
                           </>
                         ) : (
@@ -801,14 +809,6 @@ export const LREvidence = () => {
                         )}
                       </div>
                     </div>
-
-                    {/* Row 5 (edit only): Replace-file row for records that already have a file */}
-                    {editIndex !== null && evidenceData.uploadMode === "file" && evidenceData.originalName && (
-                      <div className={styles.formRowEvidence}>
-                        <label>Replace File (optional)</label>
-                        <input type="file" ref={fileInputRef} onChange={handleFileChange} />
-                      </div>
-                    )}
                   </div>
 
                   {/* Form action buttons */}
@@ -818,11 +818,11 @@ export const LREvidence = () => {
                       disabled={isLeadLocked}
                       onClick={handleSaveEvidence}
                     >
-                      {editIndex === null ? "Add Evidence" : "Update Evidence"}
+                      {editIndex === null ? "Add Evidence" : "Update"}
                     </button>
                     {editIndex !== null && (
                       <button
-                        className={styles.saveBtn1}
+                        className={styles.cancelBtn}
                         disabled={isLeadLocked}
                         onClick={resetForm}
                       >
@@ -839,12 +839,13 @@ export const LREvidence = () => {
                 <table className={styles.leadsTable}>
                   <thead>
                     <tr>
-                      <th>Date Entered</th>
-                      <th style={{ width: "12%" }}>Narrative Id</th>
-                      <th>Type</th>
-                      <th>File Name</th>
-                      <th>Description</th>
-                      <th>Actions</th>
+                      <th style={{ width: '5%'  }}>Id</th>
+                      <th style={{ width: '8%'  }}>Date</th>
+                      <th style={{ width: '12%' }}>Entered By</th>
+                      <th style={{ width: '10%' }}>Type</th>
+                      <th style={{ width: '23%' }}>Description</th>
+                      <th style={{ width: '18%' }}>File Link</th>
+                      <th style={{ width: '10%' }}>Actions</th>
                       {isCaseManager && <th style={{ width: "15%" }}>Access</th>}
                     </tr>
                   </thead>
@@ -854,9 +855,20 @@ export const LREvidence = () => {
                         const canModify = isCaseManager || item.enteredBy?.trim() === signedInOfficer?.trim();
                         return (
                         <tr key={index}>
-                          <td>{item.dateEntered}</td>
                           <td>{item.returnId}</td>
+                          <td>{item.dateEntered}</td>
+                          <td>{item.enteredBy}</td>
                           <td>{item.type}</td>
+                          <td className={styles.descriptionCell}>
+                            <div className={expandedRows.has(index) ? styles.narrativeContentExpanded : styles.narrativeContentCollapsed}>
+                              {item.evidenceDescription}
+                            </div>
+                            {item.evidenceDescription && (
+                              <button className={styles.viewToggleBtn} onClick={() => toggleRowExpand(index)}>
+                                {expandedRows.has(index) ? 'View Less ▲' : 'View ▶'}
+                              </button>
+                            )}
+                          </td>
                           <td>
                             {item.link ? (
                               <a href={item.link} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
@@ -870,7 +882,6 @@ export const LREvidence = () => {
                               <span>—</span>
                             )}
                           </td>
-                          <td>{item.evidenceDescription}</td>
                           <td>
                             <div className={styles.lrTableBtn}>
                               <button disabled={isLeadLocked || !canModify} onClick={() => handleEdit(index)}>
@@ -907,7 +918,7 @@ export const LREvidence = () => {
                       })
                     ) : (
                       <tr>
-                        <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: "center" }}>
+                        <td colSpan={isCaseManager ? 8 : 7} style={{ textAlign: "center" }}>
                           No Evidences Available
                         </td>
                       </tr>

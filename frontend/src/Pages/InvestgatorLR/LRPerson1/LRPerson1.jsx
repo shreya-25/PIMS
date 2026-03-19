@@ -873,11 +873,19 @@ export const LRPerson1 = () => {
                       <select value={formData.personType}
                         onChange={(e) => handleChange('personType', e.target.value)}>
                         <option value="">Select Type</option>
+                        <option value="Arrestee/Defendant">Arrestee/Defendant</option>
+                        <option value="Complainant">Complainant</option>
+                        <option value="Deceased">Deceased</option>
+                        <option value="Interviewed">Interviewed</option>
+                        <option value="Missing Person">Missing Person</option>
+                        <option value="Not Interviewed">Not Interviewed</option>
+                        <option value="Other">Other</option>
+                        <option value="Person Interviewed">Person Interviewed</option>
+                        <option value="Person of Interest">Person of Interest</option>
+                        <option value="Reporting Person">Reporting Person</option>
                         <option value="Suspect">Suspect</option>
                         <option value="Victim">Victim</option>
                         <option value="Witness">Witness</option>
-                        <option value="Officer">Officer</option>
-                        <option value="Other">Other</option>
                       </select>
                     </td>
                     <td>Condition</td>
@@ -1051,9 +1059,20 @@ export const LRPerson1 = () => {
               </table>
 
               <div className={styles.formButtons}>
-                <button className={styles.saveBtn} onClick={handleSave}>
-                  Save
-                </button>
+                {person ? (
+                  <>
+                    <button className={styles.saveBtn} onClick={handleSave}>
+                      Update
+                    </button>
+                    <button className={styles.cancelBtn} onClick={() => navigate(-1)}>
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button className={styles.saveBtn} onClick={handleSave}>
+                    Save
+                  </button>
+                )}
               </div>
             </div>
           </div>

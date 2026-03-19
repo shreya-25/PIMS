@@ -337,18 +337,19 @@
 /* ===== Button row ===== */
 .formButtonsReturn {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   justify-content: center;
+  margin-top: 12px;
 }
 
 .saveBtn1 {
-  padding: 10px 36px;
-  font-size: 20px;
-  font-weight: 600;
+  padding: 7px 20px;
+  font-size: 18px;
+  font-weight: 500;
   background-color: #1a73e8;
   color: #ffffff;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   letter-spacing: 0.2px;
   transition: background-color 0.18s ease;
@@ -364,20 +365,20 @@
 }
 
 .cancelBtn {
-  padding: 10px 36px;
-  font-size: 20px;
-  font-weight: 600;
-  background-color: #666;
+  padding: 7px 20px;
+  font-size: 18px;
+  font-weight: 500;
+  background-color: #6c757d;
   color: #ffffff;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   letter-spacing: 0.2px;
   transition: background-color 0.18s ease;
 }
 
 .cancelBtn:hover {
-  background-color: #444;
+  background-color: #545b62;
 }
 
 /* ===== Fetch error message ===== */

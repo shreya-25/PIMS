@@ -56,6 +56,9 @@ const mapPersonToRow = (person) => ({
   returnId:     person.leadReturnId,
   dateEntered:  new Date(person.enteredDate).toLocaleDateString(),
   name:         `${person.firstName} ${person.lastName}`,
+  dateOfBirth:  person.dateOfBirth
+    ? (() => { const d = new Date(person.dateOfBirth); return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toLocaleDateString(); })()
+    : 'N/A',
   phoneNo:      person.cellNumber || 'N/A',
   address:      person.address?.street1
     ? `${person.address.street1}, ${person.address.city || ''}, ${person.address.state || ''}`
@@ -577,13 +580,14 @@ export const LRPerson = () => {
               <table className={styles.leadsTable}>
                 <thead>
                   <tr>
+                    <th style={{ width: '7%' }}>Id</th>
                     <th style={{ width: '9%' }}>Date</th>
-                    <th style={{ width: '9%' }}>Id</th>
-                    <th style={{ width: '12%' }}>Name</th>
-                    <th style={{ width: '12%' }}>Phone No</th>
-                    <th style={{ width: '9%' }}>More</th>
-                    <th style={{ width: '9%' }}>Actions</th>
-                    {isCaseManager && <th style={{ width: '15%', fontSize: '20px' }}>Access</th>}
+                    <th style={{ width: '14%' }}>Entered By</th>
+                    <th style={{ width: '20%' }}>Name</th>
+                    <th style={{ width: '14%' }}>Birth Date</th>
+                    <th style={{ width: '8%' }}>More</th>
+                    <th style={{ width: '8%' }}>Actions</th>
+                    {isCaseManager && <th style={{ width: '24%' }}>Access</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -603,10 +607,11 @@ export const LRPerson = () => {
                           className={selectedRow === index ? styles.selectedRow : ''}
                           onClick={() => setSelectedRow(index)}
                         >
-                          <td>{person.dateEntered}</td>
                           <td>{person.returnId}</td>
+                          <td>{person.dateEntered}</td>
+                          <td>{person.enteredBy}</td>
                           <td>{person.name}</td>
-                          <td>{person.phoneNo}</td>
+                          <td>{person.dateOfBirth}</td>
                           <td>
                             <button
                               className={styles.viewPersonBtn}
@@ -654,7 +659,7 @@ export const LRPerson = () => {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: 'center' }}>
+                      <td colSpan={isCaseManager ? 8 : 7} style={{ textAlign: 'center' }}>
                         No Details Available
                       </td>
                     </tr>

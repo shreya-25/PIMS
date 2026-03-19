@@ -320,13 +320,13 @@
 
 /* ===== Primary action button (Save, Add Row) ===== */
 .saveBtn {
-  padding: 10px 36px;
+  padding: 7px 20px;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 500;
   background-color: #1a73e8;
   color: #ffffff;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   letter-spacing: 0.2px;
   transition: background-color 0.18s ease;
@@ -339,4 +339,22 @@
 .saveBtn:disabled {
   background-color: #8ab4f8;
   cursor: not-allowed;
+}
+
+/* ===== Cancel button ===== */
+.cancelBtn {
+  padding: 7px 20px;
+  font-size: 18px;
+  font-weight: 500;
+  background-color: #6c757d;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  letter-spacing: 0.2px;
+  transition: background-color 0.18s ease;
+}
+
+.cancelBtn:hover {
+  background-color: #545b62;
 }

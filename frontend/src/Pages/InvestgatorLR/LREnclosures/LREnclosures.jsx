@@ -174,6 +174,9 @@ export const LREnclosures = () => {
   const [confirmOpen,        setConfirmOpen]        = useState(false);
   const [pendingDeleteIndex, setPendingDeleteIndex]  = useState(null);
 
+  // Expand/collapse for description cells
+  const [expandedRows, setExpandedRows] = useState(new Set());
+
   // Alert/notification modal
   const [alertOpen,    setAlertOpen]    = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
@@ -204,6 +207,14 @@ export const LREnclosures = () => {
   }, []);
 
   const closeAlert = useCallback(() => setAlertOpen(false), []);
+
+  const toggleRowExpand = useCallback((idx) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
+      return next;
+    });
+  }, []);
 
   const resetForm = useCallback(() => {
     setEditIndex(null);
@@ -858,15 +869,14 @@ export const LREnclosures = () => {
                         </select>
                       </div>
 
-                      {/* When editing and a file exists, show current file name before replacement input */}
-                      {editIndex !== null && !enclosureData.isLink && enclosureData.originalName ? (
+                      {!enclosureData.isLink ? (
                         <div className={styles.formRowEvidence}>
-                          <label>Current File:</label>
-                          <span className={styles.currentFilename}>{enclosureData.originalName}</span>
-                        </div>
-                      ) : !enclosureData.isLink ? (
-                        <div className={styles.formRowEvidence}>
-                          <label>{editIndex === null ? 'Upload File' : 'Replace File (optional):'}</label>
+                          <div className={styles.uploadLabelRow}>
+                            <label>Upload File</label>
+                            {!file && editIndex !== null && enclosureData.originalName && (
+                              <span className={styles.currentFilenameInline}>{enclosureData.originalName}</span>
+                            )}
+                          </div>
                           <input
                             type="file"
                             name="file"
@@ -889,19 +899,6 @@ export const LREnclosures = () => {
                       )}
                     </div>
 
-                    {/* Extra file replacement row shown when editing a file-type enclosure */}
-                    {editIndex !== null && !enclosureData.isLink && enclosureData.originalName && (
-                      <div className={styles.formRowEvidence}>
-                        <label>Replace File (optional):</label>
-                        <input
-                          type="file"
-                          name="file"
-                          ref={fileInputRef}
-                          onChange={handleFileChange}
-                        />
-                      </div>
-                    )}
-
                   </div>
 
                   {/* Action buttons */}
@@ -911,10 +908,10 @@ export const LREnclosures = () => {
                       disabled={uploading || isLeadReadOnly}
                       onClick={handleSave}
                     >
-                      {uploading ? 'Saving...' : editIndex === null ? 'Add Enclosure' : 'Save Changes'}
+                      {uploading ? 'Saving...' : editIndex === null ? 'Add Enclosure' : 'Update'}
                     </button>
                     {editIndex !== null && (
-                      <button className={styles.saveBtn1} onClick={resetForm}>
+                      <button className={styles.cancelBtn} onClick={resetForm}>
                         Cancel
                       </button>
                     )}
@@ -928,12 +925,13 @@ export const LREnclosures = () => {
                 <table className={styles.leadsTable}>
                   <thead>
                     <tr>
-                      <th>Date Entered</th>
-                      <th>Narrative Id</th>
-                      <th>Type</th>
-                      <th>Description</th>
-                      <th>File Name</th>
-                      <th>Actions</th>
+                      <th style={{ width: '5%'  }}>Id</th>
+                      <th style={{ width: '8%'  }}>Date</th>
+                      <th style={{ width: '12%' }}>Entered By</th>
+                      <th style={{ width: '10%' }}>Type</th>
+                      <th style={{ width: '23%' }}>Description</th>
+                      <th style={{ width: '18%' }}>File Link</th>
+                      <th style={{ width: '10%' }}>Actions</th>
                       {isCaseManager && <th style={{ width: '15%' }}>Access</th>}
                     </tr>
                   </thead>
@@ -943,10 +941,29 @@ export const LREnclosures = () => {
                         const canModify = isCaseManager || enclosure.enteredBy?.trim() === signedInOfficer?.trim();
                         return (
                         <tr key={index}>
-                          <td>{enclosure.dateEntered}</td>
                           <td>{enclosure.returnId}</td>
+                          <td>{enclosure.dateEntered}</td>
+                          <td>{enclosure.enteredBy}</td>
                           <td>{enclosure.type}</td>
-                          <td>{enclosure.enclosure}</td>
+                          <td className={styles.descriptionCell}>
+                            <div
+                              className={
+                                expandedRows.has(index)
+                                  ? styles.narrativeContentExpanded
+                                  : styles.narrativeContentCollapsed
+                              }
+                            >
+                              {enclosure.enclosure}
+                            </div>
+                            {enclosure.enclosure && (
+                              <button
+                                className={styles.viewToggleBtn}
+                                onClick={() => toggleRowExpand(index)}
+                              >
+                                {expandedRows.has(index) ? 'View Less ▲' : 'View ▶'}
+                              </button>
+                            )}
+                          </td>
                           <td>
                             {/* Render a hyperlink for link-type or file-type enclosures */}
                             {enclosure.link?.trim() ? (
@@ -1013,7 +1030,7 @@ export const LREnclosures = () => {
                       })
                     ) : (
                       <tr>
-                        <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: 'center' }}>
+                        <td colSpan={isCaseManager ? 8 : 7} style={{ textAlign: 'center' }}>
                           No Enclosures Available
                         </td>
                       </tr>

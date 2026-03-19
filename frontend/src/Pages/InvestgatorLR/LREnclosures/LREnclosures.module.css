@@ -300,6 +300,22 @@
   padding: 4px 0;
 }
 
+/* ===== Upload label row: label + current filename side by side ===== */
+.uploadLabelRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.currentFilenameInline {
+  font-size: 14px;
+  color: #777;
+  font-style: italic;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ===== Button row ===== */
 .formButtonsReturn {
   display: flex;
@@ -309,13 +325,13 @@
 }
 
 .saveBtn1 {
-  padding: 10px 36px;
-  font-size: 20px;
-  font-weight: 600;
+  padding: 7px 20px;
+  font-size: 18px;
+  font-weight: 500;
   background-color: #1a73e8;
   color: #ffffff;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   letter-spacing: 0.2px;
   transition: background-color 0.18s ease;
@@ -328,6 +344,23 @@
 .saveBtn1:disabled {
   background-color: #8ab4f8;
   cursor: not-allowed;
+}
+
+.cancelBtn {
+  padding: 7px 20px;
+  font-size: 18px;
+  font-weight: 500;
+  background-color: #6c757d;
+  color: #ffffff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  letter-spacing: 0.2px;
+  transition: background-color 0.18s ease;
+}
+
+.cancelBtn:hover {
+  background-color: #545b62;
 }
 
 /* ===== Records table ===== */
@@ -367,6 +400,48 @@
 
 .leadsTable tbody tr:hover td {
   background-color: #f7f8ff;
+}
+
+/* ===== Description cell: expand / collapse ===== */
+.descriptionCell {
+  max-width: 400px;
+  position: relative;
+}
+
+.narrativeContentCollapsed {
+  max-height: calc(1.6em * 3);
+  overflow: hidden;
+  line-height: 1.6;
+  color: #444;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.narrativeContentExpanded {
+  line-height: 1.6;
+  color: #444;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.viewToggleBtn {
+  background: none;
+  border: none;
+  color: #29298b;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 4px 0;
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s;
+}
+
+.viewToggleBtn:hover {
+  color: #1a3faa;
+  text-decoration: underline;
 }
 
 /* ===== Link / file anchor in table ===== */

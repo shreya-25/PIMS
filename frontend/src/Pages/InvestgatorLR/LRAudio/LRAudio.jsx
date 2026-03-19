@@ -125,15 +125,28 @@ const attachFiles = async (items, idFieldName, filesEndpoint) => {
  * A single row in the audio records table.
  * Extracted to keep the parent render function concise.
  */
-const AudioTableRow = ({ audio, index, isCaseManager, isReadOnly, leadStatus, canModify, onEdit, onDelete, onAccessChange }) => {
+const AudioTableRow = ({ audio, index, isCaseManager, isReadOnly, leadStatus, canModify, onEdit, onDelete, onAccessChange, isExpanded, onToggleExpand }) => {
   const isLocked = leadStatus === 'In Review' || leadStatus === 'Completed' || isReadOnly || !canModify;
 
   return (
     <tr>
-      <td>{audio.dateEntered}</td>
       <td>{audio.returnId}</td>
+      <td>{audio.dateEntered}</td>
+      <td>{audio.enteredBy}</td>
 
-      {/* File name column: renders a link for files/URLs, or a placeholder */}
+      {/* Description cell with expand/collapse */}
+      <td className={styles.descriptionCell}>
+        <div className={isExpanded ? styles.narrativeContentExpanded : styles.narrativeContentCollapsed}>
+          {audio.description}
+        </div>
+        {audio.description && (
+          <button className={styles.viewToggleBtn} onClick={() => onToggleExpand(index)}>
+            {isExpanded ? 'View Less ▲' : 'View ▶'}
+          </button>
+        )}
+      </td>
+
+      {/* File link column */}
       <td>
         {audio.isLink ? (
           <a href={audio.link} target="_blank" rel="noopener noreferrer" className={styles.linkButton}>
@@ -147,8 +160,6 @@ const AudioTableRow = ({ audio, index, isCaseManager, isReadOnly, leadStatus, ca
           <span className={styles.noFile}>No File Available</span>
         )}
       </td>
-
-      <td>{audio.description}</td>
 
       {/* Action buttons: edit and delete */}
       <td>
@@ -234,6 +245,7 @@ export const LRAudio = () => {
   const [editingId, setEditingId]       = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [expandedRows, setExpandedRows] = useState(new Set());
 
   // Alert modal
   const [alertOpen, setAlertOpen]       = useState(false);
@@ -255,6 +267,14 @@ export const LRAudio = () => {
     selectedLead?.leadStatus === 'In Review' || selectedLead?.leadStatus === 'Completed';
 
   // ── Helpers ───────────────────────────────────────────────────────────────
+
+  const toggleRowExpand = useCallback((idx) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
+      return next;
+    });
+  }, []);
 
   /** Display a message in the alert modal. */
   const showAlert = useCallback((message) => {
@@ -896,18 +916,18 @@ export const LRAudio = () => {
                       </div>
                     ) : (
                       <div className={styles.formRowEvidence}>
-                        <label>{isEditing ? 'Replace Audio (optional)' : 'Upload Audio*'}</label>
+                        <div className={styles.uploadLabelRow}>
+                          <label>Upload Audio</label>
+                          {!file && isEditing && audioData.filename && (
+                            <span className={styles.currentFilenameInline}>{audioData.filename}</span>
+                          )}
+                        </div>
                         <input
                           type="file"
                           accept="audio/*"
                           ref={fileInputRef}
                           onChange={handleFileChange}
                         />
-                        {isEditing && audioData.filename && (
-                          <div className={styles.currentFilename}>
-                            Current File: {audioData.filename}
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>
@@ -923,45 +943,28 @@ export const LRAudio = () => {
                   >
                     {isSubmitting
                       ? isEditing ? 'Updating…' : 'Adding…'
-                      : isEditing ? 'Update Audio' : 'Add Audio'}
+                      : isEditing ? 'Update' : 'Add Audio'}
                   </button>
 
                   {isEditing && (
-                    <button className={styles.saveBtn1} disabled={isSubmitting} onClick={resetForm}>
+                    <button className={styles.cancelBtn} disabled={isSubmitting} onClick={resetForm}>
                       Cancel
                     </button>
                   )}
                 </div>
 
-                {/* ── Inline audio preview gallery (shown only when playable sources exist) ── */}
-                {audioFiles.some((a) => a.audioSrc) && (
-                  <div className={styles.uploadedAudio}>
-                    <div className={styles.audioGallery}>
-                      {audioFiles
-                        .filter((a) => a.audioSrc)
-                        .map((audio, index) => (
-                          <div key={index} className={styles.audioCard}>
-                            <audio controls>
-                              <source src={audio.audioSrc} type="audio/mp3" />
-                              Your browser does not support the audio element.
-                            </audio>
-                            <p>{audio.description}</p>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* ── Audio records table ── */}
               <table className={styles.leadsTable}>
                 <thead>
                   <tr>
-                    <th style={{ width: '14%' }}>Date Entered</th>
-                    <th style={{ width: '12%' }}>Narrative Id</th>
-                    <th>File Name</th>
-                    <th>Description</th>
-                    <th style={{ width: '13%' }}>Actions</th>
+                    <th style={{ width: '5%'  }}>Id</th>
+                    <th style={{ width: '8%'  }}>Date</th>
+                    <th style={{ width: '12%' }}>Entered By</th>
+                    <th style={{ width: '23%' }}>Description</th>
+                    <th style={{ width: '18%' }}>File Link</th>
+                    <th style={{ width: '10%' }}>Actions</th>
                     {isCaseManager && <th style={{ width: '15%' }}>Access</th>}
                   </tr>
                 </thead>
@@ -979,11 +982,13 @@ export const LRAudio = () => {
                         onEdit={handleEditAudio}
                         onDelete={requestDeleteAudio}
                         onAccessChange={handleAccessChange}
+                        isExpanded={expandedRows.has(index)}
+                        onToggleExpand={toggleRowExpand}
                       />
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={isCaseManager ? 6 : 5} className={styles.emptyRow}>
+                      <td colSpan={isCaseManager ? 7 : 6} className={styles.emptyRow}>
                         No Audio Data Available
                       </td>
                     </tr>

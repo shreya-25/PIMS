@@ -131,6 +131,8 @@ export const LRTimeline = () => {
   const [alertMessage, setAlertMessage]             = useState('');
   const [confirmOpen, setConfirmOpen]               = useState(false);
   const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
+  const [selectedEntry, setSelectedEntry]           = useState(null);
+  const [showEntryModal, setShowEntryModal]         = useState(false);
 
   const isEditing = editingIndex !== null;
 
@@ -266,7 +268,7 @@ export const LRTimeline = () => {
 
   const formatTimeRangeNY = (startTime, endTime) => {
     if (!startTime || !endTime) return '';
-    const opts  = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/New_York' };
+    const opts  = { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/New_York' };
     const start = new Date(startTime);
     const end   = new Date(endTime);
     if (isNaN(start) || isNaN(end)) return '';
@@ -290,7 +292,10 @@ export const LRTimeline = () => {
     flags:            e.timelineFlag || [],
     accessLevel:      e.accessLevel || 'Everyone',
     enteredBy:        e.enteredBy,
+    dateEntered:      formatDate(e.enteredDate),
     date:             formatDate(e.eventDate),
+    eventStartDate:   formatDate(e.eventStartDate),
+    eventEndDate:     formatDate(e.eventEndDate),
     timeRange:        formatTimeRangeNY(e.eventStartTime, e.eventEndTime),
     location:         e.eventLocation,
     description:      e.eventDescription,
@@ -533,6 +538,9 @@ export const LRTimeline = () => {
       setAlertOpen(true);
     }
   };
+
+  const openEntryModal  = (entry) => { setSelectedEntry(entry); setShowEntryModal(true); };
+  const closeEntryModal = ()      => { setShowEntryModal(false); setSelectedEntry(null); };
 
   // ── Navigation helpers ─────────────────────────────────────────────────────
 
@@ -805,11 +813,11 @@ export const LRTimeline = () => {
                       className={styles.saveBtn1}
                       onClick={handleSubmit}
                     >
-                      {isEditing ? 'Update Entry' : 'Add Entry'}
+                      {isEditing ? 'Update' : 'Add Entry'}
                     </button>
 
                     {isEditing && (
-                      <button className={styles.saveBtn1} onClick={resetForm}>
+                      <button className={styles.cancelBtn} onClick={resetForm}>
                         Cancel
                       </button>
                     )}
@@ -823,12 +831,14 @@ export const LRTimeline = () => {
                 <table className={styles.leadsTable}>
                   <thead>
                     <tr>
-                      <th style={{ width: '10%' }}>Event Date</th>
-                      <th style={{ width: '12%' }}>Narrative Id</th>
-                      <th style={{ width: '17%' }}>Event Time Range</th>
-                      <th style={{ width: '15%' }}>Event Location</th>
-                      <th style={{ width: '11%' }}>Description</th>
-                      <th style={{ width: '11%' }}>Actions</th>
+                      <th style={{ width: '5%' }}>Id</th>
+                      <th style={{ width: '8%' }}>Date</th>
+                      <th style={{ width: '12%' }}>Entered By</th>
+                      <th style={{ width: '12%' }}>Event Start</th>
+                      <th style={{ width: '12%' }}>Event End</th>
+                      <th style={{ width: '12%' }}>Location</th>
+                      <th style={{ width: '7%' }}>More</th>
+                      <th style={{ width: '10%' }}>Actions</th>
                       {isCaseManager && <th style={{ width: '15%' }}>Access</th>}
                     </tr>
                   </thead>
@@ -837,11 +847,17 @@ export const LRTimeline = () => {
                       const canModify = isCaseManager || entry.enteredBy?.trim() === signedInOfficer?.trim();
                       return (
                       <tr key={entry.id || idx}>
-                        <td>{entry.date}</td>
                         <td>{entry.leadReturnId}</td>
-                        <td>{entry.timeRange}</td>
+                        <td>{entry.dateEntered}</td>
+                        <td>{entry.enteredBy}</td>
+                        <td>{entry.eventStartDate}</td>
+                        <td>{entry.eventEndDate}</td>
                         <td>{entry.location}</td>
-                        <td>{entry.description}</td>
+                        <td>
+                          <button className={styles.viewEntryBtn} onClick={() => openEntryModal(entry)}>
+                            View
+                          </button>
+                        </td>
                         <td>
                           <div className={styles.lrTableBtn}>
                             <button disabled={isFormDisabled || !canModify} onClick={() => handleEdit(idx)}>
@@ -879,7 +895,7 @@ export const LRTimeline = () => {
                       );
                     }) : (
                       <tr>
-                        <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: 'center' }}>
+                        <td colSpan={isCaseManager ? 9 : 8} style={{ textAlign: 'center' }}>
                           No Timeline Entry Available
                         </td>
                       </tr>
@@ -893,6 +909,91 @@ export const LRTimeline = () => {
 
         </div>
       </div>
+
+      {/* ── Timeline entry detail modal ── */}
+      {showEntryModal && selectedEntry && (
+        <div className={styles.entryModalOverlay} onClick={closeEntryModal}>
+          <div className={styles.entryModal} onClick={e => e.stopPropagation()}>
+            <button className={styles.entryModalClose} onClick={closeEntryModal}>&times;</button>
+            <h2 className={styles.entryModalTitle}>Timeline Entry Details</h2>
+
+            {/* Row 1: Narrative Id | Date Entered | Entered By */}
+            <table className={styles.entryGroupTable}>
+              <thead>
+                <tr>
+                  <th>Narrative Id</th>
+                  <th>Date Entered</th>
+                  <th>Entered By</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{selectedEntry.leadReturnId || ''}</td>
+                  <td>{selectedEntry.dateEntered || ''}</td>
+                  <td>{selectedEntry.enteredBy || ''}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Row 2: Event Start Date | Event End Date | Location */}
+            <table className={styles.entryGroupTable}>
+              <thead>
+                <tr>
+                  <th>Event Start Date</th>
+                  <th>Event End Date</th>
+                  <th>Location</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{selectedEntry.eventStartDate || ''}</td>
+                  <td>{selectedEntry.eventEndDate || ''}</td>
+                  <td>{selectedEntry.location || ''}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Row 3: Time Range */}
+            <table className={styles.entryGroupTable}>
+              <thead>
+                <tr><th>Time Range</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{selectedEntry.timeRange || ''}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Row 3: Description */}
+            <table className={styles.entryGroupTable}>
+              <thead>
+                <tr><th>Description</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className={styles.wrapCell}>{selectedEntry.description || ''}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Row 4: Flag (only if present) */}
+            {selectedEntry.flags?.length > 0 && (
+              <table className={styles.entryGroupTable}>
+                <thead>
+                  <tr><th>Flag</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>{selectedEntry.flags.join(', ')}</td>
+                  </tr>
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

@@ -182,7 +182,7 @@ export const CasePageManager = () => {
 
     const beat = async () => {
       try {
-        const { data } = await api.post(`${PRESENCE_BASE}/heartbeat`, payload);
+        const { data } = await api.post(`${PRESENCE_BASE}/heartbeat`, payload, { suppressGlobalError: true });
         if (!cancelled) setPresenceOthers(Array.isArray(data?.others) ? data.others : []);
       } catch {
         setPresenceOthers([]);
@@ -194,7 +194,7 @@ export const CasePageManager = () => {
     return () => {
       cancelled = true;
       clearInterval(beatTimerRef.current);
-      api.post(`${PRESENCE_BASE}/leave`, payload).catch(() => {});
+      api.post(`${PRESENCE_BASE}/leave`, payload, { suppressGlobalError: true }).catch(() => {});
     };
   }, [selectedCase?.caseNo, selectedCase?.caseName, caseDetails?.caseNo, caseDetails?.caseName]);
 

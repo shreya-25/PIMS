@@ -455,6 +455,13 @@ export const LRResult = () => {
     setReturnData((prev) => ({ ...prev, [field]: value }));
   };
 
+  /** Resets the form back to empty and exits edit mode. */
+  const resetForm = () => {
+    setEditMode(false);
+    setEditId(null);
+    setReturnData(buildDefaultForm(localStorage.getItem('loggedInUser') || ''));
+  };
+
   /** Populate the form for editing an existing narrative entry. */
   const handleEditReturn = (ret) => {
     setReturnData({
@@ -875,8 +882,13 @@ export const LRResult = () => {
                       }
                       onClick={handleAddOrUpdateReturn}
                     >
-                      {editMode ? 'Update' : 'Save Narrative'}
+                      {editMode ? 'Update' : 'Add Narrative'}
                     </button>
+                    {editMode && (
+                      <button className={styles.cancelBtn} onClick={resetForm}>
+                        Cancel
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

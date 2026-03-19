@@ -15,8 +15,10 @@ const roomKeyFor = ({ caseNo, caseName }) =>
   `caseNo=${String(caseNo)}|caseName=${normalize(caseName)}`;
 
 async function getUserRoleForCase({ caseNo, caseName, username }) {
-  const user = await User.findOne({ username: username.toLowerCase().trim() }).select("_id").lean();
+  const user = await User.findOne({ username: username.toLowerCase().trim() }).select("_id role").lean();
   if (!user) return null;
+
+  if (user.role === "Admin") return "Admin";
 
   const doc = await Case.findOne({ caseNo, isDeleted: { $ne: true } })
     .select("caseManagerUserIds detectiveSupervisorUserId investigatorUserIds")

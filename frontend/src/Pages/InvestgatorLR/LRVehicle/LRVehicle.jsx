@@ -94,6 +94,7 @@ const mapVehicleToDisplayRow = (v, i) => ({
   year:        v.year,
   make:        v.make,
   model:       v.model,
+  type:        v.type,
   color:       v.primaryColor,
   vin:         v.vin,
   plate:       v.plate,
@@ -910,7 +911,7 @@ export const LRVehicle = () => {
                       disabled={isLeadReadOnly}
                       onClick={handleSaveVehicle}
                     >
-                      {editIndex !== null ? 'Update Vehicle' : 'Add Vehicle'}
+                      {editIndex !== null ? 'Update' : 'Add Vehicle'}
                     </button>
                     {editIndex !== null && (
                       <button className={styles.cancelBtn} onClick={resetForm}>
@@ -931,12 +932,14 @@ export const LRVehicle = () => {
                 <table className={styles.leadsTable}>
                   <thead>
                     <tr>
-                      <th style={{ width: '13%' }}>Date Entered</th>
-                      <th style={{ width: '12%' }}>Narrative Id</th>
+                      <th style={{ width: '4%'  }}>Id</th>
+                      <th style={{ width: '11%' }}>Date</th>
+                      <th style={{ width: '15%' }}>Entered By</th>
+                      <th style={{ width: '10%' }}>Type</th>
                       <th style={{ width: '10%' }}>Model</th>
-                      <th style={{ width: '10%' }}>Color</th>
-                      <th style={{ width: '9%'  }}>More</th>
-                      <th style={{ width: '14%' }}>Actions</th>
+                      <th style={{ width: '12%' }}>Color</th>
+                      <th style={{ width: '8%'  }}>More</th>
+                      <th style={{ width: '12%' }}>Actions</th>
                       {isCaseManager && <th style={{ width: '15%', fontSize: '20px' }}>Access</th>}
                     </tr>
                   </thead>
@@ -949,8 +952,10 @@ export const LRVehicle = () => {
 
                         return (
                           <tr key={index}>
-                            <td>{vehicle.dateEntered}</td>
                             <td>{vehicle.returnId}</td>
+                            <td>{vehicle.dateEntered}</td>
+                            <td>{vehicle.enteredBy}</td>
+                            <td>{vehicle.type}</td>
                             <td>{vehicle.model}</td>
                             <td>
                               {/* Color label + visual swatch */}
@@ -1018,7 +1023,7 @@ export const LRVehicle = () => {
                       })
                     ) : (
                       <tr>
-                        <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: 'center' }}>
+                        <td colSpan={isCaseManager ? 9 : 8} style={{ textAlign: 'center' }}>
                           No Vehicle Data Available
                         </td>
                       </tr>

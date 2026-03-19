@@ -96,6 +96,7 @@ export const LRVideo = () => {
   const [alertMessage, setAlertMessage]             = useState('');
   const [deleteOpen, setDeleteOpen]                 = useState(false);
   const [pendingDeleteIndex, setPendingDeleteIndex] = useState(null);
+  const [expandedRows, setExpandedRows]             = useState(new Set());
 
   const isEditing = editingIndex !== null;
 
@@ -466,6 +467,14 @@ export const LRVideo = () => {
     }
   };
 
+  const toggleRowExpand = useCallback((idx) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
+      return next;
+    });
+  }, []);
+
   // ── Navigation helpers ─────────────────────────────────────────────────────
 
   const goToLeadReview = () => {
@@ -687,18 +696,18 @@ export const LRVideo = () => {
                           </>
                         ) : (
                           <>
-                            <label>{isEditing ? 'Replace Video (optional)' : 'Upload Video'}</label>
+                            <div className={styles.uploadLabelRow}>
+                              <label>Upload Video</label>
+                              {isEditing && videoData.filename && (
+                                <span className={styles.currentFilenameInline}>{videoData.filename}</span>
+                              )}
+                            </div>
                             <input
                               type="file"
                               accept="video/*"
                               ref={fileInputRef}
                               onChange={handleFileChange}
                             />
-                            {isEditing && videoData.filename && (
-                              <span className={styles.currentFilename}>
-                                Current File: {videoData.filename}
-                              </span>
-                            )}
                           </>
                         )}
                       </div>
@@ -715,12 +724,12 @@ export const LRVideo = () => {
                     >
                       {isSubmitting
                         ? (isEditing ? 'Updating...' : 'Adding...')
-                        : (isEditing ? 'Update Video' : 'Add Video')}
+                        : (isEditing ? 'Update' : 'Add Video')}
                     </button>
 
                     {isEditing && (
                       <button
-                        className={styles.saveBtn1}
+                        className={styles.cancelBtn}
                         disabled={isSubmitting}
                         onClick={resetForm}
                       >
@@ -737,21 +746,34 @@ export const LRVideo = () => {
                 <table className={styles.leadsTable}>
                   <thead>
                     <tr>
-                      <th style={{ width: '14%' }}>Date Entered</th>
-                      <th style={{ width: '12%' }}>Narrative Id</th>
-                      <th>File Name</th>
-                      <th>Description</th>
-                      <th style={{ width: '13%' }}>Actions</th>
+                      <th style={{ width: '5%' }}>Id</th>
+                      <th style={{ width: '8%' }}>Date</th>
+                      <th style={{ width: '12%' }}>Entered By</th>
+                      <th style={{ width: '23%' }}>Description</th>
+                      <th style={{ width: '18%' }}>File Link</th>
+                      <th style={{ width: '10%' }}>Actions</th>
                       {isCaseManager && <th style={{ width: '15%' }}>Access</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {videos.length > 0 ? videos.map((video, idx) => {
-                      const canModify = isCaseManager || video.enteredBy?.trim() === signedInOfficer?.trim();
+                      const canModify  = isCaseManager || video.enteredBy?.trim() === signedInOfficer?.trim();
+                      const isExpanded = expandedRows.has(idx);
                       return (
                       <tr key={video.id || idx}>
-                        <td>{video.dateEntered}</td>
                         <td>{video.returnId}</td>
+                        <td>{video.dateEntered}</td>
+                        <td>{video.enteredBy}</td>
+                        <td className={styles.descriptionCell}>
+                          <div className={isExpanded ? styles.narrativeContentExpanded : styles.narrativeContentCollapsed}>
+                            {video.description}
+                          </div>
+                          {video.description && (
+                            <button className={styles.viewToggleBtn} onClick={() => toggleRowExpand(idx)}>
+                              {isExpanded ? 'View Less ▲' : 'View ▶'}
+                            </button>
+                          )}
+                        </td>
                         <td>
                           {/* Render either a direct URL link or a signed S3 URL */}
                           {video.isLink ? (
@@ -763,18 +785,19 @@ export const LRVideo = () => {
                             >
                               {video.link}
                             </a>
-                          ) : (
+                          ) : video.signedUrl ? (
                             <a
                               href={video.signedUrl}
                               target="_blank"
                               rel="noopener noreferrer"
                               className={styles.linkButton}
                             >
-                              {video.originalName || ''}
+                              {video.originalName || video.filename || ''}
                             </a>
+                          ) : (
+                            <span className={styles.noFile}>No file</span>
                           )}
                         </td>
-                        <td>{video.description}</td>
                         <td>
                           <div className={styles.lrTableBtn}>
                             <button
@@ -818,7 +841,7 @@ export const LRVideo = () => {
                       );
                     }) : (
                       <tr>
-                        <td colSpan={isCaseManager ? 6 : 5} style={{ textAlign: 'center' }}>
+                        <td colSpan={isCaseManager ? 7 : 6} style={{ textAlign: 'center' }}>
                           No Video Data Available
                         </td>
                       </tr>

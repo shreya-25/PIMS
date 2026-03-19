@@ -23,7 +23,7 @@ export default function usePresence({ caseNo, caseName, page = "CasePageManager"
     const beat = async () => {
       try {
         if (!visibleRef.current) return;
-        const { data } = await api.post("/api/presence/heartbeat", { caseNo, caseName, page });
+        const { data } = await api.post("/api/presence/heartbeat", { caseNo, caseName, page }, { suppressGlobalError: true });
         setOthers(Array.isArray(data?.others) ? data.others : []);
       } catch { /* silent */ }
     };
@@ -33,7 +33,7 @@ export default function usePresence({ caseNo, caseName, page = "CasePageManager"
 
     return () => {
       clearInterval(timerId);
-      api.post("/api/presence/leave", { caseNo, caseName, page }).catch(()=>{});
+      api.post("/api/presence/leave", { caseNo, caseName, page }, { suppressGlobalError: true }).catch(()=>{});
     };
   }, [caseNo, caseName, page, intervalMs]);
 
