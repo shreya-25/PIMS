@@ -55,8 +55,29 @@ export const SearchLead = () => {
   );
   const signedInOfficer = localStorage.getItem("loggedInUser");
 
+  const { selectedCase, setSelectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
 
-    const { selectedCase, setSelectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus } = useContext(CaseContext);
+  const [allUsers, setAllUsers] = useState([]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const { data } = await api.get("/api/users/usernames", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setAllUsers(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.warn("Failed to fetch users:", err);
+      }
+    };
+    fetchUsers();
+  }, []);
+
+  const resolveOfficerName = (username) => {
+    const u = allUsers.find((u) => u.username === username);
+    return u ? `${u.firstName} ${u.lastName}` : (username || "—");
+  };
 
   const [leads, setLeads] = useState({
     assignedLeads: [],
@@ -315,28 +336,33 @@ console.log("Flat combined search results:", combinedResults);
     const combinedWithOfficers = combinedResults.map(item => {
   let officers = [];
 
-  // Case 1: from /api/lead/search – usually assignedTo is an array of { username, ... }
-  if (Array.isArray(item.assignedTo)) {
-    officers = item.assignedTo.map(o => o.username || o);
+  // Preferred: backend already resolved assignedOfficers via Lead lookup
+  if (Array.isArray(item.assignedOfficers) && item.assignedOfficers.length > 0) {
+    officers = item.assignedOfficers;
   }
-  // Case 2: from LeadReturnResult / LeadReturn – often { assignedTo: { assignees: [...] } }
+  // Fallback: assignedTo is array of { username, ... } (from /api/lead/search)
+  else if (Array.isArray(item.assignedTo)) {
+    officers = item.assignedTo.map(o => (typeof o === "string" ? o : o.username)).filter(Boolean);
+  }
+  // Fallback: assignedTo.assignees array
   else if (Array.isArray(item.assignedTo?.assignees)) {
     officers = item.assignedTo.assignees.slice();
   }
-  // Case 3: buried inside fullLeadReturn (if you kept that)
+  // Fallback: buried inside fullLeadReturn
   else if (Array.isArray(item.fullLeadReturn?.assignedTo?.assignees)) {
     officers = item.fullLeadReturn.assignedTo.assignees.slice();
   }
 
   return {
     ...item,
-    assignedOfficers: officers,  // ✅ normalized field
+    assignedOfficers: officers,
   };
 });
 
 setLeadsData(combinedWithOfficers);
 setTotalEntries(combinedWithOfficers.length);
 setCurrentPage(1);
+setViewMode("leads");
   } catch (error) {
     console.error("❌ Error in handleSearch:", error);
     setLeadsData([]);
@@ -396,6 +422,112 @@ setCurrentPage(1);
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
   const [leadDropdownOpen, setLeadDropdownOpen] = useState(true);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [searchMode, setSearchMode] = useState("keyword"); // "keyword" | "person"
+  const [viewMode, setViewMode] = useState("leads"); // "leads" | "cases"
+
+  // ── Person search ──────────────────────────────────────────────────────────
+  const [personSearchTerm, setPersonSearchTerm] = useState("");
+  const [personSuggestions, setPersonSuggestions] = useState([]);
+  const [showPersonSuggestions, setShowPersonSuggestions] = useState(false);
+  const personSearchRef = useRef(null);
+  const suggestionDebounceRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (personSearchRef.current && !personSearchRef.current.contains(e.target)) {
+        setShowPersonSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const fetchPersonSuggestions = async (query) => {
+    if (!query.trim()) {
+      setPersonSuggestions([]);
+      return;
+    }
+    try {
+      const token = localStorage.getItem("token");
+      const resp = await api.get("/api/lrperson/search", {
+        params: { name: query },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const persons = Array.isArray(resp.data) ? resp.data : [];
+      // Deduplicate by full name
+      const seenNames = new Set();
+      const unique = persons.filter((p) => {
+        const fullName = [p.firstName, p.middleInitial, p.lastName].filter(Boolean).join(" ").toLowerCase();
+        if (seenNames.has(fullName)) return false;
+        seenNames.add(fullName);
+        return true;
+      });
+      setPersonSuggestions(unique);
+    } catch (err) {
+      console.warn("Person suggestions fetch failed:", err);
+      setPersonSuggestions([]);
+    }
+  };
+
+  const handlePersonInputChange = (e) => {
+    const val = e.target.value;
+    setPersonSearchTerm(val);
+    clearTimeout(suggestionDebounceRef.current);
+    if (val.trim()) {
+      suggestionDebounceRef.current = setTimeout(() => {
+        fetchPersonSuggestions(val);
+        setShowPersonSuggestions(true);
+      }, 300);
+    } else {
+      setPersonSuggestions([]);
+      setShowPersonSuggestions(false);
+    }
+  };
+
+  const handlePersonSearch = async (overrideName) => {
+    const name = overrideName !== undefined ? overrideName : personSearchTerm.trim();
+    if (!name) return;
+    try {
+      const token = localStorage.getItem("token");
+      const resp = await api.get("/api/lrperson/search", {
+        params: { name },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const persons = Array.isArray(resp.data) ? resp.data : [];
+      // Deduplicate by caseNo + leadNo, using the enriched lead data from backend
+      const combinedMap = new Map();
+      persons.forEach((p) => {
+        const key = `${p.caseNo}::${p.leadNo}`;
+        if (!combinedMap.has(key)) {
+          combinedMap.set(key, {
+            caseNo: p.caseNo,
+            caseName: p.caseName,
+            leadNo: p.leadNo,
+            description: p.description,
+            assignedOfficers: Array.isArray(p.assignedOfficers) ? p.assignedOfficers : [],
+            leadStatus: p.leadStatus || null,
+            priority: p.priority || null,
+            dueDate: p.dueDate || null,
+          });
+        }
+      });
+      const results = Array.from(combinedMap.values());
+      setLeadsData(results);
+      setTotalEntries(results.length);
+      setCurrentPage(1);
+      setViewMode("leads");
+    } catch (err) {
+      console.error("Person search failed:", err);
+    }
+  };
+
+  const handleSuggestionClick = (person) => {
+    const fullName = [person.firstName, person.middleInitial, person.lastName].filter(Boolean).join(" ");
+    setPersonSearchTerm(fullName);
+    setPersonSuggestions([]);
+    setShowPersonSuggestions(false);
+    handlePersonSearch(fullName);
+  };
 
   const onShowCaseSelector = (route) => {
     navigate(route, { state: { caseDetails } });
@@ -632,12 +764,27 @@ const sortedFilteredLeads = useMemo(() => {
 }, [leadsData, filterConfig, sortConfig]);
 
 
+  // Unique cases for "Cases" view
+  const uniqueCasesData = useMemo(() => {
+    const caseMap = new Map();
+    sortedFilteredLeads.forEach((lead) => {
+      const key = String(lead.caseNo);
+      if (!caseMap.has(key)) {
+        caseMap.set(key, { caseNo: lead.caseNo, caseName: lead.caseName, leadsCount: 1 });
+      } else {
+        caseMap.get(key).leadsCount++;
+      }
+    });
+    return Array.from(caseMap.values());
+  }, [sortedFilteredLeads]);
+
   // optional: slice for pagination
   const pagedLeads = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     const end = start + pageSize;
+    if (viewMode === "cases") return uniqueCasesData.slice(start, end);
     return sortedFilteredLeads.slice(start, end);
-  }, [sortedFilteredLeads, currentPage, pageSize]);
+  }, [sortedFilteredLeads, uniqueCasesData, viewMode, currentPage, pageSize]);
 
   // Summary stats: unique cases & total leads for current search results
 const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
@@ -667,26 +814,92 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
             </div>
             <div className={styles['search-lead-portion']}>
               <div className={styles['search-lead-head']}>
-                <label className={styles['input-label1']}>Search Lead</label>
+                <label className={styles['input-label1']}>Search</label>
               </div>
               <div className={styles['search_and_hierarchy_container']}>
+                {/* Mode toggle */}
+                <div className={styles['search-mode-toggle']}>
+                  <button
+                    className={`${styles['mode-btn']} ${searchMode === "keyword" ? styles['mode-btn-active'] : ""}`}
+                    onClick={() => { setSearchMode("keyword"); setShowPersonSuggestions(false); }}
+                  >
+                    Keyword
+                  </button>
+                  <button
+                    className={`${styles['mode-btn']} ${searchMode === "person" ? styles['mode-btn-active'] : ""}`}
+                    onClick={() => setSearchMode("person")}
+                  >
+                    Person
+                  </button>
+                </div>
+
                 <div className={styles['search-bar']}>
-                  <div className={styles['search-container1']}>
-                    <i className="fa-solid fa-magnifying-glass"></i>
-                    <input
-                      type="text"
-                      className={styles['search-input1']}
-                      placeholder="Search leads by keyword..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleSearch();
-                        }
-                      }}
-                    />
-                    <button className={styles['search-btn']} onClick={handleSearch}>Search</button>
-                  </div>
+                  {searchMode === "keyword" ? (
+                    <div className={styles['search-container1']}>
+                      <i className="fa-solid fa-magnifying-glass"></i>
+                      <input
+                        type="text"
+                        className={styles['search-input1']}
+                        placeholder="Search leads by keyword..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") handleSearch(); }}
+                      />
+                      <button className={styles['search-btn']} onClick={handleSearch}>Search</button>
+                    </div>
+                  ) : (
+                    <div className={styles['person-search-wrapper']} ref={personSearchRef}>
+                      <div className={styles['search-container1']}>
+                        <i className="fa-solid fa-user"></i>
+                        <input
+                          type="text"
+                          className={styles['search-input1']}
+                          placeholder="Search by person name..."
+                          value={personSearchTerm}
+                          onChange={handlePersonInputChange}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") { setShowPersonSuggestions(false); handlePersonSearch(); }
+                            if (e.key === "Escape") setShowPersonSuggestions(false);
+                          }}
+                          onFocus={() => { if (personSuggestions.length > 0) setShowPersonSuggestions(true); }}
+                        />
+                        {personSearchTerm && (
+                          <button
+                            className={styles['person-clear-btn']}
+                            onClick={() => { setPersonSearchTerm(""); setPersonSuggestions([]); setShowPersonSuggestions(false); }}
+                            title="Clear"
+                          >
+                            ✕
+                          </button>
+                        )}
+                        <button
+                          className={styles['search-btn']}
+                          onClick={() => { setShowPersonSuggestions(false); handlePersonSearch(); }}
+                        >
+                          Search
+                        </button>
+                      </div>
+
+                      {showPersonSuggestions && personSuggestions.length > 0 && (
+                        <ul className={styles['person-suggestions-list']}>
+                          {personSuggestions.map((person, idx) => {
+                            const fullName = [person.firstName, person.middleInitial, person.lastName].filter(Boolean).join(" ");
+                            return (
+                              <li
+                                key={idx}
+                                className={styles['person-suggestion-item']}
+                                onMouseDown={() => handleSuggestionClick(person)}
+                              >
+                                <span className={styles['suggestion-name']}>{fullName}</span>
+                                {person.alias && <span className={styles['suggestion-alias']}>({person.alias})</span>}
+                                {person.personType && <span className={styles['suggestion-type']}>{person.personType}</span>}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -898,11 +1111,19 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
   )} */}
   {leadsData.length > 0 && (
   <div className={styles['results-summary']}>
-    <div className={styles['stat-card']}>
+    <div
+      className={`${styles['stat-card']} ${viewMode === "cases" ? styles['stat-card-active'] : ""}`}
+      onClick={() => { setViewMode("cases"); setCurrentPage(1); }}
+      title="Show unique cases"
+    >
       <div className={styles['stat-count']}>{uniqueCasesCount}</div>
       <div className={styles['stat-label']}>Cases Matched</div>
     </div>
-    <div className={styles['stat-card']}>
+    <div
+      className={`${styles['stat-card']} ${viewMode === "leads" ? styles['stat-card-active'] : ""}`}
+      onClick={() => { setViewMode("leads"); setCurrentPage(1); }}
+      title="Show all leads"
+    >
       <div className={styles['stat-count']}>{totalLeadsCount}</div>
       <div className={styles['stat-label']}>Leads Matched</div>
     </div>
@@ -914,6 +1135,43 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
               <div className={styles['table-section']}>
               <div className={styles['table-scroll-container']}>
               <table className={styles['results-table']}>
+                {viewMode === "cases" ? (
+                  <>
+                    <thead>
+                      <tr>
+                        <th style={{ width: "14%" }}>Case No.</th>
+                        <th style={{ width: "55%" }}>Case Name</th>
+                        <th style={{ width: "16%", textAlign: "center" }}>Leads Involved</th>
+                        <th style={{ width: "15%" }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pagedLeads.length > 0 ? (
+                        pagedLeads.map((c, idx) => (
+                          <tr key={idx}>
+                            <td>{c.caseNo || "NA"}</td>
+                            <td>{c.caseName || "NA"}</td>
+                            <td style={{ textAlign: "center" }}>{c.leadsCount}</td>
+                            <td>
+                              <button
+                                className={styles['view-btn1']}
+                                onClick={() => {
+                                  setSelectedCase({ caseNo: c.caseNo, caseName: c.caseName });
+                                  navigate("/CasePageManager", { state: { caseDetails: { caseNo: c.caseNo, caseName: c.caseName } } });
+                                }}
+                              >
+                                View
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr><td colSpan="4" style={{ textAlign: "center", color: "#aaa" }}>No matching cases</td></tr>
+                      )}
+                    </tbody>
+                  </>
+                ) : (
+                  <>
                 <thead>
                   <tr>
                     {[
@@ -1002,7 +1260,7 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
                                   padding: "8px 0px 0px 8px",
                                 }}
                               >
-                                {officer}
+                                {resolveOfficerName(officer)}
                               </span>
                             ))
                           ) : (
@@ -1032,12 +1290,14 @@ const { uniqueCasesCount, totalLeadsCount } = useMemo(() => {
                     </tr>
                   )}
                 </tbody>
+                  </>
+                )}
               </table>
               </div>
 
               <Pagination
                 currentPage={currentPage}
-                totalEntries={totalEntries}
+                totalEntries={viewMode === "cases" ? uniqueCasesData.length : sortedFilteredLeads.length}
                 onPageChange={setCurrentPage}
                 pageSize={pageSize}
                 onPageSizeChange={setPageSize}

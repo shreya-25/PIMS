@@ -329,4 +329,74 @@ const deletePersonPhoto = async (req, res) => {
     }
 };
 
-module.exports = { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, updateLRPersonById, deleteLRPerson, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto };
+const searchPersonsByName = async (req, res) => {
+    try {
+        const { name } = req.query;
+        if (!name || !name.trim()) {
+            return res.status(200).json([]);
+        }
+        // Split into tokens so "John Smith" matches firstName="John" + lastName="Smith"
+        const tokens = name.trim().split(/\s+/).filter(Boolean);
+        const tokenConditions = tokens.map((token) => {
+            const r = new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+            return { $or: [{ firstName: r }, { lastName: r }, { alias: r }] };
+        });
+
+        const persons = await LRPerson.find({
+            isDeleted: { $ne: true },
+            $and: tokenConditions,
+        })
+            .select('firstName lastName middleInitial alias caseNo caseName leadNo description leadReturnId personType')
+            .lean();
+
+        if (persons.length === 0) {
+            return res.status(200).json([]);
+        }
+
+        // Collect unique (caseNo, leadNo) pairs so we can fetch real lead data
+        const leadKeyMap = new Map();
+        persons.forEach((p) => {
+            const key = `${p.caseNo}::${p.leadNo}`;
+            if (!leadKeyMap.has(key)) {
+                leadKeyMap.set(key, { caseNo: p.caseNo, caseName: p.caseName, leadNo: p.leadNo, description: p.description });
+            }
+        });
+
+        // Fetch actual Lead documents for all unique keys in one query
+        const Lead = require('../models/lead');
+        const orConditions = Array.from(leadKeyMap.values()).map(({ caseNo, leadNo }) => ({
+            caseNo,
+            leadNo: Number(leadNo),
+            isDeleted: { $ne: true },
+        }));
+        const leads = await Lead.find({ $or: orConditions })
+            .select('caseNo leadNo caseName description assignedTo leadStatus priority dueDate')
+            .lean();
+
+        const leadMap = new Map();
+        leads.forEach((l) => leadMap.set(`${l.caseNo}::${l.leadNo}`, l));
+
+        // Return person records enriched with live lead data
+        const enriched = persons.map((p) => {
+            const lead = leadMap.get(`${p.caseNo}::${p.leadNo}`);
+            const assignedOfficers = lead
+                ? (lead.assignedTo || []).map((a) => a.username).filter(Boolean)
+                : [];
+            return {
+                ...p,
+                assignedOfficers,
+                leadStatus: lead?.leadStatus || null,
+                priority: lead?.priority || null,
+                dueDate: lead?.dueDate || null,
+                description: lead?.description || p.description,
+            };
+        });
+
+        res.status(200).json(enriched);
+    } catch (err) {
+        console.error('Error searching persons by name:', err.message);
+        res.status(500).json({ message: 'Something went wrong' });
+    }
+};
+
+module.exports = { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, updateLRPersonById, deleteLRPerson, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto, searchPersonsByName };

@@ -1,10 +1,14 @@
 const express = require("express");
-const { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, updateLRPersonById, deleteLRPerson, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto } = require("../controller/LRPersonController");
+const { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, updateLRPersonById, deleteLRPerson, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto, searchPersonsByName } = require("../controller/LRPersonController");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
 const upload = require("../middleware/upload-disk");
 
 const router = express.Router();
+
+// Search persons by name (must be before parameterized routes)
+router.get('/search', verifyToken, searchPersonsByName);
+
 router.post("/lrperson", verifyToken, createLRPerson);
 
 router.get("/lrperson/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLRPersonByDetails);

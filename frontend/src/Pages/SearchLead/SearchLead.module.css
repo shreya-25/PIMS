@@ -274,6 +274,23 @@
   padding: 12px 24px;
   min-width: 150px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat-card:hover {
+  background-color: #f0f4ff;
+  box-shadow: 0 2px 8px rgba(41, 41, 139, 0.12);
+}
+
+.stat-card-active {
+  background-color: #29298b;
+  border-left-color: #1a1a6e;
+}
+
+.stat-card-active .stat-count,
+.stat-card-active .stat-label {
+  color: #fff;
 }
 
 .stat-count {
@@ -428,6 +445,110 @@
 
 .view-btn1:hover {
   background-color: #1558b0;
+}
+
+/* ─── Search mode toggle ─────────────────────────────────────────────────────── */
+.search-mode-toggle {
+  display: flex;
+  gap: 0;
+  margin-bottom: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.mode-btn {
+  background: #fff;
+  color: #555;
+  border: none;
+  padding: 5px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.mode-btn:not(:last-child) {
+  border-right: 1px solid #ccc;
+}
+
+.mode-btn-active {
+  background: #29298b;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ─── Person search autocomplete ─────────────────────────────────────────────── */
+.person-search-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.person-clear-btn {
+  background: none;
+  border: none;
+  color: #999;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.person-clear-btn:hover {
+  color: #555;
+}
+
+.person-suggestions-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  z-index: 100;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.person-suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: background-color 0.12s ease;
+}
+
+.person-suggestion-item:hover {
+  background-color: #f0f4ff;
+}
+
+.suggestion-name {
+  font-weight: 600;
+  color: #222;
+}
+
+.suggestion-alias {
+  color: #777;
+  font-size: 13px;
+}
+
+.suggestion-type {
+  margin-left: auto;
+  font-size: 12px;
+  color: #fff;
+  background: #29298b;
+  border-radius: 10px;
+  padding: 2px 8px;
+  white-space: nowrap;
 }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────────── */

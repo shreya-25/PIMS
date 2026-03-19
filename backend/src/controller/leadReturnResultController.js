@@ -1,6 +1,7 @@
 const LeadReturnResult = require("../models/leadReturnResult");
 const LeadReturn = require("../models/leadreturn");
 const LRPerson = require("../models/LRPerson");
+const Lead = require("../models/lead");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const { createSnapshot } = require("../utils/leadReturnVersioning");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
@@ -429,7 +430,28 @@ const searchCasesAndLeadsByKeyword = async (req, res) => {
     }
 
     const deduped = Array.from(dedupMap.values());
-    return res.status(200).json(deduped);
+
+    // Bulk-fetch Lead documents to get assignedTo for every result
+    const leadConditions = deduped.map((item) => ({
+      caseNo: item.caseNo,
+      leadNo: Number(item.leadNo),
+      isDeleted: { $ne: true },
+    }));
+    const leads = leadConditions.length
+      ? await Lead.find({ $or: leadConditions }).select("caseNo leadNo assignedTo").lean()
+      : [];
+    const leadMap = new Map();
+    leads.forEach((l) => leadMap.set(`${l.caseNo}::${l.leadNo}`, l));
+
+    const enriched = deduped.map((item) => {
+      const lead = leadMap.get(`${item.caseNo}::${item.leadNo}`);
+      const assignedOfficers = lead
+        ? (lead.assignedTo || []).map((a) => a.username).filter(Boolean)
+        : [];
+      return { ...item, assignedTo: lead?.assignedTo || [], assignedOfficers };
+    });
+
+    return res.status(200).json(enriched);
   } catch (err) {
     console.error("Error searching cases and leads by keyword:", err);
     return res.status(500).json({ message: "Something went wrong" });
