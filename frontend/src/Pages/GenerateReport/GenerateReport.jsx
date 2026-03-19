@@ -1447,8 +1447,7 @@ export const GenerateReport = () => {
                         Generate report in hierarchical order of <strong>timeline</strong> (oldest to newest).
                       </p>
 
-                      <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ marginTop: 8, display: 'flex', flexDirection: 'row', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
                           <button
                             type="button"
                             className={`${styles.btn} ${styles['btn-primary']}`}
@@ -1474,18 +1473,15 @@ export const GenerateReport = () => {
                           >
                             Run timeline-only report
                           </button>
-                        </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           <button
                             type="button"
-                            className={`${styles.btn} ${styles['btn-secondary']}`}
+                            className={`${styles.btn} ${styles['btn-primary']}`}
                             disabled={!timelineOrderedLeads.length || isGeneratingReport}
                             onClick={() => { setReportScope('visible'); handleRunReportWithSummary(timelineOrderedLeads); }}
                           >
                             Run full report (ascending timeline order)
                           </button>
-                        </div>
 
                         {isGeneratingReport && <span style={{ fontSize: 14, color: '#555', fontStyle: 'italic' }}>Generating report...</span>}
                         {!timelineOrderedLeads.length && (
