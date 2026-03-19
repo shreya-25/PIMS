@@ -31,6 +31,26 @@ const formatDate = (dateString) => {
   return `${month}/${day}/${year}`;
 };
 
+// ---------- Helper to format time range in America/New_York timezone ----------
+const formatTimeRangeNY = (startTime, endTime) => {
+  if (!startTime || !endTime) return '';
+  const opts = { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/New_York' };
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+  if (isNaN(start) || isNaN(end)) return '';
+  return `${start.toLocaleTimeString('en-US', opts)} - ${end.toLocaleTimeString('en-US', opts)}`;
+};
+
+// ---------- Helper to format dates as MM/DD/YYYY (4-digit year) ----------
+const formatDateFull = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (isNaN(date)) return "";
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  return `${month}/${day}/${date.getFullYear()}`;
+};
+
 function CollapsibleSection({ title, defaultOpen = true, rightSlot = null, children }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
@@ -212,9 +232,31 @@ const [selectedForReport, setSelectedForReport] = useState(() => new Set());
 
 // Range just for the "selected subset" flow
 const [subsetRange, setSubsetRange] = useState({ start: "", end: "" });
+const [expandedDescriptions, setExpandedDescriptions] = useState(new Set());
+const [expandedSections, setExpandedSections] = useState(new Set());
+const [showTimelineModal, setShowTimelineModal] = useState(false);
+const [selectedTimelineEntry, setSelectedTimelineEntry] = useState(null);
 
 const getDeletedReason = (lead) => lead?.deletedReason || "";
 const isDeletedStatus = (s) => String(s ?? "").trim().toLowerCase() === "deleted";
+
+const toggleDescriptionExpand = (key) => {
+  setExpandedDescriptions(prev => {
+    const next = new Set(prev);
+    next.has(key) ? next.delete(key) : next.add(key);
+    return next;
+  });
+};
+
+const toggleSection = (key) => {
+  setExpandedSections(prev => {
+    const next = new Set(prev);
+    next.has(key) ? next.delete(key) : next.add(key);
+    return next;
+  });
+};
+const openTimelineModal = (entry) => { setSelectedTimelineEntry(entry); setShowTimelineModal(true); };
+const closeTimelineModal = () => { setShowTimelineModal(false); setSelectedTimelineEntry(null); };
 
 
 
@@ -529,7 +571,24 @@ const toggleLeadForReport = (leadNo) => {
             } catch (err) {
               console.error(`Error fetching returns for Lead ${lead.leadNo}`, err);
             }
-            return { ...lead, leadReturns };
+            let enclosures = [], evidence = [], pictures = [], audio = [], videos = [], timeline = [], notes = [];
+            const [encRes, evRes, picRes, audRes, vidRes, tlRes, notesRes] = await Promise.allSettled([
+              api.get(`/api/lrenclosure/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/lrevidence/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/lrpicture/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/lraudio/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/lrvideo/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/timeline/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/scratchpad/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, { headers: { Authorization: `Bearer ${token}` } }),
+            ]);
+            if (encRes.status === "fulfilled") enclosures = encRes.value.data;
+            if (evRes.status === "fulfilled") evidence = evRes.value.data;
+            if (picRes.status === "fulfilled") pictures = picRes.value.data;
+            if (audRes.status === "fulfilled") audio = audRes.value.data;
+            if (vidRes.status === "fulfilled") videos = vidRes.value.data;
+            if (tlRes.status === "fulfilled") timeline = tlRes.value.data;
+            if (notesRes.status === "fulfilled") notes = (notesRes.value.data || []).filter(n => n.type === 'Lead');
+            return { ...lead, leadReturns, enclosures, evidence, pictures, audio, videos, timeline, notes };
           })
         );
         setLeadsData(leadsWithDetails);
@@ -997,153 +1056,415 @@ useEffect(() => {
                       </td>
                     </tr>
 
-                    {/* Persons */}
-                    {returnItem.persons && returnItem.persons.length > 0 && (
+                    {/* All sections — single row with parent + child collapsibles */}
+                    {((returnItem.persons?.length > 0) || (returnItem.vehicles?.length > 0) ||
+                      (lead.enclosures||[]).some(e=>String(e.leadReturnId)===String(returnItem.leadReturnId)) ||
+                      (lead.evidence||[]).some(e=>String(e.leadReturnId)===String(returnItem.leadReturnId)) ||
+                      (lead.pictures||[]).some(p=>String(p.leadReturnId)===String(returnItem.leadReturnId)) ||
+                      (lead.audio||[]).some(a=>String(a.leadReturnId)===String(returnItem.leadReturnId)) ||
+                      (lead.videos||[]).some(v=>String(v.leadReturnId)===String(returnItem.leadReturnId)) ||
+                      (lead.timeline||[]).some(t=>String(t.leadReturnId)===String(returnItem.leadReturnId))
+                    ) && (
                     <tr>
-                      <td colSpan={2}>
-                        <div className={styles["person-section"]}>
-                            <h3 className={styles["title-ld"]}>Person Details</h3>
-                            <table
-                              className={styles["lead-table2"]}
-                              style={{ width: "100%", tableLayout: "fixed" }}
-                            >
-                              <thead>
-                                <tr>
-                                  <th>Date Entered</th>
-                                  <th>Name</th>
-                                  <th>Phone No</th>
-                                  <th>Address</th>
-                                  <th>Additional Details</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {returnItem.persons.map((person, index) => (
-                                  <tr key={person._id || index}>
-                                    <td>{formatDate(person.enteredDate)}</td>
-                                    <td>
-                                      {person.firstName
-                                        ? `${person.firstName}, ${person.lastName}`
-                                        : "N/A"}
-                                    </td>
-                                    <td>{person.cellNumber}</td>
-                                    <td
-                                      style={{
-                                        whiteSpace: "normal",
-                                        wordWrap: "break-word",
-                                      }}
-                                    >
-                                      {person.address
-                                        ? `${person.address.street1 || ""}, ${
-                                            person.address.city || ""
-                                          }, ${person.address.state || ""}, ${
-                                            person.address.zipCode || ""
-                                          }`
-                                        : "N/A"}
-                                    </td>
-                                    <td>
-                                      <button
-                                        className={styles["download-btn"]}
-                                        onClick={() => openPersonModal(person, lead.leadNo, selectedCase.caseName)}
-                                      >
-                                        View
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                      <td colSpan={2} style={{ padding: '4px 0 0 0' }}>
+                        {/* Parent collapsible */}
+                        <h3 className={styles.collapsibleHeaderParent} onClick={() => toggleSection(`${returnItem.leadReturnId}-all`)}>
+                          <span className={`${styles.collapsibleChevron}${expandedSections.has(`${returnItem.leadReturnId}-all`) ? ` ${styles.collapsibleChevronOpen}` : ''}`}>▶</span>
+                          Other Lead Return Details
+                        </h3>
+                        {expandedSections.has(`${returnItem.leadReturnId}-all`) && (
+                          <div className={styles.sectionGroupContent}>
+
+                            {/* Persons */}
+                            {returnItem.persons?.length > 0 && (
+                            <div className={styles["person-section"]}>
+                              <h3 className={styles.collapsibleHeader} onClick={() => toggleSection(`${returnItem.leadReturnId}-persons`)}>
+                                <span className={`${styles.collapsibleChevron}${expandedSections.has(`${returnItem.leadReturnId}-persons`) ? ` ${styles.collapsibleChevronOpen}` : ''}`}>▶</span>
+                                Person Details
+                              </h3>
+                              {expandedSections.has(`${returnItem.leadReturnId}-persons`) && (
+                                <table className={styles["lead-table2"]} style={{ width: "100%", tableLayout: "fixed" }}>
+                                  <colgroup>
+                                    <col style={{ width: "5%" }} /><col style={{ width: "7%" }} /><col style={{ width: "10%" }} />
+                                    <col style={{ width: "13%" }} /><col style={{ width: "9%" }} /><col style={{ width: "10%" }} />
+                                    <col style={{ width: "22%" }} /><col style={{ width: "6%" }} />
+                                  </colgroup>
+                                  <thead><tr>
+                                    <th style={{ textAlign: "left" }}>Id</th><th>Date</th><th>Entered By</th>
+                                    <th>Name</th><th>Birth Date</th><th>Phone No</th><th>Address</th><th>More</th>
+                                  </tr></thead>
+                                  <tbody>
+                                    {returnItem.persons.map((person, index) => (
+                                      <tr key={person._id || index}>
+                                        <td style={{ textAlign: "left" }}>{person.leadReturnId}</td>
+                                        <td>{formatDate(person.enteredDate)}</td>
+                                        <td>{person.enteredBy}</td>
+                                        <td>{person.firstName ? `${person.firstName} ${person.lastName}` : "N/A"}</td>
+                                        <td>{formatDateFull(person.dateOfBirth)}</td>
+                                        <td>{person.cellNumber}</td>
+                                        <td style={{ whiteSpace: "normal", wordWrap: "break-word" }}>
+                                          {person.address ? [person.address.street1, person.address.city, person.address.state, person.address.zipCode].filter(Boolean).join(", ") : ""}
+                                        </td>
+                                        <td><button className={styles.viewBtn} onClick={() => openPersonModal(person, lead.leadNo, selectedCase.caseName)}>View</button></td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              )}
+                            </div>
+                            )}
+
+                            {/* Vehicles */}
+                            {returnItem.vehicles?.length > 0 && (
+                            <div className={styles["person-section"]}>
+                              <h3 className={styles.collapsibleHeader} onClick={() => toggleSection(`${returnItem.leadReturnId}-vehicles`)}>
+                                <span className={`${styles.collapsibleChevron}${expandedSections.has(`${returnItem.leadReturnId}-vehicles`) ? ` ${styles.collapsibleChevronOpen}` : ''}`}>▶</span>
+                                Vehicles Details
+                              </h3>
+                              {expandedSections.has(`${returnItem.leadReturnId}-vehicles`) && (
+                                <table className={styles["lead-table2"]} style={{ width: "100%", tableLayout: "fixed" }}>
+                                  <colgroup>
+                                    <col style={{ width: "5%" }} /><col style={{ width: "7%" }} /><col style={{ width: "10%" }} />
+                                    <col style={{ width: "7%" }} /><col style={{ width: "8%" }} /><col style={{ width: "7%" }} />
+                                    <col style={{ width: "10%" }} /><col style={{ width: "9%" }} /><col style={{ width: "9%" }} /><col style={{ width: "6%" }} />
+                                  </colgroup>
+                                  <thead><tr>
+                                    <th>Id</th><th>Date</th><th>Entered By</th><th>Type</th><th>Model</th>
+                                    <th>Color</th><th>VIN</th><th>Plate No</th><th>State</th><th>More</th>
+                                  </tr></thead>
+                                  <tbody>
+                                    {returnItem.vehicles.map((vehicle, index) => (
+                                      <tr key={vehicle._id || index}>
+                                        <td>{vehicle.leadReturnId}</td><td>{formatDate(vehicle.enteredDate)}</td>
+                                        <td>{vehicle.enteredBy}</td><td>{vehicle.type}</td><td>{vehicle.model}</td>
+                                        <td>
+                                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                            <span>{vehicle.primaryColor}</span>
+                                            <div style={{ width: 16, height: 16, backgroundColor: vehicle.primaryColor, border: "1px solid #999", borderRadius: 2, flexShrink: 0 }} />
+                                          </div>
+                                        </td>
+                                        <td>{vehicle.vin}</td><td>{vehicle.plate}</td><td>{vehicle.state}</td>
+                                        <td><button className={styles.viewBtn} onClick={() => openVehicleModal(lead.leadNo, lead.description, selectedCase.caseNo, selectedCase.caseName, vehicle.leadReturnId, returnItem.leadsDeskCode)}>View</button></td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              )}
+                            </div>
+                            )}
+
+                            {/* Enclosures */}
+                            {(lead.enclosures||[]).filter(e=>String(e.leadReturnId)===String(returnItem.leadReturnId)).length > 0 && (
+                            <div className={styles["person-section"]}>
+                              <h3 className={styles.collapsibleHeader} onClick={() => toggleSection(`${returnItem.leadReturnId}-enclosures`)}>
+                                <span className={`${styles.collapsibleChevron}${expandedSections.has(`${returnItem.leadReturnId}-enclosures`) ? ` ${styles.collapsibleChevronOpen}` : ''}`}>▶</span>
+                                Enclosures
+                              </h3>
+                              {expandedSections.has(`${returnItem.leadReturnId}-enclosures`) && (
+                                <table className={styles["lead-table2"]} style={{ width: "100%", tableLayout: "fixed" }}>
+                                  <colgroup>
+                                    <col style={{ width: "5%" }} /><col style={{ width: "8%" }} /><col style={{ width: "12%" }} />
+                                    <col style={{ width: "10%" }} /><col style={{ width: "45%" }} /><col style={{ width: "20%" }} />
+                                  </colgroup>
+                                  <thead><tr><th>Id</th><th>Date</th><th>Entered By</th><th>Type</th><th>Description</th><th>File Link</th></tr></thead>
+                                  <tbody>
+                                    {(lead.enclosures||[]).filter(e=>String(e.leadReturnId)===String(returnItem.leadReturnId)).map((enc, i) => {
+                                      const descKey = `enc-${enc._id || i}`;
+                                      return (
+                                        <tr key={enc._id || i}>
+                                          <td>{enc.leadReturnId}</td><td>{formatDate(enc.enteredDate)}</td>
+                                          <td>{enc.enteredBy}</td><td>{enc.type}</td>
+                                          <td>
+                                            <div className={expandedDescriptions.has(descKey) ? styles.descTextExpanded : styles.descText}>{enc.enclosureDescription}</div>
+                                            {enc.enclosureDescription && <button className={styles.viewToggleBtn} onClick={() => toggleDescriptionExpand(descKey)}>{expandedDescriptions.has(descKey) ? 'View Less ▲' : 'View ▶'}</button>}
+                                          </td>
+                                          <td>{enc.isLink ? <a href={enc.link} target="_blank" rel="noopener noreferrer">{enc.link}</a> : enc.signedUrl ? <a href={enc.signedUrl} target="_blank" rel="noopener noreferrer">{enc.originalName || enc.filename}</a> : (enc.originalName || enc.filename || "")}</td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              )}
+                            </div>
+                            )}
+
+                            {/* Evidence */}
+                            {(lead.evidence||[]).filter(e=>String(e.leadReturnId)===String(returnItem.leadReturnId)).length > 0 && (
+                            <div className={styles["person-section"]}>
+                              <h3 className={styles.collapsibleHeader} onClick={() => toggleSection(`${returnItem.leadReturnId}-evidence`)}>
+                                <span className={`${styles.collapsibleChevron}${expandedSections.has(`${returnItem.leadReturnId}-evidence`) ? ` ${styles.collapsibleChevronOpen}` : ''}`}>▶</span>
+                                Evidence
+                              </h3>
+                              {expandedSections.has(`${returnItem.leadReturnId}-evidence`) && (
+                                <table className={styles["lead-table2"]} style={{ width: "100%", tableLayout: "fixed" }}>
+                                  <colgroup>
+                                    <col style={{ width: "5%" }} /><col style={{ width: "8%" }} /><col style={{ width: "12%" }} />
+                                    <col style={{ width: "10%" }} /><col style={{ width: "45%" }} /><col style={{ width: "20%" }} />
+                                  </colgroup>
+                                  <thead><tr><th>Id</th><th>Date</th><th>Entered By</th><th>Type</th><th>Description</th><th>File Link</th></tr></thead>
+                                  <tbody>
+                                    {(lead.evidence||[]).filter(e=>String(e.leadReturnId)===String(returnItem.leadReturnId)).map((ev, i) => {
+                                      const descKey = `ev-${ev._id || i}`;
+                                      return (
+                                        <tr key={ev._id || i}>
+                                          <td>{ev.leadReturnId}</td><td>{formatDate(ev.enteredDate)}</td>
+                                          <td>{ev.enteredBy}</td><td>{ev.type}</td>
+                                          <td>
+                                            <div className={expandedDescriptions.has(descKey) ? styles.descTextExpanded : styles.descText}>{ev.evidenceDescription}</div>
+                                            {ev.evidenceDescription && <button className={styles.viewToggleBtn} onClick={() => toggleDescriptionExpand(descKey)}>{expandedDescriptions.has(descKey) ? 'View Less ▲' : 'View ▶'}</button>}
+                                          </td>
+                                          <td>{ev.isLink ? <a href={ev.link} target="_blank" rel="noopener noreferrer">{ev.link}</a> : ev.signedUrl ? <a href={ev.signedUrl} target="_blank" rel="noopener noreferrer">{ev.originalName || ev.filename}</a> : (ev.originalName || ev.filename || "")}</td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              )}
+                            </div>
+                            )}
+
+                            {/* Pictures */}
+                            {(lead.pictures||[]).filter(p=>String(p.leadReturnId)===String(returnItem.leadReturnId)).length > 0 && (
+                            <div className={styles["person-section"]}>
+                              <h3 className={styles.collapsibleHeader} onClick={() => toggleSection(`${returnItem.leadReturnId}-pictures`)}>
+                                <span className={`${styles.collapsibleChevron}${expandedSections.has(`${returnItem.leadReturnId}-pictures`) ? ` ${styles.collapsibleChevronOpen}` : ''}`}>▶</span>
+                                Pictures
+                              </h3>
+                              {expandedSections.has(`${returnItem.leadReturnId}-pictures`) && (
+                                <table className={styles["lead-table2"]} style={{ width: "100%", tableLayout: "fixed" }}>
+                                  <colgroup>
+                                    <col style={{ width: "5%" }} /><col style={{ width: "8%" }} /><col style={{ width: "12%" }} />
+                                    <col style={{ width: "10%" }} /><col style={{ width: "44%" }} /><col style={{ width: "20%" }} />
+                                  </colgroup>
+                                  <thead><tr><th>Id</th><th>Date</th><th>Entered By</th><th>Capture Date</th><th>Description</th><th>File Link</th></tr></thead>
+                                  <tbody>
+                                    {(lead.pictures||[]).filter(p=>String(p.leadReturnId)===String(returnItem.leadReturnId)).map((pic, i) => {
+                                      const descKey = `pic-${pic._id || i}`;
+                                      return (
+                                        <tr key={pic._id || i}>
+                                          <td>{pic.leadReturnId}</td><td>{formatDate(pic.enteredDate)}</td>
+                                          <td>{pic.enteredBy}</td><td>{formatDate(pic.datePictureTaken)}</td>
+                                          <td>
+                                            <div className={expandedDescriptions.has(descKey) ? styles.descTextExpanded : styles.descText}>{pic.pictureDescription}</div>
+                                            {pic.pictureDescription && <button className={styles.viewToggleBtn} onClick={() => toggleDescriptionExpand(descKey)}>{expandedDescriptions.has(descKey) ? 'View Less ▲' : 'View ▶'}</button>}
+                                          </td>
+                                          <td>{pic.isLink ? <a href={pic.link} target="_blank" rel="noopener noreferrer">{pic.link}</a> : pic.signedUrl ? <a href={pic.signedUrl} target="_blank" rel="noopener noreferrer">{pic.originalName || pic.filename}</a> : (pic.originalName || pic.filename || "")}</td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              )}
+                            </div>
+                            )}
+
+                            {/* Audio */}
+                            {(lead.audio||[]).filter(a=>String(a.leadReturnId)===String(returnItem.leadReturnId)).length > 0 && (
+                            <div className={styles["person-section"]}>
+                              <h3 className={styles.collapsibleHeader} onClick={() => toggleSection(`${returnItem.leadReturnId}-audio`)}>
+                                <span className={`${styles.collapsibleChevron}${expandedSections.has(`${returnItem.leadReturnId}-audio`) ? ` ${styles.collapsibleChevronOpen}` : ''}`}>▶</span>
+                                Audio
+                              </h3>
+                              {expandedSections.has(`${returnItem.leadReturnId}-audio`) && (
+                                <table className={styles["lead-table2"]} style={{ width: "100%", tableLayout: "fixed" }}>
+                                  <colgroup>
+                                    <col style={{ width: "5%" }} /><col style={{ width: "8%" }} /><col style={{ width: "12%" }} />
+                                    <col style={{ width: "10%" }} /><col style={{ width: "44%" }} /><col style={{ width: "20%" }} />
+                                  </colgroup>
+                                  <thead><tr><th>Id</th><th>Date</th><th>Entered By</th><th>Record Date</th><th>Description</th><th>File Link</th></tr></thead>
+                                  <tbody>
+                                    {(lead.audio||[]).filter(a=>String(a.leadReturnId)===String(returnItem.leadReturnId)).map((aud, i) => {
+                                      const descKey = `aud-${aud._id || i}`;
+                                      return (
+                                        <tr key={aud._id || i}>
+                                          <td>{aud.leadReturnId}</td><td>{formatDate(aud.enteredDate)}</td>
+                                          <td>{aud.enteredBy}</td><td>{formatDate(aud.dateAudioRecorded)}</td>
+                                          <td>
+                                            <div className={expandedDescriptions.has(descKey) ? styles.descTextExpanded : styles.descText}>{aud.audioDescription}</div>
+                                            {aud.audioDescription && <button className={styles.viewToggleBtn} onClick={() => toggleDescriptionExpand(descKey)}>{expandedDescriptions.has(descKey) ? 'View Less ▲' : 'View ▶'}</button>}
+                                          </td>
+                                          <td>{aud.isLink ? <a href={aud.link} target="_blank" rel="noopener noreferrer">{aud.link}</a> : aud.signedUrl ? <a href={aud.signedUrl} target="_blank" rel="noopener noreferrer">{aud.originalName || aud.filename}</a> : (aud.originalName || aud.filename || "No File Available")}</td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              )}
+                            </div>
+                            )}
+
+                            {/* Videos */}
+                            {(lead.videos||[]).filter(v=>String(v.leadReturnId)===String(returnItem.leadReturnId)).length > 0 && (
+                            <div className={styles["person-section"]}>
+                              <h3 className={styles.collapsibleHeader} onClick={() => toggleSection(`${returnItem.leadReturnId}-videos`)}>
+                                <span className={`${styles.collapsibleChevron}${expandedSections.has(`${returnItem.leadReturnId}-videos`) ? ` ${styles.collapsibleChevronOpen}` : ''}`}>▶</span>
+                                Videos
+                              </h3>
+                              {expandedSections.has(`${returnItem.leadReturnId}-videos`) && (
+                                <table className={styles["lead-table2"]} style={{ width: "100%", tableLayout: "fixed" }}>
+                                  <colgroup>
+                                    <col style={{ width: "5%" }} /><col style={{ width: "8%" }} /><col style={{ width: "12%" }} />
+                                    <col style={{ width: "10%" }} /><col style={{ width: "44%" }} /><col style={{ width: "20%" }} />
+                                  </colgroup>
+                                  <thead><tr><th>Id</th><th>Date</th><th>Entered By</th><th>Record Date</th><th>Description</th><th>File Link</th></tr></thead>
+                                  <tbody>
+                                    {(lead.videos||[]).filter(v=>String(v.leadReturnId)===String(returnItem.leadReturnId)).map((vid, i) => {
+                                      const descKey = `vid-${vid._id || i}`;
+                                      return (
+                                        <tr key={vid._id || i}>
+                                          <td>{vid.leadReturnId}</td><td>{formatDate(vid.enteredDate)}</td>
+                                          <td>{vid.enteredBy}</td><td>{formatDate(vid.dateVideoRecorded)}</td>
+                                          <td>
+                                            <div className={expandedDescriptions.has(descKey) ? styles.descTextExpanded : styles.descText}>{vid.videoDescription}</div>
+                                            {vid.videoDescription && <button className={styles.viewToggleBtn} onClick={() => toggleDescriptionExpand(descKey)}>{expandedDescriptions.has(descKey) ? 'View Less ▲' : 'View ▶'}</button>}
+                                          </td>
+                                          <td>{vid.isLink ? <a href={vid.link} target="_blank" rel="noopener noreferrer">{vid.link}</a> : vid.signedUrl ? <a href={vid.signedUrl} target="_blank" rel="noopener noreferrer">{vid.originalName || vid.filename}</a> : (vid.originalName || vid.filename || "No file")}</td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              )}
+                            </div>
+                            )}
+
+                            {/* Timeline Entries */}
+                            {(lead.timeline||[]).filter(t=>String(t.leadReturnId)===String(returnItem.leadReturnId)).length > 0 && (
+                            <div className={styles["person-section"]}>
+                              <h3 className={styles.collapsibleHeader} onClick={() => toggleSection(`${returnItem.leadReturnId}-timeline`)}>
+                                <span className={`${styles.collapsibleChevron}${expandedSections.has(`${returnItem.leadReturnId}-timeline`) ? ` ${styles.collapsibleChevronOpen}` : ''}`}>▶</span>
+                                Timeline Entries
+                              </h3>
+                              {expandedSections.has(`${returnItem.leadReturnId}-timeline`) && (
+                                <table className={styles["lead-table2"]} style={{ width: "100%", tableLayout: "fixed" }}>
+                                  <colgroup>
+                                    <col style={{ width: "4%" }} /><col style={{ width: "8%" }} /><col style={{ width: "11%" }} />
+                                    <col style={{ width: "9%" }} /><col style={{ width: "9%" }} /><col style={{ width: "16%" }} />
+                                    <col style={{ width: "35%" }} /><col style={{ width: "8%" }} />
+                                  </colgroup>
+                                  <thead><tr><th>Id</th><th>Date</th><th>Entered By</th><th>Event Start</th><th>Event End</th><th>Location</th><th>Description</th><th>More</th></tr></thead>
+                                  <tbody>
+                                    {(lead.timeline||[]).filter(t=>String(t.leadReturnId)===String(returnItem.leadReturnId)).map((tl, i) => {
+                                      const descKey = `tl-${tl._id || i}`;
+                                      return (
+                                        <tr key={tl._id || i}>
+                                          <td>{tl.leadReturnId}</td><td>{formatDate(tl.enteredDate)}</td>
+                                          <td>{tl.enteredBy}</td><td>{formatDate(tl.eventStartDate)}</td>
+                                          <td>{formatDate(tl.eventEndDate)}</td><td>{tl.eventLocation}</td>
+                                          <td>
+                                            <div className={expandedDescriptions.has(descKey) ? styles.descTextExpanded : styles.descText}>{tl.eventDescription}</div>
+                                            {tl.eventDescription && <button className={styles.viewToggleBtn} onClick={() => toggleDescriptionExpand(descKey)}>{expandedDescriptions.has(descKey) ? 'View Less ▲' : 'View ▶'}</button>}
+                                          </td>
+                                          <td><button className={styles.viewBtn} onClick={() => openTimelineModal(tl)}>View</button></td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              )}
+                            </div>
+                            )}
+
+                            {/* Notes */}
+                            {lead.notes?.length > 0 && (
+                            <div className={styles["person-section"]}>
+                              <h3 className={styles.collapsibleHeader} onClick={() => toggleSection(`${lead.leadNo}-notes`)}>
+                                <span className={`${styles.collapsibleChevron}${expandedSections.has(`${lead.leadNo}-notes`) ? ` ${styles.collapsibleChevronOpen}` : ''}`}>▶</span>
+                                Notes
+                              </h3>
+                              {expandedSections.has(`${lead.leadNo}-notes`) && (
+                                <table className={styles["lead-table2"]} style={{ width: "100%", tableLayout: "fixed" }}>
+                                  <colgroup>
+                                    <col style={{ width: "5%" }} /><col style={{ width: "9%" }} /><col style={{ width: "13%" }} /><col style={{ width: "73%" }} />
+                                  </colgroup>
+                                  <thead><tr><th>Id</th><th>Date</th><th>Entered By</th><th>Notes</th></tr></thead>
+                                  <tbody>
+                                    {lead.notes.map((note, i) => {
+                                      const descKey = `note-${note._id || i}`;
+                                      return (
+                                        <tr key={note._id || i}>
+                                          <td>{note.leadReturnId}</td><td>{formatDate(note.enteredDate)}</td>
+                                          <td>{note.enteredBy}</td>
+                                          <td>
+                                            <div className={expandedDescriptions.has(descKey) ? styles.descTextExpanded : styles.descText}>{note.text}</div>
+                                            {note.text && <button className={styles.viewToggleBtn} onClick={() => toggleDescriptionExpand(descKey)}>{expandedDescriptions.has(descKey) ? 'View Less ▲' : 'View ▶'}</button>}
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              )}
+                            </div>
+                            )}
+
                           </div>
+                        )}
                       </td>
-                      <PersonModal
-                        isOpen={showPersonModal}
-                        onClose={closePersonModal}
-                        personData={personModalData.person}
-                        caseName={personModalData.caseName}
-                        leadNo={personModalData.leadNo}
-                      />
                     </tr>
                     )}
 
-                    {/* Vehicles */}
-                    {returnItem.vehicles && returnItem.vehicles.length > 0 && (
-                    <tr>
-                      <td colSpan={2}>
-                        <div className={styles["person-section"]}>
-                            <h3 className={styles["title-ld"]}>Vehicles Details</h3>
-                            <table
-                              className={styles["lead-table2"]}
-                              style={{ width: "100%", tableLayout: "fixed" }}
-                            >
-                              <thead>
-                                <tr>
-                                  <th>Date Entered</th>
-                                  <th>Make</th>
-                                  <th>Model</th>
-                                  <th>Color</th>
-                                  <th>Plate</th>
-                                  <th>State</th>
-                                  <th>Additional Details</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {returnItem.vehicles.map((vehicle, index) => (
-                                  <tr key={vehicle._id || index}>
-                                    <td>{formatDate(vehicle.enteredDate)}</td>
-                                    <td>{vehicle.make}</td>
-                                    <td>{vehicle.model}</td>
-                                    <td>
-                                      <div style={{ display: "flex", alignItems: "center" }}>
-                                        <span style={{ width: "60px", display: "inline-block" }}>
-                                          {vehicle.primaryColor}
-                                        </span>
-                                        <div
-                                          style={{
-                                            width: "18px",
-                                            height: "18px",
-                                            backgroundColor: vehicle.primaryColor,
-                                            marginLeft: "15px",
-                                            border: "1px solid #000",
-                                          }}
-                                        />
-                                      </div>
-                                    </td>
-                                    <td>{vehicle.plate}</td>
-                                    <td>{vehicle.state}</td>
-                                    <td>
-                                      <button
-                                        className={styles["download-btn"]}
-                                        onClick={() =>
-                                          openVehicleModal(
-                                            lead.leadNo,
-                                            lead.description,
-                                            selectedCase.caseNo,
-                                            selectedCase.caseName,
-                                            returnItem.leadReturnId,
-                                            returnItem.leadsDeskCode
-                                          )
-                                        }
-                                      >
-                                        View
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                    {/* Timeline Entry Detail Modal */}
+                    {showTimelineModal && selectedTimelineEntry && (
+                      <tr>
+                        <td colSpan={2} style={{ padding: 0 }}>
+                          <div className={styles.tlModalOverlay} onClick={closeTimelineModal}>
+                            <div className={styles.tlModalContent} onClick={e => e.stopPropagation()}>
+                              <button className={styles.tlModalClose} onClick={closeTimelineModal}>&times;</button>
+                              <h2>Timeline Entry Details</h2>
+                              <p><strong>Narrative Id:</strong> {selectedTimelineEntry.leadReturnId}</p>
+
+                              <table className={styles.tlGroupTable}>
+                                <thead><tr><th>Date Entered</th><th>Entered By</th></tr></thead>
+                                <tbody><tr><td>{formatDate(selectedTimelineEntry.enteredDate)}</td><td>{selectedTimelineEntry.enteredBy}</td></tr></tbody>
+                              </table>
+
+                              <table className={styles.tlGroupTable}>
+                                <thead><tr><th>Event Start Date</th><th>Event End Date</th><th>Location</th></tr></thead>
+                                <tbody><tr><td>{formatDate(selectedTimelineEntry.eventStartDate)}</td><td>{formatDate(selectedTimelineEntry.eventEndDate)}</td><td>{selectedTimelineEntry.eventLocation}</td></tr></tbody>
+                              </table>
+
+                              {(selectedTimelineEntry.eventStartTime || selectedTimelineEntry.eventEndTime) && (
+                                <table className={styles.tlGroupTable}>
+                                  <thead><tr><th>Time Range</th></tr></thead>
+                                  <tbody><tr><td>{formatTimeRangeNY(selectedTimelineEntry.eventStartTime, selectedTimelineEntry.eventEndTime)}</td></tr></tbody>
+                                </table>
+                              )}
+
+                              <table className={styles.tlGroupTable}>
+                                <thead><tr><th>Description</th></tr></thead>
+                                <tbody><tr><td>{selectedTimelineEntry.eventDescription || ''}</td></tr></tbody>
+                              </table>
+
+                              {selectedTimelineEntry.timelineFlag?.length > 0 && (
+                                <table className={styles.tlGroupTable}>
+                                  <thead><tr><th>Flag</th></tr></thead>
+                                  <tbody><tr><td>{selectedTimelineEntry.timelineFlag.join(', ')}</td></tr></tbody>
+                                </table>
+                              )}
+                            </div>
                           </div>
-                      </td>
-                      <VehicleModal
-                        isOpen={showVehicleModal}
-                        onClose={closeVehicleModal}
-                        leadNo={vehicleModalData.leadNo}
-                        leadName={vehicleModalData.description}
-                        caseNo={vehicleModalData.caseNo}
-                        caseName={vehicleModalData.caseName}
-                        leadReturnId={vehicleModalData.leadReturnId}
-                        leadsDeskCode={vehicleModalData.leadsDeskCode}
-                      />
-                    </tr>
+                        </td>
+                      </tr>
                     )}
+
+                    <PersonModal
+                      isOpen={showPersonModal}
+                      onClose={closePersonModal}
+                      personData={personModalData.person}
+                      caseName={personModalData.caseName}
+                      leadNo={personModalData.leadNo}
+                    />
+                    <VehicleModal
+                      isOpen={showVehicleModal}
+                      onClose={closeVehicleModal}
+                      leadNo={vehicleModalData.leadNo}
+                      leadName={vehicleModalData.description}
+                      caseNo={vehicleModalData.caseNo}
+                      caseName={vehicleModalData.caseName}
+                      leadReturnId={vehicleModalData.leadReturnId}
+                      leadsDeskCode={vehicleModalData.leadsDeskCode}
+                    />
                     <MediaModal
                       isOpen={showMediaModal}
                       onClose={closeMediaModal}
@@ -1158,6 +1479,7 @@ useEffect(() => {
                   </td>
                 </tr>
               )}
+
             </tbody>
           </table>
         </div>
