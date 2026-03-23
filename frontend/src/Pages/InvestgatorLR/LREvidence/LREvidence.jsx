@@ -23,7 +23,7 @@ import { CaseContext } from "../../CaseContext";
 import { useLeadStatus } from "../../../hooks/useLeadStatus";
 import api from "../../../api";
 import styles from "../LR.module.css";
-import { formatDate, alphabetToNumber, buildLeadCasePath } from "../lrUtils";
+import { formatDate, alphabetToNumber, buildLeadCaseIdPath } from "../lrUtils";
 import { useLeadReport } from "../useLeadReport";
 import { LRTopMenu } from "../LRTopMenu";
 
@@ -110,8 +110,7 @@ export const LREvidence = () => {
 
   // ── Lead status hook (read-only gate) ───────────────────────────────────────
   const { status, isReadOnly } = useLeadStatus({
-    caseNo:   selectedCase.caseNo,
-    caseName: selectedCase.caseName,
+    caseId:   selectedCase._id || selectedCase.id,
     leadNo:   selectedLead.leadNo,
     leadName: selectedLead.leadName,
   });
@@ -200,13 +199,13 @@ export const LREvidence = () => {
   // ── API: Fetch narrative IDs for the dropdown ───────────────────────────────
   useEffect(() => {
     if (!selectedLead?.leadNo || !selectedLead?.leadName ||
-        !selectedCase?.caseNo || !selectedCase?.caseName) return;
+        !selectedCase?._id && !selectedCase?.id) return;
 
     const controller = new AbortController();
     const token = localStorage.getItem("token");
-    const path  = buildLeadCasePath(
+    const path  = buildLeadCaseIdPath(
       selectedLead.leadNo, selectedLead.leadName,
-      selectedCase.caseNo, selectedCase.caseName
+      selectedCase._id || selectedCase.id
     );
 
     (async () => {
@@ -236,19 +235,19 @@ export const LREvidence = () => {
     return () => controller.abort();
   }, [
     selectedLead?.leadNo, selectedLead?.leadName,
-    selectedCase?.caseNo, selectedCase?.caseName,
+    selectedCase?._id, selectedCase?.id,
     editIndex,
   ]);
 
   // ── API: Fetch lead metadata (assignment info, primary investigator) ─────────
   useEffect(() => {
     if (!selectedLead?.leadNo || !selectedLead?.leadName ||
-        !selectedCase?.caseNo || !selectedCase?.caseName) return;
+        !selectedCase?._id && !selectedCase?.id) return;
 
     const token = localStorage.getItem("token");
-    const path  = buildLeadCasePath(
+    const path  = buildLeadCaseIdPath(
       selectedLead.leadNo, selectedLead.leadName,
-      selectedCase.caseNo, selectedCase.caseName
+      selectedCase._id || selectedCase.id
     );
 
     api
@@ -271,12 +270,12 @@ export const LREvidence = () => {
    * applies visibility filtering based on the current user's role and access level.
    */
   const fetchEvidences = useCallback(async () => {
-    if (!selectedLead?.leadNo || !selectedCase?.caseNo) return;
+    if (!selectedLead?.leadNo || !selectedCase?._id && !selectedCase?.id) return;
 
     const token = localStorage.getItem("token");
-    const path  = buildLeadCasePath(
+    const path  = buildLeadCaseIdPath(
       selectedLead.leadNo, selectedLead.leadName,
-      selectedCase.caseNo, selectedCase.caseName
+      selectedCase._id || selectedCase.id
     );
 
     try {
@@ -322,7 +321,7 @@ export const LREvidence = () => {
 
   useEffect(() => {
     if (selectedLead?.leadNo && selectedLead?.leadName &&
-        selectedCase?.caseNo && selectedCase?.caseName) {
+        (selectedCase?._id || selectedCase?.id)) {
       fetchEvidences();
     }
   }, [selectedLead, selectedCase]);
@@ -462,9 +461,9 @@ export const LREvidence = () => {
         ]);
       } else {
         const ev   = evidences[editIndex];
-        const path = buildLeadCasePath(
+        const path = buildLeadCaseIdPath(
           selectedLead.leadNo, selectedLead.leadName,
-          selectedCase.caseNo, selectedCase.caseName
+          selectedCase._id || selectedCase.id
         );
         await api.put(
           `/api/lrevidence/${path}/${ev.returnId}/${encodeURIComponent(originalDesc)}`,
@@ -517,9 +516,9 @@ export const LREvidence = () => {
 
     const ev    = evidences[idx];
     const token = localStorage.getItem("token");
-    const path  = buildLeadCasePath(
+    const path  = buildLeadCaseIdPath(
       selectedLead.leadNo, selectedLead.leadName,
-      selectedCase.caseNo, selectedCase.caseName
+      selectedCase._id || selectedCase.id
     );
 
     try {
@@ -543,9 +542,9 @@ export const LREvidence = () => {
   const handleAccessChange = async (idx, newAccess) => {
     const ev    = evidences[idx];
     const token = localStorage.getItem("token");
-    const path  = buildLeadCasePath(
+    const path  = buildLeadCaseIdPath(
       selectedLead.leadNo, selectedLead.leadName,
-      selectedCase.caseNo, selectedCase.caseName
+      selectedCase._id || selectedCase.id
     );
 
     try {

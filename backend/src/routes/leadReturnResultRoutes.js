@@ -13,7 +13,7 @@ router.post("/create", verifyToken, createLeadReturnResult);
 // Route to get lead return results assigned to or assigned by the authenticated officer
 router.get("/officer-leads", verifyToken, getLeadReturnResultsByOfficer);
 
-router.get("/:leadNo/:leadName/:caseNo/:caseName",verifyToken, getLeadReturnResultByLeadNoandLeadName);
+router.get("/:leadNo/:leadName/:caseId", verifyToken, getLeadReturnResultByLeadNoandLeadName);
 
 router.get("/", verifyToken, searchCasesAndLeadsByKeyword);
 

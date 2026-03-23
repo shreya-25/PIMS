@@ -80,7 +80,7 @@ router.post(
 
 router.get("/case/:caseNo", verifyToken, getVideoByCaseNo);
 
-router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLRVideoByDetails);
+router.get("/:leadNo/:leadName/:caseId", verifyToken, getLRVideoByDetails);
 
 router.put(
   "/:id",

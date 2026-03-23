@@ -109,8 +109,7 @@ export const LRPerson = () => {
 
   // ─── Lead status / read-only hook ───────────────────────────────────────────
   const { status, isReadOnly } = useLeadStatus({
-    caseNo:   selectedCase?.caseNo,
-    caseName: selectedCase?.caseName,
+    caseId:   selectedCase?._id || selectedCase?.id,
     leadNo:   selectedLead?.leadNo,
     leadName: selectedLead?.leadName,
   });
@@ -183,13 +182,14 @@ export const LRPerson = () => {
    * Used to derive access-filtering and role-based UI visibility.
    */
   useEffect(() => {
-    if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (!selectedLead?.leadNo || !selectedLead?.leadName || !caseId) return;
 
     const fetchLeadData = async () => {
       const token = localStorage.getItem('token');
       try {
         const { data } = await api.get(
-          `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+          `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (data.length > 0) {
@@ -209,15 +209,15 @@ export const LRPerson = () => {
    * Wrapped in useCallback so it can be safely listed in the fetch trigger effect's deps.
    */
   const fetchPersons = useCallback(async () => {
-    if (!selectedCase?.caseNo || !selectedCase?.caseName || !selectedLead?.leadNo || !selectedLead?.leadName) return;
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (!caseId || !selectedLead?.leadNo || !selectedLead?.leadName) return;
 
     const token   = localStorage.getItem('token');
     const encLead = encodeURIComponent(selectedLead.leadName);
-    const encCase = encodeURIComponent(selectedCase.caseName);
 
     try {
       const { data } = await api.get(
-        `/api/lrperson/lrperson/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
+        `/api/lrperson/lrperson/${selectedLead.leadNo}/${encLead}/${caseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -231,7 +231,7 @@ export const LRPerson = () => {
 
   // Trigger person fetch when case/lead selection changes
   useEffect(() => {
-    if (selectedCase?.caseNo && selectedCase?.caseName && selectedLead?.leadNo && selectedLead?.leadName) {
+    if ((selectedCase?._id || selectedCase?.id) && selectedLead?.leadNo && selectedLead?.leadName) {
       fetchPersons();
     }
   }, [selectedCase, selectedLead, fetchPersons]);
@@ -307,7 +307,7 @@ export const LRPerson = () => {
 
     try {
       const { data: updatedDoc } = await api.put(
-        `/api/lrperson/${selectedLead.leadNo}/${selectedCase.caseNo}/${p.leadReturnId}/${p.firstName}`,
+        `/api/lrperson/${selectedLead.leadNo}/${selectedCase._id || selectedCase.id}/${p.leadReturnId}/${p.firstName}`,
         { accessLevel: newAccess },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -331,10 +331,11 @@ export const LRPerson = () => {
    * attached files fetched before the report payload is assembled.
    */
   const handleViewLeadReturn = async () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    const lead  = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase  = selectedCase?._id || selectedCase?.id ? selectedCase : location.state?.caseDetails;
+    const kaseId = kase?._id || kase?.id;
 
-    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kaseId) {
       showAlert('Please select a case and lead first.');
       return;
     }
@@ -342,30 +343,29 @@ export const LRPerson = () => {
 
     try {
       setIsGenerating(true);
-      const token   = localStorage.getItem('token');
-      const headers = { headers: { Authorization: `Bearer ${token}` } };
-      const { leadNo }             = lead;
-      const leadName               = lead.leadName || lead.description;
-      const { caseNo, caseName }   = kase;
-      const encLead = encodeURIComponent(leadName);
-      const encCase = encodeURIComponent(caseName);
+      const token    = localStorage.getItem('token');
+      const headers  = { headers: { Authorization: `Bearer ${token}` } };
+      const { leadNo } = lead;
+      const leadName   = lead.leadName || lead.description;
+      const encLead    = encodeURIComponent(leadName);
+      const base       = `${leadNo}/${encLead}/${kaseId}`;
 
       // Fetch all lead data sections in parallel
       const [
         instrRes, returnsRes, personsRes, vehiclesRes, enclosuresRes,
         evidenceRes, picturesRes, audioRes, videosRes, scratchpadRes, timelineRes,
       ] = await Promise.all([
-        api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lead/lead/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/leadReturnResult/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrperson/lrperson/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvehicle/lrvehicle/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrenclosure/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrevidence/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrpicture/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lraudio/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvideo/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/scratchpad/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/timeline/${base}`, headers).catch(() => ({ data: [] })),
       ]);
 
       // Attach binary files to media/document sections in parallel

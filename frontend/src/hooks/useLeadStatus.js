@@ -5,15 +5,15 @@ import api from '../api';
 const RANK = { Pending: 0, Accepted: 1, 'In Review': 2, Completed: 3, Closed: 4 };
 const higher = (a,b) => (RANK[a] ?? -1) >= (RANK[b] ?? -1) ? a : b;
 
-export function useLeadStatus({ caseNo, caseName, leadNo, leadName }) {
+export function useLeadStatus({ caseId, leadNo, leadName }) {
   const queryClient = useQueryClient();
-  const key = ['lead-status', caseNo, caseName, leadNo, leadName];
+  const key = ['lead-status', caseId, leadNo, leadName];
 
   const { data: status = 'Pending', isFetching } = useQuery({
     queryKey: key,
     queryFn: async () => {
       const { data } = await api.get(
-        `/api/lead/status/${leadNo}/${encodeURIComponent(leadName)}/${caseNo}/${encodeURIComponent(caseName)}`
+        `/api/lead/status/${leadNo}/${encodeURIComponent(leadName)}/${caseId}`
       );
       return data.leadStatus || data.status || 'Pending';
     },

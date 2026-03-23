@@ -275,11 +275,12 @@ export const CaseInformation = () => {
 
   // ── Fetch all leads (needed for access level resolution) ──────────────────
   useEffect(() => {
-    if (!caseNo || !caseName) return;
-    api.get(`/api/lead/case/${caseNo}/${caseName}`)
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (!caseId) return;
+    api.get(`/api/lead/case/${caseId}`)
       .then((r) => setLeads(Array.isArray(r.data) ? r.data : []))
       .catch(() => setLeads([]));
-  }, [caseNo, caseName]);
+  }, [selectedCase?._id, selectedCase?.id]);
 
   // ── Helper: set of leadNos where current user is an assignee ─────────────
   const assignedLeadNos = useMemo(

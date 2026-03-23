@@ -124,8 +124,7 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
   };
           
   const { status, isReadOnly, setLocalStatus } = useLeadStatus({
-    caseNo: selectedCase.caseNo,
-    caseName: selectedCase.caseName,
+    caseId: selectedCase._id || selectedCase.id,
     leadNo: selectedLead.leadNo,
     leadName: selectedLead.leadName,
   });
@@ -186,8 +185,7 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
         {
           leadNo: selectedLead.leadNo,
           description: selectedLead.leadName,
-          caseNo: selectedCase.caseNo,
-          caseName: selectedCase.caseName,
+          caseId: selectedCase._id || selectedCase.id,
           reason: reason
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -238,10 +236,11 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
   useEffect(() => {
     const loadLeadMeta = async () => {
       try {
-        if (!selectedCase?.caseNo || !selectedCase?.caseName || !selectedLead?.leadNo) return;
+        if (!selectedCase?._id && !selectedCase?.id || !selectedLead?.leadNo) return;
         const token = localStorage.getItem("token");
+        const caseId = selectedCase._id || selectedCase.id;
         const { data = [] } = await api.get(
-          `/api/lead/lead/${selectedLead.leadNo}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+          `/api/lead/lead/${selectedLead.leadNo}/${caseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (Array.isArray(data) && data[0]) setLeadData(data[0]);
@@ -250,7 +249,7 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
       }
     };
     loadLeadMeta();
-  }, [selectedCase?.caseNo, selectedCase?.caseName, selectedLead?.leadNo]);
+  }, [selectedCase?._id, selectedCase?.id, selectedLead?.leadNo]);
 
   const buildRecipients = () => {
     const current = localStorage.getItem("loggedInUser");
@@ -323,8 +322,7 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
         {
           leadNo: selectedLead.leadNo,
           description: selectedLead.leadName,
-          caseNo: selectedCase.caseNo,
-          caseName: selectedCase.caseName,
+          caseId: selectedCase._id || selectedCase.id,
           ...(newStatus === "complete" && { approvedDate: new Date().toISOString() })
         },
         { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }}

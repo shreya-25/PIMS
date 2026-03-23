@@ -244,11 +244,12 @@ export const CasePageManager = () => {
   // ─── Effect: fetch leads (polled every 15s) ───────────────────────────────
   useEffect(() => {
     const fetchLeadsForCase = async () => {
-      if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+      const caseId = selectedCase?._id || selectedCase?.id;
+      if (!caseId) return;
       try {
         const token = localStorage.getItem("token");
         const response = await api.get(
-          `/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+          `/api/lead/case/${caseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -317,7 +318,7 @@ export const CasePageManager = () => {
     fetchLeadsForCase();
     const intervalId = setInterval(fetchLeadsForCase, 15_000);
     return () => clearInterval(intervalId);
-  }, [selectedCase?.caseNo, selectedCase?.caseName, signedInOfficer]);
+  }, [selectedCase?._id, selectedCase?.id, signedInOfficer]);
 
   // ─── Computed: presence display names ─────────────────────────────────────
   const presenceNames = useMemo(
@@ -379,7 +380,7 @@ export const CasePageManager = () => {
   const acceptLead = async (leadNo, description) => {
     try {
       const token = localStorage.getItem("token");
-      const url = `/api/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`;
+      const url = `/api/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase._id || selectedCase.id}`;
       await api.put(url, {}, {
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       });

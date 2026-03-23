@@ -162,13 +162,12 @@ const getLeadReturnResultsByOfficer = async (req, res) => {
 
 const getLeadReturnResultByLeadNoandLeadName = async (req, res) => {
     try {
-        const { leadNo, leadName, caseNo, caseName } = req.params;
+        const { leadNo, leadName, caseId } = req.params;
 
         const query = {
             leadNo: Number(leadNo),
             description: leadName,
-            caseNo: caseNo,
-            caseName: caseName,
+            caseId,
             isDeleted: { $ne: true }
         };
 

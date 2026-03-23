@@ -12,9 +12,9 @@ router.get("/case/:caseNo", verifyToken, getVehiclesByCaseNo);
 router.post("/lrvehicle", verifyToken, createLRVehicle);
 
 // Get vehicle records by lead details
-router.get("/lrvehicle/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLRVehicleByDetails);
+router.get("/lrvehicle/:leadNo/:leadName/:caseId", verifyToken, getLRVehicleByDetails);
 
-router.get("/lrvehicle/:leadNo/:leadName/:caseNo/:caseName/:id", verifyToken, getLRVehicleByDetailsandid);
+router.get("/lrvehicle/:leadNo/:leadName/:caseId/:id", verifyToken, getLRVehicleByDetailsandid);
 
 // PUT   /api/lrvehicle/:leadNo/:caseNo/:leadReturnId/:vin
 router.put(

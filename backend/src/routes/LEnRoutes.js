@@ -78,17 +78,17 @@ router.post(
 
 router.get("/case/:caseNo", verifyToken, getEnclosuresByCaseNo);
 
-router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLREnclosureByDetails);
+router.get("/:leadNo/:leadName/:caseId", verifyToken, getLREnclosureByDetails);
 
 router.put(
-  "/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId",
+  "/:leadNo/:leadName/:caseId/:leadReturnId",
   verifyToken,
   upload.single("file"),
   updateLREnclosure
 );
 
 router.delete(
-  "/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId",
+  "/:leadNo/:leadName/:caseId/:leadReturnId",
   verifyToken,
   deleteLREnclosure
 );

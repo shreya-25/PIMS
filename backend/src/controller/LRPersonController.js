@@ -102,8 +102,8 @@ const createLRPerson = async (req, res) => {
 
 const getLRPersonByDetails = async (req, res) => {
     try {
-        const { leadNo, leadName, caseNo, caseName } = req.params;
-        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
+        const { leadNo, leadName, caseId } = req.params;
+        const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
         const lrPersons = await LRPerson.find(query);
 
         if (lrPersons.length === 0) {
@@ -129,8 +129,8 @@ const getLRPersonByDetails = async (req, res) => {
 
 const getLRPersonByDetailsandid = async (req, res) => {
     try {
-        const { leadNo, leadName, caseNo, caseName, id } = req.params;
-        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId: id, isDeleted: { $ne: true } };
+        const { leadNo, leadName, caseId, id } = req.params;
+        const query = { leadNo: Number(leadNo), description: leadName, caseId, leadReturnId: id, isDeleted: { $ne: true } };
         const lrPersons = await LRPerson.find(query);
 
         if (lrPersons.length === 0) {

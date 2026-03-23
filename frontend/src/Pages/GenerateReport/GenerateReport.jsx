@@ -106,26 +106,25 @@ const buildTimelineOrderedLeads = (entries, allLeads) => {
 // ===== API FETCH HELPERS =====
 
 // Fetch all sections for one lead (persons, vehicles, evidence, etc.) — mirrors ViewLR
-async function fetchLeadAllSectionsLikeViewLR({ leadNo, leadName, caseNo, caseName, token }) {
+async function fetchLeadAllSectionsLikeViewLR({ leadNo, leadName, caseId, token }) {
   const headers = { headers: { Authorization: `Bearer ${token}` } };
   const encLead = encodeURIComponent(leadName || "");
-  const encCase = encodeURIComponent(caseName || "");
 
   const [
     instrRes, returnsRes, personsRes, vehiclesRes, enclosuresRes,
     evidenceRes, picturesRes, audioRes, videosRes, notesRes, timelineRes,
   ] = await Promise.all([
-    api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-    api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-    api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-    api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-    api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-    api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-    api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-    api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-    api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-    api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-    api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/lraudio/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/timeline/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
   ]);
 
   const leadDoc    = instrRes.data?.[0] || {};
@@ -196,20 +195,19 @@ const cleanLeadRecord = (lead) => ({
 });
 
 // Deep fetch for one lead with all sections (ViewLR-style)
-const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
+const fetchSingleLeadFullDetails = async (leadNo, leadName, caseId, token) => {
   try {
     const headers = { headers: { Authorization: `Bearer ${token}` } };
     const { data: leadData = [] } = await api.get(
-      `/api/lead/lead/${leadNo}/${caseNo}/${encodeURIComponent(caseName)}`,
+      `/api/lead/lead/${leadNo}/${encodeURIComponent(leadName)}/${caseId}`,
       headers
     );
     if (!Array.isArray(leadData) || leadData.length === 0) return null;
     const lead = cleanLeadRecord(leadData[0]);
     const full = await fetchLeadAllSectionsLikeViewLR({
       leadNo: lead.leadNo,
-      leadName: lead.description || "",
-      caseNo,
-      caseName,
+      leadName: lead.description || leadName || "",
+      caseId,
       token,
     });
     return full ? { ...lead, ...full } : lead;
@@ -220,14 +218,14 @@ const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
 };
 
 // Recursively fetch entire parent chain for a lead (child → ancestors)
-const fetchLeadHierarchyFullDetails = async (leadNo, caseNo, caseName, token, chain = []) => {
-  const currentLead = await fetchSingleLeadFullDetails(leadNo, caseNo, caseName, token);
+const fetchLeadHierarchyFullDetails = async (leadNo, leadName, caseId, token, chain = []) => {
+  const currentLead = await fetchSingleLeadFullDetails(leadNo, leadName, caseId, token);
   if (!currentLead) return [chain];
   const updatedChain = [...chain, currentLead];
   if (!currentLead.parentLeadNo || currentLead.parentLeadNo.length === 0) return [updatedChain];
   let allChains = [];
   for (const parentNo of toArray(currentLead.parentLeadNo)) {
-    const subChains = await fetchLeadHierarchyFullDetails(parentNo, caseNo, caseName, token, updatedChain);
+    const subChains = await fetchLeadHierarchyFullDetails(parentNo, currentLead.description || "", caseId, token, updatedChain);
     allChains.push(...subChains);
   }
   return allChains;
@@ -447,16 +445,17 @@ export const GenerateReport = () => {
   // Fetch all leads for the case with deep section hydration (ViewLR-style)
   useEffect(() => {
     const fetchAllLeads = async () => {
-      if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+      const caseId = selectedCase?._id || selectedCase?.id;
+      if (!caseId) return;
       const token = localStorage.getItem("token");
       try {
         const { data: leads = [] } = await api.get(
-          `/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+          `/api/lead/case/${caseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const leadsWithDetails = await Promise.all(
           leads.map(async (lead) => {
-            const full = await fetchSingleLeadFullDetails(lead.leadNo, selectedCase.caseNo, selectedCase.caseName, token);
+            const full = await fetchSingleLeadFullDetails(lead.leadNo, lead.description || "", caseId, token);
             return full ? full : cleanLeadRecord(lead);
           })
         );
@@ -474,11 +473,12 @@ export const GenerateReport = () => {
   // Fetch all timeline entries and derive initial timeline-ordered lead list
   useEffect(() => {
     const fetchTimeline = async () => {
-      if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+      const caseId = selectedCase?._id || selectedCase?.id;
+      if (!caseId) return;
       const token = localStorage.getItem("token");
       try {
         const { data } = await api.get(
-          `/api/timeline/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+          `/api/timeline/case/${caseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const sorted = [...data].sort((a, b) => {
@@ -495,7 +495,7 @@ export const GenerateReport = () => {
       }
     };
     fetchTimeline();
-  }, [selectedCase?.caseNo, selectedCase?.caseName]);
+  }, [selectedCase?._id, selectedCase?.id]);
 
   // Recompute timeline-ordered leads when leadsData updates after timeline is loaded
   useEffect(() => {
@@ -745,7 +745,7 @@ export const GenerateReport = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await api.get("/api/lead/search", {
-        params: { caseNo: selectedCase.caseNo, caseName: selectedCase.caseName, keyword: searchTerm },
+        params: { caseId: selectedCase?._id || selectedCase?.id, keyword: searchTerm },
         headers: { Authorization: `Bearer ${token}` },
       });
       setLeadsData(response.data);
@@ -770,8 +770,9 @@ export const GenerateReport = () => {
     if (!hierarchyLeadInput) return;
     const token = localStorage.getItem("token");
     try {
+      const caseId = selectedCase?._id || selectedCase?.id;
       const chainResults = await fetchLeadHierarchyFullDetails(
-        hierarchyLeadInput, selectedCase.caseNo, selectedCase.caseName, token, []
+        hierarchyLeadInput, "", caseId, token, []
       );
       setHierarchyChains(chainResults);
       const uniqueLeads = [];
@@ -1384,11 +1385,12 @@ export const GenerateReport = () => {
                   {/* Flagged leads */}
                   {reportType === 'flagged' && (
                     <>
-                      <div className={styles['range-filter']} style={{ marginTop: "8px", marginBottom: "8px" }}>
-                        <div className={styles['range-filter__label']} style={{ fontSize: "18px" }}>Choose flag(s)</div>
-                        <label className={styles.summaryOption1} style={{ marginLeft: 8, fontSize: "18px" }}>
+                      <div style={{ marginTop: 10, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 18, fontWeight: 600, color: '#1e293b' }}>Choose flag(s)</span>
+                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 18, color: '#1e293b' }}>
                           <input
                             type="checkbox"
+                            style={{ transform: 'scale(1.3)', accentColor: '#2563eb', cursor: 'pointer' }}
                             checked={isMultiFlag}
                             onChange={(e) => {
                               const next = e.target.checked;
@@ -1396,7 +1398,7 @@ export const GenerateReport = () => {
                               if (!next && selectedFlags.length > 1) setSelectedFlags([selectedFlags[selectedFlags.length - 1]]);
                             }}
                           />
-                          <span className={styles.summaryOptionText1}>Allow multiple</span>
+                          Allow multiple
                         </label>
                       </div>
 
@@ -1406,7 +1408,7 @@ export const GenerateReport = () => {
                           selected={selectedFlags}
                           onChange={setSelectedFlags}
                           multiple={isMultiFlag}
-                          placeholder="Select timeline flags"
+                          placeholder={availableFlags.length ? "Select timeline flags" : "No flags available"}
                           disabled={!availableFlags.length}
                         />
                         <button

@@ -81,8 +81,7 @@ const closeComments  = useCallback(() => setShowComments(false), []);
   const leadName = selectedLead?.leadName || location.state?.leadDetails?.leadName;
 
   const { status, isReadOnly, setLocalStatus } = useLeadStatus({
-    caseNo: selectedCase.caseNo,
-    caseName: selectedCase.caseName,
+    caseId: selectedCase._id || selectedCase.id,
     leadNo: selectedLead.leadNo,
     leadName: selectedLead.leadName,
   });
@@ -210,9 +209,9 @@ const canShowSubmit      = !isClosedOrCompleted && !isInReview && (
 
   // -------- fetch all sections (same endpoints you already use) --------
   useEffect(() => {
-    if (!caseNo || !caseName || !leadNo || !leadName) return;
+    const caseId = selectedCase?._id || selectedCase?.id || location.state?.caseDetails?._id || location.state?.caseDetails?.id;
+    if (!caseId || !leadNo || !leadName) return;
     const encLead = encodeURIComponent(leadName);
-    const encCase = encodeURIComponent(caseName);
     const token = localStorage.getItem("token");
     const headers = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -232,17 +231,17 @@ const canShowSubmit      = !isClosedOrCompleted && !isInReview && (
           notesRes,
           timelineRes,
         ] = await Promise.all([
-          api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/lraudio/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/timeline/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
         ]);
 
         const leadDoc = instrRes.data?.[0] || {}; setInstructions(leadDoc);
@@ -262,7 +261,7 @@ const canShowSubmit      = !isClosedOrCompleted && !isInReview && (
       }
     }
     loadAll();
-  }, [caseNo, caseName, leadNo, leadName]);
+  }, [selectedCase?._id, selectedCase?.id, leadNo, leadName]);
 
   // Group helpers — we’ll try common keys: narrativeId, returnId, lrId, or fall back to _id
   const keyFor = (obj) =>
@@ -287,7 +286,7 @@ const canShowSubmit      = !isClosedOrCompleted && !isInReview && (
 
   const go = (path) => navigate(path);
 
-  if (!caseNo || !leadNo) {
+  if (!(selectedCase?._id || selectedCase?.id) || !leadNo) {
     return (
       <div style={{ padding: 16 }}>
         Please select a case & lead.
@@ -334,8 +333,7 @@ const actuallyDoSubmitReport = async () => {
       const body = {
         leadNo: selectedLead.leadNo,
         description: selectedLead.leadName,
-        caseNo: selectedCase.caseNo,
-        caseName: selectedCase.caseName,
+        caseId: selectedCase._id || selectedCase.id,
         submittedDate: new Date(),
         assignedTo: { assignees: assignees.length ? assignees : [me], lRStatus: "Submitted" },
      assignedBy: { assignee: managerUser || me, lRStatus: "Pending" }
@@ -354,8 +352,7 @@ const actuallyDoSubmitReport = async () => {
           {
             leadNo: selectedLead.leadNo,
             description: selectedLead.leadName,
-            caseNo: selectedCase.caseNo,
-            caseName: selectedCase.caseName,
+            caseId: selectedCase._id || selectedCase.id,
             submittedDate: now
           },
           {

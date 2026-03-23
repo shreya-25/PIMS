@@ -114,7 +114,7 @@ const createLead = async (req, res) => {
 
     let savedLead = null;
     while (!savedLead) {
-      const last = await Lead.findOne({ caseNo, caseName }).sort({ leadNo: -1 }).limit(1);
+      const last = await Lead.findOne({ caseId }).sort({ leadNo: -1 }).limit(1);
       const nextLeadNo = last ? last.leadNo + 1 : 1;
 
       try {
@@ -227,8 +227,8 @@ const getLRForCM = async (req, res) => {
 
 const getLeadsByCase = async (req, res) => {
     try {
-      const { caseNo, caseName } = req.params;
-      const leads = await Lead.find({ caseNo, caseName }).select("-events").lean();
+      const { caseId } = req.params;
+      const leads = await Lead.find({ caseId }).select("-events").lean();
       res.status(200).json(leads);
     } catch (err) {
       console.error("Error fetching leads by case:", err.message);
@@ -238,12 +238,11 @@ const getLeadsByCase = async (req, res) => {
 
   const getLeadsByLeadNoandLeadName = async (req, res) => {
     try {
-        const { leadNo, leadName, caseNo, caseName } = req.params;
+        const { leadNo, leadName, caseId } = req.params;
         const query = {
             leadNo: leadNo,
             description: leadName,
-            caseNo: caseNo,
-            caseName: caseName
+            caseId,
         };
         const leads = await Lead.find(query).lean();
         res.status(200).json(leads);
@@ -255,11 +254,10 @@ const getLeadsByCase = async (req, res) => {
 
 const getLeadsforHierarchy = async (req, res) => {
   try {
-      const { leadNo, caseNo, caseName } = req.params;
+      const { leadNo, caseId } = req.params;
       const query = {
           leadNo: leadNo,
-          caseNo: caseNo,
-          caseName: caseName
+          caseId,
       };
       const leads = await Lead.find(query).select("-events").lean();
       res.status(200).json(leads);
@@ -271,8 +269,8 @@ const getLeadsforHierarchy = async (req, res) => {
 
 const getAssociatedSubCategories = async (req, res) => {
   try {
-    const { caseNo, caseName } = req.params;
-    const leads = await Lead.find({ caseNo, caseName }).select("subCategory").lean();
+    const { caseId } = req.params;
+    const leads = await Lead.find({ caseId }).select("subCategory").lean();
     const uniqueSubCategories = [...new Set(leads.flatMap(lead => lead.subCategory || []))];
     res.status(200).json({ associatedSubCategories: uniqueSubCategories });
   } catch (err) {
@@ -285,13 +283,12 @@ const getAssociatedSubCategories = async (req, res) => {
 
 const updateLeadStatus = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName } = req.params;
+    const { leadNo, leadName, caseId } = req.params;
 
     const lead = await Lead.findOne({
       leadNo: Number(leadNo),
       description: leadName,
-      caseNo,
-      caseName,
+      caseId,
     });
 
     if (!lead) {
@@ -371,18 +368,15 @@ const updateLRStatusToPending = async (req, res) => {
 
 const searchLeadsByKeyword = async (req, res) => {
   try {
-    const { caseNo, caseName, keyword, field } = req.query;
+    const { caseId, keyword, field } = req.query;
 
-    if (!caseNo || !caseName) {
-      return res.status(400).json({ message: "caseNo and caseName are required." });
+    if (!caseId) {
+      return res.status(400).json({ message: "caseId is required." });
     }
 
     const searchKeyword = keyword || "";
 
-    const baseQuery = {
-      caseNo,
-      caseName: { $regex: new RegExp(`^${caseName}$`, "i") }
-    };
+    const baseQuery = { caseId };
 
     let query;
     if (field) {
@@ -468,7 +462,7 @@ const HarddeleteLead = async (req, res) => {
 };
 
 const deleteLead = async (req, res) => {
-  const { leadNo, leadName, caseNo, caseName } = req.params;
+  const { leadNo, leadName, caseId } = req.params;
   const { reason } = req.body;
 
   try {
@@ -484,7 +478,7 @@ const deleteLead = async (req, res) => {
     const lead = await Lead.findOne({
       leadNo: Number(leadNo),
       description: leadName,
-      caseNo, caseName
+      caseId,
     });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
@@ -556,12 +550,12 @@ const deleteLead = async (req, res) => {
 
 const setLeadStatusToInReview = async (req, res) => {
   try {
-    const { leadNo, description, caseName, caseNo, submittedDate } = req.body;
-    if (!leadNo || !description || !caseName || !caseNo) {
+    const { leadNo, description, caseId, submittedDate } = req.body;
+    if (!leadNo || !description || !caseId) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
-    const lead = await Lead.findOne({ leadNo, description, caseName, caseNo });
+    const lead = await Lead.findOne({ leadNo, description, caseId });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
     const actor = req.user?.username || "unknown";
@@ -602,12 +596,12 @@ const setLeadStatusToInReview = async (req, res) => {
 
 const setLeadStatusToComplete = async (req, res) => {
   try {
-    const { leadNo, description, caseName, caseNo, approvedDate } = req.body;
-    if (!leadNo || !description || !caseName || !caseNo) {
+    const { leadNo, description, caseId, approvedDate } = req.body;
+    if (!leadNo || !description || !caseId) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
-    const lead = await Lead.findOne({ leadNo, description, caseName, caseNo });
+    const lead = await Lead.findOne({ leadNo, description, caseId });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
     const actor = req.user?.username || "unknown";
@@ -645,17 +639,16 @@ const setLeadStatusToComplete = async (req, res) => {
 
 const setLeadStatusToPending = async (req, res) => {
   try {
-    const { leadNo, description, caseName, caseNo } = req.body;
+    const { leadNo, description, caseId } = req.body;
 
-    if (!leadNo || !description || !caseName || !caseNo) {
+    if (!leadNo || !description || !caseId) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
     const lead = await Lead.findOne({
       leadNo,
       description,
-      caseName,
-      caseNo,
+      caseId,
     });
 
     if (!lead) {
@@ -674,12 +667,12 @@ const setLeadStatusToPending = async (req, res) => {
 
 const setLeadStatusToReturned = async (req, res) => {
   try {
-    const { leadNo, description, caseName, caseNo, reason } = req.body;
-    if (!leadNo || !description || !caseName || !caseNo) {
+    const { leadNo, description, caseId, reason } = req.body;
+    if (!leadNo || !description || !caseId) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
-    const lead = await Lead.findOne({ leadNo, description, caseName, caseNo });
+    const lead = await Lead.findOne({ leadNo, description, caseId });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
     const actor = req.user?.username || "unknown";
@@ -719,12 +712,12 @@ const setLeadStatusToReturned = async (req, res) => {
 
 const setLeadStatusToReopened = async (req, res) => {
   try {
-    const { leadNo, description, caseName, caseNo } = req.body;
-    if (!leadNo || !description || !caseName || !caseNo) {
+    const { leadNo, description, caseId } = req.body;
+    if (!leadNo || !description || !caseId) {
       return res.status(400).json({ message: "All fields are required." });
     }
 
-    const lead = await Lead.findOne({ leadNo, description, caseName, caseNo });
+    const lead = await Lead.findOne({ leadNo, description, caseId });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
     const actor = req.user?.username || "unknown";
@@ -763,10 +756,10 @@ const setLeadStatusToReopened = async (req, res) => {
 
 const updateLead = async (req, res) => {
   try {
-    const { leadNo, description, caseNo, caseName } = req.params;
+    const { leadNo, description, caseId } = req.params;
     const incoming = req.body;
 
-    const prev = await Lead.findOne({ leadNo: Number(leadNo), description, caseNo, caseName });
+    const prev = await Lead.findOne({ leadNo: Number(leadNo), description, caseId });
     if (!prev) return res.status(404).json({ message: "Lead not found" });
 
     const { events: _ignoreEvents, ...incomingNoEvents } = incoming;
@@ -852,7 +845,7 @@ const updateLead = async (req, res) => {
     }
 
     const lead = await Lead.findOneAndUpdate(
-      { leadNo: Number(leadNo), description, caseNo, caseName },
+      { leadNo: Number(leadNo), description, caseId },
       updateDoc,
       { new: true }
     );
@@ -867,7 +860,7 @@ const updateLead = async (req, res) => {
 
 const updateAssignedToStatus = async (req, res) => {
   try {
-    const { leadNo, description, caseNo, caseName } = req.params;
+    const { leadNo, description, caseId } = req.params;
     const { officerUsername, status, reason } = req.body;
 
     if (!officerUsername || !status) {
@@ -878,8 +871,7 @@ const updateAssignedToStatus = async (req, res) => {
       {
         leadNo: Number(leadNo),
         description,
-        caseNo,
-        caseName,
+        caseId,
         'assignedTo.username': officerUsername
       },
       { $set: { 'assignedTo.$.status': status } },
@@ -917,10 +909,10 @@ const updateAssignedToStatus = async (req, res) => {
 
 const removeAssignedOfficer = async (req, res) => {
   try {
-    const { leadNo, description, caseNo, caseName, username } = req.params;
+    const { leadNo, description, caseId, username } = req.params;
 
     const lead = await Lead.findOneAndUpdate(
-      { leadNo: Number(leadNo), description, caseNo, caseName },
+      { leadNo: Number(leadNo), description, caseId },
       { $pull: { assignedTo: { username } } },
       { new: true }
     );
@@ -958,13 +950,12 @@ const removeAssignedOfficer = async (req, res) => {
 
 const getLeadStatus = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName } = req.params;
+    const { leadNo, leadName, caseId } = req.params;
 
     const lead = await Lead.findOne({
       leadNo:   Number(leadNo),
       description: leadName,
-      caseNo,
-      caseName
+      caseId,
     });
 
     if (!lead) {
@@ -980,12 +971,12 @@ const getLeadStatus = async (req, res) => {
 
 const setLeadStatusToClosed = async (req, res) => {
   try {
-    const { leadNo, description, caseNo, caseName, reason } = req.body;
-    if (!leadNo || !description || !caseNo || !caseName || !reason) {
+    const { leadNo, description, caseId, reason } = req.body;
+    if (!leadNo || !description || !caseId || !reason) {
       return res.status(400).json({ message: "All fields (including reason) are required." });
     }
 
-    const lead = await Lead.findOne({ leadNo: Number(leadNo), description, caseNo, caseName });
+    const lead = await Lead.findOne({ leadNo: Number(leadNo), description, caseId });
     if (!lead) return res.status(404).json({ message: "Lead not found." });
 
     const actor = req.user?.username || "unknown";
@@ -1020,7 +1011,7 @@ const setLeadStatusToClosed = async (req, res) => {
 
 const updateLeadFlags = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName } = req.params;
+    const { leadNo, leadName, caseId } = req.params;
     const { associatedFlags } = req.body;
 
     if (!Array.isArray(associatedFlags)) {
@@ -1028,7 +1019,7 @@ const updateLeadFlags = async (req, res) => {
     }
 
     const lead = await Lead.findOneAndUpdate(
-      { leadNo: Number(leadNo), description: leadName, caseNo, caseName },
+      { leadNo: Number(leadNo), description: leadName, caseId },
       { $set: { associatedFlags } },
       { new: true }
     );
@@ -1043,9 +1034,9 @@ const updateLeadFlags = async (req, res) => {
 
 const getCaseFlaggedLeads = async (req, res) => {
   try {
-    const { caseNo, caseName } = req.params;
+    const { caseId } = req.params;
     const leads = await Lead.find({
-      caseNo, caseName,
+      caseId,
       isDeleted: { $ne: true },
       "associatedFlags.0": { $exists: true }
     }).select("leadNo description associatedFlags accessLevel leadStatus").lean();
@@ -1058,8 +1049,8 @@ const getCaseFlaggedLeads = async (req, res) => {
 
 const getCaseAllLeadsWithFlags = async (req, res) => {
   try {
-    const { caseNo, caseName } = req.params;
-    const leads = await Lead.find({ caseNo, caseName, isDeleted: { $ne: true } })
+    const { caseId } = req.params;
+    const leads = await Lead.find({ caseId, isDeleted: { $ne: true } })
       .select("leadNo description associatedFlags accessLevel leadStatus")
       .lean();
     res.status(200).json(leads);

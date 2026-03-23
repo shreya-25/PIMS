@@ -87,8 +87,7 @@ export const LRScratchpad = () => {
   // ── Lead status and read-only guard ───────────────────────────────────────
 
   const { status, isReadOnly } = useLeadStatus({
-    caseNo:   selectedCase.caseNo,
-    caseName: selectedCase.caseName,
+    caseId:   selectedCase._id || selectedCase.id,
     leadNo:   selectedLead.leadNo,
     leadName: selectedLead.leadName,
   });
@@ -138,11 +137,12 @@ export const LRScratchpad = () => {
   // ── Fetch lead metadata (assignees, primary officer) ──────────────────────
 
   useEffect(() => {
-    if (!selectedLead?.leadNo || !selectedCase?.caseNo) return;
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (!selectedLead?.leadNo || !caseId) return;
     const token = localStorage.getItem('token');
     api
       .get(
-        `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+        `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       .then(({ data }) => {
@@ -160,17 +160,17 @@ export const LRScratchpad = () => {
   // ── Fetch narrative IDs for the return-ID dropdown ────────────────────────
 
   useEffect(() => {
-    if (!selectedLead?.leadNo || !selectedCase?.caseNo) return;
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (!selectedLead?.leadNo || !caseId) return;
     const ac = new AbortController();
 
     (async () => {
       try {
         const token   = localStorage.getItem('token');
         const encLead = encodeURIComponent(selectedLead.leadName);
-        const encCase = encodeURIComponent(selectedCase.caseName);
 
         const { data } = await api.get(
-          `/api/leadReturnResult/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
+          `/api/leadReturnResult/${selectedLead.leadNo}/${encLead}/${caseId}`,
           { headers: { Authorization: `Bearer ${token}` }, signal: ac.signal }
         );
 
@@ -194,21 +194,21 @@ export const LRScratchpad = () => {
   }, [
     selectedLead?.leadNo,
     selectedLead?.leadName,
-    selectedCase?.caseNo,
-    selectedCase?.caseName,
+    selectedCase?._id,
+    selectedCase?.id,
     isEditing,
   ]);
 
   // ── Fetch notes from the API, applying access-level filtering ─────────────
 
   const fetchNotes = async () => {
+    const caseId  = selectedCase?._id || selectedCase?.id;
     const token   = localStorage.getItem('token');
     const encLead = encodeURIComponent(selectedLead?.leadName);
-    const encCase = encodeURIComponent(selectedCase?.caseName);
 
     try {
       const { data } = await api.get(
-        `/api/scratchpad/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
+        `/api/scratchpad/${selectedLead.leadNo}/${encLead}/${caseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -243,7 +243,7 @@ export const LRScratchpad = () => {
   };
 
   useEffect(() => {
-    if (selectedLead?.leadNo && selectedLead?.leadName && selectedCase?.caseNo && selectedCase?.caseName) {
+    if (selectedLead?.leadNo && selectedLead?.leadName && (selectedCase?._id || selectedCase?.id)) {
       fetchNotes();
     }
   }, [selectedLead, selectedCase]);

@@ -76,8 +76,8 @@ const createLRPicture = async (req, res) => {
 
 const getLRPictureByDetails = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName } = req.params;
-    const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
+    const { leadNo, leadName, caseId } = req.params;
+    const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
     const lrPictures = await LRPicture.find(query);
 
     if (!lrPictures || lrPictures.length === 0) return res.status(200).json([]);
@@ -101,15 +101,15 @@ const getLRPictureByDetails = async (req, res) => {
 
 const updateLRPicture = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName, leadReturnId, pictureDescription: oldDesc } = req.params;
+    const { leadNo, leadName, caseId, leadReturnId, pictureDescription: oldDesc } = req.params;
 
     const pic = await LRPicture.findOne({
-      leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId, pictureDescription: oldDesc,
+      leadNo: Number(leadNo), description: leadName, caseId, leadReturnId, pictureDescription: oldDesc,
       isDeleted: { $ne: true },
     });
     if (!pic) return res.status(404).json({ message: "Picture not found" });
 
-    const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+    const accessErr = await checkLeadWriteAccess(req, pic.caseNo, leadNo);
     if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldPicture = pic.toObject();
@@ -153,15 +153,15 @@ const updateLRPicture = async (req, res) => {
 
 const deleteLRPicture = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName, leadReturnId, pictureDescription } = req.params;
+    const { leadNo, leadName, caseId, leadReturnId, pictureDescription } = req.params;
 
     const pic = await LRPicture.findOne({
-      leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId, pictureDescription,
+      leadNo: Number(leadNo), description: leadName, caseId, leadReturnId, pictureDescription,
       isDeleted: { $ne: true }
     });
     if (!pic) return res.status(404).json({ message: "Picture not found" });
 
-    const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+    const accessErr = await checkLeadWriteAccess(req, pic.caseNo, leadNo);
     if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldPicture = pic.toObject();

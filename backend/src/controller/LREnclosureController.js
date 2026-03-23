@@ -88,8 +88,8 @@ const createLREnclosure = async (req, res) => {
 
 const getLREnclosureByDetails = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName } = req.params;
-    const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
+    const { leadNo, leadName, caseId } = req.params;
+    const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
     const lrEnclosures = await LREnclosure.find(query);
     if (lrEnclosures.length === 0) return res.status(404).json({ message: "No enclosures found." });
 
@@ -108,12 +108,12 @@ const getLREnclosureByDetails = async (req, res) => {
 
 const updateLREnclosure = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName, leadReturnId } = req.params;
+    const { leadNo, leadName, caseId, leadReturnId } = req.params;
 
-    const enc = await LREnclosure.findOne({ leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId, isDeleted: { $ne: true } });
+    const enc = await LREnclosure.findOne({ leadNo: Number(leadNo), description: leadName, caseId, leadReturnId, isDeleted: { $ne: true } });
     if (!enc) return res.status(404).json({ message: "Enclosure not found" });
 
-    const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+    const accessErr = await checkLeadWriteAccess(req, enc.caseNo, leadNo);
     if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldEnclosure = enc.toObject();
@@ -159,15 +159,15 @@ const updateLREnclosure = async (req, res) => {
 
 const deleteLREnclosure = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName, leadReturnId } = req.params;
+    const { leadNo, leadName, caseId, leadReturnId } = req.params;
 
     const enc = await LREnclosure.findOne({
-      leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId,
+      leadNo: Number(leadNo), description: leadName, caseId, leadReturnId,
       isDeleted: { $ne: true }
     });
     if (!enc) return res.status(404).json({ message: "Enclosure not found" });
 
-    const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+    const accessErr = await checkLeadWriteAccess(req, enc.caseNo, leadNo);
     if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldValue = enc.toObject();

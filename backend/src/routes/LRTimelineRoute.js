@@ -7,10 +7,10 @@ const router = express.Router();
 // Route to create a new timeline entry
 router.post("/create", verifyToken, createLRTimeline);
 
-// Route to fetch timeline entries for a given case using both caseNo and caseName
-router.get("/case/:caseNo/:caseName", verifyToken, getTimelinesByCase);
+// Route to fetch timeline entries for a given case using caseId
+router.get("/case/:caseId", verifyToken, getTimelinesByCase);
 
-router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLRTimelineByDetails);
+router.get("/:leadNo/:leadName/:caseId", verifyToken, getLRTimelineByDetails);
 
 // update one
 router.put("/:id", verifyToken, updateLRTimeline);

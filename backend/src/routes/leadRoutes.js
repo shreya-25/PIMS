@@ -17,20 +17,20 @@ router.post("/create", verifyToken, createLead);
 // Fetch leads assigned by the logged-in officer
 router.get("/assigned-leads", verifyToken, getLeadsByOfficer);
 
-router.get("/case/:caseNo/:caseName", verifyToken, getLeadsByCase);
+router.get("/case/:caseId", verifyToken, getLeadsByCase);
 
 router.get("/assignedTo-leads", verifyToken, getLeadsForAssignedToOfficer);
 
-router.get("/lead/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLeadsByLeadNoandLeadName);
-router.get("/lead/:leadNo/:caseNo/:caseName", verifyToken, getLeadsforHierarchy);
+router.get("/lead/:leadNo/:leadName/:caseId", verifyToken, getLeadsByLeadNoandLeadName);
+router.get("/lead/:leadNo/:caseId", verifyToken, getLeadsforHierarchy);
 
 router.get("/assigned-only", verifyToken, getAssignedLeadsForOfficer);
 
 router.get("/lead-returnforreview", verifyToken, getLRForCM);
 
 router.get(
-  '/status/:leadNo/:leadName/:caseNo/:caseName',
-  verifyToken,        // if you protect this route
+  '/status/:leadNo/:leadName/:caseId',
+  verifyToken,
   getLeadStatus
 );
 
@@ -39,16 +39,15 @@ router.put("/lead/status/close", setLeadStatusToClosed);
 router.put("/status/reopened", verifyToken, setLeadStatusToReopened);
 
 router.put(
-  "/update/:leadNo/:description/:caseNo/:caseName",
+  "/update/:leadNo/:description/:caseId",
   verifyToken,
-  // roleMiddleware("CaseManager"),
   updateLead
 );
 
-router.put('/:leadNo/:leadName/:caseNo/:caseName', verifyToken, updateLeadStatus);
+router.put('/:leadNo/:leadName/:caseId', verifyToken, updateLeadStatus);
 
 
-router.get('/associatedSubCategories/:caseNo/:caseName', getAssociatedSubCategories);
+router.get('/associatedSubCategories/:caseId', getAssociatedSubCategories);
 
 router.get("/search", verifyToken, searchLeadsByKeyword);
 
@@ -60,43 +59,28 @@ router.put("/status/pending", verifyToken, setLeadStatusToPending);
 router.put("/status/returned", verifyToken, setLeadStatusToReturned);
 
 router.put(
-  "/:leadNo/:description/:caseNo/:caseName/removeAssigned/:username",
-  verifyToken,       // if you protect routes
+  "/:leadNo/:description/:caseId/removeAssigned/:username",
+  verifyToken,
   removeAssignedOfficer
 );
 
 router.delete(
-  "/:leadNo/:leadName/:caseNo/:caseName",
+  "/:leadNo/:leadName/:caseId",
   verifyToken,
-  // roleMiddleware(["CaseManager", "Detective Supervisor"]),
   deleteLead
 );
 
 
-// API to get the maximum lead number
-// router.get("/maxLeadNumber", async (req, res) => {
-//     try {
-//         const maxLead = await Lead.findOne().sort({ leadNo: -1 }).limit(1); // Get the highest lead number
-//         const maxLeadNo = maxLead ? maxLead.leadNo : 0; // Default to 0 if no leads exist
-//         res.status(200).json({ maxLeadNo });
-//     } catch (error) {
-//         console.error("Error fetching max lead number:", error);
-//         res.status(500).json({ message: "Internal Server Error" });
-//     }
-// });
-
-
 router.get("/maxLeadNumber", async (req, res) => {
   try {
-    const { caseNo, caseName } = req.query;
+    const { caseId } = req.query;
 
-    if (!caseNo || !caseName) {
-      return res.status(400).json({ message: "caseNo and caseName are required" });
+    if (!caseId) {
+      return res.status(400).json({ message: "caseId is required" });
     }
 
-    // No Number() conversion
     const maxLead = await Lead
-      .findOne({ caseNo: caseNo, caseName })
+      .findOne({ caseId })
       .sort({ leadNo: -1 })
       .limit(1);
 
@@ -108,16 +92,15 @@ router.get("/maxLeadNumber", async (req, res) => {
   }
 });
 
-  // router.patch("/updateStatus", verifyToken, leadController.updateLeadLRStatus);
 router.put(
-  '/lead/:leadNo/:description/:caseNo/:caseName/assignedTo',
+  '/lead/:leadNo/:description/:caseId/assignedTo',
   verifyToken,
   updateAssignedToStatus
 );
 
 // Flag routes
-router.get("/flagged/:caseNo/:caseName", verifyToken, getCaseFlaggedLeads);
-router.get("/all-with-flags/:caseNo/:caseName", verifyToken, getCaseAllLeadsWithFlags);
-router.patch("/flags/:leadNo/:leadName/:caseNo/:caseName", verifyToken, updateLeadFlags);
+router.get("/flagged/:caseId", verifyToken, getCaseFlaggedLeads);
+router.get("/all-with-flags/:caseId", verifyToken, getCaseAllLeadsWithFlags);
+router.patch("/flags/:leadNo/:leadName/:caseId", verifyToken, updateLeadFlags);
 
 module.exports = router;

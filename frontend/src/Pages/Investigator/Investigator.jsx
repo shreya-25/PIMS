@@ -62,7 +62,7 @@ export const Investigator = () => {
   const [allUsers, setAllUsers] = useState([]);
 
   // ─── Data hooks ───────────────────────────────────────────────────────────
-  const { leads, acceptLead } = useLeads(selectedCase?.caseNo, selectedCase?.caseName, signedInOfficer);
+  const { leads, acceptLead } = useLeads(selectedCase?._id || selectedCase?.id, signedInOfficer);
 
   // ─── One-time setup ───────────────────────────────────────────────────────
   useEffect(() => { window.scrollTo(0, 0); }, []);

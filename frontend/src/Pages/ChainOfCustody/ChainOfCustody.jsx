@@ -75,15 +75,16 @@ const isPrimaryInvestigator =
   // --- fetch lead (should include `events` and `leadStatus`)
   useEffect(() => {
     const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) return;
+    const kase = selectedCase?._id || selectedCase?.id ? selectedCase : location.state?.caseDetails;
+    const kaseId = kase?._id || kase?.id;
+    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kaseId) return;
 
     const token = localStorage.getItem("token");
     api
       .get(
         `/api/lead/lead/${lead.leadNo}/${encodeURIComponent(
           lead.leadName || lead.description
-        )}/${kase.caseNo}/${encodeURIComponent(kase.caseName)}`,
+        )}/${kaseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       .then(({ data }) => {

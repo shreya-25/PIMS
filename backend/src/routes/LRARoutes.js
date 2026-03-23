@@ -93,7 +93,7 @@ router.delete(
 
 router.get("/case/:caseNo", verifyToken, getAudioByCaseNo);
 
-router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLRAudioByDetails);
+router.get("/:leadNo/:leadName/:caseId", verifyToken, getLRAudioByDetails);
 
 
 module.exports = router;

@@ -80,11 +80,11 @@ router.post(
 
 router.get("/case/:caseNo", verifyToken, getEvidenceByCaseNo);
 
-router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLREvidenceByDetails);
+router.get("/:leadNo/:leadName/:caseId", verifyToken, getLREvidenceByDetails);
 
 // Update evidence (with optional file)
 router.put(
-  "/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId/:evidenceDescription",
+  "/:leadNo/:leadName/:caseId/:leadReturnId/:evidenceDescription",
   verifyToken,
   upload.single("file"),
   updateLREvidence
@@ -92,7 +92,7 @@ router.put(
 
 // Delete evidence
 router.delete(
-  "/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId/:evidenceDescription",
+  "/:leadNo/:leadName/:caseId/:leadReturnId/:evidenceDescription",
   verifyToken,
   deleteLREvidence
 );

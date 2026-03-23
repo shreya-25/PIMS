@@ -111,12 +111,13 @@ export const LeadLog = () => {
 
   useEffect(() => {
     const fetchLeadLog = async () => {
-      if (selectedCase.caseNo && selectedCase.caseName) {
+      const caseId = selectedCase._id || selectedCase.id;
+      if (caseId) {
         try {
           const token = localStorage.getItem("token");
-  
+
           const response = await api.get(
-            `/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+            `/api/lead/case/${caseId}`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,

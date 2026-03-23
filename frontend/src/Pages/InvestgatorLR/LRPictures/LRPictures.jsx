@@ -23,7 +23,7 @@ import { CaseContext } from "../../CaseContext";
 import { useLeadStatus } from "../../../hooks/useLeadStatus";
 import api from "../../../api";
 import styles from "../LR.module.css";
-import { formatDate, alphabetToNumber, buildLeadCasePath, isHttpUrl } from "../lrUtils";
+import { formatDate, alphabetToNumber, buildLeadCaseIdPath, isHttpUrl } from "../lrUtils";
 import { useLeadReport } from "../useLeadReport";
 import { LRTopMenu } from "../LRTopMenu";
 
@@ -97,8 +97,7 @@ export const LRPictures = () => {
 
   // ── Lead status hook (read-only gate) ───────────────────────────────────────
   const { status, isReadOnly } = useLeadStatus({
-    caseNo:   selectedCase.caseNo,
-    caseName: selectedCase.caseName,
+    caseId:   selectedCase._id || selectedCase.id,
     leadNo:   selectedLead.leadNo,
     leadName: selectedLead.leadName,
   });
@@ -185,13 +184,13 @@ export const LRPictures = () => {
   // ── API: Fetch narrative IDs for the dropdown ───────────────────────────────
   useEffect(() => {
     if (!selectedLead?.leadNo || !selectedLead?.leadName ||
-        !selectedCase?.caseNo || !selectedCase?.caseName) return;
+        !selectedCase?._id && !selectedCase?.id) return;
 
     const controller = new AbortController();
     const token = localStorage.getItem("token");
-    const path  = buildLeadCasePath(
+    const path  = buildLeadCaseIdPath(
       selectedLead.leadNo, selectedLead.leadName,
-      selectedCase.caseNo, selectedCase.caseName
+      selectedCase._id || selectedCase.id
     );
 
     (async () => {
@@ -222,19 +221,19 @@ export const LRPictures = () => {
     return () => controller.abort();
   }, [
     selectedLead?.leadNo, selectedLead?.leadName,
-    selectedCase?.caseNo, selectedCase?.caseName,
+    selectedCase?._id, selectedCase?.id,
     isEditing,
   ]);
 
   // ── API: Fetch lead metadata (assignment info, primary investigator) ─────────
   useEffect(() => {
     if (!selectedLead?.leadNo || !selectedLead?.leadName ||
-        !selectedCase?.caseNo || !selectedCase?.caseName) return;
+        !selectedCase?._id && !selectedCase?.id) return;
 
     const token = localStorage.getItem("token");
-    const path  = buildLeadCasePath(
+    const path  = buildLeadCaseIdPath(
       selectedLead.leadNo, selectedLead.leadName,
-      selectedCase.caseNo, selectedCase.caseName
+      selectedCase._id || selectedCase.id
     );
 
     api
@@ -257,12 +256,12 @@ export const LRPictures = () => {
    * Normalises signed URLs and links for use in the table.
    */
   const fetchPictures = useCallback(async () => {
-    if (!selectedLead?.leadNo || !selectedCase?.caseNo) return;
+    if (!selectedLead?.leadNo || !selectedCase?._id && !selectedCase?.id) return;
 
     const token = localStorage.getItem("token");
-    const path  = buildLeadCasePath(
+    const path  = buildLeadCaseIdPath(
       selectedLead.leadNo, selectedLead.leadName,
-      selectedCase.caseNo, selectedCase.caseName
+      selectedCase._id || selectedCase.id
     );
 
     try {
@@ -294,7 +293,7 @@ export const LRPictures = () => {
 
   useEffect(() => {
     if (selectedLead?.leadNo && selectedLead?.leadName &&
-        selectedCase?.caseNo && selectedCase?.caseName) {
+        (selectedCase?._id || selectedCase?.id)) {
       fetchPictures();
     }
   }, [selectedLead, selectedCase]);
@@ -473,9 +472,9 @@ export const LRPictures = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const path  = buildLeadCasePath(
+      const path  = buildLeadCaseIdPath(
         selectedLead.leadNo, selectedLead.leadName,
-        selectedCase.caseNo, selectedCase.caseName
+        selectedCase._id || selectedCase.id
       );
       await api.put(
         `/api/lrpicture/${path}/${pic.returnId}/${encodeURIComponent(pic.description)}`,
@@ -505,9 +504,9 @@ export const LRPictures = () => {
 
     const pic   = pictures[idx];
     const token = localStorage.getItem("token");
-    const path  = buildLeadCasePath(
+    const path  = buildLeadCaseIdPath(
       selectedLead.leadNo, selectedLead.leadName,
-      selectedCase.caseNo, selectedCase.caseName
+      selectedCase._id || selectedCase.id
     );
 
     try {
@@ -534,9 +533,9 @@ export const LRPictures = () => {
   const handleAccessChange = async (idx, newAccessLevel) => {
     const picture = pictures[idx];
     const token   = localStorage.getItem("token");
-    const path    = buildLeadCasePath(
+    const path    = buildLeadCaseIdPath(
       selectedLead.leadNo, selectedLead.leadName,
-      selectedCase.caseNo, selectedCase.caseName
+      selectedCase._id || selectedCase.id
     );
 
     const fd = new FormData();

@@ -204,8 +204,7 @@ export const LRVehicle = () => {
 
   // ── Lead status hook ──────────────────────────────────────────────────────
   const { status, isReadOnly } = useLeadStatus({
-    caseNo:   selectedCase?.caseNo,
-    caseName: selectedCase?.caseName,
+    caseId:   selectedCase?._id || selectedCase?.id,
     leadNo:   selectedLead?.leadNo,
     leadName: selectedLead?.leadName,
   });
@@ -260,13 +259,13 @@ export const LRVehicle = () => {
    * Re-runs whenever the selected lead or case changes.
    */
   useEffect(() => {
-    if (!selectedLead?.leadNo || !selectedCase?.caseNo) return;
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (!selectedLead?.leadNo || !caseId) return;
     const token = localStorage.getItem('token');
 
     api
       .get(
-        `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}` +
-        `/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+        `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       .then(({ data }) => {
@@ -286,9 +285,9 @@ export const LRVehicle = () => {
    * when creating a new vehicle record.
    */
   useEffect(() => {
+    const caseId = selectedCase?._id || selectedCase?.id;
     if (
-      !selectedLead?.leadNo || !selectedLead?.leadName ||
-      !selectedCase?.caseNo  || !selectedCase?.caseName
+      !selectedLead?.leadNo || !selectedLead?.leadName || !caseId
     ) return;
 
     const ac = new AbortController();
@@ -297,8 +296,7 @@ export const LRVehicle = () => {
     (async () => {
       try {
         const { data } = await api.get(
-          `/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}` +
-          `/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+          `/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
           { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -320,23 +318,23 @@ export const LRVehicle = () => {
     return () => ac.abort();
   }, [
     selectedLead?.leadNo, selectedLead?.leadName,
-    selectedCase?.caseNo, selectedCase?.caseName,
+    selectedCase?._id, selectedCase?.id,
     editIndex, todayISO,
   ]);
 
   /** Fetches vehicle records whenever the selected lead or case changes. */
   useEffect(() => {
-    if (selectedLead?.leadNo && selectedCase?.caseNo) {
+    if (selectedLead?.leadNo && (selectedCase?._id || selectedCase?.id)) {
       fetchVehicles();
     }
   }, [selectedLead, selectedCase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchVehicles = async () => {
+    const caseId = selectedCase?._id || selectedCase?.id;
     const token = localStorage.getItem('token');
     try {
       const { data } = await api.get(
-        `/api/lrvehicle/lrvehicle/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}` +
-        `/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+        `/api/lrvehicle/lrvehicle/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setRawVehicles(data);
@@ -428,7 +426,7 @@ export const LRVehicle = () => {
         const old      = rawVehicles[editIndex];
         const vinParam = old.vin ? encodeURIComponent(old.vin) : encodeURIComponent('-EMPTY-');
         res = await api.put(
-          `/api/lrvehicle/${selectedLead.leadNo}/${selectedCase.caseNo}` +
+          `/api/lrvehicle/${selectedLead.leadNo}/${selectedCase._id || selectedCase.id}` +
           `/${encodeURIComponent(old.leadReturnId)}/${vinParam}`,
           payload,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -477,7 +475,7 @@ export const LRVehicle = () => {
     try {
       await api.delete(
         `/api/lrvehicle/${encodeURIComponent(String(selectedLead.leadNo))}` +
-        `/${encodeURIComponent(String(selectedCase.caseNo))}` +
+        `/${encodeURIComponent(String(selectedCase._id || selectedCase.id))}` +
         `/${encodeURIComponent(String(r.leadReturnId))}/${vinParam}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -509,7 +507,7 @@ export const LRVehicle = () => {
 
     try {
       const { data: updated } = await api.put(
-        `/api/lrvehicle/${selectedLead.leadNo}/${selectedCase.caseNo}` +
+        `/api/lrvehicle/${selectedLead.leadNo}/${selectedCase._id || selectedCase.id}` +
         `/${encodeURIComponent(v.leadReturnId)}/${vinParam}`,
         { accessLevel: newAccess },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -545,10 +543,11 @@ export const LRVehicle = () => {
    * and navigates to the DocumentReview page.
    */
   const handleViewLeadReturn = async () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    const lead   = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase   = selectedCase?._id || selectedCase?.id ? selectedCase : location.state?.caseDetails;
+    const kaseId = kase?._id || kase?.id;
 
-    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kaseId) {
       showAlert('Please select a case and lead first.');
       return;
     }
@@ -559,9 +558,8 @@ export const LRVehicle = () => {
     const headers  = { headers: { Authorization: `Bearer ${token}` } };
     const { leadNo } = lead;
     const leadName   = lead.leadName || lead.description;
-    const { caseNo, caseName } = kase;
-    const encLead  = encodeURIComponent(leadName);
-    const encCase  = encodeURIComponent(caseName);
+    const encLead    = encodeURIComponent(leadName);
+    const base       = `${leadNo}/${encLead}/${kaseId}`;
 
     try {
       // Fetch all lead return sections in parallel
@@ -569,17 +567,17 @@ export const LRVehicle = () => {
         instrRes, returnsRes, personsRes, vehiclesRes, enclosuresRes,
         evidenceRes, picturesRes, audioRes, videosRes, scratchpadRes, timelineRes,
       ] = await Promise.all([
-        api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lead/lead/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/leadReturnResult/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrperson/lrperson/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvehicle/lrvehicle/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrenclosure/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrevidence/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrpicture/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lraudio/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvideo/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/scratchpad/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/timeline/${base}`, headers).catch(() => ({ data: [] })),
       ]);
 
       // Attach associated files to each media section

@@ -128,12 +128,13 @@ export const SearchLead = () => {
 
   useEffect(() => {
     const fetchAllLeads = async () => {
-      if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+      const caseId = selectedCase?._id || selectedCase?.id;
+      if (!caseId) return;
 
       try {
         const token = localStorage.getItem("token");
         const resp = await api.get(
-          `/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+          `/api/lead/case/${caseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -273,11 +274,10 @@ const handleSearch = async () => {
     try {
       const leadResp = await api.get("/api/lead/search", {
         params: {
-          caseNo: selectedCase.caseNo,
-          caseName: selectedCase.caseName,
+          caseId: selectedCase._id || selectedCase.id,
           keyword: keywordParam,
           field: fieldParam,
-          officerName: signedInOfficer,   
+          officerName: signedInOfficer,
         },
         headers: { Authorization: `Bearer ${token}` },
       });

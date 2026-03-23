@@ -140,8 +140,7 @@ export const LRResult = () => {
 
   // ─── Lead status / read-only hook ───────────────────────────────────────────
   const { status, isReadOnly } = useLeadStatus({
-    caseNo:   effectiveCase?.caseNo,
-    caseName: effectiveCase?.caseName,
+    caseId:   effectiveCase?._id || effectiveCase?.id,
     leadNo:   effectiveLead?.leadNo,
     leadName: effectiveLead?.leadName,
   });
@@ -260,14 +259,15 @@ export const LRResult = () => {
    * Used to derive access-filtering and role-based UI visibility.
    */
   useEffect(() => {
-    if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !effectiveCase?.caseNo || !effectiveCase?.caseName) return;
+    const caseId = effectiveCase?._id || effectiveCase?.id;
+    if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !caseId) return;
     const ac = new AbortController();
 
     (async () => {
       try {
         const token = localStorage.getItem('token');
         const { data } = await api.get(
-          `/api/lead/lead/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${effectiveCase.caseNo}/${encodeURIComponent(effectiveCase.caseName)}`,
+          `/api/lead/lead/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${caseId}`,
           { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
         );
         if (ac.signal.aborted || !data?.length) return;
@@ -278,21 +278,22 @@ export const LRResult = () => {
     })();
 
     return () => ac.abort();
-  }, [effectiveLead?.leadNo, effectiveLead?.leadName, effectiveCase?.caseNo, effectiveCase?.caseName]);
+  }, [effectiveLead?.leadNo, effectiveLead?.leadName, effectiveCase?._id, effectiveCase?.id]);
 
   /**
    * Fetch the lead's current status from the dedicated status endpoint.
    * Merges with any status already held in context (always keeps the highest rank).
    */
   useEffect(() => {
-    if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !effectiveCase?.caseNo || !effectiveCase?.caseName) return;
+    const caseId = effectiveCase?._id || effectiveCase?.id;
+    if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !caseId) return;
     const ac = new AbortController();
 
     (async () => {
       try {
         const token = localStorage.getItem('token');
         const { data } = await api.get(
-          `/api/lead/status/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${effectiveCase.caseNo}/${encodeURIComponent(effectiveCase.caseName)}`,
+          `/api/lead/status/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${caseId}`,
           { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
         );
         if (ac.signal.aborted) return;
@@ -320,8 +321,8 @@ export const LRResult = () => {
   }, [
     effectiveLead?.leadNo,
     effectiveLead?.leadName,
-    effectiveCase?.caseNo,
-    effectiveCase?.caseName,
+    effectiveCase?._id,
+    effectiveCase?.id,
     setLeadStatus,
   ]);
 
@@ -369,7 +370,8 @@ export const LRResult = () => {
    * the highest existing alphabetic return ID for next-ID generation.
    */
   useEffect(() => {
-    if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !effectiveCase?.caseNo || !effectiveCase?.caseName) return;
+    const caseId = effectiveCase?._id || effectiveCase?.id;
+    if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !caseId) return;
     const ac = new AbortController();
 
     (async () => {
@@ -377,7 +379,7 @@ export const LRResult = () => {
         setError('');
         const token = localStorage.getItem('token');
         const { data } = await api.get(
-          `/api/leadReturnResult/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${effectiveCase.caseNo}/${encodeURIComponent(effectiveCase.caseName)}`,
+          `/api/leadReturnResult/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${caseId}`,
           { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
         );
         if (ac.signal.aborted) return;
@@ -433,8 +435,8 @@ export const LRResult = () => {
   }, [
     effectiveLead?.leadNo,
     effectiveLead?.leadName,
-    effectiveCase?.caseNo,
-    effectiveCase?.caseName,
+    effectiveCase?._id,
+    effectiveCase?.id,
     isCaseManager,
     leadData?.assignedTo,
     setLeadReturns,
@@ -486,7 +488,7 @@ export const LRResult = () => {
     const token = localStorage.getItem('token');
     try {
       await api.delete(
-        `/api/leadReturnResult/delete/${effectiveLead.leadNo}/${effectiveCase.caseNo}/${pendingDeleteId}`,
+        `/api/leadReturnResult/delete/${effectiveLead.leadNo}/${effectiveCase._id || effectiveCase.id}/${pendingDeleteId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const updated = returns.filter((r) => r.leadReturnId !== pendingDeleteId);
@@ -507,7 +509,7 @@ export const LRResult = () => {
     const token = localStorage.getItem('token');
     try {
       const { data: updated } = await api.patch(
-        `/api/leadReturnResult/update/${ret.leadNo}/${caseNo}/${ret.leadReturnId}`,
+        `/api/leadReturnResult/update/${ret.leadNo}/${effectiveCase._id || effectiveCase.id}/${ret.leadReturnId}`,
         { accessLevel: newAccess },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -542,7 +544,7 @@ export const LRResult = () => {
       if (editMode && editId) {
         // ── Update existing entry ────────────────────────────────────────────
         const { data: updated } = await api.patch(
-          `/api/leadReturnResult/update/${selectedLead.leadNo}/${caseNo}/${editId}`,
+          `/api/leadReturnResult/update/${selectedLead.leadNo}/${effectiveCase._id || effectiveCase.id}/${editId}`,
           { leadReturnResult: returnData.results },
           { headers: { Authorization: `Bearer ${token}` } }
         );
