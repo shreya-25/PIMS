@@ -186,4 +186,21 @@ const deleteLRVideo = async (req, res) => {
   }
 };
 
-module.exports = { createLRVideo, getLRVideoByDetails, updateLRVideo, deleteLRVideo };
+const getVideoByCaseNo = async (req, res) => {
+    try {
+        const { caseNo } = req.params;
+        const records = await LRVideo.find({ caseNo, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+        const enriched = await Promise.all(
+            records.map(async (v) => {
+                const signedUrl = v.s3Key ? await getFileFromS3(v.s3Key) : null;
+                return { ...v.toObject(), signedUrl };
+            })
+        );
+        res.status(200).json(enriched);
+    } catch (err) {
+        console.error("Error fetching video by caseNo:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+module.exports = { createLRVideo, getLRVideoByDetails, updateLRVideo, deleteLRVideo, getVideoByCaseNo };

@@ -399,4 +399,25 @@ const searchPersonsByName = async (req, res) => {
     }
 };
 
-module.exports = { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, updateLRPersonById, deleteLRPerson, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto, searchPersonsByName };
+const getPersonsByCaseNo = async (req, res) => {
+    try {
+        const { caseNo } = req.params;
+        const persons = await LRPerson.find({ caseNo, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+        const enriched = await Promise.all(
+            persons.map(async (p) => {
+                const obj = p.toObject();
+                if (obj.photoS3Key) {
+                    try { obj.photoUrl = await getFileFromS3(obj.photoS3Key); }
+                    catch (e) { obj.photoUrl = null; }
+                }
+                return obj;
+            })
+        );
+        res.status(200).json(enriched);
+    } catch (err) {
+        console.error("Error fetching persons by caseNo:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+module.exports = { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, updateLRPersonById, deleteLRPerson, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto, searchPersonsByName, getPersonsByCaseNo };

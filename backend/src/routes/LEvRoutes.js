@@ -2,7 +2,7 @@ const express = require("express");
 const verifyToken = require("../middleware/authMiddleware");
 const { createLREvidence, getLREvidenceByDetails,
   updateLREvidence,
-  deleteLREvidence } = require("../controller/LREvidenceController");
+  deleteLREvidence, getEvidenceByCaseNo } = require("../controller/LREvidenceController");
 const getUploadMiddleware = require("../middleware/upload");
 const upload = require("../middleware/upload-disk");
 
@@ -77,6 +77,8 @@ router.post(
 //   });
 // });
 
+
+router.get("/case/:caseNo", verifyToken, getEvidenceByCaseNo);
 
 router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLREvidenceByDetails);
 

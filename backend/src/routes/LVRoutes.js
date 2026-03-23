@@ -1,9 +1,12 @@
 const express = require("express");
-const { createLRVehicle, getLRVehicleByDetails, getLRVehicleByDetailsandid, updateLRVehicle, deleteLRVehicle  } = require("../controller/LRVehicleController");
+const { createLRVehicle, getLRVehicleByDetails, getLRVehicleByDetailsandid, updateLRVehicle, deleteLRVehicle, getVehiclesByCaseNo  } = require("../controller/LRVehicleController");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
 
 const router = express.Router();
+
+// Get all vehicles for a case
+router.get("/case/:caseNo", verifyToken, getVehiclesByCaseNo);
 
 // Create a new vehicle entry
 router.post("/lrvehicle", verifyToken, createLRVehicle);

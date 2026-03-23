@@ -183,4 +183,21 @@ const deleteLREnclosure = async (req, res) => {
   }
 };
 
-module.exports = { createLREnclosure, getLREnclosureByDetails, updateLREnclosure, deleteLREnclosure };
+const getEnclosuresByCaseNo = async (req, res) => {
+    try {
+        const { caseNo } = req.params;
+        const records = await LREnclosure.find({ caseNo, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+        const enriched = await Promise.all(
+            records.map(async (enc) => {
+                const signedUrl = enc.s3Key ? await getFileFromS3(enc.s3Key) : null;
+                return { ...enc.toObject(), signedUrl };
+            })
+        );
+        res.status(200).json(enriched);
+    } catch (err) {
+        console.error("Error fetching enclosures by caseNo:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+module.exports = { createLREnclosure, getLREnclosureByDetails, updateLREnclosure, deleteLREnclosure, getEnclosuresByCaseNo };

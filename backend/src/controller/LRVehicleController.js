@@ -127,4 +127,15 @@ const deleteLRVehicle = async (req, res) => {
     }
 };
 
-module.exports = { createLRVehicle, getLRVehicleByDetails, getLRVehicleByDetailsandid, updateLRVehicle, deleteLRVehicle };
+const getVehiclesByCaseNo = async (req, res) => {
+    try {
+        const { caseNo } = req.params;
+        const vehicles = await LRVehicle.find({ caseNo, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+        res.status(200).json(vehicles);
+    } catch (err) {
+        console.error("Error fetching vehicles by caseNo:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+module.exports = { createLRVehicle, getLRVehicleByDetails, getLRVehicleByDetailsandid, updateLRVehicle, deleteLRVehicle, getVehiclesByCaseNo };

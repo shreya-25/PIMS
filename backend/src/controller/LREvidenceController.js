@@ -197,4 +197,21 @@ const deleteLREvidence = async (req, res) => {
     }
 };
 
-module.exports = { createLREvidence, getLREvidenceByDetails, updateLREvidence, deleteLREvidence };
+const getEvidenceByCaseNo = async (req, res) => {
+    try {
+        const { caseNo } = req.params;
+        const records = await LREvidence.find({ caseNo, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+        const enriched = await Promise.all(
+            records.map(async (ev) => {
+                const signedUrl = ev.s3Key ? await getFileFromS3(ev.s3Key) : null;
+                return { ...ev.toObject(), signedUrl };
+            })
+        );
+        res.status(200).json(enriched);
+    } catch (err) {
+        console.error("Error fetching evidence by caseNo:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+module.exports = { createLREvidence, getLREvidenceByDetails, updateLREvidence, deleteLREvidence, getEvidenceByCaseNo };

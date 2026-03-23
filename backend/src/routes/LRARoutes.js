@@ -1,6 +1,6 @@
 const express = require("express");
 const verifyToken = require("../middleware/authMiddleware");
-const { createLRAudio, getLRAudioByDetails, updateLRAudio, deleteLRAudio  } = require("../controller/LRAudioController");
+const { createLRAudio, getLRAudioByDetails, updateLRAudio, deleteLRAudio, getAudioByCaseNo  } = require("../controller/LRAudioController");
 const getUploadMiddleware = require("../middleware/upload");
 const upload = require("../middleware/upload-disk");
 
@@ -90,6 +90,8 @@ router.delete(
   deleteLRAudio
 );
 
+
+router.get("/case/:caseNo", verifyToken, getAudioByCaseNo);
 
 router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLRAudioByDetails);
 

@@ -184,4 +184,21 @@ const deleteLRAudio = async (req, res) => {
   }
 };
 
-module.exports = { createLRAudio, getLRAudioByDetails, updateLRAudio, deleteLRAudio };
+const getAudioByCaseNo = async (req, res) => {
+    try {
+        const { caseNo } = req.params;
+        const records = await LRAudio.find({ caseNo, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+        const enriched = await Promise.all(
+            records.map(async (a) => {
+                const signedUrl = a.s3Key ? await getFileFromS3(a.s3Key) : null;
+                return { ...a.toObject(), signedUrl };
+            })
+        );
+        res.status(200).json(enriched);
+    } catch (err) {
+        console.error("Error fetching audio by caseNo:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+module.exports = { createLRAudio, getLRAudioByDetails, updateLRAudio, deleteLRAudio, getAudioByCaseNo };

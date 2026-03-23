@@ -399,6 +399,15 @@ export const SideBar = ({
           </li>
         )}
 
+        <li
+          className={`sidebar-item ${activePage === "CaseInformation" ? "active" : ""}`}
+          style={{ paddingLeft: 30 }}
+          onClick={() => navigate("/CaseInformation", { state: { caseDetails } })}
+        >
+          <img src={folderIcon1} className="sidebar-icon" alt="" />
+          <span>Case Information</span>
+        </li>
+
         {/* Leads Desk with role-aware badge for current case */}
         <li
           className={`sidebar-item ${activePage === "LeadsDesk" ? "active" : ""}`}

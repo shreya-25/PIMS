@@ -180,4 +180,21 @@ const deleteLRPicture = async (req, res) => {
   }
 };
 
-module.exports = { createLRPicture, getLRPictureByDetails, updateLRPicture, deleteLRPicture };
+const getPicturesByCaseNo = async (req, res) => {
+    try {
+        const { caseNo } = req.params;
+        const records = await LRPicture.find({ caseNo, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+        const enriched = await Promise.all(
+            records.map(async (pic) => {
+                const signedUrl = pic.s3Key ? await getFileFromS3(pic.s3Key) : null;
+                return { ...pic.toObject(), signedUrl };
+            })
+        );
+        res.status(200).json(enriched);
+    } catch (err) {
+        console.error("Error fetching pictures by caseNo:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+module.exports = { createLRPicture, getLRPictureByDetails, updateLRPicture, deleteLRPicture, getPicturesByCaseNo };
