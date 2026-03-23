@@ -2020,6 +2020,10 @@ const assignmentHoverText = React.useMemo(() => {
                     }
                   }}>Add Lead Return</span>
 
+                  {(selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor") && (
+                    <span className={styles.menuItem} onClick={goToViewLR}>Review Lead Return</span>
+                  )}
+
                   {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
                     <span
                       className={styles.menuItem}
