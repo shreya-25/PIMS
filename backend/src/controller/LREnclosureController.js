@@ -3,6 +3,7 @@ const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
+const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
 
 // ---------- helpers ----------
 const one = (v) => Array.isArray(v) ? v[0] : v;
@@ -18,6 +19,9 @@ const safeParseJSON = (v) => {
 
 const createLREnclosure = async (req, res) => {
   try {
+    const accessErr = await checkLeadWriteAccess(req, one(req.body.caseNo), one(req.body.leadNo));
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
     const uploadMode = asString(one(req.body.uploadMode)) || "none";
     const linkRaw = asString(one(req.body.link)).trim();
     const isLinkRequested = asBool(one(req.body.isLink)) || uploadMode === "link";
@@ -109,6 +113,9 @@ const updateLREnclosure = async (req, res) => {
     const enc = await LREnclosure.findOne({ leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId, isDeleted: { $ne: true } });
     if (!enc) return res.status(404).json({ message: "Enclosure not found" });
 
+    const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
     const oldEnclosure = enc.toObject();
 
     if (req.file) {
@@ -159,6 +166,9 @@ const deleteLREnclosure = async (req, res) => {
       isDeleted: { $ne: true }
     });
     if (!enc) return res.status(404).json({ message: "Enclosure not found" });
+
+    const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldValue = enc.toObject();
 

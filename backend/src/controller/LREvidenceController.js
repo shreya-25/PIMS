@@ -3,11 +3,15 @@ const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
+const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
 
 const asBool = v => v === true || v === "true" || v === 1 || v === "1";
 
 const createLREvidence = async (req, res) => {
   try {
+    const accessErr = await checkLeadWriteAccess(req, req.body.caseNo, req.body.leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
     const isLink = req.body.isLink === "true";
     const accessLevel = req.body.accessLevel || "Everyone";
 
@@ -109,6 +113,9 @@ const updateLREvidence = async (req, res) => {
     });
     if (!ev) return res.status(404).json({ message: "Evidence not found" });
 
+    const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
     const oldEvidence = ev.toObject();
     const isLink = asBool(req.body.isLink);
     const newLink = req.body.link?.trim();
@@ -170,6 +177,9 @@ const deleteLREvidence = async (req, res) => {
         isDeleted: { $ne: true }
       });
       if (!ev) return res.status(404).json({ message: "Evidence not found" });
+
+      const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+      if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
       const oldEvidence = ev.toObject();
       ev.isDeleted = true;

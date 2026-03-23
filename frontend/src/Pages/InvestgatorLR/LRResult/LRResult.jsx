@@ -10,6 +10,7 @@ import { useContext, useState, useEffect, useCallback, useMemo, useRef } from 'r
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import Navbar from '../../../components/Navbar/Navbar';
 import styles from './LRResult.module.css';
+import { LRTopMenu } from '../LRTopMenu';
 import { CaseContext } from '../../CaseContext';
 import api from '../../../api';
 import { SideBar } from '../../../components/Sidebar/Sidebar';
@@ -222,16 +223,6 @@ export const LRResult = () => {
    * Navigate to the Submit / Review Lead Return page (ViewLR).
    * Primary investigators submit; all others review.
    */
-  const goToViewLR = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-      showAlert('Please select a case and lead first.');
-      return;
-    }
-    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
-  };
-
   // ─── Effects ─────────────────────────────────────────────────────────────────
 
   // Seed officer name from localStorage on mount
@@ -733,64 +724,15 @@ export const LRResult = () => {
         <div className={styles.leftContentLI}>
 
           {/* ── Page-level navigation bar ──────────────────────────────────── */}
-          <div className={styles.topMenuNav}>
-            <div className={styles.menuItems}>
-              <span
-                className={styles.menuItem}
-                onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                  if (lead && kase) navigate('/LeadReview', { state: { caseDetails: kase, leadDetails: lead } });
-                }}
-              >
-                Lead Information
-              </span>
-
-              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
-                Add Lead Return
-              </span>
-
-              {/* Case Manager / Supervisor: generate full report */}
-              {isCaseManager && (
-                <span
-                  className={`${styles.menuItem} ${isGenerating ? styles.menuItemDisabled : ''}`}
-                  onClick={handleViewLeadReturn}
-                  title={isGenerating ? 'Preparing report…' : 'View Lead Return'}
-                >
-                  Manage Lead Return
-                </span>
-              )}
-
-              {/* Primary investigator: can submit */}
-              {selectedCase?.role === 'Investigator' && isPrimaryInvestigator && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  Submit Lead Return
-                </span>
-              )}
-
-              {/* Secondary investigator: review only */}
-              {selectedCase?.role === 'Investigator' && !isPrimaryInvestigator && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  Review Lead Return
-                </span>
-              )}
-
-              <span
-                className={styles.menuItem}
-                onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                  if (lead && kase) {
-                    navigate('/ChainOfCustody', { state: { caseDetails: kase, leadDetails: lead } });
-                  } else {
-                    showAlert('Please select a case and lead first.');
-                  }
-                }}
-              >
-                Lead Chain of Custody
-              </span>
-            </div>
-          </div>
+          <LRTopMenu
+            activePage="addLeadReturn"
+            selectedCase={selectedCase}
+            selectedLead={selectedLead}
+            isPrimaryInvestigator={isPrimaryInvestigator}
+            isGenerating={isGenerating}
+            onManageLeadReturn={handleViewLeadReturn}
+            styles={styles}
+          />
 
           {/* ── Section tabs navigation ─────────────────────────────────────── */}
           <div className={styles.topMenuSections}>
@@ -875,7 +817,6 @@ export const LRResult = () => {
                     <button
                       className={styles.saveBtn1}
                       disabled={
-                        selectedLead?.leadStatus === 'In Review' ||
                         selectedLead?.leadStatus === 'Completed' ||
                         selectedLead?.leadStatus === 'Closed' ||
                         isReadOnly
@@ -917,7 +858,6 @@ export const LRResult = () => {
                         const isExpanded   = expandedRows.has(ret.leadReturnId);
                         const shouldTruncate = (ret.leadReturnResult || '').length > 150;
                         const disableActions =
-                          selectedLead?.leadStatus === 'In Review' ||
                           selectedLead?.leadStatus === 'Completed' ||
                           isReadOnly ||
                           !canModify;

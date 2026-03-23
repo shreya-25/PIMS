@@ -16,6 +16,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { pickHigherStatus } from '../../../utils/status';
 import Navbar from '../../../components/Navbar/Navbar';
 import styles from './LRInstruction.module.css';
+import { LRTopMenu } from '../LRTopMenu';
 import { CaseContext } from '../../CaseContext';
 import api from '../../../api';
 import { SideBar } from '../../../components/Sidebar/Sidebar';
@@ -117,53 +118,6 @@ const resolveLeadAndCase = (selectedLead, selectedCase, locationState) => ({
  * TopNavBar – page-level navigation tabs (Lead Information, Lead Return, etc.).
  * Renders role-conditional action items.
  */
-const TopNavBar = ({
-  selectedCase,
-  isPrimaryInvestigator,
-  isGenerating,
-  onNavigateToLeadInfo,
-  onViewLeadReturn,
-  onGoToViewLR,
-  onNavigateToChainOfCustody,
-}) => {
-  const isManagerRole = ['Case Manager', 'Detective Supervisor'].includes(selectedCase?.role);
-  const isInvestigator = selectedCase?.role === 'Investigator';
-
-  return (
-    <div className={styles.topMenuNav}>
-      <div className={styles.menuItems}>
-        <span className={styles.menuItem} onClick={onNavigateToLeadInfo}>
-          Lead Information
-        </span>
-
-        <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
-          Add Lead Return
-        </span>
-
-        {isManagerRole && (
-          <span
-            className={styles.menuItem}
-            onClick={onViewLeadReturn}
-            title={isGenerating ? 'Preparing report…' : 'View Lead Return'}
-            style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? 'none' : 'auto' }}
-          >
-            Manage Lead Return
-          </span>
-        )}
-
-        {isInvestigator && (
-          <span className={styles.menuItem} onClick={onGoToViewLR}>
-            {isPrimaryInvestigator ? 'Submit Lead Return' : 'Review Lead Return'}
-          </span>
-        )}
-
-        <span className={styles.menuItem} onClick={onNavigateToChainOfCustody}>
-          Lead Chain of Custody
-        </span>
-      </div>
-    </div>
-  );
-};
 
 /**
  * SectionTabBar – sub-navigation tabs for lead return sections
@@ -392,16 +346,6 @@ export const LRInstruction = () => {
     }
   }, [navigate, selectedLead, selectedCase, location.state, showAlert]);
 
-  /** Navigate to the interactive lead-review page (view / submit / review). */
-  const goToViewLR = useCallback(() => {
-    const { lead, kase } = resolveLeadAndCase(selectedLead, selectedCase, location.state);
-    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-      showAlert('Please select a case and lead first.');
-      return;
-    }
-    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
-  }, [navigate, selectedLead, selectedCase, location.state, showAlert]);
-
   // ---------------------------------------------------------------------------
   // PDF generation
   // ---------------------------------------------------------------------------
@@ -591,14 +535,14 @@ export const LRInstruction = () => {
         <div className={styles.leftContentLI}>
 
           {/* Page-level navigation bar */}
-          <TopNavBar
+          <LRTopMenu
+            activePage="addLeadReturn"
             selectedCase={selectedCase}
+            selectedLead={selectedLead}
             isPrimaryInvestigator={isPrimaryInvestigator}
             isGenerating={isGenerating}
-            onNavigateToLeadInfo={handleNavigateToLeadInfo}
-            onViewLeadReturn={handleViewLeadReturn}
-            onGoToViewLR={goToViewLR}
-            onNavigateToChainOfCustody={handleNavigateToChainOfCustody}
+            onManageLeadReturn={handleViewLeadReturn}
+            styles={styles}
           />
 
           {/* Section tab navigation */}

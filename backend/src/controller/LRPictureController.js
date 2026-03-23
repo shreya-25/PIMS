@@ -3,9 +3,13 @@ const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
+const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
 
 const createLRPicture = async (req, res) => {
   try {
+    const accessErr = await checkLeadWriteAccess(req, req.body.caseNo, req.body.leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
     const isLink = String(req.body.isLink) === "true";
     const accessLevel = req.body.accessLevel || "Everyone";
 
@@ -105,6 +109,9 @@ const updateLRPicture = async (req, res) => {
     });
     if (!pic) return res.status(404).json({ message: "Picture not found" });
 
+    const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
     const oldPicture = pic.toObject();
 
     if (req.file) {
@@ -153,6 +160,9 @@ const deleteLRPicture = async (req, res) => {
       isDeleted: { $ne: true }
     });
     if (!pic) return res.status(404).json({ message: "Picture not found" });
+
+    const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldPicture = pic.toObject();
     pic.isDeleted = true;

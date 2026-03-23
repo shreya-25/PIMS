@@ -531,6 +531,10 @@ export const CasePageManager = () => {
     const { key, direction } = assignedSortConfig;
     if (key) {
       data = data.slice().sort((a, b) => {
+        if (key === 'id') {
+          const aNum = Number(a[key] ?? 0), bNum = Number(b[key] ?? 0);
+          return direction === 'asc' ? aNum - bNum : bNum - aNum;
+        }
         const aV = key === "remainingDays" ? calculateRemainingDays(a.dueDate) : Array.isArray(a[key]) ? a[key][0] : a[key];
         const bV = key === "remainingDays" ? calculateRemainingDays(b.dueDate) : Array.isArray(b[key]) ? b[key][0] : b[key];
         return direction === 'asc' ? String(aV).localeCompare(String(bV)) : String(bV).localeCompare(String(aV));
@@ -590,6 +594,10 @@ export const CasePageManager = () => {
     const { key, direction } = pendingSortConfig;
     if (key) {
       data = data.slice().sort((a, b) => {
+        if (key === 'id') {
+          const aNum = Number(a[key] ?? 0), bNum = Number(b[key] ?? 0);
+          return direction === 'asc' ? aNum - bNum : bNum - aNum;
+        }
         const aV = key === "remainingDays" ? calculateRemainingDays(a.dueDate) : Array.isArray(a[key]) ? a[key][0] : a[key];
         const bV = key === "remainingDays" ? calculateRemainingDays(b.dueDate) : Array.isArray(b[key]) ? b[key][0] : b[key];
         return direction === 'asc' ? String(aV).localeCompare(String(bV)) : String(bV).localeCompare(String(aV));
@@ -641,6 +649,10 @@ export const CasePageManager = () => {
     const { key, direction } = pendingLRSortConfig;
     if (key) {
       data = data.slice().sort((a, b) => {
+        if (key === 'id') {
+          const aNum = Number(a[key] ?? 0), bNum = Number(b[key] ?? 0);
+          return direction === 'asc' ? aNum - bNum : bNum - aNum;
+        }
         const aV = String(a[key]), bV = String(b[key]);
         return direction === 'asc' ? aV.localeCompare(bV) : bV.localeCompare(aV);
       });
@@ -701,6 +713,10 @@ export const CasePageManager = () => {
     const { key, direction } = allSortConfig;
     if (key) {
       data = data.slice().sort((a, b) => {
+        if (key === 'id') {
+          const aNum = Number(a[key] ?? 0), bNum = Number(b[key] ?? 0);
+          return direction === 'asc' ? aNum - bNum : bNum - aNum;
+        }
         const aV = Array.isArray(a[key]) ? a[key][0] : String(a[key]);
         const bV = Array.isArray(b[key]) ? b[key][0] : String(b[key]);
         return direction === "asc" ? aV.localeCompare(bV) : bV.localeCompare(aV);
@@ -1072,6 +1088,7 @@ export const CasePageManager = () => {
                                   onToggleOne={handleAssignedCheckboxToggle}
                                   onApply={() => { applyAssignedFilter(dataKey); setOpenAssignedFilter(null); }}
                                   onCancel={() => setOpenAssignedFilter(null)}
+                                  numeric={dataKey === "id"}
                                 />
                               </span>
                             </div>
@@ -1143,6 +1160,7 @@ export const CasePageManager = () => {
                                   onApply={() => { applyPendingFilter(dataKey); setOpenPendingFilter(null); }}
                                   onCancel={() => setOpenPendingFilter(null)}
                                   onSort={() => handleSortPending(dataKey)}
+                                  numeric={dataKey === "id"}
                                 />
                               </span>
                             </div>
@@ -1216,6 +1234,7 @@ export const CasePageManager = () => {
                                   onToggleOne={handlePendingLRCheckboxToggle}
                                   onApply={() => { applyPendingLRFilter(dataKey); setOpenPendingLRFilter(null); }}
                                   onCancel={() => setOpenPendingLRFilter(null)}
+                                  numeric={dataKey === "id"}
                                 />
                               </span>
                             </div>
@@ -1282,6 +1301,7 @@ export const CasePageManager = () => {
                                     onToggleOne={handleAllCheckboxToggle}
                                     onApply={() => { applyAllFilter(dataKey); setOpenAllFilter(null); }}
                                     onCancel={() => setOpenAllFilter(null)}
+                                    numeric={dataKey === "id"}
                                   />
                                 </span>
                               </div>

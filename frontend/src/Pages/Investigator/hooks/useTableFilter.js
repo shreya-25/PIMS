@@ -51,6 +51,10 @@ export function useTableFilter(data, filterKeys) {
     const { key, direction } = sortConfig;
     if (key) {
       rows = rows.slice().sort((a, b) => {
+        if (key === 'id') {
+          const aNum = Number(a[key] ?? 0), bNum = Number(b[key] ?? 0);
+          return direction === 'asc' ? aNum - bNum : bNum - aNum;
+        }
         const aV = Array.isArray(a[key]) ? a[key][0] : String(a[key] ?? '');
         const bV = Array.isArray(b[key]) ? b[key][0] : String(b[key] ?? '');
         return direction === 'asc' ? aV.localeCompare(bV) : bV.localeCompare(aV);

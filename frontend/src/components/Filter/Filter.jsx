@@ -79,6 +79,7 @@ export default function Filter({
   onToggleOne,
   onApply,
   onCancel,
+  numeric,
 }) {
   const popupRef = useRef();
   const [pos, setPos] = useState({ top: 0, left: 0 });
@@ -148,8 +149,8 @@ export default function Filter({
       }}
     >
       <div className="fp-header">
-        <button className="fp-btn" onClick={() => onSort && onSort(dataKey, 'asc')}>A→Z</button>
-        <button className="fp-btn" onClick={() => onSort && onSort(dataKey, 'desc')}>Z→A</button>
+        <button className="fp-btn" onClick={() => onSort && onSort(dataKey, 'asc')}>{numeric ? "0→9" : "A→Z"}</button>
+        <button className="fp-btn" onClick={() => onSort && onSort(dataKey, 'desc')}>{numeric ? "9→0" : "Z→A"}</button>
       </div>
       <input
         className="fp-search"

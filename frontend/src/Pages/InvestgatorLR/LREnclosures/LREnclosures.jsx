@@ -11,6 +11,7 @@
 import { useContext, useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import styles from './LREnclosures.module.css';
+import { LRTopMenu } from '../LRTopMenu';
 import Navbar from '../../../components/Navbar/Navbar';
 import { CaseContext } from '../../CaseContext';
 import api from '../../../api';
@@ -20,7 +21,7 @@ import { useLeadStatus } from '../../../hooks/useLeadStatus';
 
 // ─── Module-level constants ──────────────────────────────────────────────────
 
-const READONLY_STATUSES = ['In Review', 'Completed', 'Closed'];
+const READONLY_STATUSES = ['Completed', 'Closed'];
 
 const DEFAULT_FORM = {
   returnId:     '',
@@ -661,34 +662,7 @@ export const LREnclosures = () => {
     }
   };
 
-  /** Navigates to the ViewLR page for reviewing or submitting the lead return. */
-  const goToViewLR = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-      showAlert('Please select a case and lead first.');
-      return;
-    }
-    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
-  };
 
-  // ── Navigation helpers ────────────────────────────────────────────────────
-
-  const navigateToLeadReview = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (lead && kase) navigate('/LeadReview', { state: { caseDetails: kase, leadDetails: lead } });
-  };
-
-  const navigateToChainOfCustody = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (lead && kase) {
-      navigate('/ChainOfCustody', { state: { caseDetails: kase, leadDetails: lead } });
-    } else {
-      showAlert('Please select a case and lead first.');
-    }
-  };
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -720,39 +694,15 @@ export const LREnclosures = () => {
         <div className={styles.leftContentLI}>
 
           {/* ── Page-level navigation menu ── */}
-          <div className={styles.topMenuNav}>
-            <div className={styles.menuItems}>
-              <span className={styles.menuItem} onClick={navigateToLeadReview}>
-                Lead Information
-              </span>
-              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
-                Add Lead Return
-              </span>
-
-              {/* Case Manager: generate full report */}
-              {isCaseManager && (
-                <span
-                  className={styles.menuItem}
-                  onClick={handleViewLeadReturn}
-                  title={isGenerating ? 'Preparing report…' : 'View Lead Return'}
-                  style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? 'none' : 'auto' }}
-                >
-                  Manage Lead Return
-                </span>
-              )}
-
-              {/* Investigator: submit or review */}
-              {selectedCase?.role === 'Investigator' && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  {isPrimaryInvestigator ? 'Submit Lead Return' : 'Review Lead Return'}
-                </span>
-              )}
-
-              <span className={styles.menuItem} onClick={navigateToChainOfCustody}>
-                Lead Chain of Custody
-              </span>
-            </div>
-          </div>
+          <LRTopMenu
+            activePage="addLeadReturn"
+            selectedCase={selectedCase}
+            selectedLead={selectedLead}
+            isPrimaryInvestigator={isPrimaryInvestigator}
+            isGenerating={isGenerating}
+            onManageLeadReturn={handleViewLeadReturn}
+            styles={styles}
+          />
 
           {/* ── Section tabs ── */}
           <div className={styles.topMenuSections}>

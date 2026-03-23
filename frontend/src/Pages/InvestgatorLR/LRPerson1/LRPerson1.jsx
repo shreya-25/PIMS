@@ -10,6 +10,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import Navbar from '../../../components/Navbar/Navbar';
 import styles from './LRPerson1.module.css';
+import { LRTopMenu } from '../LRTopMenu';
 import { CaseContext } from '../../CaseContext';
 import api from '../../../api';
 import { SideBar } from '../../../components/Sidebar/Sidebar';
@@ -139,7 +140,7 @@ const PhotoUpload = ({ preview, onFileChange, onRemove }) =>
   ) : (
     <input
       type="file"
-      accept="image/png, image/jpeg, image/jpg, image/gif, image/webp"
+      accept="*/*"
       onChange={onFileChange}
     />
   );
@@ -402,21 +403,6 @@ export const LRPerson1 = () => {
     if (lead && kase) navigate('/LeadReview', { state: { caseDetails: kase, leadDetails: lead } });
   };
 
-  const goToChainOfCustody = () => {
-    const { lead, kase } = resolveLeadAndCase();
-    if (lead && kase) navigate('/ChainOfCustody', { state: { caseDetails: kase, leadDetails: lead } });
-    else showAlert('Please select a case and lead first.');
-  };
-
-  const goToViewLR = () => {
-    const { lead, kase } = resolveLeadAndCase();
-    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-      showAlert('Please select a case and lead first.');
-      return;
-    }
-    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
-  };
-
   /**
    * Generates a full PDF report for the selected lead by fetching all sections
    * in parallel and posting the assembled payload to the report generation endpoint.
@@ -660,39 +646,15 @@ export const LRPerson1 = () => {
         <div className={styles.mainColumn}>
 
           {/* ── Top bar: page-level navigation actions ── */}
-          <nav className={styles.topMenuNav}>
-            <div className={styles.menuItems}>
-              <span className={styles.menuItem} onClick={goToLeadInformation}>
-                Lead Information
-              </span>
-
-              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
-                Add Lead Return
-              </span>
-
-              {/* Case managers can generate / manage the full lead return report */}
-              {isCaseManager && (
-                <span
-                  className={`${styles.menuItem} ${isGenerating ? styles.menuItemDisabled : ''}`}
-                  onClick={handleViewLeadReturn}
-                  title={isGenerating ? 'Preparing report…' : 'View Lead Return'}
-                >
-                  Manage Lead Return
-                </span>
-              )}
-
-              {/* Primary investigator submits; other investigators only review */}
-              {isInvestigator && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  {isPrimaryInvestigator ? 'Submit Lead Return' : 'Review Lead Return'}
-                </span>
-              )}
-
-              <span className={styles.menuItem} onClick={goToChainOfCustody}>
-                Lead Chain of Custody
-              </span>
-            </div>
-          </nav>
+          <LRTopMenu
+            activePage="addLeadReturn"
+            selectedCase={selectedCase}
+            selectedLead={selectedLead}
+            isPrimaryInvestigator={isPrimaryInvestigator}
+            isGenerating={isGenerating}
+            onManageLeadReturn={handleViewLeadReturn}
+            styles={styles}
+          />
 
           {/* ── Section tabs: LR form sub-sections ── */}
           <nav className={styles.topMenuSections}>

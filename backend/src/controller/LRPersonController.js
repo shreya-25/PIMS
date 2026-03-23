@@ -3,6 +3,7 @@ const { createAuditLog, sanitizeForAudit } = require("../services/auditService")
 const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
+const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
 
 // Validation function to check if at least one meaningful field is filled
 const isPersonRecordValid = (data) => {
@@ -48,6 +49,9 @@ const createLRPerson = async (req, res) => {
             glasses, height, weight, scar, tattoo, mark,
             accessLevel, additionalData
         } = req.body;
+
+        const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+        if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
         if (!isPersonRecordValid(req.body)) {
             return res.status(400).json({
@@ -164,6 +168,9 @@ const updateLRPerson = async (req, res) => {
         return res.status(404).json({ message: "Person not found." });
       }
 
+      const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+      if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
       const updated = await LRPerson.findOneAndUpdate(
         { leadNo: Number(leadNo), caseNo, leadReturnId, firstName },
         updateData,
@@ -201,6 +208,9 @@ const updateLRPersonById = async (req, res) => {
         return res.status(404).json({ message: "Person not found." });
       }
 
+      const accessErr = await checkLeadWriteAccess(req, existingPerson.caseNo, existingPerson.leadNo);
+      if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
       const updated = await LRPerson.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
 
       await createAuditLog({
@@ -230,6 +240,9 @@ const deleteLRPerson = async (req, res) => {
         return res.status(404).json({ message: "Person not found." });
       }
 
+      const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+      if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
       await LRPerson.findOneAndDelete({ leadNo: Number(leadNo), caseNo, leadReturnId, firstName });
 
       await createAuditLog({
@@ -255,6 +268,9 @@ const deleteLRPersonById = async (req, res) => {
       if (!existingPerson) {
         return res.status(404).json({ message: "Person not found." });
       }
+
+      const accessErr = await checkLeadWriteAccess(req, existingPerson.caseNo, existingPerson.leadNo);
+      if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
       await LRPerson.findByIdAndDelete(id);
 

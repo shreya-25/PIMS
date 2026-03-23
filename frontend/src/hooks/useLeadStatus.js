@@ -45,7 +45,11 @@ export function useLeadStatus({ caseNo, caseName, leadNo, leadName }) {
     },
   });
 
-  const isReadOnly = ['In Review','Completed','Closed'].includes(status);
+  const userRole = localStorage.getItem('role') || '';
+  const canEditInReview = userRole === 'Case Manager' || userRole === 'Detective Supervisor';
+  const isReadOnly = status === 'In Review'
+    ? !canEditInReview
+    : ['Completed', 'Closed'].includes(status);
 
   return { status, isReadOnly, isFetching, setLocalStatus, submitMutation };
 }

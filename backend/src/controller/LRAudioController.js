@@ -3,12 +3,16 @@ const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
+const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
 
 const toBool = (v) => v === true || v === "true" || v === "1";
 
 // CREATE (file optional)
 const createLRAudio = async (req, res) => {
   try {
+    const accessErr = await checkLeadWriteAccess(req, req.body.caseNo, req.body.leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
     const isLink = toBool(req.body.isLink);
     let filePath = null, originalName = null, filename = null, s3Key = null;
     let link = isLink ? (req.body.link || "").trim() || null : null;
@@ -106,6 +110,10 @@ const updateLRAudio = async (req, res) => {
     const { id } = req.params;
     const audio = await LRAudio.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!audio) return res.status(404).json({ message: "Audio not found" });
+
+    const accessErr = await checkLeadWriteAccess(req, audio.caseNo, audio.leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
     const oldAudio = audio.toObject();
 
     if (typeof req.body.audioDescription !== "undefined") audio.audioDescription = req.body.audioDescription;
@@ -157,6 +165,9 @@ const deleteLRAudio = async (req, res) => {
     const { id } = req.params;
     const audio = await LRAudio.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!audio) return res.status(404).json({ message: "Audio not found" });
+
+    const accessErr = await checkLeadWriteAccess(req, audio.caseNo, audio.leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldAudio = audio.toObject();
     audio.isDeleted = true;

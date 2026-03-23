@@ -26,6 +26,7 @@ import { formatDate, normalizeId, alphabetToNumber, isHttpUrl } from '../lrUtils
 
 // All visual styles are shared — import from the single LR stylesheet
 import styles from '../LR.module.css';
+import { LRTopMenu } from '../LRTopMenu';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -123,8 +124,7 @@ export const LRVideo = () => {
 
   // Consolidated disable flag for all form controls
   const isFormDisabled =
-    selectedLead?.leadStatus === 'In Review' ||
-    selectedLead?.leadStatus === 'Completed'  ||
+    selectedLead?.leadStatus === 'Completed' ||
     isReadOnly;
 
   // ── Session-storage keys (scoped to the active case + lead) ───────────────
@@ -475,36 +475,6 @@ export const LRVideo = () => {
     });
   }, []);
 
-  // ── Navigation helpers ─────────────────────────────────────────────────────
-
-  const goToLeadReview = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (lead && kase) navigate('/LeadReview', { state: { caseDetails: kase, leadDetails: lead } });
-  };
-
-  const goToChainOfCustody = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (lead && kase) {
-      navigate('/ChainOfCustody', { state: { caseDetails: kase, leadDetails: lead } });
-    } else {
-      setAlertMessage('Please select a case and lead first.');
-      setAlertOpen(true);
-    }
-  };
-
-  const goToViewLR = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-      setAlertMessage('Please select a case and lead first.');
-      setAlertOpen(true);
-      return;
-    }
-    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
-  };
-
   // ── Render ─────────────────────────────────────────────────────────────────
 
   const casePageRoute = selectedCase?.role === 'Investigator' ? '/Investigator' : '/CasePageManager';
@@ -537,40 +507,15 @@ export const LRVideo = () => {
         <div className={styles.leftContentLI}>
 
           {/* ── Top navigation bar (page-level) ── */}
-          <div className={styles.topMenuNav}>
-            <div className={styles.menuItems}>
-              <span className={styles.menuItem} onClick={goToLeadReview}>
-                Lead Information
-              </span>
-
-              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
-                Add Lead Return
-              </span>
-
-              {/* Case Manager: generate / view the full lead-return report */}
-              {isCaseManager && (
-                <span
-                  className={styles.menuItem}
-                  onClick={handleViewLeadReturn}
-                  title={isGenerating ? 'Preparing report…' : 'View Lead Return'}
-                  style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? 'none' : 'auto' }}
-                >
-                  Manage Lead Return
-                </span>
-              )}
-
-              {/* Investigator: label changes based on whether they are the primary */}
-              {selectedCase?.role === 'Investigator' && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  {isPrimaryInvestigator ? 'Submit Lead Return' : 'Review Lead Return'}
-                </span>
-              )}
-
-              <span className={styles.menuItem} onClick={goToChainOfCustody}>
-                Lead Chain of Custody
-              </span>
-            </div>
-          </div>
+          <LRTopMenu
+            activePage="addLeadReturn"
+            selectedCase={selectedCase}
+            selectedLead={selectedLead}
+            isPrimaryInvestigator={isPrimaryInvestigator}
+            isGenerating={isGenerating}
+            onManageLeadReturn={handleViewLeadReturn}
+            styles={styles}
+          />
 
           {/* ── Section tabs (sub-page navigation) ── */}
           <div className={styles.topMenuSections}>

@@ -12,6 +12,7 @@ import { CaseContext } from '../../CaseContext';
 import PersonModal from '../../../components/PersonModal/PersonModel';
 import Navbar from '../../../components/Navbar/Navbar';
 import styles from './LRPerson.module.css';
+import { LRTopMenu } from '../LRTopMenu';
 import api from '../../../api';
 import { SideBar } from '../../../components/Sidebar/Sidebar';
 import { AlertModal } from '../../../components/AlertModal/AlertModal';
@@ -55,7 +56,7 @@ const mapPersonToRow = (person) => ({
   _id:          person._id,
   returnId:     person.leadReturnId,
   dateEntered:  new Date(person.enteredDate).toLocaleDateString(),
-  name:         `${person.firstName} ${person.lastName}`,
+  name:         [person.firstName, person.middleInitial, person.lastName].filter(Boolean).join(' '),
   dateOfBirth:  person.dateOfBirth
     ? (() => { const d = new Date(person.dateOfBirth); return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toLocaleDateString(); })()
     : 'N/A',
@@ -324,16 +325,6 @@ export const LRPerson = () => {
    * Navigate to either Submit or Review Lead Return (ViewLR).
    * Primary investigators submit; all others review.
    */
-  const goToViewLR = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-      showAlert('Please select a case and lead first.');
-      return;
-    }
-    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
-  };
-
   /**
    * Generate a full lead report as a PDF blob and navigate to the document viewer.
    * All lead data sections are fetched in parallel; media sections also have their
@@ -468,64 +459,15 @@ export const LRPerson = () => {
         <div className={styles.leftContentLI}>
 
           {/* ── Page-level navigation bar ──────────────────────────────────── */}
-          <div className={styles.topMenuNav}>
-            <div className={styles.menuItems}>
-              <span
-                className={styles.menuItem}
-                onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                  if (lead && kase) navigate('/LeadReview', { state: { caseDetails: kase, leadDetails: lead } });
-                }}
-              >
-                Lead Information
-              </span>
-
-              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
-                Add Lead Return
-              </span>
-
-              {/* Case Manager / Supervisor: generate full report */}
-              {isCaseManager && (
-                <span
-                  className={`${styles.menuItem} ${isGenerating ? styles.menuItemDisabled : ''}`}
-                  onClick={handleViewLeadReturn}
-                  title={isGenerating ? 'Preparing report…' : 'View Lead Return'}
-                >
-                  Manage Lead Return
-                </span>
-              )}
-
-              {/* Primary investigator: can submit */}
-              {selectedCase?.role === 'Investigator' && isPrimaryInvestigator && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  Submit Lead Return
-                </span>
-              )}
-
-              {/* Secondary investigator: review only */}
-              {selectedCase?.role === 'Investigator' && !isPrimaryInvestigator && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  Review Lead Return
-                </span>
-              )}
-
-              <span
-                className={styles.menuItem}
-                onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                  if (lead && kase) {
-                    navigate('/ChainOfCustody', { state: { caseDetails: kase, leadDetails: lead } });
-                  } else {
-                    showAlert('Please select a case and lead first.');
-                  }
-                }}
-              >
-                Lead Chain of Custody
-              </span>
-            </div>
-          </div>
+          <LRTopMenu
+            activePage="addLeadReturn"
+            selectedCase={selectedCase}
+            selectedLead={selectedLead}
+            isPrimaryInvestigator={isPrimaryInvestigator}
+            isGenerating={isGenerating}
+            onManageLeadReturn={handleViewLeadReturn}
+            styles={styles}
+          />
 
           {/* ── Section tabs navigation ─────────────────────────────────────── */}
           <div className={styles.topMenuSections}>
@@ -595,7 +537,6 @@ export const LRPerson = () => {
                     persons.map((person, index) => {
                       const canModify = isCaseManager || person.enteredBy?.trim() === signedInOfficer?.trim();
                       const disableActions =
-                        selectedLead?.leadStatus === 'In Review' ||
                         selectedLead?.leadStatus === 'Completed' ||
                         selectedLead?.leadStatus === 'Closed' ||
                         isReadOnly ||
@@ -681,7 +622,6 @@ export const LRPerson = () => {
                 <button
                   className={styles.saveBtn1}
                   disabled={
-                    selectedLead?.leadStatus === 'In Review' ||
                     selectedLead?.leadStatus === 'Completed' ||
                     selectedLead?.leadStatus === 'Closed' ||
                     isReadOnly

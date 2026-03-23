@@ -15,6 +15,7 @@ import { CaseContext } from '../../CaseContext';
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
 import api from '../../../api';
 import styles from './LRAudio.module.css';
+import { LRTopMenu } from '../LRTopMenu';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -126,7 +127,7 @@ const attachFiles = async (items, idFieldName, filesEndpoint) => {
  * Extracted to keep the parent render function concise.
  */
 const AudioTableRow = ({ audio, index, isCaseManager, isReadOnly, leadStatus, canModify, onEdit, onDelete, onAccessChange, isExpanded, onToggleExpand }) => {
-  const isLocked = leadStatus === 'In Review' || leadStatus === 'Completed' || isReadOnly || !canModify;
+  const isLocked = leadStatus === 'Completed' || isReadOnly || !canModify;
 
   return (
     <tr>
@@ -264,7 +265,7 @@ export const LRAudio = () => {
 
   // Derived: is the lead locked against edits?
   const isLeadLocked =
-    selectedLead?.leadStatus === 'In Review' || selectedLead?.leadStatus === 'Completed';
+    selectedLead?.leadStatus === 'Completed' || isReadOnly;
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -701,18 +702,6 @@ export const LRAudio = () => {
     }
   };
 
-  /** Navigate to the interactive ViewLR page (submit/review lead return). */
-  const goToViewLR = useCallback(() => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-      showAlert('Please select a case and lead first.');
-      return;
-    }
-    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
-  }, [selectedLead, selectedCase, location.state, navigate, showAlert]);
-
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -743,58 +732,15 @@ export const LRAudio = () => {
         <div className={styles.leftContentLI}>
 
           {/* ── Top navigation bar: page-level actions ── */}
-          <div className={styles.topMenuNav}>
-            <div className={styles.menuItems}>
-
-              <span
-                className={styles.menuItem}
-                onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                  if (lead && kase) navigate('/LeadReview', { state: { caseDetails: kase, leadDetails: lead } });
-                }}
-              >
-                Lead Information
-              </span>
-
-              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
-                Add Lead Return
-              </span>
-
-              {isCaseManager && (
-                <span
-                  className={styles.menuItem}
-                  onClick={handleViewLeadReturn}
-                  title={isGenerating ? 'Preparing report…' : 'Manage Lead Return'}
-                  style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? 'none' : 'auto' }}
-                >
-                  Manage Lead Return
-                </span>
-              )}
-
-              {selectedCase?.role === 'Investigator' && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  {isPrimaryInvestigator ? 'Submit Lead Return' : 'Review Lead Return'}
-                </span>
-              )}
-
-              <span
-                className={styles.menuItem}
-                onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                  if (lead && kase) {
-                    navigate('/ChainOfCustody', { state: { caseDetails: kase, leadDetails: lead } });
-                  } else {
-                    showAlert('Please select a case and lead first.');
-                  }
-                }}
-              >
-                Lead Chain of Custody
-              </span>
-
-            </div>
-          </div>
+          <LRTopMenu
+            activePage="addLeadReturn"
+            selectedCase={selectedCase}
+            selectedLead={selectedLead}
+            isPrimaryInvestigator={isPrimaryInvestigator}
+            isGenerating={isGenerating}
+            onManageLeadReturn={handleViewLeadReturn}
+            styles={styles}
+          />
 
           {/* ── Section tabs navigation ── */}
           <div className={styles.topMenuSections}>

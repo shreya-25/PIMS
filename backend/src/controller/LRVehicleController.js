@@ -1,9 +1,13 @@
 const LRVehicle = require("../models/LRVehicle");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
+const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
 
 const createLRVehicle = async (req, res) => {
     try {
+        const accessErr = await checkLeadWriteAccess(req, req.body.caseNo, req.body.leadNo);
+        if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
         const {
             leadNo, description, enteredBy, caseName, caseNo,
             leadReturnId, enteredDate,
@@ -79,6 +83,9 @@ const updateLRVehicle = async (req, res) => {
       const existingVehicle = await LRVehicle.findOne({ leadNo: Number(leadNo), caseNo, leadReturnId, vin: actualVin });
       if (!existingVehicle) return res.status(404).json({ message: "Vehicle not found." });
 
+      const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+      if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
       const updated = await LRVehicle.findOneAndUpdate(
         { leadNo: Number(leadNo), caseNo, leadReturnId, vin: actualVin },
         updateData,
@@ -108,6 +115,9 @@ const deleteLRVehicle = async (req, res) => {
 
       const existingVehicle = await LRVehicle.findOne({ leadNo: Number(leadNo), caseNo, leadReturnId, vin: actualVin });
       if (!existingVehicle) return res.status(404).json({ message: "Vehicle not found." });
+
+      const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+      if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
       await LRVehicle.findOneAndDelete({ leadNo: Number(leadNo), caseNo, leadReturnId, vin: actualVin });
 
