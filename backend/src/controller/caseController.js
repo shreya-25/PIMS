@@ -13,6 +13,7 @@ const LRAudio = require("../models/LRAudio");
 const LRVideo = require("../models/LRVideo");
 const LREnclosure = require("../models/LREnclosure");
 const LRScratchpad = require("../models/LRScratchpad");
+const CompleteleadReturn = require("../models/CompleteleadReturn");
 
 // Helper: look up a single user by username, return the doc or null
 async function findUserByUsername(username) {
@@ -201,7 +202,7 @@ exports.getCasesByOfficer = async (req, res) => {
   }
 };
 
-// Update case details
+// Update case details — cascades caseNo/caseName changes to all related collections
 exports.updateCase = async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
@@ -212,10 +213,55 @@ exports.updateCase = async (req, res) => {
       return res.status(400).json({ message: "Update data cannot be empty" });
     }
 
-    const updatedCase = await Case.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!updatedCase) {
+    const existingCase = await Case.findById(req.params.id);
+    if (!existingCase) {
       return res.status(404).json({ message: "Case not found" });
     }
+
+    const { caseNo: newCaseNo, caseName: newCaseName } = req.body;
+    const oldCaseNo   = existingCase.caseNo;
+    const oldCaseName = existingCase.caseName;
+
+    // Validate new caseNo format and uniqueness
+    if (newCaseNo && newCaseNo !== oldCaseNo) {
+      if (!/^[A-Za-z0-9-]+$/.test(newCaseNo)) {
+        return res.status(400).json({ message: "Case number can only contain letters, digits, and hyphens (-)." });
+      }
+      const conflict = await Case.findOne({ caseNo: newCaseNo, _id: { $ne: req.params.id } });
+      if (conflict) {
+        return res.status(409).json({ message: "Case number already exists." });
+      }
+    }
+
+    // Validate new caseName uniqueness
+    if (newCaseName && newCaseName.trim() !== oldCaseName) {
+      const conflict = await Case.findOne({ caseName: newCaseName.trim(), _id: { $ne: req.params.id } });
+      if (conflict) {
+        return res.status(409).json({ message: "Case name already exists." });
+      }
+    }
+
+    const updatedCase = await Case.findByIdAndUpdate(req.params.id, req.body, { new: true });
+
+    // Cascade caseNo / caseName to all related collections
+    const caseNoChanged   = newCaseNo   && newCaseNo !== oldCaseNo;
+    const caseNameChanged = newCaseName && newCaseName.trim() !== oldCaseName;
+
+    if (caseNoChanged || caseNameChanged) {
+      const filter = { caseNo: oldCaseNo };
+      const update = {};
+      if (caseNoChanged)   update.caseNo   = newCaseNo;
+      if (caseNameChanged) update.caseName = newCaseName.trim();
+
+      const relatedModels = [
+        Lead, LeadReturn, LeadReturnResult, CompleteleadReturn,
+        LRPerson, LRVehicle, LRTimeline, LREvidence,
+        LRPicture, LRAudio, LRVideo, LREnclosure, LRScratchpad,
+      ];
+
+      await Promise.all(relatedModels.map((Model) => Model.updateMany(filter, update)));
+    }
+
     res.status(200).json({ message: "Case updated successfully", data: updatedCase });
   } catch (err) {
     console.error("Error updating case:", err);
