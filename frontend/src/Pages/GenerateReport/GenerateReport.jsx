@@ -198,15 +198,18 @@ const cleanLeadRecord = (lead) => ({
 const fetchSingleLeadFullDetails = async (leadNo, leadName, caseId, token) => {
   try {
     const headers = { headers: { Authorization: `Bearer ${token}` } };
+    // Use the 2-param route (leadNo + caseId only) so hierarchy works even when leadName is unknown
     const { data: leadData = [] } = await api.get(
-      `/api/lead/lead/${leadNo}/${encodeURIComponent(leadName)}/${caseId}`,
+      `/api/lead/lead/${leadNo}/${caseId}`,
       headers
     );
     if (!Array.isArray(leadData) || leadData.length === 0) return null;
     const lead = cleanLeadRecord(leadData[0]);
+    // Resolve actual name from the fetched doc so sub-section queries match
+    const actualLeadName = lead.description || leadName || "";
     const full = await fetchLeadAllSectionsLikeViewLR({
       leadNo: lead.leadNo,
-      leadName: lead.description || leadName || "",
+      leadName: actualLeadName,
       caseId,
       token,
     });
@@ -544,17 +547,18 @@ export const GenerateReport = () => {
     clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => saveExecutiveSummary(), 2000);
     return () => clearTimeout(saveTimeout.current);
-  }, [typedSummary, useWebpageSummary, selectedCase?.caseNo, selectedCase?.caseName]);
+  }, [typedSummary, useWebpageSummary, selectedCase?._id, selectedCase?.id]);
 
   // Load saved executive summary when case changes
   useEffect(() => {
-    if (!selectedCase?.caseNo) return;
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (!caseId) return;
     const token = localStorage.getItem("token");
     api
-      .get(`/api/cases/executive-summary/${selectedCase.caseNo}`, { headers: { Authorization: `Bearer ${token}` } })
+      .get(`/api/cases/executive-summary/${caseId}`, { headers: { Authorization: `Bearer ${token}` } })
       .then(({ data }) => { setTypedSummary(data.executiveCaseSummary); setUseWebpageSummary(true); })
       .catch((err) => console.error("Failed to load exec summary", err));
-  }, [selectedCase?.caseNo]);
+  }, [selectedCase?._id, selectedCase?.id]);
 
   // ------------------ Utility Helpers ------------------
 
@@ -634,12 +638,13 @@ export const GenerateReport = () => {
 
   // Persist the executive summary text to the backend
   const saveExecutiveSummary = async () => {
-    if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (!caseId) return;
     const token = localStorage.getItem("token");
     try {
       await api.put(
         "/api/cases/executive-summary",
-        { caseNo: selectedCase.caseNo, caseName: selectedCase.caseName, executiveCaseSummary: typedSummary },
+        { caseId, executiveCaseSummary: typedSummary },
         { headers: { Authorization: `Bearer ${token}` } }
       );
     } catch (err) {

@@ -71,7 +71,7 @@ export const SideBar = ({
     const fetchCases = async () => {
       try {
         const token = localStorage.getItem("token");
-        const { data } = await api.get("/api/cases-by-officer", {
+        const { data } = await api.get("/api/cases/cases-by-officer", {
           headers: { Authorization: `Bearer ${token}` },
           params: { officerName: signedInOfficer },
         });
@@ -79,7 +79,8 @@ export const SideBar = ({
         const ongoing = (data || [])
           .filter((c) => c.caseStatus === "ONGOING")
           .map((c) => ({
-            id: c.caseNo,
+            _id: c._id,
+            caseNo: c.caseNo,
             title: c.caseName,
             role: c.role || "Unknown",
           }));
@@ -106,17 +107,18 @@ export const SideBar = ({
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        const caseNos = new Set(caseList.map((c) => c.id));
+        const caseIds = new Set(caseList.map((c) => String(c._id)));
         const filtered = (data || [])
           .filter(
             (l) =>
-              caseNos.has(l.caseNo) &&
+              caseIds.has(String(l.caseId)) &&
               l.leadStatus === "Assigned" &&
               l.assignedTo?.some((a) => a.username === signedInOfficer)
           )
           .map((l) => ({
             id: l.leadNo,
             description: l.description,
+            caseId: l.caseId,
             caseNo: l.caseNo,
             assignedTo: l.assignedTo,
             leadStatus: l.leadStatus,
@@ -146,106 +148,35 @@ export const SideBar = ({
         const entries = await Promise.all(
           caseList.map(async (c) => {
             try {
-              // Check the officer's role for THIS specific case
               const isCMorDS = c.role === "Case Manager" || c.role === "Detective Supervisor";
+              const { data } = await api.get(`/api/lead/case/${c._id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+
+              const arr = Array.isArray(data?.leads)
+                ? data.leads
+                : Array.isArray(data)
+                ? data
+                : [];
 
               if (isCMorDS) {
-                // For CM/DS: count "In Review" leads
-                const { data } = await api.get(`/api/lead/case/${c.id}/${encodeURIComponent(c.title)}`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
-
-                const arr = Array.isArray(data?.leads)
-                  ? data.leads
-                  : Array.isArray(data)
-                  ? data
-                  : [];
-
-                console.log(`[Sidebar Debug] Case ${c.id} - CM/DS mode:`, {
-                  rawData: data,
-                  arrayLength: arr.length,
-                  leads: arr.map(l => ({
-                    leadNo: l.leadNo,
-                    caseNo: l.caseNo,
-                    leadStatus: l.leadStatus,
-                    status: l.status
-                  }))
-                });
-
-                // Count leads where leadStatus is "In Review", "Submitted", or "To review"
                 const count = arr.filter(
-                  (l) => {
-                    const matchesCase = String(l.caseNo) === String(c.id);
-                    const matchesStatus = l.leadStatus === "In Review" ||
-                                         l.leadStatus === "Submitted" ||
-                                         l.leadStatus === "To review" ||
-                                         l.status === "In Review" ||
-                                         l.status === "Submitted" ||
-                                         l.status === "To review";
-
-                    console.log(`[Sidebar Debug] Lead ${l.leadNo}:`, {
-                      caseNo: l.caseNo,
-                      matchesCase,
-                      leadStatus: l.leadStatus,
-                      status: l.status,
-                      matchesStatus,
-                      included: matchesCase && matchesStatus
-                    });
-
-                    return matchesCase && matchesStatus;
-                  }
+                  (l) =>
+                    l.leadStatus === "In Review" ||
+                    l.leadStatus === "Submitted" ||
+                    l.leadStatus === "To review"
                 ).length;
-
-                console.log(`[Sidebar Debug] Case ${c.id} final count:`, count);
-
-                return [String(c.id), count];
+                return [String(c._id), count];
               } else {
-                // For Investigator: fetch and count "Assigned" leads for this case
-                const { data } = await api.get(`/api/lead/case/${c.id}/${encodeURIComponent(c.title)}`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
-
-                const arr = Array.isArray(data?.leads)
-                  ? data.leads
-                  : Array.isArray(data)
-                  ? data
-                  : [];
-
-                console.log(`[Sidebar Debug] Case ${c.id} - Investigator mode:`, {
-                  rawData: data,
-                  arrayLength: arr.length,
-                  leads: arr.map(l => ({
-                    leadNo: l.leadNo,
-                    caseNo: l.caseNo,
-                    leadStatus: l.leadStatus,
-                    assignedTo: l.assignedTo
-                  }))
-                });
-
-                // Count leads that are "Assigned" to this officer
-                const assignedCount = arr.filter((l) => {
-                  const matchesCase = String(l.caseNo) === String(c.id);
-                  const isAssigned = l.leadStatus === "Assigned";
-                  const assignedToOfficer = l.assignedTo?.some((a) => a.username === signedInOfficer);
-
-                  console.log(`[Sidebar Debug] Lead ${l.leadNo}:`, {
-                    caseNo: l.caseNo,
-                    matchesCase,
-                    leadStatus: l.leadStatus,
-                    isAssigned,
-                    assignedToOfficer,
-                    included: matchesCase && isAssigned && assignedToOfficer
-                  });
-
-                  return matchesCase && isAssigned && assignedToOfficer;
-                }).length;
-
-                console.log(`[Sidebar Debug] Case ${c.id} final assigned count:`, assignedCount);
-
-                return [String(c.id), assignedCount];
+                const assignedCount = arr.filter(
+                  (l) =>
+                    l.leadStatus === "Assigned" &&
+                    l.assignedTo?.some((a) => a.username === signedInOfficer)
+                ).length;
+                return [String(c._id), assignedCount];
               }
             } catch (e) {
-              return [String(c.id), 0];
+              return [String(c._id), 0];
             }
           })
         );
@@ -272,9 +203,9 @@ export const SideBar = ({
     badgeCountByCase[String(caseId)] || 0;
 
   const handleCaseSelect = (c) => {
-    setSelectedCase({ _id: c._id || c.id, caseNo: c.id, caseName: c.title, role: c.role });
+    setSelectedCase({ _id: c._id, caseNo: c.caseNo, caseName: c.title, role: c.role });
     const dest = c.role === "Investigator" ? "/Investigator" : "/CasePageManager";
-    navigate(dest, { state: { caseDetails: c } });
+    navigate(dest, { state: { caseDetails: { _id: c._id, caseNo: c.caseNo, caseName: c.title, role: c.role } } });
   };
 
   // Admin variant
@@ -358,7 +289,7 @@ export const SideBar = ({
       <ul className="sidebar-list">
         <li
           className={`sidebar-item ${activePage === "HomePage" ? "active" : ""}`}
-          onClick={() => navigate("/HomePage", { state: { caseDetails } })}
+          onClick={() => navigate("/HomePage", { state: { caseDetails, activeTab: "cases" } })}
         >
           <img src={homeIcon} className="sidebar-icon" alt="" />
           <span>PIMS Home</span>
@@ -455,18 +386,18 @@ export const SideBar = ({
         {caseDropdownOpen && (
           <ul className="dropdown-list1">
             {caseList
-              .filter((c) => c.id !== selectedCase?.caseNo)
+              .filter((c) => String(c._id) !== String(selectedCase?._id || selectedCase?.id))
               .map((c) => {
-                const count = getCaseBadgeCount(c.id);
-                const isActive = selectedCase?.caseNo === c.id;
+                const count = getCaseBadgeCount(c._id);
+                const isActive = String(selectedCase?._id || selectedCase?.id) === String(c._id);
                 return (
                   <li
-                    key={c.id}
+                    key={String(c._id)}
                     className={`sidebar-item${isActive ? " active" : ""}`}
                     onClick={() => handleCaseSelect(c)}
                   >
                     <div className="case-headerSB">
-                      <span>Case: {c.id}</span>
+                      <span>Case: {c.caseNo}</span>
                       <span className="sidebar-number">{count}</span>
                     </div>
                   </li>

@@ -192,7 +192,18 @@ function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
     doc.font("Helvetica").fontSize(10).fillColor("black");
   };
 
-  if (y + headerHeight + minRowHeight > pageBottom()) {
+  // Measure actual first-row height so we never orphan the header alone at page bottom
+  let firstRowH = minRowHeight;
+  if (rows.length > 0) {
+    doc.font("Helvetica").fontSize(10);
+    headers.forEach((h, i) => {
+      const text = rows[0][h] || "";
+      const hgt = doc.heightOfString(text, { width: colWidths[i] - 2 * padding, align: "left" });
+      firstRowH = Math.max(firstRowH, hgt + 2 * padding);
+    });
+  }
+
+  if (y + headerHeight + firstRowH > pageBottom()) {
     doc.addPage();
     y = pageTop();
   }
@@ -574,61 +585,6 @@ function drawMetaBar(doc, x, y, width, entry) {
   return y + rowH + 10;
 }
 
-// Basic table that does NOT split rows across pages
-function drawTable(doc, startX, startY, headers, rows, colWidths, padding = 5) {
-  const minRowHeight = 20;
-  doc.font("Helvetica-Bold").fontSize(10);
-
-  let currentY = startY;
-  const headerHeight = 20;
-  let currentX = startX;
-
-  // Draw header row
-  for (let i = 0; i < headers.length; i++) {
-    doc.rect(currentX, currentY, colWidths[i], headerHeight).fillAndStroke("#e0e0e0", "#bbb");
-    doc.fillColor("#000")
-      .font("Helvetica-Bold")
-      .fontSize(11)
-      .text(headers[i], currentX + padding, currentY + 5, {
-        width: colWidths[i] - 2 * padding,
-        align: "left",
-      });
-    currentX += colWidths[i];
-  }
-  currentY += headerHeight;
-
-  // Body rows
-  doc.font("Helvetica").fontSize(10);
-  rows.forEach((row) => {
-    let maxHeight = minRowHeight;
-    currentX = startX;
-    // measure
-    headers.forEach((header, i) => {
-      const cellText = row[header] || "";
-      const cellHeight = doc.heightOfString(cellText, {
-        width: colWidths[i] - 2 * padding,
-        align: "left",
-      });
-      const rowNeeded = cellHeight + 2 * padding;
-      if (rowNeeded > maxHeight) maxHeight = rowNeeded;
-    });
-    // draw
-    headers.forEach((header, i) => {
-      const cellText = row[header] || "";
-      doc.strokeColor("#999999");
-      doc.rect(currentX, currentY, colWidths[i], maxHeight).stroke();
-      doc.text(cellText, currentX + padding, currentY + padding, {
-        width: colWidths[i] - 2 * padding,
-        align: "left",
-      });
-      currentX += colWidths[i];
-    });
-    currentY += maxHeight;
-  });
-
-  return currentY;
-}
-
 // "Row Splitting" version
 function drawTableWithRowSplitting(doc, startX, startY, headers, rows, colWidths) {
   let currentY = startY;
@@ -894,9 +850,8 @@ async function generateCaseReport(req, res) {
     selectedReports,
     summaryMode,
     leadsData: leadsDataFromBody,
-    // New: server-side data fetching params
-    caseNo: caseNoParam,
-    caseName: caseNameParam,
+    // Server-side data fetching params
+    caseId: caseIdParam,
     reportScope,
     subsetRange,
     leadNos,
@@ -908,9 +863,9 @@ async function generateCaseReport(req, res) {
   let leadsData;
   if (Array.isArray(leadsDataFromBody) && leadsDataFromBody.length > 0) {
     leadsData = leadsDataFromBody;
-  } else if (caseNoParam) {
+  } else if (caseIdParam) {
     try {
-      leadsData = await fetchCaseLeadsData(caseNoParam, caseNameParam, {
+      leadsData = await fetchCaseLeadsData(caseIdParam, {
         reportScope,
         subsetRange,
         leadNos,
@@ -920,19 +875,19 @@ async function generateCaseReport(req, res) {
       return res.status(500).json({ error: "Failed to fetch case data" });
     }
   } else {
-    return res.status(400).json({ error: "caseNo or leadsData is required" });
+    return res.status(400).json({ error: "caseId or leadsData is required" });
   }
 
   if (!leadsData || leadsData.length === 0) {
     return res.status(404).json({ error: "No leads found for this case" });
   }
 
-  const caseNo   = caseNoParam || leadsData?.[0]?.caseNo   || "";
-  const caseName = caseNameParam || leadsData?.[0]?.caseName || "";
+  const caseNo   = leadsData?.[0]?.caseNo   || "";
+  const caseName = leadsData?.[0]?.caseName || "";
 
   let characterOfCase = "";
-  if (caseNo) {
-    const caseDoc = await Case.findOne({ caseNo }).select("characterOfCase").lean();
+  if (caseIdParam) {
+    const caseDoc = await Case.findById(caseIdParam).select("characterOfCase").lean();
     characterOfCase = caseDoc?.characterOfCase || "";
   }
 
@@ -1918,18 +1873,21 @@ const LRTimeline = require("../models/LRTimeline");
 
 async function generateTimelineOnlyReport(req, res) {
   try {
-    const { caseNo, caseName, user: reqUser } = req.body;
-    if (!caseNo || !caseName) {
-      return res.status(400).json({ error: "caseNo and caseName are required" });
+    const { caseId, user: reqUser } = req.body;
+    if (!caseId) {
+      return res.status(400).json({ error: "caseId is required" });
     }
 
     const user      = reqUser || req.user?.username || "Unknown";
     const timestamp = new Date().toLocaleString("en-US");
 
+    // Fetch case name from DB for the report title
+    const caseDoc = await Case.findById(caseId).select("caseName caseNo").lean();
+    const caseName = caseDoc?.caseName || "";
+
     // ── Fetch & sort entries ───────────────────────────────────────────────
     const rawEntries = await LRTimeline.find({
-      caseNo,
-      caseName,
+      caseId,
       isDeleted: { $ne: true },
     }).lean();
 

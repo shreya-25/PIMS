@@ -24,7 +24,8 @@ const leadReturnVersionRoutes = require("./routes/leadReturnVersionRoutes.js");
 const { dbConnect } = require("./config/dbConnect"); // Import dbConnect properly
 const path = require('path');
 const presenceRoutes = require("./routes/presenceRoutes");
-const verifyToken = require("./middleware/authMiddleware"); 
+const verifyToken = require("./middleware/authMiddleware");
+const { startDueDateNotifier } = require("./jobs/dueDateNotifier");
 
 
 
@@ -85,6 +86,7 @@ app.use(cors({
 
 dbConnect().then((conn) => {
     console.log("✅ Database connected, starting server...");
+    startDueDateNotifier();
 
 app.use((req, res, next) => {
   res.setHeader('X-Server-ID', `${process.pid}`);

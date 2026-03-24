@@ -1326,7 +1326,7 @@ useEffect(() => {
 
  // somewhere at the top of your component
 const dueDateISO = leadData?.dueDate
-? new Date(leadData.dueDate).toISOString().split("T")[0]
+? leadData.dueDate.slice(0, 10)
 : "";
 
 
@@ -2202,7 +2202,7 @@ const assignmentHoverText = React.useMemo(() => {
                 <div className={styles.fieldGroup}>
                   <span className={`${styles.fieldLabel} ${styles.fieldLabelEditable}`}>Due Date</span>
                   <input type="date" className={styles.inputField} value={dueDateISO}
-                    onChange={e => { const newIso = new Date(e.target.value).toISOString(); setLeadData({ ...leadData, dueDate: newIso }); }}
+                    onChange={e => { setLeadData({ ...leadData, dueDate: e.target.value }); }}
                     readOnly={!isEditableByCaseManager("dueDate")}
                   />
                 </div>

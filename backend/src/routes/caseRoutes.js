@@ -88,13 +88,13 @@ router.put(
 
 // … other imports …
 router.get(
-  "/executive-summary/:caseNo",
+  "/executive-summary/:caseId",
   verifyToken,
   (req, res) => caseController.getExecutiveCaseSummary(req, res)
 );
 
 router.get(
-  "/case-summary/:caseNo",
+  "/case-summary/:caseId",
   verifyToken,
   (req, res) => caseController.getCaseSummary(req, res)
 );

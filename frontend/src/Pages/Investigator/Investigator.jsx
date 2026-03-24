@@ -30,14 +30,14 @@ const PENDING_LR_COLUMNS    = ['Lead No.', 'Lead Name', 'Case Name'];
 const PENDING_LR_COL_KEY    = { 'Lead No.': 'id', 'Lead Name': 'description', 'Case Name': 'caseName' };
 const PENDING_LR_COL_WIDTHS = { 'Lead No.': '15%', 'Lead Name': '35%', 'Case Name': '30%' };
 
-const ALL_COLUMNS    = ['Lead No.', 'Lead Log Summary', 'Lead Status', 'Assigned Officers'];
-const ALL_COL_KEY    = { 'Lead No.': 'id', 'Lead Log Summary': 'description', 'Lead Status': 'leadStatus', 'Assigned Officers': 'assignedOfficers' };
-const ALL_COL_WIDTHS = { 'Lead No.': '13%', 'Lead Log Summary': '40%', 'Lead Status': '17%', 'Assigned Officers': '22%' };
+const ALL_COLUMNS    = ['Lead No.', 'Lead Log Summary', 'Lead Status', 'Assigned Officers', 'Due Status'];
+const ALL_COL_KEY    = { 'Lead No.': 'id', 'Lead Log Summary': 'description', 'Lead Status': 'leadStatus', 'Assigned Officers': 'assignedOfficers', 'Due Status': 'dueStatus' };
+const ALL_COL_WIDTHS = { 'Lead No.': '10%', 'Lead Log Summary': '32%', 'Lead Status': '13%', 'Assigned Officers': '15%', 'Due Status': '12%' };
 
 // Filter key arrays — kept at module level so useTableFilter deps stay stable
 const LEAD_FILTER_KEYS    = ['id', 'description', 'dueDate', 'priority', 'remainingDays', 'flags', 'assignedOfficers'];
 const PENDING_LR_FILTER_KEYS = ['id', 'description', 'caseName'];
-const ALL_FILTER_KEYS     = ['id', 'description', 'leadStatus', 'assignedOfficers'];
+const ALL_FILTER_KEYS     = ['id', 'description', 'leadStatus', 'assignedOfficers', 'dueStatus'];
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
@@ -221,7 +221,23 @@ export const Investigator = () => {
     </tr>
   );
 
-  const renderAllRow = lead => (
+  const renderAllRow = lead => {
+    const getDueStatus = (dueDate) => {
+      if (!dueDate || dueDate === 'N/A') return { label: '—', sub: '', color: '#6b7280' };
+      // Parse date parts directly to avoid UTC→local timezone shift
+      const dateStr = dueDate.slice(0, 10); // "YYYY-MM-DD"
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const now = new Date();
+      const nowUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+      const dueUTC = Date.UTC(y, m - 1, d);
+      const diff = Math.round((dueUTC - nowUTC) / (1000 * 60 * 60 * 24));
+      const formatted = `${String(m).padStart(2, '0')}/${String(d).padStart(2, '0')}/${String(y).slice(2)}`;
+      if (diff < 0) return { label: formatted, sub: `${Math.abs(diff)}d overdue`, color: '#dc2626' };
+      if (diff === 0) return { label: formatted, sub: 'Due today', color: '#d97706' };
+      return { label: formatted, sub: `${diff}d left`, color: '#16a34a' };
+    };
+    const { label, sub, color } = getDueStatus(lead.dueDate);
+    return (
     <tr key={lead.id}>
       <td>{lead.id}</td>
       <td>{lead.description}</td>
@@ -229,6 +245,12 @@ export const Investigator = () => {
         {lead.leadStatus === 'In Review' ? 'Under review' : lead.leadStatus}
       </td>
       <td>{(lead.assignedOfficers || []).join(', ') || <em>None</em>}</td>
+      <td>
+        <div style={{ color, fontWeight: 500, lineHeight: 1.4 }}>
+          <div style={{ fontSize: 18 }}>{label}</div>
+          {sub && <div style={{ fontSize: 18 }}>{sub}</div>}
+        </div>
+      </td>
       <td style={{ textAlign: 'center' }}>
         <button
           className={styles['view-btn1']}
@@ -241,6 +263,7 @@ export const Investigator = () => {
       </td>
     </tr>
   );
+  };
 
   // ─── Render ───────────────────────────────────────────────────────────────
 

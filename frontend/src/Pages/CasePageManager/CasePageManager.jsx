@@ -108,6 +108,26 @@ export const CasePageManager = () => {
     return Math.max(0, Math.ceil(timeDifference / (1000 * 60 * 60 * 24)));
   };
 
+  // ─── Helper: due status cell content and color ────────────────────────────
+  const getDueStatus = (dueDate) => {
+    if (!dueDate) return { label: "—", sub: "", color: "#6b7280" };
+    // Parse date parts directly to avoid UTC→local timezone shift
+    const dateStr = dueDate.slice(0, 10); // "YYYY-MM-DD"
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const now = new Date();
+    const nowUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    const dueUTC = Date.UTC(y, m - 1, d);
+    const diffDays = Math.round((dueUTC - nowUTC) / (1000 * 60 * 60 * 24));
+    const formatted = `${String(m).padStart(2, "0")}/${String(d).padStart(2, "0")}/${String(y).slice(2)}`;
+    if (diffDays < 0) {
+      return { label: formatted, sub: `${Math.abs(diffDays)}d overdue`, color: "#dc2626" };
+    }
+    if (diffDays === 0) {
+      return { label: formatted, sub: "Due today", color: "#d97706" };
+    }
+    return { label: formatted, sub: `${diffDays}d left`, color: "#16a34a" };
+  };
+
   /** Returns true when a lead status indicates it has been deleted */
   const isDeletedStatus = (s) => String(s || "").toLowerCase() === "deleted";
 
@@ -203,11 +223,12 @@ export const CasePageManager = () => {
     setSummary(null);
     isFirstLoad.current = true;
     async function load() {
-      if (!selectedCase?.caseNo) return;
+      const caseId = selectedCase?._id || selectedCase?.id;
+      if (!caseId) return;
       try {
         const token = localStorage.getItem('token');
         const { data } = await api.get(
-          `/api/cases/case-summary/${selectedCase.caseNo}`,
+          `/api/cases/case-summary/${caseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setSummary(data.caseSummary ?? '');
@@ -217,20 +238,21 @@ export const CasePageManager = () => {
       }
     }
     load();
-  }, [selectedCase.caseNo]);
+  }, [selectedCase?._id || selectedCase?.id]);
 
   // ─── Effect: auto-save case summary with 2s debounce ─────────────────────
   useEffect(() => {
     if (isFirstLoad.current) { isFirstLoad.current = false; return; }
     clearTimeout(saveTimer.current);
-    if (summary === null || !selectedCase?.caseNo) return;
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (summary === null || !caseId) return;
 
     saveTimer.current = setTimeout(async () => {
       try {
         const token = localStorage.getItem('token');
         await api.put(
           '/api/cases/case-summary',
-          { caseNo: selectedCase.caseNo, caseName: selectedCase.caseName, caseSummary: summary },
+          { caseId, caseSummary: summary },
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } catch (err) {
@@ -239,7 +261,7 @@ export const CasePageManager = () => {
     }, 2000);
 
     return () => clearTimeout(saveTimer.current);
-  }, [summary, selectedCase.caseNo, selectedCase.caseName]);
+  }, [summary, selectedCase?._id, selectedCase?.id]);
 
   // ─── Effect: fetch leads (polled every 15s) ───────────────────────────────
   useEffect(() => {
@@ -271,11 +293,22 @@ export const CasePageManager = () => {
           const activeAssignees = Array.isArray(lead.assignedTo)
             ? lead.assignedTo.filter(a => a && a.status !== "declined").map(a => a.username)
             : [];
+          const dueDateStr = lead.dueDate ? lead.dueDate.slice(0, 10) : "";
+          let dueStatus = "No Due Date";
+          if (dueDateStr) {
+            const [y, m, d] = dueDateStr.split("-").map(Number);
+            const now = new Date();
+            const nowUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+            const dueUTC = Date.UTC(y, m - 1, d);
+            const diff = Math.round((dueUTC - nowUTC) / (1000 * 60 * 60 * 24));
+            dueStatus = diff < 0 ? "Overdue" : diff === 0 ? "Due Today" : "In Time";
+          }
           return {
             id: Number(lead.leadNo),
             description: lead.description,
             summary: lead.summary,
-            dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "",
+            dueDate: dueDateStr,
+            dueStatus,
             priority: lead.priority || "Medium",
             flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [],
             assignedOfficers: activeAssignees,
@@ -668,16 +701,16 @@ export const CasePageManager = () => {
   }, [sortedPendingLRs, currentPage, pageSize]);
 
   // ─── Filter/sort: All Leads ───────────────────────────────────────────────
-  const allColumns = ["Lead No.", "Lead Log Summary", "Lead Status", "Assigned Officers"];
+  const allColumns = ["Lead No.", "Lead Log Summary", "Lead Status", "Assigned Officers", "Due Status"];
   const allColKey = {
     "Lead No.": "id", "Lead Log Summary": "description",
-    "Lead Status": "leadStatus", "Assigned Officers": "assignedOfficers",
+    "Lead Status": "leadStatus", "Assigned Officers": "assignedOfficers", "Due Status": "dueStatus",
   };
-  const allColWidths = { "Lead No.": "8%", "Lead Log Summary": "32%", "Lead Status": "14%", "Assigned Officers": "22%" };
+  const allColWidths = { "Lead No.": "8%", "Lead Log Summary": "32%", "Lead Status": "13%", "Assigned Officers": "15%", "Due Status": "10%" };
 
   const popupAllRefs = useRef({});
   const [openAllFilter, setOpenAllFilter] = useState(null);
-  const [allFilterConfig, setAllFilterConfig] = useState({ id: [], description: [], leadStatus: [], assignedOfficers: [] });
+  const [allFilterConfig, setAllFilterConfig] = useState({ id: [], description: [], leadStatus: [], assignedOfficers: [], dueStatus: [] });
   const [allFilterSearch, setAllFilterSearch] = useState({});
   const [tempAllSelections, setTempAllSelections] = useState({});
   const [allSortConfig, setAllSortConfig] = useState({ key: null, direction: 'asc' });
@@ -695,21 +728,23 @@ export const CasePageManager = () => {
     setAllSortConfig(prev => ({ key: columnKey, direction: prev.key === columnKey && prev.direction === "asc" ? "desc" : "asc" }));
 
   const distinctAll = useMemo(() => {
-    const map = { id: new Set(), description: new Set(), leadStatus: new Set(), assignedOfficers: new Set() };
+    const map = { id: new Set(), description: new Set(), leadStatus: new Set(), assignedOfficers: new Set(), dueStatus: new Set() };
     leads.allLeads.forEach(lead => {
       map.id.add(String(lead.id)); map.description.add(lead.description); map.leadStatus.add(lead.leadStatus);
       (lead.assignedOfficers || []).forEach(o => map.assignedOfficers.add(o));
+      map.dueStatus.add(lead.dueStatus);
     });
     return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, Array.from(s)]));
   }, [leads.allLeads]);
 
   const sortedAllLeads = useMemo(() => {
-    const { id: fId, description: fDesc, leadStatus: fStatus, assignedOfficers: fOffs } = allFilterConfig;
+    const { id: fId, description: fDesc, leadStatus: fStatus, assignedOfficers: fOffs, dueStatus: fDue } = allFilterConfig;
     let data = leads.allLeads.filter(lead => {
       if (fId.length && !fId.includes(String(lead.id))) return false;
       if (fDesc.length && !fDesc.includes(lead.description)) return false;
       if (fStatus.length && !fStatus.includes(lead.leadStatus)) return false;
       if (fOffs.length && !lead.assignedOfficers.some(off => fOffs.includes(off))) return false;
+      if (fDue.length && !fDue.includes(lead.dueStatus)) return false;
       return true;
     });
     const { key, direction } = allSortConfig;
@@ -718,6 +753,12 @@ export const CasePageManager = () => {
         if (key === 'id') {
           const aNum = Number(a[key] ?? 0), bNum = Number(b[key] ?? 0);
           return direction === 'asc' ? aNum - bNum : bNum - aNum;
+        }
+        if (key === 'dueStatus') {
+          // Sort by actual due date so Overdue < Due Today < In Time < No Due Date
+          const toMs = (d) => d ? new Date(d).getTime() : Infinity;
+          const diff = toMs(a.dueDate) - toMs(b.dueDate);
+          return direction === 'asc' ? diff : -diff;
         }
         const aV = Array.isArray(a[key]) ? a[key][0] : String(a[key]);
         const bV = Array.isArray(b[key]) ? b[key][0] : String(b[key]);
@@ -1328,6 +1369,17 @@ export const CasePageManager = () => {
                           <td style={{ wordBreak: "break-word" }}>
                             {lead.assignedOfficers?.length > 0 ? lead.assignedOfficers.join(", ") : "None"}
                           </td>
+                          <td style={{ width: "13%" }}>
+                            {(() => {
+                              const { label, sub, color } = getDueStatus(lead.dueDate);
+                              return (
+                                <div style={{ color, fontWeight: 500, lineHeight: 1.4 }}>
+                                  <div style={{ fontSize: 18 }}>{label}</div>
+                                  {sub && <div style={{ fontSize: 18 }}>{sub}</div>}
+                                </div>
+                              );
+                            })()}
+                          </td>
                           <td style={{ width: "9%", textAlign: "center" }}>
                             <button
                               className={styles['view-btn1']}
@@ -1344,7 +1396,7 @@ export const CasePageManager = () => {
                         </tr>
                       )) : (
                         <tr>
-                          <td colSpan={5} style={{ textAlign: "center", padding: "8px" }}>No Leads Available</td>
+                          <td colSpan={6} style={{ textAlign: "center", padding: "8px" }}>No Leads Available</td>
                         </tr>
                       )}
                     </tbody>
