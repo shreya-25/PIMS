@@ -1,9 +1,13 @@
 const LRVehicle = require("../models/LRVehicle");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
-const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
+const { resolveLeadReturnRefs, resolveCaseNo } = require("../utils/resolveRefs");
+const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
 
 const createLRVehicle = async (req, res) => {
     try {
+        const accessErr = await checkLeadWriteAccess(req, req.body.caseNo, req.body.leadNo);
+        if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
         const {
             leadNo, description, enteredBy, caseName, caseNo,
             leadReturnId, enteredDate,
@@ -48,8 +52,8 @@ const createLRVehicle = async (req, res) => {
 
 const getLRVehicleByDetails = async (req, res) => {
     try {
-        const { leadNo, leadName, caseNo, caseName } = req.params;
-        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
+        const { leadNo, leadName, caseId } = req.params;
+        const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
         const lrVehicles = await LRVehicle.find(query);
         res.status(200).json(lrVehicles);
     } catch (err) {
@@ -60,8 +64,8 @@ const getLRVehicleByDetails = async (req, res) => {
 
 const getLRVehicleByDetailsandid = async (req, res) => {
     try {
-        const { leadNo, leadName, caseNo, caseName, id } = req.params;
-        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId: id, isDeleted: { $ne: true } };
+        const { leadNo, leadName, caseId, id } = req.params;
+        const query = { leadNo: Number(leadNo), description: leadName, caseId, leadReturnId: id, isDeleted: { $ne: true } };
         const lrVehicles = await LRVehicle.find(query);
         res.status(200).json(lrVehicles);
     } catch (err) {
@@ -72,12 +76,17 @@ const getLRVehicleByDetailsandid = async (req, res) => {
 
 const updateLRVehicle = async (req, res) => {
     try {
-      const { leadNo, caseNo, leadReturnId, vin } = req.params;
+      const { leadNo, leadReturnId, vin } = req.params;
+      const caseNo = await resolveCaseNo(req.params.caseId);
+      if (!caseNo) return res.status(404).json({ message: "Case not found." });
       const updateData = req.body;
       const actualVin = vin === '-EMPTY-' ? '' : vin;
 
       const existingVehicle = await LRVehicle.findOne({ leadNo: Number(leadNo), caseNo, leadReturnId, vin: actualVin });
       if (!existingVehicle) return res.status(404).json({ message: "Vehicle not found." });
+
+      const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+      if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
       const updated = await LRVehicle.findOneAndUpdate(
         { leadNo: Number(leadNo), caseNo, leadReturnId, vin: actualVin },
@@ -103,11 +112,16 @@ const updateLRVehicle = async (req, res) => {
 
 const deleteLRVehicle = async (req, res) => {
     try {
-      const { leadNo, caseNo, leadReturnId, vin } = req.params;
+      const { leadNo, leadReturnId, vin } = req.params;
+      const caseNo = await resolveCaseNo(req.params.caseId);
+      if (!caseNo) return res.status(404).json({ message: "Case not found." });
       const actualVin = vin === '-EMPTY-' ? '' : vin;
 
       const existingVehicle = await LRVehicle.findOne({ leadNo: Number(leadNo), caseNo, leadReturnId, vin: actualVin });
       if (!existingVehicle) return res.status(404).json({ message: "Vehicle not found." });
+
+      const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+      if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
       await LRVehicle.findOneAndDelete({ leadNo: Number(leadNo), caseNo, leadReturnId, vin: actualVin });
 
@@ -127,4 +141,15 @@ const deleteLRVehicle = async (req, res) => {
     }
 };
 
-module.exports = { createLRVehicle, getLRVehicleByDetails, getLRVehicleByDetailsandid, updateLRVehicle, deleteLRVehicle };
+const getVehiclesByCaseNo = async (req, res) => {
+    try {
+        const { caseNo } = req.params;
+        const vehicles = await LRVehicle.find({ caseNo, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+        res.status(200).json(vehicles);
+    } catch (err) {
+        console.error("Error fetching vehicles by caseNo:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+module.exports = { createLRVehicle, getLRVehicleByDetails, getLRVehicleByDetailsandid, updateLRVehicle, deleteLRVehicle, getVehiclesByCaseNo };

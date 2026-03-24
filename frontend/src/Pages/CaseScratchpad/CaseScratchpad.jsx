@@ -121,12 +121,13 @@ export const CaseScratchpad = () => {
           } );
           useEffect(() => {
             const fetchAllLeads = async () => {
-              if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
-          
+              const caseId = selectedCase?._id || selectedCase?.id;
+              if (!caseId) return;
+
               try {
                 const token = localStorage.getItem("token");
                 const resp = await api.get(
-                  `/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+                  `/api/lead/case/${caseId}`,
                   { headers: { Authorization: `Bearer ${token}` } }
                 );
           

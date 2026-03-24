@@ -91,10 +91,10 @@ const toArray = (val) => {
 
 
 // ---------- Fetch one lead (with returns, persons, vehicles) ----------
-const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
+const fetchSingleLeadFullDetails = async (leadNo, caseId, token) => {
   try {
     const { data: leadData } = await api.get(
-      `/api/lead/lead/${leadNo}/${caseNo}/${encodeURIComponent(caseName)}`,
+      `/api/lead/lead/${leadNo}/${caseId}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     if (!leadData || leadData.length === 0) {
@@ -103,7 +103,7 @@ const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
     }
     const lead = leadData[0];
     const { data: returnsData } = await api.get(
-      `/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}`,
+      `/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     const leadReturns = await Promise.all(
@@ -112,7 +112,7 @@ const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
         let vehicles = [];
         try {
           const { data: personsData } = await api.get(
-            `/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}/${lr.leadReturnId}`,
+            `/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}/${lr.leadReturnId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           persons = personsData;
@@ -121,7 +121,7 @@ const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
         }
         try {
           const { data: vehiclesData } = await api.get(
-            `/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseNo}/${encodeURIComponent(caseName)}/${lr.leadReturnId}`,
+            `/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}/${lr.leadReturnId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           vehicles = vehiclesData;
@@ -164,8 +164,7 @@ const fetchSingleLeadFullDetails = async (leadNo, caseNo, caseName, token) => {
 
 const fetchLeadHierarchyFullDetails = async (
   leadNo,
-  caseNo,
-  caseName,
+  caseId,
   token,
   chain = [],
   visited = new Set()
@@ -174,7 +173,7 @@ const fetchLeadHierarchyFullDetails = async (
   if (visited.has(key)) return [chain]; // prevent loops
   visited.add(key);
 
-  const current = await fetchSingleLeadFullDetails(leadNo, caseNo, caseName, token);
+  const current = await fetchSingleLeadFullDetails(leadNo, caseId, token);
 
   // If the *first* fetch fails, return [] (not [chain])
   if (!current && chain.length === 0) return [];
@@ -186,7 +185,7 @@ const fetchLeadHierarchyFullDetails = async (
 
   let all = [];
   for (const p of parents) {
-    const sub = await fetchLeadHierarchyFullDetails(p, caseNo, caseName, token, updated, visited);
+    const sub = await fetchLeadHierarchyFullDetails(p, caseId, token, updated, visited);
     all.push(...sub);
   }
   return all;
@@ -412,8 +411,7 @@ const toggleLeadForReport = (leadNo) => {
     try {
       const chainResults = await fetchLeadHierarchyFullDetails(
         hierarchyLeadInput,
-        selectedCase.caseNo,
-        selectedCase.caseName,
+        selectedCase._id || selectedCase.id,
         token,
         []
       );
@@ -528,11 +526,12 @@ const toggleLeadForReport = (leadNo) => {
   // ------------------ Fetch All Leads on Load ------------------
   useEffect(() => {
     const fetchLeadsReturnsAndPersons = async () => {
-      if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+      const caseId = selectedCase?._id || selectedCase?.id;
+      if (!caseId) return;
       const token = localStorage.getItem("token");
       try {
         const { data: leads } = await api.get(
-          `/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+          `/api/lead/case/${caseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const leadsWithDetails = await Promise.all(
@@ -540,7 +539,7 @@ const toggleLeadForReport = (leadNo) => {
             let leadReturns = [];
             try {
               const { data: returnsData } = await api.get(
-                `/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+                `/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`,
                 { headers: { Authorization: `Bearer ${token}` } }
               );
               leadReturns = await Promise.all(
@@ -549,7 +548,7 @@ const toggleLeadForReport = (leadNo) => {
                   let vehicles = [];
                   try {
                     const { data: personsData } = await api.get(
-                      `/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/${leadReturn.leadReturnId}`,
+                      `/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}/${leadReturn.leadReturnId}`,
                       { headers: { Authorization: `Bearer ${token}` } }
                     );
                     persons = personsData;
@@ -558,7 +557,7 @@ const toggleLeadForReport = (leadNo) => {
                   }
                   try {
                     const { data: vehiclesData } = await api.get(
-                      `/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/${leadReturn.leadReturnId}`,
+                      `/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}/${leadReturn.leadReturnId}`,
                       { headers: { Authorization: `Bearer ${token}` } }
                     );
                     vehicles = vehiclesData;
@@ -573,13 +572,13 @@ const toggleLeadForReport = (leadNo) => {
             }
             let enclosures = [], evidence = [], pictures = [], audio = [], videos = [], timeline = [], notes = [];
             const [encRes, evRes, picRes, audRes, vidRes, tlRes, notesRes] = await Promise.allSettled([
-              api.get(`/api/lrenclosure/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, { headers: { Authorization: `Bearer ${token}` } }),
-              api.get(`/api/lrevidence/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, { headers: { Authorization: `Bearer ${token}` } }),
-              api.get(`/api/lrpicture/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, { headers: { Authorization: `Bearer ${token}` } }),
-              api.get(`/api/lraudio/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, { headers: { Authorization: `Bearer ${token}` } }),
-              api.get(`/api/lrvideo/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, { headers: { Authorization: `Bearer ${token}` } }),
-              api.get(`/api/timeline/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, { headers: { Authorization: `Bearer ${token}` } }),
-              api.get(`/api/scratchpad/${lead.leadNo}/${encodeURIComponent(lead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/lrenclosure/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/lrevidence/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/lrpicture/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/lraudio/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/lrvideo/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/timeline/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/scratchpad/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
             ]);
             if (encRes.status === "fulfilled") enclosures = encRes.value.data;
             if (evRes.status === "fulfilled") evidence = evRes.value.data;
@@ -690,8 +689,7 @@ const handleShowLeadsInRange = () => {
       const token = localStorage.getItem("token");
       const response = await api.get("/api/lead/search", {
         params: {
-          caseNo: selectedCase.caseNo,
-          caseName: selectedCase.caseName,
+          caseId: selectedCase._id || selectedCase.id,
           keyword: searchTerm,  // searchTerm is the input value from the user
         },
         headers: { Authorization: `Bearer ${token}` },

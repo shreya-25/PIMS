@@ -44,9 +44,10 @@ export const useLeadReport = ({
   const handleViewLeadReturn = async () => {
     // Resolve lead/case from context, falling back to location state
     const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    const kase = selectedCase?._id || selectedCase?.id ? selectedCase : location.state?.caseDetails;
+    const kaseId = kase?._id || kase?.id;
 
-    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kaseId) {
       setAlertMessage("Please select a case and lead first.");
       setAlertOpen(true);
       return;
@@ -61,8 +62,7 @@ export const useLeadReport = ({
       const authHdr  = { headers: { Authorization: `Bearer ${token}` } };
       const leadName = lead.leadName || lead.description;
       const { leadNo } = lead;
-      const { caseNo, caseName } = kase;
-      const base = `${leadNo}/${encodeURIComponent(leadName)}/${caseNo}/${encodeURIComponent(caseName)}`;
+      const base = `${leadNo}/${encodeURIComponent(leadName)}/${kaseId}`;
 
       // Fetch all LR sections in parallel; each call is allowed to fail gracefully
       const [

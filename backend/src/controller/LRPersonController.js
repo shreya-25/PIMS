@@ -2,7 +2,8 @@ const LRPerson = require("../models/LRPerson");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
-const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
+const { resolveLeadReturnRefs, resolveCaseNo } = require("../utils/resolveRefs");
+const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
 
 // Validation function to check if at least one meaningful field is filled
 const isPersonRecordValid = (data) => {
@@ -48,6 +49,9 @@ const createLRPerson = async (req, res) => {
             glasses, height, weight, scar, tattoo, mark,
             accessLevel, additionalData
         } = req.body;
+
+        const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+        if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
         if (!isPersonRecordValid(req.body)) {
             return res.status(400).json({
@@ -98,8 +102,8 @@ const createLRPerson = async (req, res) => {
 
 const getLRPersonByDetails = async (req, res) => {
     try {
-        const { leadNo, leadName, caseNo, caseName } = req.params;
-        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
+        const { leadNo, leadName, caseId } = req.params;
+        const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
         const lrPersons = await LRPerson.find(query);
 
         if (lrPersons.length === 0) {
@@ -125,8 +129,8 @@ const getLRPersonByDetails = async (req, res) => {
 
 const getLRPersonByDetailsandid = async (req, res) => {
     try {
-        const { leadNo, leadName, caseNo, caseName, id } = req.params;
-        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId: id, isDeleted: { $ne: true } };
+        const { leadNo, leadName, caseId, id } = req.params;
+        const query = { leadNo: Number(leadNo), description: leadName, caseId, leadReturnId: id, isDeleted: { $ne: true } };
         const lrPersons = await LRPerson.find(query);
 
         if (lrPersons.length === 0) {
@@ -152,7 +156,9 @@ const getLRPersonByDetailsandid = async (req, res) => {
 
 const updateLRPerson = async (req, res) => {
     try {
-      const { leadNo, caseNo, leadReturnId, firstName } = req.params;
+      const { leadNo, leadReturnId, firstName } = req.params;
+      const caseNo = await resolveCaseNo(req.params.caseId);
+      if (!caseNo) return res.status(404).json({ message: "Case not found." });
       const updateData = req.body;
 
       if (!isPersonRecordValid(updateData)) {
@@ -163,6 +169,9 @@ const updateLRPerson = async (req, res) => {
       if (!existingPerson) {
         return res.status(404).json({ message: "Person not found." });
       }
+
+      const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+      if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
       const updated = await LRPerson.findOneAndUpdate(
         { leadNo: Number(leadNo), caseNo, leadReturnId, firstName },
@@ -201,6 +210,9 @@ const updateLRPersonById = async (req, res) => {
         return res.status(404).json({ message: "Person not found." });
       }
 
+      const accessErr = await checkLeadWriteAccess(req, existingPerson.caseNo, existingPerson.leadNo);
+      if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
       const updated = await LRPerson.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
 
       await createAuditLog({
@@ -223,12 +235,17 @@ const updateLRPersonById = async (req, res) => {
 
 const deleteLRPerson = async (req, res) => {
     try {
-      const { leadNo, caseNo, leadReturnId, firstName } = req.params;
+      const { leadNo, leadReturnId, firstName } = req.params;
+      const caseNo = await resolveCaseNo(req.params.caseId);
+      if (!caseNo) return res.status(404).json({ message: "Case not found." });
 
       const existingPerson = await LRPerson.findOne({ leadNo: Number(leadNo), caseNo, leadReturnId, firstName });
       if (!existingPerson) {
         return res.status(404).json({ message: "Person not found." });
       }
+
+      const accessErr = await checkLeadWriteAccess(req, caseNo, leadNo);
+      if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
       await LRPerson.findOneAndDelete({ leadNo: Number(leadNo), caseNo, leadReturnId, firstName });
 
@@ -255,6 +272,9 @@ const deleteLRPersonById = async (req, res) => {
       if (!existingPerson) {
         return res.status(404).json({ message: "Person not found." });
       }
+
+      const accessErr = await checkLeadWriteAccess(req, existingPerson.caseNo, existingPerson.leadNo);
+      if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
       await LRPerson.findByIdAndDelete(id);
 
@@ -399,4 +419,25 @@ const searchPersonsByName = async (req, res) => {
     }
 };
 
-module.exports = { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, updateLRPersonById, deleteLRPerson, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto, searchPersonsByName };
+const getPersonsByCaseNo = async (req, res) => {
+    try {
+        const { caseNo } = req.params;
+        const persons = await LRPerson.find({ caseNo, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+        const enriched = await Promise.all(
+            persons.map(async (p) => {
+                const obj = p.toObject();
+                if (obj.photoS3Key) {
+                    try { obj.photoUrl = await getFileFromS3(obj.photoS3Key); }
+                    catch (e) { obj.photoUrl = null; }
+                }
+                return obj;
+            })
+        );
+        res.status(200).json(enriched);
+    } catch (err) {
+        console.error("Error fetching persons by caseNo:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+module.exports = { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, updateLRPersonById, deleteLRPerson, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto, searchPersonsByName, getPersonsByCaseNo };

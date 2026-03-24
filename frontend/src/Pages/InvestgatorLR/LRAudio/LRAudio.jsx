@@ -15,6 +15,7 @@ import { CaseContext } from '../../CaseContext';
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
 import api from '../../../api';
 import styles from './LRAudio.module.css';
+import { LRTopMenu } from '../LRTopMenu';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -126,7 +127,7 @@ const attachFiles = async (items, idFieldName, filesEndpoint) => {
  * Extracted to keep the parent render function concise.
  */
 const AudioTableRow = ({ audio, index, isCaseManager, isReadOnly, leadStatus, canModify, onEdit, onDelete, onAccessChange, isExpanded, onToggleExpand }) => {
-  const isLocked = leadStatus === 'In Review' || leadStatus === 'Completed' || isReadOnly || !canModify;
+  const isLocked = leadStatus === 'Completed' || isReadOnly || !canModify;
 
   return (
     <tr>
@@ -224,10 +225,10 @@ export const LRAudio = () => {
 
   // ── Lead read-only status ─────────────────────────────────────────────────
   const { status: leadStatusLabel, isReadOnly } = useLeadStatus({
-    caseNo:   selectedCase?.caseNo,
-    caseName: selectedCase?.caseName,
+    caseId:   selectedCase?._id || selectedCase?.id,
     leadNo:   selectedLead?.leadNo,
     leadName: selectedLead?.leadName,
+    initialStatus: selectedLead?.leadStatus,
   });
 
   // ── Role helpers ──────────────────────────────────────────────────────────
@@ -264,7 +265,7 @@ export const LRAudio = () => {
 
   // Derived: is the lead locked against edits?
   const isLeadLocked =
-    selectedLead?.leadStatus === 'In Review' || selectedLead?.leadStatus === 'Completed';
+    selectedLead?.leadStatus === 'Completed' || isReadOnly;
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -316,13 +317,13 @@ export const LRAudio = () => {
 
   // ── API: fetch lead metadata (assignees, primary investigator) ────────────
   useEffect(() => {
-    if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+    if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?._id && !selectedCase?.id) return;
 
     const encLead = encodeURIComponent(selectedLead.leadName);
-    const encCase = encodeURIComponent(selectedCase.caseName);
+    const caseId = selectedCase._id || selectedCase.id;
 
     api
-      .get(`/api/lead/lead/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`, {
+      .get(`/api/lead/lead/${selectedLead.leadNo}/${encLead}/${caseId}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       })
       .then(({ data }) => {
@@ -339,16 +340,16 @@ export const LRAudio = () => {
 
   // ── API: fetch narrative IDs for the form select dropdown ─────────────────
   useEffect(() => {
-    if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+    if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?._id && !selectedCase?.id) return;
 
     const ac      = new AbortController();
     const encLead = encodeURIComponent(selectedLead.leadName);
-    const encCase = encodeURIComponent(selectedCase.caseName);
+    const caseId2 = selectedCase._id || selectedCase.id;
 
     (async () => {
       try {
         const { data } = await api.get(
-          `/api/leadReturnResult/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
+          `/api/leadReturnResult/${selectedLead.leadNo}/${encLead}/${caseId2}`,
           { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }, signal: ac.signal },
         );
 
@@ -367,16 +368,16 @@ export const LRAudio = () => {
     })();
 
     return () => ac.abort();
-  }, [selectedLead?.leadNo, selectedLead?.leadName, selectedCase?.caseNo, selectedCase?.caseName, isEditing]);
+  }, [selectedLead?.leadNo, selectedLead?.leadName, selectedCase?._id, selectedCase?.id, isEditing]);
 
   // ── API: fetch audio records from the server ──────────────────────────────
   const fetchAudioFiles = useCallback(async () => {
     const encLead = encodeURIComponent(selectedLead.leadName);
-    const encCase = encodeURIComponent(selectedCase.caseName);
+    const caseId3 = selectedCase._id || selectedCase.id;
 
     try {
       const { data } = await api.get(
-        `/api/lraudio/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
+        `/api/lraudio/${selectedLead.leadNo}/${encLead}/${caseId3}`,
         { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } },
       );
 
@@ -417,7 +418,7 @@ export const LRAudio = () => {
   }, [selectedLead, selectedCase, isCaseManager, signedInOfficer, leadData?.assignedTo]);
 
   useEffect(() => {
-    if (selectedLead?.leadNo && selectedLead?.leadName && selectedCase?.caseNo && selectedCase?.caseName) {
+    if (selectedLead?.leadNo && selectedLead?.leadName && (selectedCase?._id || selectedCase?.id)) {
       fetchAudioFiles();
     }
   }, [selectedLead, selectedCase, fetchAudioFiles]);
@@ -607,9 +608,10 @@ export const LRAudio = () => {
    */
   const handleViewLeadReturn = async () => {
     const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    const kase = selectedCase?._id || selectedCase?.id ? selectedCase : location.state?.caseDetails;
+    const kaseId = kase?._id || kase?.id;
 
-    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kaseId) {
       showAlert('Please select a case and lead first.');
       return;
     }
@@ -621,7 +623,6 @@ export const LRAudio = () => {
       const token   = localStorage.getItem('token');
       const headers = { headers: { Authorization: `Bearer ${token}` } };
       const encLead = encodeURIComponent(lead.leadName || lead.description);
-      const encCase = encodeURIComponent(kase.caseName);
 
       // Fetch all lead return sections in parallel; individual failures return empty arrays
       const [
@@ -629,17 +630,17 @@ export const LRAudio = () => {
         enclosuresRes, evidenceRes, picturesRes,
         audioRes, videosRes, scratchpadRes, timelineRes,
       ] = await Promise.all([
-        api.get(`/api/lead/lead/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,            headers).catch(() => ({ data: [] })),
-        api.get(`/api/leadReturnResult/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,     headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrperson/lrperson/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,   headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvehicle/lrvehicle/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrenclosure/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,         headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrevidence/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,          headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrpicture/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,           headers).catch(() => ({ data: [] })),
-        api.get(`/api/lraudio/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,             headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvideo/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,             headers).catch(() => ({ data: [] })),
-        api.get(`/api/scratchpad/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,          headers).catch(() => ({ data: [] })),
-        api.get(`/api/timeline/${lead.leadNo}/${encLead}/${kase.caseNo}/${encCase}`,            headers).catch(() => ({ data: [] })),
+        api.get(`/api/lead/lead/${lead.leadNo}/${encLead}/${kaseId}`,            headers).catch(() => ({ data: [] })),
+        api.get(`/api/leadReturnResult/${lead.leadNo}/${encLead}/${kaseId}`,     headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrperson/lrperson/${lead.leadNo}/${encLead}/${kaseId}`,   headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvehicle/lrvehicle/${lead.leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrenclosure/${lead.leadNo}/${encLead}/${kaseId}`,         headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrevidence/${lead.leadNo}/${encLead}/${kaseId}`,          headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrpicture/${lead.leadNo}/${encLead}/${kaseId}`,           headers).catch(() => ({ data: [] })),
+        api.get(`/api/lraudio/${lead.leadNo}/${encLead}/${kaseId}`,             headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvideo/${lead.leadNo}/${encLead}/${kaseId}`,             headers).catch(() => ({ data: [] })),
+        api.get(`/api/scratchpad/${lead.leadNo}/${encLead}/${kaseId}`,          headers).catch(() => ({ data: [] })),
+        api.get(`/api/timeline/${lead.leadNo}/${encLead}/${kaseId}`,            headers).catch(() => ({ data: [] })),
       ]);
 
       // Enrich media sections with their associated binary files
@@ -701,18 +702,6 @@ export const LRAudio = () => {
     }
   };
 
-  /** Navigate to the interactive ViewLR page (submit/review lead return). */
-  const goToViewLR = useCallback(() => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-      showAlert('Please select a case and lead first.');
-      return;
-    }
-    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
-  }, [selectedLead, selectedCase, location.state, navigate, showAlert]);
-
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -743,58 +732,15 @@ export const LRAudio = () => {
         <div className={styles.leftContentLI}>
 
           {/* ── Top navigation bar: page-level actions ── */}
-          <div className={styles.topMenuNav}>
-            <div className={styles.menuItems}>
-
-              <span
-                className={styles.menuItem}
-                onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                  if (lead && kase) navigate('/LeadReview', { state: { caseDetails: kase, leadDetails: lead } });
-                }}
-              >
-                Lead Information
-              </span>
-
-              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
-                Add Lead Return
-              </span>
-
-              {isCaseManager && (
-                <span
-                  className={styles.menuItem}
-                  onClick={handleViewLeadReturn}
-                  title={isGenerating ? 'Preparing report…' : 'Manage Lead Return'}
-                  style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? 'none' : 'auto' }}
-                >
-                  Manage Lead Return
-                </span>
-              )}
-
-              {selectedCase?.role === 'Investigator' && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  {isPrimaryInvestigator ? 'Submit Lead Return' : 'Review Lead Return'}
-                </span>
-              )}
-
-              <span
-                className={styles.menuItem}
-                onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                  if (lead && kase) {
-                    navigate('/ChainOfCustody', { state: { caseDetails: kase, leadDetails: lead } });
-                  } else {
-                    showAlert('Please select a case and lead first.');
-                  }
-                }}
-              >
-                Lead Chain of Custody
-              </span>
-
-            </div>
-          </div>
+          <LRTopMenu
+            activePage="addLeadReturn"
+            selectedCase={selectedCase}
+            selectedLead={selectedLead}
+            isPrimaryInvestigator={isPrimaryInvestigator}
+            isGenerating={isGenerating}
+            onManageLeadReturn={handleViewLeadReturn}
+            styles={styles}
+          />
 
           {/* ── Section tabs navigation ── */}
           <div className={styles.topMenuSections}>

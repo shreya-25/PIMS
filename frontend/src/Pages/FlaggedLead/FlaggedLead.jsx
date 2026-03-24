@@ -58,13 +58,14 @@ export const FlaggedLead = () => {
   };
 
   useEffect(() => {
-    if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (!caseId) return;
 
     const fetchLeads = async () => {
       setLoading(true);
       try {
         const resp = await api.get(
-          `/api/lead/all-with-flags/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`
+          `/api/lead/all-with-flags/${caseId}`
         );
         let leads = Array.isArray(resp.data) ? resp.data : [];
 
@@ -145,7 +146,7 @@ export const FlaggedLead = () => {
     if (!flagModalLead) return;
     try {
       await api.patch(
-        `/api/lead/flags/${flagModalLead.leadNo}/${encodeURIComponent(flagModalLead.description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+        `/api/lead/flags/${flagModalLead.leadNo}/${encodeURIComponent(flagModalLead.description)}/${selectedCase._id || selectedCase.id}`,
         { associatedFlags: tempFlags }
       );
       setAllLeads(prev =>

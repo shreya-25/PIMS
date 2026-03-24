@@ -60,10 +60,10 @@ const createLRTimeline = async (req, res) => {
 
 const getTimelinesByCase = async (req, res) => {
     try {
-        const { caseNo, caseName } = req.params;
-        if (!caseNo || !caseName) return res.status(400).json({ message: "Both case number and case name are required." });
+        const { caseId } = req.params;
+        if (!caseId) return res.status(400).json({ message: "caseId is required." });
 
-        const timelines = await LRTimeline.find({ caseNo, caseName, isDeleted: { $ne: true } });
+        const timelines = await LRTimeline.find({ caseId, isDeleted: { $ne: true } });
         if (!timelines || timelines.length === 0) return res.status(404).json({ message: "No timeline entries found for the provided case." });
 
         res.status(200).json(timelines);
@@ -75,8 +75,8 @@ const getTimelinesByCase = async (req, res) => {
 
 const getLRTimelineByDetails = async (req, res) => {
     try {
-        const { leadNo, leadName, caseNo, caseName } = req.params;
-        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
+        const { leadNo, leadName, caseId } = req.params;
+        const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
         const timeline = await LRTimeline.find(query);
 
         if (timeline.length === 0) return res.status(404).json({ message: "No timeline entries found." });

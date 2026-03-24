@@ -16,6 +16,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { pickHigherStatus } from '../../../utils/status';
 import Navbar from '../../../components/Navbar/Navbar';
 import styles from './LRInstruction.module.css';
+import { LRTopMenu } from '../LRTopMenu';
 import { CaseContext } from '../../CaseContext';
 import api from '../../../api';
 import { SideBar } from '../../../components/Sidebar/Sidebar';
@@ -117,53 +118,6 @@ const resolveLeadAndCase = (selectedLead, selectedCase, locationState) => ({
  * TopNavBar – page-level navigation tabs (Lead Information, Lead Return, etc.).
  * Renders role-conditional action items.
  */
-const TopNavBar = ({
-  selectedCase,
-  isPrimaryInvestigator,
-  isGenerating,
-  onNavigateToLeadInfo,
-  onViewLeadReturn,
-  onGoToViewLR,
-  onNavigateToChainOfCustody,
-}) => {
-  const isManagerRole = ['Case Manager', 'Detective Supervisor'].includes(selectedCase?.role);
-  const isInvestigator = selectedCase?.role === 'Investigator';
-
-  return (
-    <div className={styles.topMenuNav}>
-      <div className={styles.menuItems}>
-        <span className={styles.menuItem} onClick={onNavigateToLeadInfo}>
-          Lead Information
-        </span>
-
-        <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
-          Add Lead Return
-        </span>
-
-        {isManagerRole && (
-          <span
-            className={styles.menuItem}
-            onClick={onViewLeadReturn}
-            title={isGenerating ? 'Preparing report…' : 'View Lead Return'}
-            style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? 'none' : 'auto' }}
-          >
-            Manage Lead Return
-          </span>
-        )}
-
-        {isInvestigator && (
-          <span className={styles.menuItem} onClick={onGoToViewLR}>
-            {isPrimaryInvestigator ? 'Submit Lead Return' : 'Review Lead Return'}
-          </span>
-        )}
-
-        <span className={styles.menuItem} onClick={onNavigateToChainOfCustody}>
-          Lead Chain of Custody
-        </span>
-      </div>
-    </div>
-  );
-};
 
 /**
  * SectionTabBar – sub-navigation tabs for lead return sections
@@ -392,16 +346,6 @@ export const LRInstruction = () => {
     }
   }, [navigate, selectedLead, selectedCase, location.state, showAlert]);
 
-  /** Navigate to the interactive lead-review page (view / submit / review). */
-  const goToViewLR = useCallback(() => {
-    const { lead, kase } = resolveLeadAndCase(selectedLead, selectedCase, location.state);
-    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-      showAlert('Please select a case and lead first.');
-      return;
-    }
-    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
-  }, [navigate, selectedLead, selectedCase, location.state, showAlert]);
-
   // ---------------------------------------------------------------------------
   // PDF generation
   // ---------------------------------------------------------------------------
@@ -413,7 +357,8 @@ export const LRInstruction = () => {
   const handleViewLeadReturn = useCallback(async () => {
     const { lead, kase } = resolveLeadAndCase(selectedLead, selectedCase, location.state);
 
-    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+    const kaseId = kase?._id || kase?.id;
+    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kaseId) {
       showAlert('Please select a case and lead first.');
       return;
     }
@@ -425,11 +370,10 @@ export const LRInstruction = () => {
       const token   = localStorage.getItem('token');
       const headers = { headers: { Authorization: `Bearer ${token}` } };
 
-      const { leadNo }            = lead;
-      const leadName              = lead.leadName || lead.description;
-      const { caseNo, caseName }  = kase;
-      const encLead               = encodeURIComponent(leadName);
-      const encCase               = encodeURIComponent(caseName);
+      const { leadNo } = lead;
+      const leadName   = lead.leadName || lead.description;
+      const encLead    = encodeURIComponent(leadName);
+      const base       = `${leadNo}/${encLead}/${kaseId}`;
 
       // Fetch all lead sections in parallel for performance
       const [
@@ -437,17 +381,17 @@ export const LRInstruction = () => {
         enclosuresRes, evidenceRes, picturesRes,
         audioRes, videosRes, scratchpadRes, timelineRes,
       ] = await Promise.all([
-        api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`,             headers).catch(() => ({ data: [] })),
-        api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`,      headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`,    headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`,  headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`,          headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`,           headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`,            headers).catch(() => ({ data: [] })),
-        api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`,              headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`,              headers).catch(() => ({ data: [] })),
-        api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`,           headers).catch(() => ({ data: [] })),
-        api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`,             headers).catch(() => ({ data: [] })),
+        api.get(`/api/lead/lead/${base}`,            headers).catch(() => ({ data: [] })),
+        api.get(`/api/leadReturnResult/${base}`,     headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrperson/lrperson/${base}`,   headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvehicle/lrvehicle/${base}`,  headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrenclosure/${base}`,          headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrevidence/${base}`,           headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrpicture/${base}`,            headers).catch(() => ({ data: [] })),
+        api.get(`/api/lraudio/${base}`,              headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvideo/${base}`,              headers).catch(() => ({ data: [] })),
+        api.get(`/api/scratchpad/${base}`,           headers).catch(() => ({ data: [] })),
+        api.get(`/api/timeline/${base}`,             headers).catch(() => ({ data: [] })),
       ]);
 
       // Attach uploaded file metadata to media sections
@@ -538,15 +482,16 @@ export const LRInstruction = () => {
   /** Fetch lead instruction data and populate local state + context. */
   useEffect(() => {
     const fetchLeadInstructionData = async () => {
-      const lead = selectedLead?.leadNo ? selectedLead : leadDetails;
-      const kase = selectedCase?.caseNo ? selectedCase : caseDetails;
+      const lead   = selectedLead?.leadNo ? selectedLead : leadDetails;
+      const kase   = selectedCase?._id || selectedCase?.id ? selectedCase : caseDetails;
+      const kaseId = kase?._id || kase?.id;
 
-      if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) return;
+      if (!lead?.leadNo || !lead?.leadName || !kaseId) return;
 
       try {
         const token    = localStorage.getItem('token');
         const response = await api.get(
-          `/api/lead/lead/${lead.leadNo}/${encodeURIComponent(lead.leadName)}/${kase.caseNo}/${encodeURIComponent(kase.caseName)}`,
+          `/api/lead/lead/${lead.leadNo}/${encodeURIComponent(lead.leadName)}/${kaseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -591,14 +536,14 @@ export const LRInstruction = () => {
         <div className={styles.leftContentLI}>
 
           {/* Page-level navigation bar */}
-          <TopNavBar
+          <LRTopMenu
+            activePage="addLeadReturn"
             selectedCase={selectedCase}
+            selectedLead={selectedLead}
             isPrimaryInvestigator={isPrimaryInvestigator}
             isGenerating={isGenerating}
-            onNavigateToLeadInfo={handleNavigateToLeadInfo}
-            onViewLeadReturn={handleViewLeadReturn}
-            onGoToViewLR={goToViewLR}
-            onNavigateToChainOfCustody={handleNavigateToChainOfCustody}
+            onManageLeadReturn={handleViewLeadReturn}
+            styles={styles}
           />
 
           {/* Section tab navigation */}

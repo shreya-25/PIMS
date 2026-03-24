@@ -145,17 +145,18 @@ useEffect(() => {
     try {
       // Ensure caseDetails exists before proceeding.
       // if (!caseDetails) return;
-      if (!selectedCase.caseNo || !selectedCase.caseName) return;
+      if (!selectedCase._id && !selectedCase.id) return;
 
       // Destructure case details
       // const { id: caseNo, title: caseName } = caseDetails;
 
-      // Otherwise, fetch the max lead number using the caseNo and caseName.
+      // Otherwise, fetch the max lead number using the caseId.
+      const caseId = selectedCase._id || selectedCase.id;
       const response = await api.get(
-        `/api/lead/maxLeadNumber?caseNo=${selectedCase.caseNo}&caseName=${encodeURIComponent(selectedCase.caseName)}`
+        `/api/lead/maxLeadNumber?caseId=${caseId}`
       );
       const maxLeadNo = response.data.maxLeadNo || 0;
-      console.log("Max fetch No", maxLeadNo, selectedCase.caseNo, selectedCase.caseName );
+      console.log("Max fetch No", maxLeadNo, caseId);
       const newLeadNumber = maxLeadNo + 1;
 
       setLeadData((prevData) => ({
@@ -174,12 +175,12 @@ useEffect(() => {
 
 useEffect(() => {
   const fetchAllLeads = async () => {
-    if (!selectedCase?.caseNo || !selectedCase?.caseName) return;
+    if (!selectedCase?._id && !selectedCase?.id) return;
 
     try {
       const token = localStorage.getItem("token");
       const resp = await api.get(
-        `/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+        `/api/lead/case/${selectedCase._id || selectedCase.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -676,6 +677,7 @@ const orderedAssignees = hasAssignees
           post1:          `${realLeadNo ?? ""}: ${leadData.leadDescription}`,
           action2:        "related to the case",
           post2:          `${selectedCase.caseNo}: ${selectedCase.caseName}`,
+          caseId:         selectedCase._id || selectedCase.id || undefined,
           leadNo:         realLeadNo ?? undefined,
           leadName:       leadData.leadDescription,
           caseNo:         selectedCase.caseNo,
@@ -841,15 +843,13 @@ useEffect(() => {
   const fetchAssociatedSubCategories = async () => {
     try {
       // Ensure we have valid case identifiers
-      const caseNo = selectedCase?.caseNo || caseDetails?.caseNo;
-      const caseName = selectedCase?.caseName || caseDetails?.caseName || caseDetails?.title;
-      const caseId = selectedCase?.id || caseDetails?.id;
+      const caseId = selectedCase?._id || selectedCase?.id || caseDetails?._id || caseDetails?.id;
 
-      if (!caseNo || !caseName) return;
+      if (!caseId) return;
 
       const token = localStorage.getItem("token");
       const response = await api.get(
-        `/api/lead/associatedSubCategories/${caseNo }/${encodeURIComponent(caseName)}`,
+        `/api/lead/associatedSubCategories/${caseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

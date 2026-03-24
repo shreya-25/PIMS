@@ -2,7 +2,7 @@ const express = require("express");
 const verifyToken = require("../middleware/authMiddleware");
 const { createLRVideo, getLRVideoByDetails,
   updateLRVideo,
-  deleteLRVideo } = require("../controller/LRVideoController");
+  deleteLRVideo, getVideoByCaseNo } = require("../controller/LRVideoController");
 const getUploadMiddleware = require("../middleware/upload");
 const upload = require("../middleware/upload-disk");
 
@@ -78,7 +78,9 @@ router.post(
 // });
 
 
-router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLRVideoByDetails);
+router.get("/case/:caseNo", verifyToken, getVideoByCaseNo);
+
+router.get("/:leadNo/:leadName/:caseId", verifyToken, getLRVideoByDetails);
 
 router.put(
   "/:id",

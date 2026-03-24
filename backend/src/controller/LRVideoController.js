@@ -3,9 +3,13 @@ const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
+const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
 
 const createLRVideo = async (req, res) => {
   try {
+    const accessErr = await checkLeadWriteAccess(req, req.body.caseNo, req.body.leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
     const isLink = req.body.isLink === true || req.body.isLink === "true" || req.body.isLink === 1 || req.body.isLink === "1";
 
     if (isLink && !req.body.link) {
@@ -81,8 +85,8 @@ const createLRVideo = async (req, res) => {
 
 const getLRVideoByDetails = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName } = req.params;
-    const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
+    const { leadNo, leadName, caseId } = req.params;
+    const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
     const lrVideos = await LRVideo.find(query);
 
     const withUrls = await Promise.all(
@@ -103,6 +107,10 @@ const updateLRVideo = async (req, res) => {
     const { id } = req.params;
     const video = await LRVideo.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!video) return res.status(404).json({ message: "Video not found" });
+
+    const accessErr = await checkLeadWriteAccess(req, video.caseNo, video.leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
     const oldVideo = video.toObject();
 
     const wantsLink = req.body.isLink === true || req.body.isLink === "true" || req.body.isLink === 1 || req.body.isLink === "1";
@@ -160,6 +168,9 @@ const deleteLRVideo = async (req, res) => {
     const video = await LRVideo.findOne({ _id: id, isDeleted: { $ne: true } });
     if (!video) return res.status(404).json({ message: "Video not found" });
 
+    const accessErr = await checkLeadWriteAccess(req, video.caseNo, video.leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
     const oldVideo = video.toObject();
     video.isDeleted = true;
     video.deletedAt = new Date();
@@ -186,4 +197,21 @@ const deleteLRVideo = async (req, res) => {
   }
 };
 
-module.exports = { createLRVideo, getLRVideoByDetails, updateLRVideo, deleteLRVideo };
+const getVideoByCaseNo = async (req, res) => {
+    try {
+        const { caseNo } = req.params;
+        const records = await LRVideo.find({ caseNo, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+        const enriched = await Promise.all(
+            records.map(async (v) => {
+                const signedUrl = v.s3Key ? await getFileFromS3(v.s3Key) : null;
+                return { ...v.toObject(), signedUrl };
+            })
+        );
+        res.status(200).json(enriched);
+    } catch (err) {
+        console.error("Error fetching video by caseNo:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+module.exports = { createLRVideo, getLRVideoByDetails, updateLRVideo, deleteLRVideo, getVideoByCaseNo };

@@ -3,11 +3,15 @@ const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
+const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
 
 const asBool = v => v === true || v === "true" || v === 1 || v === "1";
 
 const createLREvidence = async (req, res) => {
   try {
+    const accessErr = await checkLeadWriteAccess(req, req.body.caseNo, req.body.leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
     const isLink = req.body.isLink === "true";
     const accessLevel = req.body.accessLevel || "Everyone";
 
@@ -78,8 +82,8 @@ const createLREvidence = async (req, res) => {
 
 const getLREvidenceByDetails = async (req, res) => {
     try {
-        const { leadNo, leadName, caseNo, caseName } = req.params;
-        const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
+        const { leadNo, leadName, caseId } = req.params;
+        const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
         const lrEvidences = await LREvidence.find(query);
 
         if (lrEvidences.length === 0) {
@@ -101,13 +105,16 @@ const getLREvidenceByDetails = async (req, res) => {
 
 const updateLREvidence = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName, leadReturnId, evidenceDescription: oldDesc } = req.params;
+    const { leadNo, leadName, caseId, leadReturnId, evidenceDescription: oldDesc } = req.params;
 
     const ev = await LREvidence.findOne({
-      leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId, evidenceDescription: oldDesc,
+      leadNo: Number(leadNo), description: leadName, caseId, leadReturnId, evidenceDescription: oldDesc,
       isDeleted: { $ne: true }
     });
     if (!ev) return res.status(404).json({ message: "Evidence not found" });
+
+    const accessErr = await checkLeadWriteAccess(req, ev.caseNo, leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldEvidence = ev.toObject();
     const isLink = asBool(req.body.isLink);
@@ -115,7 +122,7 @@ const updateLREvidence = async (req, res) => {
 
     if (req.file) {
       if (ev.s3Key) { try { await deleteFromS3(ev.s3Key); } catch {} }
-      const { key } = await uploadToS3({ filePath: req.file.path, userId: caseNo, mimetype: req.file.mimetype });
+      const { key } = await uploadToS3({ filePath: req.file.path, userId: ev.caseNo, mimetype: req.file.mimetype });
       if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
       ev.s3Key = key;
       ev.originalName = req.file.originalname;
@@ -163,13 +170,16 @@ const updateLREvidence = async (req, res) => {
 
 const deleteLREvidence = async (req, res) => {
     try {
-      const { leadNo, leadName, caseNo, caseName, leadReturnId, evidenceDescription } = req.params;
+      const { leadNo, leadName, caseId, leadReturnId, evidenceDescription } = req.params;
 
       const ev = await LREvidence.findOne({
-        leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId, evidenceDescription,
+        leadNo: Number(leadNo), description: leadName, caseId, leadReturnId, evidenceDescription,
         isDeleted: { $ne: true }
       });
       if (!ev) return res.status(404).json({ message: "Evidence not found" });
+
+      const accessErr = await checkLeadWriteAccess(req, ev.caseNo, leadNo);
+      if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
       const oldEvidence = ev.toObject();
       ev.isDeleted = true;
@@ -197,4 +207,21 @@ const deleteLREvidence = async (req, res) => {
     }
 };
 
-module.exports = { createLREvidence, getLREvidenceByDetails, updateLREvidence, deleteLREvidence };
+const getEvidenceByCaseNo = async (req, res) => {
+    try {
+        const { caseNo } = req.params;
+        const records = await LREvidence.find({ caseNo, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+        const enriched = await Promise.all(
+            records.map(async (ev) => {
+                const signedUrl = ev.s3Key ? await getFileFromS3(ev.s3Key) : null;
+                return { ...ev.toObject(), signedUrl };
+            })
+        );
+        res.status(200).json(enriched);
+    } catch (err) {
+        console.error("Error fetching evidence by caseNo:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+module.exports = { createLREvidence, getLREvidenceByDetails, updateLREvidence, deleteLREvidence, getEvidenceByCaseNo };

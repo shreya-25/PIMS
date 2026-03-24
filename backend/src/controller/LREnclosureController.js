@@ -3,6 +3,7 @@ const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
+const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
 
 // ---------- helpers ----------
 const one = (v) => Array.isArray(v) ? v[0] : v;
@@ -18,6 +19,9 @@ const safeParseJSON = (v) => {
 
 const createLREnclosure = async (req, res) => {
   try {
+    const accessErr = await checkLeadWriteAccess(req, one(req.body.caseNo), one(req.body.leadNo));
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
     const uploadMode = asString(one(req.body.uploadMode)) || "none";
     const linkRaw = asString(one(req.body.link)).trim();
     const isLinkRequested = asBool(one(req.body.isLink)) || uploadMode === "link";
@@ -84,8 +88,8 @@ const createLREnclosure = async (req, res) => {
 
 const getLREnclosureByDetails = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName } = req.params;
-    const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
+    const { leadNo, leadName, caseId } = req.params;
+    const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
     const lrEnclosures = await LREnclosure.find(query);
     if (lrEnclosures.length === 0) return res.status(404).json({ message: "No enclosures found." });
 
@@ -104,16 +108,19 @@ const getLREnclosureByDetails = async (req, res) => {
 
 const updateLREnclosure = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName, leadReturnId } = req.params;
+    const { leadNo, leadName, caseId, leadReturnId } = req.params;
 
-    const enc = await LREnclosure.findOne({ leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId, isDeleted: { $ne: true } });
+    const enc = await LREnclosure.findOne({ leadNo: Number(leadNo), description: leadName, caseId, leadReturnId, isDeleted: { $ne: true } });
     if (!enc) return res.status(404).json({ message: "Enclosure not found" });
+
+    const accessErr = await checkLeadWriteAccess(req, enc.caseNo, leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldEnclosure = enc.toObject();
 
     if (req.file) {
       if (enc.s3Key) { try { await deleteFromS3(enc.s3Key); } catch {} }
-      const { key } = await uploadToS3({ filePath: req.file.path, userId: caseNo, mimetype: req.file.mimetype });
+      const { key } = await uploadToS3({ filePath: req.file.path, userId: enc.caseNo, mimetype: req.file.mimetype });
       if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
       enc.s3Key = key;
       enc.originalName = req.file.originalname;
@@ -152,13 +159,16 @@ const updateLREnclosure = async (req, res) => {
 
 const deleteLREnclosure = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName, leadReturnId } = req.params;
+    const { leadNo, leadName, caseId, leadReturnId } = req.params;
 
     const enc = await LREnclosure.findOne({
-      leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId,
+      leadNo: Number(leadNo), description: leadName, caseId, leadReturnId,
       isDeleted: { $ne: true }
     });
     if (!enc) return res.status(404).json({ message: "Enclosure not found" });
+
+    const accessErr = await checkLeadWriteAccess(req, enc.caseNo, leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldValue = enc.toObject();
 
@@ -168,7 +178,7 @@ const deleteLREnclosure = async (req, res) => {
     await enc.save();
 
     await createAuditLog({
-      caseNo, caseName, leadNo: Number(leadNo), leadName,
+      caseNo: enc.caseNo, caseName: enc.caseName, leadNo: Number(leadNo), leadName,
       entityType: "LREnclosure", entityId: `${leadReturnId}_${enc._id}`, action: "DELETE",
       performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
       oldValue: sanitizeForAudit(oldValue), newValue: null,
@@ -183,4 +193,21 @@ const deleteLREnclosure = async (req, res) => {
   }
 };
 
-module.exports = { createLREnclosure, getLREnclosureByDetails, updateLREnclosure, deleteLREnclosure };
+const getEnclosuresByCaseNo = async (req, res) => {
+    try {
+        const { caseNo } = req.params;
+        const records = await LREnclosure.find({ caseNo, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+        const enriched = await Promise.all(
+            records.map(async (enc) => {
+                const signedUrl = enc.s3Key ? await getFileFromS3(enc.s3Key) : null;
+                return { ...enc.toObject(), signedUrl };
+            })
+        );
+        res.status(200).json(enriched);
+    } catch (err) {
+        console.error("Error fetching enclosures by caseNo:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+module.exports = { createLREnclosure, getLREnclosureByDetails, updateLREnclosure, deleteLREnclosure, getEnclosuresByCaseNo };

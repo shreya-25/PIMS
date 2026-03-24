@@ -23,8 +23,9 @@ import { CaseContext } from "../../CaseContext";
 import { useLeadStatus } from "../../../hooks/useLeadStatus";
 import api from "../../../api";
 import styles from "../LR.module.css";
-import { formatDate, alphabetToNumber, buildLeadCasePath, isHttpUrl } from "../lrUtils";
+import { formatDate, alphabetToNumber, buildLeadCaseIdPath, isHttpUrl } from "../lrUtils";
 import { useLeadReport } from "../useLeadReport";
+import { LRTopMenu } from "../LRTopMenu";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -96,10 +97,10 @@ export const LRPictures = () => {
 
   // ── Lead status hook (read-only gate) ───────────────────────────────────────
   const { status, isReadOnly } = useLeadStatus({
-    caseNo:   selectedCase.caseNo,
-    caseName: selectedCase.caseName,
+    caseId:   selectedCase._id || selectedCase.id,
     leadNo:   selectedLead.leadNo,
     leadName: selectedLead.leadName,
+    initialStatus: selectedLead?.leadStatus,
   });
 
   // ── Session-storage keys (memoized per case/lead) ───────────────────────────
@@ -154,8 +155,7 @@ export const LRPictures = () => {
 
   // ── Derived: is the form / table locked from edits? ────────────────────────
   const isLeadLocked =
-    selectedLead?.leadStatus === "In Review" ||
-    selectedLead?.leadStatus === "Completed"  ||
+    selectedLead?.leadStatus === "Completed" ||
     isReadOnly;
 
   // ── Session storage sync ────────────────────────────────────────────────────
@@ -185,13 +185,13 @@ export const LRPictures = () => {
   // ── API: Fetch narrative IDs for the dropdown ───────────────────────────────
   useEffect(() => {
     if (!selectedLead?.leadNo || !selectedLead?.leadName ||
-        !selectedCase?.caseNo || !selectedCase?.caseName) return;
+        !selectedCase?._id && !selectedCase?.id) return;
 
     const controller = new AbortController();
     const token = localStorage.getItem("token");
-    const path  = buildLeadCasePath(
+    const path  = buildLeadCaseIdPath(
       selectedLead.leadNo, selectedLead.leadName,
-      selectedCase.caseNo, selectedCase.caseName
+      selectedCase._id || selectedCase.id
     );
 
     (async () => {
@@ -222,19 +222,19 @@ export const LRPictures = () => {
     return () => controller.abort();
   }, [
     selectedLead?.leadNo, selectedLead?.leadName,
-    selectedCase?.caseNo, selectedCase?.caseName,
+    selectedCase?._id, selectedCase?.id,
     isEditing,
   ]);
 
   // ── API: Fetch lead metadata (assignment info, primary investigator) ─────────
   useEffect(() => {
     if (!selectedLead?.leadNo || !selectedLead?.leadName ||
-        !selectedCase?.caseNo || !selectedCase?.caseName) return;
+        !selectedCase?._id && !selectedCase?.id) return;
 
     const token = localStorage.getItem("token");
-    const path  = buildLeadCasePath(
+    const path  = buildLeadCaseIdPath(
       selectedLead.leadNo, selectedLead.leadName,
-      selectedCase.caseNo, selectedCase.caseName
+      selectedCase._id || selectedCase.id
     );
 
     api
@@ -257,12 +257,12 @@ export const LRPictures = () => {
    * Normalises signed URLs and links for use in the table.
    */
   const fetchPictures = useCallback(async () => {
-    if (!selectedLead?.leadNo || !selectedCase?.caseNo) return;
+    if (!selectedLead?.leadNo || !selectedCase?._id && !selectedCase?.id) return;
 
     const token = localStorage.getItem("token");
-    const path  = buildLeadCasePath(
+    const path  = buildLeadCaseIdPath(
       selectedLead.leadNo, selectedLead.leadName,
-      selectedCase.caseNo, selectedCase.caseName
+      selectedCase._id || selectedCase.id
     );
 
     try {
@@ -294,40 +294,11 @@ export const LRPictures = () => {
 
   useEffect(() => {
     if (selectedLead?.leadNo && selectedLead?.leadName &&
-        selectedCase?.caseNo && selectedCase?.caseName) {
+        (selectedCase?._id || selectedCase?.id)) {
       fetchPictures();
     }
   }, [selectedLead, selectedCase]);
 
-  // ── Handlers: navigation ────────────────────────────────────────────────────
-
-  const navigateToLeadReview = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (lead && kase) navigate("/LeadReview", { state: { caseDetails: kase, leadDetails: lead } });
-  };
-
-  const navigateToChainOfCustody = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (lead && kase) {
-      navigate("/ChainOfCustody", { state: { caseDetails: kase, leadDetails: lead } });
-    } else {
-      setAlertMessage("Please select a case and lead first.");
-      setAlertOpen(true);
-    }
-  };
-
-  const goToViewLR = useCallback(() => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-      setAlertMessage("Please select a case and lead first.");
-      setAlertOpen(true);
-      return;
-    }
-    navigate("/viewLR", { state: { caseDetails: kase, leadDetails: lead } });
-  }, [selectedLead, selectedCase, location.state, navigate]);
 
   // ── Handlers: form ──────────────────────────────────────────────────────────
 
@@ -502,9 +473,9 @@ export const LRPictures = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const path  = buildLeadCasePath(
+      const path  = buildLeadCaseIdPath(
         selectedLead.leadNo, selectedLead.leadName,
-        selectedCase.caseNo, selectedCase.caseName
+        selectedCase._id || selectedCase.id
       );
       await api.put(
         `/api/lrpicture/${path}/${pic.returnId}/${encodeURIComponent(pic.description)}`,
@@ -534,9 +505,9 @@ export const LRPictures = () => {
 
     const pic   = pictures[idx];
     const token = localStorage.getItem("token");
-    const path  = buildLeadCasePath(
+    const path  = buildLeadCaseIdPath(
       selectedLead.leadNo, selectedLead.leadName,
-      selectedCase.caseNo, selectedCase.caseName
+      selectedCase._id || selectedCase.id
     );
 
     try {
@@ -563,9 +534,9 @@ export const LRPictures = () => {
   const handleAccessChange = async (idx, newAccessLevel) => {
     const picture = pictures[idx];
     const token   = localStorage.getItem("token");
-    const path    = buildLeadCasePath(
+    const path    = buildLeadCaseIdPath(
       selectedLead.leadNo, selectedLead.leadName,
-      selectedCase.caseNo, selectedCase.caseName
+      selectedCase._id || selectedCase.id
     );
 
     const fd = new FormData();
@@ -626,40 +597,15 @@ export const LRPictures = () => {
         <div className={styles.leftContentLI}>
 
           {/* ── Page-level navigation bar ── */}
-          <div className={styles.topMenuNav}>
-            <div className={styles.menuItems}>
-              <span className={styles.menuItem} onClick={navigateToLeadReview}>
-                Lead Information
-              </span>
-
-              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
-                Add Lead Return
-              </span>
-
-              {/* Case Manager / Detective Supervisor: generate full lead return report */}
-              {["Case Manager", "Detective Supervisor"].includes(selectedCase?.role) && (
-                <span
-                  className={styles.menuItem}
-                  onClick={handleViewLeadReturn}
-                  title={isGenerating ? "Preparing report..." : "View Lead Return"}
-                  style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-                >
-                  Manage Lead Return
-                </span>
-              )}
-
-              {/* Investigator: submit (primary) or review (non-primary) */}
-              {selectedCase?.role === "Investigator" && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  {isPrimaryInvestigator ? "Submit Lead Return" : "Review Lead Return"}
-                </span>
-              )}
-
-              <span className={styles.menuItem} onClick={navigateToChainOfCustody}>
-                Lead Chain of Custody
-              </span>
-            </div>
-          </div>
+          <LRTopMenu
+            activePage="addLeadReturn"
+            selectedCase={selectedCase}
+            selectedLead={selectedLead}
+            isPrimaryInvestigator={isPrimaryInvestigator}
+            isGenerating={isGenerating}
+            onManageLeadReturn={handleViewLeadReturn}
+            styles={styles}
+          />
 
           {/* ── Section tab bar ── */}
           <div className={styles.topMenuSections}>
@@ -892,7 +838,7 @@ export const LRPictures = () => {
                                 className={styles.accessDropdown}
                               >
                                 <option value="Everyone">All</option>
-                                <option value="Case Manager">Case Manager</option>
+                                <option value="Case Manager Only">Case Manager</option>
                                 <option value="Case Manager and Assignees">Assignees</option>
                               </select>
                             </td>

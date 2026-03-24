@@ -10,6 +10,7 @@
 import { useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import styles from './LRVehicle.module.css';
+import { LRTopMenu } from '../LRTopMenu';
 import Navbar from '../../../components/Navbar/Navbar';
 import VehicleModal from '../../../components/VehicleModal/VehicleModal';
 import { CaseContext } from '../../CaseContext';
@@ -23,7 +24,7 @@ import { useLeadStatus } from '../../../hooks/useLeadStatus';
 const FORM_KEY = 'LRVehicle:form';
 const LIST_KEY = 'LRVehicle:list';
 
-const READONLY_STATUSES = ['In Review', 'Completed', 'Closed'];
+const READONLY_STATUSES = ['Completed', 'Closed'];
 
 const REQUIRED_FIELDS = [
   { key: 'leadReturnId', label: 'Narrative Id' },
@@ -203,10 +204,10 @@ export const LRVehicle = () => {
 
   // ── Lead status hook ──────────────────────────────────────────────────────
   const { status, isReadOnly } = useLeadStatus({
-    caseNo:   selectedCase?.caseNo,
-    caseName: selectedCase?.caseName,
+    caseId:   selectedCase?._id || selectedCase?.id,
     leadNo:   selectedLead?.leadNo,
     leadName: selectedLead?.leadName,
+    initialStatus: selectedLead?.leadStatus,
   });
 
   // Derived permissions
@@ -259,13 +260,13 @@ export const LRVehicle = () => {
    * Re-runs whenever the selected lead or case changes.
    */
   useEffect(() => {
-    if (!selectedLead?.leadNo || !selectedCase?.caseNo) return;
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (!selectedLead?.leadNo || !caseId) return;
     const token = localStorage.getItem('token');
 
     api
       .get(
-        `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}` +
-        `/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+        `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       .then(({ data }) => {
@@ -285,9 +286,9 @@ export const LRVehicle = () => {
    * when creating a new vehicle record.
    */
   useEffect(() => {
+    const caseId = selectedCase?._id || selectedCase?.id;
     if (
-      !selectedLead?.leadNo || !selectedLead?.leadName ||
-      !selectedCase?.caseNo  || !selectedCase?.caseName
+      !selectedLead?.leadNo || !selectedLead?.leadName || !caseId
     ) return;
 
     const ac = new AbortController();
@@ -296,8 +297,7 @@ export const LRVehicle = () => {
     (async () => {
       try {
         const { data } = await api.get(
-          `/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}` +
-          `/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+          `/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
           { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -319,23 +319,23 @@ export const LRVehicle = () => {
     return () => ac.abort();
   }, [
     selectedLead?.leadNo, selectedLead?.leadName,
-    selectedCase?.caseNo, selectedCase?.caseName,
+    selectedCase?._id, selectedCase?.id,
     editIndex, todayISO,
   ]);
 
   /** Fetches vehicle records whenever the selected lead or case changes. */
   useEffect(() => {
-    if (selectedLead?.leadNo && selectedCase?.caseNo) {
+    if (selectedLead?.leadNo && (selectedCase?._id || selectedCase?.id)) {
       fetchVehicles();
     }
   }, [selectedLead, selectedCase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchVehicles = async () => {
+    const caseId = selectedCase?._id || selectedCase?.id;
     const token = localStorage.getItem('token');
     try {
       const { data } = await api.get(
-        `/api/lrvehicle/lrvehicle/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}` +
-        `/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+        `/api/lrvehicle/lrvehicle/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setRawVehicles(data);
@@ -427,7 +427,7 @@ export const LRVehicle = () => {
         const old      = rawVehicles[editIndex];
         const vinParam = old.vin ? encodeURIComponent(old.vin) : encodeURIComponent('-EMPTY-');
         res = await api.put(
-          `/api/lrvehicle/${selectedLead.leadNo}/${selectedCase.caseNo}` +
+          `/api/lrvehicle/${selectedLead.leadNo}/${selectedCase._id || selectedCase.id}` +
           `/${encodeURIComponent(old.leadReturnId)}/${vinParam}`,
           payload,
           { headers: { Authorization: `Bearer ${token}` } }
@@ -476,7 +476,7 @@ export const LRVehicle = () => {
     try {
       await api.delete(
         `/api/lrvehicle/${encodeURIComponent(String(selectedLead.leadNo))}` +
-        `/${encodeURIComponent(String(selectedCase.caseNo))}` +
+        `/${encodeURIComponent(String(selectedCase._id || selectedCase.id))}` +
         `/${encodeURIComponent(String(r.leadReturnId))}/${vinParam}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -508,7 +508,7 @@ export const LRVehicle = () => {
 
     try {
       const { data: updated } = await api.put(
-        `/api/lrvehicle/${selectedLead.leadNo}/${selectedCase.caseNo}` +
+        `/api/lrvehicle/${selectedLead.leadNo}/${selectedCase._id || selectedCase.id}` +
         `/${encodeURIComponent(v.leadReturnId)}/${vinParam}`,
         { accessLevel: newAccess },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -544,10 +544,11 @@ export const LRVehicle = () => {
    * and navigates to the DocumentReview page.
    */
   const handleViewLeadReturn = async () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    const lead   = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase   = selectedCase?._id || selectedCase?.id ? selectedCase : location.state?.caseDetails;
+    const kaseId = kase?._id || kase?.id;
 
-    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kaseId) {
       showAlert('Please select a case and lead first.');
       return;
     }
@@ -558,9 +559,8 @@ export const LRVehicle = () => {
     const headers  = { headers: { Authorization: `Bearer ${token}` } };
     const { leadNo } = lead;
     const leadName   = lead.leadName || lead.description;
-    const { caseNo, caseName } = kase;
-    const encLead  = encodeURIComponent(leadName);
-    const encCase  = encodeURIComponent(caseName);
+    const encLead    = encodeURIComponent(leadName);
+    const base       = `${leadNo}/${encLead}/${kaseId}`;
 
     try {
       // Fetch all lead return sections in parallel
@@ -568,17 +568,17 @@ export const LRVehicle = () => {
         instrRes, returnsRes, personsRes, vehiclesRes, enclosuresRes,
         evidenceRes, picturesRes, audioRes, videosRes, scratchpadRes, timelineRes,
       ] = await Promise.all([
-        api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lead/lead/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/leadReturnResult/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrperson/lrperson/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvehicle/lrvehicle/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrenclosure/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrevidence/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrpicture/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lraudio/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvideo/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/scratchpad/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/timeline/${base}`, headers).catch(() => ({ data: [] })),
       ]);
 
       // Attach associated files to each media section
@@ -641,34 +641,7 @@ export const LRVehicle = () => {
     }
   };
 
-  /** Navigates to the ViewLR page for reviewing or submitting the lead return. */
-  const goToViewLR = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-      showAlert('Please select a case and lead first.');
-      return;
-    }
-    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
-  };
 
-  // ── Navigation helpers ────────────────────────────────────────────────────
-
-  const navigateToLeadReview = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (lead && kase) navigate('/LeadReview', { state: { caseDetails: kase, leadDetails: lead } });
-  };
-
-  const navigateToChainOfCustody = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (lead && kase) {
-      navigate('/ChainOfCustody', { state: { caseDetails: kase, leadDetails: lead } });
-    } else {
-      showAlert('Please select a case and lead first.');
-    }
-  };
 
   // ── Guard ─────────────────────────────────────────────────────────────────
 
@@ -720,39 +693,15 @@ export const LRVehicle = () => {
         <div className={styles.leftContentLI}>
 
           {/* ── Page-level navigation menu ── */}
-          <div className={styles.topMenuNav}>
-            <div className={styles.menuItems}>
-              <span className={styles.menuItem} onClick={navigateToLeadReview}>
-                Lead Information
-              </span>
-              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
-                Add Lead Return
-              </span>
-
-              {/* Case Manager: generate full report */}
-              {isCaseManager && (
-                <span
-                  className={styles.menuItem}
-                  onClick={handleViewLeadReturn}
-                  title={isGenerating ? 'Preparing report…' : 'View Lead Return'}
-                  style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? 'none' : 'auto' }}
-                >
-                  Manage Lead Return
-                </span>
-              )}
-
-              {/* Investigator: submit or review */}
-              {selectedCase?.role === 'Investigator' && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  {isPrimaryInvestigator ? 'Submit Lead Return' : 'Review Lead Return'}
-                </span>
-              )}
-
-              <span className={styles.menuItem} onClick={navigateToChainOfCustody}>
-                Lead Chain of Custody
-              </span>
-            </div>
-          </div>
+          <LRTopMenu
+            activePage="addLeadReturn"
+            selectedCase={selectedCase}
+            selectedLead={selectedLead}
+            isPrimaryInvestigator={isPrimaryInvestigator}
+            isGenerating={isGenerating}
+            onManageLeadReturn={handleViewLeadReturn}
+            styles={styles}
+          />
 
           {/* ── Section tabs ── */}
           <div className={styles.topMenuSections}>
@@ -1013,7 +962,7 @@ export const LRVehicle = () => {
                                   onChange={(e) => handleAccessChange(index, e.target.value)}
                                 >
                                   <option value="Everyone">All</option>
-                                  <option value="Case Manager">Case Manager</option>
+                                  <option value="Case Manager Only">Case Manager</option>
                                   <option value="Case Manager and Assignees">Assignees</option>
                                 </select>
                               </td>

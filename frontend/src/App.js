@@ -43,6 +43,7 @@ import { DocumentReview } from './Pages/DocumentReview/DocumentReview';
 import { ClosedCase } from './Pages/ClosedCase/ClosedCase';
 import { LeadVersionHistory } from './Pages/LeadVersionHistory/LeadVersionHistory';
 import { GenerateReport } from './Pages/GenerateReport/GenerateReport';
+import { CaseInformation } from './Pages/CaseInformation/CaseInformation';
 import ProtectedLayout from './protectedLayout';
 
 
@@ -111,6 +112,7 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/DocumentReview" element={<ProtectedLayout><DocumentReview /></ProtectedLayout>} />
         <Route path="/ClosedCase" element={<ProtectedLayout><ClosedCase /></ProtectedLayout>} />
         <Route path="/LeadVersionHistory" element={<ProtectedLayout><LeadVersionHistory /></ProtectedLayout>} />
+        <Route path="/CaseInformation" element={<ProtectedLayout><CaseInformation /></ProtectedLayout>} />
       </Routes>
 
            <AlertModal

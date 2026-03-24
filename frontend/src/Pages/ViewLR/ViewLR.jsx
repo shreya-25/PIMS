@@ -8,63 +8,7 @@ import api from "../../api";
 import styles from "./ViewLR.module.css"; 
 import { AlertModal } from "../../components/AlertModal/AlertModal";
 import { useLeadStatus } from '../../hooks/useLeadStatus';
-
-/* ---------- person details sheet (non-blocking) ---------- */
-function PersonSheet({ person, onClose }) {
-  // Close with Esc
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  if (!person) return null;
-
-  // flatten useful pairs to render
-  const fields = Object.entries(person)
-    .filter(([k]) => !["_id", "__v", "files", "photoS3Key", "photoOriginalName", "photoFilename", "photoUrl"].includes(k));
-
-  return (
-    <>
-      {/* transparent backdrop: lets clicks fall through to page/comment bar */}
-      <div className={styles.nbBackdrop} />
-
-      {/* floating sheet: catches only its own clicks */}
-      <aside className={styles.personSheet} role="dialog" aria-modal="false" aria-label="Person details">
-        <div className={styles.sheetHeader}>
-          <h4 className={styles.sheetTitle}>Person Details</h4>
-          <button className={styles.iconBtn} onClick={onClose} aria-label="Close">×</button>
-        </div>
-
-        <div className={styles.sheetBody}>
-          {person.photoUrl && (
-            <div style={{ textAlign: "center", marginBottom: "12px" }}>
-              <img
-                src={person.photoUrl}
-                alt={`${person.firstName || ""} ${person.lastName || ""}`}
-                style={{
-                  width: "120px",
-                  height: "120px",
-                  objectFit: "cover",
-                  borderRadius: "50%",
-                  border: "2px solid #ccc",
-                }}
-              />
-            </div>
-          )}
-          <div className={styles.kvGrid}>
-            {fields.map(([key, val]) => (
-              <div key={key} className={styles.kvRow}>
-                <div className={styles.kvKey}>{key}</div>
-                <div className={styles.kvVal}>{toText(val)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </aside>
-    </>
-  );
-}
+import PersonModal from "../../components/PersonModal/PersonModel";
 
 
 
@@ -102,6 +46,7 @@ export const ViewLR = () => {
   const [notes, setNotes] = useState([]);
   const [timeline, setTimeline] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [openPerson, setOpenPerson] = useState(null);
   const [showComments, setShowComments] = useState(true);
   const currentUser = localStorage.getItem("loggedInUser");
@@ -136,10 +81,10 @@ const closeComments  = useCallback(() => setShowComments(false), []);
   const leadName = selectedLead?.leadName || location.state?.leadDetails?.leadName;
 
   const { status, isReadOnly, setLocalStatus } = useLeadStatus({
-    caseNo: selectedCase.caseNo,
-    caseName: selectedCase.caseName,
+    caseId: selectedCase._id || selectedCase.id,
     leadNo: selectedLead.leadNo,
     leadName: selectedLead.leadName,
+    initialStatus: selectedLead?.leadStatus,
   });
 
   const isSubmittedInReview = status === "In Review";
@@ -167,19 +112,107 @@ const primaryUsername =
 
  const isPrimaryInvestigator = !!currentUser && currentUser === primaryUsername;
 
-const canShowSubmit      = isInvestigator && isPrimaryInvestigator && !isClosedOrCompleted && !isInReview;
+const isAssignedAsInvestigator = investigatorUsernames.includes(currentUser);
+const canShowSubmit      = !isClosedOrCompleted && !isInReview && (
+  (isInvestigator && (isPrimaryInvestigator || (!primaryUsername && isAssignedAsInvestigator))) ||
+  (isCaseManager && isAssignedAsInvestigator)
+);
 
 
   const handleNavigation = (route) => {
     navigate(route); // Navigate to respective page
   };
 
+  const attachFiles = async (items, idFieldName, filesEndpoint) => {
+    const token = localStorage.getItem("token");
+    return Promise.all(
+      (items || []).map(async (item) => {
+        const realId = item[idFieldName];
+        if (!realId) return { ...item, files: [] };
+        try {
+          const { data: filesArray } = await api.get(
+            `${filesEndpoint}/${realId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          return { ...item, files: filesArray };
+        } catch {
+          return { ...item, files: [] };
+        }
+      })
+    );
+  };
+
+  const handleManageLeadReturn = async () => {
+    if (isGenerating) return;
+    try {
+      setIsGenerating(true);
+      const token = localStorage.getItem("token");
+
+      const [enclosuresWithFiles, evidenceWithFiles, picturesWithFiles, audioWithFiles, videosWithFiles] =
+        await Promise.all([
+          attachFiles(enclosures, "_id", "/api/lrenclosures/files"),
+          attachFiles(evidence,   "_id", "/api/lrevidences/files"),
+          attachFiles(pictures,   "pictureId", "/api/lrpictures/files"),
+          attachFiles(audio,      "audioId",   "/api/lraudio/files"),
+          attachFiles(videos,     "videoId",   "/api/lrvideo/files"),
+        ]);
+
+      const selectedReports = {
+        FullReport: true, leadInstruction: true, leadReturn: true,
+        leadPersons: true, leadVehicles: true, leadEnclosures: true,
+        leadEvidence: true, leadPictures: true, leadAudio: true,
+        leadVideos: true, leadScratchpad: true, leadTimeline: true,
+      };
+
+      const body = {
+        user: currentUser || "",
+        reportTimestamp: new Date().toISOString(),
+        leadInstruction: instructions,
+        leadReturn:      returns,
+        leadReturns:     returns,
+        leadInstructions: instructions,
+        leadPersons:     persons,
+        leadVehicles:    vehicles,
+        leadEnclosures:  enclosuresWithFiles,
+        leadEvidence:    evidenceWithFiles,
+        leadPictures:    picturesWithFiles,
+        leadAudio:       audioWithFiles,
+        leadVideos:      videosWithFiles,
+        leadScratchpad:  notes,
+        leadTimeline:    timeline,
+        selectedReports,
+      };
+
+      const resp = await api.post("/api/report/generate", body, {
+        responseType: "blob",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      navigate("/DocumentReview", {
+        state: {
+          pdfBlob: new Blob([resp.data], { type: "application/pdf" }),
+          filename: `Lead_${leadNo || "report"}.pdf`,
+        },
+      });
+    } catch (err) {
+      if (err?.response?.data instanceof Blob) {
+        const text = await err.response.data.text();
+        setAlertMessage("Error generating PDF:\n" + text);
+      } else {
+        setAlertMessage("Error generating PDF:\n" + (err.message || "Unknown error"));
+      }
+      setAlertOpen(true);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
 
   // -------- fetch all sections (same endpoints you already use) --------
   useEffect(() => {
-    if (!caseNo || !caseName || !leadNo || !leadName) return;
+    const caseId = selectedCase?._id || selectedCase?.id || location.state?.caseDetails?._id || location.state?.caseDetails?.id;
+    if (!caseId || !leadNo || !leadName) return;
     const encLead = encodeURIComponent(leadName);
-    const encCase = encodeURIComponent(caseName);
     const token = localStorage.getItem("token");
     const headers = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -199,17 +232,17 @@ const canShowSubmit      = isInvestigator && isPrimaryInvestigator && !isClosedO
           notesRes,
           timelineRes,
         ] = await Promise.all([
-          api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/lraudio/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+          api.get(`/api/timeline/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
         ]);
 
         const leadDoc = instrRes.data?.[0] || {}; setInstructions(leadDoc);
@@ -229,7 +262,7 @@ const canShowSubmit      = isInvestigator && isPrimaryInvestigator && !isClosedO
       }
     }
     loadAll();
-  }, [caseNo, caseName, leadNo, leadName]);
+  }, [selectedCase?._id, selectedCase?.id, leadNo, leadName]);
 
   // Group helpers — we’ll try common keys: narrativeId, returnId, lrId, or fall back to _id
   const keyFor = (obj) =>
@@ -254,7 +287,7 @@ const canShowSubmit      = isInvestigator && isPrimaryInvestigator && !isClosedO
 
   const go = (path) => navigate(path);
 
-  if (!caseNo || !leadNo) {
+  if (!(selectedCase?._id || selectedCase?.id) || !leadNo) {
     return (
       <div style={{ padding: 16 }}>
         Please select a case & lead.
@@ -301,11 +334,10 @@ const actuallyDoSubmitReport = async () => {
       const body = {
         leadNo: selectedLead.leadNo,
         description: selectedLead.leadName,
-        caseNo: selectedCase.caseNo,
-        caseName: selectedCase.caseName,
+        caseId: selectedCase._id || selectedCase.id,
         submittedDate: new Date(),
         assignedTo: { assignees: assignees.length ? assignees : [me], lRStatus: "Submitted" },
-     assignedBy: { assignee: managerUser || me, lRStatus: "Pending" }
+        assignedBy: { assignee: managerUser || me, lRStatus: "Pending" }
       };
 
       const response = await api.put("/api/leadReturn/set-lrstatus-submitted", body, {
@@ -321,8 +353,7 @@ const actuallyDoSubmitReport = async () => {
           {
             leadNo: selectedLead.leadNo,
             description: selectedLead.leadName,
-            caseNo: selectedCase.caseNo,
-            caseName: selectedCase.caseName,
+            caseId: selectedCase._id || selectedCase.id,
             submittedDate: now
           },
           {
@@ -351,16 +382,18 @@ const actuallyDoSubmitReport = async () => {
             assignedBy:     localStorage.getItem("loggedInUser"),
             assignedTo: [{
               username: manager,
-              role:     "Case Manager",           
+              role:     "Case Manager",
               status:   "pending",
               unread:   true
             }],
             action1:        "submitted a lead return for review",
             post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
+            caseId:         selectedCase._id || selectedCase.id,
             caseNo:         selectedCase.caseNo,
             caseName:       selectedCase.caseName,
+            leadId:         selectedLead._id || selectedLead.id,
             leadNo:         selectedLead.leadNo,
-            leadName:       selectedLead.leadName,
+            leadName:       selectedLead.leadName || selectedLead.description,
             type:           "Lead"
           };
           await api.post("/api/notifications", payload, {
@@ -475,13 +508,22 @@ const actuallyDoSubmitReport = async () => {
                     //  setAlertOpen(true);
                   }
                 }}>Add Lead Return</span>
-          {/* <span className={`${styles.menuItem} ${styles.menuItemActive}`}>Submit Lead Return</span> */}
   <span
     className={`${styles.menuItem} ${styles.menuItemActive}`}
-    title={isPrimaryInvestigator ? "Submit Lead Return" : "Review Lead Return"}
+    title={isCaseManager ? "Review Lead Return" : isPrimaryInvestigator ? "Submit Lead Return" : "Review Lead Return"}
   >
-    {isPrimaryInvestigator ? "Submit Lead Return" : "Review Lead Return"}
+    {isCaseManager ? "Review Lead Return" : isPrimaryInvestigator ? "Submit Lead Return" : "Review Lead Return"}
   </span>
+  {isCaseManager && (
+    <span
+      className={styles.menuItem}
+      onClick={handleManageLeadReturn}
+      title={isGenerating ? "Preparing report…" : "Manage Lead Return"}
+      style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
+    >
+      Manage Lead Return
+    </span>
+  )}
           <span className={styles.menuItem} onClick={() => {
                   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
                   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
@@ -673,9 +715,9 @@ const actuallyDoSubmitReport = async () => {
                                         title="Click to view full person details"
                                     >
                                         <td>{p.enteredDate ? new Date(p.enteredDate).toLocaleDateString() : "—"}</td>
-                                        <td>{toText(p.firstName)}</td>
+                                        <td>{[p.firstName, p.middleInitial, p.lastName].filter(Boolean).join(' ') || '—'}</td>
                                         <td>{toText(p.cellNumber)}</td>
-                                        <td>{toText(p.address)}</td>
+                                        <td>{p.address?.street1 ? [p.address.street1, p.address.street2, p.address.building, p.address.apartment].filter(Boolean).join(' • ') + (p.address.city || p.address.state || p.address.zipCode ? ` • ${[p.address.city, p.address.state, p.address.zipCode].filter(Boolean).join(', ')}` : '') : '—'}</td>
                                     </tr>
                                     ))}
                                 </tbody>
@@ -1067,8 +1109,6 @@ const actuallyDoSubmitReport = async () => {
     <CommentBar
       combined
       status={status}
-      caseNo={caseNo}
-      caseName={caseName}
       leadNo={leadNo}
       leadName={leadName}
       includePrivateFrom={[
@@ -1087,8 +1127,13 @@ const actuallyDoSubmitReport = async () => {
                 
               </div>
 
-              {/* Non-blocking person detail sheet */}
-              <PersonSheet person={openPerson} onClose={closePersonSheet} />
+              <PersonModal
+                isOpen={!!openPerson}
+                onClose={closePersonSheet}
+                personData={openPerson}
+                caseName={caseName}
+                leadNo={leadNo}
+              />
             </>
           )}
         </div>

@@ -1,4 +1,5 @@
 const LeadReturn = require("../models/leadreturn");
+const Case = require("../models/case");
 const { createSnapshot } = require("../utils/leadReturnVersioning");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 const {
@@ -180,11 +181,15 @@ const updateLRStatusToPending = async (req, res) => {
 
 const updateLRStatusToSubmitted = async (req, res) => {
     try {
-      const { leadNo, description, caseName, caseNo, submittedDate, assignedTo, assignedBy, accessLevel } = req.body;
+      const { leadNo, description, caseId, submittedDate, assignedTo, assignedBy, accessLevel } = req.body;
 
-      if (!leadNo || !description || !caseName || !caseNo) {
+      if (!leadNo || !description || !caseId) {
         return res.status(400).json({ message: "All fields are required." });
       }
+
+      const caseDoc = await Case.findById(caseId).select("caseNo caseName").lean();
+      if (!caseDoc) return res.status(404).json({ message: "Case not found." });
+      const { caseNo, caseName } = caseDoc;
 
       let leadReturn = await LeadReturn.findOne({ leadNo, caseNo });
 

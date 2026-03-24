@@ -1,273 +1,253 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useCallback } from "react";
 import { CaseContext } from "../../Pages/CaseContext";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import "./NotificationCard.css";
 
 const NotificationCard1 = ({ signedInOfficer }) => {
-  const [newNotifs,   setNewNotifs]   = useState([]);
-  const [openNotifs,  setOpenNotifs]  = useState([]);
-  const [showAll,     setShowAll]     = useState(false);
-  const [loading,     setLoading]     = useState(false);
-  const [error,       setError]       = useState(null);
-  const [collapsedAll,setCollapsedAll]= useState(false);
+  const [newNotifs,    setNewNotifs]    = useState([]);
+  const [openNotifs,   setOpenNotifs]   = useState([]);
+  const [showAll,      setShowAll]      = useState(false);
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState(null);
+  const [collapsedAll, setCollapsedAll] = useState(false);
+  const [navigating,   setNavigating]   = useState(null); // _id being navigated
 
   const { setSelectedCase, setSelectedLead } = useContext(CaseContext);
   const navigate = useNavigate();
 
-   const downArrow = `${process.env.PUBLIC_URL}/Materials/down_arrow.png`;
+  const downArrow = `${process.env.PUBLIC_URL}/Materials/down_arrow.png`;
   const upArrow   = `${process.env.PUBLIC_URL}/Materials/up_arrow.png`;
 
+  // ── Fetch helpers ──────────────────────────────────────────────────────────
 
-//   const fetchOngoingCases = async () => {
-//   try {
-//     const { data } = await api.get(`/api/cases?officerName=${signedInOfficer}`);
-//     return data.filter(c => c.caseStatus === "Ongoing").map(c => c.caseNo);
-//   } catch (err) {
-//     console.error("❌ Error fetching ongoing cases:", err.response?.data || err.message);
-//     return []; // fallback
-//   }
-// };
-
-
-  // ————————————————
-  // 1) “fetch‐only” helpers return arrays (no setState inside)
-  // ————————————————
-  const fetchNewOnly = async () => {
+  const fetchNewOnly = useCallback(async () => {
     const { data } = await api.get(`/api/notifications/user/${signedInOfficer}`);
     return data
       .filter(n =>
         (n.type === "Case" || n.type === "Lead") &&
         n.caseStatus === "Open" &&
-        n.assignedTo.some(r => r.username === signedInOfficer && r.status === "pending" && r.unread === true  )
+        n.assignedTo.some(r =>
+          r.username === signedInOfficer &&
+          r.status === "pending" &&
+          r.unread === true
+        )
       )
       .sort((a, b) => new Date(b.time) - new Date(a.time));
-  };
+  }, [signedInOfficer]);
 
-// helper: fetch only the case‑Nos for Ongoing cases
-// const fetchOngoingCases = async () => {
-//   try {
-//     const { data } = await api.get(
-//       `/api/cases/cases-by-officer?officerName=${encodeURIComponent(signedInOfficer)}`
-//     );
-//     // data is now an array of Case docs with status="Ongoing" for this officer
-//     return data.map(c => c.caseNo);
-//   } catch (err) {
-//     console.error("Error fetching ongoing cases:", err.response?.data || err.message);
-//     return [];
-//   }
-// };
-
-
-// const fetchNewOnly = async () => {
-//   // fire both requests in parallel
-//   const [notifResp, ongoingCaseNos] = await Promise.all([
-//     api.get(`/api/notifications/user/${signedInOfficer}`),
-//     fetchOngoingCases()
-//   ]);
-
-//   return notifResp.data
-//     .filter(n =>
-//       (n.type === "Case" || n.type === "Lead") &&
-//       // only those tied to an Ongoing case
-//       ongoingCaseNos.includes(n.caseNo) &&
-//       // still pending & unread for this officer
-//       n.assignedTo.some(r =>
-//         r.username === signedInOfficer &&
-//         r.status === "pending" &&
-//         r.unread === true
-//       )
-//     )
-//     .sort((a, b) => new Date(b.time) - new Date(a.time));
-// };
-
-
-
-  const fetchOpenOnly = async () => {
+  const fetchOpenOnly = useCallback(async () => {
     const { data } = await api.get(`/api/notifications/open/user/${signedInOfficer}`);
-     return data
-    .filter(n => n.caseStatus === "Open")
-    .sort((a, b) => new Date(b.time) - new Date(a.time));
-  };
+    return data
+      .filter(n => n.caseStatus === "Open")
+      .sort((a, b) => new Date(b.time) - new Date(a.time));
+  }, [signedInOfficer]);
 
-//   const fetchOpenOnly = async () => {
-//   const [notifResp, caseNos] = await Promise.all([
-//     api.get(`/api/notifications/open/user/${signedInOfficer}`),
-//     fetchOngoingCases()
-//   ]);
+  // ── Polling (15 s) ─────────────────────────────────────────────────────────
 
-//   return notifResp.data
-//     .filter(n =>
-//       n.assignedTo.some(r => r.username === signedInOfficer) &&
-//       caseNos.includes(n.caseNo) // ✅ only for ongoing cases
-//     )
-//     .sort((a, b) => new Date(b.time) - new Date(a.time));
-// };
-
-
-  // ————————————————
-  // 2) Utility to compare two arrays of notifications
-  // ————————————————
-  const arraysAreEqual = (a, b) => {
-    if (!Array.isArray(a) || !Array.isArray(b)) return false;
-    if (a.length !== b.length) return false;
-    return JSON.stringify(a) === JSON.stringify(b);
-  };
-
-  // ————————————————
-  // 3) Poll every 15 seconds, but only set state if the data actually changed
-  // ————————————————
   useEffect(() => {
     if (!signedInOfficer) return;
-    let intervalId;
 
-    const pollNotifications = async () => {
-      // setLoading(true);
+    const poll = async () => {
       try {
-        const [freshNew, freshOpen] = await Promise.all([
-          fetchNewOnly(),
-          fetchOpenOnly()
-        ]);
-
-        // Update newNotifs only if it’s different
-        setNewNotifs(prev => {
-          if (!arraysAreEqual(prev, freshNew)) {
-            return freshNew;
-          }
-          return prev;
-        });
-
-        // Update openNotifs only if it’s different
-        setOpenNotifs(prev => {
-          if (!arraysAreEqual(prev, freshOpen)) {
-            return freshOpen;
-          }
-          return prev;
-        });
+        const [freshNew, freshOpen] = await Promise.all([fetchNewOnly(), fetchOpenOnly()]);
+        setNewNotifs(prev =>
+          JSON.stringify(prev) !== JSON.stringify(freshNew) ? freshNew : prev
+        );
+        setOpenNotifs(prev =>
+          JSON.stringify(prev) !== JSON.stringify(freshOpen) ? freshOpen : prev
+        );
       } catch (e) {
         setError(e.message || "Failed to load notifications");
-      } finally {
-        // setLoading(false);
       }
     };
 
-    // Run once immediately, then every 15s
-    pollNotifications();
-    intervalId = setInterval(pollNotifications, 15000);
-    return () => clearInterval(intervalId);
-  }, [signedInOfficer]);
+    poll();
+    const id = setInterval(poll, 15000);
+    return () => clearInterval(id);
+  }, [signedInOfficer, fetchNewOnly, fetchOpenOnly]);
 
-  // ————————————————
-  // 4) “View” handler (same as before)
-  // ————————————————
+  // ── Type badge ─────────────────────────────────────────────────────────────
+
   const getType = n => {
-    if (n.type === "Case")       return { letter: "C", color: "blue" };
-    if (n.type === "Lead")       return { letter: "L", color: "green" };
-    if (n.type === "LeadReturn") return { letter: "LR", color: "red" };
-    return { letter: "?", color: "gray" };
+    if (n.type === "Case")       return { letter: "C",  color: "#2563eb" };
+    if (n.type === "Lead")       return { letter: "L",  color: "#16a34a" };
+    if (n.type === "LeadReturn") return { letter: "LR", color: "#dc2626" };
+    return { letter: "?", color: "#6b7280" };
   };
+
+  // ── View handler ───────────────────────────────────────────────────────────
 
   const handleView = async _id => {
     const n = newNotifs.find(x => x._id === _id) || openNotifs.find(x => x._id === _id);
     if (!n) return;
 
-    const { notificationId, leadNo, leadName, caseNo, caseName, action1 } = n;
-
     const myAss = n.assignedTo.find(r => r.username === signedInOfficer);
-    let role = myAss.role;
+    if (!myAss) return;
 
-    // Mark as read if still unread
-     if (myAss.unread) {
-      await api.put(
-        `/api/notifications/mark-read/${notificationId}`,
-        { username: signedInOfficer }
-      );
-      setNewNotifs(prev => prev.filter(x => x._id !== _id));
-    }
+    setNavigating(_id);
+    try {
+      // 1. Mark as read (treat missing unread field as unread=true for legacy docs)
+      if (myAss.unread !== false) {
+        await api.put(`/api/notifications/mark-read/${n.notificationId}`, {
+          username: signedInOfficer,
+        });
+        // Remove from New Notifications
+        setNewNotifs(prev => prev.filter(x => x._id !== _id));
+        // Mark as read in All Notifications without waiting for next poll
+        setOpenNotifs(prev =>
+          prev.map(x =>
+            x._id === _id
+              ? {
+                  ...x,
+                  assignedTo: x.assignedTo.map(r =>
+                    r.username === signedInOfficer ? { ...r, unread: false } : r
+                  ),
+                }
+              : x
+          )
+        );
+      }
 
-    const baseState = { caseNo, caseName, role, ...(leadNo && { leadNo, leadName }) };
-    setSelectedCase(baseState);
-    setSelectedLead({ leadNo, leadName });
-    localStorage.setItem("selectedCase", JSON.stringify(baseState));
+      // 2. Fetch full case by caseId (ObjectId)
+      let fullCase = { caseNo: n.caseNo, caseName: n.caseName, role: myAss.role };
+      if (n.caseId) {
+        try {
+          const { data } = await api.get(`/api/cases/${n.caseId}`);
+          if (data) fullCase = { ...data, role: myAss.role };
+        } catch (e) {
+          console.error("Could not fetch full case:", e.message);
+        }
+      }
 
-    if (action1.includes("case")) {
-        const dest = (role === "Case Manager" || role === "Detective Supervisor")
-        ? "/CasePageManager": "/Investigator";
-      navigate(dest, { state: baseState });
-    }
-    else if (action1.includes("lead")) {
-      navigate("/LeadReview", { state: { ...baseState, role } });
-    }
-    else {
-      navigate("/LRInstruction", { state: baseState });
+      // Persist case to both storages + context
+      setSelectedCase(fullCase);
+      sessionStorage.setItem("selectedCase", JSON.stringify(fullCase));
+      localStorage.setItem("selectedCase", JSON.stringify(fullCase));
+
+      // 3. Fetch full lead using caseId (ObjectId) — use leadNo+caseId to avoid
+      //    brittle name-matching (notification.leadName may differ from lead.description)
+      const caseId = fullCase._id || fullCase.id;
+      let fullLead = { leadNo: n.leadNo, leadName: n.leadName };
+      if (n.leadNo && caseId) {
+        try {
+          const { data } = await api.get(`/api/lead/lead/${n.leadNo}/${caseId}`);
+          const hit = Array.isArray(data) ? data[0] : data;
+          if (hit) {
+            // Normalize: pages use `leadName`, but the Lead model stores it in `description`
+            fullLead = { ...hit, leadName: hit.leadName || hit.description || n.leadName };
+          }
+        } catch (e) {
+          console.error("Could not fetch full lead:", e.message);
+        }
+      }
+
+      // Persist lead to both storages + context
+      setSelectedLead(fullLead);
+      sessionStorage.setItem("selectedLead", JSON.stringify(fullLead));
+      localStorage.setItem("selectedLead", JSON.stringify(fullLead));
+
+      // 4. Navigate to appropriate page
+      const action = (n.action1 || "").toLowerCase();
+      if (action.includes("case")) {
+        const dest = (myAss.role === "Case Manager" || myAss.role === "Detective Supervisor")
+          ? "/CasePageManager"
+          : "/Investigator";
+        navigate(dest, { state: { caseDetails: fullCase } });
+      } else if (action.includes("lead")) {
+        navigate("/LeadReview", { state: { caseDetails: fullCase, leadDetails: fullLead } });
+      } else {
+        navigate("/LRInstruction", { state: { caseDetails: fullCase, leadDetails: fullLead } });
+      }
+    } catch (e) {
+      console.error("Notification view failed:", e.message);
+    } finally {
+      setNavigating(null);
     }
   };
 
-  if (loading) return <p>Loading notifications…</p>;
-  if (error)   return <p className="error">{error}</p>;
+  // ── Card renderer ──────────────────────────────────────────────────────────
+  // isNew: true  → "New Notifications" section — View always clickable
+  // isNew: false → "View All" section — View disabled once already read
 
-  const renderCard = n => {
+  const renderCard = (n, isNew = false) => {
     const { letter, color } = getType(n);
     const thisAss = n.assignedTo.find(r => r.username === signedInOfficer);
-    const isPending = thisAss.status === "pending";
-    const isUnread = thisAss.unread;
+    if (!thisAss) return null;
+
+    // Treat missing unread field (legacy docs) as unread=true
+    const isUnread  = thisAss.unread !== false;
+    const isLoading = navigating === n._id;
+    // Only disable View in the "View All" tab when already read
+    const viewDisabled = isLoading || (!isNew && !isUnread);
 
     return (
       <div
         key={n._id}
-        className={`notification-card ${thisAss.unread ? "unread" : "read"}`}
+        className={`notification-card ${isUnread ? "unread" : "read"}`}
       >
         <div className="circle-icon" style={{ backgroundColor: color }}>
           <span className="notification-letter">{letter}</span>
         </div>
+
         <div className="notification-content">
           <div className="notification-text">
             <p>
               <strong>{n.assignedBy}</strong> {n.action1}
               {n.post1 && <strong> {n.post1}</strong>}
-               {n.action2 && (
-    <> {n.action2}{n.post2 && <strong> {n.post2}</strong>}</>
-  )}
+              {n.action2 && (
+                <> {n.action2}{n.post2 && <strong> {n.post2}</strong>}</>
+              )}
             </p>
             <span className="time">Role: {thisAss.role}</span>
             <span className="time">{new Date(n.time).toLocaleString()}</span>
           </div>
+
           <div className="buttons-container">
-            <button className="view-btnNC" onClick={() => handleView(n._id)}
-               disabled={!isUnread}>
-              View
+            <button
+              className="view-btnNC"
+              onClick={() => handleView(n._id)}
+              disabled={viewDisabled}
+              title={viewDisabled && !isLoading ? "Already viewed" : "View"}
+              style={viewDisabled && !isLoading ? { opacity: 0.45, cursor: "not-allowed" } : undefined}
+            >
+              {isLoading ? "Loading…" : "View"}
             </button>
-            {isPending &&
-              !n.action1.toLowerCase().includes("accepted") &&
-              !n.action1.toLowerCase().includes("declined") && (
-                <>{/* Accept/Decline buttons here */}</>
-              )}
           </div>
         </div>
       </div>
     );
   };
 
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  if (loading) return <p>Loading notifications…</p>;
+  if (error)   return <p className="error">{error}</p>;
+
   return (
     <div className="notification-bar">
       <div className="headerNC">
-        <h3 
-        // className="clickable-header" 
-        className={`clickable-header ${!showAll ? "active" : ""}`}
-        onClick={() => setShowAll(false)}>
+        <h3
+          className={`clickable-header ${!showAll ? "active" : ""}`}
+          onClick={() => setShowAll(false)}
+        >
           New Notifications <span className="count">{newNotifs.length}</span>
         </h3>
-        <h3 
-        // className="clickable-header" 
-         className={`clickable-header ${showAll ? "active" : ""}`}
-        onClick={() => setShowAll(true)}>
+        <h3
+          className={`clickable-header ${showAll ? "active" : ""}`}
+          onClick={() => setShowAll(true)}
+        >
           View All Notifications
         </h3>
       </div>
 
       {!showAll ? (
         <div className="notifications-list">
-          {newNotifs.map(renderCard)}
+          {newNotifs.length === 0 ? (
+            <p style={{ padding: "8px", color: "#6b7280" }}>No new notifications.</p>
+          ) : (
+            newNotifs.map(n => <React.Fragment key={n._id}>{renderCard(n, true)}</React.Fragment>)
+          )}
         </div>
       ) : (
         <>
@@ -293,26 +273,33 @@ const NotificationCard1 = ({ signedInOfficer }) => {
                   left: "50%",
                   transform: "translateX(-50%)",
                   width: "24px",
-                  height: "24px"
+                  height: "24px",
                 }}
               />
             </button>
           </div>
+
           <div
             className="notifications-list view-all"
             style={{
               height: collapsedAll ? "80px" : "auto",
-              overflowY: collapsedAll ? "hidden" : "auto"
+              overflowY: collapsedAll ? "hidden" : "auto",
             }}
           >
-            {(collapsedAll
-              ? openNotifs.filter(n =>
-                  n.assignedTo.some(r => r.username === signedInOfficer)
-                ).slice(0, 1)
-              : openNotifs.filter(n =>
-                  n.assignedTo.some(r => r.username === signedInOfficer)
-                )
-            ).map(renderCard)}
+            {(() => {
+              const filtered = openNotifs.filter(n =>
+                n.assignedTo.some(r => r.username === signedInOfficer)
+              );
+              const visible = collapsedAll ? filtered.slice(0, 1) : filtered;
+              if (visible.length === 0) {
+                return (
+                  <p style={{ padding: "8px", color: "#6b7280" }}>No notifications.</p>
+                );
+              }
+              return visible.map(n => (
+                <React.Fragment key={n._id}>{renderCard(n)}</React.Fragment>
+              ));
+            })()}
           </div>
         </>
       )}
@@ -321,145 +308,3 @@ const NotificationCard1 = ({ signedInOfficer }) => {
 };
 
 export default NotificationCard1;
-
-//   return (
-//     <div className="notification-bar">
-//       <div className="headerNC">
-//         <h3 className="clickable-header" onClick={() => setShowAll(false)}>
-//           New Notifications <span className="count">{newNotifs.length}</span>
-//         </h3>
-//         <h3 className="clickable-header" onClick={() => setShowAll(true)}>
-//           View All Notifications
-//         </h3>
-//       </div>
-
-//       {!showAll ? (
-//         <div className="notifications-list">
-//           {newNotifs.slice(0,5).map(n => {
-//             const { letter, color } = getType(n);
-//             const thisAss = n.assignedTo.find(r => r.username === signedInOfficer);
-//             const isPending = thisAss?.status === "pending";
-
-//             return (
-//               <div key={n._id} className={`notification-card ${n.unread ? "unread" : "read"}`}>
-//                 <div className="circle-icon" style={{ backgroundColor: color }}>
-//                   <span className="notification-letter">{letter}</span>
-//                 </div>
-//                 <div className="notification-content">
-//                   <div className="notification-text">
-//                     <p>
-//                       <strong>{n.assignedBy}</strong> {n.action1}
-//                       {n.post1 && <strong> {n.post1}</strong>}
-//                     </p>
-//                     {n.action1.toLowerCase().includes("assigned") ? (
-//             <span className="time">Role: Investigator</span>
-//           ) : (
-//             <span className="time">Role: Case Manager</span>
-//           )}
-//                     <span className="time">{new Date(n.time).toLocaleString()}</span>
-//                   </div>
-//                   <div className="buttons-container">
-//                     <button className="view-btnNC" onClick={() => handleView(n._id)}>
-//                       View
-//                     </button>
-//                     {isPending &&
-//                       !n.action1.toLowerCase().includes("accepted") &&
-//                       !n.action1.toLowerCase().includes("declined") && (
-//                         <>{/* Accept/Decline buttons */}</>
-//                       )
-//                     }
-//                   </div>
-//                 </div>
-//               </div>
-//             );
-//           })}
-//         </div>
-//       ) : (
-//         <>
-//           <div className="view-all-collapse-toggle">
-//             <button
-//               onClick={() => setCollapsedAll(c => !c)}
-//               aria-label={collapsedAll ? "Expand" : "Collapse"}
-//               style={{
-//                 position: "relative",
-//                 width: "100%",
-//                 height: "40px",
-//                 background: "transparent",
-//                 border: "none",
-//                 cursor: "pointer"
-//               }}
-//             >
-//               <img
-//                 src={collapsedAll ? downArrow : upArrow}
-//                 alt={collapsedAll ? "Expand" : "Collapse"}
-//                 style={{
-//                   position: "absolute",
-//                   bottom: "4px",
-//                   left: "50%",
-//                   transform: "translateX(-50%)",
-//                   width: "24px",
-//                   height: "24px"
-//                 }}
-//               />
-//             </button>
-//           </div>
-//           <div
-//             className="notifications-list view-all"
-//             style={{
-//               height: collapsedAll ? "80px" : "auto",
-//               overflowY: collapsedAll ? "hidden" : "auto"
-//             }}
-//           >
-//             {(collapsedAll
-//               ? openNotifs.filter(x =>
-//                   x.assignedTo.some(r => r.username === signedInOfficer)
-//                 ).slice(0, 1)
-//               : openNotifs.filter(x =>
-//                   x.assignedTo.some(r => r.username === signedInOfficer)
-//                 )
-//             ).map(n => {
-//               const { letter, color } = getType(n);
-//               const thisAss = n.assignedTo.find(r => r.username === signedInOfficer);
-//               const isPending = thisAss?.status === "pending";
-
-//               return (
-//                 <div key={n._id} className={`notification-card ${n.unread ? "unread" : "read"}`}>
-//                   <div className="circle-icon" style={{ backgroundColor: color }}>
-//                     <span className="notification-letter">{letter}</span>
-//                   </div>
-//                   <div className="notification-content">
-//                     <div className="notification-text">
-//                       <p>
-//                         <strong>{n.assignedBy}</strong> {n.action1}
-//                         {n.post1 && <strong> {n.post1}</strong>}
-//                       </p>
-//                        {n.action1.toLowerCase().includes("assigned") ? (
-//             <span className="time">Role: Investigator</span>
-//           ) : (
-//             <span className="time">Role: Case Manager</span>
-//           )}
-//                       <span className="time">{new Date(n.time).toLocaleString()}</span>
-//                     </div>
-//                     <div className="buttons-container">
-//                       <button className="view-btnNC" onClick={() => handleView(n._id)}>
-//                         View
-//                       </button>
-//                       {isPending &&
-//                         !n.action1.toLowerCase().includes("accepted") &&
-//                         !n.action1.toLowerCase().includes("declined") && (
-//                           <>{/* Accept/Decline buttons */}</>
-//                         )
-//                       }
-//                     </div>
-//                   </div>
-//                 </div>
-//               );
-//             })}
-//           </div>
-//         </>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default NotificationCard1;

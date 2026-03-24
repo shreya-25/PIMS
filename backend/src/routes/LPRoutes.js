@@ -1,5 +1,5 @@
 const express = require("express");
-const { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, updateLRPersonById, deleteLRPerson, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto, searchPersonsByName } = require("../controller/LRPersonController");
+const { createLRPerson, getLRPersonByDetails, getLRPersonByDetailsandid, updateLRPerson, updateLRPersonById, deleteLRPerson, deleteLRPersonById, uploadPersonPhoto, deletePersonPhoto, searchPersonsByName, getPersonsByCaseNo } = require("../controller/LRPersonController");
 const verifyToken = require("../middleware/authMiddleware");
 const { roleMiddleware } = require("../middleware/roleMiddleware");
 const upload = require("../middleware/upload-disk");
@@ -9,21 +9,24 @@ const router = express.Router();
 // Search persons by name (must be before parameterized routes)
 router.get('/search', verifyToken, searchPersonsByName);
 
+// Get all persons for a case
+router.get('/case/:caseNo', verifyToken, getPersonsByCaseNo);
+
 router.post("/lrperson", verifyToken, createLRPerson);
 
-router.get("/lrperson/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLRPersonByDetails);
+router.get("/lrperson/:leadNo/:leadName/:caseId", verifyToken, getLRPersonByDetails);
 
-router.get("/lrperson/:leadNo/:leadName/:caseNo/:caseName/:id", verifyToken, getLRPersonByDetailsandid);
+router.get("/lrperson/:leadNo/:leadName/:caseId/:id", verifyToken, getLRPersonByDetailsandid);
 
 router.put(
-    '/:leadNo/:caseNo/:leadReturnId/:firstName',
+    '/:leadNo/:caseId/:leadReturnId/:firstName',
     verifyToken,
     updateLRPerson
   );
 
-  // DELETE  /api/lrperson/:leadNo/:caseNo/:leadReturnId/:firstName
+  // DELETE  /api/lrperson/:leadNo/:caseId/:leadReturnId/:firstName
   router.delete(
-    '/:leadNo/:caseNo/:leadReturnId/:firstName',
+    '/:leadNo/:caseId/:leadReturnId/:firstName',
     verifyToken,
     deleteLRPerson
   );

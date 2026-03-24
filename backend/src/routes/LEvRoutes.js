@@ -2,7 +2,7 @@ const express = require("express");
 const verifyToken = require("../middleware/authMiddleware");
 const { createLREvidence, getLREvidenceByDetails,
   updateLREvidence,
-  deleteLREvidence } = require("../controller/LREvidenceController");
+  deleteLREvidence, getEvidenceByCaseNo } = require("../controller/LREvidenceController");
 const getUploadMiddleware = require("../middleware/upload");
 const upload = require("../middleware/upload-disk");
 
@@ -78,11 +78,13 @@ router.post(
 // });
 
 
-router.get("/:leadNo/:leadName/:caseNo/:caseName", verifyToken, getLREvidenceByDetails);
+router.get("/case/:caseNo", verifyToken, getEvidenceByCaseNo);
+
+router.get("/:leadNo/:leadName/:caseId", verifyToken, getLREvidenceByDetails);
 
 // Update evidence (with optional file)
 router.put(
-  "/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId/:evidenceDescription",
+  "/:leadNo/:leadName/:caseId/:leadReturnId/:evidenceDescription",
   verifyToken,
   upload.single("file"),
   updateLREvidence
@@ -90,7 +92,7 @@ router.put(
 
 // Delete evidence
 router.delete(
-  "/:leadNo/:leadName/:caseNo/:caseName/:leadReturnId/:evidenceDescription",
+  "/:leadNo/:leadName/:caseId/:leadReturnId/:evidenceDescription",
   verifyToken,
   deleteLREvidence
 );

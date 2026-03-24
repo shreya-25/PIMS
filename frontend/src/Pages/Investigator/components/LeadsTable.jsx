@@ -83,6 +83,7 @@ export function LeadsTable({
                         onToggleOne={toggleOne}
                         onApply={() => { applyFilter(dk); setOpenFilter(null); }}
                         onCancel={() => setOpenFilter(null)}
+                        numeric={dk === 'id'}
                       />
                     </span>
                   </div>

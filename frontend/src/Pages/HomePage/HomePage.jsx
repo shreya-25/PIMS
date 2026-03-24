@@ -518,6 +518,7 @@ export const HomePage = () => {
     return [...filtered].sort((a, b) => {
       let aV = a[sortConfig.key], bV = b[sortConfig.key];
       if (sortConfig.key === "priority") { aV = PRIORITY_ORDER[aV] || 0; bV = PRIORITY_ORDER[bV] || 0; }
+      if (sortConfig.key === "id") { return sortConfig.direction === "asc" ? Number(aV) - Number(bV) : Number(bV) - Number(aV); }
       if (aV < bV) return sortConfig.direction === "asc" ? -1 : 1;
       if (aV > bV) return sortConfig.direction === "asc" ? 1 : -1;
       return 0;
@@ -595,6 +596,10 @@ export const HomePage = () => {
       .sort((a, b) => {
         const { key, direction } = assignedSortConfig;
         if (!key) return 0;
+        if (key === 'id') {
+          const aNum = Number(a[key] ?? 0), bNum = Number(b[key] ?? 0);
+          return direction === 'asc' ? aNum - bNum : bNum - aNum;
+        }
         const aVal = Array.isArray(a[key]) ? a[key][0] : a[key];
         const bVal = Array.isArray(b[key]) ? b[key][0] : b[key];
         return direction === "asc"
@@ -659,6 +664,10 @@ export const HomePage = () => {
     const { key, direction } = pendingSortConfig;
     if (key) {
       data = data.slice().sort((a, b) => {
+        if (key === 'id') {
+          const aNum = Number(a[key] ?? 0), bNum = Number(b[key] ?? 0);
+          return direction === 'asc' ? aNum - bNum : bNum - aNum;
+        }
         const aV = Array.isArray(a[key]) ? a[key][0] : a[key];
         const bV = Array.isArray(b[key]) ? b[key][0] : b[key];
         return direction === "asc"
@@ -908,6 +917,7 @@ export const HomePage = () => {
                                             setOpenAssignedFilter(null);
                                           }}
                                           onCancel={() => setOpenAssignedFilter(null)}
+                                          numeric={dataKey === "id"}
                                         />
                                       </span>
                                     </div>
@@ -1027,6 +1037,7 @@ export const HomePage = () => {
                                             setOpenPendingFilter(null);
                                           }}
                                           onCancel={() => setOpenPendingFilter(null)}
+                                          numeric={dataKey === "id"}
                                         />
                                       </span>
                                     </div>

@@ -10,6 +10,7 @@ import { useContext, useState, useEffect, useCallback, useMemo, useRef } from 'r
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import Navbar from '../../../components/Navbar/Navbar';
 import styles from './LRResult.module.css';
+import { LRTopMenu } from '../LRTopMenu';
 import { CaseContext } from '../../CaseContext';
 import api from '../../../api';
 import { SideBar } from '../../../components/Sidebar/Sidebar';
@@ -139,10 +140,10 @@ export const LRResult = () => {
 
   // ─── Lead status / read-only hook ───────────────────────────────────────────
   const { status, isReadOnly } = useLeadStatus({
-    caseNo:   effectiveCase?.caseNo,
-    caseName: effectiveCase?.caseName,
+    caseId:   effectiveCase?._id || effectiveCase?.id,
     leadNo:   effectiveLead?.leadNo,
     leadName: effectiveLead?.leadName,
+    initialStatus: selectedLead?.leadStatus,
   });
 
   // ─── Local state ────────────────────────────────────────────────────────────
@@ -222,16 +223,6 @@ export const LRResult = () => {
    * Navigate to the Submit / Review Lead Return page (ViewLR).
    * Primary investigators submit; all others review.
    */
-  const goToViewLR = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-      showAlert('Please select a case and lead first.');
-      return;
-    }
-    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
-  };
-
   // ─── Effects ─────────────────────────────────────────────────────────────────
 
   // Seed officer name from localStorage on mount
@@ -269,14 +260,15 @@ export const LRResult = () => {
    * Used to derive access-filtering and role-based UI visibility.
    */
   useEffect(() => {
-    if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !effectiveCase?.caseNo || !effectiveCase?.caseName) return;
+    const caseId = effectiveCase?._id || effectiveCase?.id;
+    if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !caseId) return;
     const ac = new AbortController();
 
     (async () => {
       try {
         const token = localStorage.getItem('token');
         const { data } = await api.get(
-          `/api/lead/lead/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${effectiveCase.caseNo}/${encodeURIComponent(effectiveCase.caseName)}`,
+          `/api/lead/lead/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${caseId}`,
           { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
         );
         if (ac.signal.aborted || !data?.length) return;
@@ -287,21 +279,22 @@ export const LRResult = () => {
     })();
 
     return () => ac.abort();
-  }, [effectiveLead?.leadNo, effectiveLead?.leadName, effectiveCase?.caseNo, effectiveCase?.caseName]);
+  }, [effectiveLead?.leadNo, effectiveLead?.leadName, effectiveCase?._id, effectiveCase?.id]);
 
   /**
    * Fetch the lead's current status from the dedicated status endpoint.
    * Merges with any status already held in context (always keeps the highest rank).
    */
   useEffect(() => {
-    if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !effectiveCase?.caseNo || !effectiveCase?.caseName) return;
+    const caseId = effectiveCase?._id || effectiveCase?.id;
+    if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !caseId) return;
     const ac = new AbortController();
 
     (async () => {
       try {
         const token = localStorage.getItem('token');
         const { data } = await api.get(
-          `/api/lead/status/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${effectiveCase.caseNo}/${encodeURIComponent(effectiveCase.caseName)}`,
+          `/api/lead/status/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${caseId}`,
           { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
         );
         if (ac.signal.aborted) return;
@@ -329,8 +322,8 @@ export const LRResult = () => {
   }, [
     effectiveLead?.leadNo,
     effectiveLead?.leadName,
-    effectiveCase?.caseNo,
-    effectiveCase?.caseName,
+    effectiveCase?._id,
+    effectiveCase?.id,
     setLeadStatus,
   ]);
 
@@ -378,7 +371,8 @@ export const LRResult = () => {
    * the highest existing alphabetic return ID for next-ID generation.
    */
   useEffect(() => {
-    if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !effectiveCase?.caseNo || !effectiveCase?.caseName) return;
+    const caseId = effectiveCase?._id || effectiveCase?.id;
+    if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !caseId) return;
     const ac = new AbortController();
 
     (async () => {
@@ -386,7 +380,7 @@ export const LRResult = () => {
         setError('');
         const token = localStorage.getItem('token');
         const { data } = await api.get(
-          `/api/leadReturnResult/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${effectiveCase.caseNo}/${encodeURIComponent(effectiveCase.caseName)}`,
+          `/api/leadReturnResult/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${caseId}`,
           { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
         );
         if (ac.signal.aborted) return;
@@ -442,8 +436,8 @@ export const LRResult = () => {
   }, [
     effectiveLead?.leadNo,
     effectiveLead?.leadName,
-    effectiveCase?.caseNo,
-    effectiveCase?.caseName,
+    effectiveCase?._id,
+    effectiveCase?.id,
     isCaseManager,
     leadData?.assignedTo,
     setLeadReturns,
@@ -495,7 +489,7 @@ export const LRResult = () => {
     const token = localStorage.getItem('token');
     try {
       await api.delete(
-        `/api/leadReturnResult/delete/${effectiveLead.leadNo}/${effectiveCase.caseNo}/${pendingDeleteId}`,
+        `/api/leadReturnResult/delete/${effectiveLead.leadNo}/${effectiveCase._id || effectiveCase.id}/${pendingDeleteId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const updated = returns.filter((r) => r.leadReturnId !== pendingDeleteId);
@@ -516,7 +510,7 @@ export const LRResult = () => {
     const token = localStorage.getItem('token');
     try {
       const { data: updated } = await api.patch(
-        `/api/leadReturnResult/update/${ret.leadNo}/${caseNo}/${ret.leadReturnId}`,
+        `/api/leadReturnResult/update/${ret.leadNo}/${effectiveCase._id || effectiveCase.id}/${ret.leadReturnId}`,
         { accessLevel: newAccess },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -551,7 +545,7 @@ export const LRResult = () => {
       if (editMode && editId) {
         // ── Update existing entry ────────────────────────────────────────────
         const { data: updated } = await api.patch(
-          `/api/leadReturnResult/update/${selectedLead.leadNo}/${caseNo}/${editId}`,
+          `/api/leadReturnResult/update/${selectedLead.leadNo}/${effectiveCase._id || effectiveCase.id}/${editId}`,
           { leadReturnResult: returnData.results },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -600,7 +594,8 @@ export const LRResult = () => {
     const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
     const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
-    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+    const kaseId = kase?._id || kase?.id;
+    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kaseId) {
       showAlert('Please select a case and lead first.');
       return;
     }
@@ -610,28 +605,26 @@ export const LRResult = () => {
       setIsGenerating(true);
       const token    = localStorage.getItem('token');
       const headers  = { headers: { Authorization: `Bearer ${token}` } };
-      const { leadNo }             = lead;
-      const leadName               = lead.leadName || lead.description;
-      const { caseNo: kCaseNo, caseName } = kase;
-      const encLead = encodeURIComponent(leadName);
-      const encCase = encodeURIComponent(caseName);
+      const { leadNo } = lead;
+      const leadName   = lead.leadName || lead.description;
+      const encLead    = encodeURIComponent(leadName);
 
       // Fetch all lead sections in parallel
       const [
         instrRes, returnsRes, personsRes, vehiclesRes, enclosuresRes,
         evidenceRes, picturesRes, audioRes, videosRes, scratchpadRes, timelineRes,
       ] = await Promise.all([
-        api.get(`/api/lead/lead/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrenclosure/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrevidence/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrpicture/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lraudio/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvideo/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/scratchpad/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/timeline/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lead/lead/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrenclosure/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrevidence/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrpicture/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lraudio/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvideo/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/scratchpad/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/timeline/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
       ]);
 
       // Attach binary files to media/document sections in parallel
@@ -733,64 +726,15 @@ export const LRResult = () => {
         <div className={styles.leftContentLI}>
 
           {/* ── Page-level navigation bar ──────────────────────────────────── */}
-          <div className={styles.topMenuNav}>
-            <div className={styles.menuItems}>
-              <span
-                className={styles.menuItem}
-                onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                  if (lead && kase) navigate('/LeadReview', { state: { caseDetails: kase, leadDetails: lead } });
-                }}
-              >
-                Lead Information
-              </span>
-
-              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
-                Add Lead Return
-              </span>
-
-              {/* Case Manager / Supervisor: generate full report */}
-              {isCaseManager && (
-                <span
-                  className={`${styles.menuItem} ${isGenerating ? styles.menuItemDisabled : ''}`}
-                  onClick={handleViewLeadReturn}
-                  title={isGenerating ? 'Preparing report…' : 'View Lead Return'}
-                >
-                  Manage Lead Return
-                </span>
-              )}
-
-              {/* Primary investigator: can submit */}
-              {selectedCase?.role === 'Investigator' && isPrimaryInvestigator && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  Submit Lead Return
-                </span>
-              )}
-
-              {/* Secondary investigator: review only */}
-              {selectedCase?.role === 'Investigator' && !isPrimaryInvestigator && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  Review Lead Return
-                </span>
-              )}
-
-              <span
-                className={styles.menuItem}
-                onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                  if (lead && kase) {
-                    navigate('/ChainOfCustody', { state: { caseDetails: kase, leadDetails: lead } });
-                  } else {
-                    showAlert('Please select a case and lead first.');
-                  }
-                }}
-              >
-                Lead Chain of Custody
-              </span>
-            </div>
-          </div>
+          <LRTopMenu
+            activePage="addLeadReturn"
+            selectedCase={selectedCase}
+            selectedLead={selectedLead}
+            isPrimaryInvestigator={isPrimaryInvestigator}
+            isGenerating={isGenerating}
+            onManageLeadReturn={handleViewLeadReturn}
+            styles={styles}
+          />
 
           {/* ── Section tabs navigation ─────────────────────────────────────── */}
           <div className={styles.topMenuSections}>
@@ -875,7 +819,6 @@ export const LRResult = () => {
                     <button
                       className={styles.saveBtn1}
                       disabled={
-                        selectedLead?.leadStatus === 'In Review' ||
                         selectedLead?.leadStatus === 'Completed' ||
                         selectedLead?.leadStatus === 'Closed' ||
                         isReadOnly
@@ -917,7 +860,6 @@ export const LRResult = () => {
                         const isExpanded   = expandedRows.has(ret.leadReturnId);
                         const shouldTruncate = (ret.leadReturnResult || '').length > 150;
                         const disableActions =
-                          selectedLead?.leadStatus === 'In Review' ||
                           selectedLead?.leadStatus === 'Completed' ||
                           isReadOnly ||
                           !canModify;
@@ -972,7 +914,7 @@ export const LRResult = () => {
                                   onChange={(e) => handleAccessChange(idx, e.target.value)}
                                 >
                                   <option value="Everyone">All</option>
-                                  <option value="Case Manager">Case Manager</option>
+                                  <option value="Case Manager Only">Case Manager</option>
                                   <option value="Case Manager and Assignees">Assignees</option>
                                 </select>
                               </td>

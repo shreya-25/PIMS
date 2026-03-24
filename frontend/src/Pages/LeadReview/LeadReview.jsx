@@ -749,9 +749,10 @@ const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = 
         post1: `${updatedLeadData.leadNo}: ${updatedLeadData.description}`,
         action2: "related to the case",
         post2: `${selectedCase.caseNo}: ${selectedCase.caseName}`,
-        leadNo: updatedLeadData.leadNo,
+        caseId:   selectedCase._id || selectedCase.id || undefined,
+        leadNo:   updatedLeadData.leadNo,
         leadName: updatedLeadData.description,
-        caseNo: selectedCase.caseNo,
+        caseNo:   selectedCase.caseNo,
         caseName: selectedCase.caseName,
         caseStatus: selectedCase.caseStatus || "Open",
         unread: true,
@@ -778,7 +779,7 @@ const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = 
     };
 
     await api.put(
-      `/api/lead/update/${leadData.leadNo}/${encodeURIComponent(leadData.description)}/${leadData.caseNo}/${encodeURIComponent(leadData.caseName)}`,
+      `/api/lead/update/${leadData.leadNo}/${encodeURIComponent(leadData.description)}/${leadData.caseId || selectedCase._id || selectedCase.id}`,
       processedLeadData,
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -899,7 +900,7 @@ const persistPrimary = async (leadObj, nextPrimary) => {
 
   // Persist to your existing update endpoint
   await api.put(
-    `/api/lead/update/${leadObj.leadNo}/${encodeURIComponent(leadObj.description)}/${leadObj.caseNo}/${encodeURIComponent(leadObj.caseName)}`,
+    `/api/lead/update/${leadObj.leadNo}/${encodeURIComponent(leadObj.description)}/${leadObj.caseId || selectedCase._id || selectedCase.id}`,
     payload,
     headers
   );
@@ -973,7 +974,7 @@ const acceptLead = async (leadNo, description) => {
   try {
     const token = localStorage.getItem("token");
     const { data } = await api.put(
-      `/api/lead/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/assignedTo`,
+      `/api/lead/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase._id || selectedCase.id}/assignedTo`,
       { officerUsername: signedInOfficer, status: "accepted" },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -991,7 +992,7 @@ const acceptLead = async (leadNo, description) => {
       };
 
       await api.put(
-        `/api/lead/update/${lead.leadNo}/${encodeURIComponent(lead.description)}/${lead.caseNo}/${encodeURIComponent(lead.caseName)}`,
+        `/api/lead/update/${lead.leadNo}/${encodeURIComponent(lead.description)}/${lead.caseId || selectedCase._id || selectedCase.id}`,
         updated,
         headers
       );
@@ -1022,7 +1023,7 @@ const declineLead = async (leadNo, description, reason = "") => {
   try {
     const token = localStorage.getItem("token");
     const { data } = await api.put(
-      `/api/lead/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}/assignedTo`,
+      `/api/lead/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase._id || selectedCase.id}/assignedTo`,
       { officerUsername: signedInOfficer, status: "declined", reason },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -1103,13 +1104,14 @@ console.log("SL, SC", selectedLead, selectedCase);
     const fetchLeadData = async () => {
       try {
         const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-      const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+      const kase = selectedCase?._id || selectedCase?.id ? selectedCase : location.state?.caseDetails;
+      const kaseId = kase?._id || kase?.id;
 
-      if (lead?.leadNo && lead?.leadName && kase?.caseNo && kase?.caseName) {
+      if (lead?.leadNo && lead?.leadName && kaseId) {
         const token = localStorage.getItem("token");
 
         const response = await api.get(
-          `/api/lead/lead/${lead.leadNo}/${encodeURIComponent(lead.leadName)}/${kase.caseNo}/${encodeURIComponent(kase.caseName)}`,
+          `/api/lead/lead/${lead.leadNo}/${encodeURIComponent(lead.leadName)}/${kaseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
           console.log("Fetched Lead Data1:", response.data);
@@ -1653,7 +1655,8 @@ const handleViewLeadReturn = async () => {
   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
   const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
-  if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+  const kaseId = kase?._id || kase?.id;
+  if (!lead?.leadNo || !(lead.leadName || lead.description) || !kaseId) {
     setAlertMessage("Please select a case and lead first.");
     setAlertOpen(true);
     return;
@@ -1669,9 +1672,7 @@ const handleViewLeadReturn = async () => {
 
     const { leadNo } = lead;
     const leadName = lead.leadName || lead.description;
-    const { caseNo, caseName } = kase;
     const encLead = encodeURIComponent(leadName);
-    const encCase = encodeURIComponent(caseName);
 
     // fetch everything we need for the report (same endpoints you use on LRFinish)
     const [
@@ -1687,17 +1688,17 @@ const handleViewLeadReturn = async () => {
       scratchpadRes,
       timelineRes,
     ] = await Promise.all([
-      api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-      api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/lead/lead/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/lrenclosure/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/lrevidence/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/lrpicture/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/lraudio/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/lrvideo/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/scratchpad/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+      api.get(`/api/timeline/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
     ]);
 
     // add files where applicable (note the plural file endpoints)
@@ -1858,9 +1859,9 @@ const confirmWithModal = (message, title = "Confirm") =>
 
 const handleDeleteLead = async () => {
   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+  const kase = selectedCase?._id || selectedCase?.id ? selectedCase : location.state?.caseDetails;
 
-  if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+  if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?._id && !kase?.id) {
     setAlertMessage("Please select a case and lead first.");
     setAlertOpen(true);
     return;
@@ -1874,7 +1875,8 @@ const handleDeleteLead = async () => {
 
 const submitDeleteWithReason = async (reason) => {
   const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+  const kase = selectedCase?._id || selectedCase?.id ? selectedCase : location.state?.caseDetails;
+  const kaseId = kase?._id || kase?.id;
 
   setDeleteOpen(false);
 
@@ -1882,11 +1884,10 @@ const submitDeleteWithReason = async (reason) => {
     setLoading(true);
     const token = localStorage.getItem("token");
     const encLeadName = encodeURIComponent(lead.leadName || lead.description);
-    const encCaseName = encodeURIComponent(kase.caseName);
 
     // Delete the lead (backend appends deletion reason to comments automatically)
     await api.delete(
-      `/api/lead/${lead.leadNo}/${encLeadName}/${kase.caseNo}/${encCaseName}`,
+      `/api/lead/${lead.leadNo}/${encLeadName}/${kaseId}`,
       { headers: { Authorization: `Bearer ${token}` },
     data: { reason } },
     );
@@ -2019,6 +2020,10 @@ const assignmentHoverText = React.useMemo(() => {
                       setAlertOpen(true);
                     }
                   }}>Add Lead Return</span>
+
+                  {(selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor") && (
+                    <span className={styles.menuItem} onClick={goToViewLR}>Review Lead Return</span>
+                  )}
 
                   {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
                     <span

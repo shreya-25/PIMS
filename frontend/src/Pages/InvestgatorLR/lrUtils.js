@@ -73,6 +73,18 @@ export const alphabetToNumber = (str = "") => {
 export const buildLeadCasePath = (leadNo, leadName, caseNo, caseName) =>
   `${leadNo}/${encodeURIComponent(leadName)}/${caseNo}/${encodeURIComponent(caseName)}`;
 
+/**
+ * Builds the path segment used by LR API endpoints when looking up by caseId:
+ *   /{leadNo}/{encLeadName}/{caseId}
+ *
+ * @param {string|number} leadNo
+ * @param {string}        leadName
+ * @param {string}        caseId  - MongoDB ObjectId of the case
+ * @returns {string}
+ */
+export const buildLeadCaseIdPath = (leadNo, leadName, caseId) =>
+  `${leadNo}/${encodeURIComponent(leadName)}/${caseId}`;
+
 // ─── File Attachment Helper ────────────────────────────────────────────────────
 
 /**

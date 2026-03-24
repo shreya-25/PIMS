@@ -6,6 +6,7 @@ import { CaseContext } from "../CaseContext";
 import api from "../../api"; // adjust if your api path differs
 import { AlertModal } from "../../components/AlertModal/AlertModal";
 import styles from './ChainOfCustody.module.css';
+import { LRTopMenu } from '../InvestgatorLR/LRTopMenu';
 import { VersionHistoryButton } from '../../components/VersionHistoryButton/VersionHistoryButton';
 
 
@@ -55,21 +56,6 @@ const isPrimaryInvestigator =
   !!signedInOfficer &&
   signedInOfficer === primaryUsername;
 
-// primary goes to the interactive ViewLR page
-const goToViewLR = () => {
-  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-  if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-    setAlertMessage("Please select a case and lead first.");
-    setAlertOpen(true);
-    return;
-  }
-
-  navigate("/viewLR", {
-    state: { caseDetails: kase, leadDetails: lead }
-  });
-};
 
 
   
@@ -89,15 +75,16 @@ const goToViewLR = () => {
   // --- fetch lead (should include `events` and `leadStatus`)
   useEffect(() => {
     const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) return;
+    const kase = selectedCase?._id || selectedCase?.id ? selectedCase : location.state?.caseDetails;
+    const kaseId = kase?._id || kase?.id;
+    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kaseId) return;
 
     const token = localStorage.getItem("token");
     api
       .get(
         `/api/lead/lead/${lead.leadNo}/${encodeURIComponent(
           lead.leadName || lead.description
-        )}/${kase.caseNo}/${encodeURIComponent(kase.caseName)}`,
+        )}/${kaseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       .then(({ data }) => {
@@ -421,74 +408,15 @@ const tone = (t) =>
         <SideBar activePage="LeadReview" />
 
         <div className={styles.leftContent}>
-          <div className={styles.topMenuNav}>
-            <div className={styles.menuItems}>
-              <span
-                className={styles.menuItem}
-                onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                  if (lead && kase) {
-                    navigate("/LeadReview", { state: { caseDetails: kase, leadDetails: lead } });
-                  }
-                }}
-              >
-                Lead Information
-              </span>
-
-              <span
-                className={styles.menuItem}
-                onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                  if (lead && kase) {
-                    navigate("/LRInstruction", { state: { caseDetails: kase, leadDetails: lead } });
-                  } else {
-                    alert("Please select a case and lead first.");
-                  }
-                }}
-              >
-                Add Lead Return
-              </span>
-               {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
-           <span
-              className={styles.menuItem}
-              onClick={handleViewLeadReturn}
-              title={isGenerating ? "Preparing report…" : "View Lead Return"}
-              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-            >
-              Manage Lead Return
-            </span>
-              )}
-             {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-  <span className={styles.menuItem} onClick={goToViewLR}>
-    Submit Lead Return
-  </span>
-)}
-
-  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-  <span className={styles.menuItem} onClick={goToViewLR}>
-   Review Lead Return
-  </span>
-)}
-
-
-              <span
-                className={`${styles.menuItem} ${styles.menuItemActive}`}
-                onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                  if (lead && kase) {
-                    navigate("/ChainOfCustody", { state: { caseDetails: kase, leadDetails: lead } });
-                  } else {
-                    alert("Please select a case and lead first.");
-                  }
-                }}
-              >
-                Lead Chain of Custody
-              </span>
-            </div>
-          </div>
+          <LRTopMenu
+            activePage="chainOfCustody"
+            selectedCase={selectedCase}
+            selectedLead={selectedLead}
+            isPrimaryInvestigator={isPrimaryInvestigator}
+            isGenerating={isGenerating}
+            onManageLeadReturn={handleViewLeadReturn}
+            styles={styles}
+          />
 
           {/* FULL-PAGE ASSIGNMENT LOG */}
           <AssignmentLog

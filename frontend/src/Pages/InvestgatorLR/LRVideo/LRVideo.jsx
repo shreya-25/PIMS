@@ -26,6 +26,7 @@ import { formatDate, normalizeId, alphabetToNumber, isHttpUrl } from '../lrUtils
 
 // All visual styles are shared — import from the single LR stylesheet
 import styles from '../LR.module.css';
+import { LRTopMenu } from '../LRTopMenu';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -115,16 +116,15 @@ export const LRVideo = () => {
   // ── Lead status and read-only guard ───────────────────────────────────────
 
   const { status, isReadOnly } = useLeadStatus({
-    caseNo:   selectedCase.caseNo,
-    caseName: selectedCase.caseName,
+    caseId:   selectedCase._id || selectedCase.id,
     leadNo:   selectedLead.leadNo,
     leadName: selectedLead.leadName,
+    initialStatus: selectedLead?.leadStatus,
   });
 
   // Consolidated disable flag for all form controls
   const isFormDisabled =
-    selectedLead?.leadStatus === 'In Review' ||
-    selectedLead?.leadStatus === 'Completed'  ||
+    selectedLead?.leadStatus === 'Completed' ||
     isReadOnly;
 
   // ── Session-storage keys (scoped to the active case + lead) ───────────────
@@ -169,11 +169,12 @@ export const LRVideo = () => {
   // ── Fetch lead metadata (assignees, primary officer) ──────────────────────
 
   useEffect(() => {
-    if (!selectedLead?.leadNo || !selectedCase?.caseNo) return;
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (!selectedLead?.leadNo || !caseId) return;
     const token = localStorage.getItem('token');
     api
       .get(
-        `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+        `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       .then(({ data }) => {
@@ -191,17 +192,17 @@ export const LRVideo = () => {
   // ── Fetch narrative IDs for the return-ID dropdown ────────────────────────
 
   useEffect(() => {
-    if (!selectedLead?.leadNo || !selectedCase?.caseNo) return;
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (!selectedLead?.leadNo || !caseId) return;
     const ac = new AbortController();
 
     (async () => {
       try {
         const token   = localStorage.getItem('token');
         const encLead = encodeURIComponent(selectedLead.leadName);
-        const encCase = encodeURIComponent(selectedCase.caseName);
 
         const { data } = await api.get(
-          `/api/leadReturnResult/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
+          `/api/leadReturnResult/${selectedLead.leadNo}/${encLead}/${caseId}`,
           { headers: { Authorization: `Bearer ${token}` }, signal: ac.signal }
         );
 
@@ -225,20 +226,20 @@ export const LRVideo = () => {
   }, [
     selectedLead?.leadNo,
     selectedLead?.leadName,
-    selectedCase?.caseNo,
-    selectedCase?.caseName,
+    selectedCase?._id,
+    selectedCase?.id,
     isEditing,
   ]);
 
   // ── Fetch videos from the API, applying access-level filtering ─────────────
 
   const fetchVideos = useCallback(async () => {
+    const caseId  = selectedCase?._id || selectedCase?.id;
     const encLead = encodeURIComponent(selectedLead?.leadName);
-    const encCase = encodeURIComponent(selectedCase?.caseName);
 
     try {
       const { data } = await api.get(
-        `/api/lrvideo/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
+        `/api/lrvideo/${selectedLead.leadNo}/${encLead}/${caseId}`,
         { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
       );
 
@@ -277,7 +278,7 @@ export const LRVideo = () => {
   }, [selectedLead, selectedCase, isCaseManager, signedInOfficer, leadData?.assignedTo]);
 
   useEffect(() => {
-    if (selectedLead?.leadNo && selectedLead?.leadName && selectedCase?.caseNo && selectedCase?.caseName) {
+    if (selectedLead?.leadNo && selectedLead?.leadName && (selectedCase?._id || selectedCase?.id)) {
       fetchVideos();
     }
   }, [selectedLead, selectedCase, fetchVideos]);
@@ -475,36 +476,6 @@ export const LRVideo = () => {
     });
   }, []);
 
-  // ── Navigation helpers ─────────────────────────────────────────────────────
-
-  const goToLeadReview = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (lead && kase) navigate('/LeadReview', { state: { caseDetails: kase, leadDetails: lead } });
-  };
-
-  const goToChainOfCustody = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (lead && kase) {
-      navigate('/ChainOfCustody', { state: { caseDetails: kase, leadDetails: lead } });
-    } else {
-      setAlertMessage('Please select a case and lead first.');
-      setAlertOpen(true);
-    }
-  };
-
-  const goToViewLR = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-      setAlertMessage('Please select a case and lead first.');
-      setAlertOpen(true);
-      return;
-    }
-    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
-  };
-
   // ── Render ─────────────────────────────────────────────────────────────────
 
   const casePageRoute = selectedCase?.role === 'Investigator' ? '/Investigator' : '/CasePageManager';
@@ -537,40 +508,15 @@ export const LRVideo = () => {
         <div className={styles.leftContentLI}>
 
           {/* ── Top navigation bar (page-level) ── */}
-          <div className={styles.topMenuNav}>
-            <div className={styles.menuItems}>
-              <span className={styles.menuItem} onClick={goToLeadReview}>
-                Lead Information
-              </span>
-
-              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
-                Add Lead Return
-              </span>
-
-              {/* Case Manager: generate / view the full lead-return report */}
-              {isCaseManager && (
-                <span
-                  className={styles.menuItem}
-                  onClick={handleViewLeadReturn}
-                  title={isGenerating ? 'Preparing report…' : 'View Lead Return'}
-                  style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? 'none' : 'auto' }}
-                >
-                  Manage Lead Return
-                </span>
-              )}
-
-              {/* Investigator: label changes based on whether they are the primary */}
-              {selectedCase?.role === 'Investigator' && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  {isPrimaryInvestigator ? 'Submit Lead Return' : 'Review Lead Return'}
-                </span>
-              )}
-
-              <span className={styles.menuItem} onClick={goToChainOfCustody}>
-                Lead Chain of Custody
-              </span>
-            </div>
-          </div>
+          <LRTopMenu
+            activePage="addLeadReturn"
+            selectedCase={selectedCase}
+            selectedLead={selectedLead}
+            isPrimaryInvestigator={isPrimaryInvestigator}
+            isGenerating={isGenerating}
+            onManageLeadReturn={handleViewLeadReturn}
+            styles={styles}
+          />
 
           {/* ── Section tabs (sub-page navigation) ── */}
           <div className={styles.topMenuSections}>

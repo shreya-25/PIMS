@@ -43,16 +43,16 @@ const EMPTY_LEADS = {
  * @param {string} signedInOfficer - Username of the logged-in investigator.
  * @returns {{ leads, acceptLead }} - Lead buckets and an accept action.
  */
-export function useLeads(caseNo, caseName, signedInOfficer) {
+export function useLeads(caseId, signedInOfficer) {
   const [leads, setLeads] = useState(EMPTY_LEADS);
 
   useEffect(() => {
-    if (!caseNo || !caseName) return;
+    if (!caseId) return;
 
     const fetchLeads = async () => {
       try {
         const token = localStorage.getItem('token');
-        const { data } = await api.get(`/api/lead/case/${caseNo}/${encodeURIComponent(caseName)}`, {
+        const { data } = await api.get(`/api/lead/case/${caseId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -79,7 +79,7 @@ export function useLeads(caseNo, caseName, signedInOfficer) {
     fetchLeads();
     const intervalId = setInterval(fetchLeads, POLL_INTERVAL_MS);
     return () => clearInterval(intervalId);
-  }, [caseNo, caseName, signedInOfficer]);
+  }, [caseId, signedInOfficer]);
 
   /**
    * Accepts an assigned lead: calls the API then optimistically updates local state.
@@ -91,7 +91,7 @@ export function useLeads(caseNo, caseName, signedInOfficer) {
     try {
       const token = localStorage.getItem('token');
       await api.put(
-        `/api/lead/${leadNo}/${encodeURIComponent(description)}/${caseNo}/${encodeURIComponent(caseName)}`,
+        `/api/lead/${leadNo}/${encodeURIComponent(description)}/${caseId}`,
         {},
         { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
       );

@@ -3,9 +3,13 @@ const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
+const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
 
 const createLRPicture = async (req, res) => {
   try {
+    const accessErr = await checkLeadWriteAccess(req, req.body.caseNo, req.body.leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
+
     const isLink = String(req.body.isLink) === "true";
     const accessLevel = req.body.accessLevel || "Everyone";
 
@@ -72,8 +76,8 @@ const createLRPicture = async (req, res) => {
 
 const getLRPictureByDetails = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName } = req.params;
-    const query = { leadNo: Number(leadNo), description: leadName, caseNo, caseName, isDeleted: { $ne: true } };
+    const { leadNo, leadName, caseId } = req.params;
+    const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
     const lrPictures = await LRPicture.find(query);
 
     if (!lrPictures || lrPictures.length === 0) return res.status(200).json([]);
@@ -97,19 +101,22 @@ const getLRPictureByDetails = async (req, res) => {
 
 const updateLRPicture = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName, leadReturnId, pictureDescription: oldDesc } = req.params;
+    const { leadNo, leadName, caseId, leadReturnId, pictureDescription: oldDesc } = req.params;
 
     const pic = await LRPicture.findOne({
-      leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId, pictureDescription: oldDesc,
+      leadNo: Number(leadNo), description: leadName, caseId, leadReturnId, pictureDescription: oldDesc,
       isDeleted: { $ne: true },
     });
     if (!pic) return res.status(404).json({ message: "Picture not found" });
+
+    const accessErr = await checkLeadWriteAccess(req, pic.caseNo, leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldPicture = pic.toObject();
 
     if (req.file) {
       if (pic.s3Key) await deleteFromS3(pic.s3Key);
-      const { key } = await uploadToS3({ filePath: req.file.path, userId: caseNo, mimetype: req.file.mimetype });
+      const { key } = await uploadToS3({ filePath: req.file.path, userId: pic.caseNo, mimetype: req.file.mimetype });
       if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
       pic.s3Key = key;
       pic.originalName = req.file.originalname;
@@ -146,13 +153,16 @@ const updateLRPicture = async (req, res) => {
 
 const deleteLRPicture = async (req, res) => {
   try {
-    const { leadNo, leadName, caseNo, caseName, leadReturnId, pictureDescription } = req.params;
+    const { leadNo, leadName, caseId, leadReturnId, pictureDescription } = req.params;
 
     const pic = await LRPicture.findOne({
-      leadNo: Number(leadNo), description: leadName, caseNo, caseName, leadReturnId, pictureDescription,
+      leadNo: Number(leadNo), description: leadName, caseId, leadReturnId, pictureDescription,
       isDeleted: { $ne: true }
     });
     if (!pic) return res.status(404).json({ message: "Picture not found" });
+
+    const accessErr = await checkLeadWriteAccess(req, pic.caseNo, leadNo);
+    if (accessErr) return res.status(accessErr.status).json({ message: accessErr.message });
 
     const oldPicture = pic.toObject();
     pic.isDeleted = true;
@@ -180,4 +190,21 @@ const deleteLRPicture = async (req, res) => {
   }
 };
 
-module.exports = { createLRPicture, getLRPictureByDetails, updateLRPicture, deleteLRPicture };
+const getPicturesByCaseNo = async (req, res) => {
+    try {
+        const { caseNo } = req.params;
+        const records = await LRPicture.find({ caseNo, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
+        const enriched = await Promise.all(
+            records.map(async (pic) => {
+                const signedUrl = pic.s3Key ? await getFileFromS3(pic.s3Key) : null;
+                return { ...pic.toObject(), signedUrl };
+            })
+        );
+        res.status(200).json(enriched);
+    } catch (err) {
+        console.error("Error fetching pictures by caseNo:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
+module.exports = { createLRPicture, getLRPictureByDetails, updateLRPicture, deleteLRPicture, getPicturesByCaseNo };

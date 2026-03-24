@@ -111,12 +111,13 @@ export const LeadLog = () => {
 
   useEffect(() => {
     const fetchLeadLog = async () => {
-      if (selectedCase.caseNo && selectedCase.caseName) {
+      const caseId = selectedCase._id || selectedCase.id;
+      if (caseId) {
         try {
           const token = localStorage.getItem("token");
-  
+
           const response = await api.get(
-            `/api/lead/case/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+            `/api/lead/case/${caseId}`,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -555,6 +556,10 @@ const formatDate = (dateString) => {
       } else if (key === "assignedDate" || key === "submittedDate" || key === "approvedDate") {
         aVal = a[key] ? new Date(a[key]).getTime() : 0;
         bVal = b[key] ? new Date(b[key]).getTime() : 0;
+      } else if (key === "leadNo") {
+        aVal = Number(a[key] ?? 0);
+        bVal = Number(b[key] ?? 0);
+        return direction === "asc" ? aVal - bVal : bVal - aVal;
       } else {
         aVal = String(a[key] ?? "");
         bVal = String(b[key] ?? "");
@@ -723,6 +728,7 @@ const formatDate = (dateString) => {
                           onToggleOne={handleCheckboxToggle}
                           onApply={applyFilter}
                           onCancel={() => setOpenFilter(null)}
+                          numeric={dataKey === "leadNo"}
                         />
                       </span>
                     </div>

@@ -10,6 +10,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import Navbar from '../../../components/Navbar/Navbar';
 import styles from './LRPerson1.module.css';
+import { LRTopMenu } from '../LRTopMenu';
 import { CaseContext } from '../../CaseContext';
 import api from '../../../api';
 import { SideBar } from '../../../components/Sidebar/Sidebar';
@@ -139,7 +140,7 @@ const PhotoUpload = ({ preview, onFileChange, onRemove }) =>
   ) : (
     <input
       type="file"
-      accept="image/png, image/jpeg, image/jpg, image/gif, image/webp"
+      accept="*/*"
       onChange={onFileChange}
     />
   );
@@ -402,21 +403,6 @@ export const LRPerson1 = () => {
     if (lead && kase) navigate('/LeadReview', { state: { caseDetails: kase, leadDetails: lead } });
   };
 
-  const goToChainOfCustody = () => {
-    const { lead, kase } = resolveLeadAndCase();
-    if (lead && kase) navigate('/ChainOfCustody', { state: { caseDetails: kase, leadDetails: lead } });
-    else showAlert('Please select a case and lead first.');
-  };
-
-  const goToViewLR = () => {
-    const { lead, kase } = resolveLeadAndCase();
-    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-      showAlert('Please select a case and lead first.');
-      return;
-    }
-    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
-  };
-
   /**
    * Generates a full PDF report for the selected lead by fetching all sections
    * in parallel and posting the assembled payload to the report generation endpoint.
@@ -424,7 +410,8 @@ export const LRPerson1 = () => {
    */
   const handleViewLeadReturn = async () => {
     const { lead, kase } = resolveLeadAndCase();
-    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+    const kaseId = kase?._id || kase?.id;
+    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kaseId) {
       showAlert('Please select a case and lead first.');
       return;
     }
@@ -436,26 +423,25 @@ export const LRPerson1 = () => {
       const headers = { headers: { Authorization: `Bearer ${token}` } };
       const { leadNo } = lead;
       const leadName = lead.leadName || lead.description;
-      const { caseNo, caseName } = kase;
       const encLead = encodeURIComponent(leadName);
-      const encCase = encodeURIComponent(caseName);
+      const base = `${leadNo}/${encLead}/${kaseId}`;
 
       // Fetch all report sections in parallel
       const [
         instrRes, returnsRes, personsRes, vehiclesRes, enclosuresRes,
         evidenceRes, picturesRes, audioRes, videosRes, scratchpadRes, timelineRes,
       ] = await Promise.all([
-        api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`,               headers).catch(() => ({ data: [] })),
-        api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`,         headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`,       headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`,     headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`,             headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`,              headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`,               headers).catch(() => ({ data: [] })),
-        api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`,                 headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`,                 headers).catch(() => ({ data: [] })),
-        api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`,              headers).catch(() => ({ data: [] })),
-        api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`,                headers).catch(() => ({ data: [] })),
+        api.get(`/api/lead/lead/${base}`,               headers).catch(() => ({ data: [] })),
+        api.get(`/api/leadReturnResult/${base}`,         headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrperson/lrperson/${base}`,       headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvehicle/lrvehicle/${base}`,     headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrenclosure/${base}`,             headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrevidence/${base}`,              headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrpicture/${base}`,               headers).catch(() => ({ data: [] })),
+        api.get(`/api/lraudio/${base}`,                 headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvideo/${base}`,                 headers).catch(() => ({ data: [] })),
+        api.get(`/api/scratchpad/${base}`,              headers).catch(() => ({ data: [] })),
+        api.get(`/api/timeline/${base}`,                headers).catch(() => ({ data: [] })),
       ]);
 
       // Attach associated files to media/enclosure sections
@@ -660,39 +646,15 @@ export const LRPerson1 = () => {
         <div className={styles.mainColumn}>
 
           {/* ── Top bar: page-level navigation actions ── */}
-          <nav className={styles.topMenuNav}>
-            <div className={styles.menuItems}>
-              <span className={styles.menuItem} onClick={goToLeadInformation}>
-                Lead Information
-              </span>
-
-              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
-                Add Lead Return
-              </span>
-
-              {/* Case managers can generate / manage the full lead return report */}
-              {isCaseManager && (
-                <span
-                  className={`${styles.menuItem} ${isGenerating ? styles.menuItemDisabled : ''}`}
-                  onClick={handleViewLeadReturn}
-                  title={isGenerating ? 'Preparing report…' : 'View Lead Return'}
-                >
-                  Manage Lead Return
-                </span>
-              )}
-
-              {/* Primary investigator submits; other investigators only review */}
-              {isInvestigator && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  {isPrimaryInvestigator ? 'Submit Lead Return' : 'Review Lead Return'}
-                </span>
-              )}
-
-              <span className={styles.menuItem} onClick={goToChainOfCustody}>
-                Lead Chain of Custody
-              </span>
-            </div>
-          </nav>
+          <LRTopMenu
+            activePage="addLeadReturn"
+            selectedCase={selectedCase}
+            selectedLead={selectedLead}
+            isPrimaryInvestigator={isPrimaryInvestigator}
+            isGenerating={isGenerating}
+            onManageLeadReturn={handleViewLeadReturn}
+            styles={styles}
+          />
 
           {/* ── Section tabs: LR form sub-sections ── */}
           <nav className={styles.topMenuSections}>

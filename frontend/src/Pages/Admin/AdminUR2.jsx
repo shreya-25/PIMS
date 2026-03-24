@@ -16,10 +16,12 @@ const AGENCIES = [
 ];
 
 const ROLES = [
-  { value: "Admin",                label: "Admin" },
-  { value: "CaseManager",         label: "Case Manager" },
-  { value: "Investigator",        label: "Investigator" },
-  { value: "Detective Supervisor", label: "Detective Supervisor" },
+  { value: "Admin",                   label: "Admin" },
+  { value: "DetectiveSupervisor",     label: "Detective Supervisor" },
+  { value: "CaseManager",             label: "Case Manager" },
+  { value: "Detective/Investigator",  label: "Detective/Investigator" },
+  { value: "ReadOnly",                label: "Read Only" },
+  { value: "OtherLEO",               label: "Other LEO (Law Enforcement Agency)" },
 ];
 
 const PERMISSIONS = [
@@ -50,6 +52,7 @@ export const AdminUR2 = () => {
     lastName: "",
     email: "",
     agency: "",
+    batchId: "",
     role: "",
     userType: "External",
     assignedCases: [],
@@ -140,6 +143,7 @@ export const AdminUR2 = () => {
           lastName: formData.lastName,
           email: formData.email,
           role: formData.role,
+          batchId: formData.batchId || undefined,
           username: formData.email.split("@")[0],
           password: "Invite@123",
         },
@@ -151,6 +155,7 @@ export const AdminUR2 = () => {
         lastName: "",
         email: "",
         agency: "",
+        batchId: "",
         role: "",
         userType: "External",
         assignedCases: [],
@@ -274,7 +279,20 @@ export const AdminUR2 = () => {
                 </div>
               </div>
 
-              {/* Row 3: Role / User Type */}
+              {/* Row 3: Batch ID */}
+              <div className={styles["form-row"]}>
+                <div className={styles["form-group"]}>
+                  <label>Batch ID <span className={styles["optional"]}>(Optional)</span></label>
+                  <input
+                    type="text"
+                    placeholder="e.g. BATCH-2024-001"
+                    value={formData.batchId}
+                    onChange={(e) => handleField("batchId", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Row 4: Role / User Type */}
               <div className={styles["form-row"]}>
                 <div className={styles["form-group"]}>
                   <label>

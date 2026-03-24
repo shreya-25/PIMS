@@ -12,6 +12,7 @@ import { CaseContext } from '../../CaseContext';
 import PersonModal from '../../../components/PersonModal/PersonModel';
 import Navbar from '../../../components/Navbar/Navbar';
 import styles from './LRPerson.module.css';
+import { LRTopMenu } from '../LRTopMenu';
 import api from '../../../api';
 import { SideBar } from '../../../components/Sidebar/Sidebar';
 import { AlertModal } from '../../../components/AlertModal/AlertModal';
@@ -55,7 +56,7 @@ const mapPersonToRow = (person) => ({
   _id:          person._id,
   returnId:     person.leadReturnId,
   dateEntered:  new Date(person.enteredDate).toLocaleDateString(),
-  name:         `${person.firstName} ${person.lastName}`,
+  name:         [person.firstName, person.middleInitial, person.lastName].filter(Boolean).join(' '),
   dateOfBirth:  person.dateOfBirth
     ? (() => { const d = new Date(person.dateOfBirth); return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()).toLocaleDateString(); })()
     : 'N/A',
@@ -108,10 +109,10 @@ export const LRPerson = () => {
 
   // ─── Lead status / read-only hook ───────────────────────────────────────────
   const { status, isReadOnly } = useLeadStatus({
-    caseNo:   selectedCase?.caseNo,
-    caseName: selectedCase?.caseName,
-    leadNo:   selectedLead?.leadNo,
-    leadName: selectedLead?.leadName,
+    caseId:        selectedCase?._id || selectedCase?.id,
+    leadNo:        selectedLead?.leadNo,
+    leadName:      selectedLead?.leadName,
+    initialStatus: selectedLead?.leadStatus,
   });
 
   // ─── Local state ────────────────────────────────────────────────────────────
@@ -182,13 +183,14 @@ export const LRPerson = () => {
    * Used to derive access-filtering and role-based UI visibility.
    */
   useEffect(() => {
-    if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?.caseNo || !selectedCase?.caseName) return;
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (!selectedLead?.leadNo || !selectedLead?.leadName || !caseId) return;
 
     const fetchLeadData = async () => {
       const token = localStorage.getItem('token');
       try {
         const { data } = await api.get(
-          `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${selectedCase.caseNo}/${encodeURIComponent(selectedCase.caseName)}`,
+          `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (data.length > 0) {
@@ -208,15 +210,15 @@ export const LRPerson = () => {
    * Wrapped in useCallback so it can be safely listed in the fetch trigger effect's deps.
    */
   const fetchPersons = useCallback(async () => {
-    if (!selectedCase?.caseNo || !selectedCase?.caseName || !selectedLead?.leadNo || !selectedLead?.leadName) return;
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (!caseId || !selectedLead?.leadNo || !selectedLead?.leadName) return;
 
     const token   = localStorage.getItem('token');
     const encLead = encodeURIComponent(selectedLead.leadName);
-    const encCase = encodeURIComponent(selectedCase.caseName);
 
     try {
       const { data } = await api.get(
-        `/api/lrperson/lrperson/${selectedLead.leadNo}/${encLead}/${selectedCase.caseNo}/${encCase}`,
+        `/api/lrperson/lrperson/${selectedLead.leadNo}/${encLead}/${caseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -230,7 +232,7 @@ export const LRPerson = () => {
 
   // Trigger person fetch when case/lead selection changes
   useEffect(() => {
-    if (selectedCase?.caseNo && selectedCase?.caseName && selectedLead?.leadNo && selectedLead?.leadName) {
+    if ((selectedCase?._id || selectedCase?.id) && selectedLead?.leadNo && selectedLead?.leadName) {
       fetchPersons();
     }
   }, [selectedCase, selectedLead, fetchPersons]);
@@ -306,7 +308,7 @@ export const LRPerson = () => {
 
     try {
       const { data: updatedDoc } = await api.put(
-        `/api/lrperson/${selectedLead.leadNo}/${selectedCase.caseNo}/${p.leadReturnId}/${p.firstName}`,
+        `/api/lrperson/${selectedLead.leadNo}/${selectedCase._id || selectedCase.id}/${p.leadReturnId}/${p.firstName}`,
         { accessLevel: newAccess },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -324,26 +326,17 @@ export const LRPerson = () => {
    * Navigate to either Submit or Review Lead Return (ViewLR).
    * Primary investigators submit; all others review.
    */
-  const goToViewLR = () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-    if (!lead?.leadNo || !lead?.leadName || !kase?.caseNo || !kase?.caseName) {
-      showAlert('Please select a case and lead first.');
-      return;
-    }
-    navigate('/viewLR', { state: { caseDetails: kase, leadDetails: lead } });
-  };
-
   /**
    * Generate a full lead report as a PDF blob and navigate to the document viewer.
    * All lead data sections are fetched in parallel; media sections also have their
    * attached files fetched before the report payload is assembled.
    */
   const handleViewLeadReturn = async () => {
-    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+    const lead  = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+    const kase  = selectedCase?._id || selectedCase?.id ? selectedCase : location.state?.caseDetails;
+    const kaseId = kase?._id || kase?.id;
 
-    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kaseId) {
       showAlert('Please select a case and lead first.');
       return;
     }
@@ -351,30 +344,29 @@ export const LRPerson = () => {
 
     try {
       setIsGenerating(true);
-      const token   = localStorage.getItem('token');
-      const headers = { headers: { Authorization: `Bearer ${token}` } };
-      const { leadNo }             = lead;
-      const leadName               = lead.leadName || lead.description;
-      const { caseNo, caseName }   = kase;
-      const encLead = encodeURIComponent(leadName);
-      const encCase = encodeURIComponent(caseName);
+      const token    = localStorage.getItem('token');
+      const headers  = { headers: { Authorization: `Bearer ${token}` } };
+      const { leadNo } = lead;
+      const leadName   = lead.leadName || lead.description;
+      const encLead    = encodeURIComponent(leadName);
+      const base       = `${leadNo}/${encLead}/${kaseId}`;
 
       // Fetch all lead data sections in parallel
       const [
         instrRes, returnsRes, personsRes, vehiclesRes, enclosuresRes,
         evidenceRes, picturesRes, audioRes, videosRes, scratchpadRes, timelineRes,
       ] = await Promise.all([
-        api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lead/lead/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/leadReturnResult/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrperson/lrperson/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvehicle/lrvehicle/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrenclosure/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrevidence/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrpicture/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lraudio/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvideo/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/scratchpad/${base}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/timeline/${base}`, headers).catch(() => ({ data: [] })),
       ]);
 
       // Attach binary files to media/document sections in parallel
@@ -468,64 +460,15 @@ export const LRPerson = () => {
         <div className={styles.leftContentLI}>
 
           {/* ── Page-level navigation bar ──────────────────────────────────── */}
-          <div className={styles.topMenuNav}>
-            <div className={styles.menuItems}>
-              <span
-                className={styles.menuItem}
-                onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                  if (lead && kase) navigate('/LeadReview', { state: { caseDetails: kase, leadDetails: lead } });
-                }}
-              >
-                Lead Information
-              </span>
-
-              <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
-                Add Lead Return
-              </span>
-
-              {/* Case Manager / Supervisor: generate full report */}
-              {isCaseManager && (
-                <span
-                  className={`${styles.menuItem} ${isGenerating ? styles.menuItemDisabled : ''}`}
-                  onClick={handleViewLeadReturn}
-                  title={isGenerating ? 'Preparing report…' : 'View Lead Return'}
-                >
-                  Manage Lead Return
-                </span>
-              )}
-
-              {/* Primary investigator: can submit */}
-              {selectedCase?.role === 'Investigator' && isPrimaryInvestigator && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  Submit Lead Return
-                </span>
-              )}
-
-              {/* Secondary investigator: review only */}
-              {selectedCase?.role === 'Investigator' && !isPrimaryInvestigator && (
-                <span className={styles.menuItem} onClick={goToViewLR}>
-                  Review Lead Return
-                </span>
-              )}
-
-              <span
-                className={styles.menuItem}
-                onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                  if (lead && kase) {
-                    navigate('/ChainOfCustody', { state: { caseDetails: kase, leadDetails: lead } });
-                  } else {
-                    showAlert('Please select a case and lead first.');
-                  }
-                }}
-              >
-                Lead Chain of Custody
-              </span>
-            </div>
-          </div>
+          <LRTopMenu
+            activePage="addLeadReturn"
+            selectedCase={selectedCase}
+            selectedLead={selectedLead}
+            isPrimaryInvestigator={isPrimaryInvestigator}
+            isGenerating={isGenerating}
+            onManageLeadReturn={handleViewLeadReturn}
+            styles={styles}
+          />
 
           {/* ── Section tabs navigation ─────────────────────────────────────── */}
           <div className={styles.topMenuSections}>
@@ -595,7 +538,6 @@ export const LRPerson = () => {
                     persons.map((person, index) => {
                       const canModify = isCaseManager || person.enteredBy?.trim() === signedInOfficer?.trim();
                       const disableActions =
-                        selectedLead?.leadStatus === 'In Review' ||
                         selectedLead?.leadStatus === 'Completed' ||
                         selectedLead?.leadStatus === 'Closed' ||
                         isReadOnly ||
@@ -649,7 +591,7 @@ export const LRPerson = () => {
                                 onChange={(e) => handleAccessChange(index, e.target.value)}
                               >
                                 <option value="Everyone">All</option>
-                                <option value="Case Manager">Case Manager</option>
+                                <option value="Case Manager Only">Case Manager</option>
                                 <option value="Case Manager and Assignees">Assignees</option>
                               </select>
                             </td>
@@ -681,7 +623,6 @@ export const LRPerson = () => {
                 <button
                   className={styles.saveBtn1}
                   disabled={
-                    selectedLead?.leadStatus === 'In Review' ||
                     selectedLead?.leadStatus === 'Completed' ||
                     selectedLead?.leadStatus === 'Closed' ||
                     isReadOnly
