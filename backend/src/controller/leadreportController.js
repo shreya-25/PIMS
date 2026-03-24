@@ -1151,7 +1151,7 @@ let currentY = headerHeight + 20;
           ["Race", "Ethnicity", "Person Type", "Condition", "Caution Type"],
           ["Skin Tone", "Eye Color", "Glasses", "Hair Color", "Height"],
           ["Weight", "Scars", "Marks", "Tattoo"],
-          ["SSN", "Occupation", "Business Name"],
+          ["SSN", "Driver License ID", "Occupation", "Business Name"],
           ["Street 1", "Street 2", "Building"],
           ["Apartment", "City", "State", "Zip Code"],
         ];
@@ -1162,7 +1162,7 @@ let currentY = headerHeight + 20;
           "Race": 103,         "Ethnicity": 102,     "Person Type": 102,    "Condition": 102, "Caution Type": 103,
           "Skin Tone": 103,    "Eye Color": 102,     "Glasses": 102,        "Hair Color": 102,  "Height": 103,
           "Weight": 128,       "Scars": 128,         "Marks": 128,          "Tattoo": 128,
-          "SSN": 171,          "Occupation": 170,    "Business Name": 171,
+          "SSN": 128,          "Driver License ID": 128, "Occupation": 128,  "Business Name": 128,
           "Street 1": 171,     "Street 2": 170,      "Building": 171,
           "Apartment": 128,    "City": 128,          "State": 128,          "Zip Code": 128,
         };
@@ -1190,7 +1190,8 @@ let currentY = headerHeight + 20;
             case "Date Entered":   return formatDate(person.enteredDate);
             case "Cell Number":    return person.cellNumber || "";
             case "Business Name":  return person.businessName || "";
-            case "SSN":            return person.ssn || "";
+            case "SSN":                return person.ssn || "";
+            case "Driver License ID":  return person.driverLicenseId || "";
             case "Email":          return person.email || "";
             case "Occupation":     return person.occupation || "";
             case "Person Type":    return person.personType || "";
