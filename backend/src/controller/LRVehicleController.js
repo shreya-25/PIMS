@@ -1,6 +1,6 @@
 const LRVehicle = require("../models/LRVehicle");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
-const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
+const { resolveLeadReturnRefs, resolveCaseNo } = require("../utils/resolveRefs");
 const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
 
 const createLRVehicle = async (req, res) => {
@@ -76,7 +76,9 @@ const getLRVehicleByDetailsandid = async (req, res) => {
 
 const updateLRVehicle = async (req, res) => {
     try {
-      const { leadNo, caseNo, leadReturnId, vin } = req.params;
+      const { leadNo, leadReturnId, vin } = req.params;
+      const caseNo = await resolveCaseNo(req.params.caseId);
+      if (!caseNo) return res.status(404).json({ message: "Case not found." });
       const updateData = req.body;
       const actualVin = vin === '-EMPTY-' ? '' : vin;
 
@@ -110,7 +112,9 @@ const updateLRVehicle = async (req, res) => {
 
 const deleteLRVehicle = async (req, res) => {
     try {
-      const { leadNo, caseNo, leadReturnId, vin } = req.params;
+      const { leadNo, leadReturnId, vin } = req.params;
+      const caseNo = await resolveCaseNo(req.params.caseId);
+      if (!caseNo) return res.status(404).json({ message: "Case not found." });
       const actualVin = vin === '-EMPTY-' ? '' : vin;
 
       const existingVehicle = await LRVehicle.findOne({ leadNo: Number(leadNo), caseNo, leadReturnId, vin: actualVin });

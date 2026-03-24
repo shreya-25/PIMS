@@ -109,9 +109,10 @@ export const LRPerson = () => {
 
   // ─── Lead status / read-only hook ───────────────────────────────────────────
   const { status, isReadOnly } = useLeadStatus({
-    caseId:   selectedCase?._id || selectedCase?.id,
-    leadNo:   selectedLead?.leadNo,
-    leadName: selectedLead?.leadName,
+    caseId:        selectedCase?._id || selectedCase?.id,
+    leadNo:        selectedLead?.leadNo,
+    leadName:      selectedLead?.leadName,
+    initialStatus: selectedLead?.leadStatus,
   });
 
   // ─── Local state ────────────────────────────────────────────────────────────
@@ -590,7 +591,7 @@ export const LRPerson = () => {
                                 onChange={(e) => handleAccessChange(index, e.target.value)}
                               >
                                 <option value="Everyone">All</option>
-                                <option value="Case Manager">Case Manager</option>
+                                <option value="Case Manager Only">Case Manager</option>
                                 <option value="Case Manager and Assignees">Assignees</option>
                               </select>
                             </td>

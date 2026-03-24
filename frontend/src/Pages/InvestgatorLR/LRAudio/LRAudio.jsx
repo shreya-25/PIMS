@@ -228,6 +228,7 @@ export const LRAudio = () => {
     caseId:   selectedCase?._id || selectedCase?.id,
     leadNo:   selectedLead?.leadNo,
     leadName: selectedLead?.leadName,
+    initialStatus: selectedLead?.leadStatus,
   });
 
   // ── Role helpers ──────────────────────────────────────────────────────────

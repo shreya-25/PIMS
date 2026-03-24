@@ -19,14 +19,14 @@ router.get("/lrperson/:leadNo/:leadName/:caseId", verifyToken, getLRPersonByDeta
 router.get("/lrperson/:leadNo/:leadName/:caseId/:id", verifyToken, getLRPersonByDetailsandid);
 
 router.put(
-    '/:leadNo/:caseNo/:leadReturnId/:firstName',
+    '/:leadNo/:caseId/:leadReturnId/:firstName',
     verifyToken,
     updateLRPerson
   );
 
-  // DELETE  /api/lrperson/:leadNo/:caseNo/:leadReturnId/:firstName
+  // DELETE  /api/lrperson/:leadNo/:caseId/:leadReturnId/:firstName
   router.delete(
-    '/:leadNo/:caseNo/:leadReturnId/:firstName',
+    '/:leadNo/:caseId/:leadReturnId/:firstName',
     verifyToken,
     deleteLRPerson
   );

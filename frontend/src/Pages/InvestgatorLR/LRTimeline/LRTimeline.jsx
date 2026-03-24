@@ -152,9 +152,10 @@ export const LRTimeline = () => {
   // ── Lead status and read-only guard ───────────────────────────────────────
 
   const { status, isReadOnly } = useLeadStatus({
-    caseId:   selectedCase._id || selectedCase.id,
-    leadNo:   selectedLead.leadNo,
-    leadName: selectedLead.leadName,
+    caseId:        selectedCase._id || selectedCase.id,
+    leadNo:        selectedLead.leadNo,
+    leadName:      selectedLead.leadName,
+    initialStatus: selectedLead?.leadStatus,
   });
 
   // Consolidated disable flag for all form controls
@@ -831,7 +832,7 @@ export const LRTimeline = () => {
                               className={styles.accessDropdown}
                             >
                               <option value="Everyone">All</option>
-                              <option value="Case Manager">Case Manager</option>
+                              <option value="Case Manager Only">Case Manager</option>
                               <option value="Case Manager and Assignees">Assignees</option>
                             </select>
                           </td>

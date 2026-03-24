@@ -143,6 +143,7 @@ export const LRResult = () => {
     caseId:   effectiveCase?._id || effectiveCase?.id,
     leadNo:   effectiveLead?.leadNo,
     leadName: effectiveLead?.leadName,
+    initialStatus: selectedLead?.leadStatus,
   });
 
   // ─── Local state ────────────────────────────────────────────────────────────
@@ -593,7 +594,8 @@ export const LRResult = () => {
     const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
     const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
 
-    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+    const kaseId = kase?._id || kase?.id;
+    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kaseId) {
       showAlert('Please select a case and lead first.');
       return;
     }
@@ -603,28 +605,26 @@ export const LRResult = () => {
       setIsGenerating(true);
       const token    = localStorage.getItem('token');
       const headers  = { headers: { Authorization: `Bearer ${token}` } };
-      const { leadNo }             = lead;
-      const leadName               = lead.leadName || lead.description;
-      const { caseNo: kCaseNo, caseName } = kase;
-      const encLead = encodeURIComponent(leadName);
-      const encCase = encodeURIComponent(caseName);
+      const { leadNo } = lead;
+      const leadName   = lead.leadName || lead.description;
+      const encLead    = encodeURIComponent(leadName);
 
       // Fetch all lead sections in parallel
       const [
         instrRes, returnsRes, personsRes, vehiclesRes, enclosuresRes,
         evidenceRes, picturesRes, audioRes, videosRes, scratchpadRes, timelineRes,
       ] = await Promise.all([
-        api.get(`/api/lead/lead/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrenclosure/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrevidence/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrpicture/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lraudio/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvideo/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/scratchpad/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
-        api.get(`/api/timeline/${leadNo}/${encLead}/${kCaseNo}/${encCase}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lead/lead/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrenclosure/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrevidence/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrpicture/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lraudio/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvideo/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/scratchpad/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
+        api.get(`/api/timeline/${leadNo}/${encLead}/${kaseId}`, headers).catch(() => ({ data: [] })),
       ]);
 
       // Attach binary files to media/document sections in parallel
@@ -914,7 +914,7 @@ export const LRResult = () => {
                                   onChange={(e) => handleAccessChange(idx, e.target.value)}
                                 >
                                   <option value="Everyone">All</option>
-                                  <option value="Case Manager">Case Manager</option>
+                                  <option value="Case Manager Only">Case Manager</option>
                                   <option value="Case Manager and Assignees">Assignees</option>
                                 </select>
                               </td>

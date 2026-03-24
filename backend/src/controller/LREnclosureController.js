@@ -120,7 +120,7 @@ const updateLREnclosure = async (req, res) => {
 
     if (req.file) {
       if (enc.s3Key) { try { await deleteFromS3(enc.s3Key); } catch {} }
-      const { key } = await uploadToS3({ filePath: req.file.path, userId: caseNo, mimetype: req.file.mimetype });
+      const { key } = await uploadToS3({ filePath: req.file.path, userId: enc.caseNo, mimetype: req.file.mimetype });
       if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
       enc.s3Key = key;
       enc.originalName = req.file.originalname;
@@ -178,7 +178,7 @@ const deleteLREnclosure = async (req, res) => {
     await enc.save();
 
     await createAuditLog({
-      caseNo, caseName, leadNo: Number(leadNo), leadName,
+      caseNo: enc.caseNo, caseName: enc.caseName, leadNo: Number(leadNo), leadName,
       entityType: "LREnclosure", entityId: `${leadReturnId}_${enc._id}`, action: "DELETE",
       performedBy: { username: req.user?.name || "Unknown", role: req.user?.role || "Unknown" },
       oldValue: sanitizeForAudit(oldValue), newValue: null,

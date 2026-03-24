@@ -207,6 +207,7 @@ export const LRVehicle = () => {
     caseId:   selectedCase?._id || selectedCase?.id,
     leadNo:   selectedLead?.leadNo,
     leadName: selectedLead?.leadName,
+    initialStatus: selectedLead?.leadStatus,
   });
 
   // Derived permissions
@@ -961,7 +962,7 @@ export const LRVehicle = () => {
                                   onChange={(e) => handleAccessChange(index, e.target.value)}
                                 >
                                   <option value="Everyone">All</option>
-                                  <option value="Case Manager">Case Manager</option>
+                                  <option value="Case Manager Only">Case Manager</option>
                                   <option value="Case Manager and Assignees">Assignees</option>
                                 </select>
                               </td>

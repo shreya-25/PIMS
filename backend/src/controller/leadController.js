@@ -1,6 +1,15 @@
 const Lead = require("../models/lead");
 const User = require("../models/userModel");
+const Case = require("../models/case");
 const mongoose = require("mongoose");
+
+// Resolve a caseId param that may be an ObjectId string or a caseNo string
+async function resolveCaseId(value) {
+  if (!value) return null;
+  if (mongoose.isValidObjectId(value)) return value;
+  const caseDoc = await Case.findOne({ caseNo: value }).select("_id").lean();
+  return caseDoc ? caseDoc._id : value; // fallback keeps original so Mongo gives a clear error
+}
 const { createSnapshot } = require("../utils/leadReturnVersioning");
 const LeadReturn = require("../models/leadreturn");
 const LeadReturnResult = require("../models/leadReturnResult");
@@ -227,7 +236,7 @@ const getLRForCM = async (req, res) => {
 
 const getLeadsByCase = async (req, res) => {
     try {
-      const { caseId } = req.params;
+      const caseId = await resolveCaseId(req.params.caseId);
       const leads = await Lead.find({ caseId }).select("-events").lean();
       res.status(200).json(leads);
     } catch (err) {
@@ -238,7 +247,8 @@ const getLeadsByCase = async (req, res) => {
 
   const getLeadsByLeadNoandLeadName = async (req, res) => {
     try {
-        const { leadNo, leadName, caseId } = req.params;
+        const { leadNo, leadName } = req.params;
+        const caseId = await resolveCaseId(req.params.caseId);
         const query = {
             leadNo: leadNo,
             description: leadName,
@@ -254,7 +264,8 @@ const getLeadsByCase = async (req, res) => {
 
 const getLeadsforHierarchy = async (req, res) => {
   try {
-      const { leadNo, caseId } = req.params;
+      const { leadNo } = req.params;
+      const caseId = await resolveCaseId(req.params.caseId);
       const query = {
           leadNo: leadNo,
           caseId,

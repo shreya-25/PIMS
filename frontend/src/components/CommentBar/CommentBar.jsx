@@ -14,26 +14,24 @@ import "./CommentBar.css";
  */
 const CommentBar = forwardRef(function CommentBar(
   {
-    caseNo: pCaseNo,
-    caseName: pCaseName,
+    caseId: pCaseId,
     leadNo: pLeadNo,
     leadName: pLeadName,
     tag = "ViewLR",
     autoFocus = true,
-    disabled = false, 
-    lockReason = "", 
+    disabled = false,
+    lockReason = "",
   },
   ref
 ) {
   const { selectedCase, selectedLead } = useContext(CaseContext) || {};
 
   // ---- Resolve exact scope (prefer explicit props) ----
-  const caseNo   = pCaseNo   ?? selectedCase?.caseNo;
-  const caseName = pCaseName ?? selectedCase?.caseName;
+  const caseId   = pCaseId   ?? selectedCase?._id ?? selectedCase?.id;
   const leadNo   = pLeadNo   ?? selectedLead?.leadNo;
   const leadName = pLeadName ?? selectedLead?.leadName;
 
-  const ready = Boolean(caseNo && caseName && leadNo && leadName && tag);
+  const ready = Boolean(caseId && leadNo && leadName && tag);
 
   const [comments, setComments]   = useState([]);  // server rows
   const [draft, setDraft]         = useState("");
@@ -56,7 +54,7 @@ const CommentBar = forwardRef(function CommentBar(
     setError(null);
     try {
       const res = await api.get("/api/comment", {
-        params: { caseNo, caseName, leadNo, leadName, tag },
+        params: { caseId, leadNo, leadName, tag },
         headers: { Authorization: `Bearer ${token}` },
       });
       const list = Array.isArray(res.data) ? res.data.slice() : [];
@@ -69,7 +67,7 @@ const CommentBar = forwardRef(function CommentBar(
     } finally {
       setLoading(false);
     }
-  }, [ready, caseNo, caseName, leadNo, leadName, tag, token]);
+  }, [ready, caseId, leadNo, leadName, tag, token]);
 
   useEffect(() => { fetchComments(); }, [fetchComments]);
 
@@ -100,10 +98,9 @@ const CommentBar = forwardRef(function CommentBar(
         setDraft("");
       } else {
         const body = {
-          caseNo,
-          caseName,
+          caseId,
           leadNo,
-          description: leadName,   // backend expects description = leadName in your API
+          description: leadName,
           tag,
           enteredBy,
           enteredDate: new Date(),

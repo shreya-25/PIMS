@@ -410,7 +410,8 @@ export const LRPerson1 = () => {
    */
   const handleViewLeadReturn = async () => {
     const { lead, kase } = resolveLeadAndCase();
-    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kase?.caseNo || !kase?.caseName) {
+    const kaseId = kase?._id || kase?.id;
+    if (!lead?.leadNo || !(lead.leadName || lead.description) || !kaseId) {
       showAlert('Please select a case and lead first.');
       return;
     }
@@ -422,26 +423,25 @@ export const LRPerson1 = () => {
       const headers = { headers: { Authorization: `Bearer ${token}` } };
       const { leadNo } = lead;
       const leadName = lead.leadName || lead.description;
-      const { caseNo, caseName } = kase;
       const encLead = encodeURIComponent(leadName);
-      const encCase = encodeURIComponent(caseName);
+      const base = `${leadNo}/${encLead}/${kaseId}`;
 
       // Fetch all report sections in parallel
       const [
         instrRes, returnsRes, personsRes, vehiclesRes, enclosuresRes,
         evidenceRes, picturesRes, audioRes, videosRes, scratchpadRes, timelineRes,
       ] = await Promise.all([
-        api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseNo}/${encCase}`,               headers).catch(() => ({ data: [] })),
-        api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseNo}/${encCase}`,         headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrperson/lrperson/${leadNo}/${encLead}/${caseNo}/${encCase}`,       headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvehicle/lrvehicle/${leadNo}/${encLead}/${caseNo}/${encCase}`,     headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrenclosure/${leadNo}/${encLead}/${caseNo}/${encCase}`,             headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrevidence/${leadNo}/${encLead}/${caseNo}/${encCase}`,              headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseNo}/${encCase}`,               headers).catch(() => ({ data: [] })),
-        api.get(`/api/lraudio/${leadNo}/${encLead}/${caseNo}/${encCase}`,                 headers).catch(() => ({ data: [] })),
-        api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseNo}/${encCase}`,                 headers).catch(() => ({ data: [] })),
-        api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseNo}/${encCase}`,              headers).catch(() => ({ data: [] })),
-        api.get(`/api/timeline/${leadNo}/${encLead}/${caseNo}/${encCase}`,                headers).catch(() => ({ data: [] })),
+        api.get(`/api/lead/lead/${base}`,               headers).catch(() => ({ data: [] })),
+        api.get(`/api/leadReturnResult/${base}`,         headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrperson/lrperson/${base}`,       headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvehicle/lrvehicle/${base}`,     headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrenclosure/${base}`,             headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrevidence/${base}`,              headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrpicture/${base}`,               headers).catch(() => ({ data: [] })),
+        api.get(`/api/lraudio/${base}`,                 headers).catch(() => ({ data: [] })),
+        api.get(`/api/lrvideo/${base}`,                 headers).catch(() => ({ data: [] })),
+        api.get(`/api/scratchpad/${base}`,              headers).catch(() => ({ data: [] })),
+        api.get(`/api/timeline/${base}`,                headers).catch(() => ({ data: [] })),
       ]);
 
       // Attach associated files to media/enclosure sections

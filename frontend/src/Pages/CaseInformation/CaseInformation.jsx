@@ -640,7 +640,6 @@ export const CaseInformation = () => {
 
   const EmptyState = ({ label }) => (
     <div className={styles['empty-state']}>
-      <span className={styles['empty-icon']}>📂</span>
       <span>No {label} found for this case</span>
     </div>
   );
@@ -970,7 +969,6 @@ export const CaseInformation = () => {
                   }
                   if (!vehRows.length) return (
                     <div className={styles['empty-state']}>
-                      <span className={styles['empty-icon']}>🚗</span>
                       <span>No vehicles found for this case</span>
                     </div>
                   );

@@ -2,7 +2,7 @@ const LRPerson = require("../models/LRPerson");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
-const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
+const { resolveLeadReturnRefs, resolveCaseNo } = require("../utils/resolveRefs");
 const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
 
 // Validation function to check if at least one meaningful field is filled
@@ -156,7 +156,9 @@ const getLRPersonByDetailsandid = async (req, res) => {
 
 const updateLRPerson = async (req, res) => {
     try {
-      const { leadNo, caseNo, leadReturnId, firstName } = req.params;
+      const { leadNo, leadReturnId, firstName } = req.params;
+      const caseNo = await resolveCaseNo(req.params.caseId);
+      if (!caseNo) return res.status(404).json({ message: "Case not found." });
       const updateData = req.body;
 
       if (!isPersonRecordValid(updateData)) {
@@ -233,7 +235,9 @@ const updateLRPersonById = async (req, res) => {
 
 const deleteLRPerson = async (req, res) => {
     try {
-      const { leadNo, caseNo, leadReturnId, firstName } = req.params;
+      const { leadNo, leadReturnId, firstName } = req.params;
+      const caseNo = await resolveCaseNo(req.params.caseId);
+      if (!caseNo) return res.status(404).json({ message: "Case not found." });
 
       const existingPerson = await LRPerson.findOne({ leadNo: Number(leadNo), caseNo, leadReturnId, firstName });
       if (!existingPerson) {

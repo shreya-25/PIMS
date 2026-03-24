@@ -2,14 +2,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api';
 
-const RANK = { Pending: 0, Accepted: 1, 'In Review': 2, Completed: 3, Closed: 4 };
+const RANK = { Pending: 0, Assigned: 1, Accepted: 2, 'In Review': 3, Completed: 4, Closed: 5 };
 const higher = (a,b) => (RANK[a] ?? -1) >= (RANK[b] ?? -1) ? a : b;
 
-export function useLeadStatus({ caseId, leadNo, leadName }) {
+export function useLeadStatus({ caseId, leadNo, leadName, initialStatus }) {
   const queryClient = useQueryClient();
   const key = ['lead-status', caseId, leadNo, leadName];
 
-  const { data: status = 'Pending', isFetching } = useQuery({
+  const { data: status = initialStatus || 'Pending', isFetching } = useQuery({
     queryKey: key,
     queryFn: async () => {
       const { data } = await api.get(
@@ -17,8 +17,8 @@ export function useLeadStatus({ caseId, leadNo, leadName }) {
       );
       return data.leadStatus || data.status || 'Pending';
     },
-    staleTime: 30_000, // avoids refetch thrash
-    select: (incoming) => incoming, // keep simple now
+    staleTime: 30_000,
+    initialData: () => queryClient.getQueryData(key) ?? initialStatus ?? undefined,
   });
 
   const setLocalStatus = (next) => {

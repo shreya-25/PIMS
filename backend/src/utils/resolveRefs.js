@@ -2,6 +2,20 @@ const Case = require("../models/case");
 const Lead = require("../models/lead");
 const LeadReturn = require("../models/leadreturn");
 const User = require("../models/userModel");
+const mongoose = require("mongoose");
+
+/**
+ * If value is a valid ObjectId, look up the Case and return its caseNo string.
+ * Otherwise treat value as already a caseNo and return it as-is.
+ */
+async function resolveCaseNo(value) {
+  if (!value) return null;
+  if (mongoose.isValidObjectId(value)) {
+    const caseDoc = await Case.findById(value).select("caseNo").lean();
+    return caseDoc ? caseDoc.caseNo : null;
+  }
+  return value;
+}
 
 /**
  * Resolve ObjectId refs from string identifiers.
@@ -51,4 +65,4 @@ async function resolveLeadReturnRefs({ caseNo, caseName, leadNo, leadReturnId, e
     return results;
 }
 
-module.exports = { resolveLeadReturnRefs };
+module.exports = { resolveLeadReturnRefs, resolveCaseNo };

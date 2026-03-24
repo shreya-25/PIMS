@@ -116,7 +116,7 @@ const updateLRPicture = async (req, res) => {
 
     if (req.file) {
       if (pic.s3Key) await deleteFromS3(pic.s3Key);
-      const { key } = await uploadToS3({ filePath: req.file.path, userId: caseNo, mimetype: req.file.mimetype });
+      const { key } = await uploadToS3({ filePath: req.file.path, userId: pic.caseNo, mimetype: req.file.mimetype });
       if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
       pic.s3Key = key;
       pic.originalName = req.file.originalname;

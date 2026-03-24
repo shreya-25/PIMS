@@ -84,6 +84,7 @@ const closeComments  = useCallback(() => setShowComments(false), []);
     caseId: selectedCase._id || selectedCase.id,
     leadNo: selectedLead.leadNo,
     leadName: selectedLead.leadName,
+    initialStatus: selectedLead?.leadStatus,
   });
 
   const isSubmittedInReview = status === "In Review";
@@ -113,7 +114,7 @@ const primaryUsername =
 
 const isAssignedAsInvestigator = investigatorUsernames.includes(currentUser);
 const canShowSubmit      = !isClosedOrCompleted && !isInReview && (
-  (isInvestigator && isPrimaryInvestigator) ||
+  (isInvestigator && (isPrimaryInvestigator || (!primaryUsername && isAssignedAsInvestigator))) ||
   (isCaseManager && isAssignedAsInvestigator)
 );
 
@@ -336,7 +337,7 @@ const actuallyDoSubmitReport = async () => {
         caseId: selectedCase._id || selectedCase.id,
         submittedDate: new Date(),
         assignedTo: { assignees: assignees.length ? assignees : [me], lRStatus: "Submitted" },
-     assignedBy: { assignee: managerUser || me, lRStatus: "Pending" }
+        assignedBy: { assignee: managerUser || me, lRStatus: "Pending" }
       };
 
       const response = await api.put("/api/leadReturn/set-lrstatus-submitted", body, {
@@ -1106,8 +1107,6 @@ const actuallyDoSubmitReport = async () => {
     <CommentBar
       combined
       status={status}
-      caseNo={caseNo}
-      caseName={caseName}
       leadNo={leadNo}
       leadName={leadName}
       includePrivateFrom={[

@@ -16,16 +16,16 @@ router.get("/lrvehicle/:leadNo/:leadName/:caseId", verifyToken, getLRVehicleByDe
 
 router.get("/lrvehicle/:leadNo/:leadName/:caseId/:id", verifyToken, getLRVehicleByDetailsandid);
 
-// PUT   /api/lrvehicle/:leadNo/:caseNo/:leadReturnId/:vin
+// PUT   /api/lrvehicle/:leadNo/:caseId/:leadReturnId/:vin
 router.put(
-    "/:leadNo/:caseNo/:leadReturnId/:vin",
+    "/:leadNo/:caseId/:leadReturnId/:vin",
     verifyToken,
     updateLRVehicle
   );
 
-  // DELETE   /api/lrvehicle/:leadNo/:caseNo/:leadReturnId/:vin
+  // DELETE   /api/lrvehicle/:leadNo/:caseId/:leadReturnId/:vin
   router.delete(
-    "/:leadNo/:caseNo/:leadReturnId/:vin",
+    "/:leadNo/:caseId/:leadReturnId/:vin",
     verifyToken,
     deleteLRVehicle
   );

@@ -122,7 +122,7 @@ const updateLREvidence = async (req, res) => {
 
     if (req.file) {
       if (ev.s3Key) { try { await deleteFromS3(ev.s3Key); } catch {} }
-      const { key } = await uploadToS3({ filePath: req.file.path, userId: caseNo, mimetype: req.file.mimetype });
+      const { key } = await uploadToS3({ filePath: req.file.path, userId: ev.caseNo, mimetype: req.file.mimetype });
       if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
       ev.s3Key = key;
       ev.originalName = req.file.originalname;

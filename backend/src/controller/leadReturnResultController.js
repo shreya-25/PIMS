@@ -4,7 +4,7 @@ const LRPerson = require("../models/LRPerson");
 const Lead = require("../models/lead");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const { createSnapshot } = require("../utils/leadReturnVersioning");
-const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
+const { resolveLeadReturnRefs, resolveCaseNo } = require("../utils/resolveRefs");
 
 // Helpers to convert between A...Z strings and numbers
 function alphabetToNumber(str) {
@@ -182,7 +182,9 @@ const getLeadReturnResultByLeadNoandLeadName = async (req, res) => {
 // Update a specific lead return result entry
 const updateLeadReturnResult = async (req, res) => {
     try {
-        const { leadNo, caseNo, leadReturnId } = req.params;
+        const { leadNo, leadReturnId } = req.params;
+        const caseNo = await resolveCaseNo(req.params.caseId);
+        if (!caseNo) return res.status(404).json({ message: "Case not found." });
         const updateData = req.body;
 
         // Validate accessLevel if it's being updated
@@ -263,7 +265,9 @@ const updateLeadReturnResult = async (req, res) => {
 // Delete a specific lead return result entry (SOFT DELETE)
 const deleteLeadReturnResult = async (req, res) => {
     try {
-        const { leadNo, caseNo, leadReturnId } = req.params;
+        const { leadNo, leadReturnId } = req.params;
+        const caseNo = await resolveCaseNo(req.params.caseId);
+        if (!caseNo) return res.status(404).json({ message: "Case not found." });
 
         const existingResult = await LeadReturnResult.findOne({
             leadNo: Number(leadNo),

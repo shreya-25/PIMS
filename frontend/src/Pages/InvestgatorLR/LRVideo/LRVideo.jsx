@@ -119,6 +119,7 @@ export const LRVideo = () => {
     caseId:   selectedCase._id || selectedCase.id,
     leadNo:   selectedLead.leadNo,
     leadName: selectedLead.leadName,
+    initialStatus: selectedLead?.leadStatus,
   });
 
   // Consolidated disable flag for all form controls

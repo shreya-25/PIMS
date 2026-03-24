@@ -177,7 +177,7 @@ const NotificationCard1 = ({ signedInOfficer }) => {
     let role = myAss.role;
 
     // Mark as read if still unread
-     if (myAss.unread) {
+    if (myAss.unread) {
       await api.put(
         `/api/notifications/mark-read/${notificationId}`,
         { username: signedInOfficer }
@@ -185,21 +185,46 @@ const NotificationCard1 = ({ signedInOfficer }) => {
       setNewNotifs(prev => prev.filter(x => x._id !== _id));
     }
 
-    const baseState = { caseNo, caseName, role, ...(leadNo && { leadNo, leadName }) };
-    setSelectedCase(baseState);
-    setSelectedLead({ leadNo, leadName });
-    localStorage.setItem("selectedCase", JSON.stringify(baseState));
+    // Fetch full case object so pages have _id for API calls
+    let fullCase = { caseNo, caseName, role };
+    try {
+      const { data } = await api.get(`/api/cases/${caseNo}`);
+      if (data) fullCase = { ...data, role };
+    } catch (e) {
+      console.error("Could not fetch full case:", e.message);
+    }
+
+    setSelectedCase(fullCase);
+    sessionStorage.setItem("selectedCase", JSON.stringify(fullCase));
+    localStorage.setItem("selectedCase", JSON.stringify(fullCase));
+
+    // Fetch full lead object so pages have _id, leadStatus, primaryInvestigator, etc.
+    let fullLead = { leadNo, leadName };
+    if (leadNo && leadName) {
+      try {
+        const caseId = fullCase._id || fullCase.id;
+        const { data } = await api.get(
+          `/api/lead/lead/${leadNo}/${encodeURIComponent(leadName)}/${caseId}`
+        );
+        if (Array.isArray(data) && data[0]) {
+          // Normalize: ensure leadName is set (API returns `description` as the lead name)
+          fullLead = { ...data[0], leadName: data[0].leadName || data[0].description };
+        }
+      } catch (e) {
+        console.error("Could not fetch full lead:", e.message);
+      }
+    }
+    setSelectedLead(fullLead);
+    sessionStorage.setItem("selectedLead", JSON.stringify(fullLead));
 
     if (action1.includes("case")) {
-        const dest = (role === "Case Manager" || role === "Detective Supervisor")
-        ? "/CasePageManager": "/Investigator";
-      navigate(dest, { state: baseState });
-    }
-    else if (action1.includes("lead")) {
-      navigate("/LeadReview", { state: { ...baseState, role } });
-    }
-    else {
-      navigate("/LRInstruction", { state: baseState });
+      const dest = (role === "Case Manager" || role === "Detective Supervisor")
+        ? "/CasePageManager" : "/Investigator";
+      navigate(dest, { state: { caseDetails: fullCase } });
+    } else if (action1.includes("lead")) {
+      navigate("/LeadReview", { state: { caseDetails: fullCase, leadDetails: fullLead } });
+    } else {
+      navigate("/LRInstruction", { state: { caseDetails: fullCase, leadDetails: fullLead } });
     }
   };
 
@@ -233,8 +258,7 @@ const NotificationCard1 = ({ signedInOfficer }) => {
             <span className="time">{new Date(n.time).toLocaleString()}</span>
           </div>
           <div className="buttons-container">
-            <button className="view-btnNC" onClick={() => handleView(n._id)}
-               disabled={!isUnread}>
+            <button className="view-btnNC" onClick={() => handleView(n._id)}>
               View
             </button>
             {isPending &&

@@ -127,6 +127,7 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
     caseId: selectedCase._id || selectedCase.id,
     leadNo: selectedLead.leadNo,
     leadName: selectedLead.leadName,
+    initialStatus: selectedLead?.leadStatus,
   });
 
   const styles = useMemo(() => ({ zoomLabel: { minWidth: 56, textAlign: "center" } }), []);
