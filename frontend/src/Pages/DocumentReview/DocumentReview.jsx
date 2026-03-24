@@ -284,10 +284,12 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
         post1: `${selectedLead.leadNo}: ${selectedLead.leadName}`,
         action2: "related to the case",
         post2: `${selectedCase.caseNo}: ${selectedCase.caseName}`,
-        caseNo: selectedCase.caseNo,
+        caseId:   selectedCase._id || selectedCase.id,
+        caseNo:   selectedCase.caseNo,
         caseName: selectedCase.caseName,
-        leadNo: selectedLead.leadNo,
-        leadName: selectedLead.leadName,
+        leadId:   selectedLead._id || selectedLead.id,
+        leadNo:   selectedLead.leadNo,
+        leadName: selectedLead.leadName || selectedLead.description,
         type: "Lead",
       };
 

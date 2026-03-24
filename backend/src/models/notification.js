@@ -1,8 +1,13 @@
 const mongoose = require("mongoose");
+const { Schema } = mongoose;
 
 const NotificationSchema = new mongoose.Schema({
   notificationId: { type: String, unique: true, required: true },
   assignedBy:     { type: String, required: true },
+
+  // Stable ObjectId refs
+  caseId: { type: Schema.Types.ObjectId, ref: "Case", default: null },
+  leadId: { type: Schema.Types.ObjectId, ref: "Lead", default: null },
 
   // now an array of objects rather than just strings
   assignedTo: [{

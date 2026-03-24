@@ -18,6 +18,8 @@ router.post("/", async (req, res) => {
       notificationId: req.body.notificationId,
       assignedBy:     req.body.assignedBy,
       assignedTo,
+      caseId:         req.body.caseId   || null,
+      leadId:         req.body.leadId   || null,
       action1:        req.body.action1,
       action2:        req.body.action2,
       post1:          req.body.post1,
@@ -27,7 +29,7 @@ router.post("/", async (req, res) => {
       caseNo:         req.body.caseNo,
       caseName:       req.body.caseName,
       caseStatus:     req.body.caseStatus,
-      type:           req.body.type,  
+      type:           req.body.type,
       time:           new Date(),
     });
 

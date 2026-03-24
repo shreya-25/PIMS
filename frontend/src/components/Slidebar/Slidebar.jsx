@@ -334,16 +334,12 @@ setIsSidebarOpen(false);
           assignedBy:     caseDetails.managerName,
           assignedTo:     assignedToPayload,
           action1:        "assigned you to a new case",
-          action2:        "",                          // optional
           post1:          `${caseDetails.number}: ${caseDetails.title}`,
-          post2:          "",                          // optional
-          leadNo:         "",                          // optional for cases
-          leadName:       "",                          // optional for cases
+          caseId:         createdCase._id || createdCase.id,
           caseNo:         caseDetails.number,
           caseName:       caseDetails.title,
           caseStatus:     "Open",
-          type:           "Case",                      // <— REQUIRED by your schema
-          // unread & time will get their defaults from the schema
+          type:           "Case",
         };
 
         try {

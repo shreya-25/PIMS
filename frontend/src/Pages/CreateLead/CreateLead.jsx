@@ -677,6 +677,7 @@ const orderedAssignees = hasAssignees
           post1:          `${realLeadNo ?? ""}: ${leadData.leadDescription}`,
           action2:        "related to the case",
           post2:          `${selectedCase.caseNo}: ${selectedCase.caseName}`,
+          caseId:         selectedCase._id || selectedCase.id || undefined,
           leadNo:         realLeadNo ?? undefined,
           leadName:       leadData.leadDescription,
           caseNo:         selectedCase.caseNo,

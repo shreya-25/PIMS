@@ -143,6 +143,25 @@ exports.getCaseById = async (req, res) => {
   }
 };
 
+exports.getCaseByNo = async (req, res) => {
+  try {
+    const { caseNo } = req.params;
+    if (!caseNo) return res.status(400).json({ message: "caseNo is required" });
+
+    const caseData = await Case.findOne({ caseNo })
+      .populate("caseManagerUserIds", "username firstName lastName displayName")
+      .populate("detectiveSupervisorUserId", "username firstName lastName displayName")
+      .populate("investigatorUserIds", "username firstName lastName displayName")
+      .lean();
+
+    if (!caseData) return res.status(404).json({ message: "Case not found" });
+    res.status(200).json(caseData);
+  } catch (err) {
+    console.error("Error fetching case by caseNo:", err);
+    res.status(500).json({ message: "Error fetching case", error: err.message });
+  }
+};
+
 // Get cases assigned to a specific officer (by username query param)
 exports.getCasesByOfficer = async (req, res) => {
   try {

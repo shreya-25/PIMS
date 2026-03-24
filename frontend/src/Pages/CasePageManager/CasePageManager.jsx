@@ -464,6 +464,7 @@ export const CasePageManager = () => {
             assignedTo: newlyAdded.map(p => ({ username: p.username, role: p.role, status: "pending", unread: true })),
             action1: "assigned you to a new case",
             post1: `${selectedCase.caseNo}: ${selectedCase.caseName}`,
+            caseId: selectedCase._id || selectedCase.id || undefined,
             caseNo: selectedCase.caseNo,
             caseName: selectedCase.caseName,
             caseStatus: selectedCase.caseStatus || "Open",

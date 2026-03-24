@@ -382,16 +382,18 @@ const actuallyDoSubmitReport = async () => {
             assignedBy:     localStorage.getItem("loggedInUser"),
             assignedTo: [{
               username: manager,
-              role:     "Case Manager",           
+              role:     "Case Manager",
               status:   "pending",
               unread:   true
             }],
             action1:        "submitted a lead return for review",
             post1:          `${selectedLead.leadNo}: ${selectedLead.leadName}`,
+            caseId:         selectedCase._id || selectedCase.id,
             caseNo:         selectedCase.caseNo,
             caseName:       selectedCase.caseName,
+            leadId:         selectedLead._id || selectedLead.id,
             leadNo:         selectedLead.leadNo,
-            leadName:       selectedLead.leadName,
+            leadName:       selectedLead.leadName || selectedLead.description,
             type:           "Lead"
           };
           await api.post("/api/notifications", payload, {

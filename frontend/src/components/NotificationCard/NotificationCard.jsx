@@ -220,15 +220,14 @@ const handleDecline = async _id => {
     await api.post("/api/notifications", {
   notificationId: Date.now().toString(),
   assignedBy: signedInOfficer,
-  assignedTo: [
-    { username: n.assignedBy }         // case-manager
-  ],
-  action1: `declined the case titled`,  // required
-  post1:   `${n.caseNo}: ${n.caseName}`,                                   // required (can be empty)
-  caseNo:   n.caseNo,
-  caseName: n.caseName,
-  caseStatus:     n.caseStatus || "Open", 
-  type:     "Case"                            // now in your enum
+  assignedTo: [{ username: n.assignedBy }],
+  action1:    "declined the case titled",
+  post1:      `${n.caseNo}: ${n.caseName}`,
+  caseId:     n.caseId || null,
+  caseNo:     n.caseNo,
+  caseName:   n.caseName,
+  caseStatus: n.caseStatus || "Open",
+  type:       "Case",
 },
   {
     headers: {
@@ -295,15 +294,14 @@ const handleDecline = async _id => {
     await api.post("/api/notifications", {
   notificationId: Date.now().toString(),
   assignedBy: signedInOfficer,
-  assignedTo: [
-    { username: n.assignedBy }         // case-manager
-  ],
-  action1: `accepted the case titled`,  // required
-  post1:   `${n.caseNo}: ${n.caseName}`,                                   // required (can be empty)
-  caseNo:   n.caseNo,
-  caseName: n.caseName,
-  caseStatus:     n.caseStatus || "Open", 
-  type:     "Case"                            // now in your enum
+  assignedTo: [{ username: n.assignedBy }],
+  action1:    "accepted the case titled",
+  post1:      `${n.caseNo}: ${n.caseName}`,
+  caseId:     n.caseId || null,
+  caseNo:     n.caseNo,
+  caseName:   n.caseName,
+  caseStatus: n.caseStatus || "Open",
+  type:       "Case",
 },
   {
     headers: {
