@@ -15,18 +15,16 @@ const LRTimeline = require("../models/LRTimeline");
  * Makes 11 batch queries total (1 leads + 10 sub-collections), then
  * groups results in memory to build the shape the PDF code expects.
  *
- * @param {string} caseNo
- * @param {string} caseName
+ * @param {string} caseId   MongoDB ObjectId of the case
  * @param {object} [options]
  * @param {string} [options.reportScope]       "all" | "selected"
  * @param {{ start: number, end: number }} [options.subsetRange]
  * @param {number[]} [options.leadNos]         cherry-picked lead numbers
  * @returns {Promise<object[]>} leadsData shaped for PDF generation
  */
-async function fetchCaseLeadsData(caseNo, caseName, options = {}) {
+async function fetchCaseLeadsData(caseId, options = {}) {
     // Build lead filter
-    const leadFilter = { caseNo, isDeleted: { $ne: true } };
-    if (caseName) leadFilter.caseName = caseName;
+    const leadFilter = { caseId, isDeleted: { $ne: true } };
 
     if (Array.isArray(options.leadNos) && options.leadNos.length > 0) {
         leadFilter.leadNo = { $in: options.leadNos.map(Number) };
@@ -44,7 +42,7 @@ async function fetchCaseLeadsData(caseNo, caseName, options = {}) {
     const leadNos = leads.map(l => l.leadNo);
 
     // Shared filter for sub-collections
-    const subFilter = { caseNo, leadNo: { $in: leadNos }, isDeleted: { $ne: true } };
+    const subFilter = { caseId, leadNo: { $in: leadNos }, isDeleted: { $ne: true } };
 
     // 10 batch queries in parallel
     const [results, persons, vehicles, enclosures, evidence, pictures, audio, videos, scratchpads, timelines] =

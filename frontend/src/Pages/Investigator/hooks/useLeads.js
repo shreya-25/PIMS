@@ -9,24 +9,34 @@ const POLL_INTERVAL_MS = 15_000;
  * Maps a raw API lead object to the flat shape used in the UI.
  * Adds a computed `remainingDays` field so tables don't need a cell resolver.
  */
-const mapLead = lead => ({
-  id: Number(lead.leadNo),
-  description: lead.description,
-  summary: lead.summary,
-  dueDate: lead.dueDate
-    ? new Date(lead.dueDate).toISOString().split('T')[0]
-    : 'N/A',
-  remainingDays: lead.dueDate ? calculateRemainingDays(lead.dueDate) : 0,
-  priority: lead.priority || 'Medium',
-  flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [],
-  // Only include assignees who have not declined
-  assignedOfficers: Array.isArray(lead.assignedTo)
-    ? lead.assignedTo.filter(a => a?.status !== 'declined').map(a => a.username)
-    : [],
-  leadStatus: lead.leadStatus,
-  caseName: lead.caseName,
-  caseNo: String(lead.caseNo),
-});
+const mapLead = lead => {
+  const dueDateStr = lead.dueDate ? lead.dueDate.slice(0, 10) : 'N/A';
+  let dueStatus = 'No Due Date';
+  if (dueDateStr && dueDateStr !== 'N/A') {
+    const [y, m, d] = dueDateStr.split('-').map(Number);
+    const now = new Date();
+    const nowUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+    const dueUTC = Date.UTC(y, m - 1, d);
+    const diff = Math.round((dueUTC - nowUTC) / (1000 * 60 * 60 * 24));
+    dueStatus = diff < 0 ? 'Overdue' : diff === 0 ? 'Due Today' : 'In Time';
+  }
+  return {
+    id: Number(lead.leadNo),
+    description: lead.description,
+    summary: lead.summary,
+    dueDate: dueDateStr,
+    dueStatus,
+    remainingDays: lead.dueDate ? calculateRemainingDays(lead.dueDate) : 0,
+    priority: lead.priority || 'Medium',
+    flags: Array.isArray(lead.associatedFlags) ? lead.associatedFlags : [],
+    assignedOfficers: Array.isArray(lead.assignedTo)
+      ? lead.assignedTo.filter(a => a?.status !== 'declined').map(a => a.username)
+      : [],
+    leadStatus: lead.leadStatus,
+    caseName: lead.caseName,
+    caseNo: String(lead.caseNo),
+  };
+};
 
 const EMPTY_LEADS = {
   allLeads: [],

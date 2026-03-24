@@ -527,10 +527,11 @@ exports.getCaseSummaryByCaseNo = async (req, res) => {
 
 exports.updateExecutiveCaseSummary = async (req, res) => {
   try {
-    const { caseNo, caseName, executiveCaseSummary } = req.body;
-    if (!caseNo) return res.status(400).json({ message: "caseNo is required" });
-    const updated = await Case.findOneAndUpdate(
-      { caseNo },
+    const { caseId, executiveCaseSummary } = req.body;
+    if (!caseId || !mongoose.Types.ObjectId.isValid(caseId))
+      return res.status(400).json({ message: "caseId is required" });
+    const updated = await Case.findByIdAndUpdate(
+      caseId,
       { executiveCaseSummary: executiveCaseSummary ?? "" },
       { new: true }
     );
@@ -544,10 +545,11 @@ exports.updateExecutiveCaseSummary = async (req, res) => {
 
 exports.updateCaseSummary = async (req, res) => {
   try {
-    const { caseNo, caseSummary } = req.body;
-    if (!caseNo) return res.status(400).json({ message: "caseNo is required" });
-    const updated = await Case.findOneAndUpdate(
-      { caseNo },
+    const { caseId, caseSummary } = req.body;
+    if (!caseId || !mongoose.Types.ObjectId.isValid(caseId))
+      return res.status(400).json({ message: "caseId is required" });
+    const updated = await Case.findByIdAndUpdate(
+      caseId,
       { caseSummary },
       { new: true }
     );
@@ -561,11 +563,12 @@ exports.updateCaseSummary = async (req, res) => {
 
 exports.getExecutiveCaseSummary = async (req, res) => {
   try {
-    const { caseNo } = req.params;
-    if (!caseNo) return res.status(400).json({ message: "caseNo is required" });
-    const caseDoc = await Case.findOne({ caseNo }).lean();
+    const { caseId } = req.params;
+    if (!caseId || !mongoose.Types.ObjectId.isValid(caseId))
+      return res.status(400).json({ message: "caseId is required" });
+    const caseDoc = await Case.findById(caseId).lean();
     if (!caseDoc) return res.status(404).json({ message: "Case not found" });
-    return res.status(200).json({ caseNo: caseDoc.caseNo, executiveCaseSummary: caseDoc.executiveCaseSummary ?? "" });
+    return res.status(200).json({ executiveCaseSummary: caseDoc.executiveCaseSummary ?? "" });
   } catch (err) {
     console.error("Error fetching executive summary:", err);
     return res.status(500).json({ message: "Server error", error: err.message });
@@ -574,11 +577,12 @@ exports.getExecutiveCaseSummary = async (req, res) => {
 
 exports.getCaseSummary = async (req, res) => {
   try {
-    const { caseNo } = req.params;
-    if (!caseNo) return res.status(400).json({ message: "caseNo is required" });
-    const caseDoc = await Case.findOne({ caseNo }).lean();
+    const { caseId } = req.params;
+    if (!caseId || !mongoose.Types.ObjectId.isValid(caseId))
+      return res.status(400).json({ message: "caseId is required" });
+    const caseDoc = await Case.findById(caseId).lean();
     if (!caseDoc) return res.status(404).json({ message: "Case not found" });
-    return res.status(200).json({ caseNo: caseDoc.caseNo, caseSummary: caseDoc.caseSummary ?? "" });
+    return res.status(200).json({ caseSummary: caseDoc.caseSummary ?? "" });
   } catch (err) {
     console.error("Error fetching case summary:", err);
     return res.status(500).json({ message: "Server error", error: err.message });

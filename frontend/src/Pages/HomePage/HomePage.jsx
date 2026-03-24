@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo, useEffect } from "react";
 import { useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import styles from "./HomePage.module.css";
 import { CaseContext } from "../CaseContext";
 import Navbar from "../../components/Navbar/Navbar";
@@ -13,7 +13,8 @@ import { AlertModal } from "../../components/AlertModal/AlertModal";
 import api from "../../api";
 
 export const HomePage = () => {
-  const [activeTab, setActiveTab] = useState("notifications");
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || "notifications");
   const isCaseMgmt = activeTab !== "notifications";
 
   // Refs for filter button anchor positioning

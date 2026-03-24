@@ -55,6 +55,11 @@ export function useTableFilter(data, filterKeys) {
           const aNum = Number(a[key] ?? 0), bNum = Number(b[key] ?? 0);
           return direction === 'asc' ? aNum - bNum : bNum - aNum;
         }
+        if (key === 'dueStatus') {
+          const toMs = d => (d && d !== 'N/A') ? new Date(d).getTime() : Infinity;
+          const diff = toMs(a.dueDate) - toMs(b.dueDate);
+          return direction === 'asc' ? diff : -diff;
+        }
         const aV = Array.isArray(a[key]) ? a[key][0] : String(a[key] ?? '');
         const bV = Array.isArray(b[key]) ? b[key][0] : String(b[key] ?? '');
         return direction === 'asc' ? aV.localeCompare(bV) : bV.localeCompare(aV);
