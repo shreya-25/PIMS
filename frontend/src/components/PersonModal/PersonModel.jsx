@@ -214,11 +214,12 @@ const PersonModal = ({
                 </tbody>
               </table>
 
-              {/* Row 6: SSN | Occupation | Business Name */}
+              {/* Row 6: SSN | Driver License ID | Occupation | Business Name */}
               <table className="person-group-table">
                 <thead>
                   <tr>
                     <th>SSN</th>
+                    <th>Driver License ID</th>
                     <th>Occupation</th>
                     <th>Business Name</th>
                   </tr>
@@ -226,6 +227,7 @@ const PersonModal = ({
                 <tbody>
                   <tr>
                     <td>{person.ssn || ""}</td>
+                    <td>{person.driverLicenseId || ""}</td>
                     <td>{person.occupation || ""}</td>
                     <td>{person.businessName || ""}</td>
                   </tr>

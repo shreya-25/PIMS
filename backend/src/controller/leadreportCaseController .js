@@ -1114,10 +1114,11 @@ if (leadState) {
                       },
                     },
                     {
-                      headers: ["SSN", "Occupation", "Business Name"],
-                      widths: [171, 170, 171],
+                      headers: ["SSN", "Driver License ID", "Occupation", "Business Name"],
+                      widths: [128, 128, 128, 128],
                       row: {
                         "SSN": person.ssn || "",
+                        "Driver License ID": person.driverLicenseId || "",
                         "Occupation": person.occupation || "",
                         "Business Name": person.businessName || "",
                       },

@@ -61,7 +61,7 @@ const buildEmptyForm = (todayISO) => ({
   cellNumber: '', alias: '', businessName: '',
   street1: '', street2: '', building: '', apartment: '',
   city: '', state: '', zipCode: '',
-  dateOfBirth: '', ssn: '', occupation: '', email: '',
+  dateOfBirth: '', ssn: '', driverLicenseId: '', occupation: '', email: '',
   personType: '', condition: '', cautionType: '',
   sex: '', race: '', ethnicity: '', skinTone: '',
   eyeColor: '', glasses: '', hairColor: '',
@@ -89,6 +89,7 @@ const buildFormFromPerson = (person) => ({
   zipCode:      person?.address?.zipCode          || '',
   dateOfBirth:  person?.dateOfBirth?.slice(0, 10)  || '',
   ssn:          person?.ssn                       || '',
+  driverLicenseId: person?.driverLicenseId        || '',
   occupation:   person?.occupation                || '',
   email:        person?.email                     || '',
   personType:   person?.personType                || '',
@@ -543,8 +544,9 @@ export const LRPerson1 = () => {
         zipCode:   formData.zipCode,
       },
       dateOfBirth:  formData.dateOfBirth || undefined,
-      ssn:          formData.ssn,
-      occupation:   formData.occupation,
+      ssn:             formData.ssn,
+      driverLicenseId: formData.driverLicenseId,
+      occupation:      formData.occupation,
       email:        formData.email,
       personType:   formData.personType,
       condition:    formData.condition,
@@ -818,18 +820,19 @@ export const LRPerson1 = () => {
                       onChange={(e) => handleChange('email', e.target.value)} /></td>
                   </tr>
                   <tr>
+                    <td>Driver License ID</td>
+                    <td><input type="text" value={formData.driverLicenseId}
+                      onChange={(e) => handleChange('driverLicenseId', e.target.value)} /></td>
                     <td>Occupation</td>
                     <td><input type="text" value={formData.occupation}
                       onChange={(e) => handleChange('occupation', e.target.value)} /></td>
+                  </tr>
+                  <tr>
                     <td>Business Name</td>
                     <td>
                       <input type="text" value={formData.businessName}
                         onChange={(e) => handleChange('businessName', e.target.value)} />
                     </td>
-                  </tr>
-
-                  {/* ── Classification dropdowns ── */}
-                  <tr>
                     <td>Person Type</td>
                     <td>
                       <select value={formData.personType}
@@ -850,6 +853,8 @@ export const LRPerson1 = () => {
                         <option value="Witness">Witness</option>
                       </select>
                     </td>
+                  </tr>
+                  <tr>
                     <td>Condition</td>
                     <td>
                       <select value={formData.condition}
@@ -861,10 +866,8 @@ export const LRPerson1 = () => {
                         <option value="Deceased">Deceased</option>
                       </select>
                     </td>
-                  </tr>
-                  <tr>
                     <td>Caution Type</td>
-                    <td colSpan="3">
+                    <td>
                       <select value={formData.cautionType}
                         onChange={(e) => handleChange('cautionType', e.target.value)}>
                         <option value="">Select Type</option>
