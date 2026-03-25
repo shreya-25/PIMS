@@ -27,6 +27,7 @@ export function useTableFilter(data, filterKeys) {
     const map = Object.fromEntries(filterKeys.map(k => [k, new Set()]));
     data.forEach(row => {
       filterKeys.forEach(key => {
+        if ((key === 'dueDate' || key === 'remainingDays') && row.leadStatus === 'Completed') return;
         const val = row[key];
         if (Array.isArray(val)) val.forEach(v => map[key].add(String(v)));
         else if (val != null)   map[key].add(String(val));
