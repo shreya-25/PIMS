@@ -301,7 +301,7 @@ export const CasePageManager = () => {
             const nowUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
             const dueUTC = Date.UTC(y, m - 1, d);
             const diff = Math.round((dueUTC - nowUTC) / (1000 * 60 * 60 * 24));
-            dueStatus = diff < 0 ? "Overdue" : diff === 0 ? "Due Today" : "In Time";
+            dueStatus = diff < 0 ? "Overdue" : diff === 0 ? "Due Today" : "Pending";
           }
           return {
             id: Number(lead.leadNo),
@@ -547,8 +547,9 @@ export const CasePageManager = () => {
   const distinctAssigned = useMemo(() => {
     const map = { id: new Set(), description: new Set(), dueDate: new Set(), priority: new Set(), remainingDays: new Set(), flags: new Set(), assignedOfficers: new Set() };
     leads.assignedLeads.forEach(lead => {
-      map.id.add(String(lead.id)); map.description.add(lead.description); map.dueDate.add(lead.dueDate);
-      map.priority.add(lead.priority); map.remainingDays.add(String(calculateRemainingDays(lead.dueDate)));
+      map.id.add(String(lead.id)); map.description.add(lead.description);
+      if (lead.leadStatus !== 'Completed') { map.dueDate.add(lead.dueDate); map.remainingDays.add(String(calculateRemainingDays(lead.dueDate))); }
+      map.priority.add(lead.priority);
       lead.flags.forEach(f => map.flags.add(f)); lead.assignedOfficers.forEach(o => map.assignedOfficers.add(o));
     });
     return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, Array.from(s)]));
@@ -610,8 +611,9 @@ export const CasePageManager = () => {
   const distinctPending = useMemo(() => {
     const map = { id: new Set(), description: new Set(), dueDate: new Set(), priority: new Set(), remainingDays: new Set(), flags: new Set(), assignedOfficers: new Set() };
     leads.pendingLeads.forEach(lead => {
-      map.id.add(String(lead.id)); map.description.add(lead.description); map.dueDate.add(lead.dueDate);
-      map.priority.add(lead.priority); map.remainingDays.add(String(calculateRemainingDays(lead.dueDate)));
+      map.id.add(String(lead.id)); map.description.add(lead.description);
+      if (lead.leadStatus !== 'Completed') { map.dueDate.add(lead.dueDate); map.remainingDays.add(String(calculateRemainingDays(lead.dueDate))); }
+      map.priority.add(lead.priority);
       lead.flags.forEach(f => map.flags.add(f)); lead.assignedOfficers.forEach(o => map.assignedOfficers.add(o));
     });
     return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, Array.from(s)]));
@@ -732,7 +734,7 @@ export const CasePageManager = () => {
     leads.allLeads.forEach(lead => {
       map.id.add(String(lead.id)); map.description.add(lead.description); map.leadStatus.add(lead.leadStatus);
       (lead.assignedOfficers || []).forEach(o => map.assignedOfficers.add(o));
-      map.dueStatus.add(lead.dueStatus);
+      if (lead.leadStatus !== 'Completed') map.dueStatus.add(lead.dueStatus);
     });
     return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, Array.from(s)]));
   }, [leads.allLeads]);
@@ -755,7 +757,7 @@ export const CasePageManager = () => {
           return direction === 'asc' ? aNum - bNum : bNum - aNum;
         }
         if (key === 'dueStatus') {
-          // Sort by actual due date so Overdue < Due Today < In Time < No Due Date
+          // Sort by actual due date so Overdue < Due Today < Pending < No Due Date
           const toMs = (d) => d ? new Date(d).getTime() : Infinity;
           const diff = toMs(a.dueDate) - toMs(b.dueDate);
           return direction === 'asc' ? diff : -diff;
@@ -1146,9 +1148,9 @@ export const CasePageManager = () => {
                       <tr key={lead.id}>
                         <td>{lead.id}</td>
                         <td>{lead.description}</td>
-                        <td>{lead.dueDate || ""}</td>
+                        <td>{lead.leadStatus === 'Completed' ? '' : (lead.dueDate || "")}</td>
                         <td>{lead.priority || ""}</td>
-                        <td>{calculateRemainingDays(lead.dueDate)}</td>
+                        <td>{lead.leadStatus === 'Completed' ? '' : calculateRemainingDays(lead.dueDate)}</td>
                         <td style={{ wordBreak: "break-word" }}>
                           {lead.assignedOfficers?.length > 0 ? lead.assignedOfficers.join(", ") : "None"}
                         </td>
@@ -1371,7 +1373,9 @@ export const CasePageManager = () => {
                           </td>
                           <td style={{ width: "13%" }}>
                             {(() => {
-                              const { label, sub, color } = getDueStatus(lead.dueDate);
+                              const { label, sub, color } = lead.leadStatus === 'Completed'
+                                ? { label: '—', sub: '', color: '#6b7280' }
+                                : getDueStatus(lead.dueDate);
                               return (
                                 <div style={{ color, fontWeight: 500, lineHeight: 1.4 }}>
                                   <div style={{ fontSize: 18 }}>{label}</div>

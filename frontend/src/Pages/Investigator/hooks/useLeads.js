@@ -18,7 +18,7 @@ const mapLead = lead => {
     const nowUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
     const dueUTC = Date.UTC(y, m - 1, d);
     const diff = Math.round((dueUTC - nowUTC) / (1000 * 60 * 60 * 24));
-    dueStatus = diff < 0 ? 'Overdue' : diff === 0 ? 'Due Today' : 'In Time';
+    dueStatus = diff < 0 ? 'Overdue' : diff === 0 ? 'Due Today' : 'Pending';
   }
   return {
     id: Number(lead.leadNo),

@@ -185,9 +185,9 @@ export const Investigator = () => {
     <tr key={lead.id}>
       <td>{lead.id}</td>
       <td>{lead.description}</td>
-      <td>{lead.dueDate}</td>
+      <td>{lead.leadStatus === 'Completed' ? '' : lead.dueDate}</td>
       <td>{lead.priority}</td>
-      <td>{lead.remainingDays}</td>
+      <td>{lead.leadStatus === 'Completed' ? '' : lead.remainingDays}</td>
       <td>{(lead.assignedOfficers || []).join(', ')}</td>
       <td style={{ textAlign: 'center' }}>
         <button className={styles['view-btn1']}  onClick={() => handleLeadClick(lead)}>Manage</button>
@@ -200,9 +200,9 @@ export const Investigator = () => {
     <tr key={lead.id}>
       <td>{lead.id}</td>
       <td>{lead.description}</td>
-      <td>{lead.dueDate}</td>
+      <td>{lead.leadStatus === 'Completed' ? '' : lead.dueDate}</td>
       <td>{lead.priority}</td>
-      <td>{lead.remainingDays}</td>
+      <td>{lead.leadStatus === 'Completed' ? '' : lead.remainingDays}</td>
       <td>{(lead.assignedOfficers || []).join(', ')}</td>
       <td style={{ textAlign: 'center' }}>
         <button className={styles['view-btn1']} onClick={() => handleLeadClick(lead)}>Manage</button>
@@ -236,7 +236,9 @@ export const Investigator = () => {
       if (diff === 0) return { label: formatted, sub: 'Due today', color: '#d97706' };
       return { label: formatted, sub: `${diff}d left`, color: '#16a34a' };
     };
-    const { label, sub, color } = getDueStatus(lead.dueDate);
+    const { label, sub, color } = lead.leadStatus === 'Completed'
+      ? { label: '—', sub: '', color: '#6b7280' }
+      : getDueStatus(lead.dueDate);
     return (
     <tr key={lead.id}>
       <td>{lead.id}</td>
