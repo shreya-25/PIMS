@@ -212,8 +212,8 @@ export const SideBar = ({
   if (variant === "admin") {
     const adminItems = [
       { label: "User Registration",   route: "/AdminUR" },
-      { label: "User Registration 2", route: "/AdminUR2" },
       { label: "Registered Users",    route: "/AdminUserList" },
+      { label: "Agency Management",   route: "/AdminAgencies" },
       { label: "Case Management",     route: "/AdminCM" },
     ];
     return (

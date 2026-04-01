@@ -1,174 +1,549 @@
 
 .background {
-  position: relative;
+  position: fixed;
+  inset: 0;
   width: 100%;
-  min-height: 100svh;
-  isolation: isolate;
-  height: 100svh;
+  height: 100%;
 }
 
 .bgImage {
-  position: fixed;
+  position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  z-index: -1;
+  z-index: 0;
 }
 
 .overlay {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  min-height: 100svh;
-  background: rgba(0,0,0,0.5);
+  /* background: linear-gradient(135deg, rgba(6, 12, 34, 0.92) 0%, rgba(10, 25, 60, 0.852) 100%); */
+    background: linear-gradient(135deg, rgba(1, 3, 10, 0.717) 100%, rgb(0, 0, 0) 100%);
+
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
-}
-
-.subHeading {
-  font-size: 16px;
-  letter-spacing: 1px;
-  color: white;
-  margin-top: -10px;
-  text-align: center;
+  z-index: 1;
 }
 
 .mainBox {
   display: flex;
-  align-items: stretch;
-  background-color: #1B1C1C;
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  width: 1000px;
+  min-height: 580px;
+  border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.06);
 }
 
+/* ── Left Panel ── */
 .imgContainer {
-  background-color: #1B1C1C;
-  padding: 10px 20px;
-  text-align: center;
-  z-index: 3;
   width: 400px;
-  min-height: 500px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  background: linear-gradient(160deg, #0a1628 0%, #0d2045 60%, #0f2d5e 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 36px;
+  position: relative;
+  border-right: 1px solid rgba(255,255,255,0.07);
 }
 
-.formContainer {
-  background-color: #1B1C1C;
-  padding: 30px 40px;
+.imgContainer::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #1d4ed8, #3b82f6, #1d4ed8);
+}
+
+.logo img {
+  width: 160px;
+  height: auto;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 4px 12px rgba(59, 130, 246, 0.4));
+}
+
+.mainHeading {
+  font-size: 56px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 6px;
+  margin: 0 0 8px 0;
+  text-shadow: 0 2px 20px rgba(59, 130, 246, 0.5);
+}
+
+.subHeading {
+  font-size: 16px;
+  letter-spacing: 2.5px;
+  /* text-transform: uppercase; */
+  color: rgba(255,255,255,0.5);
   text-align: center;
-  z-index: 3;
-  width: 400px;
-  min-height: 500px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  margin: 0 0 32px 0;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(29, 78, 216, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 18px;
+  color: rgba(147, 197, 253, 0.9);
+  letter-spacing: 0.5px;
+}
+
+.badge svg {
+  flex-shrink: 0;
+}
+
+/* ── Right Panel ── */
+.formContainer {
+  flex: 1;
+  background: #0f1623;
+  padding: 52px 64px;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
-.logo img {
-  width: 200px;
-  height: auto;
-  margin-bottom: -20px;
-  margin-top: 80px;
-}
-
-.mainHeading {
-  font-size: 80px;
-  margin-bottom: 20px;
-  margin-top: 20px;
+.welcomeText {
+  font-size: 30px;
+  font-weight: 700;
   color: #ffffff;
-  z-index: 10;
+  margin: 0 0 6px 0;
 }
 
-.loginForm input {
-  width: 100%;
-  padding: 12px 15px;
-  margin: 10px 0;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-.divider {
-  margin: 15px 0;
-  color: #666;
-  font-size: 14px;
-}
-
-.googleSignup {
-  background-color: #ffffff;
-  color: #333;
-  border: 1px solid #ccc;
-  padding: 10px;
-  width: 100%;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-  margin-bottom: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.3s ease;
-  box-sizing: border-box;
-}
-
-.googleIcon {
-  width: 25px;
-  height: 25px;
-  margin-top: 1px;
-}
-
-.register {
-  background-color: #165357;
-  color: white;
-  padding: 10px;
-  width: 100%;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-  border: none;
-  box-sizing: border-box;
-}
-
-.register:hover, .googleSignup:hover {
-  opacity: 0.9;
-}
-
-.loginForm p {
-  font-size: 14px;
-  color: #666;
-}
-
-.loginForm a {
-  color: #165357;
-  text-decoration: none;
-}
-
-.loginForm a:hover {
-  text-decoration: underline;
-}
-
-.forgotPass {
-  color: #165357;
-  text-decoration: none;
-  text-align: right;
-  font-size: 14px;
+.signInPrompt {
+  font-size: 18px;
+  color: rgba(255,255,255,0.4);
+  margin: 0 0 18px 0;
+  line-height: 1.5;
 }
 
 .loginForm {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
   width: 100%;
 }
 
+.msButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 15px 20px;
+  background: #ffffff;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+}
+
+.msButton:hover:not(:disabled) {
+  background: #f0f4ff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+
+.msButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.msButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.msButtonIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(26, 26, 46, 0.2);
+  border-top-color: #1a1a2e;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .errorMessage {
-  color: red;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
   font-size: 13px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 28px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+}
+
+.divider span {
+  font-size: 11px;
+  color: rgba(255,255,255,0.25);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.otpForm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.otpInput {
+  width: 100%;
+  padding: 13px 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.otpInput::placeholder {
+  color: rgba(255,255,255,0.3);
+}
+
+.otpInput:focus {
+  border-color: rgba(59, 130, 246, 0.6);
+}
+
+.otpInput:disabled {
+  opacity: 0.5;
+}
+
+.otpButton {
+  width: 100%;
+  padding: 13px 20px;
+  background: rgba(29, 78, 216, 0.8);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.otpButton:hover:not(:disabled) {
+  background: rgba(29, 78, 216, 1);
+  transform: translateY(-1px);
+}
+
+.otpButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinnerDark {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.otpSentNote {
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  margin: 0;
+}
+
+.otpSentNote strong {
+  color: rgba(255,255,255,0.8);
+}
+
+.backLink {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.35);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  text-decoration: underline;
+  margin-top: 2px;
+}
+
+.backLink:hover {
+  color: rgba(255,255,255,0.6);
+}
+
+/* ── Password field with show/hide ── */
+.pwdField {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.pwdField .otpInput {
+  padding-right: 56px;
+}
+
+.eyeToggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.35);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px;
+  letter-spacing: 0.3px;
+}
+
+.eyeToggle:hover {
+  color: rgba(255,255,255,0.65);
+}
+
+/* ── Forgot password row ── */
+.forgotRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -2px;
+}
+
+.forgotLink {
+  background: none;
+  border: none;
+  color: rgba(147, 197, 253, 0.7);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.forgotLink:hover {
+  color: rgba(147, 197, 253, 1);
+}
+
+/* ── OTP field row ── */
+.otpFieldRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.otpLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.3px;
+}
+
+.otpRequired {
+  color: #f87171;
+}
+
+.otpInputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.otpInputWrap .otpInput {
+  padding: 9px 46px 9px 14px;
+  letter-spacing: 4px;
+  font-size: 15px;
+}
+
+.otpEyeBtn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.otpEyeBtn:hover {
+  color: rgba(255,255,255,0.75);
+}
+
+/* ── OTP action buttons ── */
+.otpActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.otpActionBtn {
+  flex: 1;
+  padding: 12px 10px;
+  background: rgba(29, 78, 216, 0.85);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.otpActionBtn:hover:not(:disabled) {
+  background: rgba(29, 78, 216, 1);
+}
+
+.otpActionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.otpCancelBtn {
+  flex: 1;
+  padding: 12px 10px;
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.otpCancelBtn:hover:not(:disabled) {
+  border-color: rgba(255,255,255,0.45);
+  color: #fff;
+}
+
+.otpCancelBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.otpEmailBtn {
+  flex: 1;
+  padding: 12px 10px;
+  background: rgba(29, 78, 216, 0.85);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.otpEmailBtn:hover:not(:disabled) {
+  background: rgba(29, 78, 216, 1);
+}
+
+.otpEmailBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.otpHelpLink {
+  background: none;
+  border: none;
+  color: rgba(147, 197, 253, 0.75);
+  font-size: 13px;
+  font-weight: 600;
+  font-style: italic;
+  cursor: pointer;
+  padding: 0;
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  margin-top: 4px;
+}
+
+.otpHelpLink:hover {
+  color: rgba(147, 197, 253, 1);
+}
+
+/* ── TOTP prompt ── */
+.totpPrompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.totpIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(29, 78, 216, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(147, 197, 253, 0.9);
+}
+
+.secureNote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 28px;
+  font-size: 16px;
+  color: rgba(255,255,255,0.2);
+  letter-spacing: 0.3px;
+}
+
+.secureNote svg {
+  flex-shrink: 0;
+  font-size: 16px;
+  color: rgba(255,255,255,0.25);
 }

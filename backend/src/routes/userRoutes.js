@@ -1,7 +1,7 @@
 const express = require("express");
 const verifyToken = require("../middleware/authMiddleware");
 const router = express.Router();
-const { getAllUsernames } = require("../controller/userController");
+const { getAllUsernames, updateUser } = require("../controller/userController");
 
 
 //Only admin can access
@@ -23,5 +23,6 @@ router.get("/investigator", (req, res) => {
 });
 
 router.get("/usernames", getAllUsernames);
+router.patch("/:id", verifyToken, updateUser);
 
 module.exports = router;
