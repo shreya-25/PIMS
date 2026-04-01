@@ -199,6 +199,12 @@
   border-color: #888;
 }
 
+/* ===== Mandatory field error highlight ===== */
+.fieldError {
+  border-color: #d9534f !important;
+  background-color: #fff5f5 !important;
+}
+
 /* ===== Shared large input / select (date, narrative ID) ===== */
 .inputLarge {
   width: 100%;

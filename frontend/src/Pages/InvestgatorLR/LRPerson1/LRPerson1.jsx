@@ -246,6 +246,7 @@ export const LRPerson1 = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [alertOpen, setAlertOpen]       = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
+  const [fieldErrors, setFieldErrors]   = useState({});
 
   // ── Read logged-in username once on mount ────────────────────────────────
   useEffect(() => {
@@ -353,6 +354,12 @@ export const LRPerson1 = () => {
   // ── Form field change handler ─────────────────────────────────────────────
   const handleChange = useCallback((field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   }, []);
 
   // ── Photo handlers ────────────────────────────────────────────────────────
@@ -510,6 +517,20 @@ export const LRPerson1 = () => {
    * after the main record is saved. Clears session storage on success.
    */
   const handleSave = async () => {
+    // ── Mandatory field validation ────────────────────────────────────────
+    const errors = {};
+    if (!formData.dateEntered) errors.dateEntered = true;
+    if (!formData.leadReturnId) errors.leadReturnId = true;
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const labels = [];
+      if (errors.dateEntered) labels.push('Date Entered');
+      if (errors.leadReturnId) labels.push('Narrative Id');
+      showAlert('Please fill in the required fields: ' + labels.join(', '));
+      return;
+    }
+
     if (!isPersonRecordValid(formData)) {
       showAlert(
         'Cannot save an empty record. Please fill in at least one field (name, alias, business name, person type, address, physical descriptor, or contact info).'
@@ -692,7 +713,7 @@ export const LRPerson1 = () => {
                     <td>
                       <input
                         type="date"
-                        className={styles.inputLarge}
+                        className={`${styles.inputLarge}${fieldErrors.dateEntered ? ` ${styles.fieldError}` : ''}`}
                         value={formData.dateEntered}
                         onChange={(e) => handleChange('dateEntered', e.target.value)}
                       />
@@ -700,7 +721,7 @@ export const LRPerson1 = () => {
                     <td>Narrative Id *</td>
                     <td>
                       <select
-                        className={styles.inputLarge}
+                        className={`${styles.inputLarge}${fieldErrors.leadReturnId ? ` ${styles.fieldError}` : ''}`}
                         value={formData.leadReturnId}
                         onChange={(e) => handleChange('leadReturnId', e.target.value)}
                       >

@@ -828,7 +828,7 @@ export const HomePage = () => {
                                 </th>
                               );
                             })}
-                            <th style={{ width: "7%", textAlign: "center" }}>Actions</th>
+                            <th style={{ width: "4%", textAlign: "center" }}>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -847,17 +847,6 @@ export const HomePage = () => {
                                     >
                                       Manage
                                     </button>
-                                    {(c.role === "Detective Supervisor" || c.role === "Case Manager") && (
-                                      <button
-                                        className={styles["case-close-btn"]}
-                                        onClick={() => {
-                                          setCaseToClose({ caseNo: c.id, caseName: c.title });
-                                          setCloseConfirmOpen(true);
-                                        }}
-                                      >
-                                        Close
-                                      </button>
-                                    )}
                                   </div>
                                 </td>
                               </tr>

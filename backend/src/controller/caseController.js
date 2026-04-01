@@ -32,6 +32,7 @@ exports.createCase = async (req, res) => {
       managers = [],
       detectiveSupervisor,
       characterOfCase = "",
+      caseSummary = "",
     } = req.body;
 
     // --- validate required fields ---
@@ -88,6 +89,7 @@ exports.createCase = async (req, res) => {
       caseName,
       status: "ONGOING",
       characterOfCase,
+      caseSummary,
       caseManagerUserIds: managerUsers.map(u => u._id),
       detectiveSupervisorUserId: dsUser._id,
       investigatorUserIds: investigatorUsers.map(u => u._id),
@@ -210,6 +212,8 @@ exports.getCasesByOfficer = async (req, res) => {
         caseNo: c.caseNo,
         caseName: c.caseName,
         caseStatus: c.status,
+        archivedAt: c.archivedAt || null,
+        updatedAt: c.updatedAt || null,
         role,
       };
     });
@@ -362,7 +366,7 @@ exports.closeCase = async (req, res) => {
 
     const updated = await Case.findOneAndUpdate(
       { caseNo },
-      { status: "COMPLETED" },
+      { status: "COMPLETED", archivedAt: new Date() },
       { new: true }
     );
 

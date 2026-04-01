@@ -12,7 +12,7 @@ import { useLeads } from './hooks/useLeads';
 import { useTableFilter } from './hooks/useTableFilter';
 import { CollapsibleSection } from './components/CollapsibleSection';
 import { LeadsTable } from './components/LeadsTable';
-import { toTitleCase, isDeletedStatus, statusColor } from './utils';
+import { toTitleCase, isDeletedStatus, isClosedStatus, statusColor } from './utils';
 
 import styles from './Investigator.module.css';
 
@@ -50,7 +50,7 @@ export const Investigator = () => {
   // ─── UI state ────────────────────────────────────────────────────────────
   const [activeTab,          setActiveTab]          = useState('allLeads');
   const [currentPage,        setCurrentPage]        = useState(1);
-  const [pageSize,           setPageSize]           = useState(10);
+  const [pageSize,           setPageSize]           = useState(50);
   const [isCaseSummaryOpen,  setIsCaseSummaryOpen]  = useState(true);
   const [isCaseTeamOpen,     setIsCaseTeamOpen]     = useState(true);
   // Confirm-accept modal state
@@ -222,10 +222,19 @@ export const Investigator = () => {
   );
 
   const renderAllRow = lead => {
+    const isDeleted = isDeletedStatus(lead.leadStatus);
+    const isClosed  = isClosedStatus(lead.leadStatus);
+
+    // Row-level styling: uniform colour across all cells for terminated leads
+    // Deleted  → deep maroon (#7f1d1d) on a faint rose background; strikethrough text
+    // Closed   → formal crimson (#9b1c1c) on a very pale pink background; no strikethrough
+    const rowStyle = (isDeleted || isClosed)
+      ? { color: '#9b1c1c', backgroundColor: '#fff5f5' }
+      : {};
+
     const getDueStatus = (dueDate) => {
-      if (!dueDate || dueDate === 'N/A') return { label: '—', sub: '', color: '#6b7280' };
-      // Parse date parts directly to avoid UTC→local timezone shift
-      const dateStr = dueDate.slice(0, 10); // "YYYY-MM-DD"
+      if (!dueDate || dueDate === 'N/A') return { label: '—', sub: '', color: 'inherit' };
+      const dateStr = dueDate.slice(0, 10);
       const [y, m, d] = dateStr.split('-').map(Number);
       const now = new Date();
       const nowUTC = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
@@ -236,35 +245,39 @@ export const Investigator = () => {
       if (diff === 0) return { label: formatted, sub: 'Due today', color: '#d97706' };
       return { label: formatted, sub: `${diff}d left`, color: '#16a34a' };
     };
-    const { label, sub, color } = lead.leadStatus === 'Completed'
-      ? { label: '—', sub: '', color: '#6b7280' }
+
+    // Terminated leads show no due-date details
+    const { label, sub, color } = (isDeleted || isClosed || lead.leadStatus === 'Completed')
+      ? { label: '—', sub: '', color: 'inherit' }
       : getDueStatus(lead.dueDate);
+
+    const isNonNavigable = isDeleted || isClosed;
+
     return (
-    <tr key={lead.id}>
-      <td>{lead.id}</td>
-      <td>{lead.description}</td>
-      <td style={{ color: statusColor(lead.leadStatus) }}>
-        {lead.leadStatus === 'In Review' ? 'Under review' : lead.leadStatus}
-      </td>
-      <td>{(lead.assignedOfficers || []).join(', ') || <em>None</em>}</td>
-      <td>
-        <div style={{ color, fontWeight: 500, lineHeight: 1.4 }}>
-          <div style={{ fontSize: 18 }}>{label}</div>
-          {sub && <div style={{ fontSize: 18 }}>{sub}</div>}
-        </div>
-      </td>
-      <td style={{ textAlign: 'center' }}>
-        <button
-          className={styles['view-btn1']}
-          onClick={() => !isDeletedStatus(lead.leadStatus) && handleLeadClick(lead)}
-          disabled={isDeletedStatus(lead.leadStatus)}
-          style={{ opacity: isDeletedStatus(lead.leadStatus) ? 0.5 : 1, cursor: isDeletedStatus(lead.leadStatus) ? 'not-allowed' : 'pointer' }}
-        >
-          Manage
-        </button>
-      </td>
-    </tr>
-  );
+      <tr key={lead.id} style={rowStyle}>
+        <td>{lead.id}</td>
+        <td>{lead.description}</td>
+        <td style={{ color: isNonNavigable ? 'inherit' : statusColor(lead.leadStatus), fontWeight: 600 }}>
+          {lead.leadStatus === 'In Review' ? 'Under Review' : lead.leadStatus}
+        </td>
+        <td>{(lead.assignedOfficers || []).join(', ') || <em>None</em>}</td>
+        <td>
+          <div style={{ color: isNonNavigable ? 'inherit' : color, fontWeight: 500, lineHeight: 1.4 }}>
+            <div style={{ fontSize: 18 }}>{label}</div>
+            {sub && <div style={{ fontSize: 18 }}>{sub}</div>}
+          </div>
+        </td>
+        <td style={{ textAlign: 'center' }}>
+          <button
+            className={isNonNavigable ? styles['manage-btn-terminated'] : styles['view-btn1']}
+            onClick={() => !isNonNavigable && handleLeadClick(lead)}
+            disabled={isNonNavigable}
+          >
+            Manage
+          </button>
+        </td>
+      </tr>
+    );
   };
 
   // ─── Render ───────────────────────────────────────────────────────────────

@@ -5,6 +5,9 @@ export const toTitleCase = (s = '') =>
 /** Returns true if a lead status is 'deleted'. */
 export const isDeletedStatus = s => String(s || '').toLowerCase() === 'deleted';
 
+/** Returns true if a lead status is 'closed'. */
+export const isClosedStatus = s => String(s || '').toLowerCase() === 'closed';
+
 /**
  * Returns the CSS color for a lead's status badge.
  * Red for active/unresolved, green for progress/done, black otherwise.
