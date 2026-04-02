@@ -15,8 +15,21 @@ export const CasePageManager = () => {
   const { caseDetails } = location.state || {};
 
   // ─── Context ──────────────────────────────────────────────────────────────
-  const { selectedCase, setSelectedLead, setLeadStatus } = useContext(CaseContext);
-  const isSupervisor = selectedCase.role === "Detective Supervisor";
+  const { selectedCase, setSelectedCase, setSelectedLead, setLeadStatus } = useContext(CaseContext);
+
+  // Reliable caseId: prefer live context but fall back to navigation state so
+  // data is fetched on the very first render even if context hasn't updated yet.
+  const activeCaseId = selectedCase?._id || selectedCase?.id || caseDetails?._id;
+
+  // If context hasn't been updated yet (timing with notification navigation),
+  // sync the navigation state into context so the page loads correctly.
+  useEffect(() => {
+    if (caseDetails && (!selectedCase || (caseDetails._id && selectedCase._id !== caseDetails._id))) {
+      setSelectedCase(caseDetails);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const isSupervisor = selectedCase?.role === "Detective Supervisor";
   const signedInOfficer = localStorage.getItem("loggedInUser");
 
   // ─── Constants ────────────────────────────────────────────────────────────
@@ -178,7 +191,7 @@ export const CasePageManager = () => {
     api.get(`/api/cases/${selectedCase.caseNo}/team`)
       .then(({ data }) => setTeam(data))
       .catch(console.error);
-  }, [selectedCase.caseNo]);
+  }, [selectedCase?.caseNo]);
 
   // ─── Effect: sync fetched team into selection state ───────────────────────
   useEffect(() => {
@@ -224,13 +237,12 @@ export const CasePageManager = () => {
   useEffect(() => {
     setSummary(null);
     isFirstLoad.current = true;
+    if (!activeCaseId) return;
     async function load() {
-      const caseId = selectedCase?._id || selectedCase?.id;
-      if (!caseId) return;
       try {
         const token = localStorage.getItem('token');
         const { data } = await api.get(
-          `/api/cases/case-summary/${caseId}`,
+          `/api/cases/case-summary/${activeCaseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setSummary(data.caseSummary ?? '');
@@ -240,7 +252,7 @@ export const CasePageManager = () => {
       }
     }
     load();
-  }, [selectedCase?._id || selectedCase?.id]);
+  }, [activeCaseId]);
 
   // ─── Save case summary on demand ─────────────────────────────────────────
   const saveSummary = async () => {
@@ -265,12 +277,11 @@ export const CasePageManager = () => {
   // ─── Effect: fetch leads (polled every 15s) ───────────────────────────────
   useEffect(() => {
     const fetchLeadsForCase = async () => {
-      const caseId = selectedCase?._id || selectedCase?.id;
-      if (!caseId) return;
+      if (!activeCaseId) return;
       try {
         const token = localStorage.getItem("token");
         const response = await api.get(
-          `/api/lead/case/${caseId}`,
+          `/api/lead/case/${activeCaseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -350,7 +361,7 @@ export const CasePageManager = () => {
     fetchLeadsForCase();
     const intervalId = setInterval(fetchLeadsForCase, 15_000);
     return () => clearInterval(intervalId);
-  }, [selectedCase?._id, selectedCase?.id, signedInOfficer]);
+  }, [activeCaseId, signedInOfficer]);
 
   // ─── Computed: presence display names ─────────────────────────────────────
   const presenceNames = useMemo(

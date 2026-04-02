@@ -1,5 +1,5 @@
 import { useContext, useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import { CaseContext } from '../CaseContext';
 import Navbar from '../../components/Navbar/Navbar';
@@ -43,7 +43,21 @@ const ALL_FILTER_KEYS     = ['id', 'description', 'leadStatus', 'assignedOfficer
 
 export const Investigator = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { caseDetails } = location.state || {};
   const { setSelectedCase, selectedCase, setSelectedLead, setLeadStatus } = useContext(CaseContext);
+
+  // If context hasn't been updated yet (timing with notification navigation),
+  // sync the navigation state into context so the page loads correctly.
+  useEffect(() => {
+    if (caseDetails && (!selectedCase || (caseDetails._id && selectedCase._id !== caseDetails._id))) {
+      setSelectedCase(caseDetails);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reliable caseId: prefer live context but fall back to navigation state so
+  // data is fetched on the very first render even if context hasn't updated yet.
+  const activeCaseId = selectedCase?._id || selectedCase?.id || caseDetails?._id;
 
   const signedInOfficer = localStorage.getItem('loggedInUser');
 
@@ -62,7 +76,7 @@ export const Investigator = () => {
   const [allUsers, setAllUsers] = useState([]);
 
   // ─── Data hooks ───────────────────────────────────────────────────────────
-  const { leads, acceptLead } = useLeads(selectedCase?._id || selectedCase?.id, signedInOfficer);
+  const { leads, acceptLead } = useLeads(activeCaseId, signedInOfficer);
 
   // ─── One-time setup ───────────────────────────────────────────────────────
   useEffect(() => { window.scrollTo(0, 0); }, []);
@@ -85,11 +99,11 @@ export const Investigator = () => {
 
   // Fetch case summary whenever the active case changes
   useEffect(() => {
-    if (!selectedCase?.caseNo) return;
+    if (!activeCaseId) return;
     async function fetchSummary() {
       try {
         const token = localStorage.getItem('token');
-        const { data } = await api.get(`/api/cases/case-summary/${selectedCase.caseNo}`, {
+        const { data } = await api.get(`/api/cases/case-summary/${activeCaseId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setSummary(data.caseSummary);
@@ -98,7 +112,7 @@ export const Investigator = () => {
       }
     }
     fetchSummary();
-  }, [selectedCase?.caseNo]);
+  }, [activeCaseId]);
 
   // Fetch case team composition whenever the active case changes
   useEffect(() => {

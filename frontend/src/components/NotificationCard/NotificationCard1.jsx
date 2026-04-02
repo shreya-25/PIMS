@@ -78,93 +78,147 @@ const NotificationCard1 = ({ signedInOfficer }) => {
 
   // ── View handler ───────────────────────────────────────────────────────────
 
-  const handleView = async _id => {
-    const n = newNotifs.find(x => x._id === _id) || openNotifs.find(x => x._id === _id);
-    if (!n) return;
+  const handleView = async (_id) => {
+  const n = newNotifs.find(x => x._id === _id) || openNotifs.find(x => x._id === _id);
+  if (!n) return;
 
-    const myAss = n.assignedTo.find(r => r.username === signedInOfficer);
-    if (!myAss) return;
+  const myAss = n.assignedTo.find(r => r.username === signedInOfficer);
+  if (!myAss) return;
 
-    setNavigating(_id);
-    try {
-      // 1. Mark as read (treat missing unread field as unread=true for legacy docs)
-      if (myAss.unread !== false) {
-        await api.put(`/api/notifications/mark-read/${n.notificationId}`, {
-          username: signedInOfficer,
-        });
-        // Remove from New Notifications
-        setNewNotifs(prev => prev.filter(x => x._id !== _id));
-        // Mark as read in All Notifications without waiting for next poll
-        setOpenNotifs(prev =>
-          prev.map(x =>
-            x._id === _id
-              ? {
-                  ...x,
-                  assignedTo: x.assignedTo.map(r =>
-                    r.username === signedInOfficer ? { ...r, unread: false } : r
-                  ),
-                }
-              : x
-          )
-        );
-      }
+  setNavigating(_id);
 
-      // 2. Fetch full case by caseId (ObjectId)
-      let fullCase = { caseNo: n.caseNo, caseName: n.caseName, role: myAss.role };
-      if (n.caseId) {
-        try {
-          const { data } = await api.get(`/api/cases/${n.caseId}`);
-          if (data) fullCase = { ...data, role: myAss.role };
-        } catch (e) {
-          console.error("Could not fetch full case:", e.message);
-        }
-      }
+  try {
+    if (myAss.unread !== false) {
+      api.put(`/api/notifications/mark-read/${n.notificationId}`, {
+        username: signedInOfficer,
+      })
+        .then(() => {
+          setNewNotifs(prev => prev.filter(x => x._id !== _id));
+          setOpenNotifs(prev =>
+            prev.map(x =>
+              x._id === _id
+                ? {
+                    ...x,
+                    assignedTo: x.assignedTo.map(r =>
+                      r.username === signedInOfficer
+                        ? { ...r, unread: false }
+                        : r
+                    ),
+                  }
+                : x
+            )
+          );
+        })
+        .catch(e => console.error("Mark-read failed:", e.message));
+    }
 
-      // Persist case to both storages + context
-      setSelectedCase(fullCase);
-      sessionStorage.setItem("selectedCase", JSON.stringify(fullCase));
-      localStorage.setItem("selectedCase", JSON.stringify(fullCase));
+    const token = localStorage.getItem("token");
 
-      // 3. Fetch full lead using caseId (ObjectId) — use leadNo+caseId to avoid
-      //    brittle name-matching (notification.leadName may differ from lead.description)
-      const caseId = fullCase._id || fullCase.id;
-      let fullLead = { leadNo: n.leadNo, leadName: n.leadName };
-      if (n.leadNo && caseId) {
-        try {
-          const { data } = await api.get(`/api/lead/lead/${n.leadNo}/${caseId}`);
-          const hit = Array.isArray(data) ? data[0] : data;
-          if (hit) {
-            // Normalize: pages use `leadName`, but the Lead model stores it in `description`
-            fullLead = { ...hit, leadName: hit.leadName || hit.description || n.leadName };
-          }
-        } catch (e) {
-          console.error("Could not fetch full lead:", e.message);
-        }
-      }
+    // fetch actual case from backend
+    const { data: allCases } = await api.get("/api/cases", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      params: { officerName: signedInOfficer },
+    });
 
-      // Persist lead to both storages + context
-      setSelectedLead(fullLead);
-      sessionStorage.setItem("selectedLead", JSON.stringify(fullLead));
-      localStorage.setItem("selectedLead", JSON.stringify(fullLead));
+    const matchedCase = allCases.find(
+      c =>
+        String(c.caseNo) === String(n.caseNo) ||
+        String(c._id) === String(n.caseId)
+    );
 
-      // 4. Navigate to appropriate page
-      const action = (n.action1 || "").toLowerCase();
-      if (action.includes("case")) {
-        const dest = (myAss.role === "Case Manager" || myAss.role === "Detective Supervisor")
+    if (!matchedCase) {
+      console.error("Case not found from notifications payload:", n);
+      setNavigating(null);
+      return;
+    }
+
+    let resolvedRole = myAss.role;
+
+    const name = signedInOfficer?.toLowerCase?.() ?? "";
+
+    if (
+      matchedCase.detectiveSupervisorUserId &&
+      (matchedCase.detectiveSupervisorUserId.username?.toLowerCase() === name ||
+        matchedCase.detectiveSupervisorUserId.displayName?.toLowerCase() === name)
+    ) {
+      resolvedRole = "Detective Supervisor";
+    } else if (
+      Array.isArray(matchedCase.caseManagerUserIds) &&
+      matchedCase.caseManagerUserIds.some(
+        u =>
+          u.username?.toLowerCase() === name ||
+          u.displayName?.toLowerCase() === name
+      )
+    ) {
+      resolvedRole = "Case Manager";
+    } else if (
+      Array.isArray(matchedCase.investigatorUserIds) &&
+      matchedCase.investigatorUserIds.some(
+        u =>
+          u.username?.toLowerCase() === name ||
+          u.displayName?.toLowerCase() === name
+      )
+    ) {
+      resolvedRole = "Investigator";
+    }
+
+    // make same shape as working ongoing-case navigation
+    const caseObj = {
+      _id: matchedCase._id,
+      id: matchedCase.caseNo,
+      title: matchedCase.caseName,
+      caseNo: matchedCase.caseNo,
+      caseName: matchedCase.caseName,
+      status: matchedCase.status,
+      role: resolvedRole,
+      createdAt: matchedCase.createdAt,
+    };
+
+    setSelectedCase(caseObj);
+    sessionStorage.setItem("selectedCase", JSON.stringify(caseObj));
+    localStorage.setItem("selectedCase", JSON.stringify(caseObj));
+    localStorage.setItem("role", resolvedRole);
+
+    if (n.type === "Case") {
+      setSelectedLead(null);
+      sessionStorage.removeItem("selectedLead");
+      localStorage.removeItem("selectedLead");
+
+      const dest =
+        resolvedRole === "Case Manager" || resolvedRole === "Detective Supervisor"
           ? "/CasePageManager"
           : "/Investigator";
-        navigate(dest, { state: { caseDetails: fullCase } });
-      } else if (action.includes("lead")) {
-        navigate("/LeadReview", { state: { caseDetails: fullCase, leadDetails: fullLead } });
-      } else {
-        navigate("/LRInstruction", { state: { caseDetails: fullCase, leadDetails: fullLead } });
+
+      navigate(dest, { state: { caseDetails: caseObj } });
+    } else {
+      const leadObj = {
+        leadNo: n.leadNo,
+        leadName: n.leadName,
+      };
+
+      setSelectedLead(leadObj);
+      sessionStorage.setItem("selectedLead", JSON.stringify(leadObj));
+      localStorage.setItem("selectedLead", JSON.stringify(leadObj));
+
+      if (n.type === "Lead") {
+        navigate("/LeadReview", {
+          state: { caseDetails: caseObj, leadDetails: leadObj },
+        });
+      } else if (n.type === "LeadReturn") {
+        navigate("/LRInstruction", {
+          state: { caseDetails: caseObj, leadDetails: leadObj },
+        });
       }
-    } catch (e) {
-      console.error("Notification view failed:", e.message);
-    } finally {
-      setNavigating(null);
     }
-  };
+  } catch (err) {
+    console.error("Notification navigation failed:", err);
+  } finally {
+    setNavigating(null);
+  }
+};
 
   // ── Card renderer ──────────────────────────────────────────────────────────
   // isNew: true  → "New Notifications" section — View always clickable
