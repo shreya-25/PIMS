@@ -1,5 +1,4 @@
 import React, { useContext, useState, useEffect, useRef, memo} from 'react';
-
 import Navbar from '../../components/Navbar/Navbar';
 import Searchbar from '../../components/Searchbar/Searchbar';
 import Button from '../../components/Button/Button';
@@ -13,8 +12,11 @@ import api from "../../api"; // adjust the path as needed
 import SelectLeadModal from "../../components/SelectLeadModal/SelectLeadModal";
 import {SideBar } from "../../components/Sidebar/Sidebar";
 import { AlertModal } from "../../components/AlertModal/AlertModal";
-
 import { createPortal } from "react-dom";
+
+// Double-encodes '/' so Express routing doesn't split on it.
+// Backend uses decodeURIComponent() to restore the original value.
+const safeEncode = (str) => encodeURIComponent(str ?? '').replace(/%2F/gi, '%252F');
 
 
 export const LeadReview = () => {
@@ -779,7 +781,7 @@ const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = 
     };
 
     await api.put(
-      `/api/lead/update/${leadData.leadNo}/${encodeURIComponent(leadData.description)}/${leadData.caseId || selectedCase._id || selectedCase.id}`,
+      `/api/lead/update/${leadData.leadNo}/${safeEncode(leadData.description)}/${leadData.caseId || selectedCase._id || selectedCase.id}`,
       processedLeadData,
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -900,7 +902,7 @@ const persistPrimary = async (leadObj, nextPrimary) => {
 
   // Persist to your existing update endpoint
   await api.put(
-    `/api/lead/update/${leadObj.leadNo}/${encodeURIComponent(leadObj.description)}/${leadObj.caseId || selectedCase._id || selectedCase.id}`,
+    `/api/lead/update/${leadObj.leadNo}/${safeEncode(leadObj.description)}/${leadObj.caseId || selectedCase._id || selectedCase.id}`,
     payload,
     headers
   );
@@ -974,7 +976,7 @@ const acceptLead = async (leadNo, description) => {
   try {
     const token = localStorage.getItem("token");
     const { data } = await api.put(
-      `/api/lead/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase._id || selectedCase.id}/assignedTo`,
+      `/api/lead/lead/${leadNo}/${safeEncode(description)}/${selectedCase._id || selectedCase.id}/assignedTo`,
       { officerUsername: signedInOfficer, status: "accepted" },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -992,7 +994,7 @@ const acceptLead = async (leadNo, description) => {
       };
 
       await api.put(
-        `/api/lead/update/${lead.leadNo}/${encodeURIComponent(lead.description)}/${lead.caseId || selectedCase._id || selectedCase.id}`,
+        `/api/lead/update/${lead.leadNo}/${safeEncode(lead.description)}/${lead.caseId || selectedCase._id || selectedCase.id}`,
         updated,
         headers
       );
@@ -1023,7 +1025,7 @@ const declineLead = async (leadNo, description, reason = "") => {
   try {
     const token = localStorage.getItem("token");
     const { data } = await api.put(
-      `/api/lead/lead/${leadNo}/${encodeURIComponent(description)}/${selectedCase._id || selectedCase.id}/assignedTo`,
+      `/api/lead/lead/${leadNo}/${safeEncode(description)}/${selectedCase._id || selectedCase.id}/assignedTo`,
       { officerUsername: signedInOfficer, status: "declined", reason },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -1111,7 +1113,7 @@ console.log("SL, SC", selectedLead, selectedCase);
         const token = localStorage.getItem("token");
 
         const response = await api.get(
-          `/api/lead/lead/${lead.leadNo}/${encodeURIComponent(lead.leadName)}/${kaseId}`,
+          `/api/lead/lead/${lead.leadNo}/${safeEncode(lead.leadName)}/${kaseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
           console.log("Fetched Lead Data1:", response.data);
@@ -1672,7 +1674,7 @@ const handleViewLeadReturn = async () => {
 
     const { leadNo } = lead;
     const leadName = lead.leadName || lead.description;
-    const encLead = encodeURIComponent(leadName);
+    const encLead = safeEncode(leadName);
 
     // fetch everything we need for the report (same endpoints you use on LRFinish)
     const [
@@ -1834,7 +1836,7 @@ const confirmWithModal = (message, title = "Confirm") =>
 //   try {
 //     setLoading(true);
 //     const token = localStorage.getItem("token");
-//     const encLeadName = encodeURIComponent(lead.leadName || lead.description);
+//     const encLeadName = safeEncode(lead.leadName || lead.description);
 //     const encCaseName = encodeURIComponent(kase.caseName);
 
 //     await api.delete(
@@ -1883,7 +1885,7 @@ const submitDeleteWithReason = async (reason) => {
   try {
     setLoading(true);
     const token = localStorage.getItem("token");
-    const encLeadName = encodeURIComponent(lead.leadName || lead.description);
+    const encLeadName = safeEncode(lead.leadName || lead.description);
 
     // Delete the lead (backend appends deletion reason to comments automatically)
     await api.delete(

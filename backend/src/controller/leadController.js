@@ -247,7 +247,8 @@ const getLeadsByCase = async (req, res) => {
 
   const getLeadsByLeadNoandLeadName = async (req, res) => {
     try {
-        const { leadNo, leadName } = req.params;
+        const leadNo = req.params.leadNo;
+        const leadName = decodeURIComponent(req.params.leadName);
         const caseId = await resolveCaseId(req.params.caseId);
         const query = {
             leadNo: leadNo,
@@ -294,7 +295,9 @@ const getAssociatedSubCategories = async (req, res) => {
 
 const updateLeadStatus = async (req, res) => {
   try {
-    const { leadNo, leadName, caseId } = req.params;
+    const leadNo = req.params.leadNo;
+    const leadName = decodeURIComponent(req.params.leadName);
+    const caseId = req.params.caseId;
 
     const lead = await Lead.findOne({
       leadNo: Number(leadNo),
@@ -473,7 +476,9 @@ const HarddeleteLead = async (req, res) => {
 };
 
 const deleteLead = async (req, res) => {
-  const { leadNo, leadName, caseId } = req.params;
+  const leadNo = req.params.leadNo;
+  const leadName = decodeURIComponent(req.params.leadName);
+  const caseId = req.params.caseId;
   const { reason } = req.body;
 
   try {
@@ -767,7 +772,9 @@ const setLeadStatusToReopened = async (req, res) => {
 
 const updateLead = async (req, res) => {
   try {
-    const { leadNo, description, caseId } = req.params;
+    const leadNo = req.params.leadNo;
+    const description = decodeURIComponent(req.params.description);
+    const caseId = req.params.caseId;
     const incoming = req.body;
 
     const prev = await Lead.findOne({ leadNo: Number(leadNo), description, caseId });
@@ -920,7 +927,9 @@ const updateAssignedToStatus = async (req, res) => {
 
 const removeAssignedOfficer = async (req, res) => {
   try {
-    const { leadNo, description, caseId, username } = req.params;
+    const leadNo = req.params.leadNo;
+    const description = decodeURIComponent(req.params.description);
+    const { caseId, username } = req.params;
 
     const lead = await Lead.findOneAndUpdate(
       { leadNo: Number(leadNo), description, caseId },
@@ -1022,7 +1031,9 @@ const setLeadStatusToClosed = async (req, res) => {
 
 const updateLeadFlags = async (req, res) => {
   try {
-    const { leadNo, leadName, caseId } = req.params;
+    const leadNo = req.params.leadNo;
+    const leadName = decodeURIComponent(req.params.leadName);
+    const caseId = req.params.caseId;
     const { associatedFlags } = req.body;
 
     if (!Array.isArray(associatedFlags)) {
