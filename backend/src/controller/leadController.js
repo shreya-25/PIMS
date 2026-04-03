@@ -447,7 +447,7 @@ const HarddeleteLead = async (req, res) => {
 
   try {
     const role = req.user?.role || "";
-    const allowed = /^(Admin|CaseManager|Detective Supervisor)$/.test(role);
+    const allowed = /^(Admin|Case\s*Manager|CaseManager|Detective\s*Supervisor)$/i.test(role);
     if (!allowed) {
       return res
         .status(403)
@@ -483,7 +483,7 @@ const deleteLead = async (req, res) => {
 
   try {
     const role = req.user?.role || "";
-    const allowed = /^(Admin|CaseManager|Detective Supervisor)$/.test(role);
+    const allowed = /^(Admin|Case\s*Manager|CaseManager|Detective\s*Supervisor)$/i.test(role);
     if (!allowed) {
       return res.status(403).json({ message: "Unauthorized: Only Case Managers or Detective Supervisors can delete a lead." });
     }
