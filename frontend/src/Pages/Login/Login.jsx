@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import styles from './Login.module.css';
 import { useNavigate } from 'react-router-dom';
 import api from "../../api";
-import { msalInstance, loginRequest } from "../../msalConfig";
+// import { msalInstance, loginRequest } from "../../msalConfig";
 
 // view: 'login' | 'forgot' | 'forgot-sent'
 export function Login() {
   const [view, setView] = useState('login');
   const [errorMessage, setErrorMessage] = useState('');
-  const [msLoading, setMsLoading] = useState(false);
+  // const [msLoading, setMsLoading] = useState(false);
 
   // Email+password → OTP/TOTP flow
   const [credentials, setCredentials] = useState({ email: '', password: '' });
@@ -39,36 +39,36 @@ export function Login() {
     }
   };
 
-  useEffect(() => {
-    msalInstance.initialize().then(() => {
-      msalInstance.handleRedirectPromise().then(async (result) => {
-        if (!result) return;
-        try {
-          setMsLoading(true);
-          const response = await api.post("/api/auth/microsoft", { idToken: result.idToken });
-          const { token, userId, username: name, role } = response.data;
-          if (!token) { setErrorMessage("Authentication failed: Token not provided by the server."); return; }
-          storeAndNavigate({ token, userId, username: name, role });
-        } catch (error) {
-          setErrorMessage(error.response?.data?.message || "Microsoft login failed.");
-        } finally {
-          setMsLoading(false);
-        }
-      }).catch(() => setErrorMessage("Microsoft login failed. Please try again."));
-    });
-  }, []);
+  // useEffect(() => {
+  //   msalInstance.initialize().then(() => {
+  //     msalInstance.handleRedirectPromise().then(async (result) => {
+  //       if (!result) return;
+  //       try {
+  //         setMsLoading(true);
+  //         const response = await api.post("/api/auth/microsoft", { idToken: result.idToken });
+  //         const { token, userId, username: name, role } = response.data;
+  //         if (!token) { setErrorMessage("Authentication failed: Token not provided by the server."); return; }
+  //         storeAndNavigate({ token, userId, username: name, role });
+  //       } catch (error) {
+  //         setErrorMessage(error.response?.data?.message || "Microsoft login failed.");
+  //       } finally {
+  //         setMsLoading(false);
+  //       }
+  //     }).catch(() => setErrorMessage("Microsoft login failed. Please try again."));
+  //   });
+  // }, []);
 
-  const handleMicrosoftLogin = async () => {
-    setMsLoading(true);
-    setErrorMessage('');
-    try {
-      await msalInstance.initialize();
-      await msalInstance.loginRedirect(loginRequest);
-    } catch {
-      setErrorMessage("Microsoft login failed. Please try again.");
-      setMsLoading(false);
-    }
-  };
+  // const handleMicrosoftLogin = async () => {
+  //   setMsLoading(true);
+  //   setErrorMessage('');
+  //   try {
+  //     await msalInstance.initialize();
+  //     await msalInstance.loginRedirect(loginRequest);
+  //   } catch {
+  //     setErrorMessage("Microsoft login failed. Please try again.");
+  //     setMsLoading(false);
+  //   }
+  // };
 
   /* ── E-MAIL ME — send OTP to email regardless of MFA method ── */
   const handleEmailMe = async () => {
@@ -230,7 +230,7 @@ export function Login() {
             <div className={styles.loginForm}>
               {errorMessage && <p className={styles.errorMessage}>{errorMessage}</p>}
 
-              {/* Microsoft SSO */}
+              {/* Microsoft SSO — commented out
               <button
                 type="button"
                 className={styles.msButton}
@@ -251,6 +251,7 @@ export function Login() {
               </button>
 
               <div className={styles.divider}><span>or sign in with email &amp; password</span></div>
+              */}
 
               {/* Email + Password */}
               {pwdStep === 'credentials' ? (

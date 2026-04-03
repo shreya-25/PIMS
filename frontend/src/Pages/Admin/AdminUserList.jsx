@@ -17,7 +17,7 @@ const ROLE_LABELS = {
 
 
 const BLANK_EDIT = {
-  firstName: "", lastName: "", email: "", role: "",
+  firstName: "", lastName: "", username: "", email: "", role: "",
   agency: "", ori: "", badgeId: "", isActive: true,
 };
 
@@ -62,6 +62,7 @@ export const AdminUserList = () => {
     setEditForm({
       firstName: u.firstName || "",
       lastName:  u.lastName  || "",
+      username:  u.username  || "",
       email:     u.email     || "",
       role:      u.role      || "",
       agency:    u.agency    || "",
@@ -233,6 +234,16 @@ export const AdminUserList = () => {
                     placeholder="Last Name"
                   />
                 </div>
+              </div>
+
+              {/* Username */}
+              <div className={styles["modal-group"]}>
+                <label>Username</label>
+                <input
+                  type="text" name="username"
+                  value={editForm.username} onChange={handleEditChange}
+                  placeholder="Username"
+                />
               </div>
 
               {/* Email + Role */}

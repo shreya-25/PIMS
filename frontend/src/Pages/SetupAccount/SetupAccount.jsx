@@ -15,14 +15,6 @@ const AGENCY_ORI = [
   { agency: "Johnson City Police Department",          ori: "NY0070300" },
 ];
 
-const ROLES = [
-  { value: "Admin",                  label: "Admin" },
-  { value: "Detective Supervisor",   label: "Detective Supervisor" },
-  { value: "CaseManager",            label: "Case Manager" },
-  { value: "Detective/Investigator", label: "Detective/Investigator" },
-  { value: "External Contributor",   label: "External Contributor" },
-  { value: "Read Only",              label: "Read Only" },
-];
 
 export const SetupAccount = () => {
   const navigate = useNavigate();
@@ -34,13 +26,14 @@ export const SetupAccount = () => {
     firstName: "",
     lastName: "",
     email: "",
-    role: "",
+    username: "",
     agency: "",
     badgeId: "",
     ori: "",
     password: "",
     confirmPassword: "",
   });
+  const [usernameManuallyEdited, setUsernameManuallyEdited] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
@@ -65,7 +58,7 @@ export const SetupAccount = () => {
           firstName: res.data.firstName || "",
           lastName: res.data.lastName || "",
           email: res.data.email || "",
-          role: res.data.role || "",
+          username: res.data.username || "",
           agency: res.data.agency || "",
           badgeId: res.data.badgeId || "",
           ori: res.data.ori || "",
@@ -96,6 +89,9 @@ export const SetupAccount = () => {
 
   const strength = getStrength(formData.password);
 
+  const deriveUsername = (lastName, badgeId) =>
+    (lastName.toLowerCase().trim() + String(badgeId).trim()).replace(/[^a-z0-9_.\-]/g, "");
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === "agency") {
@@ -104,7 +100,22 @@ export const SetupAccount = () => {
       setFormError("");
       return;
     }
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (name === "username") {
+      setUsernameManuallyEdited(true);
+      setFormData((prev) => ({ ...prev, username: value }));
+      setFormError("");
+      return;
+    }
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+      if (!usernameManuallyEdited && (name === "lastName" || name === "badgeId")) {
+        updated.username = deriveUsername(
+          name === "lastName" ? value : prev.lastName,
+          name === "badgeId" ? value : prev.badgeId
+        );
+      }
+      return updated;
+    });
     setFormError("");
   };
 
@@ -115,8 +126,12 @@ export const SetupAccount = () => {
       setFormError("First and last name are required.");
       return;
     }
-    if (!formData.role) {
-      setFormError("Please select a role.");
+    if (!formData.username.trim()) {
+      setFormError("Username is required.");
+      return;
+    }
+    if (!/^[a-z0-9_.\-]+$/i.test(formData.username.trim())) {
+      setFormError("Username may only contain letters, numbers, underscores, hyphens, and dots.");
       return;
     }
     if (!formData.agency) {
@@ -143,13 +158,18 @@ export const SetupAccount = () => {
         token,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        role: formData.role,
+        username: formData.username.trim().toLowerCase(),
         agency: formData.agency,
         badgeId: formData.badgeId,
         ori: formData.ori,
         password: formData.password,
       });
-      setStep("mfa-choice");
+      // Go straight to authenticator setup
+      setTotpLoading(true);
+      const qrRes = await api.post("/api/auth/totp/generate", { email: formData.email });
+      setTotpQr(qrRes.data.qrCode);
+      setTotpLoading(false);
+      setStep("totp-scan");
     } catch (err) {
       setFormError(err?.response?.data?.message || "Something went wrong. Please try again.");
     } finally {
@@ -157,21 +177,6 @@ export const SetupAccount = () => {
     }
   };
 
-  const handleChooseEmail = () => setStep("done");
-
-  const handleChooseTotp = async () => {
-    setTotpLoading(true);
-    setTotpError("");
-    try {
-      const res = await api.post("/api/auth/totp/generate", { email: formData.email });
-      setTotpQr(res.data.qrCode);
-      setStep("totp-scan");
-    } catch (err) {
-      setTotpError(err?.response?.data?.message || "Failed to generate QR code.");
-    } finally {
-      setTotpLoading(false);
-    }
-  };
 
   const handleTotpActivate = async (e) => {
     e.preventDefault();
@@ -211,45 +216,6 @@ export const SetupAccount = () => {
     );
   }
 
-  /* ── MFA choice ── */
-  if (step === "mfa-choice") {
-    return (
-      <div className={styles.page}>
-        <div className={styles.card}>
-          <div className={styles.header}>
-            <h2 className={styles.title}>Choose Your Verification Method</h2>
-            <p className={styles.subtitle}>Every login will require a 6-digit code — pick how you'd like to receive it.</p>
-          </div>
-          {totpError && <div className={styles.errorBanner}>{totpError}</div>}
-          <div className={styles.mfaOptions}>
-            <button className={styles.mfaCard} onClick={handleChooseEmail} disabled={totpLoading}>
-              <div className={styles.mfaIcon}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/>
-                </svg>
-              </div>
-              <div className={styles.mfaCardBody}>
-                <span className={styles.mfaCardTitle}>Email OTP</span>
-                <span className={styles.mfaCardDesc}>A one-time code will be sent to your email each time you log in.</span>
-              </div>
-            </button>
-            <button className={styles.mfaCard} onClick={handleChooseTotp} disabled={totpLoading}>
-              <div className={styles.mfaIcon} style={{ background: "#eff6ff", color: "#1d4ed8" }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/>
-                </svg>
-              </div>
-              <div className={styles.mfaCardBody}>
-                <span className={styles.mfaCardTitle}>Authenticator App</span>
-                <span className={styles.mfaCardDesc}>Use Microsoft Authenticator or Google Authenticator — works offline, no email needed.</span>
-              </div>
-              {totpLoading && <span className={styles.mfaSpinner} />}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   /* ── TOTP scan step ── */
   if (step === "totp-scan") {
@@ -279,9 +245,6 @@ export const SetupAccount = () => {
             {totpError && <div className={styles.errorBanner}>{totpError}</div>}
             <button type="submit" className={styles.submitBtn} disabled={totpLoading || totpCode.length !== 6}>
               {totpLoading ? "Verifying…" : "Confirm & Finish"}
-            </button>
-            <button type="button" className={styles.backBtn} onClick={() => setStep("mfa-choice")}>
-              ← Choose a different method
             </button>
           </form>
         </div>
@@ -316,7 +279,7 @@ export const SetupAccount = () => {
 
         <form onSubmit={handleSubmit} className={styles.form}>
 
-          {/* Name row */}
+          {/* First Name | Last Name */}
           <div className={styles.row}>
             <div className={styles.formGroup}>
               <label className={styles.label}>First Name <span className={styles.required}>*</span></label>
@@ -344,8 +307,21 @@ export const SetupAccount = () => {
             </div>
           </div>
 
-          {/* Email (readonly) | Role — same line */}
+          {/* Username | Email */}
           <div className={styles.row}>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Username <span className={styles.required}>*</span></label>
+              <input
+                type="text"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                className={styles.input}
+                placeholder="Choose a username"
+                required
+                autoComplete="username"
+              />
+            </div>
             <div className={styles.formGroup}>
               <label className={styles.label}>Email</label>
               <input
@@ -354,19 +330,6 @@ export const SetupAccount = () => {
                 readOnly
                 className={`${styles.input} ${styles.readOnly}`}
               />
-            </div>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>Role <span className={styles.required}>*</span></label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                className={styles.input}
-                required
-              >
-                <option value="" disabled>Select Role</option>
-                {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-              </select>
             </div>
           </div>
 

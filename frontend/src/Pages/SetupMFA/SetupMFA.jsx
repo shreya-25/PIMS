@@ -39,7 +39,7 @@ export const SetupMFA = () => {
     setError("");
     try {
       // Verify the email OTP — this returns a JWT but we only need it to confirm identity
-      await api.post("/api/auth/verify-otp", { email: email.trim(), otp: otpCode.trim() }, { suppressGlobalError: true });
+      await api.post("/api/auth/verify-otp", { email: email.trim(), otp: otpCode.trim(), method: "email" }, { suppressGlobalError: true });
 
       // Generate new TOTP secret + QR
       const res = await api.post("/api/auth/totp/generate", { email: email.trim() });

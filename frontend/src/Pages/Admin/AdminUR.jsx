@@ -37,6 +37,7 @@ export const AdminUR = () => {
     firstName: "",
     lastName: "",
     email: "",
+    username: "",
     role: "",
     agency: "",
     badgeId: "",
@@ -85,6 +86,7 @@ export const AdminUR = () => {
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
+          ...(formData.username.trim() ? { username: formData.username.trim().toLowerCase() } : {}),
           role: formData.role,
           agency: formData.agency,
           badgeId: formData.badgeId,
@@ -101,7 +103,7 @@ export const AdminUR = () => {
         title: "User Created",
         message: `Account created for ${formData.email}.\nUsername: ${generatedUsername}\nA setup invitation email has been sent with instructions to create their password.`,
       });
-      setFormData({ firstName: "", lastName: "", email: "", role: "", agency: "", badgeId: "", ori: "" });
+      setFormData({ firstName: "", lastName: "", email: "", username: "", role: "", agency: "", badgeId: "", ori: "" });
       setInviteMessage("");
       setExpiryEnabled(false);
       setExpiryDate("");
@@ -198,6 +200,18 @@ export const AdminUR = () => {
                 </div>
               </div>
 
+              {/* Username — optional */}
+              <div className={styles["form-group"]}>
+                <label>Username <span className={styles["optional"]}>(Optional — auto-generated from last name + badge ID if left blank)</span></label>
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="e.g. jsmith"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                />
+              </div>
+
               {/* Agency | ORI — both mandatory, same line */}
               <div className={styles["form-row"]}>
                 <div className={styles["form-group"]}>
@@ -233,13 +247,14 @@ export const AdminUR = () => {
               {/* Badge ID | Temp Password — same line */}
               <div className={styles["form-row"]}>
                 <div className={styles["form-group"]}>
-                  <label>Badge ID</label>
+                  <label>Badge ID <span className={styles["required"]}>*</span></label>
                   <input
                     type="text"
                     name="badgeId"
                     placeholder="e.g. 777"
                     value={formData.badgeId}
                     onChange={handleInputChange}
+                    required
                   />
                 </div>
                 <div className={styles["form-group"]}>
@@ -316,7 +331,7 @@ export const AdminUR = () => {
                     type="button"
                     className={styles["cancel-btn"]}
                     onClick={() => {
-                      setFormData({ firstName: "", lastName: "", email: "", role: "", agency: "", badgeId: "", ori: "" });
+                      setFormData({ firstName: "", lastName: "", email: "", username: "", role: "", agency: "", badgeId: "", ori: "" });
                       setInviteMessage("");
                       setExpiryEnabled(false);
                       setExpiryDate("");
