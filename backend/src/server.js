@@ -26,6 +26,7 @@ const path = require('path');
 const presenceRoutes = require("./routes/presenceRoutes");
 const verifyToken = require("./middleware/authMiddleware");
 const { startDueDateNotifier } = require("./jobs/dueDateNotifier");
+const { seedAgencies } = require("./seeds/agencySeed");
 
 
 
@@ -33,6 +34,7 @@ const { startDueDateNotifier } = require("./jobs/dueDateNotifier");
 
 
 const reportRoutes = require("./routes/reportRoutes.js"); // For report generation
+const agencyRoutes = require("./routes/agencyRoutes.js");
 
 if (process.env.NODE_ENV !== "production") require("dotenv").config();
 
@@ -87,6 +89,7 @@ app.use(cors({
 dbConnect().then((conn) => {
     console.log("✅ Database connected, starting server...");
     startDueDateNotifier();
+    seedAgencies();
 
 app.use((req, res, next) => {
   res.setHeader('X-Server-ID', `${process.pid}`);
@@ -120,6 +123,7 @@ app.use("/api/leadreturn-versions", leadReturnVersionRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'temp_uploads')));
 
 app.use("/api/report", reportRoutes); // For report generation
+app.use("/api/agencies", agencyRoutes);
 
 if (process.env.NODE_ENV === 'production') {
   const buildPath = path.join(__dirname, '..', '..', 'frontend', 'build');

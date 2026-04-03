@@ -34,7 +34,8 @@ import { ViewTimeline } from './Pages/ViewTimeline/ViewTimeline';
 import { ViewLR } from './Pages/ViewLR/ViewLR';
 import { AdminUR } from './Pages/Admin/AdminUR';
 import { AdminUserList } from './Pages/Admin/AdminUserList';
-import { AdminUR2 } from './Pages/Admin/AdminUR2';
+import { AdminAgencies } from './Pages/Admin/AdminAgencies';
+import { AdminCM } from './Pages/Admin/AdminCM';
 import {LeadReview} from './Pages/LeadReview/LeadReview';
 import { LeadsDesk } from './Pages/LeadsDesk/LeadsDesk';
 import { ChainOfCustody } from './Pages/ChainOfCustody/ChainOfCustody';
@@ -44,6 +45,9 @@ import { ClosedCase } from './Pages/ClosedCase/ClosedCase';
 import { LeadVersionHistory } from './Pages/LeadVersionHistory/LeadVersionHistory';
 import { GenerateReport } from './Pages/GenerateReport/GenerateReport';
 import { CaseInformation } from './Pages/CaseInformation/CaseInformation';
+import { SetupAccount } from './Pages/SetupAccount/SetupAccount';
+import { ResetPassword } from './Pages/ResetPassword/ResetPassword';
+import { SetupMFA } from './Pages/SetupMFA/SetupMFA';
 import ProtectedLayout from './protectedLayout';
 
 
@@ -102,7 +106,8 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/ViewTimeline" element={<ProtectedLayout> <ViewTimeline /> </ProtectedLayout>} />
         <Route path="/AdminUR" element={<ProtectedLayout> <AdminUR /> </ProtectedLayout>} />
         <Route path="/AdminUserList" element={<ProtectedLayout> <AdminUserList /> </ProtectedLayout>} />
-        <Route path="/AdminUR2" element={<ProtectedLayout> <AdminUR2 /> </ProtectedLayout>} />
+        <Route path="/AdminAgencies" element={<ProtectedLayout> <AdminAgencies /> </ProtectedLayout>} />
+        <Route path="/AdminCM" element={<ProtectedLayout> <AdminCM /> </ProtectedLayout>} />
         <Route path="/ViewLR" element={<ProtectedLayout> <ViewLR /> </ProtectedLayout>} />
         <Route path="/LeadReview" element = {<ProtectedLayout> <LeadReview /> </ProtectedLayout> } />
         <Route path="/LeadsDesk" element= {<ProtectedLayout>  <LeadsDesk /> </ProtectedLayout> } />
@@ -113,6 +118,9 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/ClosedCase" element={<ProtectedLayout><ClosedCase /></ProtectedLayout>} />
         <Route path="/LeadVersionHistory" element={<ProtectedLayout><LeadVersionHistory /></ProtectedLayout>} />
         <Route path="/CaseInformation" element={<ProtectedLayout><CaseInformation /></ProtectedLayout>} />
+        <Route path="/setup-account" element={<SetupAccount />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/setup-mfa" element={<SetupMFA />} />
       </Routes>
 
            <AlertModal

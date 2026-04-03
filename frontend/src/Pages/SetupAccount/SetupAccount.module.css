@@ -1,0 +1,445 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: linear-gradient(135deg, #eef2ff 0%, #f0f9ff 100%);
+  padding: 32px 16px;
+  font-family: Arial, sans-serif;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  padding: 32px 40px 40px;
+  width: 100%;
+  max-width: 1100px;
+}
+
+.header {
+  margin-bottom: 20px;
+}
+
+.title {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* ─── Pre-filled info grid ───────────────────────────────────────────────── */
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 20px;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.infoLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+
+.infoValue {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid #f1f5f9;
+  margin: -10px 0 0;
+}
+
+/* ─── Form ───────────────────────────────────────────────────────────────── */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.row3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+}
+
+.readOnly {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  cursor: default;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 18px;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.required {
+  color: #dc2626;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 18px;
+  font-family: Arial, sans-serif;
+  box-sizing: border-box;
+  outline: none;
+  background: #fafafa;
+  color: #111827;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.input:focus {
+  border-color: #29298b;
+  box-shadow: 0 0 0 3px rgba(41, 41, 139, 0.1);
+  background: #fff;
+}
+
+.pwdWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.pwdWrapper .input {
+  padding-right: 60px;
+}
+
+.eyeBtn {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  padding: 4px 6px;
+}
+
+.eyeBtn:hover {
+  color: #29298b;
+}
+
+/* ─── Strength bar ───────────────────────────────────────────────────────── */
+
+.strengthRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.strengthBar {
+  flex: 1;
+  height: 5px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.strengthFill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.strengthLabel {
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 44px;
+  text-align: right;
+}
+
+.hint {
+  font-size: 18px;
+  color: #6b7280;
+}
+
+.mismatch {
+  font-size: 18px;
+  color: #dc2626;
+}
+
+/* ─── Error / success ────────────────────────────────────────────────────── */
+
+.errorBanner {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #7f1d1d;
+  font-size: 18px;
+}
+
+.submitBtn {
+  padding: 12px;
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: Arial, sans-serif;
+  cursor: pointer;
+  transition: background 0.18s ease;
+  margin-top: 4px;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background: #1558b0;
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ─── Success / error states ─────────────────────────────────────────────── */
+
+.successIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 26px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.errorIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.loadingText,
+.errorText {
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.loginBtn {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 20px;
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: Arial, sans-serif;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.loginBtn:hover {
+  background: #1558b0;
+}
+
+/* ─── MFA choice step ────────────────────────────────────────────────────── */
+
+.mfaOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.mfaCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+  width: 100%;
+  font-family: Arial, sans-serif;
+  position: relative;
+}
+
+.mfaCard:hover:not(:disabled) {
+  border-color: #1a73e8;
+  background: #f8faff;
+  box-shadow: 0 2px 12px rgba(26, 115, 232, 0.1);
+}
+
+.mfaCard:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.mfaIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: #f0fdf4;
+  color: #15803d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mfaCardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mfaCardTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.mfaCardDesc {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.mfaSpinner {
+  position: absolute;
+  right: 18px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #1a73e8;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── TOTP scan step ─────────────────────────────────────────────────────── */
+
+.qrWrapper {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0 8px;
+}
+
+.qrImage {
+  width: 200px;
+  height: 200px;
+  border: 3px solid #e5e7eb;
+  border-radius: 12px;
+  display: block;
+}
+
+.qrHint {
+  text-align: center;
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+.totpForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.totpInput {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 22px;
+  font-family: monospace;
+  letter-spacing: 8px;
+  text-align: center;
+  outline: none;
+  box-sizing: border-box;
+  background: #fafafa;
+  color: #111827;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.totpInput:focus {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.12);
+  background: #fff;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.backBtn:hover {
+  color: #374151;
+}

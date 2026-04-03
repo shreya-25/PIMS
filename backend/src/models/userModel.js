@@ -31,18 +31,40 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
-      minlength: 6,
+      minlength: 8,
       select: false, // don't return password by default
     },
 
     role: {
       type: String,
       required: true,
-      enum: ["Admin", "CaseManager", "Investigator", "Detective Supervisor"],
+      enum: ["Admin", "Detective Supervisor", "CaseManager", "Detective/Investigator", "External Contributor", "Read Only"],
       index: true,
     },
 
+    agency: { type: String, default: "" },
+    badgeId: { type: String, trim: true, default: "" },
+    ori: { type: String, trim: true, default: "" },       // e.g. NY1234567
+    emailDomain: { type: String, trim: true, default: "" }, // e.g. binghamton.edu
+
+    // Account setup flow (email-verified onboarding)
+    setupToken: { type: String, select: false },
+    setupTokenExpiry: { type: Date },
+    accountSetupComplete: { type: Boolean, default: false, index: true },
+
+    // Password reset flow
+    resetToken: { type: String, select: false },
+    resetTokenExpiry: { type: Date },
+
+    // Account access expiry (optional, for external/temporary users)
+    accessExpiresAt: { type: Date, default: null },
+
     // Never delete users in audit-heavy systems—disable instead
+    // 2FA
+    mfaMethod:   { type: String, enum: ["email", "totp"], default: "email" },
+    totpSecret:  { type: String, default: null, select: false },
+    totpEnabled: { type: Boolean, default: false },
+
     isActive: { type: Boolean, default: true, index: true },
 
     lastLoginAt: { type: Date, default: null },
