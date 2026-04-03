@@ -15,8 +15,21 @@ export const CasePageManager = () => {
   const { caseDetails } = location.state || {};
 
   // ─── Context ──────────────────────────────────────────────────────────────
-  const { selectedCase, setSelectedLead, setLeadStatus } = useContext(CaseContext);
-  const isSupervisor = selectedCase.role === "Detective Supervisor";
+  const { selectedCase, setSelectedCase, setSelectedLead, setLeadStatus } = useContext(CaseContext);
+
+  // Reliable caseId: prefer live context but fall back to navigation state so
+  // data is fetched on the very first render even if context hasn't updated yet.
+  const activeCaseId = selectedCase?._id || selectedCase?.id || caseDetails?._id;
+
+  // If context hasn't been updated yet (timing with notification navigation),
+  // sync the navigation state into context so the page loads correctly.
+  useEffect(() => {
+    if (caseDetails && (!selectedCase || (caseDetails._id && selectedCase._id !== caseDetails._id))) {
+      setSelectedCase(caseDetails);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const isSupervisor = selectedCase?.role === "Detective Supervisor";
   const signedInOfficer = localStorage.getItem("loggedInUser");
 
   // ─── Constants ────────────────────────────────────────────────────────────
@@ -59,13 +72,12 @@ export const CasePageManager = () => {
 
   // ─── Case summary state ───────────────────────────────────────────────────
   const [summary, setSummary] = useState(null);
-  const saveTimer = useRef(null);
   const isFirstLoad = useRef(true);
 
   // ─── UI / pagination state ────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("allLeads");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(50);
 
   // ─── Alert / confirm modal state ──────────────────────────────────────────
   const [alertOpen, setAlertOpen] = useState(false);
@@ -131,6 +143,9 @@ export const CasePageManager = () => {
   /** Returns true when a lead status indicates it has been deleted */
   const isDeletedStatus = (s) => String(s || "").toLowerCase() === "deleted";
 
+  /** Returns true when a lead status indicates it has been closed */
+  const isClosedStatus = (s) => String(s || "").toLowerCase() === "closed";
+
   // ─── Effect: close team dropdowns on outside click ────────────────────────
   useEffect(() => {
     function handleClickOutside(e) {
@@ -176,7 +191,7 @@ export const CasePageManager = () => {
     api.get(`/api/cases/${selectedCase.caseNo}/team`)
       .then(({ data }) => setTeam(data))
       .catch(console.error);
-  }, [selectedCase.caseNo]);
+  }, [selectedCase?.caseNo]);
 
   // ─── Effect: sync fetched team into selection state ───────────────────────
   useEffect(() => {
@@ -222,13 +237,12 @@ export const CasePageManager = () => {
   useEffect(() => {
     setSummary(null);
     isFirstLoad.current = true;
+    if (!activeCaseId) return;
     async function load() {
-      const caseId = selectedCase?._id || selectedCase?.id;
-      if (!caseId) return;
       try {
         const token = localStorage.getItem('token');
         const { data } = await api.get(
-          `/api/cases/case-summary/${caseId}`,
+          `/api/cases/case-summary/${activeCaseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setSummary(data.caseSummary ?? '');
@@ -238,40 +252,36 @@ export const CasePageManager = () => {
       }
     }
     load();
-  }, [selectedCase?._id || selectedCase?.id]);
+  }, [activeCaseId]);
 
-  // ─── Effect: auto-save case summary with 2s debounce ─────────────────────
-  useEffect(() => {
-    if (isFirstLoad.current) { isFirstLoad.current = false; return; }
-    clearTimeout(saveTimer.current);
+  // ─── Save case summary on demand ─────────────────────────────────────────
+  const saveSummary = async () => {
     const caseId = selectedCase?._id || selectedCase?.id;
     if (summary === null || !caseId) return;
-
-    saveTimer.current = setTimeout(async () => {
-      try {
-        const token = localStorage.getItem('token');
-        await api.put(
-          '/api/cases/case-summary',
-          { caseId, caseSummary: summary },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-      } catch (err) {
-        console.error('Case summary save failed', err);
-      }
-    }, 2000);
-
-    return () => clearTimeout(saveTimer.current);
-  }, [summary, selectedCase?._id, selectedCase?.id]);
+    try {
+      const token = localStorage.getItem('token');
+      await api.put(
+        '/api/cases/case-summary',
+        { caseId, caseSummary: summary },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setAlertMessage("Case summary saved successfully.");
+      setAlertOpen(true);
+    } catch (err) {
+      console.error('Case summary save failed', err);
+      setAlertMessage("Failed to save case summary. Please try again.");
+      setAlertOpen(true);
+    }
+  };
 
   // ─── Effect: fetch leads (polled every 15s) ───────────────────────────────
   useEffect(() => {
     const fetchLeadsForCase = async () => {
-      const caseId = selectedCase?._id || selectedCase?.id;
-      if (!caseId) return;
+      if (!activeCaseId) return;
       try {
         const token = localStorage.getItem("token");
         const response = await api.get(
-          `/api/lead/case/${caseId}`,
+          `/api/lead/case/${activeCaseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -351,7 +361,7 @@ export const CasePageManager = () => {
     fetchLeadsForCase();
     const intervalId = setInterval(fetchLeadsForCase, 15_000);
     return () => clearInterval(intervalId);
-  }, [selectedCase?._id, selectedCase?.id, signedInOfficer]);
+  }, [activeCaseId, signedInOfficer]);
 
   // ─── Computed: presence display names ─────────────────────────────────────
   const presenceNames = useMemo(
@@ -859,8 +869,14 @@ export const CasePageManager = () => {
                   className={styles['summary-textarea']}
                   value={summary ?? ""}
                   onChange={e => setSummary(e.target.value.replace(/^Case Summary:\s?/, ""))}
-                  rows={6}
+                  rows={4}
                 />
+                <button
+                  className={styles['save-summary-btn']}
+                  onClick={saveSummary}
+                >
+                  Save Summary
+                </button>
               </div>
             )}
           </section>
@@ -1357,48 +1373,55 @@ export const CasePageManager = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {paginatedLeads.length > 0 ? paginatedLeads.map(lead => (
-                        <tr key={lead.id} style={{ backgroundColor: "#fff" }}>
+                      {paginatedLeads.length > 0 ? paginatedLeads.map(lead => {
+                        const isDeleted = isDeletedStatus(lead.leadStatus);
+                        const isClosed  = isClosedStatus(lead.leadStatus);
+                        const isNonNavigable = isDeleted || isClosed;
+
+                        // Uniform row colour for terminated leads
+                        const rowStyle = (isDeleted || isClosed)
+                          ? { color: '#9b1c1c', backgroundColor: '#fff5f5' }
+                          : { backgroundColor: '#fff' };
+
+                        const { label, sub, color } = (isNonNavigable || lead.leadStatus === 'Completed')
+                          ? { label: '—', sub: '', color: 'inherit' }
+                          : getDueStatus(lead.dueDate);
+
+                        return (
+                        <tr key={lead.id} style={rowStyle}>
                           <td>{lead.id}</td>
                           <td>{lead.description}</td>
                           <td style={{
-                            color: ["Assigned", "Accepted", "Approved", "Returned", "Completed", "Reopened"].includes(lead.leadStatus)
-                              ? "green"
-                              : lead.leadStatus === "In Review" ? "red" : "black"
+                            fontWeight: 600,
+                            color: isNonNavigable ? 'inherit' : (
+                              ["Assigned", "Accepted", "Approved", "Returned", "Completed", "Reopened"].includes(lead.leadStatus)
+                                ? "green"
+                                : lead.leadStatus === "In Review" ? "red" : "black"
+                            )
                           }}>
-                            {lead.leadStatus === "In Review" ? "To review" : lead.leadStatus}
+                            {lead.leadStatus === "In Review" ? "Under Review" : lead.leadStatus}
                           </td>
                           <td style={{ wordBreak: "break-word" }}>
                             {lead.assignedOfficers?.length > 0 ? lead.assignedOfficers.join(", ") : "None"}
                           </td>
                           <td style={{ width: "13%" }}>
-                            {(() => {
-                              const { label, sub, color } = lead.leadStatus === 'Completed'
-                                ? { label: '—', sub: '', color: '#6b7280' }
-                                : getDueStatus(lead.dueDate);
-                              return (
-                                <div style={{ color, fontWeight: 500, lineHeight: 1.4 }}>
-                                  <div style={{ fontSize: 18 }}>{label}</div>
-                                  {sub && <div style={{ fontSize: 18 }}>{sub}</div>}
-                                </div>
-                              );
-                            })()}
+                            <div style={{ color: isNonNavigable ? 'inherit' : color, fontWeight: 500, lineHeight: 1.4 }}>
+                              <div style={{ fontSize: 18 }}>{label}</div>
+                              {sub && <div style={{ fontSize: 18 }}>{sub}</div>}
+                            </div>
                           </td>
                           <td style={{ width: "9%", textAlign: "center" }}>
                             <button
-                              className={styles['view-btn1']}
-                              onClick={() => !isDeletedStatus(lead.leadStatus) && handleLeadClick(lead)}
-                              disabled={isDeletedStatus(lead.leadStatus)}
-                              style={{
-                                opacity: isDeletedStatus(lead.leadStatus) ? 0.5 : 1,
-                                cursor: isDeletedStatus(lead.leadStatus) ? "not-allowed" : "pointer",
-                              }}
+                              className={isNonNavigable ? styles['manage-btn-terminated'] : styles['view-btn1']}
+                              onClick={() => !isNonNavigable && handleLeadClick(lead)}
+                              disabled={isNonNavigable}
                             >
                               Manage
                             </button>
                           </td>
                         </tr>
-                      )) : (
+                        );
+                      }) : (
                         <tr>
                           <td colSpan={6} style={{ textAlign: "center", padding: "8px" }}>No Leads Available</td>
                         </tr>

@@ -374,7 +374,7 @@ function getLeadClosureInfo(lead) {
     reason = lead.deletedReason || lead.deleteReason || lead.reason || "";
   } else if (looksClosed || lead.closedDate || lead.completedDate) {
     state  = statusStr || "Closed";
-    reason = lead.closedReason || lead.closingReason || lead.closeReason || lead.reason || "";
+    reason = lead.closedReason || lead.closingReason || lead.closeReason || lead.reason || lead.comment || "";
   }
 
   // normalize whitespace

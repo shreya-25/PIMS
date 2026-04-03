@@ -63,6 +63,7 @@ select.input-field option[value=""] {
 
 .textarea-field {
   height: 120px; /* Adjusted height for better usability */
+  font-family: inherit;
 }
 
 select.input-field {

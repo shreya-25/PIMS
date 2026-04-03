@@ -38,35 +38,25 @@ export const ClosedCase = () => {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No token found");
 
-        const { data } = await api.get("/api/cases", {
+        const { data } = await api.get("/api/cases/cases-by-officer", {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          params: { officerName: signedInOfficer },
+          params: { officerName: signedInOfficer, status: "COMPLETED" },
+          returnEmptyOn404: true,
+          emptyData: [],
         });
 
         if (cancelled) return;
 
-        const rows = (data || [])
-          .filter(
-            (c) =>
-              c.caseStatus === "Completed" &&
-              Array.isArray(c.assignedOfficers) &&
-              c.assignedOfficers.some((o) => o?.name === signedInOfficer)
-          )
-          .map((c) => {
-            const closedAt = c.closedAt || c.updatedAt || c.createdAt;
-            const officer = c.assignedOfficers.find(
-              (o) => o?.name === signedInOfficer
-            );
-            return {
-              id: c.caseNo,
-              title: c.caseName,
-              role: officer?.role || "Unknown",
-              closedAt, // raw date string
-            };
-          });
+        const rows = (data || []).map((c) => ({
+          _id: c._id,
+          id: c.caseNo,
+          title: c.caseName,
+          role: c.role || "Unknown",
+          closedAt: c.archivedAt || c.updatedAt || null,
+        }));
 
         setCases(rows);
       } catch (e) {
@@ -220,7 +210,7 @@ export const ClosedCase = () => {
 
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleView = (c) => {
-    const caseObj = { _id: c._id || c.id, caseNo: c.id, caseName: c.title, role: c.role };
+    const caseObj = { _id: c._id, caseNo: c.id, caseName: c.title, role: c.role };
     setSelectedCase(caseObj);
     localStorage.setItem(
       "selectedCase",

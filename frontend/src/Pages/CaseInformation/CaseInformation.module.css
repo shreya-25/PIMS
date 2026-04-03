@@ -99,8 +99,8 @@
 .close-case-btn {
   padding: 6px 16px;
   background: #fff;
-  color: #16a34a;
-  border: 1.5px solid #16a34a;
+  color: #dc2626;
+  border: 1.5px solid #dc2626;
   border-radius: 999px;
   font-size: 15px;
   font-weight: 600;
@@ -112,12 +112,12 @@
 }
 
 .close-case-btn:hover {
-  background: #dcfce7;
+  background: #fee2e2;
 }
 
 .close-case-btn:disabled {
-  color: #86efac;
-  border-color: #86efac;
+  color: #fca5a5;
+  border-color: #fca5a5;
   cursor: not-allowed;
 }
 

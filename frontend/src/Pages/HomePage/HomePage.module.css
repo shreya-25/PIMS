@@ -194,6 +194,7 @@
 /* Container for multiple buttons in one cell */
 .btn-sec-HP {
   display: flex;
+  justify-content: center;
 }
 
 .manage-btn,
