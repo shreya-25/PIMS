@@ -483,6 +483,7 @@ const deleteLead = async (req, res) => {
 
   try {
     const role = req.user?.role || "";
+    console.log("[deleteLead] role from JWT:", JSON.stringify(role));
     const allowed = /^(Admin|Case\s*Manager|CaseManager|Detective\s*Supervisor)$/i.test(role);
     if (!allowed) {
       return res.status(403).json({ message: "Unauthorized: Only Case Managers or Detective Supervisors can delete a lead." });
