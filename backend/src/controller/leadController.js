@@ -878,7 +878,8 @@ const updateLead = async (req, res) => {
 
 const updateAssignedToStatus = async (req, res) => {
   try {
-    const { leadNo, description, caseId } = req.params;
+    const { leadNo, caseId } = req.params;
+    const description = decodeURIComponent(req.params.description);
     const { officerUsername, status, reason } = req.body;
 
     if (!officerUsername || !status) {
@@ -888,7 +889,6 @@ const updateAssignedToStatus = async (req, res) => {
     const lead = await Lead.findOneAndUpdate(
       {
         leadNo: Number(leadNo),
-        description,
         caseId,
         'assignedTo.username': officerUsername
       },
