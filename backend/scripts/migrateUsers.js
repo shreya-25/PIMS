@@ -51,24 +51,35 @@ async function migrate() {
       patch.totpEnabled = false;
     }
 
+    // email — fallback if missing
+    if (!user.email) {
+      patch.email = "pgarey@endicott.org";
+    }
+
     // emailDomain — derive from email
-    if (!user.emailDomain && user.email && user.email.includes("@")) {
-      patch.emailDomain = user.email.split("@")[1].toLowerCase();
+    const effectiveEmail = user.email || "pgarey@endicott.org";
+    if (!user.emailDomain) {
+      patch.emailDomain = effectiveEmail.split("@")[1].toLowerCase();
     }
 
-    // badgeId
-    if (user.badgeId === undefined) {
-      patch.badgeId = "";
+    // badgeId — default placeholder for all users
+    if (!user.badgeId) {
+      patch.badgeId = "777";
     }
 
-    // agency
-    if (user.agency === undefined) {
-      patch.agency = "";
+    // agency — default to Endicott Police Department
+    if (!user.agency) {
+      patch.agency = "Endicott Police Department";
     }
 
-    // ori
-    if (user.ori === undefined) {
-      patch.ori = "";
+    // ori — default to Endicott Police Department
+    if (!user.ori) {
+      patch.ori = "Endicott Police Department";
+    }
+
+    // role — rename old "Investigator" to "Detective/Investigator"
+    if (user.role === "Investigator") {
+      patch.role = "Detective/Investigator";
     }
 
     // displayName — derive from firstName + lastName
