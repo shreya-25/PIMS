@@ -138,13 +138,35 @@ export const LRResult = () => {
   const FORM_KEY = `${storagePrefix}:form`;
   const LIST_KEY = `${storagePrefix}:list`;
 
+    // context
+  const contextLeadStatus =
+  selectedLead?.leadStatus ||
+  effectiveLead?.leadStatus ||
+  selectedCase?.leadStatus ||
+  effectiveCase?.leadStatus ||
+  '';
+
   // ─── Lead status / read-only hook ───────────────────────────────────────────
+  // const { status, isReadOnly } = useLeadStatus({
+  //   caseId:   effectiveCase?._id || effectiveCase?.id,
+  //   leadNo:   effectiveLead?.leadNo,
+  //   leadName: effectiveLead?.leadName,
+  //   initialStatus: selectedLead?.leadStatus,
+  // });
   const { status, isReadOnly } = useLeadStatus({
-    caseId:   effectiveCase?._id || effectiveCase?.id,
-    leadNo:   effectiveLead?.leadNo,
-    leadName: effectiveLead?.leadName,
-    initialStatus: selectedLead?.leadStatus,
-  });
+  caseId: effectiveCase?._id || effectiveCase?.id,
+  leadNo: effectiveLead?.leadNo,
+  leadName: effectiveLead?.leadName,
+  initialStatus: contextLeadStatus,
+});
+
+useEffect(() => {
+  if (!contextLeadStatus) return;
+
+  setLeadStatus((prev) =>
+    prev ? pickHigherStatus(prev, contextLeadStatus) : contextLeadStatus
+  );
+}, [contextLeadStatus, setLeadStatus]);
 
   // ─── Local state ────────────────────────────────────────────────────────────
   const [officerName, setOfficerName] = useState('');
@@ -285,48 +307,101 @@ export const LRResult = () => {
    * Fetch the lead's current status from the dedicated status endpoint.
    * Merges with any status already held in context (always keeps the highest rank).
    */
+  // useEffect(() => {
+  //   const caseId = effectiveCase?._id || effectiveCase?.id;
+  //   if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !caseId) return;
+  //   const ac = new AbortController();
+
+  //   (async () => {
+  //     try {
+  //       const token = localStorage.getItem('token');
+  //       const { data } = await api.get(
+  //         `/api/lead/status/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${caseId}`,
+  //         { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
+  //       );
+  //       if (ac.signal.aborted) return;
+
+  //       const incoming =
+  //         (data && typeof data === 'object' && 'leadStatus' in data && data.leadStatus) ||
+  //         (Array.isArray(data) && data[0]?.leadStatus) ||
+  //         null;
+
+  //       if (incoming) {
+  //         setLeadStatus((prev) => (prev ? pickHigherStatus(prev, incoming) : incoming));
+  //       } else {
+  //         console.warn('No leadStatus returned from status endpoint');
+  //         setLeadStatus('Unknown');
+  //       }
+  //     } catch (err) {
+  //       if (!ac.signal.aborted) {
+  //         console.error('Failed to fetch lead status:', err);
+  //         setError('Could not load lead status');
+  //       }
+  //     }
+  //   })();
+
+  //   return () => ac.abort();
+  // }, [
+  //   effectiveLead?.leadNo,
+  //   effectiveLead?.leadName,
+  //   effectiveCase?._id,
+  //   effectiveCase?.id,
+  //   setLeadStatus,
+  // ]);
+
   useEffect(() => {
-    const caseId = effectiveCase?._id || effectiveCase?.id;
-    if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !caseId) return;
-    const ac = new AbortController();
+  const caseId = effectiveCase?._id || effectiveCase?.id;
+  if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !caseId) return;
+  const ac = new AbortController();
 
-    (async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const { data } = await api.get(
-          `/api/lead/status/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${caseId}`,
-          { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
+  (async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const { data } = await api.get(
+        `/api/lead/status/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${caseId}`,
+        { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (ac.signal.aborted) return;
+
+      const incoming =
+        (data && typeof data === 'object' && data.leadStatus) ||
+        (Array.isArray(data) && data[0]?.leadStatus) ||
+        null;
+
+      if (incoming) {
+        setLeadStatus((prev) => (prev ? pickHigherStatus(prev, incoming) : incoming));
+      } else {
+        console.warn('No leadStatus returned from status endpoint');
+        setLeadStatus((prev) =>
+          prev ||
+          leadData?.leadStatus ||
+          contextLeadStatus ||
+          'Unknown'
         );
-        if (ac.signal.aborted) return;
-
-        const incoming =
-          (data && typeof data === 'object' && 'leadStatus' in data && data.leadStatus) ||
-          (Array.isArray(data) && data[0]?.leadStatus) ||
-          null;
-
-        if (incoming) {
-          setLeadStatus((prev) => (prev ? pickHigherStatus(prev, incoming) : incoming));
-        } else {
-          console.warn('No leadStatus returned from status endpoint');
-          setLeadStatus('Unknown');
-        }
-      } catch (err) {
-        if (!ac.signal.aborted) {
-          console.error('Failed to fetch lead status:', err);
-          setError('Could not load lead status');
-        }
       }
-    })();
+    } catch (err) {
+      if (!ac.signal.aborted) {
+        console.error('Failed to fetch lead status:', err);
+        setLeadStatus((prev) =>
+          prev ||
+          leadData?.leadStatus ||
+          contextLeadStatus ||
+          'Unknown'
+        );
+      }
+    }
+  })();
 
-    return () => ac.abort();
-  }, [
-    effectiveLead?.leadNo,
-    effectiveLead?.leadName,
-    effectiveCase?._id,
-    effectiveCase?.id,
-    setLeadStatus,
-  ]);
-
+  return () => ac.abort();
+}, [
+  effectiveLead?.leadNo,
+  effectiveLead?.leadName,
+  effectiveCase?._id,
+  effectiveCase?.id,
+  leadData?.leadStatus,
+  contextLeadStatus,
+  setLeadStatus,
+]);
   // Restore form and list from sessionStorage on mount (once)
   useEffect(() => {
     try {
