@@ -4,6 +4,7 @@ const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
+const { decodeParam } = require("../utils/decodeParam");
 
 const createLRPicture = async (req, res) => {
   try {

@@ -4,6 +4,7 @@ const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
+const { decodeParam } = require("../utils/decodeParam");
 
 const asBool = v => v === true || v === "true" || v === 1 || v === "1";
 
@@ -82,7 +83,8 @@ const createLREvidence = async (req, res) => {
 
 const getLREvidenceByDetails = async (req, res) => {
     try {
-        const { leadNo, leadName, caseId } = req.params;
+        const { leadNo, caseId } = req.params;
+        const leadName = decodeParam(req.params.leadName);
         const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
         const lrEvidences = await LREvidence.find(query);
 
@@ -105,7 +107,8 @@ const getLREvidenceByDetails = async (req, res) => {
 
 const updateLREvidence = async (req, res) => {
   try {
-    const { leadNo, leadName, caseId, leadReturnId, evidenceDescription: oldDesc } = req.params;
+    const { leadNo, caseId, leadReturnId, evidenceDescription: oldDesc } = req.params;
+    const leadName = decodeParam(req.params.leadName);
 
     const ev = await LREvidence.findOne({
       leadNo: Number(leadNo), description: leadName, caseId, leadReturnId, evidenceDescription: oldDesc,
@@ -170,7 +173,8 @@ const updateLREvidence = async (req, res) => {
 
 const deleteLREvidence = async (req, res) => {
     try {
-      const { leadNo, leadName, caseId, leadReturnId, evidenceDescription } = req.params;
+      const { leadNo, caseId, leadReturnId, evidenceDescription } = req.params;
+      const leadName = decodeParam(req.params.leadName);
 
       const ev = await LREvidence.findOne({
         leadNo: Number(leadNo), description: leadName, caseId, leadReturnId, evidenceDescription,

@@ -1,6 +1,7 @@
 const LRTimeline = require("../models/LRTimeline");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
+const { decodeParam } = require("../utils/decodeParam");
 
 const createLRTimeline = async (req, res) => {
     try {

@@ -585,8 +585,8 @@ const orderedAssignees = hasAssignees
         assignedTo:           assignedToPayload,        // ✅ primary first
         primaryInvestigator:  leadData.primaryOfficer || null,
         assignedBy:           username,
-        summary:              leadData.leadSummary,
-        description:          leadData.leadDescription,
+        summary:              leadData.leadSummary?.trim(),
+        description:          leadData.leadDescription?.trim(),
         accessLevel:          leadData.accessLevel,
         leadStatus:           computedLeadStatus,       // ✅ Assigned vs Created
       },

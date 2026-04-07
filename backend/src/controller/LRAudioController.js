@@ -4,6 +4,7 @@ const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
+const { decodeParam } = require("../utils/decodeParam");
 
 const toBool = (v) => v === true || v === "true" || v === "1";
 
@@ -86,7 +87,8 @@ const createLRAudio = async (req, res) => {
 // LIST
 const getLRAudioByDetails = async (req, res) => {
   try {
-    const { leadNo, leadName, caseId } = req.params;
+    const { leadNo, caseId } = req.params;
+    const leadName = decodeParam(req.params.leadName);
     const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
     const lrAudios = await LRAudio.find(query);
     if (lrAudios.length === 0) return res.status(404).json({ message: "No Audios found." });

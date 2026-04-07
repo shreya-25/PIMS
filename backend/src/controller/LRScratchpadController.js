@@ -1,6 +1,7 @@
 const LRScratchpad = require("../models/LRScratchpad");
 const { resolveLeadReturnRefs } = require("../utils/resolveRefs");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
+const { decodeParam } = require("../utils/decodeParam");
 
 const createLRScratchpad = async (req, res) => {
     try {

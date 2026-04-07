@@ -11,6 +11,7 @@ async function resolveCaseId(value) {
   return caseDoc ? caseDoc._id : value; // fallback keeps original so Mongo gives a clear error
 }
 const { createSnapshot } = require("../utils/leadReturnVersioning");
+const { decodeParam, normaliseLeadText } = require("../utils/decodeParam");
 const LeadReturn = require("../models/leadreturn");
 const LeadReturnResult = require("../models/leadReturnResult");
 const LRPerson = require("../models/LRPerson");
@@ -63,8 +64,8 @@ const createLead = async (req, res) => {
       completedDate,
       assignedTo: assignedToInput = [],
       assignedBy,
-      summary,
-      description,
+      summary: summaryRaw,
+      description: descriptionRaw,
       leadStatus,
       dueDate,
       priority,
@@ -77,12 +78,15 @@ const createLead = async (req, res) => {
       primaryInvestigator,
     } = req.body;
 
+    const summary     = normaliseLeadText(summaryRaw);
+    const description = normaliseLeadText(descriptionRaw);
+
     const missing = [];
-    if (!caseId)      missing.push('Case ID');
-    if (!caseName)    missing.push('Case Name');
-    if (!caseNo)      missing.push('Case Number');
-    if (!summary)     missing.push('Lead Log Summary');
-    if (!description) missing.push('Lead Description');
+    if (!caseId)       missing.push('Case ID');
+    if (!caseName)     missing.push('Case Name');
+    if (!caseNo)       missing.push('Case Number');
+    if (!summary)      missing.push('Lead Log Summary');
+    if (!description)  missing.push('Lead Description');
 
     if (missing.length) {
       return res.status(400).json({
@@ -451,7 +455,8 @@ const searchLeadsByKeyword = async (req, res) => {
 };
 
 const HarddeleteLead = async (req, res) => {
-  const { leadNo, leadName, caseNo, caseName } = req.params;
+  const { leadNo, caseNo, caseName } = req.params;
+  const leadName = decodeParam(req.params.leadName);
 
   try {
     const role = req.user?.role || "";
@@ -790,6 +795,12 @@ const updateLead = async (req, res) => {
     if (!prev) return res.status(404).json({ message: "Lead not found" });
 
     const { events: _ignoreEvents, ...incomingNoEvents } = incoming;
+
+    // Normalise free-text fields so stored values stay URL-safe
+    if (incomingNoEvents.description != null)
+      incomingNoEvents.description = normaliseLeadText(incomingNoEvents.description);
+    if (incomingNoEvents.summary != null)
+      incomingNoEvents.summary = normaliseLeadText(incomingNoEvents.summary);
 
     // normalize assignedTo with userId lookup
     const normalizeAssignedTo = async (arr) => {

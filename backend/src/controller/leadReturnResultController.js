@@ -5,6 +5,7 @@ const Lead = require("../models/lead");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const { createSnapshot } = require("../utils/leadReturnVersioning");
 const { resolveLeadReturnRefs, resolveCaseNo } = require("../utils/resolveRefs");
+const { decodeParam } = require("../utils/decodeParam");
 
 // Helpers to convert between A...Z strings and numbers
 function alphabetToNumber(str) {

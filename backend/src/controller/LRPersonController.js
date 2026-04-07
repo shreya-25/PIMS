@@ -4,6 +4,7 @@ const fs = require("fs");
 const { uploadToS3, deleteFromS3, getFileFromS3 } = require("../s3");
 const { resolveLeadReturnRefs, resolveCaseNo } = require("../utils/resolveRefs");
 const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
+const { decodeParam } = require("../utils/decodeParam");
 
 // Validation function to check if at least one meaningful field is filled
 const isPersonRecordValid = (data) => {
@@ -102,7 +103,8 @@ const createLRPerson = async (req, res) => {
 
 const getLRPersonByDetails = async (req, res) => {
     try {
-        const { leadNo, leadName, caseId } = req.params;
+        const { leadNo, caseId } = req.params;
+        const leadName = decodeParam(req.params.leadName);
         const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
         const lrPersons = await LRPerson.find(query);
 
@@ -129,7 +131,8 @@ const getLRPersonByDetails = async (req, res) => {
 
 const getLRPersonByDetailsandid = async (req, res) => {
     try {
-        const { leadNo, leadName, caseId, id } = req.params;
+        const { leadNo, caseId, id } = req.params;
+        const leadName = decodeParam(req.params.leadName);
         const query = { leadNo: Number(leadNo), description: leadName, caseId, leadReturnId: id, isDeleted: { $ne: true } };
         const lrPersons = await LRPerson.find(query);
 

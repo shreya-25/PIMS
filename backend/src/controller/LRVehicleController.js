@@ -2,6 +2,7 @@ const LRVehicle = require("../models/LRVehicle");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const { resolveLeadReturnRefs, resolveCaseNo } = require("../utils/resolveRefs");
 const { checkLeadWriteAccess } = require("../utils/leadWriteAccess");
+const { decodeParam } = require("../utils/decodeParam");
 
 const createLRVehicle = async (req, res) => {
     try {
