@@ -483,7 +483,11 @@ export const LRInstruction = () => {
   useEffect(() => {
     const fetchLeadInstructionData = async () => {
       const lead   = selectedLead?.leadNo ? selectedLead : leadDetails;
-      const kase   = selectedCase?._id || selectedCase?.id ? selectedCase : caseDetails;
+      // Prefer whichever object actually carries a MongoDB _id
+      const kase   =
+        selectedCase?._id || selectedCase?.id ? selectedCase :
+        caseDetails?._id  || caseDetails?.id  ? caseDetails  :
+        selectedCase;
       const kaseId = kase?._id || kase?.id;
 
       if (!lead?.leadNo || !lead?.leadName || !kaseId) return;
@@ -506,7 +510,7 @@ export const LRInstruction = () => {
     };
 
     fetchLeadInstructionData();
-  }, [selectedLead, setLeadInstructions]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedLead, selectedCase, setLeadInstructions]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** Merge the fetched lead status upward using priority ranking. */
   useEffect(() => {

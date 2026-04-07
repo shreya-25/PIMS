@@ -1162,11 +1162,15 @@ console.log("SL, SC", selectedLead, selectedCase);
 
   setLeadData({
     ...item,
-    assignedOfficer: item.assignedOfficer || [],
-    assignedTo: assignedNorm,
-    // leadStatus: item.leadStatus || computeLeadStatus(assignedNorm),
-    leadStatus: item.leadStatus || computeLeadStatus(assignedNorm, item.primaryInvestigator || item.primaryOfficer),
-    primaryOfficer: item.primaryInvestigator || "",
+    assignedOfficer:    item.assignedOfficer    || [],
+    assignedTo:         assignedNorm,
+    leadStatus:         item.leadStatus || computeLeadStatus(assignedNorm, item.primaryInvestigator || item.primaryOfficer),
+    primaryOfficer:     item.primaryInvestigator || "",
+    // Normalise fields absent from old documents (created before schema migration)
+    incidentNo:         item.incidentNo         ?? '',
+    parentLeadNo:       item.parentLeadNo        ?? '',
+    subCategory:        item.subCategory         ?? '',
+    associatedSubCategories: item.associatedSubCategories ?? [],
   });
 
   // const assignedUsernames = assignedNorm.map(x => x.username);

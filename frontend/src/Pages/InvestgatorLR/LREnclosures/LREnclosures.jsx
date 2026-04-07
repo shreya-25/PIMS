@@ -137,7 +137,8 @@ export const LREnclosures = () => {
   const fileInputRef = useRef();
 
   // ── Context & route state ─────────────────────────────────────────────────
-  const { selectedCase, selectedLead, leadStatus } = useContext(CaseContext);
+  const { selectedCase, selectedLead, leadStatus, setSelectedCase, setSelectedLead } = useContext(CaseContext);
+  const { caseDetails, leadDetails } = location.state || {};
 
   const isCaseManager =
     selectedCase?.role === 'Case Manager' ||
@@ -223,6 +224,14 @@ export const LREnclosures = () => {
     setFile(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, []);
+
+  // ── Sync context from router state (covers fresh-session tab navigation) ──
+  useEffect(() => {
+    if (caseDetails && leadDetails) {
+      setSelectedCase(caseDetails);
+      setSelectedLead(leadDetails);
+    }
+  }, [caseDetails, leadDetails]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── sessionStorage sync ───────────────────────────────────────────────────
 
@@ -708,7 +717,7 @@ export const LREnclosures = () => {
                   key={route}
                   className={`${styles.menuItem}${active ? ` ${styles.menuItemActive}` : ''}`}
                   style={{ fontWeight: active ? '600' : '400' }}
-                  onClick={() => navigate(route)}
+                  onClick={() => navigate(route, { state: { caseDetails: selectedCase, leadDetails: selectedLead } })}
                 >
                   {label}
                 </span>

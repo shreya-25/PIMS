@@ -477,7 +477,7 @@ export const LRPerson = () => {
                 <span
                   key={route}
                   className={`${styles.menuItem} ${active ? styles.menuItemActive : styles.menuItemInactive}`}
-                  onClick={() => navigate(route)}
+                  onClick={() => navigate(route, { state: { caseDetails: selectedCase, leadDetails: selectedLead } })}
                 >
                   {label}
                 </span>

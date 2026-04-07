@@ -209,7 +209,8 @@ export const LRAudio = () => {
   const location = useLocation();
 
   // ── Context ──────────────────────────────────────────────────────────────
-  const { selectedCase, selectedLead } = useContext(CaseContext);
+  const { selectedCase, selectedLead, setSelectedCase, setSelectedLead } = useContext(CaseContext);
+  const { caseDetails, leadDetails } = location.state || {};
 
   // ── Session-storage cache keys (memoised by case/lead identifiers) ────────
   const { formKey, listKey } = useMemo(() => {
@@ -290,6 +291,14 @@ export const LRAudio = () => {
     setEditingId(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, []);
+
+  // ── Sync context from router state (covers fresh-session tab navigation) ─
+  useEffect(() => {
+    if (caseDetails && leadDetails) {
+      setSelectedCase(caseDetails);
+      setSelectedLead(leadDetails);
+    }
+  }, [caseDetails, leadDetails]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Session-storage: restore cached data on context switch ────────────────
   useEffect(() => {
@@ -749,7 +758,7 @@ export const LRAudio = () => {
                 <span
                   key={route}
                   className={`${styles.menuItem} ${active ? styles.menuItemActive : styles.menuItemSecondary}`}
-                  onClick={() => navigate(route)}
+                  onClick={() => navigate(route, { state: { caseDetails: selectedCase, leadDetails: selectedLead } })}
                 >
                   {label}
                 </span>

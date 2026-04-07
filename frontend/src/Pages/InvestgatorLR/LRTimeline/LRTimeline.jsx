@@ -117,7 +117,8 @@ export const LRTimeline = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { selectedCase, selectedLead, leadStatus } = useContext(CaseContext);
+  const { selectedCase, selectedLead, leadStatus, setSelectedCase, setSelectedLead } = useContext(CaseContext);
+  const { caseDetails, leadDetails } = location.state || {};
 
   // ── State ──────────────────────────────────────────────────────────────────
 
@@ -185,6 +186,14 @@ export const LRTimeline = () => {
     setAlertMessage,
     setAlertOpen,
   });
+
+  // ── Sync context from router state (covers fresh-session tab navigation) ──
+  useEffect(() => {
+    if (caseDetails && leadDetails) {
+      setSelectedCase(caseDetails);
+      setSelectedLead(leadDetails);
+    }
+  }, [caseDetails, leadDetails]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Session storage: restore form + list when the active case/lead changes ──
 
@@ -593,7 +602,7 @@ export const LRTimeline = () => {
                   key={route}
                   className={`${styles.menuItem}${active ? ` ${styles.menuItemActive}` : ''}`}
                   style={{ fontWeight: active ? '600' : '400' }}
-                  onClick={() => navigate(route)}
+                  onClick={() => navigate(route, { state: { caseDetails: selectedCase, leadDetails: selectedLead } })}
                 >
                   {label}
                 </span>

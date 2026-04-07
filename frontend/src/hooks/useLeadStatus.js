@@ -11,6 +11,7 @@ export function useLeadStatus({ caseId, leadNo, leadName, initialStatus }) {
 
   const { data: status = initialStatus || 'Pending', isFetching } = useQuery({
     queryKey: key,
+    enabled: !!(caseId && leadNo && leadName),
     queryFn: async () => {
       const { data } = await api.get(
         `/api/lead/status/${leadNo}/${encodeURIComponent(leadName)}/${caseId}`

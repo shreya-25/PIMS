@@ -101,7 +101,8 @@ export const LREvidence = () => {
   const location = useLocation();
 
   // ── Context ─────────────────────────────────────────────────────────────────
-  const { selectedCase, selectedLead, leadStatus } = useContext(CaseContext);
+  const { selectedCase, selectedLead, leadStatus, setSelectedCase, setSelectedLead } = useContext(CaseContext);
+  const { caseDetails, leadDetails } = location.state || {};
 
   // ── Permission flags ────────────────────────────────────────────────────────
   const isCaseManager =
@@ -110,9 +111,9 @@ export const LREvidence = () => {
 
   // ── Lead status hook (read-only gate) ───────────────────────────────────────
   const { status, isReadOnly } = useLeadStatus({
-    caseId:   selectedCase._id || selectedCase.id,
-    leadNo:   selectedLead.leadNo,
-    leadName: selectedLead.leadName,
+    caseId:        selectedCase?._id || selectedCase?.id,
+    leadNo:        selectedLead?.leadNo,
+    leadName:      selectedLead?.leadName,
     initialStatus: selectedLead?.leadStatus,
   });
 
@@ -196,6 +197,14 @@ export const LREvidence = () => {
   useEffect(() => {
     sessionStorage.setItem(listKey, JSON.stringify(evidences));
   }, [listKey, evidences]);
+
+  // ── Sync context from router state (covers fresh-session tab navigation) ────
+  useEffect(() => {
+    if (caseDetails && leadDetails) {
+      setSelectedCase(caseDetails);
+      setSelectedLead(leadDetails);
+    }
+  }, [caseDetails, leadDetails]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── API: Fetch narrative IDs for the dropdown ───────────────────────────────
   useEffect(() => {
@@ -614,7 +623,7 @@ export const LREvidence = () => {
                   key={path}
                   className={`${styles.menuItem}${active ? ` ${styles.menuItemActive}` : ""}`}
                   style={{ fontWeight: active ? "600" : "400" }}
-                  onClick={() => navigate(path)}
+                  onClick={() => navigate(path, { state: { caseDetails: selectedCase, leadDetails: selectedLead } })}
                 >
                   {label}
                 </span>

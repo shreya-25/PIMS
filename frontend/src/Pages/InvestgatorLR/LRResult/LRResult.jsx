@@ -743,7 +743,7 @@ export const LRResult = () => {
                 <span
                   key={route}
                   className={`${styles.menuItem} ${active ? styles.menuItemActive : styles.menuItemInactive}`}
-                  onClick={() => navigate(route)}
+                  onClick={() => navigate(route, { state: { caseDetails: effectiveCase, leadDetails: effectiveLead } })}
                 >
                   {label}
                 </span>

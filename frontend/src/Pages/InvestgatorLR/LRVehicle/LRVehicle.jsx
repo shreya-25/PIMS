@@ -711,7 +711,7 @@ export const LRVehicle = () => {
                   key={route}
                   className={`${styles.menuItem}${active ? ` ${styles.menuItemActive}` : ''}`}
                   style={{ fontWeight: active ? '600' : '400' }}
-                  onClick={() => navigate(route)}
+                  onClick={() => navigate(route, { state: { caseDetails: selectedCase, leadDetails: selectedLead } })}
                 >
                   {label}
                 </span>

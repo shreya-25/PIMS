@@ -256,7 +256,15 @@ const getLeadsByCase = async (req, res) => {
             caseId,
         };
         const leads = await Lead.find(query).lean();
-        res.status(200).json(leads);
+        // Normalise fields that may be absent from documents created before schema migrations
+        const normalised = leads.map(l => ({
+          ...l,
+          incidentNo:              l.incidentNo              ?? null,
+          parentLeadNo:            l.parentLeadNo            ?? null,
+          subCategory:             l.subCategory             ?? null,
+          associatedSubCategories: l.associatedSubCategories ?? [],
+        }));
+        res.status(200).json(normalised);
     } catch (err) {
         console.error("Error fetching leads by case:", err.message);
         res.status(500).json({ message: "Something went wrong" });
@@ -971,10 +979,12 @@ const removeAssignedOfficer = async (req, res) => {
 
 const getLeadStatus = async (req, res) => {
   try {
-    const { leadNo, leadName, caseId } = req.params;
+    const { leadNo } = req.params;
+    const leadName = decodeURIComponent(req.params.leadName);
+    const caseId = await resolveCaseId(req.params.caseId);
 
     const lead = await Lead.findOne({
-      leadNo:   Number(leadNo),
+      leadNo:      Number(leadNo),
       description: leadName,
       caseId,
     });
