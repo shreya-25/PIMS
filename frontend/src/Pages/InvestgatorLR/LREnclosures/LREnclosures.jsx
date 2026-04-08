@@ -334,8 +334,20 @@ export const LREnclosures = () => {
   //   editIndex,
   // ]);
   useEffect(() => {
-  const { leadNo, leadName } = selectedLead || {};
-  const caseId = selectedCase?._id || selectedCase?.id;
+  const leadNo =
+    selectedLead?.leadNo ?? leadDetails?.leadNo;
+
+  const leadName =
+    selectedLead?.leadName ??
+    selectedLead?.description ??
+    leadDetails?.leadName ??
+    leadDetails?.description;
+
+  const caseId =
+    selectedCase?._id ||
+    selectedCase?.id ||
+    caseDetails?._id ||
+    caseDetails?.id;
 
   if (!leadNo || !leadName || !caseId) return;
 
@@ -344,7 +356,8 @@ export const LREnclosures = () => {
   (async () => {
     try {
       const token = localStorage.getItem('token');
-      const { data } = await api.get(
+
+      const response = await api.get(
         `/api/leadReturnResult/${leadNo}/${encodeURIComponent(leadName)}/${caseId}`,
         {
           signal: controller.signal,
@@ -352,7 +365,13 @@ export const LREnclosures = () => {
         }
       );
 
-      const ids = [...new Set((data || []).map((r) => r?.leadReturnId).filter(Boolean))];
+      const rows = Array.isArray(response.data)
+        ? response.data
+        : Array.isArray(response.data?.data)
+          ? response.data.data
+          : [];
+
+      const ids = [...new Set(rows.map((r) => r?.leadReturnId).filter(Boolean))];
       ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
       setNarrativeIds(ids);
 
@@ -372,8 +391,14 @@ export const LREnclosures = () => {
 }, [
   selectedLead?.leadNo,
   selectedLead?.leadName,
+  selectedLead?.description,
+  leadDetails?.leadNo,
+  leadDetails?.leadName,
+  leadDetails?.description,
   selectedCase?._id,
   selectedCase?.id,
+  caseDetails?._id,
+  caseDetails?.id,
   editIndex,
 ]);
   /** Fetches enclosure records whenever the selected lead or case changes. */
@@ -383,37 +408,86 @@ export const LREnclosures = () => {
     }
   }, [selectedLead, selectedCase]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // const fetchEnclosures = async () => {
+  //   const token    = localStorage.getItem('token');
+  //   const leadNo   = selectedLead.leadNo;
+  //   const leadName = encodeURIComponent(selectedLead.leadName);
+  //   const caseNo   = selectedCase._id || selectedCase.id;
+  //   const caseName = caseNo; // unused below, keeping for compat
+
+  //   try {
+  //     const { data } = await api.get(
+  //       `/api/lrenclosure/${leadNo}/${leadName}/${caseNo}`,
+  //       { headers: { Authorization: `Bearer ${token}` } }
+  //     );
+
+  //     const mapped = data.map((enc) => ({
+  //       dateEntered:  formatDate(enc.enteredDate),
+  //       type:         enc.type,
+  //       enclosure:    enc.enclosureDescription,
+  //       returnId:     enc.leadReturnId,
+  //       originalName: enc.originalName,
+  //       filename:     enc.filename,
+  //       link:         enc.link || '',
+  //       signedUrl:    enc.signedUrl || '',
+  //       accessLevel:  enc.accessLevel ?? 'Everyone',
+  //       enteredBy:    enc.enteredBy,
+  //     }));
+
+  //     setEnclosures(filterByAccessLevel(mapped, isCaseManager, leadData));
+  //   } catch (err) {
+  //     console.error('Error fetching enclosures:', err);
+  //   }
+  // };
+
   const fetchEnclosures = async () => {
-    const token    = localStorage.getItem('token');
-    const leadNo   = selectedLead.leadNo;
-    const leadName = encodeURIComponent(selectedLead.leadName);
-    const caseNo   = selectedCase._id || selectedCase.id;
-    const caseName = caseNo; // unused below, keeping for compat
+  const token = localStorage.getItem('token');
+  const leadNo = selectedLead?.leadNo ?? leadDetails?.leadNo;
+  const leadName = encodeURIComponent(
+    selectedLead?.leadName ??
+    selectedLead?.description ??
+    leadDetails?.leadName ??
+    leadDetails?.description ??
+    ''
+  );
+  const caseId =
+    selectedCase?._id ||
+    selectedCase?.id ||
+    caseDetails?._id ||
+    caseDetails?.id;
 
-    try {
-      const { data } = await api.get(
-        `/api/lrenclosure/${leadNo}/${leadName}/${caseNo}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+  if (!leadNo || !leadName || !caseId) return;
 
-      const mapped = data.map((enc) => ({
-        dateEntered:  formatDate(enc.enteredDate),
-        type:         enc.type,
-        enclosure:    enc.enclosureDescription,
-        returnId:     enc.leadReturnId,
-        originalName: enc.originalName,
-        filename:     enc.filename,
-        link:         enc.link || '',
-        signedUrl:    enc.signedUrl || '',
-        accessLevel:  enc.accessLevel ?? 'Everyone',
-        enteredBy:    enc.enteredBy,
-      }));
+  try {
+    const response = await api.get(
+      `/api/lrenclosure/${leadNo}/${leadName}/${caseId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-      setEnclosures(filterByAccessLevel(mapped, isCaseManager, leadData));
-    } catch (err) {
-      console.error('Error fetching enclosures:', err);
-    }
-  };
+    const rows = Array.isArray(response.data)
+      ? response.data
+      : Array.isArray(response.data?.data)
+        ? response.data.data
+        : [];
+
+    const mapped = rows.map((enc) => ({
+      dateEntered:  formatDate(enc.enteredDate),
+      type:         enc.type,
+      enclosure:    enc.enclosureDescription,
+      returnId:     enc.leadReturnId,
+      originalName: enc.originalName,
+      filename:     enc.filename,
+      link:         enc.link || '',
+      signedUrl:    enc.signedUrl || '',
+      accessLevel:  enc.accessLevel ?? 'Everyone',
+      enteredBy:    enc.enteredBy,
+    }));
+
+    setEnclosures(filterByAccessLevel(mapped, isCaseManager, leadData));
+  } catch (err) {
+    console.error('Error fetching enclosures:', err);
+  }
+};
 
   // ── Form handlers ─────────────────────────────────────────────────────────
 
