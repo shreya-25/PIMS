@@ -503,14 +503,16 @@ export const LRInstruction = () => {
       const kaseId = kase?._id || kase?.id;
       const leadName = lead?.leadName || lead?.description;
 
+      console.log('[LRInstruction] fetch guard check:', { leadNo: lead?.leadNo, leadName, kaseId, selectedLead, selectedCase, caseDetails, leadDetails });
+
       if (!lead?.leadNo || !leadName || !kaseId) return;
 
       try {
         const token    = localStorage.getItem('token');
-        const response = await api.get(
-          `/api/lead/lead/${lead.leadNo}/${encodeURIComponent(leadName)}/${kaseId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const url = `/api/lead/lead/${lead.leadNo}/${encodeURIComponent(leadName)}/${kaseId}`;
+        console.log('[LRInstruction] fetching:', url);
+        const response = await api.get(url, { headers: { Authorization: `Bearer ${token}` } });
+        console.log('[LRInstruction] response:', response.data);
 
         if (response.data.length > 0) {
           const instruction = response.data[0];
