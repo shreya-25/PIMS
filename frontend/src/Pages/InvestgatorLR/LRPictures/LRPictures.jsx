@@ -95,6 +95,7 @@ export const LRPictures = () => {
   const isCaseManager =
     selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
   const signedInOfficer = localStorage.getItem("loggedInUser");
+  const signedInUserId  = localStorage.getItem("userId");
 
   // ── Lead status hook (read-only gate) ───────────────────────────────────────
   const { status, isReadOnly } = useLeadStatus({
@@ -148,11 +149,14 @@ export const LRPictures = () => {
   });
 
   // ── Primary investigator check ──────────────────────────────────────────────
+  const primaryInvestigatorUserId = leadData?.primaryInvestigatorUserId || "";
   const primaryUsername = leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
   const isPrimaryInvestigator =
     selectedCase?.role === "Investigator" &&
-    !!signedInOfficer &&
-    signedInOfficer === primaryUsername;
+    !!signedInUserId &&
+    (primaryInvestigatorUserId
+      ? signedInUserId === String(primaryInvestigatorUserId)
+      : signedInOfficer === primaryUsername);
 
   // ── Derived: is the form / table locked from edits? ────────────────────────
   const isLeadLocked =
@@ -293,6 +297,7 @@ export const LRPictures = () => {
         accessLevel:         pic.accessLevel ?? "Everyone",
         pictureId:           pic._id,
         enteredBy:           pic.enteredBy,
+        enteredByUserId:     pic.enteredByUserId ? String(pic.enteredByUserId) : null,
       }));
 
       setPictures(mapped);
@@ -414,6 +419,7 @@ export const LRPictures = () => {
     fd.append("leadNo",           selectedLead.leadNo);
     fd.append("description",      selectedLead.leadName);
     fd.append("enteredBy",        localStorage.getItem("loggedInUser"));
+    fd.append("enteredByUserId",  localStorage.getItem("userId"));
     fd.append("caseName",         selectedCase.caseName);
     fd.append("caseNo",           selectedCase.caseNo);
     fd.append("leadReturnId",     pictureData.leadReturnId || "");
@@ -472,6 +478,7 @@ export const LRPictures = () => {
     fd.append("datePictureTaken", pictureData.datePictureTaken);
     fd.append("pictureDescription", pictureData.description);
     fd.append("enteredBy",        localStorage.getItem("loggedInUser"));
+    fd.append("enteredByUserId",  localStorage.getItem("userId"));
     fd.append("accessLevel",      pictureData.accessLevel || pic.accessLevel || "Everyone");
     fd.append("isLink",           String(!!pictureData.isLink));
     if (pictureData.isLink) fd.append("link", pictureData.link.trim());
@@ -553,6 +560,7 @@ export const LRPictures = () => {
     fd.append("datePictureTaken", picture.rawDatePictureTaken);
     fd.append("pictureDescription", picture.description);
     fd.append("enteredBy",        localStorage.getItem("loggedInUser"));
+    fd.append("enteredByUserId",  localStorage.getItem("userId"));
     fd.append("accessLevel",      newAccessLevel);
 
     try {
@@ -788,7 +796,9 @@ export const LRPictures = () => {
                   <tbody>
                     {pictures.length > 0 ? (
                       pictures.map((picture, index) => {
-                        const canModify = isCaseManager || picture.enteredBy?.trim() === signedInOfficer?.trim();
+                        const canModify = isCaseManager || (picture.enteredByUserId && signedInUserId
+                          ? picture.enteredByUserId === signedInUserId
+                          : picture.enteredBy?.trim() === signedInOfficer?.trim());
                         return (
                         <tr key={index}>
                           <td>{picture.returnId}</td>

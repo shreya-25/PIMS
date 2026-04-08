@@ -215,11 +215,15 @@ useEffect(() => {
 
   // ─── Derived investigator-role values ───────────────────────────────────────
   const signedInOfficer  = localStorage.getItem('loggedInUser');
+  const signedInUserId   = localStorage.getItem('userId');
+  const primaryInvestigatorUserId = leadData?.primaryInvestigatorUserId || '';
   const primaryUsername  = leadData?.primaryInvestigator || leadData?.primaryOfficer || '';
   const isPrimaryInvestigator =
     selectedCase?.role === 'Investigator' &&
-    !!signedInOfficer &&
-    signedInOfficer === primaryUsername;
+    !!signedInUserId &&
+    (primaryInvestigatorUserId
+      ? signedInUserId === String(primaryInvestigatorUserId)
+      : signedInOfficer === primaryUsername);
 
   const nextReturnId    = numberToAlphabet(maxReturnId + 1);
   const displayReturnId = editMode ? returnData.leadReturnId : nextReturnId;
@@ -486,19 +490,22 @@ useEffect(() => {
         // Non-managers only see entries they are assigned to or that are open to all
         let visible = withDefaults;
         if (!isCaseManager) {
+          const currentUserId = localStorage.getItem('userId');
           const currentUser   = localStorage.getItem('loggedInUser')?.trim();
-          const leadAssignees = (leadData?.assignedTo || []).map((a) =>
-            typeof a === 'string' ? a.trim() : String(a ?? '').trim()
-          );
+          const leadAssigneeUserIds = (leadData?.assignedTo || [])
+            .map(a => (typeof a === 'object' && a !== null ? String(a.userId || '') : ''))
+            .filter(Boolean);
+          const leadAssigneeUsernames = (leadData?.assignedTo || [])
+            .map(a => (typeof a === 'object' && a !== null ? (a.username || '') : String(a ?? '')).trim());
 
           visible = withDefaults.filter((r) => {
             if (r.accessLevel === 'Everyone') return true;
             if (r.accessLevel === 'Case Manager and Assignees') {
               const returnAssignees = (r.assignedTo?.assignees || []).map((a) => a?.trim());
-              return (
-                leadAssignees.some((a) => a === currentUser) ||
-                returnAssignees.some((a) => a === currentUser)
-              );
+              const inLeadAssignees = currentUserId
+                ? leadAssigneeUserIds.includes(currentUserId)
+                : leadAssigneeUsernames.some(a => a === currentUser);
+              return inLeadAssignees || returnAssignees.some(a => a === currentUser);
             }
             return false; // 'Case Manager' only — hidden from investigators
           });
@@ -650,6 +657,7 @@ useEffect(() => {
           caseName:         selectedCase.caseName,
           enteredDate:      new Date(),
           enteredBy:        officer,
+          enteredByUserId:  localStorage.getItem('userId'),
           assignedTo:       { assignees: [officer], lRStatus: 'Pending' },
           assignedBy:       { assignee: officer,    lRStatus: 'Pending' },
           leadReturnResult: returnData.results,

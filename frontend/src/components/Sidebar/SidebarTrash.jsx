@@ -31,6 +31,7 @@ const leadActivePages     = new Set(["LeadReview", "LeadInformation"]); // which
   } = leads;
 
   const signedInOfficer = localStorage.getItem("loggedInUser");
+  const signedInUserId  = localStorage.getItem("userId");
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [caseList, setCaseList] = useState(initialCases);
@@ -123,7 +124,7 @@ const leadCountByCase = useMemo(() => {
     return groupCountByCase(allLeads, "In Review");
   }
   if (Array.isArray(pendingLeadReturns) && pendingLeadReturns.length) {
-    // many apps mark “pending returns” == “In Review”; if your backend differs, adjust the statusKey
+    // many apps mark "pending returns" == "In Review"; if your backend differs, adjust the statusKey
     return groupCountByCase(pendingLeadReturns, "In Review");
   }
 
@@ -213,7 +214,11 @@ const leadCountByCase = useMemo(() => {
             (l) =>
               caseNos.has(l.caseNo) &&
               l.leadStatus === "Assigned" &&
-              l.assignedTo.some((a) => a.username === signedInOfficer)
+              l.assignedTo.some((a) =>
+                signedInUserId && a.userId
+                  ? String(a.userId) === signedInUserId
+                  : a.username === signedInOfficer
+              )
           )
           .map((l) => ({
             id: l.leadNo,

@@ -305,11 +305,15 @@ export const LRInstruction = () => {
   // ---------------------------------------------------------------------------
 
   const signedInOfficer = localStorage.getItem('loggedInUser');
+  const signedInUserId  = localStorage.getItem('userId');
+  const primaryInvestigatorUserId = leadData?.primaryInvestigatorUserId || '';
   const primaryUsername = leadData?.primaryInvestigator || leadData?.primaryOfficer || '';
   const isPrimaryInvestigator =
     selectedCase?.role === 'Investigator' &&
-    !!signedInOfficer &&
-    signedInOfficer === primaryUsername;
+    !!signedInUserId &&
+    (primaryInvestigatorUserId
+      ? signedInUserId === String(primaryInvestigatorUserId)
+      : signedInOfficer === primaryUsername);
 
   // ---------------------------------------------------------------------------
   // Alert helper

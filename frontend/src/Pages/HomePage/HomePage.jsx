@@ -36,6 +36,7 @@ export const HomePage = () => {
 
   const { setSelectedCase, setSelectedLead } = useContext(CaseContext);
   const signedInOfficer = localStorage.getItem("loggedInUser");
+  const signedInUserId  = localStorage.getItem("userId");
   const navigate = useNavigate();
 
   const [cases, setCases] = useState([]);
@@ -57,29 +58,23 @@ export const HomePage = () => {
   };
 
   // Map a raw API case to the shape used in UI, resolving the officer's role
-  const mapCaseForOfficer = (c, officerName) => {
+  const mapCaseForOfficer = (c, officerName, officerUserId) => {
     const name = officerName?.toLowerCase?.() ?? "";
+    const uid  = officerUserId ?? "";
+
+    const matchUser = (u) =>
+      u &&
+      (uid
+        ? String(u._id || u.id || "") === uid
+        : u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name);
+
     let role = "";
 
-    if (
-      c.detectiveSupervisorUserId &&
-      (c.detectiveSupervisorUserId.username?.toLowerCase() === name ||
-        c.detectiveSupervisorUserId.displayName?.toLowerCase() === name)
-    ) {
+    if (c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId)) {
       role = "Detective Supervisor";
-    } else if (
-      Array.isArray(c.caseManagerUserIds) &&
-      c.caseManagerUserIds.some(
-        (u) => u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name
-      )
-    ) {
+    } else if (Array.isArray(c.caseManagerUserIds) && c.caseManagerUserIds.some(matchUser)) {
       role = "Case Manager";
-    } else if (
-      Array.isArray(c.investigatorUserIds) &&
-      c.investigatorUserIds.some(
-        (u) => u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name
-      )
-    ) {
+    } else if (Array.isArray(c.investigatorUserIds) && c.investigatorUserIds.some(matchUser)) {
       role = "Investigator";
     }
 
@@ -117,27 +112,23 @@ export const HomePage = () => {
         if (cancelled) return;
 
         const name = signedInOfficer?.toLowerCase?.() ?? "";
+        const uid  = signedInUserId ?? "";
+        const matchUser = (u) =>
+          u &&
+          (uid
+            ? String(u._id || u.id || "") === uid
+            : u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name);
+
         const assignedCases = response.data
           .filter((c) => {
             if (c.status !== "ONGOING") return false;
-            const isDS =
-              c.detectiveSupervisorUserId &&
-              (c.detectiveSupervisorUserId.username?.toLowerCase() === name ||
-                c.detectiveSupervisorUserId.displayName?.toLowerCase() === name);
-            const isCM =
-              Array.isArray(c.caseManagerUserIds) &&
-              c.caseManagerUserIds.some(
-                (u) => u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name
-              );
-            const isInv =
-              Array.isArray(c.investigatorUserIds) &&
-              c.investigatorUserIds.some(
-                (u) => u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name
-              );
+            const isDS = c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId);
+            const isCM = Array.isArray(c.caseManagerUserIds) && c.caseManagerUserIds.some(matchUser);
+            const isInv = Array.isArray(c.investigatorUserIds) && c.investigatorUserIds.some(matchUser);
             return isDS || isCM || isInv;
           })
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-          .map((c) => mapCaseForOfficer(c, signedInOfficer));
+          .map((c) => mapCaseForOfficer(c, signedInOfficer, signedInUserId));
 
         setCases(assignedCases);
       } catch (error) {
@@ -230,7 +221,11 @@ export const HomePage = () => {
           .filter(
             (lead) =>
               Array.isArray(lead.assignedTo) &&
-              lead.assignedTo.some((o) => o.username === signedInOfficer) &&
+              lead.assignedTo.some((o) =>
+                signedInUserId && o.userId
+                  ? String(o.userId) === signedInUserId
+                  : o.username === signedInOfficer
+              ) &&
               ongoingCases.some((c) => c.caseNo === lead.caseNo)
           )
           .map((lead) => ({
@@ -411,17 +406,17 @@ export const HomePage = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const isSupervisor =
-        data.detectiveSupervisor === signedInOfficer ||
-        data.detectiveSupervisor?.username === signedInOfficer;
+      const matchByIdOrName = (u) =>
+        u && (signedInUserId && (u._id || u.id || u.userId)
+          ? String(u._id || u.id || u.userId) === signedInUserId
+          : (u.username === signedInOfficer || u === signedInOfficer));
+
+      const isSupervisor = matchByIdOrName(data.detectiveSupervisor) ||
+        data.detectiveSupervisor === signedInOfficer;
       const isCM =
-        Array.isArray(data.caseManagers) &&
-        (data.caseManagers.includes?.(signedInOfficer) ||
-          data.caseManagers.some?.((u) => u?.username === signedInOfficer));
+        Array.isArray(data.caseManagers) && data.caseManagers.some(matchByIdOrName);
       const isInv =
-        Array.isArray(data.investigators) &&
-        (data.investigators.includes?.(signedInOfficer) ||
-          data.investigators.some?.((u) => u?.username === signedInOfficer));
+        Array.isArray(data.investigators) && data.investigators.some(matchByIdOrName);
 
       if (isSupervisor) role = "Detective Supervisor";
       else if (isCM) role = "Case Manager";

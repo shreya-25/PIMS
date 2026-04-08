@@ -31,6 +31,7 @@ export const CasePageManager = () => {
 
   const isSupervisor = selectedCase?.role === "Detective Supervisor";
   const signedInOfficer = localStorage.getItem("loggedInUser");
+  const signedInUserId  = localStorage.getItem("userId");
 
   // ─── Constants ────────────────────────────────────────────────────────────
   const RIGHT_ALIGN_COL = "Lead No.";
@@ -290,11 +291,14 @@ export const CasePageManager = () => {
         // Apply access-level filter; supervisors see all leads
         const filteredLeadsArray = leadsArray.filter((lead) => {
           if (isSupervisor) return true;
-          if (
-            lead.accessLevel === "Only Case Manager and Assignees" &&
-            !lead.assignedTo?.some(a => a.username === signedInOfficer) &&
-            lead.assignedBy !== signedInOfficer
-          ) return false;
+          if (lead.accessLevel === "Only Case Manager and Assignees") {
+            const isAssignee = lead.assignedTo?.some(a =>
+              signedInUserId && a.userId
+                ? String(a.userId) === signedInUserId
+                : a.username === signedInOfficer
+            );
+            if (!isAssignee && lead.assignedBy !== signedInOfficer) return false;
+          }
           return true;
         });
 

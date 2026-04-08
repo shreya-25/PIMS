@@ -97,12 +97,19 @@ const getMissingFields = ({ enclosureData, file, editIndex }) => {
  */
 const filterByAccessLevel = (records, isCaseManager, leadData) => {
   if (isCaseManager) return records;
-  const currentUser    = localStorage.getItem('loggedInUser')?.trim();
-  const leadAssignees  = (leadData?.assignedTo || []).map((a) => a?.trim());
+  const currentUserId = localStorage.getItem('userId');
+  const currentUser   = localStorage.getItem('loggedInUser')?.trim();
+  const leadAssigneeUserIds = (leadData?.assignedTo || [])
+    .map(a => (typeof a === 'object' && a !== null ? String(a.userId || '') : ''))
+    .filter(Boolean);
+  const leadAssigneeUsernames = (leadData?.assignedTo || [])
+    .map(a => (typeof a === 'object' && a !== null ? (a.username || '') : String(a ?? '')).trim());
   return records.filter((enc) => {
     if (enc.accessLevel === 'Everyone') return true;
     if (enc.accessLevel === 'Case Manager and Assignees') {
-      return leadAssignees.some((a) => a === currentUser);
+      return currentUserId
+        ? leadAssigneeUserIds.includes(currentUserId)
+        : leadAssigneeUsernames.some(a => a === currentUser);
     }
     return false;
   });
@@ -193,11 +200,15 @@ export const LREnclosures = () => {
 
   // Derived permissions
   const signedInOfficer  = localStorage.getItem('loggedInUser');
+  const signedInUserId   = localStorage.getItem('userId');
+  const primaryInvestigatorUserId = leadData?.primaryInvestigatorUserId || '';
   const primaryUsername  = leadData?.primaryInvestigator || leadData?.primaryOfficer || '';
   const isPrimaryInvestigator =
     selectedCase?.role === 'Investigator' &&
-    !!signedInOfficer &&
-    signedInOfficer === primaryUsername;
+    !!signedInUserId &&
+    (primaryInvestigatorUserId
+      ? signedInUserId === String(primaryInvestigatorUserId)
+      : signedInOfficer === primaryUsername);
 
   const isLeadReadOnly = READONLY_STATUSES.includes(selectedLead?.leadStatus) || isReadOnly;
 
@@ -364,7 +375,8 @@ export const LREnclosures = () => {
         link:         enc.link || '',
         signedUrl:    enc.signedUrl || '',
         accessLevel:  enc.accessLevel ?? 'Everyone',
-        enteredBy:    enc.enteredBy,
+        enteredBy:        enc.enteredBy,
+        enteredByUserId:  enc.enteredByUserId ? String(enc.enteredByUserId) : null,
       }));
 
       setEnclosures(filterByAccessLevel(mapped, isCaseManager, leadData));
@@ -407,6 +419,7 @@ export const LREnclosures = () => {
     fd.append('leadNo',              selectedLead.leadNo);
     fd.append('description',         selectedLead.leadName);
     fd.append('enteredBy',           localStorage.getItem('loggedInUser'));
+    fd.append('enteredByUserId',     localStorage.getItem('userId'));
     fd.append('caseName',            selectedCase.caseName);
     fd.append('caseNo',              selectedCase.caseNo);
     fd.append('leadReturnId',        enclosureData.returnId);
@@ -440,7 +453,8 @@ export const LREnclosures = () => {
             filename:     '',
             signedUrl:    '',
             accessLevel:  enclosureData.accessLevel || 'Everyone',
-            enteredBy:    localStorage.getItem('loggedInUser'),
+            enteredBy:        localStorage.getItem('loggedInUser'),
+            enteredByUserId:  localStorage.getItem('userId'),
           },
         ]);
       } else {
@@ -893,7 +907,9 @@ export const LREnclosures = () => {
                   <tbody>
                     {enclosures.length > 0 ? (
                       enclosures.map((enclosure, index) => {
-                        const canModify = isCaseManager || enclosure.enteredBy?.trim() === signedInOfficer?.trim();
+                        const canModify = isCaseManager || (enclosure.enteredByUserId && signedInUserId
+                          ? enclosure.enteredByUserId === signedInUserId
+                          : enclosure.enteredBy?.trim() === signedInOfficer?.trim());
                         return (
                         <tr key={index}>
                           <td>{enclosure.returnId}</td>

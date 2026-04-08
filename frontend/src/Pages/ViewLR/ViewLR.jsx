@@ -144,6 +144,12 @@ const canShowSubmit      = !isClosedOrCompleted && !isInReview && (
 
   const handleManageLeadReturn = async () => {
     if (isGenerating) return;
+    // Guard: don't generate if lead data failed to load (backend was down or data missing)
+    if (!instructions || !instructions.leadNo) {
+      setAlertMessage("Lead data has not loaded yet. Please wait a moment and try again, or refresh the page.");
+      setAlertOpen(true);
+      return;
+    }
     try {
       setIsGenerating(true);
       const token = localStorage.getItem("token");
@@ -245,8 +251,9 @@ const canShowSubmit      = !isClosedOrCompleted && !isInReview && (
           api.get(`/api/timeline/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
         ]);
 
-        const leadDoc = instrRes.data?.[0] || {}; setInstructions(leadDoc);
- setLeadData(leadDoc);
+        const leadDoc = instrRes.data?.[0] || {};
+        setInstructions(leadDoc);
+        setLeadData(leadDoc);
         setReturns(returnsRes.data || []);
         setPersons(personsRes.data || []);
         setVehicles(vehiclesRes.data || []);
@@ -264,7 +271,7 @@ const canShowSubmit      = !isClosedOrCompleted && !isInReview && (
     loadAll();
   }, [selectedCase?._id, selectedCase?.id, leadNo, leadName]);
 
-  // Group helpers — we’ll try common keys: narrativeId, returnId, lrId, or fall back to _id
+  // Group helpers — we'll try common keys: narrativeId, returnId, lrId, or fall back to _id
   const keyFor = (obj) =>
     obj.narrativeId || obj.returnId || obj.lrId || obj.leadReturnId || obj._id;
 
@@ -375,6 +382,7 @@ const actuallyDoSubmitReport = async () => {
            setAlertMessage("Lead Return submitted!");
       setAlertOpen(true);
         const manager    = leadData.assignedBy;                  // string username
+        const managerUserId = leadData.assignedByUserId || undefined;
         const investigators = normalizeAssignees(leadData.assignedTo);
         if (manager) {
           const payload = {
@@ -382,6 +390,7 @@ const actuallyDoSubmitReport = async () => {
             assignedBy:     localStorage.getItem("loggedInUser"),
             assignedTo: [{
               username: manager,
+              userId:   managerUserId,
               role:     "Case Manager",
               status:   "pending",
               unread:   true
@@ -902,7 +911,7 @@ const actuallyDoSubmitReport = async () => {
                                 </thead>
                                 <tbody>
                                 {grouped.evidence.map((e) => {
-                                    // decide what to show as the “file” cell
+                                    // decide what to show as the "file" cell
                                     const fileCell = e.isLink
                                     ? (e.link ? <a href={e.link} target="_blank" rel="noreferrer">Open link</a> : "—")
                                     : (e.originalName || e.filename || e.filePath || "—");

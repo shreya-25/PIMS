@@ -236,6 +236,7 @@ export default function Comment({ tag }) {
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState([]);
   const enteredBy = localStorage.getItem("loggedInUser") || "Unknown";
+  const currentUserId = localStorage.getItem("userId");
 
   // --- Edit state ---
   const [editingId, setEditingId] = useState(null);
@@ -285,6 +286,7 @@ export default function Comment({ tag }) {
         description: selectedLead.leadName,
         tag,
         enteredBy,
+        enteredByUserId: currentUserId,
         enteredDate: new Date(),
         comment: commentText,
       };
@@ -349,7 +351,9 @@ export default function Comment({ tag }) {
                   {new Date(c.enteredDate).toLocaleString()}
                 </p>
                 {/* show edit icon only on your own comments */}
-                {c.enteredBy === enteredBy && editingId !== c._id && (
+                {(c.enteredByUserId && currentUserId
+                  ? c.enteredByUserId === currentUserId
+                  : c.enteredBy === enteredBy) && editingId !== c._id && (
                   <img
                     src={`${process.env.PUBLIC_URL}/Materials/edit.png`}
                     alt="Edit"

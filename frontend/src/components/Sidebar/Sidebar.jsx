@@ -25,6 +25,7 @@ export const SideBar = ({
   );
 
   const signedInOfficer = localStorage.getItem("loggedInUser");
+  const signedInUserId  = localStorage.getItem("userId");
   const signedInRole = selectedCase?.role;
   const systemRole = localStorage.getItem("role");
 
@@ -113,7 +114,11 @@ export const SideBar = ({
             (l) =>
               caseIds.has(String(l.caseId)) &&
               l.leadStatus === "Assigned" &&
-              l.assignedTo?.some((a) => a.username === signedInOfficer)
+              l.assignedTo?.some((a) =>
+                signedInUserId && a.userId
+                  ? String(a.userId) === signedInUserId
+                  : a.username === signedInOfficer
+              )
           )
           .map((l) => ({
             id: l.leadNo,
@@ -171,7 +176,11 @@ export const SideBar = ({
                 const assignedCount = arr.filter(
                   (l) =>
                     l.leadStatus === "Assigned" &&
-                    l.assignedTo?.some((a) => a.username === signedInOfficer)
+                    l.assignedTo?.some((a) =>
+                      signedInUserId && a.userId
+                        ? String(a.userId) === signedInUserId
+                        : a.username === signedInOfficer
+                    )
                 ).length;
                 return [String(c._id), assignedCount];
               }

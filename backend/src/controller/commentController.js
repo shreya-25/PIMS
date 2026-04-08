@@ -12,11 +12,18 @@ const createComment = async (req, res) => {
       assignedTo,
       assignedBy,
       enteredBy,
+      enteredByUserId,
       caseId,
       enteredDate,
       tag,
       comment: commentText
     } = req.body;
+
+    // Resolve enteredByUserId from JWT token (most reliable), then request body, then username lookup
+    const resolvedEnteredByUserId =
+      req.user?.userId ||
+      enteredByUserId ||
+      null;
 
     const newComment = new Comment({
       leadNo,
@@ -24,6 +31,7 @@ const createComment = async (req, res) => {
       assignedTo,
       assignedBy,
       enteredBy,
+      enteredByUserId: resolvedEnteredByUserId,
       caseId: caseId || null,
       enteredDate,
       tag,

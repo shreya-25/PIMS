@@ -243,6 +243,7 @@ export const LRPerson1 = () => {
   const [narrativeIds, setNarrativeIds] = useState([]);
   const [leadData, setLeadData]         = useState({});
   const [username, setUsername]         = useState('');
+  const [userId, setUserId]             = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [alertOpen, setAlertOpen]       = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
@@ -252,6 +253,8 @@ export const LRPerson1 = () => {
   useEffect(() => {
     const loggedInUser = localStorage.getItem('loggedInUser');
     if (loggedInUser) setUsername(loggedInUser);
+    const loggedInUserId = localStorage.getItem('userId');
+    if (loggedInUserId) setUserId(loggedInUserId);
   }, []);
 
   // ── Persist form data to sessionStorage on every change (add mode only) ──
@@ -347,9 +350,15 @@ export const LRPerson1 = () => {
 
   // ── Derived: primary investigator check ──────────────────────────────────
   const signedInOfficer   = localStorage.getItem('loggedInUser');
+  const signedInUserId    = localStorage.getItem('userId');
+  const primaryInvestigatorUserId = leadData?.primaryInvestigatorUserId || '';
   const primaryUsername   = leadData?.primaryInvestigator || leadData?.primaryOfficer || '';
   const isPrimaryInvestigator =
-    selectedCase?.role === 'Investigator' && !!signedInOfficer && signedInOfficer === primaryUsername;
+    selectedCase?.role === 'Investigator' &&
+    !!signedInUserId &&
+    (primaryInvestigatorUserId
+      ? signedInUserId === String(primaryInvestigatorUserId)
+      : signedInOfficer === primaryUsername);
 
   // ── Form field change handler ─────────────────────────────────────────────
   const handleChange = useCallback((field, value) => {
@@ -545,8 +554,9 @@ export const LRPerson1 = () => {
       description:   selectedLead?.leadName,
       caseNo:        selectedCase?.caseNo,
       caseName:      selectedCase?.caseName,
-      enteredBy:     username,
-      enteredDate:   formData.dateEntered,
+      enteredBy:       username,
+      enteredByUserId: userId,
+      enteredDate:     formData.dateEntered,
       leadReturnId:  formData.leadReturnId,
       lastName:      formData.lastName,
       firstName:     formData.firstName,

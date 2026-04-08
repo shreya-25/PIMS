@@ -16,37 +16,52 @@ const NotificationCard1 = ({ signedInOfficer }) => {
   const { setSelectedCase, setSelectedLead } = useContext(CaseContext);
   const navigate = useNavigate();
 
+  const signedInUserId = localStorage.getItem("userId");
+
   const downArrow = `${process.env.PUBLIC_URL}/Materials/down_arrow.png`;
   const upArrow   = `${process.env.PUBLIC_URL}/Materials/up_arrow.png`;
 
   // ── Fetch helpers ──────────────────────────────────────────────────────────
 
+  // Match current user in an assignedTo array — prefer userId, fall back to username
+  const isMyEntry = useCallback((r) =>
+    signedInUserId && r.userId
+      ? String(r.userId) === signedInUserId
+      : r.username === signedInOfficer,
+  [signedInUserId, signedInOfficer]);
+
   const fetchNewOnly = useCallback(async () => {
-    const { data } = await api.get(`/api/notifications/user/${signedInOfficer}`);
+    const url = signedInUserId
+      ? `/api/notifications/user/id/${signedInUserId}`
+      : `/api/notifications/user/${signedInOfficer}`;
+    const { data } = await api.get(url);
     return data
       .filter(n =>
         (n.type === "Case" || n.type === "Lead") &&
         n.caseStatus === "Open" &&
         n.assignedTo.some(r =>
-          r.username === signedInOfficer &&
+          isMyEntry(r) &&
           r.status === "pending" &&
           r.unread === true
         )
       )
       .sort((a, b) => new Date(b.time) - new Date(a.time));
-  }, [signedInOfficer]);
+  }, [signedInOfficer, signedInUserId, isMyEntry]);
 
   const fetchOpenOnly = useCallback(async () => {
-    const { data } = await api.get(`/api/notifications/open/user/${signedInOfficer}`);
+    const url = signedInUserId
+      ? `/api/notifications/open/user/id/${signedInUserId}`
+      : `/api/notifications/open/user/${signedInOfficer}`;
+    const { data } = await api.get(url);
     return data
       .filter(n => n.caseStatus === "Open")
       .sort((a, b) => new Date(b.time) - new Date(a.time));
-  }, [signedInOfficer]);
+  }, [signedInOfficer, signedInUserId]);
 
   // ── Polling (15 s) ─────────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!signedInOfficer) return;
+    if (!signedInOfficer && !signedInUserId) return;
 
     const poll = async () => {
       try {
@@ -65,7 +80,7 @@ const NotificationCard1 = ({ signedInOfficer }) => {
     poll();
     const id = setInterval(poll, 15000);
     return () => clearInterval(id);
-  }, [signedInOfficer, fetchNewOnly, fetchOpenOnly]);
+  }, [signedInOfficer, signedInUserId, fetchNewOnly, fetchOpenOnly]);
 
   // ── Type badge ─────────────────────────────────────────────────────────────
 
@@ -82,7 +97,7 @@ const NotificationCard1 = ({ signedInOfficer }) => {
   const n = newNotifs.find(x => x._id === _id) || openNotifs.find(x => x._id === _id);
   if (!n) return;
 
-  const myAss = n.assignedTo.find(r => r.username === signedInOfficer);
+  const myAss = n.assignedTo.find(r => isMyEntry(r));
   if (!myAss) return;
 
   setNavigating(_id);
@@ -90,6 +105,7 @@ const NotificationCard1 = ({ signedInOfficer }) => {
   try {
     if (myAss.unread !== false) {
       api.put(`/api/notifications/mark-read/${n.notificationId}`, {
+        userId: signedInUserId || undefined,
         username: signedInOfficer,
       })
         .then(() => {
@@ -100,7 +116,7 @@ const NotificationCard1 = ({ signedInOfficer }) => {
                 ? {
                     ...x,
                     assignedTo: x.assignedTo.map(r =>
-                      r.username === signedInOfficer
+                      isMyEntry(r)
                         ? { ...r, unread: false }
                         : r
                     ),
@@ -138,29 +154,24 @@ const NotificationCard1 = ({ signedInOfficer }) => {
     let resolvedRole = myAss.role;
 
     const name = signedInOfficer?.toLowerCase?.() ?? "";
+    const matchMember = (u) =>
+      (signedInUserId && (String(u._id) === signedInUserId || String(u.id) === signedInUserId || String(u.userId) === signedInUserId)) ||
+      u.username?.toLowerCase() === name ||
+      u.displayName?.toLowerCase() === name;
 
     if (
       matchedCase.detectiveSupervisorUserId &&
-      (matchedCase.detectiveSupervisorUserId.username?.toLowerCase() === name ||
-        matchedCase.detectiveSupervisorUserId.displayName?.toLowerCase() === name)
+      matchMember(matchedCase.detectiveSupervisorUserId)
     ) {
       resolvedRole = "Detective Supervisor";
     } else if (
       Array.isArray(matchedCase.caseManagerUserIds) &&
-      matchedCase.caseManagerUserIds.some(
-        u =>
-          u.username?.toLowerCase() === name ||
-          u.displayName?.toLowerCase() === name
-      )
+      matchedCase.caseManagerUserIds.some(matchMember)
     ) {
       resolvedRole = "Case Manager";
     } else if (
       Array.isArray(matchedCase.investigatorUserIds) &&
-      matchedCase.investigatorUserIds.some(
-        u =>
-          u.username?.toLowerCase() === name ||
-          u.displayName?.toLowerCase() === name
-      )
+      matchedCase.investigatorUserIds.some(matchMember)
     ) {
       resolvedRole = "Investigator";
     }
@@ -226,7 +237,7 @@ const NotificationCard1 = ({ signedInOfficer }) => {
 
   const renderCard = (n, isNew = false) => {
     const { letter, color } = getType(n);
-    const thisAss = n.assignedTo.find(r => r.username === signedInOfficer);
+    const thisAss = n.assignedTo.find(r => isMyEntry(r));
     if (!thisAss) return null;
 
     // Treat missing unread field (legacy docs) as unread=true
@@ -342,7 +353,7 @@ const NotificationCard1 = ({ signedInOfficer }) => {
           >
             {(() => {
               const filtered = openNotifs.filter(n =>
-                n.assignedTo.some(r => r.username === signedInOfficer)
+                n.assignedTo.some(r => isMyEntry(r))
               );
               const visible = collapsedAll ? filtered.slice(0, 1) : filtered;
               if (visible.length === 0) {

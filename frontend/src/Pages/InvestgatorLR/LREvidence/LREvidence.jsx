@@ -108,6 +108,7 @@ export const LREvidence = () => {
   const isCaseManager =
     selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor";
   const signedInOfficer = localStorage.getItem("loggedInUser");
+  const signedInUserId  = localStorage.getItem("userId");
 
   // ── Lead status hook (read-only gate) ───────────────────────────────────────
   const { status, isReadOnly } = useLeadStatus({
@@ -163,11 +164,14 @@ export const LREvidence = () => {
   });
 
   // ── Primary investigator check ──────────────────────────────────────────────
+  const primaryInvestigatorUserId = leadData?.primaryInvestigatorUserId || "";
   const primaryUsername = leadData?.primaryInvestigator || leadData?.primaryOfficer || "";
   const isPrimaryInvestigator =
     selectedCase?.role === "Investigator" &&
-    !!signedInOfficer &&
-    signedInOfficer === primaryUsername;
+    !!signedInUserId &&
+    (primaryInvestigatorUserId
+      ? signedInUserId === String(primaryInvestigatorUserId)
+      : signedInOfficer === primaryUsername);
 
   // ── Derived: is the form / table locked from edits? ────────────────────────
   const isLeadLocked =
@@ -307,18 +311,26 @@ export const LREvidence = () => {
         signedUrl:           enc.signedUrl || "",
         accessLevel:         enc.accessLevel ?? "Everyone",
         enteredBy:           enc.enteredBy,
+        enteredByUserId:     enc.enteredByUserId ? String(enc.enteredByUserId) : null,
       }));
 
       // Non-case-managers see only records they are permitted to view
+      const currentUserId = localStorage.getItem("userId");
       const currentUser   = localStorage.getItem("loggedInUser")?.trim();
-      const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+      const leadAssigneeUserIds = (leadData?.assignedTo || [])
+        .map(a => (typeof a === "object" && a !== null ? String(a.userId || "") : ""))
+        .filter(Boolean);
+      const leadAssigneeUsernames = (leadData?.assignedTo || [])
+        .map(a => (typeof a === "object" && a !== null ? (a.username || "") : String(a ?? "")).trim());
 
       const visible = isCaseManager
         ? mapped
         : mapped.filter(ev => {
             if (ev.accessLevel === "Everyone") return true;
             if (ev.accessLevel === "Case Manager and Assignees") {
-              return leadAssignees.some(a => a === currentUser);
+              return currentUserId
+                ? leadAssigneeUserIds.includes(currentUserId)
+                : leadAssigneeUsernames.some(a => a === currentUser);
             }
             return false; // "Case Manager" only
           });
@@ -423,6 +435,7 @@ export const LREvidence = () => {
     fd.append("leadNo",              selectedLead.leadNo);
     fd.append("description",         selectedLead.leadName);
     fd.append("enteredBy",           localStorage.getItem("loggedInUser"));
+    fd.append("enteredByUserId",     localStorage.getItem("userId"));
     fd.append("caseName",            selectedCase.caseName);
     fd.append("caseNo",              selectedCase.caseNo);
     fd.append("leadReturnId",        evidenceData.leadReturnId);
@@ -467,6 +480,7 @@ export const LREvidence = () => {
             signedUrl:           "",
             accessLevel:         evidenceData.accessLevel || "Everyone",
             enteredBy:           localStorage.getItem("loggedInUser"),
+            enteredByUserId:     localStorage.getItem("userId"),
           },
         ]);
       } else {
@@ -807,7 +821,9 @@ export const LREvidence = () => {
                   <tbody>
                     {evidences.length > 0 ? (
                       evidences.map((item, index) => {
-                        const canModify = isCaseManager || item.enteredBy?.trim() === signedInOfficer?.trim();
+                        const canModify = isCaseManager || (item.enteredByUserId && signedInUserId
+                          ? item.enteredByUserId === signedInUserId
+                          : item.enteredBy?.trim() === signedInOfficer?.trim());
                         return (
                         <tr key={index}>
                           <td>{item.returnId}</td>

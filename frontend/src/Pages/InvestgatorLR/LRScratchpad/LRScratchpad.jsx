@@ -79,11 +79,15 @@ export const LRScratchpad = () => {
     selectedCase?.role === 'Case Manager' || selectedCase?.role === 'Detective Supervisor';
 
   const signedInOfficer = localStorage.getItem('loggedInUser');
+  const signedInUserId  = localStorage.getItem('userId');
+  const primaryInvestigatorUserId = leadData?.primaryInvestigatorUserId || '';
   const primaryUsername = leadData?.primaryInvestigator || leadData?.primaryOfficer || '';
   const isPrimaryInvestigator =
     selectedCase?.role === 'Investigator' &&
-    !!signedInOfficer &&
-    signedInOfficer === primaryUsername;
+    !!signedInUserId &&
+    (primaryInvestigatorUserId
+      ? signedInUserId === String(primaryInvestigatorUserId)
+      : signedInOfficer === primaryUsername);
 
   // ── Lead status and read-only guard ───────────────────────────────────────
 
@@ -227,21 +231,29 @@ export const LRScratchpad = () => {
         .filter(note => note.type === 'Lead')
         .map(note => ({
           ...note,
-          dateEntered: formatDate(note.enteredDate),
-          returnId:    note.leadReturnId || '',
-          accessLevel: note.accessLevel ?? 'Everyone',
+          dateEntered:     formatDate(note.enteredDate),
+          returnId:        note.leadReturnId || '',
+          accessLevel:     note.accessLevel ?? 'Everyone',
+          enteredByUserId: note.enteredByUserId ? String(note.enteredByUserId) : null,
         }));
 
       // Non-case-managers only see records they are permitted to view
+      const currentUserId = localStorage.getItem('userId');
       const currentUser   = localStorage.getItem('loggedInUser')?.trim();
-      const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+      const leadAssigneeUserIds = (leadData?.assignedTo || [])
+        .map(a => (typeof a === 'object' && a !== null ? String(a.userId || '') : ''))
+        .filter(Boolean);
+      const leadAssigneeUsernames = (leadData?.assignedTo || [])
+        .map(a => (typeof a === 'object' && a !== null ? (a.username || '') : String(a ?? '')).trim());
 
       const visible = isCaseManager
         ? formatted
         : formatted.filter(note => {
             if (note.accessLevel === 'Everyone') return true;
             if (note.accessLevel === 'Case Manager and Assignees') {
-              return leadAssignees.some(a => a === currentUser);
+              return currentUserId
+                ? leadAssigneeUserIds.includes(currentUserId)
+                : leadAssigneeUsernames.some(a => a === currentUser);
             }
             return false;
           });
@@ -285,8 +297,9 @@ export const LRScratchpad = () => {
       description:  selectedLead?.leadName,
       assignedTo:   {},
       assignedBy:   {},
-      enteredBy:    localStorage.getItem('loggedInUser'),
-      caseName:     selectedCase?.caseName,
+      enteredBy:        localStorage.getItem('loggedInUser'),
+      enteredByUserId:  localStorage.getItem('userId'),
+      caseName:         selectedCase?.caseName,
       caseNo:       selectedCase?.caseNo,
       leadReturnId: noteData.returnId,
       enteredDate:  new Date().toISOString(),
@@ -572,7 +585,9 @@ export const LRScratchpad = () => {
                 </thead>
                 <tbody>
                   {notes.length > 0 ? notes.map((note, idx) => {
-                    const canModify  = isCaseManager || note.enteredBy?.trim() === signedInOfficer?.trim();
+                    const canModify  = isCaseManager || (note.enteredByUserId && signedInUserId
+                      ? note.enteredByUserId === signedInUserId
+                      : note.enteredBy?.trim() === signedInOfficer?.trim());
                     const isExpanded = expandedRows.has(idx);
                     return (
                     <tr key={note._id || idx}>
