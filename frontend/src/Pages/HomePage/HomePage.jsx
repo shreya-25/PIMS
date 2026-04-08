@@ -90,9 +90,10 @@ export const HomePage = () => {
       ? getDisplayName(c.detectiveSupervisorUserId)
       : "—";
 
-    const caseManagers = Array.isArray(c.caseManagerUserIds) && c.caseManagerUserIds.length > 0
-      ? c.caseManagerUserIds.map(getDisplayName).filter(Boolean).join(", ") || "—"
-      : "—";
+    const caseManagerNames = Array.isArray(c.caseManagerUserIds)
+      ? c.caseManagerUserIds.map(getDisplayName).filter(Boolean)
+      : [];
+    const caseManagers = caseManagerNames.length > 0 ? caseManagerNames.join(", ") : "—";
 
     const investigators = Array.isArray(c.investigatorUserIds) && c.investigatorUserIds.length > 0
       ? c.investigatorUserIds.map(getDisplayName).filter(Boolean).join(", ") || "—"
@@ -107,6 +108,7 @@ export const HomePage = () => {
       createdAt: c.createdAt,
       detectiveSupervisor,
       caseManagers,
+      caseManagerNames,
       investigators,
     };
   };
@@ -129,7 +131,6 @@ export const HomePage = () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          params: { officerName: signedInOfficer },
         });
 
         if (cancelled) return;
@@ -498,6 +499,19 @@ export const HomePage = () => {
 
   // Add a newly created case to local state (avoids duplicates)
   const addCase = (serverCase) => {
+    if (serverCase.status !== "ONGOING") return;
+    const name = signedInOfficer?.toLowerCase?.() ?? "";
+    const uid  = signedInUserId ?? "";
+    const matchUser = (u) =>
+      u &&
+      (uid
+        ? String(u._id || u.id || "") === uid
+        : u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name);
+    const isAssigned =
+      (serverCase.detectiveSupervisorUserId && matchUser(serverCase.detectiveSupervisorUserId)) ||
+      (Array.isArray(serverCase.caseManagerUserIds) && serverCase.caseManagerUserIds.some(matchUser)) ||
+      (Array.isArray(serverCase.investigatorUserIds) && serverCase.investigatorUserIds.some(matchUser));
+    if (!isAssigned) return;
     const mapped = mapCaseForOfficer(serverCase, signedInOfficer, signedInUserId);
     setCases((prev) => [mapped, ...prev.filter((c) => c.id !== mapped.id)]);
   };
@@ -505,21 +519,24 @@ export const HomePage = () => {
   // ─── Cases table: columns, filter/sort ───────────────────────────────────
 
   const columnWidths = { "Case No.": "7%", "Case Name": "21%", "Created At": "7%", "Case Managers": "16%" };
-  const colKey = { "Case No.": "id", "Case Name": "title", "Created At": "createdAt", "Case Managers": "team" };
+  const colKey = { "Case No.": "id", "Case Name": "title", "Created At": "createdAt", "Case Managers": "caseManagers" };
 
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-  const [filterConfig, setFilterConfig] = useState({ id: [], title: [], createdAt: [], role: [] });
+  const [filterConfig, setFilterConfig] = useState({ id: [], title: [], createdAt: [], role: [], caseManagers: [] });
   const [openFilter, setOpenFilter] = useState(null);
   const [filterSearch, setFilterSearch] = useState({});
   const [tempFilterSelections, setTempFilterSelections] = useState({});
 
   const distinctValues = useMemo(() => {
-    const map = { id: new Set(), title: new Set(), createdAt: new Set(), role: new Set() };
+    const map = { id: new Set(), title: new Set(), createdAt: new Set(), role: new Set(), caseManagers: new Set() };
     cases.forEach((c) => {
       map.id.add(String(c.id));
       map.title.add(c.title);
       map.createdAt.add(formatDate(c.createdAt));
       map.role.add(c.role);
+      if (Array.isArray(c.caseManagerNames)) {
+        c.caseManagerNames.forEach((name) => { if (name) map.caseManagers.add(name); });
+      }
     });
     return Object.fromEntries(Object.entries(map).map(([k, s]) => [k, [...s]]));
   }, [cases]);
@@ -528,6 +545,9 @@ export const HomePage = () => {
     const filtered = cases.filter((c) =>
       Object.entries(filterConfig).every(([field, sel]) => {
         if (!sel.length) return true;
+        if (field === "caseManagers") {
+          return sel.some((s) => (c.caseManagerNames || []).includes(s));
+        }
         const cell = field === "createdAt" ? formatDate(c.createdAt) : String(c[field]);
         return sel.includes(cell);
       })
