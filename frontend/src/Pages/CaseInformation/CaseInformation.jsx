@@ -22,6 +22,7 @@ export const CaseInformation = () => {
   const role = selectedCase?.role || '';
   const isCMorDS = role === 'Case Manager' || role === 'Detective Supervisor';
   const signedInOfficer = localStorage.getItem('loggedInUser');
+  const signedInUserId  = localStorage.getItem('userId');
 
   // ── Case edit state ──────────────────────────────────────────────────────
   const [editing, setEditing] = useState(false);
@@ -286,10 +287,14 @@ export const CaseInformation = () => {
   const assignedLeadNos = useMemo(
     () => new Set(
       leads
-        .filter((l) => l.assignedTo?.some((a) => a.username === signedInOfficer))
+        .filter((l) => l.assignedTo?.some((a) =>
+          signedInUserId && a.userId
+            ? String(a.userId) === signedInUserId
+            : a.username === signedInOfficer
+        ))
         .map((l) => l.leadNo)
     ),
-    [leads, signedInOfficer]
+    [leads, signedInOfficer, signedInUserId]
   );
 
   // ── Access level filter function ──────────────────────────────────────────

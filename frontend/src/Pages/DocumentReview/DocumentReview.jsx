@@ -254,18 +254,20 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
 
   const buildRecipients = () => {
     const current = localStorage.getItem("loggedInUser");
+    const currentUserId = localStorage.getItem("userId");
     const uniq = new Map();
 
-    const push = (u, role) => {
-      if (!u) return;
-      if (u === current) return;
-      if (!uniq.has(u)) uniq.set(u, { username: u, role, status: "pending", unread: true });
+    const push = (username, role, userId) => {
+      if (!username) return;
+      // Skip the current user (they're the sender)
+      if (currentUserId && userId ? String(userId) === currentUserId : username === current) return;
+      if (!uniq.has(username)) uniq.set(username, { username, userId: userId || undefined, role, status: "pending", unread: true });
     };
 
-    (leadData?.assignedTo || []).forEach(a => push(a?.username, "Investigator"));
+    (leadData?.assignedTo || []).forEach(a => push(a?.username, "Investigator", a?.userId));
 
     if (leadData?.assignedBy)
-      push(leadData.assignedBy, "Case Manager");
+      push(leadData.assignedBy, "Case Manager", leadData?.assignedByUserId);
 
     return Array.from(uniq.values());
   };

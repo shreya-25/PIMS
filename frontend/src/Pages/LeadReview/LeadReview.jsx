@@ -1337,7 +1337,12 @@ const dueDateISO = leadData?.dueDate
 
 
 
-const myAssignment = normalizeAssignedTo(leadData.assignedTo).find(a => a.username === signedInOfficer);
+const signedInUserId = localStorage.getItem("userId");
+const myAssignment = normalizeAssignedTo(leadData.assignedTo).find(a =>
+  signedInUserId && a.userId
+    ? String(a.userId) === signedInUserId
+    : a.username === signedInOfficer
+);
 const showDecisionBlock =
   myAssignment?.status === "pending" 
   // &&(selectedCase.role !== "Case Manager" && selectedCase.role !== "Detective Supervisor");

@@ -54,15 +54,21 @@ const Navbar = () => {
     
      const fetchNewOnly = async () => {
      if (!loggedInUser) return;
+     const signedInUserId = localStorage.getItem("userId");
      try {
-       const { data } = await api.get(`/api/notifications/user/${loggedInUser}`);
-       // filter to only “unread” & “pending” Ongoing case/lead notifications
+       const url = signedInUserId
+         ? `/api/notifications/user/id/${signedInUserId}`
+         : `/api/notifications/user/${loggedInUser}`;
+       const { data } = await api.get(url);
+       // filter to only "unread" & "pending" Ongoing case/lead notifications
        const fresh = data
          .filter(n =>
            (n.type === "Case" || n.type === "Lead") &&
            n.caseStatus === "Open" &&
            n.assignedTo.some(r =>
-             r.username === loggedInUser &&
+             (signedInUserId && r.userId
+               ? String(r.userId) === signedInUserId
+               : r.username === loggedInUser) &&
              r.status === "pending" &&
              r.unread === true
            )

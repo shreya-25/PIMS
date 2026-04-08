@@ -66,8 +66,9 @@ const mapPersonToRow = (person) => ({
     : '',
   leadReturnId: person.leadReturnId,
   accessLevel:  person.accessLevel || 'Everyone',
-  enteredBy:    person.enteredBy,
-  photoUrl:     person.photoUrl || null,
+  enteredBy:        person.enteredBy,
+  enteredByUserId:  person.enteredByUserId ? String(person.enteredByUserId) : null,
+  photoUrl:         person.photoUrl || null,
 });
 
 /** Section-tab definitions; used to render the second menu bar declaratively. */
@@ -106,6 +107,7 @@ export const LRPerson = () => {
     selectedCase?.role === 'Case Manager' || selectedCase?.role === 'Detective Supervisor';
 
   const signedInOfficer = localStorage.getItem('loggedInUser');
+  const signedInUserId  = localStorage.getItem('userId');
 
   // ─── Lead status / read-only hook ───────────────────────────────────────────
   const { status, isReadOnly } = useLeadStatus({
@@ -135,9 +137,14 @@ export const LRPerson = () => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   // ─── Derived investigator-role values ───────────────────────────────────────
+  const primaryInvestigatorUserId = leadData?.primaryInvestigatorUserId || '';
   const primaryUsername = leadData?.primaryInvestigator || leadData?.primaryOfficer || '';
   const isPrimaryInvestigator =
-    selectedCase?.role === 'Investigator' && !!signedInOfficer && signedInOfficer === primaryUsername;
+    selectedCase?.role === 'Investigator' &&
+    !!signedInUserId &&
+    (primaryInvestigatorUserId
+      ? signedInUserId === String(primaryInvestigatorUserId)
+      : signedInOfficer === primaryUsername);
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -154,13 +161,20 @@ export const LRPerson = () => {
   const applyAccessFilter = useCallback(
     (mapped) => {
       if (isCaseManager) return mapped;
+      const currentUserId = localStorage.getItem('userId');
       const currentUser   = localStorage.getItem('loggedInUser')?.trim();
-      const leadAssignees = (leadData?.assignedTo || []).map((a) => a?.trim());
+      const leadAssigneeUserIds = (leadData?.assignedTo || [])
+        .map(a => (typeof a === 'object' && a !== null ? String(a.userId || '') : ''))
+        .filter(Boolean);
+      const leadAssigneeUsernames = (leadData?.assignedTo || [])
+        .map(a => (typeof a === 'object' && a !== null ? (a.username || '') : String(a ?? '')).trim());
 
       return mapped.filter((p) => {
         if (p.accessLevel === 'Everyone') return true;
         if (p.accessLevel === 'Case Manager and Assignees') {
-          return leadAssignees.some((a) => a === currentUser);
+          return currentUserId
+            ? leadAssigneeUserIds.includes(currentUserId)
+            : leadAssigneeUsernames.some(a => a === currentUser);
         }
         return false; // 'Case Manager' only — hidden from investigators
       });
@@ -536,7 +550,9 @@ export const LRPerson = () => {
                 <tbody>
                   {persons.length > 0 ? (
                     persons.map((person, index) => {
-                      const canModify = isCaseManager || person.enteredBy?.trim() === signedInOfficer?.trim();
+                      const canModify = isCaseManager || (person.enteredByUserId && signedInUserId
+                        ? person.enteredByUserId === signedInUserId
+                        : person.enteredBy?.trim() === signedInOfficer?.trim());
                       const disableActions =
                         selectedLead?.leadStatus === 'Completed' ||
                         selectedLead?.leadStatus === 'Closed' ||

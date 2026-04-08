@@ -55,6 +55,7 @@ const EMPTY_LEADS = {
  */
 export function useLeads(caseId, signedInOfficer) {
   const [leads, setLeads] = useState(EMPTY_LEADS);
+  const signedInUserId = localStorage.getItem('userId');
 
   useEffect(() => {
     if (!caseId) return;
@@ -68,9 +69,13 @@ export function useLeads(caseId, signedInOfficer) {
 
         const raw = Array.isArray(data) ? data : [];
 
-        // Only show leads assigned to the current officer
+        // Only show leads assigned to the current officer (prefer userId comparison)
         const mine = raw.filter(l =>
-          l.assignedTo?.some(o => o.username === signedInOfficer)
+          l.assignedTo?.some(o =>
+            signedInUserId && o.userId
+              ? String(o.userId) === signedInUserId
+              : o.username === signedInOfficer
+          )
         );
 
         const allLeads = mine.map(mapLead).sort((a, b) => b.id - a.id);

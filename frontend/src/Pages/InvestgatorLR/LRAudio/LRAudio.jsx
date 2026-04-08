@@ -235,6 +235,7 @@ export const LRAudio = () => {
   // ── Role helpers ──────────────────────────────────────────────────────────
   const isCaseManager   = ['Case Manager', 'Detective Supervisor'].includes(selectedCase?.role);
   const signedInOfficer = localStorage.getItem('loggedInUser');
+  const signedInUserId  = localStorage.getItem('userId');
 
   // ── Local state ───────────────────────────────────────────────────────────
   const [leadData, setLeadData]         = useState({});
@@ -260,9 +261,14 @@ export const LRAudio = () => {
   const isEditing = editingId !== null;
 
   // Derived: is the current user the primary investigator on this lead?
+  const primaryInvestigatorUserId = leadData?.primaryInvestigatorUserId || '';
   const primaryUsername = leadData?.primaryInvestigator || leadData?.primaryOfficer || '';
   const isPrimaryInvestigator =
-    selectedCase?.role === 'Investigator' && !!signedInOfficer && signedInOfficer === primaryUsername;
+    selectedCase?.role === 'Investigator' &&
+    !!signedInUserId &&
+    (primaryInvestigatorUserId
+      ? signedInUserId === String(primaryInvestigatorUserId)
+      : signedInOfficer === primaryUsername);
 
   // Derived: is the lead locked against edits?
   const isLeadLocked =
@@ -405,17 +411,27 @@ export const LRAudio = () => {
         signedUrl:            a.signedUrl || '',
         audioSrc:             a.isLink ? a.link : (a.signedUrl || ''),
         enteredBy:            a.enteredBy,
+        enteredByUserId:      a.enteredByUserId ? String(a.enteredByUserId) : null,
       }));
 
       // Non-managers only see records they have access to
       let visible = mapped;
       if (!isCaseManager) {
+        const currentUserId = signedInUserId;
         const currentUser   = signedInOfficer?.trim();
-        const leadAssignees = (leadData?.assignedTo || []).map((a) => a?.trim());
+        const leadAssigneeUserIds = (leadData?.assignedTo || [])
+          .map(a => (typeof a === 'object' && a !== null ? String(a.userId || '') : ''))
+          .filter(Boolean);
+        const leadAssigneeUsernames = (leadData?.assignedTo || [])
+          .map(a => (typeof a === 'object' && a !== null ? (a.username || '') : String(a ?? '')).trim());
 
         visible = mapped.filter((audio) => {
           if (audio.accessLevel === 'Everyone') return true;
-          if (audio.accessLevel === 'Case Manager and Assignees') return leadAssignees.includes(currentUser);
+          if (audio.accessLevel === 'Case Manager and Assignees') {
+            return currentUserId
+              ? leadAssigneeUserIds.includes(currentUserId)
+              : leadAssigneeUsernames.includes(currentUser);
+          }
           return false; // 'Case Manager Only'
         });
       }
@@ -469,6 +485,7 @@ export const LRAudio = () => {
     fd.append('leadNo',            selectedLead.leadNo);
     fd.append('description',       selectedLead.leadName);
     fd.append('enteredBy',         localStorage.getItem('loggedInUser'));
+    fd.append('enteredByUserId',   localStorage.getItem('userId'));
     fd.append('caseName',          selectedCase.caseName);
     fd.append('caseNo',            selectedCase.caseNo);
     fd.append('leadReturnId',      audioData.leadReturnId);
@@ -933,7 +950,9 @@ export const LRAudio = () => {
                         isCaseManager={isCaseManager}
                         isReadOnly={isReadOnly}
                         leadStatus={selectedLead?.leadStatus}
-                        canModify={isCaseManager || audio.enteredBy?.trim() === signedInOfficer?.trim()}
+                        canModify={isCaseManager || (audio.enteredByUserId && signedInUserId
+                          ? audio.enteredByUserId === signedInUserId
+                          : audio.enteredBy?.trim() === signedInOfficer?.trim())}
                         onEdit={handleEditAudio}
                         onDelete={requestDeleteAudio}
                         onAccessChange={handleAccessChange}

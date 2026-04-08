@@ -108,11 +108,15 @@ export const LRVideo = () => {
     selectedCase?.role === 'Case Manager' || selectedCase?.role === 'Detective Supervisor';
 
   const signedInOfficer = localStorage.getItem('loggedInUser');
+  const signedInUserId  = localStorage.getItem('userId');
+  const primaryInvestigatorUserId = leadData?.primaryInvestigatorUserId || '';
   const primaryUsername = leadData?.primaryInvestigator || leadData?.primaryOfficer || '';
   const isPrimaryInvestigator =
     selectedCase?.role === 'Investigator' &&
-    !!signedInOfficer &&
-    signedInOfficer === primaryUsername;
+    !!signedInUserId &&
+    (primaryInvestigatorUserId
+      ? signedInUserId === String(primaryInvestigatorUserId)
+      : signedInOfficer === primaryUsername);
 
   // ── Lead status and read-only guard ───────────────────────────────────────
 
@@ -267,15 +271,25 @@ export const LRVideo = () => {
         isLink:               v.isLink,
         accessLevel:          v.accessLevel || 'Everyone',
         enteredBy:            v.enteredBy,
+        enteredByUserId:      v.enteredByUserId ? String(v.enteredByUserId) : null,
       }));
 
       let visible = mapped;
       if (!isCaseManager) {
+        const currentUserId = signedInUserId;
         const currentUser   = signedInOfficer?.trim();
-        const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+        const leadAssigneeUserIds = (leadData?.assignedTo || [])
+          .map(a => (typeof a === 'object' && a !== null ? String(a.userId || '') : ''))
+          .filter(Boolean);
+        const leadAssigneeUsernames = (leadData?.assignedTo || [])
+          .map(a => (typeof a === 'object' && a !== null ? (a.username || '') : String(a ?? '')).trim());
         visible = mapped.filter(v => {
           if (v.accessLevel === 'Everyone') return true;
-          if (v.accessLevel === 'Case Manager and Assignees') return leadAssignees.includes(currentUser);
+          if (v.accessLevel === 'Case Manager and Assignees') {
+            return currentUserId
+              ? leadAssigneeUserIds.includes(currentUserId)
+              : leadAssigneeUsernames.includes(currentUser);
+          }
           return false;
         });
       }
@@ -336,6 +350,7 @@ export const LRVideo = () => {
     fd.append('leadNo',           selectedLead.leadNo);
     fd.append('description',      selectedLead.leadName);
     fd.append('enteredBy',        localStorage.getItem('loggedInUser'));
+    fd.append('enteredByUserId',  localStorage.getItem('userId'));
     fd.append('caseName',         selectedCase.caseName);
     fd.append('caseNo',           selectedCase.caseNo);
     fd.append('leadReturnId',     videoData.leadReturnId);
@@ -712,7 +727,9 @@ export const LRVideo = () => {
                   </thead>
                   <tbody>
                     {videos.length > 0 ? videos.map((video, idx) => {
-                      const canModify  = isCaseManager || video.enteredBy?.trim() === signedInOfficer?.trim();
+                      const canModify  = isCaseManager || (video.enteredByUserId && signedInUserId
+                        ? video.enteredByUserId === signedInUserId
+                        : video.enteredBy?.trim() === signedInOfficer?.trim());
                       const isExpanded = expandedRows.has(idx);
                       return (
                       <tr key={video.id || idx}>

@@ -144,11 +144,15 @@ export const LRTimeline = () => {
     selectedCase?.role === 'Case Manager' || selectedCase?.role === 'Detective Supervisor';
 
   const signedInOfficer = localStorage.getItem('loggedInUser');
+  const signedInUserId  = localStorage.getItem('userId');
+  const primaryInvestigatorUserId = leadData?.primaryInvestigatorUserId || '';
   const primaryUsername = leadData?.primaryInvestigator || leadData?.primaryOfficer || '';
   const isPrimaryInvestigator =
     selectedCase?.role === 'Investigator' &&
-    !!signedInOfficer &&
-    signedInOfficer === primaryUsername;
+    !!signedInUserId &&
+    (primaryInvestigatorUserId
+      ? signedInUserId === String(primaryInvestigatorUserId)
+      : signedInOfficer === primaryUsername);
 
   // ── Lead status and read-only guard ───────────────────────────────────────
 
@@ -302,6 +306,7 @@ export const LRTimeline = () => {
     flags:            e.timelineFlag || [],
     accessLevel:      e.accessLevel || 'Everyone',
     enteredBy:        e.enteredBy,
+    enteredByUserId:  e.enteredByUserId ? String(e.enteredByUserId) : null,
     dateEntered:      formatDate(e.enteredDate),
     date:             formatDate(e.eventDate),
     eventStartDate:   formatDate(e.eventStartDate),
@@ -325,15 +330,22 @@ export const LRTimeline = () => {
       const mapped = data.map(mapEntry);
 
       // Non-case-managers only see records they are permitted to view
+      const currentUserId = localStorage.getItem('userId');
       const currentUser   = localStorage.getItem('loggedInUser')?.trim();
-      const leadAssignees = (leadData?.assignedTo || []).map(a => a?.trim());
+      const leadAssigneeUserIds = (leadData?.assignedTo || [])
+        .map(a => (typeof a === 'object' && a !== null ? String(a.userId || '') : ''))
+        .filter(Boolean);
+      const leadAssigneeUsernames = (leadData?.assignedTo || [])
+        .map(a => (typeof a === 'object' && a !== null ? (a.username || '') : String(a ?? '')).trim());
 
       const visible = isCaseManager
         ? mapped
         : mapped.filter(entry => {
             if (entry.accessLevel === 'Everyone') return true;
             if (entry.accessLevel === 'Case Manager and Assignees') {
-              return leadAssignees.some(a => a === currentUser);
+              return currentUserId
+                ? leadAssigneeUserIds.includes(currentUserId)
+                : leadAssigneeUsernames.some(a => a === currentUser);
             }
             return false;
           });
@@ -438,6 +450,7 @@ export const LRTimeline = () => {
       assignedTo:       selectedLead.assignedTo || {},
       assignedBy:       selectedLead.assignedBy || {},
       enteredBy:        localStorage.getItem('loggedInUser'),
+      enteredByUserId:  localStorage.getItem('userId'),
       caseName:         selectedCase.caseName,
       caseNo:           selectedCase.caseNo,
       leadReturnId,
@@ -799,7 +812,9 @@ export const LRTimeline = () => {
                   </thead>
                   <tbody>
                     {timelineEntries.length > 0 ? timelineEntries.map((entry, idx) => {
-                      const canModify = isCaseManager || entry.enteredBy?.trim() === signedInOfficer?.trim();
+                      const canModify = isCaseManager || (entry.enteredByUserId && signedInUserId
+                        ? entry.enteredByUserId === signedInUserId
+                        : entry.enteredBy?.trim() === signedInOfficer?.trim());
                       return (
                       <tr key={entry.id || idx}>
                         <td>{entry.leadReturnId}</td>

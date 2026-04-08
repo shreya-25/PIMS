@@ -101,7 +101,8 @@ const mapVehicleToDisplayRow = (v, i) => ({
   plate:       v.plate,
   state:       v.state,
   accessLevel: v.accessLevel ?? 'Everyone',
-  enteredBy:   v.enteredBy,
+  enteredBy:        v.enteredBy,
+  enteredByUserId:  v.enteredByUserId ? String(v.enteredByUserId) : null,
 });
 
 /**
@@ -110,14 +111,19 @@ const mapVehicleToDisplayRow = (v, i) => ({
  */
 const filterByAccessLevel = (records, isCaseManager, leadData) => {
   if (isCaseManager) return records;
-  const currentUser = localStorage.getItem('loggedInUser')?.trim();
-  const leadAssignees = (leadData?.assignedTo || []).map(
-    (a) => (typeof a === 'string' ? a.trim() : String(a ?? ''))
-  );
+  const currentUserId = localStorage.getItem('userId');
+  const currentUser   = localStorage.getItem('loggedInUser')?.trim();
+  const leadAssigneeUserIds = (leadData?.assignedTo || [])
+    .map(a => (typeof a === 'object' && a !== null ? String(a.userId || '') : ''))
+    .filter(Boolean);
+  const leadAssigneeUsernames = (leadData?.assignedTo || [])
+    .map(a => (typeof a === 'object' && a !== null ? (a.username || '') : String(a ?? '')).trim());
   return records.filter((r) => {
     if (r.accessLevel === 'Everyone') return true;
     if (r.accessLevel === 'Case Manager and Assignees') {
-      return leadAssignees.some((a) => a === currentUser);
+      return currentUserId
+        ? leadAssigneeUserIds.includes(currentUserId)
+        : leadAssigneeUsernames.some(a => a === currentUser);
     }
     return false;
   });
@@ -212,11 +218,15 @@ export const LRVehicle = () => {
 
   // Derived permissions
   const signedInOfficer   = localStorage.getItem('loggedInUser');
+  const signedInUserId    = localStorage.getItem('userId');
+  const primaryInvestigatorUserId = leadData?.primaryInvestigatorUserId || '';
   const primaryUsername   = leadData?.primaryInvestigator || leadData?.primaryOfficer || '';
   const isPrimaryInvestigator =
     selectedCase?.role === 'Investigator' &&
-    !!signedInOfficer &&
-    signedInOfficer === primaryUsername;
+    !!signedInUserId &&
+    (primaryInvestigatorUserId
+      ? signedInUserId === String(primaryInvestigatorUserId)
+      : signedInOfficer === primaryUsername);
 
   // True when the lead is locked and no edits should be allowed
   const isLeadReadOnly = READONLY_STATUSES.includes(selectedLead?.leadStatus) || isReadOnly;
@@ -410,11 +420,12 @@ export const LRVehicle = () => {
     const token    = localStorage.getItem('token');
     const username = localStorage.getItem('loggedInUser');
     const payload  = {
-      leadNo:      selectedLead.leadNo,
-      description: selectedLead.leadName,
-      caseNo:      selectedCase.caseNo,
-      caseName:    selectedCase.caseName,
-      enteredBy:   username,
+      leadNo:          selectedLead.leadNo,
+      description:     selectedLead.leadName,
+      caseNo:          selectedCase.caseNo,
+      caseName:        selectedCase.caseName,
+      enteredBy:       username,
+      enteredByUserId: localStorage.getItem('userId'),
       enteredDate: vehicleData.enteredDate || new Date().toISOString(),
       accessLevel: vehicleData.accessLevel || 'Everyone',
       ...vehicleData,
@@ -896,7 +907,9 @@ export const LRVehicle = () => {
                     {vehicles.length > 0 ? (
                       vehicles.map((vehicle, index) => {
                         // Only the record's author can edit/delete it
-                        const canModify      = isCaseManager || vehicle.enteredBy?.trim() === signedInOfficer?.trim();
+                        const canModify      = isCaseManager || (vehicle.enteredByUserId && signedInUserId
+                          ? vehicle.enteredByUserId === signedInUserId
+                          : vehicle.enteredBy?.trim() === signedInOfficer?.trim());
                         const disableActions = isLeadReadOnly || !canModify;
 
                         return (

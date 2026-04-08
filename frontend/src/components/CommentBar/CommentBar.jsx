@@ -42,6 +42,7 @@ const CommentBar = forwardRef(function CommentBar(
   const inputRef = useRef(null);
   const token    = localStorage.getItem("token");
   const enteredBy = localStorage.getItem("loggedInUser") || "Unknown";
+  const currentUserId = localStorage.getItem("userId");
 
   const sendIcon = `${process.env.PUBLIC_URL}/Materials/send.png`;
 
@@ -103,6 +104,7 @@ const CommentBar = forwardRef(function CommentBar(
           description: leadName,
           tag,
           enteredBy,
+          enteredByUserId: currentUserId,
           enteredDate: new Date(),
           comment: text,
         };
@@ -167,7 +169,9 @@ const CommentBar = forwardRef(function CommentBar(
                 <time dateTime={c.enteredDate}>
                   {new Date(c.enteredDate).toLocaleString()}
                 </time>
-                {c.enteredBy === enteredBy && (
+                {(c.enteredByUserId && currentUserId
+                  ? c.enteredByUserId === currentUserId
+                  : c.enteredBy === enteredBy) && (
                   <button className="cbar__edit" onClick={() => startEdit(c)}>
                     Edit
                   </button>
