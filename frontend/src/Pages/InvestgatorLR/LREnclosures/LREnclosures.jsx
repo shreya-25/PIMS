@@ -333,22 +333,21 @@ export const LREnclosures = () => {
   //   selectedCase?._id, selectedCase?.id,
   //   editIndex,
   // ]);
-
   useEffect(() => {
   const { leadNo, leadName } = selectedLead || {};
-  const { caseNo, caseName } = selectedCase || {};
+  const caseId = selectedCase?._id || selectedCase?.id;
 
-  if (!leadNo || !leadName || !caseNo || !caseName) return;
+  if (!leadNo || !leadName || !caseId) return;
 
-  const ac = new AbortController();
-  const token = localStorage.getItem('token');
+  const controller = new AbortController();
 
   (async () => {
     try {
+      const token = localStorage.getItem('token');
       const { data } = await api.get(
-        `/api/leadReturnResult/${leadNo}/${encodeURIComponent(leadName)}/${caseNo}/${encodeURIComponent(caseName)}`,
+        `/api/leadReturnResult/${leadNo}/${encodeURIComponent(leadName)}/${caseId}`,
         {
-          signal: ac.signal,
+          signal: controller.signal,
           headers: { Authorization: `Bearer ${token}` },
         }
       );
@@ -363,21 +362,20 @@ export const LREnclosures = () => {
           : prev
       );
     } catch (e) {
-      if (!ac.signal.aborted) {
+      if (!controller.signal.aborted) {
         console.error('Failed to fetch narrative IDs:', e);
       }
     }
   })();
 
-  return () => ac.abort();
+  return () => controller.abort();
 }, [
   selectedLead?.leadNo,
   selectedLead?.leadName,
-  selectedCase?.caseNo,
-  selectedCase?.caseName,
+  selectedCase?._id,
+  selectedCase?.id,
   editIndex,
 ]);
-
   /** Fetches enclosure records whenever the selected lead or case changes. */
   useEffect(() => {
     if (selectedLead?.leadNo && (selectedCase?._id || selectedCase?.id)) {
