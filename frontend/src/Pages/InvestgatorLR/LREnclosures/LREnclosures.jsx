@@ -295,44 +295,88 @@ export const LREnclosures = () => {
    * Fetches available narrative IDs and auto-selects the latest one
    * when creating a new enclosure record.
    */
+  // useEffect(() => {
+  //   if (
+  //     !selectedLead?.leadNo || !selectedLead?.leadName ||
+  //     !selectedCase?._id && !selectedCase?.id
+  //   ) return;
+
+  //   const ac    = new AbortController();
+  //   const token = localStorage.getItem('token');
+  //   const caseId4 = selectedCase._id || selectedCase.id;
+
+  //   (async () => {
+  //     try {
+  //       const { data } = await api.get(
+  //         `/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId4}`,
+  //         { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
+  //       );
+
+  //       const ids = [...new Set((data || []).map((r) => r?.leadReturnId).filter(Boolean))];
+  //       ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
+  //       setNarrativeIds(ids);
+
+  //       // Auto-select the latest narrative ID only for new (non-edit) records
+  //       setEnclosureData((prev) =>
+  //         editIndex === null && !prev.returnId
+  //           ? { ...prev, returnId: ids.at(-1) || '' }
+  //           : prev
+  //       );
+  //     } catch (e) {
+  //       if (!ac.signal.aborted) console.error('Failed to fetch narrative IDs:', e);
+  //     }
+  //   })();
+
+  //   return () => ac.abort();
+  // }, [
+  //   selectedLead?.leadNo, selectedLead?.leadName,
+  //   selectedCase?._id, selectedCase?.id,
+  //   editIndex,
+  // ]);
+
   useEffect(() => {
-    if (
-      !selectedLead?.leadNo || !selectedLead?.leadName ||
-      !selectedCase?._id && !selectedCase?.id
-    ) return;
+  const { leadNo, leadName } = selectedLead || {};
+  const { caseNo, caseName } = selectedCase || {};
 
-    const ac    = new AbortController();
-    const token = localStorage.getItem('token');
-    const caseId4 = selectedCase._id || selectedCase.id;
+  if (!leadNo || !leadName || !caseNo || !caseName) return;
 
-    (async () => {
-      try {
-        const { data } = await api.get(
-          `/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId4}`,
-          { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
-        );
+  const ac = new AbortController();
+  const token = localStorage.getItem('token');
 
-        const ids = [...new Set((data || []).map((r) => r?.leadReturnId).filter(Boolean))];
-        ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
-        setNarrativeIds(ids);
+  (async () => {
+    try {
+      const { data } = await api.get(
+        `/api/leadReturnResult/${leadNo}/${encodeURIComponent(leadName)}/${caseNo}/${encodeURIComponent(caseName)}`,
+        {
+          signal: ac.signal,
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-        // Auto-select the latest narrative ID only for new (non-edit) records
-        setEnclosureData((prev) =>
-          editIndex === null && !prev.returnId
-            ? { ...prev, returnId: ids.at(-1) || '' }
-            : prev
-        );
-      } catch (e) {
-        if (!ac.signal.aborted) console.error('Failed to fetch narrative IDs:', e);
+      const ids = [...new Set((data || []).map((r) => r?.leadReturnId).filter(Boolean))];
+      ids.sort((a, b) => alphabetToNumber(a) - alphabetToNumber(b));
+      setNarrativeIds(ids);
+
+      setEnclosureData((prev) =>
+        editIndex === null && !prev.returnId
+          ? { ...prev, returnId: ids.at(-1) || '' }
+          : prev
+      );
+    } catch (e) {
+      if (!ac.signal.aborted) {
+        console.error('Failed to fetch narrative IDs:', e);
       }
-    })();
+    }
+  })();
 
-    return () => ac.abort();
-  }, [
-    selectedLead?.leadNo, selectedLead?.leadName,
-    selectedCase?._id, selectedCase?.id,
-    editIndex,
-  ]);
+  return () => ac.abort();
+}, [
+  selectedLead?.leadNo,
+  selectedLead?.leadName,
+  selectedCase?.caseNo,
+  selectedCase?.caseName,
+  editIndex,
+]);
 
   /** Fetches enclosure records whenever the selected lead or case changes. */
   useEffect(() => {
