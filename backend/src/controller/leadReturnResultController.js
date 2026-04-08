@@ -161,23 +161,43 @@ const getLeadReturnResultsByOfficer = async (req, res) => {
     }
 };
 
+// const getLeadReturnResultByLeadNoandLeadName = async (req, res) => {
+//     try {
+//         const { leadNo, leadName, caseId } = req.params;
+
+//         const query = {
+//             leadNo: Number(leadNo),
+//             description: leadName,
+//             caseId,
+//             isDeleted: { $ne: true },
+//         };
+
+//         const leadReturns = await LeadReturnResult.find(query).lean();
+//         res.status(200).json(leadReturns);
+//     } catch (err) {
+//         console.error("Error fetching lead return results by case and lead:", err.message);
+//         res.status(500).json({ message: "Something went wrong" });
+//     }
+// };
+
 const getLeadReturnResultByLeadNoandLeadName = async (req, res) => {
-    try {
-        const { leadNo, leadName, caseId } = req.params;
+  try {
+    const { leadNo, caseId } = req.params;
+    const leadName = decodeParam(req.params.leadName || "");
 
-        const query = {
-            leadNo: Number(leadNo),
-            description: leadName,
-            caseId,
-            isDeleted: { $ne: true },
-        };
+    const query = {
+      leadNo: Number(leadNo),
+      description: leadName,
+      caseId,
+      isDeleted: { $ne: true },
+    };
 
-        const leadReturns = await LeadReturnResult.find(query).lean();
-        res.status(200).json(leadReturns);
-    } catch (err) {
-        console.error("Error fetching lead return results by case and lead:", err.message);
-        res.status(500).json({ message: "Something went wrong" });
-    }
+    const leadReturns = await LeadReturnResult.find(query).lean();
+    return res.status(200).json(leadReturns);
+  } catch (err) {
+    console.error("Error fetching lead return results by case and lead:", err.message);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
 };
 
 const getLeadReturnResultByLeadNo = async (req, res) => {

@@ -14,7 +14,7 @@ router.post("/create", verifyToken, createLeadReturnResult);
 router.get("/officer-leads", verifyToken, getLeadReturnResultsByOfficer);
 
 router.get("/:leadNo/:caseId", verifyToken, getLeadReturnResultByLeadNo);
-router.get("/:leadNo/:leadName/:caseId", verifyToken, getLeadReturnResultByLeadNoandLeadName);
+router.get("/:leadNo/:leadName(*)/:caseId", verifyToken, getLeadReturnResultByLeadNoandLeadName);
 
 router.get("/", verifyToken, searchCasesAndLeadsByKeyword);
 
