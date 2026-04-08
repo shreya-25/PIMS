@@ -7,19 +7,23 @@
 .page-wrapper {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
   font-family: Arial, sans-serif;
 }
 
 .main-container {
   margin-left: 20%;
   width: 80%;
-  padding-left: 40px;
-  padding-right: 40px;
+  padding-left: 32px;
+  padding-right: 32px;
   padding-top: var(--nav-h);
+  padding-bottom: 8px;
   box-sizing: border-box;
-  min-height: 100dvh;
+  height: 100dvh;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ─── Content area ────────────────────────────────────────────────────────── */
@@ -27,47 +31,48 @@
 .content {
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
-/* ─── Card (matches ChainOfCustody .card) ─────────────────────────────────── */
+/* ─── Card ────────────────────────────────────────────────────────────────── */
 
 .card {
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.04);
-  padding: 24px 28px 28px;
+  padding: 14px 22px 16px;
   width: 90%;
-  margin: 24px auto 8px;
+  margin: 12px auto 8px;
 }
 
-/* ─── Card header (matches ChainOfCustody .elog-header) ───────────────────── */
+/* ─── Card header ─────────────────────────────────────────────────────────── */
 
 .card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 14px;
-  margin-bottom: 20px;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
   border-bottom: 1px solid #f1f5f9;
 }
 
 .card-header h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: #0f172a;
 }
 
-/* ─── Chip (matches ChainOfCustody .chip) ─────────────────────────────────── */
+/* ─── Chip ────────────────────────────────────────────────────────────────── */
 
 .chip {
   background: #eef2ff;
   color: #312e81;
   border: 1px solid #c7d2fe;
   border-radius: 999px;
-  padding: 4px 12px;
+  padding: 3px 10px;
   font-size: 18px;
   font-weight: 500;
   white-space: nowrap;
@@ -78,19 +83,20 @@
 .form-grid {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 12px;
+  align-items: start;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
 }
 
 .form-group label {
@@ -101,12 +107,32 @@
   letter-spacing: 0.04em;
 }
 
+.form-group select {
+  color: #9ca3af;
+}
+
+.form-group select.has-value {
+  color: #111827;
+}
+
+/* dropdown options text */
+.form-group select option {
+  color: #111827;
+  background: #ffffff;
+}
+
+/* keep placeholder option gray in collapsed state logic */
+.form-group select option[value=""] {
+  color: #9ca3af;
+}
+
 .form-group input[type="text"],
 .form-group input[type="email"],
 .form-group input[type="password"],
 .form-group select {
   width: 100%;
-  padding: 10px 12px;
+  height: 44px;
+  padding: 7px 10px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 18px;
@@ -123,6 +149,27 @@
   border-color: #29298b;
   box-shadow: 0 0 0 3px rgba(41, 41, 139, 0.1);
   background: #fff;
+}
+
+/* ─── Placeholder styling ─────────────────────────────────────────────────── */
+
+.form-group input::placeholder,
+.invite-textarea::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+.form-group select {
+  color: #9ca3af;
+}
+
+.form-group select.has-value {
+  color: #111827;
+}
+
+/* optional: make disabled placeholder option also look muted */
+.form-group select option[value=""] {
+  color: #9ca3af;
 }
 
 /* ─── Submit button ───────────────────────────────────────────────────────── */
@@ -191,11 +238,12 @@
 .password-row {
   display: flex;
   gap: 10px;
-  align-items: center;
+  align-items: stretch;
 }
 
 .password-display {
   flex: 1;
+  height: 44px;
   font-family: monospace !important;
   font-size: 16px !important;
   letter-spacing: 1.5px;
@@ -206,7 +254,12 @@
 }
 
 .regen-btn {
-  padding: 10px 16px;
+  height: 44px;
+  min-width: 48px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: #f1f5f9;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
@@ -221,6 +274,13 @@
 
 .regen-btn:hover {
   background: #e2e8f0;
+}
+
+.password-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 15px;
+  color: #6b7280;
 }
 
 /* ─── Optional label ─────────────────────────────────────────────────────── */
@@ -273,7 +333,7 @@
   background: #fff;
 }
 
-/* ─── Form footer (updated layout) ──────────────────────────────────────── */
+/* ─── Form footer ────────────────────────────────────────────────────────── */
 
 .form-footer {
   display: flex;
@@ -342,6 +402,7 @@
 }
 
 .expiry-date-input {
+  height: 40px;
   padding: 8px 12px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
