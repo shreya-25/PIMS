@@ -32,7 +32,9 @@ export const HomePage = () => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSizeMap, setPageSizeMap] = useState({ cases: 50, assignedLeads: 10, pendingLeadReturns: 10 });
+  const pageSize = pageSizeMap[activeTab] ?? 10;
+  const setPageSize = (size) => setPageSizeMap((prev) => ({ ...prev, [activeTab]: size }));
 
   const { setSelectedCase, setSelectedLead } = useContext(CaseContext);
   const signedInOfficer = localStorage.getItem("loggedInUser");
@@ -61,7 +63,6 @@ export const HomePage = () => {
   const mapCaseForOfficer = (c, officerName, officerUserId) => {
     const name = officerName?.toLowerCase?.() ?? "";
     const uid  = officerUserId ?? "";
-
     const matchUser = (u) =>
       u &&
       (uid
@@ -69,7 +70,6 @@ export const HomePage = () => {
         : u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name);
 
     let role = "";
-
     if (c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId)) {
       role = "Detective Supervisor";
     } else if (Array.isArray(c.caseManagerUserIds) && c.caseManagerUserIds.some(matchUser)) {
@@ -78,6 +78,26 @@ export const HomePage = () => {
       role = "Investigator";
     }
 
+    const getDisplayName = (u) => {
+      if (!u) return "";
+      const full = u.displayName || u.name || "";
+      const uname = u.username || "";
+      if (full && uname) return `${full} (${uname})`;
+      return full || uname;
+    };
+
+    const detectiveSupervisor = c.detectiveSupervisorUserId
+      ? getDisplayName(c.detectiveSupervisorUserId)
+      : "—";
+
+    const caseManagers = Array.isArray(c.caseManagerUserIds) && c.caseManagerUserIds.length > 0
+      ? c.caseManagerUserIds.map(getDisplayName).filter(Boolean).join(", ") || "—"
+      : "—";
+
+    const investigators = Array.isArray(c.investigatorUserIds) && c.investigatorUserIds.length > 0
+      ? c.investigatorUserIds.map(getDisplayName).filter(Boolean).join(", ") || "—"
+      : "—";
+
     return {
       _id: c._id,
       id: c.caseNo,
@@ -85,6 +105,9 @@ export const HomePage = () => {
       status: c.status,
       role,
       createdAt: c.createdAt,
+      detectiveSupervisor,
+      caseManagers,
+      investigators,
     };
   };
 
@@ -475,14 +498,14 @@ export const HomePage = () => {
 
   // Add a newly created case to local state (avoids duplicates)
   const addCase = (serverCase) => {
-    const mapped = mapCaseForOfficer(serverCase, signedInOfficer);
+    const mapped = mapCaseForOfficer(serverCase, signedInOfficer, signedInUserId);
     setCases((prev) => [mapped, ...prev.filter((c) => c.id !== mapped.id)]);
   };
 
   // ─── Cases table: columns, filter/sort ───────────────────────────────────
 
-  const columnWidths = { "Case No.": "7%", "Case Name": "16%", "Created At": "6%", Role: "7%" };
-  const colKey = { "Case No.": "id", "Case Name": "title", "Created At": "createdAt", Role: "role" };
+  const columnWidths = { "Case No.": "7%", "Case Name": "21%", "Created At": "7%", "Case Managers": "16%" };
+  const colKey = { "Case No.": "id", "Case Name": "title", "Created At": "createdAt", "Case Managers": "team" };
 
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [filterConfig, setFilterConfig] = useState({ id: [], title: [], createdAt: [], role: [] });
@@ -784,7 +807,7 @@ export const HomePage = () => {
                       <table className={styles["leads-table"]}>
                         <thead>
                           <tr>
-                            {["Case No.", "Case Name", "Created At", "Role"].map((col) => {
+                            {["Case No.", "Case Name", "Created At", "Case Managers"].map((col) => {
                               const dataKey = colKey[col];
                               return (
                                 <th
@@ -823,7 +846,7 @@ export const HomePage = () => {
                                 </th>
                               );
                             })}
-                            <th style={{ width: "4%", textAlign: "center" }}>Actions</th>
+                            <th style={{ width: "6%", textAlign: "left" }}>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -833,8 +856,14 @@ export const HomePage = () => {
                                 <td>{c.id}</td>
                                 <td>{c.title}</td>
                                 <td>{formatDate(c.createdAt)}</td>
-                                <td>{c.role}</td>
-                                <td style={{ width: "5%", textAlign: "center" }}>
+                                <td>
+                                  {c.caseManagers !== "—"
+                                    ? c.caseManagers.split(", ").map((m, i) => (
+                                        <div key={i}>{m}</div>
+                                      ))
+                                    : "—"}
+                                </td>
+                                <td style={{ width: "5%", textAlign: "left" }}>
                                   <div className={styles["btn-sec-HP"]}>
                                     <button
                                       className={styles["manage-btn"]}

@@ -1155,17 +1155,7 @@ let currentY = headerHeight + 20;
           ["Street 1", "Street 2", "Building"],
           ["Apartment", "City", "State", "Zip Code"],
         ];
-        // You can tweak these widths to taste
-        const personWidths = {
-          "Last Name": 103,    "First Name": 102,    "Middle Initial": 102, "Suffix": 102,    "Alias": 103,
-          "Sex": 103,          "Date of Birth": 102, "Address": 102,        "Phone No": 102,  "Email": 103,
-          "Race": 103,         "Ethnicity": 102,     "Person Type": 102,    "Condition": 102, "Caution Type": 103,
-          "Skin Tone": 103,    "Eye Color": 102,     "Glasses": 102,        "Hair Color": 102,  "Height": 103,
-          "Weight": 128,       "Scars": 128,         "Marks": 128,          "Tattoo": 128,
-          "SSN": 128,          "Driver License ID": 128, "Occupation": 128,  "Business Name": 128,
-          "Street 1": 171,     "Street 2": 170,      "Building": 171,
-          "Apartment": 128,    "City": 128,          "State": 128,          "Zip Code": 128,
-        };
+
 
         // Helper to pull the right field off your model
         function getPersonValue(person, header) {
@@ -1239,8 +1229,8 @@ let currentY = headerHeight + 20;
             currentY = doc.page.margins.top;
           }
 
-          doc.font("Helvetica-Bold").fontSize(11)
-            .text(`Person ${pIdx + 1}`, 50, currentY);
+          const personLabel = [`Person ${pIdx + 1}`, [person.firstName, person.lastName].filter(Boolean).join(" ")].filter(Boolean).join(" – ");
+          doc.font("Helvetica-Bold").fontSize(11).text(personLabel, 50, currentY);
           currentY += 20;
 
           // Person photo + label side by side
@@ -1271,43 +1261,51 @@ let currentY = headerHeight + 20;
           //   currentY += 20;
           // }
 
-          // Now draw each mini-table
-          personTables.forEach((headers) => {
-            // page-break check
-            if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
-              doc.addPage();
-              currentY = doc.page.margins.top;
-            }
-
-            // build one row of data
-            const row = {};
-            headers.forEach(h => {
-              row[h] = getPersonValue(person, h);
-            });
-
-            // compute column widths
-            const colWidths = headers.map(h => personWidths[h] || 100);
-
-            // draw it
-            currentY = drawTable(doc, 50, currentY, headers, [row], colWidths);
+          // Collect all fields across all personTables, keep only filled ones
+          const allPersonFields = personTables.flat();
+          const addressIsFilled = getPersonValue(person, "Address") !== "";
+          const addressSubFields = new Set(["Street 1", "Street 2", "Building", "Apartment", "City", "State", "Zip Code"]);
+          const filledFields = allPersonFields.filter(h => {
+            if (addressIsFilled && addressSubFields.has(h)) return false;
+            const val = getPersonValue(person, h);
+            return val !== "" && val !== null && val !== undefined;
           });
 
-          // Additional Data
-          if (Array.isArray(person.additionalData) && person.additionalData.length > 0) {
+          // Build combined entry list: standard filled fields + valid additionalData entries
+          const allEntries = filledFields.map(h => ({ header: h, value: getPersonValue(person, h) }));
+          if (Array.isArray(person.additionalData)) {
+            person.additionalData.forEach(d => {
+              const cat = d.category || d.description || "";
+              const val = d.value || d.details || "";
+              if (cat && val) allEntries.push({ header: cat, value: val });
+            });
+          }
+
+          // Render in rows of 4 (128px each = 512px total)
+          const COLS_PER_ROW = 4;
+          const COL_WIDTH = 128;
+          for (let i = 0; i < allEntries.length; i += COLS_PER_ROW) {
+            const chunk = allEntries.slice(i, i + COLS_PER_ROW);
+            const remainingCols = COLS_PER_ROW - chunk.length;
+
+            const headers = chunk.map(e => e.header);
+            const row = {};
+            chunk.forEach(e => { row[e.header] = e.value; });
+            const colWidths = chunk.map(() => COL_WIDTH);
+
+            if (remainingCols > 0) {
+              headers.push("");
+              row[""] = "";
+              colWidths.push(remainingCols * COL_WIDTH);
+            }
+
             if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
               doc.addPage();
               currentY = doc.page.margins.top;
             }
-            const addHeaders = ["Category", "Value"];
-            const addWidths = [256, 256];
-            const addRows = person.additionalData.map(d => ({
-              "Category": d.category || d.description || "",
-              "Value":    d.value    || d.details    || "",
-            }));
-            currentY = drawTable(doc, 50, currentY, addHeaders, addRows, addWidths);
+            currentY = drawTable(doc, 50, currentY, headers, [row], colWidths);
           }
-
-          currentY = currentY + 5;
+          currentY += 20;
         }
       }
     }

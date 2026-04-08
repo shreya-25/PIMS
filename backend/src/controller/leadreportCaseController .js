@@ -977,7 +977,7 @@ async function generateCaseReport(req, res) {
         currentY = ensureSpace(doc, currentY, 60);
 
         // LEAD DETAILS
-        doc.font("Helvetica-Bold").fontSize(12).text(`Lead No. ${lead.leadNo} Details:`, 50, currentY);
+        doc.font("Helvetica-Bold").fontSize(12).text(`LEAD NO. ${lead.leadNo} DETAILS:`, 50, currentY);
         currentY += 20;
 
         // structured details
@@ -1030,7 +1030,8 @@ if (leadState) {
                 currentY = ensureSpace(doc, currentY, 60);
                 doc.font("Helvetica-Bold").fontSize(12).text("Person Details:", 50, currentY);
                 currentY += 20;
-                for (const person of lr.persons) {
+                for (let pIdx = 0; pIdx < lr.persons.length; pIdx++) {
+                  const person = lr.persons[pIdx];
                   // Person photo
                   if (person.photoS3Key) {
                     try {
@@ -1058,91 +1059,45 @@ if (leadState) {
                         person.address.zipCode,
                       ].filter(Boolean).join(", ")
                     : "";
-                  const personTables = [
-                    {
-                      headers: ["Last Name", "First Name", "Middle Initial", "Suffix", "Alias"],
-                      widths: [103, 102, 102, 102, 103],
-                      row: {
-                        "Last Name": person.lastName || "",
-                        "First Name": person.firstName || "",
-                        "Middle Initial": person.middleInitial || "",
-                        "Suffix": person.suffix || "",
-                        "Alias": person.alias || "",
-                      },
-                    },
-                    {
-                      headers: ["Sex", "Date of Birth", "Address", "Phone No", "Email"],
-                      widths: [103, 102, 102, 102, 103],
-                      row: {
-                        "Sex": person.sex || "",
-                        "Date of Birth": person.dateOfBirth ? formatDate(person.dateOfBirth) : "",
-                        "Address": fullAddress,
-                        "Phone No": person.cellNumber || "",
-                        "Email": person.email || "",
-                      },
-                    },
-                    {
-                      headers: ["Race", "Ethnicity", "Person Type", "Condition", "Caution Type"],
-                      widths: [103, 102, 102, 102, 103],
-                      row: {
-                        "Race": person.race || "",
-                        "Ethnicity": person.ethnicity || "",
-                        "Person Type": person.personType || "",
-                        "Condition": person.condition || "",
-                        "Caution Type": person.cautionType || "",
-                      },
-                    },
-                    {
-                      headers: ["Skin Tone", "Eye Color", "Glasses", "Hair Color", "Height"],
-                      widths: [103, 102, 102, 102, 103],
-                      row: {
-                        "Skin Tone": person.skinTone || "",
-                        "Eye Color": person.eyeColor || "",
-                        "Glasses": person.glasses || "",
-                        "Hair Color": person.hairColor || "",
-                        "Height": heightDisplay,
-                      },
-                    },
-                    {
-                      headers: ["Weight", "Scars", "Marks", "Tattoo"],
-                      widths: [128, 128, 128, 128],
-                      row: {
-                        "Weight": person.weight != null ? person.weight.toString() : "",
-                        "Scars": person.scar || "",
-                        "Marks": person.mark || "",
-                        "Tattoo": person.tattoo || "",
-                      },
-                    },
-                    {
-                      headers: ["SSN", "Driver License ID", "Occupation", "Business Name"],
-                      widths: [128, 128, 128, 128],
-                      row: {
-                        "SSN": person.ssn || "",
-                        "Driver License ID": person.driverLicenseId || "",
-                        "Occupation": person.occupation || "",
-                        "Business Name": person.businessName || "",
-                      },
-                    },
-                    {
-                      headers: ["Street 1", "Street 2", "Building"],
-                      widths: [171, 170, 171],
-                      row: {
-                        "Street 1": person.address?.street1 || "",
-                        "Street 2": person.address?.street2 || "",
-                        "Building": person.address?.building || "",
-                      },
-                    },
-                    {
-                      headers: ["Apartment", "City", "State", "Zip Code"],
-                      widths: [128, 128, 128, 128],
-                      row: {
-                        "Apartment": person.address?.apartment || "",
-                        "City": person.address?.city || "",
-                        "State": person.address?.state || "",
-                        "Zip Code": person.address?.zipCode || "",
-                      },
-                    },
-                  ];
+                  // Flat map of all fields and their values
+                  const personFieldMap = {
+                    "Last Name":        person.lastName || "",
+                    "First Name":       person.firstName || "",
+                    "Middle Initial":   person.middleInitial || "",
+                    "Suffix":           person.suffix || "",
+                    "Alias":            person.alias || "",
+                    "Sex":              person.sex || "",
+                    "Date of Birth":    person.dateOfBirth ? formatDate(person.dateOfBirth) : "",
+                    "Address":          fullAddress,
+                    "Phone No":         person.cellNumber || "",
+                    "Email":            person.email || "",
+                    "Race":             person.race || "",
+                    "Ethnicity":        person.ethnicity || "",
+                    "Person Type":      person.personType || "",
+                    "Condition":        person.condition || "",
+                    "Caution Type":     person.cautionType || "",
+                    "Skin Tone":        person.skinTone || "",
+                    "Eye Color":        person.eyeColor || "",
+                    "Glasses":          person.glasses || "",
+                    "Hair Color":       person.hairColor || "",
+                    "Height":           heightDisplay,
+                    "Weight":           person.weight != null && person.weight !== "" ? `${person.weight} lbs` : "",
+                    "Scars":            person.scar || "",
+                    "Marks":            person.mark || "",
+                    "Tattoo":           person.tattoo || "",
+                    "SSN":              person.ssn || "",
+                    "Driver License ID": person.driverLicenseId || "",
+                    "Occupation":       person.occupation || "",
+                    "Business Name":    person.businessName || "",
+                  };
+
+                  // If combined address is filled, skip individual address sub-fields
+                  const addressSubFields = new Set(["Street 1", "Street 2", "Building", "Apartment", "City", "State", "Zip Code"]);
+                  const filledFields = Object.keys(personFieldMap).filter(h => {
+                    if (fullAddress && addressSubFields.has(h)) return false;
+                    const val = personFieldMap[h];
+                    return val !== "" && val !== null && val !== undefined;
+                  });
                   // const personTables = [
                   //   ["Date Entered", "Name", "Phone #", "Address"],
                   //   ["Last Name", "First Name", "Middle Initial", "Cell Number"],
@@ -1208,29 +1163,43 @@ if (leadState) {
                   // ];
 
                   currentY = ensureSpace(doc, currentY, 60);
+                  const personLabel = [`Person ${pIdx + 1}`, [person.firstName, person.lastName].filter(Boolean).join(" ")].filter(Boolean).join(" – ");
+                  doc.font("Helvetica-Bold").fontSize(11).text(personLabel, 50, currentY);
+                  currentY += 20;
 
-                  personTables.forEach((tbl) => {
-                    // Estimate the table height
-                    const rowHeight = measureRowHeight(doc, tbl.row, tbl.headers, tbl.widths);
-                    // Add space for header row + some buffer
-                    const estimatedHeight = rowHeight + 20;
-                    currentY = ensureSpace(doc, currentY, estimatedHeight);
-
-                    // Actually draw table with row splitting
-                    currentY =
-                      drawTableWithRowSplitting(doc, 50, currentY, tbl.headers, [tbl.row], tbl.widths) +
-                      20;
-                  });
-
-                  // Additional Data
-                  if (Array.isArray(person.additionalData) && person.additionalData.length > 0) {
-                    currentY = ensureSpace(doc, currentY, 50);
-                    const addRows = person.additionalData.map(d => ({
-                      "Category": d.category || d.description || "",
-                      "Value":    d.value    || d.details    || "",
-                    }));
-                    currentY = drawTableWithRowSplitting(doc, 50, currentY, ["Category", "Value"], addRows, [256, 256]) + 20;
+                  // Build combined entry list: standard filled fields + valid additionalData entries
+                  const allEntries = filledFields.map(h => ({ header: h, value: personFieldMap[h] }));
+                  if (Array.isArray(person.additionalData)) {
+                    person.additionalData.forEach(d => {
+                      const cat = d.category || d.description || "";
+                      const val = d.value || d.details || "";
+                      if (cat && val) allEntries.push({ header: cat, value: val });
+                    });
                   }
+
+                  // Render in rows of 4 (128px each = 512px total)
+                  const COLS_PER_ROW = 4;
+                  const COL_WIDTH = 128;
+                  for (let i = 0; i < allEntries.length; i += COLS_PER_ROW) {
+                    const chunk = allEntries.slice(i, i + COLS_PER_ROW);
+                    const remainingCols = COLS_PER_ROW - chunk.length;
+
+                    const headers = chunk.map(e => e.header);
+                    const row = {};
+                    chunk.forEach(e => { row[e.header] = e.value; });
+                    const colWidths = chunk.map(() => COL_WIDTH);
+
+                    if (remainingCols > 0) {
+                      headers.push("");
+                      row[""] = "";
+                      colWidths.push(remainingCols * COL_WIDTH);
+                    }
+
+                    const rowHeight = measureRowHeight(doc, row, headers, colWidths);
+                    currentY = ensureSpace(doc, currentY, rowHeight + 20);
+                    currentY = drawTableWithRowSplitting(doc, 50, currentY, headers, [row], colWidths);
+                  }
+                  currentY += 20;
 
                   // currentY = ensureSpace(doc, currentY, 60);
 
