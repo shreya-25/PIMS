@@ -254,10 +254,23 @@ const getLeadsByCase = async (req, res) => {
         const leadNo = req.params.leadNo;
         const leadName = decodeURIComponent(req.params.leadName);
         const caseId = await resolveCaseId(req.params.caseId);
+
+        // Also resolve caseNo so older documents (where caseId may be null) are found
+        const caseDoc = caseId
+            ? await Case.findById(caseId).select('caseNo').lean()
+            : null;
+        const caseNo = caseDoc?.caseNo;
+
+        const caseFilter = [];
+        if (caseId) caseFilter.push({ caseId });
+        if (caseNo) caseFilter.push({ caseNo });
+
         const query = {
             leadNo: leadNo,
             description: leadName,
-            caseId,
+            ...(caseFilter.length === 1
+                ? caseFilter[0]
+                : { $or: caseFilter }),
         };
         const leads = await Lead.find(query).lean();
         // Normalise fields that may be absent from documents created before schema migrations
@@ -268,6 +281,7 @@ const getLeadsByCase = async (req, res) => {
           subCategory:             l.subCategory             ?? null,
           associatedSubCategories: l.associatedSubCategories ?? [],
         }));
+        res.set('Cache-Control', 'no-store');
         res.status(200).json(normalised);
     } catch (err) {
         console.error("Error fetching leads by case:", err.message);
