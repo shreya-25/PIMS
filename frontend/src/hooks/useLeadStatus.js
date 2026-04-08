@@ -1,9 +1,9 @@
 // hooks/useLeadStatus.js
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api';
+import { STATUS_RANK } from '../utils/status';
 
-const RANK = { Pending: 0, Assigned: 1, Accepted: 2, 'In Review': 3, Completed: 4, Closed: 5 };
-const higher = (a,b) => (RANK[a] ?? -1) >= (RANK[b] ?? -1) ? a : b;
+const higher = (a, b) => (STATUS_RANK[a] ?? -1) >= (STATUS_RANK[b] ?? -1) ? a : b;
 
 export function useLeadStatus({ caseId, leadNo, leadName, initialStatus }) {
   const queryClient = useQueryClient();
@@ -50,7 +50,7 @@ export function useLeadStatus({ caseId, leadNo, leadName, initialStatus }) {
   const canEditInReview = userRole === 'Case Manager' || userRole === 'Detective Supervisor';
   const isReadOnly = status === 'In Review'
     ? !canEditInReview
-    : ['Completed', 'Closed'].includes(status);
+    : ['Approved', 'Completed', 'Closed', 'Deleted'].includes(status);
 
   return { status, isReadOnly, isFetching, setLocalStatus, submitMutation };
 }

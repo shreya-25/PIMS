@@ -91,7 +91,7 @@ const getLRAudioByDetails = async (req, res) => {
     const leadName = decodeParam(req.params.leadName);
     const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
     const lrAudios = await LRAudio.find(query);
-    if (lrAudios.length === 0) return res.status(404).json({ message: "No Audios found." });
+    if (lrAudios.length === 0) return res.status(200).json([]);
 
     const withUrls = await Promise.all(
       lrAudios.map(async (a) => {

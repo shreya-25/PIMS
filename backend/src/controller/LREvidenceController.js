@@ -88,9 +88,7 @@ const getLREvidenceByDetails = async (req, res) => {
         const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
         const lrEvidences = await LREvidence.find(query);
 
-        if (lrEvidences.length === 0) {
-            return res.status(404).json({ message: "No evidences found." });
-        }
+        if (lrEvidences.length === 0) return res.status(200).json([]);
 
         const evidencesWithUrls = await Promise.all(
           lrEvidences.map(async (ev) => {

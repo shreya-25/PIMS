@@ -93,7 +93,7 @@ const getLREnclosureByDetails = async (req, res) => {
     const leadName = decodeParam(req.params.leadName);
     const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
     const lrEnclosures = await LREnclosure.find(query);
-    if (lrEnclosures.length === 0) return res.status(404).json({ message: "No enclosures found." });
+    if (lrEnclosures.length === 0) return res.status(200).json([]);
 
     const enclosuresWithUrls = await Promise.all(
       lrEnclosures.map(async (enc) => {

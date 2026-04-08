@@ -169,7 +169,7 @@ const getLeadReturnResultByLeadNoandLeadName = async (req, res) => {
             leadNo: Number(leadNo),
             description: leadName,
             caseId,
-            isDeleted: { $ne: true }
+            isDeleted: { $ne: true },
         };
 
         const leadReturns = await LeadReturnResult.find(query).lean();

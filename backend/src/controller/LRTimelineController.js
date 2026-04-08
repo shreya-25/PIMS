@@ -65,7 +65,7 @@ const getTimelinesByCase = async (req, res) => {
         if (!caseId) return res.status(400).json({ message: "caseId is required." });
 
         const timelines = await LRTimeline.find({ caseId, isDeleted: { $ne: true } });
-        if (!timelines || timelines.length === 0) return res.status(404).json({ message: "No timeline entries found for the provided case." });
+        if (!timelines || timelines.length === 0) return res.status(200).json([]);
 
         res.status(200).json(timelines);
     } catch (err) {
@@ -80,7 +80,7 @@ const getLRTimelineByDetails = async (req, res) => {
         const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
         const timeline = await LRTimeline.find(query);
 
-        if (timeline.length === 0) return res.status(404).json({ message: "No timeline entries found." });
+        if (timeline.length === 0) return res.status(200).json([]);
         res.status(200).json(timeline);
     } catch (err) {
         console.error("Error fetching LRTimeline records:", err.message);

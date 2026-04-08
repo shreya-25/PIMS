@@ -32,6 +32,7 @@ console.log(caseDetails, leadDetails, leadOrigin);
 const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
 const [leadCreated, setLeadCreated] = useState(false);
+const [submitting, setSubmitting] = useState(false);
 const formatDate = (dateString) => {
   if (!dateString) return "";
   const date = new Date(dateString);
@@ -567,28 +568,29 @@ const orderedAssignees = hasAssignees
   // const assignedToPayload = orderedAssignees.map(u => ({ username: u, status: "pending" }));
   const assignedToPayload = orderedAssignees; // ← usernames array (primary first)
 
+  setSubmitting(true);
   try {
     // 4) Create the lead
     const response = await api.post(
       "/api/lead/create",
       {
-        caseId:               selectedCase.id || selectedCase._id,  // ✅ Add MongoDB ObjectId
-        caseName:             selectedCase.caseName,
-        caseNo:               selectedCase.caseNo,
+        caseId:               selectedCase.id || selectedCase._id,
+        caseName:             selectedCase.caseName?.trim(),
+        caseNo:               selectedCase.caseNo?.trim(),
         parentLeadNo:         originNumbers,
-        incidentNo:           leadData.incidentNumber,
+        incidentNo:           leadData.incidentNumber?.trim(),
         subCategory:            subCategoriesArray,
         associatedSubCategories: leadData.associatedSubCategories,
-        dueDate:              leadData.dueDate,
-        assignedDate:         leadData.assignedDate,
+        dueDate:              leadData.dueDate?.trim(),
+        assignedDate:         leadData.assignedDate?.trim(),
 
-        assignedTo:           assignedToPayload,        // ✅ primary first
-        primaryInvestigator:  leadData.primaryOfficer || null,
-        assignedBy:           username,
+        assignedTo:           assignedToPayload,
+        primaryInvestigator:  leadData.primaryOfficer?.trim() || null,
+        assignedBy:           username?.trim(),
         summary:              leadData.leadSummary?.trim(),
         description:          leadData.leadDescription?.trim(),
         accessLevel:          leadData.accessLevel,
-        leadStatus:           computedLeadStatus,       // ✅ Assigned vs Created
+        leadStatus:           computedLeadStatus,
       },
       { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
     );
@@ -716,6 +718,7 @@ const orderedAssignees = hasAssignees
       "Unknown error";
     setAlertMessage(`Error: ${typeof msg === "object" ? JSON.stringify(msg, null, 2) : msg}`);
     setAlertOpen(true);
+    setSubmitting(false);
   }
 };
 
@@ -1350,8 +1353,12 @@ useEffect(() => {
 
       {/* Action Buttons */}
       <div className={styles.btnSec}>
-        <button className={styles.nextBtn} onClick={handleGenerateLead}>
-          Create Lead
+        <button
+          className={styles.nextBtn}
+          onClick={handleGenerateLead}
+          disabled={submitting || leadCreated}
+        >
+          {submitting ? "Creating…" : "Create Lead"}
         </button>
         {/* <button className={styles.nextBtn}>Download</button>
         <button className={styles.nextBtn}>Print</button> */}
