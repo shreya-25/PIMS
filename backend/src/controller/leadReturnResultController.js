@@ -180,6 +180,24 @@ const getLeadReturnResultByLeadNoandLeadName = async (req, res) => {
     }
 };
 
+const getLeadReturnResultByLeadNo = async (req, res) => {
+    try {
+        const { leadNo, caseId } = req.params;
+
+        const query = {
+            leadNo: Number(leadNo),
+            caseId,
+            isDeleted: { $ne: true },
+        };
+
+        const leadReturns = await LeadReturnResult.find(query).lean();
+        res.status(200).json(leadReturns);
+    } catch (err) {
+        console.error("Error fetching lead return results by leadNo and caseId:", err.message);
+        res.status(500).json({ message: "Something went wrong" });
+    }
+};
+
 // Update a specific lead return result entry
 const updateLeadReturnResult = async (req, res) => {
     try {
@@ -462,5 +480,5 @@ const searchCasesAndLeadsByKeyword = async (req, res) => {
   }
 };
 
-module.exports = { createLeadReturnResult, getLeadReturnResultsByOfficer, getLeadReturnResultByLeadNoandLeadName, updateLeadReturnResult,
+module.exports = { createLeadReturnResult, getLeadReturnResultsByOfficer, getLeadReturnResultByLeadNoandLeadName, getLeadReturnResultByLeadNo, updateLeadReturnResult,
     deleteLeadReturnResult, searchCasesAndLeadsByKeyword };

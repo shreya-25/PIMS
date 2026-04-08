@@ -297,14 +297,14 @@ useEffect(() => {
    */
   useEffect(() => {
     const caseId = effectiveCase?._id || effectiveCase?.id;
-    if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !caseId) return;
+    if (!effectiveLead?.leadNo || !caseId) return;
     const ac = new AbortController();
 
     (async () => {
       try {
         const token = localStorage.getItem('token');
         const { data } = await api.get(
-          `/api/lead/lead/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${caseId}`,
+          `/api/lead/lead/${effectiveLead.leadNo}/${caseId}`,
           { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
         );
         if (ac.signal.aborted || !data?.length) return;
@@ -315,7 +315,7 @@ useEffect(() => {
     })();
 
     return () => ac.abort();
-  }, [effectiveLead?.leadNo, effectiveLead?.leadName, effectiveCase?._id, effectiveCase?.id]);
+  }, [effectiveLead?.leadNo, effectiveCase?._id, effectiveCase?.id]);
 
   /**
    * Fetch the lead's current status from the dedicated status endpoint.
@@ -365,14 +365,14 @@ useEffect(() => {
 
   useEffect(() => {
   const caseId = effectiveCase?._id || effectiveCase?.id;
-  if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !caseId) return;
+  if (!effectiveLead?.leadNo || !caseId) return;
   const ac = new AbortController();
 
   (async () => {
     try {
       const token = localStorage.getItem('token');
       const { data } = await api.get(
-        `/api/lead/status/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${caseId}`,
+        `/api/lead/status/${effectiveLead.leadNo}/${caseId}`,
         { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
       );
       if (ac.signal.aborted) return;
@@ -409,7 +409,6 @@ useEffect(() => {
   return () => ac.abort();
 }, [
   effectiveLead?.leadNo,
-  effectiveLead?.leadName,
   effectiveCase?._id,
   effectiveCase?.id,
   leadData?.leadStatus,
@@ -461,7 +460,7 @@ useEffect(() => {
    */
   useEffect(() => {
     const caseId = effectiveCase?._id || effectiveCase?.id;
-    if (!effectiveLead?.leadNo || !effectiveLead?.leadName || !caseId) return;
+    if (!effectiveLead?.leadNo || !caseId) return;
     const ac = new AbortController();
 
     (async () => {
@@ -469,7 +468,7 @@ useEffect(() => {
         setError('');
         const token = localStorage.getItem('token');
         const { data } = await api.get(
-          `/api/leadReturnResult/${effectiveLead.leadNo}/${encodeURIComponent(effectiveLead.leadName)}/${caseId}`,
+          `/api/leadReturnResult/${effectiveLead.leadNo}/${caseId}`,
           { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
         );
         if (ac.signal.aborted) return;
@@ -524,7 +523,6 @@ useEffect(() => {
     return () => ac.abort();
   }, [
     effectiveLead?.leadNo,
-    effectiveLead?.leadName,
     effectiveCase?._id,
     effectiveCase?.id,
     isCaseManager,

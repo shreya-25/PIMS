@@ -7,14 +7,14 @@ const higher = (a, b) => (STATUS_RANK[a] ?? -1) >= (STATUS_RANK[b] ?? -1) ? a : 
 
 export function useLeadStatus({ caseId, leadNo, leadName, initialStatus }) {
   const queryClient = useQueryClient();
-  const key = ['lead-status', caseId, leadNo, leadName];
+  const key = ['lead-status', caseId, leadNo];
 
   const { data: status = initialStatus || 'Pending', isFetching } = useQuery({
     queryKey: key,
-    enabled: !!(caseId && leadNo && leadName),
+    enabled: !!(caseId && leadNo),
     queryFn: async () => {
       const { data } = await api.get(
-        `/api/lead/status/${leadNo}/${encodeURIComponent(leadName)}/${caseId}`
+        `/api/lead/status/${leadNo}/${caseId}`
       );
       return data.leadStatus || data.status || 'Pending';
     },

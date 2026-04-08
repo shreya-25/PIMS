@@ -1,7 +1,7 @@
 const express = require("express");
 const { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName, getLeadsforHierarchy, updateLeadStatus, getAssociatedSubCategories, searchLeadsByKeyword, setLeadStatusToInReview,
   updateLead, removeAssignedOfficer, getAssignedLeadsForOfficer, deleteLead,setLeadStatusToReturned,setLeadStatusToReopened,
-  setLeadStatusToComplete, setLeadStatusToPending, updateAssignedToStatus, getLRForCM, getLeadStatus,setLeadStatusToClosed,
+  setLeadStatusToComplete, setLeadStatusToPending, updateAssignedToStatus, getLRForCM, getLeadStatus, getLeadStatusByLeadNo, setLeadStatusToClosed,
   updateLeadFlags, getCaseFlaggedLeads, getCaseAllLeadsWithFlags
  } = require("../controller/leadController");
 const verifyToken = require("../middleware/authMiddleware");
@@ -28,11 +28,8 @@ router.get("/assigned-only", verifyToken, getAssignedLeadsForOfficer);
 
 router.get("/lead-returnforreview", verifyToken, getLRForCM);
 
-router.get(
-  '/status/:leadNo/:leadName/:caseId',
-  verifyToken,
-  getLeadStatus
-);
+router.get('/status/:leadNo/:caseId', verifyToken, getLeadStatusByLeadNo);
+router.get('/status/:leadNo/:leadName/:caseId', verifyToken, getLeadStatus);
 
 router.put("/lead/status/close", setLeadStatusToClosed);
 

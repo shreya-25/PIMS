@@ -1012,6 +1012,28 @@ const getLeadStatus = async (req, res) => {
   }
 };
 
+const getLeadStatusByLeadNo = async (req, res) => {
+  try {
+    const { leadNo } = req.params;
+    const caseId = await resolveCaseId(req.params.caseId);
+
+    const lead = await Lead.findOne({
+      leadNo:    Number(leadNo),
+      caseId,
+      isDeleted: { $ne: true },
+    });
+
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found" });
+    }
+
+    res.status(200).json({ leadStatus: lead.leadStatus });
+  } catch (err) {
+    console.error("Error fetching lead status:", err);
+    res.status(500).json({ message: "Server error while fetching lead status" });
+  }
+};
+
 const setLeadStatusToClosed = async (req, res) => {
   try {
     const { leadNo, description, caseId, reason } = req.body;
@@ -1106,6 +1128,6 @@ const getCaseAllLeadsWithFlags = async (req, res) => {
 };
 
 module.exports = { createLead, getLeadsByOfficer, getLeadsByCase, getLeadsForAssignedToOfficer, getLeadsByLeadNoandLeadName , getLeadsforHierarchy, updateLeadStatus, getAssociatedSubCategories, updateLRStatusToPending, searchLeadsByKeyword , setLeadStatusToInReview,
-  setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM, getLeadStatus, setLeadStatusToClosed,  deleteLead, setLeadStatusToReturned, setLeadStatusToReopened,
+  setLeadStatusToComplete, setLeadStatusToPending, updateLead, updateAssignedToStatus, removeAssignedOfficer, getAssignedLeadsForOfficer, getLRForCM, getLeadStatus, getLeadStatusByLeadNo, setLeadStatusToClosed,  deleteLead, setLeadStatusToReturned, setLeadStatusToReopened,
   updateLeadFlags, getCaseFlaggedLeads, getCaseAllLeadsWithFlags
 };
