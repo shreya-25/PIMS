@@ -1580,7 +1580,7 @@ for (const enc of leadEvidence) {
 
         currentY = startSection(doc, "Picture Details", currentY);
         const headers = ["Date Entered","Date Picture Taken","Description"];
-        const widths  = [90,120, 302];
+        const widths  = [90,127, 295];
         const rows    = leadPictures.map(p => ({
           "Date Entered":        formatDate(p.enteredDate),
           "Date Picture Taken":  formatDate(p.datePictureTaken),
@@ -1651,7 +1651,7 @@ for (const enc of leadPictures) {
       } else {
         currentY = startSection(doc, "Audio Details", currentY);
         const headers = ["Date Entered","Date Audio Recorded","Description"];
-        const widths  = [90,120, 302];
+        const widths  = [90,127, 295];
         const rows    = leadAudio.map(a => ({
           "Date Entered":         formatDate(a.enteredDate),
           "Date Audio Recorded":  formatDate(a.dateAudioRecorded),
@@ -1682,7 +1682,7 @@ for (const enc of leadPictures) {
 
         currentY = startSection(doc, "Video Details", currentY);
         const headers = ["Date Entered","Date Video Recorded","Description"];
-        const widths  = [90,120, 302];
+        const widths  = [90,127, 295];
         const rows    = leadVideos.map(v => ({
           "Date Entered":         formatDate(v.enteredDate),
           "Date Video Recorded":  formatDate(v.dateVideoRecorded),
