@@ -501,14 +501,13 @@ export const LRInstruction = () => {
         caseDetails?._id  || caseDetails?.id  ? caseDetails  :
         selectedCase;
       const kaseId = kase?._id || kase?.id;
-      const leadName = lead?.leadName || lead?.description;
 
-      if (!lead?.leadNo || !leadName || !kaseId) return;
+      if (!lead?.leadNo || !kaseId) return;
 
       try {
         const token    = localStorage.getItem('token');
         const response = await api.get(
-          `/api/lead/lead/${lead.leadNo}/${encodeURIComponent(leadName)}/${kaseId}`,
+          `/api/lead/lead/${lead.leadNo}/${kaseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
