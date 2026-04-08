@@ -470,24 +470,24 @@ export const LREnclosures = () => {
   if (!leadNo || !leadName || !caseId) return;
 
   try {
-    const response = await api.get(
+    const { data } = await api.get(
       `/api/lrenclosure/${leadNo}/${leadName}/${caseId}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-      const mapped = data.map((enc) => ({
-        dateEntered:  formatDate(enc.enteredDate),
-        type:         enc.type,
-        enclosure:    enc.enclosureDescription,
-        returnId:     enc.leadReturnId,
-        originalName: enc.originalName,
-        filename:     enc.filename,
-        link:         enc.link || '',
-        signedUrl:    enc.signedUrl || '',
-        accessLevel:  enc.accessLevel ?? 'Everyone',
-        enteredBy:        enc.enteredBy,
-        enteredByUserId:  enc.enteredByUserId ? String(enc.enteredByUserId) : null,
-      }));
+    const mapped = (data || []).map((enc) => ({
+      dateEntered: formatDate(enc.enteredDate),
+      type: enc.type,
+      enclosure: enc.enclosureDescription,
+      returnId: enc.leadReturnId,
+      originalName: enc.originalName,
+      filename: enc.filename,
+      link: enc.link || '',
+      signedUrl: enc.signedUrl || '',
+      accessLevel: enc.accessLevel ?? 'Everyone',
+      enteredBy: enc.enteredBy,
+      enteredByUserId: enc.enteredByUserId ? String(enc.enteredByUserId) : null,
+    }));
 
     setEnclosures(filterByAccessLevel(mapped, isCaseManager, leadData));
   } catch (err) {
