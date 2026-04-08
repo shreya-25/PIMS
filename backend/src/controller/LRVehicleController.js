@@ -53,7 +53,8 @@ const createLRVehicle = async (req, res) => {
 
 const getLRVehicleByDetails = async (req, res) => {
     try {
-        const { leadNo, leadName, caseId } = req.params;
+        const { leadNo, caseId } = req.params;
+        const leadName = decodeParam(req.params.leadName);
         const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
         const lrVehicles = await LRVehicle.find(query);
         res.status(200).json(lrVehicles);
@@ -65,7 +66,8 @@ const getLRVehicleByDetails = async (req, res) => {
 
 const getLRVehicleByDetailsandid = async (req, res) => {
     try {
-        const { leadNo, leadName, caseId, id } = req.params;
+        const { leadNo, caseId, id } = req.params;
+        const leadName = decodeParam(req.params.leadName);
         const query = { leadNo: Number(leadNo), description: leadName, caseId, leadReturnId: id, isDeleted: { $ne: true } };
         const lrVehicles = await LRVehicle.find(query);
         res.status(200).json(lrVehicles);

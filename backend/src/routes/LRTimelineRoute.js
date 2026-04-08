@@ -10,7 +10,7 @@ router.post("/create", verifyToken, createLRTimeline);
 // Route to fetch timeline entries for a given case using caseId
 router.get("/case/:caseId", verifyToken, getTimelinesByCase);
 
-router.get("/:leadNo/:leadName/:caseId", verifyToken, getLRTimelineByDetails);
+router.get("/:leadNo/:leadName(*)/:caseId", verifyToken, getLRTimelineByDetails);
 
 // update one
 router.put("/:id", verifyToken, updateLRTimeline);

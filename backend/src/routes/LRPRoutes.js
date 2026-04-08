@@ -78,9 +78,9 @@ router.post(
 
 router.get("/case/:caseNo", verifyToken, getPicturesByCaseNo);
 
-router.get("/:leadNo/:leadName/:caseId", verifyToken, getLRPictureByDetails);
-router.put("/:leadNo/:leadName/:caseId/:leadReturnId/:pictureDescription", verifyToken, upload.single("file"), updateLRPicture);
-router.delete("/:leadNo/:leadName/:caseId/:leadReturnId/:pictureDescription", verifyToken, deleteLRPicture);
+router.get("/:leadNo/:leadName(*)/:caseId", verifyToken, getLRPictureByDetails);
+router.put("/:leadNo/:leadName(*)/:caseId/:leadReturnId/:pictureDescription(*)", verifyToken, upload.single("file"), updateLRPicture);
+router.delete("/:leadNo/:leadName(*)/:caseId/:leadReturnId/:pictureDescription(*)", verifyToken, deleteLRPicture);
 
 
 

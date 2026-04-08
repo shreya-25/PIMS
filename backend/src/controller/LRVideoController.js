@@ -86,7 +86,8 @@ const createLRVideo = async (req, res) => {
 
 const getLRVideoByDetails = async (req, res) => {
   try {
-    const { leadNo, leadName, caseId } = req.params;
+    const { leadNo, caseId } = req.params;
+    const leadName = decodeParam(req.params.leadName);
     const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
     const lrVideos = await LRVideo.find(query);
 

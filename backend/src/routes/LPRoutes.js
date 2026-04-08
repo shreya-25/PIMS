@@ -14,9 +14,9 @@ router.get('/case/:caseNo', verifyToken, getPersonsByCaseNo);
 
 router.post("/lrperson", verifyToken, createLRPerson);
 
-router.get("/lrperson/:leadNo/:leadName/:caseId", verifyToken, getLRPersonByDetails);
+router.get("/lrperson/:leadNo/:leadName(*)/:caseId", verifyToken, getLRPersonByDetails);
 
-router.get("/lrperson/:leadNo/:leadName/:caseId/:id", verifyToken, getLRPersonByDetailsandid);
+router.get("/lrperson/:leadNo/:leadName(*)/:caseId/:id", verifyToken, getLRPersonByDetailsandid);
 
 router.put(
     '/:leadNo/:caseId/:leadReturnId/:firstName',
