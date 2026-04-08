@@ -272,7 +272,9 @@ const getLeadsByCase = async (req, res) => {
                 ? caseFilter[0]
                 : { $or: caseFilter }),
         };
+        console.log('[getLeadsByLeadNoandLeadName] query:', JSON.stringify(query));
         const leads = await Lead.find(query).lean();
+        console.log('[getLeadsByLeadNoandLeadName] results:', leads.length);
         // Normalise fields that may be absent from documents created before schema migrations
         const normalised = leads.map(l => ({
           ...l,
