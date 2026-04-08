@@ -1,9 +1,14 @@
 const express = require("express");
 const verifyToken = require("../middleware/authMiddleware");
-const { createLREnclosure, getLREnclosureByDetails, updateLREnclosure, deleteLREnclosure, getEnclosuresByCaseNo } = require("../controller/LREnclosureController");
+const {
+  createLREnclosure,
+  getLREnclosureByDetails,
+  updateLREnclosure,
+  deleteLREnclosure,
+  getEnclosuresByCaseNo,
+} = require("../controller/LREnclosureController");
 const getUploadMiddleware = require("../middleware/upload");
 const upload = require("../middleware/upload-disk");
-
 
 const router = express.Router();
 
@@ -11,48 +16,49 @@ router.post(
   "/upload-lrenclosure",
   verifyToken,
   async (req, res, next) => {
-    // 1) Perform the file upload
     try {
-      const upload = await getUploadMiddleware();
-      upload.single("file")(req, res, function (err) {
+      const dynamicUpload = await getUploadMiddleware();
+
+      dynamicUpload.single("file")(req, res, function (err) {
         if (err) {
           console.error("Multer error:", err);
           return res.status(400).json({ message: err.message });
         }
+
         console.log("Multer finished, req.file:", req.file);
-        next(); // Proceed to the next middleware/controller
+        next();
       });
     } catch (error) {
       console.error("Error in upload middleware:", error);
       return res.status(500).json({ message: "File upload initialization failed" });
     }
   },
-  // 2) After the file is uploaded, call createLREnclosure
   createLREnclosure
 );
 
-
 router.post(
-    "/upload",
-    verifyToken,
-    upload.single("file"), // process file upload via disk storage
-    createLREnclosure      // then call your controller to save textual data & file details to MongoDB
-  );
+  "/upload",
+  verifyToken,
+  upload.single("file"),
+  createLREnclosure
+);
 
 // router.post("/upload-test-gridfs", async (req, res) => {
 //   try {
 //     console.log("POST /upload-test-gridfs route reached");
-//     const upload = await getUploadMiddleware();
+//     const dynamicUpload = await getUploadMiddleware();
 //     console.log("Multer instance acquired for test");
-//     upload.single("file")(req, res, function (err) {
+
+//     dynamicUpload.single("file")(req, res, function (err) {
 //       if (err) {
 //         console.error("Multer error on /upload-test-gridfs:", err);
 //         return res.status(400).json({ message: err.message });
 //       }
+
 //       console.log("Multer finished, req.file:", req.file);
-//       res.status(200).json({ 
-//         message: "GridFS upload test successful", 
-//         file: req.file 
+//       res.status(200).json({
+//         message: "GridFS upload test successful",
+//         file: req.file,
 //       });
 //     });
 //   } catch (error) {
@@ -67,28 +73,28 @@ router.post(
 //       console.error("Multer error:", err);
 //       return res.status(400).json({ message: err.message });
 //     }
+
 //     console.log("Disk storage Multer finished, req.file:", req.file);
 //     res.status(200).json({
 //       message: "Disk storage upload test successful",
-//       file: req.file
+//       file: req.file,
 //     });
 //   });
 // });
 
-
 router.get("/case/:caseNo", verifyToken, getEnclosuresByCaseNo);
 
-router.get("/:leadNo/:leadName/:caseId", verifyToken, getLREnclosureByDetails);
+router.get("/:leadNo/:leadName(*)/:caseId", verifyToken, getLREnclosureByDetails);
 
 router.put(
-  "/:leadNo/:leadName/:caseId/:leadReturnId",
+  "/:leadNo/:leadName(*)/:caseId/:leadReturnId",
   verifyToken,
   upload.single("file"),
   updateLREnclosure
 );
 
 router.delete(
-  "/:leadNo/:leadName/:caseId/:leadReturnId",
+  "/:leadNo/:leadName(*)/:caseId/:leadReturnId",
   verifyToken,
   deleteLREnclosure
 );
