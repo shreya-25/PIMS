@@ -458,6 +458,18 @@ export const LRInstruction = () => {
   // Effects
   // ---------------------------------------------------------------------------
 
+  /** Sync context from router state (covers fresh-session and tab navigation). */
+  useEffect(() => {
+    if (caseDetails && leadDetails) {
+      setSelectedCase(caseDetails);
+      setSelectedLead({
+        ...leadDetails,
+        leadName: leadDetails.leadName || leadDetails.description,
+        leadNo:   leadDetails.leadNo   ?? leadDetails.id,
+      });
+    }
+  }, [caseDetails, leadDetails]); // eslint-disable-line react-hooks/exhaustive-deps
+
   /**
    * Hydrate context when the page is reached via a direct URL containing
    * query-string parameters instead of router state.
@@ -489,13 +501,14 @@ export const LRInstruction = () => {
         caseDetails?._id  || caseDetails?.id  ? caseDetails  :
         selectedCase;
       const kaseId = kase?._id || kase?.id;
+      const leadName = lead?.leadName || lead?.description;
 
-      if (!lead?.leadNo || !lead?.leadName || !kaseId) return;
+      if (!lead?.leadNo || !leadName || !kaseId) return;
 
       try {
         const token    = localStorage.getItem('token');
         const response = await api.get(
-          `/api/lead/lead/${lead.leadNo}/${encodeURIComponent(lead.leadName)}/${kaseId}`,
+          `/api/lead/lead/${lead.leadNo}/${encodeURIComponent(leadName)}/${kaseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

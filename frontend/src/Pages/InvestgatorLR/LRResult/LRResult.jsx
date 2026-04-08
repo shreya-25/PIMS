@@ -111,6 +111,8 @@ export const LRResult = () => {
     leadStatus,
     setLeadStatus,
     setLeadReturns,
+    setSelectedCase,
+    setSelectedLead,
   } = useContext(CaseContext);
 
   // Prefer live context values; fall back to values passed through router state
@@ -246,6 +248,18 @@ useEffect(() => {
    * Primary investigators submit; all others review.
    */
   // ─── Effects ─────────────────────────────────────────────────────────────────
+
+  // Sync context from router state (covers fresh-session and tab navigation)
+  useEffect(() => {
+    if (caseDetails && leadDetails) {
+      setSelectedCase(caseDetails);
+      setSelectedLead({
+        ...leadDetails,
+        leadName: leadDetails.leadName || leadDetails.description,
+        leadNo:   leadDetails.leadNo   ?? leadDetails.id,
+      });
+    }
+  }, [caseDetails, leadDetails]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Seed officer name from localStorage on mount
   useEffect(() => {
