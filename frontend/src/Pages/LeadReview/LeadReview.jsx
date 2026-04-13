@@ -30,7 +30,7 @@ export const LeadReview = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [pendingRoute, setPendingRoute]   = useState(null);
-  const [caseTeam, setCaseTeam] = useState({ detectiveSupervisor: "", caseManagers: [], investigators: [] });
+  const [caseTeam, setCaseTeam] = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [] });
   const [originalAssigned, setOriginalAssigned] = useState([]);
   const signedInOfficer = localStorage.getItem("loggedInUser");
   const [alertOpen, setAlertOpen] = useState(false);
@@ -210,9 +210,9 @@ const DeleteReasonModal = memo(function DeleteReasonModal({ open, onCancel, onSu
       headers: { Authorization: `Bearer ${token}` }
     }).then(resp => {
       setCaseTeam({
-        detectiveSupervisor: resp.data.detectiveSupervisor,
+        detectiveSupervisors: resp.data.detectiveSupervisors || [],
         caseManagers:         resp.data.caseManagers,
-        investigators:       resp.data.investigators
+        investigators:        resp.data.investigators
       });
     }).catch(console.error);
   }, [selectedCase.caseNo]);
@@ -704,9 +704,7 @@ const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = 
       );
 
       const officers = [
-        ...(caseTeam.detectiveSupervisor
-          ? [{ name: toUsername(caseTeam.detectiveSupervisor), role: "Detective Supervisor", status: "accepted" }]
-          : []),
+        ...(caseTeam.detectiveSupervisors || []).map(ds => ({ name: toUsername(ds), role: "Detective Supervisor", status: "accepted" })),
         ...(caseTeam.caseManagers || []).map((n) => ({
           name: toUsername(n),
           role: "Case Manager",
@@ -730,18 +728,21 @@ const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = 
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setCaseTeam({
-        detectiveSupervisor: teamResp.data.detectiveSupervisor,
+        detectiveSupervisors: teamResp.data.detectiveSupervisors || [],
         caseManagers: teamResp.data.caseManagers,
         investigators: teamResp.data.investigators,
       });
 
-      // Send lead-assignment notifications for each newly added officer
-      const assignedToEntries = newlyAdded.map((u) => ({
-        username: u,
-        role: "Investigator",
-        status: "pending",
-        unread: true,
-      }));
+      // Send lead-assignment notifications for each newly added officer (exclude DS)
+      const dsUsernames = (caseTeam.detectiveSupervisors || []).map(toUsername);
+      const assignedToEntries = newlyAdded
+        .filter((u) => !dsUsernames.includes(u))
+        .map((u) => ({
+          username: u,
+          role: "Investigator",
+          status: "pending",
+          unread: true,
+        }));
 
       const notificationPayload = {
         notificationId: Date.now().toString(),

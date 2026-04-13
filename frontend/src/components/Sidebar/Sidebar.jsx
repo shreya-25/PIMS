@@ -4,6 +4,7 @@ import "./Sidebar.css";
 import { CaseContext } from "../../Pages/CaseContext";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "../../api";
+import { ROLES, CASE_ROLES, isDetectiveSupervisor } from "../../constants/roles";
 
 export const SideBar = ({
   cases: initialCases = [],
@@ -12,6 +13,7 @@ export const SideBar = ({
   setActiveTab,
   onShowCaseSelector,
   variant = "default",
+  isDS: isDSProp = null,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -31,6 +33,14 @@ export const SideBar = ({
 
   const [caseDropdownOpen, setCaseDropdownOpen] = useState(true);
   const [caseList, setCaseList] = useState(initialCases);
+
+  // True if user is a Detective Supervisor either by system role or by case-level role in any case
+  const isUserDS = useMemo(
+    () =>
+      isDetectiveSupervisor(systemRole) ||
+      caseList.some((c) => c.role === CASE_ROLES.DETECTIVE_SUPERVISOR),
+    [systemRole, caseList]
+  );
 
   // Investigator-only: assigned leads for badge counts
   const [assignedLeadsList, setAssignedLeadsList] = useState([]);
@@ -255,6 +265,7 @@ export const SideBar = ({
 
   // Home variant (kept minimal)
   if (variant === "home") {
+    const showArchivedTab = isDSProp !== null ? isDSProp : isUserDS;
     return (
       <aside className="sidebar">
         <ul className="sidebar-list">
@@ -274,7 +285,7 @@ export const SideBar = ({
             <span>Case Management</span>
           </li>
 
-          {systemRole !== "Investigator" && (
+          {systemRole !== ROLES.INVESTIGATOR && (
             <li
               className="sidebar-item"
               style={{ paddingLeft: 32 }}
@@ -285,6 +296,16 @@ export const SideBar = ({
             >
               <img src={addIcon} className="sidebar-icon" alt="" />
               <span>Add Case</span>
+            </li>
+          )}
+
+          {showArchivedTab && (
+            <li
+              className={`sidebar-item ${activeTab === "archived" ? "active" : ""}`}
+              onClick={() => navigate("/ClosedCase")}
+            >
+              <img src={folderIcon} className="sidebar-icon" alt="" />
+              <span>Archived Cases</span>
             </li>
           )}
         </ul>
@@ -415,7 +436,7 @@ export const SideBar = ({
           </ul>
         )}
 
-        {["Case Manager", "Detective Supervisor", "Investigator"].includes(selectedCase?.role) && (
+        {isUserDS && (
           <li className="sidebar-item" onClick={() => navigate("/ClosedCase")}>
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Archived Cases</span>

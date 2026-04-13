@@ -5,6 +5,7 @@ import styles from "./ClosedCase.module.css";
 import Navbar from "../../components/Navbar/Navbar";
 import { SideBar } from "../../components/Sidebar/Sidebar";
 import Filter from "../../components/Filter/Filter";
+import Pagination from "../../components/Pagination/Pagination";
 import api from "../../api";
 import { CaseContext } from "../CaseContext";
 
@@ -26,6 +27,8 @@ export const ClosedCase = () => {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
 
   // ── Fetch Closed cases (polling like HomePage) ──────────────────────────────
   useEffect(() => {
@@ -33,7 +36,6 @@ export const ClosedCase = () => {
 
     const fetchClosed = async () => {
       try {
-        setLoading(true);
         setErr("");
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No token found");
@@ -54,8 +56,9 @@ export const ClosedCase = () => {
           _id: c._id,
           id: c.caseNo,
           title: c.caseName,
-          role: c.role || "Unknown",
           closedAt: c.archivedAt || c.updatedAt || null,
+          caseManagers: c.caseManagers || "—",
+          caseManagerNames: c.caseManagerNames || [],
         }));
 
         setCases(rows);
@@ -68,26 +71,22 @@ export const ClosedCase = () => {
     };
 
     fetchClosed();
-    const id = setInterval(fetchClosed, 15000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
+    return () => { cancelled = true; };
   }, [signedInOfficer]);
 
   // ── Filter + Sort (mirrors HomePage pattern) ────────────────────────────────
   const columnWidths = {
-    "Case No.": "8%",
+    "Case No.": "11%",
     "Case Name": "20%",
     "Closed At": "8%",
-    "Role": "9%",
+    "Case Managers": "14%",
   };
 
   const colKey = {
     "Case No.": "id",
     "Case Name": "title",
     "Closed At": "closedAt",
-    "Role": "role",
+    "Case Managers": "caseManagers",
   };
 
   const filterButtonRefs = useRef({});
@@ -102,7 +101,7 @@ export const ClosedCase = () => {
     id: [],
     title: [],
     closedAt: [],
-    role: [],
+    caseManagers: [],
   });
 
   const [filterSearch, setFilterSearch] = useState({});
@@ -116,14 +115,14 @@ export const ClosedCase = () => {
       id: new Set(),
       title: new Set(),
       closedAt: new Set(),
-      role: new Set(),
+      caseManagers: new Set(),
     };
 
     cases.forEach((c) => {
       map.id.add(String(c.id));
       map.title.add(c.title);
       map.closedAt.add(formatDate(c.closedAt));
-      map.role.add(c.role);
+      (c.caseManagerNames || []).forEach((name) => { if (name) map.caseManagers.add(name); });
     });
 
     return Object.fromEntries(
@@ -159,6 +158,7 @@ export const ClosedCase = () => {
       ...fc,
       [dataKey]: tempFilterSelections[dataKey] || [],
     }));
+    setCurrentPage(1);
     setOpenFilter(null);
   };
 
@@ -170,6 +170,7 @@ export const ClosedCase = () => {
 
   const sortColumn = (dataKey, direction) => {
     setSortConfig({ key: dataKey, direction });
+    setCurrentPage(1);
   };
 
   const sortedCases = useMemo(() => {
@@ -177,10 +178,10 @@ export const ClosedCase = () => {
     const filtered = cases.filter((c) => {
       return Object.entries(filterConfig).every(([field, selected]) => {
         if (!selected || selected.length === 0) return true;
-
-        const cell =
-          field === "closedAt" ? formatDate(c.closedAt) : String(c[field]);
-
+        if (field === "caseManagers") {
+          return selected.some((s) => (c.caseManagerNames || []).includes(s));
+        }
+        const cell = field === "closedAt" ? formatDate(c.closedAt) : String(c[field]);
         return selected.includes(cell);
       });
     });
@@ -208,6 +209,11 @@ export const ClosedCase = () => {
     });
   }, [cases, filterConfig, sortConfig]);
 
+  const paginatedCases = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedCases.slice(start, start + pageSize);
+  }, [sortedCases, currentPage, pageSize]);
+
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleView = (c) => {
     const caseObj = { _id: c._id, caseNo: c.id, caseName: c.title, role: c.role };
@@ -226,10 +232,15 @@ export const ClosedCase = () => {
       <Navbar />
       <div className={styles['main-container']}>
         <SideBar
+          variant="home"
           activePage="ClosedCase"
-          activeTab="closed"
-          setActiveTab={() => {}}
-          onShowCaseSelector={() => {}}
+          activeTab="archived"
+          isDS={true}
+          setActiveTab={(tab) => {
+            if (tab === "notifications") navigate("/HomePage", { state: { activeTab: "notifications" } });
+            else if (tab === "cases") navigate("/HomePage", { state: { activeTab: "cases" } });
+          }}
+          onShowCaseSelector={() => navigate("/HomePage", { state: { activeTab: "cases", openAddCase: true } })}
         />
 
         <div className={styles['left-content']}>
@@ -248,12 +259,12 @@ export const ClosedCase = () => {
                     <col style={{ width: columnWidths["Case Name"] }} />
                     <col style={{ width: columnWidths["Closed At"] }} />
                     <col style={{ width: columnWidths["Role"] }} />
-                    <col style={{ width: "5%" }} /> {/* Actions */}
+                    <col style={{ width: "6%" }} /> {/* Actions */}
                   </colgroup>
 
                   <thead>
                     <tr>
-                      {["Case No.", "Case Name", "Closed At", "Role"].map((col) => {
+                      {["Case No.", "Case Name", "Closed At", "Case Managers"].map((col) => {
                         const dataKey = colKey[col];
                         return (
                           <th
@@ -302,7 +313,7 @@ export const ClosedCase = () => {
                           </th>
                         );
                       })}
-                      <th className={styles['actions-header']}>Actions</th>
+                      <th className={styles['actions-header']} style={{ width: "6%" }}>Actions</th>
                     </tr>
                   </thead>
 
@@ -319,16 +330,20 @@ export const ClosedCase = () => {
                           {err}
                         </td>
                       </tr>
-                    ) : sortedCases.length ? (
-                      sortedCases.map((c) => (
+                    ) : paginatedCases.length ? (
+                      paginatedCases.map((c) => (
                         <tr key={c.id}>
                           <td>{c.id}</td>
                           <td>{c.title}</td>
                           <td>{formatDate(c.closedAt)}</td>
-                          <td>{c.role}</td>
+                          <td>
+                            {c.caseManagers !== "—"
+                              ? c.caseManagers.split(", ").map((m, i) => <div key={i}>{m}</div>)
+                              : "—"}
+                          </td>
                           <td className={styles['center-cell']}>
-                            <button className={styles['view-btn1']} onClick={() => handleView(c)}>
-                              View
+                            <button className={styles['manage-btn']} onClick={() => handleView(c)}>
+                              Manage
                             </button>
                           </td>
                         </tr>
@@ -343,6 +358,13 @@ export const ClosedCase = () => {
                   </tbody>
                 </table>
               </div>
+              <Pagination
+                currentPage={currentPage}
+                totalEntries={sortedCases.length}
+                onPageChange={setCurrentPage}
+                pageSize={pageSize}
+                onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
+              />
             </div>
           </div>
         </div>

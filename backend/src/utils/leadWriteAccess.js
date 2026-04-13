@@ -50,7 +50,7 @@ async function checkLeadWriteAccess(req, caseNo, leadNo) {
       }
 
       const caseDoc = await Case.findOne({ caseNo })
-        .select("caseManagerUserIds detectiveSupervisorUserId")
+        .select("caseManagerUserIds detectiveSupervisorUserId detectiveSupervisorUserIds")
         .lean();
 
       if (!caseDoc) return null; // case not found — let the controller handle it
@@ -60,9 +60,9 @@ async function checkLeadWriteAccess(req, caseNo, leadNo) {
       const isCM = (caseDoc.caseManagerUserIds || []).some(
         (id) => id.equals(userObjId)
       );
-      const isDS =
-        caseDoc.detectiveSupervisorUserId &&
-        caseDoc.detectiveSupervisorUserId.equals(userObjId);
+      const allDS = [...(caseDoc.detectiveSupervisorUserIds || [])];
+      if (caseDoc.detectiveSupervisorUserId) allDS.push(caseDoc.detectiveSupervisorUserId);
+      const isDS = allDS.some((id) => id.equals(userObjId));
 
       if (!isCM && !isDS) {
         return {

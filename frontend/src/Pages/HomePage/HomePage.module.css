@@ -19,14 +19,17 @@
   padding-left: 20px;
   padding-top: var(--nav-h);
   box-sizing: border-box;
-  min-height: 100dvh;
-  overflow-y: auto;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Scrollable column that holds all tab content */
 .left-content {
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -49,8 +52,9 @@
   width: 99%;
   box-sizing: border-box;
   margin-top: 20px;
-  overflow-y: auto;
-  max-height: calc(100dvh - var(--nav-h) - 20px);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* ─── Tab navigation bar ──────────────────────────────────────────────────── */
@@ -101,16 +105,21 @@
   padding: 8px;
   width: 95%;
   margin: 0 auto;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ─── Table ───────────────────────────────────────────────────────────────── */
 
-/* Horizontally scrollable table wrapper */
+/* Horizontally scrollable table wrapper — only scroll zone on the page */
 .table-scroll-container {
   width: 100%;
+  flex: 1;
+  min-height: 0;
   overflow-x: auto;
   overflow-y: auto;
-  max-height: calc(100dvh - var(--nav-h) - 20px);
   -webkit-overflow-scrolling: touch;
 }
 

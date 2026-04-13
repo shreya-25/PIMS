@@ -48,11 +48,11 @@ export const CasePageManager = () => {
   });
 
   // ─── Case team state ──────────────────────────────────────────────────────
-  const [team, setTeam] = useState({ detectiveSupervisor: [], caseManagers: [], investigators: [] });
+  const [team, setTeam] = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [] });
   const [allUsers, setAllUsers] = useState([]);
   const [selectedInvestigators, setSelectedInvestigators] = useState([]);
   const [selectedCaseManagers, setSelectedCaseManagers] = useState([]);
-  const [selectedDetectiveSupervisor, setSelectedDetectiveSupervisor] = useState("");
+  const [selectedDetectiveSupervisors, setSelectedDetectiveSupervisors] = useState([]);
 
   // ─── Team dropdown open/search state ──────────────────────────────────────
   const [investigatorsDropdownOpen, setInvestigatorsDropdownOpen] = useState(false);
@@ -202,10 +202,10 @@ export const CasePageManager = () => {
     if (Array.isArray(team.caseManagers)) {
       setSelectedCaseManagers(team.caseManagers);
     }
-    if (team.detectiveSupervisor) {
-      setSelectedDetectiveSupervisor(team.detectiveSupervisor);
+    if (Array.isArray(team.detectiveSupervisors)) {
+      setSelectedDetectiveSupervisors([...team.detectiveSupervisors]);
     }
-  }, [team.investigators, team.caseManagers, team.detectiveSupervisor]);
+  }, [team.investigators, team.caseManagers, team.detectiveSupervisors]);
 
   // ─── Effect: presence heartbeat ──────────────────────────────────────────
   useEffect(() => {
@@ -452,18 +452,18 @@ export const CasePageManager = () => {
   const saveInvestigators = async (
     overrideInvestigators = selectedInvestigators,
     overrideManagers = selectedCaseManagers,
-    overrideSupervisor = selectedDetectiveSupervisor
+    overrideSupervisors = selectedDetectiveSupervisors
   ) => {
     try {
       const token = localStorage.getItem("token");
 
-      const prevSupervisor = team.detectiveSupervisor;
+      const prevSupervisors = team.detectiveSupervisors || [];
       const prevManagers = team.caseManagers || [];
       const prevInvestigators = team.investigators || [];
 
       // Block removal of officers who still have open leads
       const removed = [
-        ...(prevSupervisor && prevSupervisor !== overrideSupervisor ? [{ username: prevSupervisor, role: "Detective Supervisor" }] : []),
+        ...prevSupervisors.filter(u => !overrideSupervisors.includes(u)).map(u => ({ username: u, role: "Detective Supervisor" })),
         ...prevManagers.filter(u => !overrideManagers.includes(u)).map(u => ({ username: u, role: "Case Manager" })),
         ...prevInvestigators.filter(u => !overrideInvestigators.includes(u)).map(u => ({ username: u, role: "Investigator" })),
       ];
@@ -478,13 +478,13 @@ export const CasePageManager = () => {
       }
 
       const officers = [
-        { name: overrideSupervisor, role: "Detective Supervisor", status: "accepted" },
+        ...overrideSupervisors.map(u => ({ name: u, role: "Detective Supervisor", status: "accepted" })),
         ...overrideManagers.map(u => ({ name: u, role: "Case Manager", status: "accepted" })),
         ...overrideInvestigators.map(u => ({ name: u, role: "Investigator", status: "pending" })),
       ];
 
       const newlyAdded = [
-        ...(overrideSupervisor && overrideSupervisor !== prevSupervisor ? [{ username: overrideSupervisor, role: "Detective Supervisor" }] : []),
+        ...overrideSupervisors.filter(u => !prevSupervisors.includes(u)).map(u => ({ username: u, role: "Detective Supervisor" })),
         ...overrideManagers.filter(u => !prevManagers.includes(u)).map(u => ({ username: u, role: "Case Manager" })),
         ...overrideInvestigators.filter(u => !prevInvestigators.includes(u)).map(u => ({ username: u, role: "Investigator" })),
       ];
@@ -496,7 +496,7 @@ export const CasePageManager = () => {
       );
 
       setTeam({
-        detectiveSupervisor: overrideSupervisor,
+        detectiveSupervisors: [...overrideSupervisors],
         caseManagers: [...overrideManagers],
         investigators: [...overrideInvestigators],
       });
@@ -914,9 +914,9 @@ export const CasePageManager = () => {
                   </thead>
                   <tbody>
 
-                    {/* Detective Supervisor */}
+                    {/* Detective Supervisor(s) */}
                     <tr>
-                      <td className={styles['case-team-td']}>Detective Supervisor</td>
+                      <td className={styles['case-team-td']}>Detective Supervisor{team.detectiveSupervisors.length > 1 ? "s" : ""}</td>
                       <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
                         {selectedCase.role === "Detective Supervisor" ? (
                           <div ref={dsRef} className={styles['custom-dropdown']}>
@@ -925,7 +925,7 @@ export const CasePageManager = () => {
                               onClick={() => setDetectiveSupervisorDropdownOpen(prev => !prev)}
                             >
                               <span className={styles['dh-text']}>
-                                {selectedDetectiveSupervisor ? displayName(selectedDetectiveSupervisor) : "Select Detective Supervisor"}
+                                {selectedDetectiveSupervisors.length > 0 ? displayNames(selectedDetectiveSupervisors) : "Select Detective Supervisor(s)"}
                               </span>
                               <span className={styles['dropdown-icon']} aria-hidden="true">
                                 <img src={detectiveSupervisorDropdownOpen ? downIcon : upIcon} className={styles['caret-icon']} alt="" />
@@ -943,18 +943,21 @@ export const CasePageManager = () => {
                                   autoFocus
                                 />
                                 {allUsers
+                                  .filter(user => user.role === "Detective Supervisor")
                                   .filter(user => !dsSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(dsSearch.toLowerCase()))
                                   .map(user => (
                                     <div key={user.username} className={styles['dropdown-item']}>
                                       <input
-                                        type="radio"
-                                        name="detectiveSupervisor"
+                                        type="checkbox"
                                         id={`ds-${user.username}`}
                                         value={user.username}
-                                        checked={selectedDetectiveSupervisor === user.username}
-                                        onChange={() => {
-                                          setSelectedDetectiveSupervisor(user.username);
-                                          saveInvestigators(selectedInvestigators, selectedCaseManagers, user.username);
+                                        checked={selectedDetectiveSupervisors.includes(user.username)}
+                                        onChange={e => {
+                                          const next = e.target.checked
+                                            ? [...selectedDetectiveSupervisors, user.username]
+                                            : selectedDetectiveSupervisors.filter(u => u !== user.username);
+                                          setSelectedDetectiveSupervisors(next);
+                                          saveInvestigators(selectedInvestigators, selectedCaseManagers, next);
                                         }}
                                       />
                                       <label htmlFor={`ds-${user.username}`}>
@@ -966,7 +969,7 @@ export const CasePageManager = () => {
                             )}
                           </div>
                         ) : (
-                          formatUser(team.detectiveSupervisor) || "—"
+                          displayNames(team.detectiveSupervisors) || "—"
                         )}
                       </td>
                     </tr>
@@ -1000,6 +1003,7 @@ export const CasePageManager = () => {
                                   autoFocus
                                 />
                                 {allUsers
+                                  .filter(user => user.role === "CaseManager")
                                   .filter(user => !cmSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(cmSearch.toLowerCase()))
                                   .map(user => (
                                     <div key={user.username} className={styles['dropdown-item']}>
@@ -1013,7 +1017,7 @@ export const CasePageManager = () => {
                                             ? [...selectedCaseManagers, user.username]
                                             : selectedCaseManagers.filter(u => u !== user.username);
                                           setSelectedCaseManagers(next);
-                                          saveInvestigators(selectedInvestigators, next, selectedDetectiveSupervisor);
+                                          saveInvestigators(selectedInvestigators, next, selectedDetectiveSupervisors);
                                         }}
                                       />
                                       <label htmlFor={`cm-${user.username}`}>
@@ -1074,7 +1078,7 @@ export const CasePageManager = () => {
                                             ? [...selectedInvestigators, user.username]
                                             : selectedInvestigators.filter(u => u !== user.username);
                                           setSelectedInvestigators(next);
-                                          saveInvestigators(next, selectedCaseManagers, selectedDetectiveSupervisor);
+                                          saveInvestigators(next, selectedCaseManagers, selectedDetectiveSupervisors);
                                         }}
                                       />
                                       <label htmlFor={`inv-${user.username}`}>

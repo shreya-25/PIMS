@@ -11,6 +11,7 @@ import { SideBar } from "../../components/Sidebar/Sidebar";
 import Pagination from "../../components/Pagination/Pagination";
 import { AlertModal } from "../../components/AlertModal/AlertModal";
 import api from "../../api";
+import { ROLES, isDetectiveSupervisor } from "../../constants/roles";
 
 export const HomePage = () => {
   const location = useLocation();
@@ -39,9 +40,11 @@ export const HomePage = () => {
   const { setSelectedCase, setSelectedLead } = useContext(CaseContext);
   const signedInOfficer = localStorage.getItem("loggedInUser");
   const signedInUserId  = localStorage.getItem("userId");
+  const systemRole      = localStorage.getItem("role");
   const navigate = useNavigate();
 
   const [cases, setCases] = useState([]);
+  const [treatAsDS, setTreatAsDS] = useState(false);
   const [leads, setLeads] = useState({
     assignedLeads: [],
     pendingLeads: [],
@@ -60,7 +63,7 @@ export const HomePage = () => {
   };
 
   // Map a raw API case to the shape used in UI, resolving the officer's role
-  const mapCaseForOfficer = (c, officerName, officerUserId) => {
+  const mapCaseForOfficer = (c, officerName, officerUserId, sysRole) => {
     const name = officerName?.toLowerCase?.() ?? "";
     const uid  = officerUserId ?? "";
     const matchUser = (u) =>
@@ -76,6 +79,9 @@ export const HomePage = () => {
       role = "Case Manager";
     } else if (Array.isArray(c.investigatorUserIds) && c.investigatorUserIds.some(matchUser)) {
       role = "Investigator";
+    } else if (isDetectiveSupervisor(sysRole)) {
+      // DS viewing a case they aren't directly assigned to — treat as DS for navigation
+      role = "Detective Supervisor";
     }
 
     const getDisplayName = (u) => {
@@ -113,6 +119,30 @@ export const HomePage = () => {
     };
   };
 
+  // Detect DS status on mount — runs regardless of active tab so the sidebar shows correctly
+  useEffect(() => {
+    const detectDS = async () => {
+      try {
+        if (isDetectiveSupervisor(systemRole)) { setTreatAsDS(true); return; }
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const { data } = await api.get("/api/cases", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const name = signedInOfficer?.toLowerCase?.() ?? "";
+        const uid  = signedInUserId ?? "";
+        const matchUser = (u) =>
+          u && (uid ? String(u._id || u.id || "") === uid
+            : u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name);
+        const isCaseLevelDS = (data || []).some(
+          (c) => c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId)
+        );
+        setTreatAsDS(isCaseLevelDS);
+      } catch { /* silent */ }
+    };
+    detectDS();
+  }, [signedInOfficer]);
+
   // Fetch ongoing cases assigned to the signed-in officer; polls every 5s
   useEffect(() => {
     if (!isCaseMgmt) return;
@@ -143,16 +173,24 @@ export const HomePage = () => {
             ? String(u._id || u.id || "") === uid
             : u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name);
 
+        // Treat user as DS if their system role is DS OR they are the DS in any ongoing case
+        const isCaseLevelDS = response.data.some(
+          (c) => c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId)
+        );
+        const treatAsDSLocal = isDetectiveSupervisor(systemRole) || isCaseLevelDS;
+        setTreatAsDS(treatAsDSLocal);
+
         const assignedCases = response.data
           .filter((c) => {
             if (c.status !== "ONGOING") return false;
+            if (treatAsDSLocal) return true;
             const isDS = c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId);
             const isCM = Array.isArray(c.caseManagerUserIds) && c.caseManagerUserIds.some(matchUser);
             const isInv = Array.isArray(c.investigatorUserIds) && c.investigatorUserIds.some(matchUser);
             return isDS || isCM || isInv;
           })
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-          .map((c) => mapCaseForOfficer(c, signedInOfficer, signedInUserId));
+          .map((c) => mapCaseForOfficer(c, signedInOfficer, signedInUserId, treatAsDSLocal ? ROLES.DETECTIVE_SUPERVISOR : systemRole));
 
         setCases(assignedCases);
       } catch (error) {
@@ -769,6 +807,7 @@ export const HomePage = () => {
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           onShowCaseSelector={setShowAddCase}
+          isDS={treatAsDS}
         />
 
         {/* Add case slide-bar (shown when triggered from sidebar) */}
@@ -804,7 +843,7 @@ export const HomePage = () => {
                     className={`${styles.hoverable} ${activeTab === "cases" ? styles.active : ""}`}
                     onClick={() => setActiveTab("cases")}
                   >
-                    My Ongoing Cases: {cases.length}
+                    {treatAsDS ? `All Ongoing Cases: ${cases.length}` : `My Ongoing Cases: ${cases.length}`}
                   </span>
                   <span
                     className={`${styles.hoverable} ${activeTab === "assignedLeads" ? styles.active : ""}`}

@@ -660,16 +660,16 @@ const orderedAssignees = hasAssignees
 
       // 7) Notifications — keep primary first for display consistency
       if (orderedAssignees.length) {
-        const assignedToEntries = orderedAssignees.map((u) => ({
-          username: u,
-          role: (caseTeam.caseManagers || []).includes(u)
-            ? "Case Manager"
-            : u === caseTeam.detectiveSupervisor
-            ? "Detective Supervisor"
-            : "Investigator",
-          status: "pending",
-          unread: true,
-        }));
+        const assignedToEntries = orderedAssignees
+          .filter((u) => u !== caseTeam.detectiveSupervisor)
+          .map((u) => ({
+            username: u,
+            role: (caseTeam.caseManagers || []).includes(u)
+              ? "Case Manager"
+              : "Investigator",
+            status: "pending",
+            unread: true,
+          }));
 
         const notificationPayload = {
           notificationId: Date.now().toString(),

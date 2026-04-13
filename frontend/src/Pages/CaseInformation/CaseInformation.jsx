@@ -21,6 +21,8 @@ export const CaseInformation = () => {
   const caseName = selectedCase?.caseName;
   const role = selectedCase?.role || '';
   const isCMorDS = role === 'Case Manager' || role === 'Detective Supervisor';
+  const systemRole = localStorage.getItem('role') || '';
+  const isDS = role === 'Detective Supervisor' || systemRole === 'Admin';
   const signedInOfficer = localStorage.getItem('loggedInUser');
   const signedInUserId  = localStorage.getItem('userId');
 
@@ -691,7 +693,7 @@ export const CaseInformation = () => {
                   Edit Case
                 </button>
               )}
-              {isCMorDS && (selectedCase?.status || 'ONGOING') === 'ONGOING' && (
+              {isDS && (selectedCase?.status || 'ONGOING') === 'ONGOING' && (
                 <button
                   className={styles['close-case-btn']}
                   onClick={() => setConfirmCloseOpen(true)}

@@ -54,6 +54,7 @@ export const ViewLR = () => {
    const [alertOpen, setAlertOpen] = useState(false);
     const [alertMessage, setAlertMessage] = useState("");
     const [leadData, setLeadData] = useState({});
+    const [dsSupervisors, setDsSupervisors] = useState([]);
      const [confirmConfig, setConfirmConfig] = useState({
       open: false,
       title: '',
@@ -254,6 +255,15 @@ const canShowSubmit      = !isClosedOrCompleted && !isInReview && (
         const leadDoc = instrRes.data?.[0] || {};
         setInstructions(leadDoc);
         setLeadData(leadDoc);
+
+        // Fetch DS list to exclude from notifications
+        try {
+          const caseNo = selectedCase?.caseNo;
+          if (caseNo) {
+            const teamRes = await api.get(`/api/cases/${caseNo}/team`, headers).catch(() => ({ data: {} }));
+            setDsSupervisors((teamRes.data?.detectiveSupervisors || []).map(ds => (typeof ds === 'string' ? ds : ds?.username || ds?.name || '')).filter(Boolean));
+          }
+        } catch (_) { /* non-blocking */ }
         setReturns(returnsRes.data || []);
         setPersons(personsRes.data || []);
         setVehicles(vehiclesRes.data || []);
@@ -384,7 +394,7 @@ const actuallyDoSubmitReport = async () => {
         const manager    = leadData.assignedBy;                  // string username
         const managerUserId = leadData.assignedByUserId || undefined;
         const investigators = normalizeAssignees(leadData.assignedTo);
-        if (manager) {
+        if (manager && !dsSupervisors.includes(manager)) {
           const payload = {
             notificationId: Date.now().toString(),
             assignedBy:     localStorage.getItem("loggedInUser"),

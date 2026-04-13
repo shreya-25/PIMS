@@ -181,3 +181,21 @@
 .view-btn1:hover {
   background-color: rgb(30, 30, 110);
 }
+
+.manage-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+  color: #fff;
+  background-color: #1a73e8;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.manage-btn:hover {
+  background-color: #1558b0;
+}

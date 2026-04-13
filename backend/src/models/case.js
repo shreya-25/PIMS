@@ -45,11 +45,20 @@ const caseSchema = new mongoose.Schema(
       },
     ],
 
+    // Legacy single-value field — kept for backward compatibility with existing documents.
+    // New code writes to detectiveSupervisorUserIds (array) instead.
     detectiveSupervisorUserId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       default: null,
     },
+
+    detectiveSupervisorUserIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
 
     createdByUserId: {
       type: mongoose.Schema.Types.ObjectId,
