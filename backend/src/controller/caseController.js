@@ -217,12 +217,14 @@ exports.getCasesByOfficer = async (req, res) => {
         { detectiveSupervisorUserId: user._id },
         { detectiveSupervisorUserIds: user._id },
         { investigatorUserIds: user._id },
+        { readOnlyUserIds: user._id },
       ],
     })
       .populate("caseManagerUserIds", "username firstName lastName displayName role")
       .populate("detectiveSupervisorUserId", "username firstName lastName displayName role")
       .populate("detectiveSupervisorUserIds", "username firstName lastName displayName role")
       .populate("investigatorUserIds", "username firstName lastName displayName role")
+      .populate("readOnlyUserIds", "username firstName lastName displayName role")
       .lean();
 
     if (!cases || cases.length === 0) {
@@ -238,6 +240,8 @@ exports.getCasesByOfficer = async (req, res) => {
         role = "Detective Supervisor";
       } else if (c.investigatorUserIds.some(inv => inv._id.equals(user._id))) {
         role = "Investigator";
+      } else if ((c.readOnlyUserIds || []).some(ro => ro._id.equals(user._id))) {
+        role = "Read Only";
       }
 
       const getDisplayName = (u) => {
@@ -465,6 +469,7 @@ exports.getCaseTeam = async (req, res) => {
       .populate("detectiveSupervisorUserId", "username firstName lastName displayName")
       .populate("detectiveSupervisorUserIds", "username firstName lastName displayName")
       .populate("investigatorUserIds", "username firstName lastName displayName")
+      .populate("readOnlyUserIds", "username firstName lastName displayName")
       .lean();
 
     if (!c) {
@@ -474,8 +479,9 @@ exports.getCaseTeam = async (req, res) => {
     const detectiveSupervisors = mergeDetectiveSupervisors(c).map(u => u.username).filter(Boolean);
     const caseManagers = (c.caseManagerUserIds || []).map(u => u.username);
     const investigators = [...new Set((c.investigatorUserIds || []).map(u => u.username))];
+    const readOnly = (c.readOnlyUserIds || []).map(u => u.username);
 
-    return res.json({ detectiveSupervisors, caseManagers, investigators });
+    return res.json({ detectiveSupervisors, caseManagers, investigators, readOnly });
   } catch (err) {
     console.error("Error in getCaseTeam:", err);
     return res.status(500).json({ message: "Server error", error: err.message });
@@ -526,6 +532,7 @@ exports.updateCaseOfficers = async (req, res) => {
     const caseManagerIds = [];
     const detectiveSupervisorIds = [];
     const investigatorIds = [];
+    const readOnlyIds = [];
 
     for (const off of officers) {
       const name = off.name || off.username || off;
@@ -539,6 +546,8 @@ exports.updateCaseOfficers = async (req, res) => {
         detectiveSupervisorIds.push(user._id);
       } else if (off.role === "Investigator") {
         investigatorIds.push(user._id);
+      } else if (off.role === "Read Only") {
+        readOnlyIds.push(user._id);
       }
     }
 
@@ -549,6 +558,7 @@ exports.updateCaseOfficers = async (req, res) => {
       caseDoc.detectiveSupervisorUserId = null;
     }
     caseDoc.investigatorUserIds = [...new Map(investigatorIds.map(id => [id.toString(), id])).values()];
+    caseDoc.readOnlyUserIds = [...new Map(readOnlyIds.map(id => [id.toString(), id])).values()];
     await caseDoc.save();
 
     return res.status(200).json({ message: "Assigned officers updated successfully", data: caseDoc });

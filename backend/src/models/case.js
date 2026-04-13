@@ -60,6 +60,13 @@ const caseSchema = new mongoose.Schema(
       },
     ],
 
+    readOnlyUserIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
     createdByUserId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

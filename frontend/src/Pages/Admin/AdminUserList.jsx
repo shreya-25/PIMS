@@ -134,190 +134,171 @@ export const AdminUserList = () => {
         )}
 
         <div className={styles["content"]}>
-          <div className={styles[editUser ? "split-layout" : "card"]}>
-            {/* ── Table panel ── */}
-            <div className={editUser ? styles["table-panel"] : undefined}>
-              <div className={styles["card-header"]}>
-                <h2>Registered Users</h2>
-                <span className={styles["chip"]}>User Registration</span>
-              </div>
-
-              {loading && <p className={styles["state-msg"]}>Loading...</p>}
-              {error && <p className={styles["error-msg"]}>{error}</p>}
-
-              {!loading && !error && (
-                <div className={styles["table-wrapper"]}>
-                  <table className={styles["user-table"]}>
-                    <thead>
-                      <tr>
-                        <th>#</th>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {users.length === 0 ? (
-                        <tr>
-                          <td colSpan={7} className={styles["empty-row"]}>
-                            No users registered yet.
-                          </td>
-                        </tr>
-                      ) : (
-                        users.map((u, i) => (
-                          <tr key={u._id || i} className={editUser?._id === u._id ? styles["row-selected"] : ""}>
-                            <td>{i + 1}</td>
-                            <td>{u.firstName || "—"}</td>
-                            <td>{u.lastName || "—"}</td>
-                            <td>{u.username}</td>
-                            <td>{u.email}</td>
-                            <td>
-                              <span className={`${styles["role-badge"]} ${styles[`role-${(u.role || "").replace(/\s+/g, "-")}`]}`}>
-                                {ROLE_LABELS[u.role] || u.role}
-                              </span>
-                            </td>
-                            <td>
-                              <button
-                                className={`${styles["edit-btn"]} ${editUser?._id === u._id ? styles["edit-btn-active"] : ""}`}
-                                onClick={() => editUser?._id === u._id ? closeEdit() : openEdit(u)}
-                              >
-                                {editUser?._id === u._id ? "Close" : "Edit"}
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+          <div className={styles["card"]}>
+            <div className={styles["card-header"]}>
+              <h2>Registered Users</h2>
+              <span className={styles["chip"]}>User Registration</span>
             </div>
 
-            {/* ── Inline edit panel ── */}
-            {editUser && (
-              <div className={styles["edit-panel"]}>
-                <div className={styles["edit-panel-header"]}>
-                  <h3>Edit User — {editUser.username}</h3>
-                  <button className={styles["modal-close"]} onClick={closeEdit}>✕</button>
-                </div>
+            {loading && <p className={styles["state-msg"]}>Loading...</p>}
+            {error && <p className={styles["error-msg"]}>{error}</p>}
 
-                <form onSubmit={handleEditSubmit} className={styles["modal-form"]}>
-                  {/* Name row */}
-                  <div className={styles["modal-row"]}>
-                    <div className={styles["modal-group"]}>
-                      <label>First Name</label>
-                      <input
-                        type="text" name="firstName"
-                        value={editForm.firstName} onChange={handleEditChange}
-                        placeholder="First Name"
-                      />
-                    </div>
-                    <div className={styles["modal-group"]}>
-                      <label>Last Name</label>
-                      <input
-                        type="text" name="lastName"
-                        value={editForm.lastName} onChange={handleEditChange}
-                        placeholder="Last Name"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Username */}
-                  <div className={styles["modal-group"]}>
-                    <label>Username</label>
-                    <input
-                      type="text" name="username"
-                      value={editForm.username} onChange={handleEditChange}
-                      placeholder="Username"
-                    />
-                  </div>
-
-                  {/* Email + Role */}
-                  <div className={styles["modal-row"]}>
-                    <div className={styles["modal-group"]}>
-                      <label>Email</label>
-                      <input
-                        type="email" name="email"
-                        value={editForm.email} onChange={handleEditChange}
-                        placeholder="Email"
-                      />
-                    </div>
-                    <div className={styles["modal-group"]}>
-                      <label>Role</label>
-                      <select name="role" value={editForm.role} onChange={handleEditChange}>
-                        <option value="" disabled>Select Role</option>
-                        <option value="Admin">Admin</option>
-                        <option value="Detective Supervisor">Detective Supervisor</option>
-                        <option value="CaseManager">Case Manager</option>
-                        <option value="Detective/Investigator">Detective/Investigator</option>
-                        <option value="External Contributor">External Contributor</option>
-                        <option value="Read Only">Read Only</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Agency + ORI */}
-                  <div className={styles["modal-row"]}>
-                    <div className={styles["modal-group"]}>
-                      <label>Agency</label>
-                      <select name="agency" value={editForm.agency} onChange={handleEditChange}>
-                        <option value="">— None —</option>
-                        {agencyList.map(({ _id, name }) => (
-                          <option key={_id} value={name}>{name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className={styles["modal-group"]}>
-                      <label>ORI – Agency ID</label>
-                      <select name="ori" value={editForm.ori} onChange={handleEditChange}>
-                        <option value="">— None —</option>
-                        {agencyList.map(({ _id, name, ori }) => (
-                          <option key={_id} value={ori}>{ori} — {name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Badge ID + Status */}
-                  <div className={styles["modal-row"]}>
-                    <div className={styles["modal-group"]}>
-                      <label>Badge ID</label>
-                      <input
-                        type="text" name="badgeId"
-                        value={editForm.badgeId} onChange={handleEditChange}
-                        placeholder="e.g. 777"
-                      />
-                    </div>
-                    <div className={styles["modal-group"]}>
-                      <label>Account Status</label>
-                      <select name="isActive" value={editForm.isActive ? "true" : "false"}
-                        onChange={(e) => setEditForm((prev) => ({ ...prev, isActive: e.target.value === "true" }))}>
-                        <option value="true">Active</option>
-                        <option value="false">Inactive</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {editError   && <p className={styles["modal-error"]}>{editError}</p>}
-                  {editSuccess && <p className={styles["modal-success"]}>{editSuccess}</p>}
-
-                  <div className={styles["modal-footer"]}>
-                    <button type="button" className={styles["cancel-btn"]} onClick={closeEdit}>
-                      Cancel
-                    </button>
-                    <button type="submit" className={styles["save-btn"]} disabled={editSaving}>
-                      {editSaving ? "Saving..." : "Save Changes"}
-                    </button>
-                  </div>
-                </form>
+            {!loading && !error && (
+              <div className={styles["table-wrapper"]}>
+                <table className={styles["user-table"]}>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>First Name</th>
+                      <th>Last Name</th>
+                      <th>Username</th>
+                      <th>Email</th>
+                      <th>Role</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className={styles["empty-row"]}>
+                          No users registered yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      users.map((u, i) => (
+                        <tr key={u._id || i}>
+                          <td>{i + 1}</td>
+                          <td>{u.firstName || "—"}</td>
+                          <td>{u.lastName || "—"}</td>
+                          <td>{u.username}</td>
+                          <td>{u.email}</td>
+                          <td>
+                            <span className={`${styles["role-badge"]} ${styles[`role-${(u.role || "").replace(/[\s/]+/g, "-")}`]}`}>
+                              {ROLE_LABELS[u.role] || u.role}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              className={styles["edit-btn"]}
+                              onClick={() => openEdit(u)}
+                            >
+                              Edit
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* ── Centered modal overlay — outside main-container so fixed positioning is truly full-viewport ── */}
+      {editUser && (
+        <div className={styles["modal-overlay"]} onClick={closeEdit}>
+          <div className={styles["modal-card"]} onClick={(e) => e.stopPropagation()}>
+
+            {/* Header */}
+            <div className={styles["modal-header"]}>
+              <div className={styles["modal-header-left"]}>
+                <h3 className={styles["modal-title"]}>Edit User</h3>
+                <span className={styles["modal-username"]}>@{editUser.username}</span>
+              </div>
+              <button className={styles["modal-close"]} onClick={closeEdit} aria-label="Close">✕</button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleEditSubmit} className={styles["modal-form"]}>
+              {/* Row 1: First Name · Last Name · Username */}
+              <div className={styles["modal-row-3"]}>
+                <div className={styles["modal-group"]}>
+                  <label>First Name</label>
+                  <input type="text" name="firstName" value={editForm.firstName} onChange={handleEditChange} placeholder="First Name" />
+                </div>
+                <div className={styles["modal-group"]}>
+                  <label>Last Name</label>
+                  <input type="text" name="lastName" value={editForm.lastName} onChange={handleEditChange} placeholder="Last Name" />
+                </div>
+                <div className={styles["modal-group"]}>
+                  <label>Username</label>
+                  <input type="text" name="username" value={editForm.username} onChange={handleEditChange} placeholder="Username" />
+                </div>
+              </div>
+
+              {/* Row 2: Email · Role · Badge ID */}
+              <div className={styles["modal-row-3"]}>
+                <div className={styles["modal-group"]}>
+                  <label>Email</label>
+                  <input type="email" name="email" value={editForm.email} onChange={handleEditChange} placeholder="Email" />
+                </div>
+                <div className={styles["modal-group"]}>
+                  <label>Role</label>
+                  <select name="role" value={editForm.role} onChange={handleEditChange}>
+                    <option value="" disabled>Select Role</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Detective Supervisor">Detective Supervisor</option>
+                    <option value="CaseManager">Case Manager</option>
+                    <option value="Detective/Investigator">Detective/Investigator</option>
+                    <option value="External Contributor">External Contributor</option>
+                    <option value="Read Only">Read Only</option>
+                  </select>
+                </div>
+                <div className={styles["modal-group"]}>
+                  <label>Badge ID</label>
+                  <input type="text" name="badgeId" value={editForm.badgeId} onChange={handleEditChange} placeholder="e.g. 777" />
+                </div>
+              </div>
+
+              {/* Row 3: Agency · ORI · Account Status */}
+              <div className={styles["modal-row-3"]}>
+                <div className={styles["modal-group"]}>
+                  <label>Agency</label>
+                  <select name="agency" value={editForm.agency} onChange={handleEditChange}>
+                    <option value="">— None —</option>
+                    {agencyList.map(({ _id, name }) => (
+                      <option key={_id} value={name}>{name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles["modal-group"]}>
+                  <label>ORI – Agency ID</label>
+                  <select name="ori" value={editForm.ori} onChange={handleEditChange}>
+                    <option value="">— None —</option>
+                    {agencyList.map(({ _id, ori }) => (
+                      <option key={_id} value={ori}>{ori}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles["modal-group"]}>
+                  <label>Account Status</label>
+                  <select
+                    name="isActive"
+                    value={editForm.isActive ? "true" : "false"}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, isActive: e.target.value === "true" }))}
+                  >
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                  </select>
+                </div>
+              </div>
+
+              {editError   && <p className={styles["modal-error"]}>{editError}</p>}
+              {editSuccess && <p className={styles["modal-success"]}>{editSuccess}</p>}
+
+              <div className={styles["modal-footer"]}>
+                <button type="button" className={styles["cancel-btn"]} onClick={closeEdit}>Cancel</button>
+                <button type="submit" className={styles["save-btn"]} disabled={editSaving}>
+                  {editSaving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 };

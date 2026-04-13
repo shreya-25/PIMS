@@ -73,6 +73,8 @@ export const SideBar = ({
         ? "/Investigator"
         : role === "Case Manager" || role === "Detective Supervisor"
         ? "/CasePageManager"
+        : role === "Read Only"
+        ? "/LeadsDesk"
         : "/HomePage";
     navigate(dest, { state: { caseDetails: selectedCase } });
   };
@@ -223,7 +225,7 @@ export const SideBar = ({
 
   const handleCaseSelect = (c) => {
     setSelectedCase({ _id: c._id, caseNo: c.caseNo, caseName: c.title, role: c.role });
-    const dest = c.role === "Investigator" ? "/Investigator" : "/CasePageManager";
+    const dest = c.role === "Investigator" ? "/Investigator" : c.role === "Read Only" ? "/LeadsDesk" : "/CasePageManager";
     navigate(dest, { state: { caseDetails: { _id: c._id, caseNo: c.caseNo, caseName: c.title, role: c.role } } });
   };
 
@@ -313,25 +315,31 @@ export const SideBar = ({
     );
   }
 
+  const isReadOnlyRole = selectedCase?.role === "Read Only";
+
   // Default variant
   return (
     <aside className="sidebar">
       <ul className="sidebar-list">
-        <li
-          className={`sidebar-item ${activePage === "HomePage" ? "active" : ""}`}
-          onClick={() => navigate("/HomePage", { state: { caseDetails, activeTab: "cases" } })}
-        >
-          <img src={homeIcon} className="sidebar-icon" alt="" />
-          <span>PIMS Home</span>
-        </li>
+        {!isReadOnlyRole && (
+          <li
+            className={`sidebar-item ${activePage === "HomePage" ? "active" : ""}`}
+            onClick={() => navigate("/HomePage", { state: { caseDetails, activeTab: "cases" } })}
+          >
+            <img src={homeIcon} className="sidebar-icon" alt="" />
+            <span>PIMS Home</span>
+          </li>
+        )}
 
-        <li
-          className={`sidebar-item ${["CasePageManager", "Investigator"].includes(activePage) ? "active" : ""}`}
-          onClick={goToCasePage}
-        >
-          <img src={folderIcon} className="sidebar-icon" alt="" />
-          <span>Case: {selectedCase?.caseNo || "-"}</span>
-        </li>
+        {!isReadOnlyRole && (
+          <li
+            className={`sidebar-item ${["CasePageManager", "Investigator"].includes(activePage) ? "active" : ""}`}
+            onClick={goToCasePage}
+          >
+            <img src={folderIcon} className="sidebar-icon" alt="" />
+            <span>Case: {selectedCase?.caseNo || "-"}</span>
+          </li>
+        )}
 
         {["Case Manager", "Detective Supervisor"].includes(selectedCase?.role) && (
           <li
@@ -344,7 +352,7 @@ export const SideBar = ({
           </li>
         )}
 
-        {selectedLead && LEAD_CRUMB_PAGES.has(activePage) && (
+        {!isReadOnlyRole && selectedLead && LEAD_CRUMB_PAGES.has(activePage) && (
           <li
             className={`sidebar-item ${LEAD_CRUMB_PAGES.has(activePage) ? "active" : ""}`}
             style={{ paddingLeft: 30 }}
@@ -360,16 +368,18 @@ export const SideBar = ({
           </li>
         )}
 
-        <li
-          className={`sidebar-item ${activePage === "CaseInformation" ? "active" : ""}`}
-          style={{ paddingLeft: 30 }}
-          onClick={() => navigate("/CaseInformation", { state: { caseDetails } })}
-        >
-          <img src={folderIcon1} className="sidebar-icon" alt="" />
-          <span>Case Information</span>
-        </li>
+        {!isReadOnlyRole && (
+          <li
+            className={`sidebar-item ${activePage === "CaseInformation" ? "active" : ""}`}
+            style={{ paddingLeft: 30 }}
+            onClick={() => navigate("/CaseInformation", { state: { caseDetails } })}
+          >
+            <img src={folderIcon1} className="sidebar-icon" alt="" />
+            <span>Case Information</span>
+          </li>
+        )}
 
-        {/* Leads Desk with role-aware badge for current case */}
+        {/* Leads Desk — visible to all roles */}
         <li
           className={`sidebar-item ${activePage === "LeadsDesk" ? "active" : ""}`}
           style={{ paddingLeft: 30, display: "flex", alignItems: "center", justifyContent: "space-between" }}
@@ -381,39 +391,47 @@ export const SideBar = ({
           </div>
         </li>
 
-        <li
-          className={`sidebar-item ${activePage === "GenerateReport" ? "active" : ""}`}
-          style={{ paddingLeft: 30 }}
-          onClick={() => navigate("/GenerateReport", { state: { caseDetails } })}
-        >
-          <img src={printIcon} className="sidebar-icon" alt="" />
-          <span>Generate Report</span>
-        </li>
+        {!isReadOnlyRole && (
+          <li
+            className={`sidebar-item ${activePage === "GenerateReport" ? "active" : ""}`}
+            style={{ paddingLeft: 30 }}
+            onClick={() => navigate("/GenerateReport", { state: { caseDetails } })}
+          >
+            <img src={printIcon} className="sidebar-icon" alt="" />
+            <span>Generate Report</span>
+          </li>
+        )}
 
-        <li
-          className={`sidebar-item ${activePage === "LeadLog" ? "active" : ""}`}
-          style={{ paddingLeft: 30 }}
-          onClick={() => navigate("/LeadLog", { state: { caseDetails } })}
-        >
-          <img src={logIcon} className="sidebar-icon" alt="" />
-          <span>Case Log</span>
-        </li>
+        {!isReadOnlyRole && (
+          <li
+            className={`sidebar-item ${activePage === "LeadLog" ? "active" : ""}`}
+            style={{ paddingLeft: 30 }}
+            onClick={() => navigate("/LeadLog", { state: { caseDetails } })}
+          >
+            <img src={logIcon} className="sidebar-icon" alt="" />
+            <span>Case Log</span>
+          </li>
+        )}
 
-        <li
-          className={`sidebar-item ${activePage === "SearchLead" ? "active" : ""}`}
-          onClick={() => navigate("/SearchLead", { state: { caseDetails } })}
-        >
-          <img src={searchIcon} className="sidebar-icon" alt="" />
-          <span>Advanced Search </span>
-        </li>
+        {!isReadOnlyRole && (
+          <li
+            className={`sidebar-item ${activePage === "SearchLead" ? "active" : ""}`}
+            onClick={() => navigate("/SearchLead", { state: { caseDetails } })}
+          >
+            <img src={searchIcon} className="sidebar-icon" alt="" />
+            <span>Advanced Search </span>
+          </li>
+        )}
 
         {/* Other Ongoing Cases */}
-        <li className="sidebar-item" onClick={() => setCaseDropdownOpen((o) => !o)}>
-          <img src={folderIcon} className="sidebar-icon" alt="" />
-          <span>Other Ongoing Cases {caseDropdownOpen ? "▲" : "▼"}</span>
-        </li>
+        {!isReadOnlyRole && (
+          <li className="sidebar-item" onClick={() => setCaseDropdownOpen((o) => !o)}>
+            <img src={folderIcon} className="sidebar-icon" alt="" />
+            <span>Other Ongoing Cases {caseDropdownOpen ? "▲" : "▼"}</span>
+          </li>
+        )}
 
-        {caseDropdownOpen && (
+        {!isReadOnlyRole && caseDropdownOpen && (
           <ul className="dropdown-list1">
             {caseList
               .filter((c) => String(c._id) !== String(selectedCase?._id || selectedCase?.id))
@@ -436,7 +454,7 @@ export const SideBar = ({
           </ul>
         )}
 
-        {isUserDS && (
+        {!isReadOnlyRole && isUserDS && (
           <li className="sidebar-item" onClick={() => navigate("/ClosedCase")}>
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Archived Cases</span>

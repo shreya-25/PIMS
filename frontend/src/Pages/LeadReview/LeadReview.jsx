@@ -1349,6 +1349,7 @@ const showDecisionBlock =
   // &&(selectedCase.role !== "Case Manager" && selectedCase.role !== "Detective Supervisor");
 const isManager = ["Case Manager", "Detective Supervisor"].includes(selectedCase?.role);
 const isAssigned = !!myAssignment;
+const isReadOnly = selectedCase?.role === "Read Only";
 
 const canWorkOnReturn = isAssigned ? (myAssignment.status === "accepted") : isManager;
 
@@ -2017,27 +2018,29 @@ const assignmentHoverText = React.useMemo(() => {
 
           {/* Page Header */}
 
-            {canWorkOnReturn && (
+            {(canWorkOnReturn || isReadOnly) && (
               <div className={styles.topMenuNav}>
                 <div className={styles.menuItems}>
                   <span className={`${styles.menuItem} ${styles.menuItemActive}`}>Lead Information</span>
 
-                  <span className={styles.menuItem} onClick={() => {
-                    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                    if (lead && kase) {
-                      navigate("/LRInstruction", { state: { caseDetails: kase, leadDetails: lead } });
-                    } else {
-                      setAlertMessage("Please select a case and lead first.");
-                      setAlertOpen(true);
-                    }
-                  }}>Add Lead Return</span>
+                  {!isReadOnly && (
+                    <span className={styles.menuItem} onClick={() => {
+                      const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                      const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                      if (lead && kase) {
+                        navigate("/LRInstruction", { state: { caseDetails: kase, leadDetails: lead } });
+                      } else {
+                        setAlertMessage("Please select a case and lead first.");
+                        setAlertOpen(true);
+                      }
+                    }}>Add Lead Return</span>
+                  )}
 
-                  {(selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor") && (
+                  {!isReadOnly && (selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor") && (
                     <span className={styles.menuItem} onClick={goToViewLR}>Review Lead Return</span>
                   )}
 
-                  {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
+                  {!isReadOnly && (["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
                     <span
                       className={styles.menuItem}
                       onClick={handleViewLeadReturn}
@@ -2048,11 +2051,11 @@ const assignmentHoverText = React.useMemo(() => {
                     </span>
                   )}
 
-                  {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
+                  {!isReadOnly && selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
                     <span className={styles.menuItem} onClick={goToViewLR}>Submit Lead Return</span>
                   )}
 
-                  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
+                  {!isReadOnly && selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
                     <span className={styles.menuItem} onClick={goToViewLR}>Review Lead Return</span>
                   )}
 
