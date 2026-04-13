@@ -113,9 +113,8 @@ cd frontend && npm run build
 
 ## Deployment
 
-- Backend is deployed on **Azure App Service** (Canada Central)
-- Frontend is deployed on **Azure Static Web Apps** or **Netlify**
-- Production domain: `pims.endicottpd.org`
+- System is deployed on **Azure App Service** (Canada Central)
+- Production domain: `pims.endicott.org`
 
 ---
 
