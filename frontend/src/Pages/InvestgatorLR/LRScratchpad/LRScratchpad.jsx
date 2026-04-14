@@ -27,6 +27,7 @@ import { formatDate, normalizeId, alphabetToNumber } from '../lrUtils';
 import lrStyles    from '../LR.module.css';
 import localStyles from './LRScratchpad.module.css';
 import { LRTopMenu } from '../LRTopMenu';
+import { safeEncode } from '../../../utils/encode';
 
 const styles = { ...lrStyles, ...localStyles };
 
@@ -156,7 +157,7 @@ export const LRScratchpad = () => {
     const token = localStorage.getItem('token');
     api
       .get(
-        `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
+        `/api/lead/lead/${selectedLead.leadNo}/${safeEncode(selectedLead.leadName)}/${caseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       .then(({ data }) => {
@@ -181,7 +182,7 @@ export const LRScratchpad = () => {
     (async () => {
       try {
         const token   = localStorage.getItem('token');
-        const encLead = encodeURIComponent(selectedLead.leadName);
+        const encLead = safeEncode(selectedLead.leadName);
 
         const { data } = await api.get(
           `/api/leadReturnResult/${selectedLead.leadNo}/${encLead}/${caseId}`,
@@ -218,7 +219,7 @@ export const LRScratchpad = () => {
   const fetchNotes = async () => {
     const caseId  = selectedCase?._id || selectedCase?.id;
     const token   = localStorage.getItem('token');
-    const encLead = encodeURIComponent(selectedLead?.leadName);
+    const encLead = safeEncode(selectedLead?.leadName);
 
     try {
       const { data } = await api.get(

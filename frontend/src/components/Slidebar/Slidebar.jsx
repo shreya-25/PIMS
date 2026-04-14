@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { CaseContext } from "../../Pages/CaseContext";
+import { useState, useEffect, useRef } from "react";
 import { AlertModal } from "../AlertModal/AlertModal";
-import { useContext } from "react";
 import "./Slidebar.css";
 import api from "../../api"
 
@@ -11,21 +9,20 @@ export const SlideBar = ({ onAddCase, onClose,  isOpen,
   const managersRef = useRef(null);
   // const dropdownRef = useRef(null);
   const investigatorsRef = useRef(null);
-  const [currentRole, setCurrentRole] = useState(""); 
+
    const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [caseDetails, setCaseDetails] = useState({
     title: "",
     number: "",
     managers: [],
-    detectiveSupervisor: "",
-    investigators: [], // Store selected investigators
+    detectiveSupervisors: [],
+    investigators: [],
     summary: "",
     executiveCaseSummary:"",
     characterOfCase: "",
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+
   const [allUsers, setAllUsers] = useState([]);
 
   // keep internal state in sync with parent
@@ -52,17 +49,23 @@ const managersSearchRef = useRef(null);
 const investigatorsSearchRef = useRef(null);
 const supervisorSearchRef = useRef(null);
 
-const toDisplay = (u) =>
-  `${u.firstName || ""} ${u.lastName || ""} (${u.username})`
-    .replace(/\s+/g, " ")
-    .trim();
+const toDisplay = (u) => {
+  const full = `${u.firstName || ""} ${u.lastName || ""}`.replace(/\s+/g, " ").trim();
+  const title = u.title ? ` (${u.title})` : "";
+  const username = u.username ? ` (${u.username})` : "";
+  return full ? `${full}${title}${username}` : u.username || "";
+};
 
 const matches = (u, q) =>
   !q ? true : toDisplay(u).toLowerCase().includes(q.toLowerCase());
 
-const filteredManagers = allUsers.filter((u) => matches(u, managersQuery));
+const filteredManagers = allUsers
+  .filter((u) => u.role === "CaseManager")
+  .filter((u) => matches(u, managersQuery));
 
-const filteredInvestigators = allUsers.filter((u) => matches(u, investigatorsQuery));
+const filteredInvestigators = allUsers
+  .filter((u) => u.role === "Detective/Investigator" || u.role === "CaseManager")
+  .filter((u) => matches(u, investigatorsQuery));
 
 const filteredSupervisors = allUsers
   .filter((u) => u.role === "Detective Supervisor")
@@ -98,38 +101,21 @@ const filteredSupervisors = allUsers
     if (localStorage.getItem("loggedInUser")) {
       setCaseDetails(cd => ({
         ...cd,
-        detectiveSupervisor: localStorage.getItem("loggedInUser"),
         managerName: localStorage.getItem("loggedInUser"),
       }));
     }
   }, [localStorage.getItem("loggedInUser")]);
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-  const toggleManagers   = () => setManagersOpen((o) => !o);
-  const toggleInvestigators = () =>
-    setInvestigatorsOpen((o) => !o);
+  const toggleInvestigators = () => setInvestigatorsOpen((o) => !o);
 
 
   useEffect(() => {
     const fetchUsers = async () => {
-      setError(null);
-      setLoading(true);
       try {
-        const token = localStorage.getItem("token");
-        const { data } = await api.get("/api/users/usernames", {
-          // headers: { Authorization: `Bearer ${token}` }
-        });
+        const { data } = await api.get("/api/users/usernames");
         setAllUsers(data.users);
-         const loggedInUsername = localStorage.getItem("loggedInUser");
-        const me = data.users.find(u => u.username === loggedInUsername);
-        if (me) setCurrentRole(me.role);
       } catch (err) {
         console.error("❌ Error fetching users:", err);
-        setError("Could not load user list");
-      } finally {
-        setLoading(false);
       }
     };
   
@@ -179,29 +165,11 @@ useEffect(() => {
 
   
 
-  const handleCheckboxChange = (e) => {
-    const { value, checked } = e.target;
-    setCaseDetails((prevDetails) => ({
-      ...prevDetails,
-      investigators: checked
-        ? [...prevDetails.investigators, value]
-        : prevDetails.investigators.filter((inv) => inv !== value),
-    }));
-  };
-  
   const handleDone = async () => {
-    const {
-      title,
-      number,
-      managers,
-      detectiveSupervisor,
-      investigators,
-      summary,
-      executiveCaseSummary
-    } = caseDetails;
+    const { title, number, managers, detectiveSupervisors, investigators } = caseDetails;
 
-    if (!title || !number || !managers || !detectiveSupervisor) {
-       setAlertMessage("Please fill all required fields: Case Number, Name, and Managers");
+    if (!title || !number || !managers.length || !detectiveSupervisors.length) {
+       setAlertMessage("Please fill all required fields: Case Number, Name, Managers, and at least one Detective Supervisor");
        setAlertOpen(true);
        return;
      }
@@ -211,10 +179,7 @@ useEffect(() => {
       setAlertOpen(true);
       return;
     }
-  
-    setLoading(true);
-    setError(null);
-  
+
     const newCase = {
       id: caseDetails.number.trim(),
       title: caseDetails.title.trim(),
@@ -226,7 +191,7 @@ useEffect(() => {
       executiveCaseSummary: caseDetails.executiveCaseSummary,
       characterOfCase: caseDetails.characterOfCase,
       managers: caseDetails.managers.map(username => ({ username })),
-      detectiveSupervisor,
+      detectiveSupervisors,
       selectedOfficers: investigators.map(name => ({ name })),
     };
   
@@ -303,6 +268,7 @@ setCaseDetails({
   title: "",
   number: "",
   managers: [],
+  detectiveSupervisors: [],
   investigators: [],
   summary: "",
   executiveCaseSummary: "",
@@ -314,7 +280,7 @@ setIsSidebarOpen(false);
 
       const creator = signedInOfficer;
       const everyone = [
-       { username: caseDetails.detectiveSupervisor, role: "Detective Supervisor" },
+       ...caseDetails.detectiveSupervisors.map(u => ({ username: u, role: "Detective Supervisor" })),
        ...caseDetails.managers.map(u => ({ username: u, role: "Case Manager" })),
        ...caseDetails.investigators.map(u => ({ username: u, role: "Investigator" }))
       ];
@@ -374,12 +340,9 @@ setIsSidebarOpen(false);
     || err.message                                     // or the JS error
     || "Unknown error";
 
-  setError(msg);
   setAlertMessage(`Error creating case: ${msg}`);
   setAlertOpen(true);
-} finally {
-  setLoading(false);
-}
+  }
   };
   
   
@@ -455,16 +418,12 @@ setIsSidebarOpen(false);
                 }
                 aria-haspopup="listbox"
                 aria-expanded={supervisorOpen}
-                title={caseDetails.detectiveSupervisor || "Select Supervisor"}
+                title={caseDetails.detectiveSupervisors.join(", ") || "Select Supervisors"}
               >
                 <span className="inv-input-label">
-                  {caseDetails.detectiveSupervisor
-                    ? toDisplay(
-                        allUsers.find((u) => u.username === caseDetails.detectiveSupervisor) || {
-                          username: caseDetails.detectiveSupervisor,
-                        }
-                      )
-                    : "Select Supervisor"}
+                  {caseDetails.detectiveSupervisors.length
+                    ? caseDetails.detectiveSupervisors.join(", ")
+                    : "Select Supervisors"}
                 </span>
                 <span className="inv-caret" aria-hidden />
               </button>
@@ -485,21 +444,28 @@ setIsSidebarOpen(false);
 
                   <div className="inv-list">
                     {filteredSupervisors.length ? (
-                      filteredSupervisors.map((u) => (
-                        <label
-                          key={u.username}
-                          className={`inv-item${caseDetails.detectiveSupervisor === u.username ? " selected" : ""}`}
-                          onClick={() => {
-                            setCaseDetails((cd) => ({
-                              ...cd,
-                              detectiveSupervisor: u.username,
-                            }));
-                            setSupervisorOpen(false);
-                          }}
-                        >
-                          <span className="inv-text">{toDisplay(u)}</span>
-                        </label>
-                      ))
+                      filteredSupervisors.map((u) => {
+                        const checked = caseDetails.detectiveSupervisors.includes(u.username);
+                        return (
+                          <label key={u.username} className="inv-item">
+                            <input
+                              type="checkbox"
+                              value={u.username}
+                              checked={checked}
+                              onChange={(e) => {
+                                const { value, checked } = e.target;
+                                setCaseDetails((cd) => ({
+                                  ...cd,
+                                  detectiveSupervisors: checked
+                                    ? [...cd.detectiveSupervisors, value]
+                                    : cd.detectiveSupervisors.filter((x) => x !== value),
+                                }));
+                              }}
+                            />
+                            <span className="inv-text">{toDisplay(u)}</span>
+                          </label>
+                        );
+                      })
                     ) : (
                       <div className="inv-empty">No matches</div>
                     )}

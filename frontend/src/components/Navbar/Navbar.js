@@ -163,7 +163,7 @@ const Navbar = () => {
             <img
               src={`${process.env.PUBLIC_URL}/Materials/home-white.png`}
               alt="Home"
-              onClick={() => handleNavigation("/HomePage")}
+              onClick={() => navigate("/HomePage", { state: { activeTab: "cases" } })}
               className="icon-img"
             />
           </li>

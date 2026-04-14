@@ -11,6 +11,7 @@ import { SideBar } from "../../components/Sidebar/Sidebar";
 import Pagination from "../../components/Pagination/Pagination";
 import { AlertModal } from "../../components/AlertModal/AlertModal";
 import api from "../../api";
+import { ROLES, isDetectiveSupervisor } from "../../constants/roles";
 
 export const HomePage = () => {
   const location = useLocation();
@@ -39,14 +40,17 @@ export const HomePage = () => {
   const { setSelectedCase, setSelectedLead } = useContext(CaseContext);
   const signedInOfficer = localStorage.getItem("loggedInUser");
   const signedInUserId  = localStorage.getItem("userId");
+  const systemRole      = localStorage.getItem("role");
   const navigate = useNavigate();
 
   const [cases, setCases] = useState([]);
+  const [treatAsDS, setTreatAsDS] = useState(false);
   const [leads, setLeads] = useState({
     assignedLeads: [],
     pendingLeads: [],
     pendingLeadReturns: [],
   });
+  const [userMap, setUserMap] = useState({});  // username → user object
 
   // Format a date string as MM/DD/YYYY
   const formatDate = (dateString) => {
@@ -59,8 +63,28 @@ export const HomePage = () => {
     return `${month}/${day}/${year}`;
   };
 
+  // Fetch all users once for name/title lookups
+  useEffect(() => {
+    api.get("/api/users/usernames")
+      .then(({ data }) => {
+        const map = {};
+        (data.users || []).forEach((u) => { if (u.username) map[u.username] = u; });
+        setUserMap(map);
+      })
+      .catch(() => {});
+  }, []);
+
+  const formatUserDisplay = (username, map) => {
+    const u = map[username];
+    if (!u) return username;
+    const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+    const title = u.title ? ` (${u.title})` : "";
+    const uname = ` (${u.username})`;
+    return full ? `${full}${title}${uname}` : u.username;
+  };
+
   // Map a raw API case to the shape used in UI, resolving the officer's role
-  const mapCaseForOfficer = (c, officerName, officerUserId) => {
+  const mapCaseForOfficer = (c, officerName, officerUserId, sysRole) => {
     const name = officerName?.toLowerCase?.() ?? "";
     const uid  = officerUserId ?? "";
     const matchUser = (u) =>
@@ -70,20 +94,26 @@ export const HomePage = () => {
         : u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name);
 
     let role = "";
-    if (c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId)) {
+    if (
+      (c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId)) ||
+      (Array.isArray(c.detectiveSupervisorUserIds) && c.detectiveSupervisorUserIds.some(matchUser))
+    ) {
       role = "Detective Supervisor";
     } else if (Array.isArray(c.caseManagerUserIds) && c.caseManagerUserIds.some(matchUser)) {
       role = "Case Manager";
     } else if (Array.isArray(c.investigatorUserIds) && c.investigatorUserIds.some(matchUser)) {
       role = "Investigator";
+    } else if (isDetectiveSupervisor(sysRole)) {
+      // DS viewing a case they aren't directly assigned to — treat as DS for navigation
+      role = "Detective Supervisor";
     }
 
     const getDisplayName = (u) => {
       if (!u) return "";
-      const full = u.displayName || u.name || "";
-      const uname = u.username || "";
-      if (full && uname) return `${full} (${uname})`;
-      return full || uname;
+      const full = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.displayName || u.name || "";
+      const title = u.title ? ` (${u.title})` : "";
+      const uname = u.username ? ` (${u.username})` : "";
+      return full ? `${full}${title}${uname}` : u.username || "";
     };
 
     const detectiveSupervisor = c.detectiveSupervisorUserId
@@ -112,6 +142,32 @@ export const HomePage = () => {
       investigators,
     };
   };
+
+  // Detect DS status on mount — runs regardless of active tab so the sidebar shows correctly
+  useEffect(() => {
+    const detectDS = async () => {
+      try {
+        if (isDetectiveSupervisor(systemRole)) { setTreatAsDS(true); return; }
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const { data } = await api.get("/api/cases", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const name = signedInOfficer?.toLowerCase?.() ?? "";
+        const uid  = signedInUserId ?? "";
+        const matchUser = (u) =>
+          u && (uid ? String(u._id || u.id || "") === uid
+            : u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name);
+        const isCaseLevelDS = (data || []).some(
+          (c) =>
+            (c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId)) ||
+            (Array.isArray(c.detectiveSupervisorUserIds) && c.detectiveSupervisorUserIds.some(matchUser))
+        );
+        setTreatAsDS(isCaseLevelDS);
+      } catch { /* silent */ }
+    };
+    detectDS();
+  }, [signedInOfficer]);
 
   // Fetch ongoing cases assigned to the signed-in officer; polls every 5s
   useEffect(() => {
@@ -143,16 +199,27 @@ export const HomePage = () => {
             ? String(u._id || u.id || "") === uid
             : u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name);
 
+        // Treat user as DS if their system role is DS OR they are the DS in any ongoing case
+        const isCaseLevelDS = response.data.some(
+          (c) =>
+            (c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId)) ||
+            (Array.isArray(c.detectiveSupervisorUserIds) && c.detectiveSupervisorUserIds.some(matchUser))
+        );
+        const treatAsDSLocal = isDetectiveSupervisor(systemRole) || isCaseLevelDS;
+        setTreatAsDS(treatAsDSLocal);
+
         const assignedCases = response.data
           .filter((c) => {
             if (c.status !== "ONGOING") return false;
-            const isDS = c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId);
+            // Detective Supervisors see all ongoing cases
+            if (treatAsDSLocal) return true;
+            // Case Managers and Investigators only see cases they are assigned to
             const isCM = Array.isArray(c.caseManagerUserIds) && c.caseManagerUserIds.some(matchUser);
             const isInv = Array.isArray(c.investigatorUserIds) && c.investigatorUserIds.some(matchUser);
-            return isDS || isCM || isInv;
+            return isCM || isInv;
           })
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-          .map((c) => mapCaseForOfficer(c, signedInOfficer, signedInUserId));
+          .map((c) => mapCaseForOfficer(c, signedInOfficer, signedInUserId, treatAsDSLocal ? ROLES.DETECTIVE_SUPERVISOR : systemRole));
 
         setCases(assignedCases);
       } catch (error) {
@@ -241,7 +308,7 @@ export const HomePage = () => {
           .filter((c) => c.status === "ONGOING")
           .map((c) => ({ caseNo: c.caseNo, caseName: c.caseName }));
 
-        const assignedLeads = leadsResponse.data
+        const allOfficerLeads = leadsResponse.data
           .filter(
             (lead) =>
               Array.isArray(lead.assignedTo) &&
@@ -258,14 +325,15 @@ export const HomePage = () => {
             dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
             priority: lead.priority || "Medium",
             flags: lead.associatedFlags || [],
-            assignedOfficers: lead.assignedTo,
+            assignedOfficers: (lead.assignedTo || []).map((o) => o.username),
             leadStatus: lead.leadStatus,
             caseName: lead.caseName,
             caseNo: lead.caseNo,
           }));
 
-        const pendingLeads = assignedLeads.filter((lead) => lead.leadStatus === "Pending");
-        setLeads((prev) => ({ ...prev, assignedLeads, pendingLeads }));
+        const pendingLeads = allOfficerLeads.filter((lead) => lead.leadStatus === "Pending");
+        // Only update pendingLeads here; assignedLeads is managed by fetchAssignedLeads
+        setLeads((prev) => ({ ...prev, pendingLeads }));
       } catch (error) {
         console.error("Error fetching assigned leads:", error.response?.data || error);
       }
@@ -386,7 +454,9 @@ export const HomePage = () => {
       console.error("Failed to fetch case role:", err);
     }
 
-    const caseDetails = { caseNo: lead.caseNo, caseName: lead.caseName, role };
+    // Look up _id from the cases already in state so LeadReview can build its API URL
+    const matchedCase = cases.find((c) => c.id === lead.caseNo);
+    const caseDetails = { _id: matchedCase?._id, caseNo: lead.caseNo, caseName: lead.caseName, role };
     setSelectedCase(caseDetails);
     setSelectedLead({ leadNo: lead.id, leadName: lead.description });
     localStorage.setItem("role", role);
@@ -449,7 +519,8 @@ export const HomePage = () => {
       console.error("Failed to fetch case role:", err);
     }
 
-    const caseDetails = { caseNo: lead.caseNo, caseName: lead.caseName, role };
+    const matchedCase = cases.find((c) => c.id === lead.caseNo);
+    const caseDetails = { _id: matchedCase?._id, caseNo: lead.caseNo, caseName: lead.caseName, role };
     const leadDetails = { leadNo: lead.id, leadName: lead.description };
     setSelectedCase(caseDetails);
     setSelectedLead(leadDetails);
@@ -769,6 +840,7 @@ export const HomePage = () => {
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           onShowCaseSelector={setShowAddCase}
+          isDS={treatAsDS}
         />
 
         {/* Add case slide-bar (shown when triggered from sidebar) */}
@@ -804,7 +876,7 @@ export const HomePage = () => {
                     className={`${styles.hoverable} ${activeTab === "cases" ? styles.active : ""}`}
                     onClick={() => setActiveTab("cases")}
                   >
-                    My Ongoing Cases: {cases.length}
+                    {treatAsDS ? `All Ongoing Cases: ${cases.length}` : `My Ongoing Cases: ${cases.length}`}
                   </span>
                   <span
                     className={`${styles.hoverable} ${activeTab === "assignedLeads" ? styles.active : ""}`}
@@ -968,7 +1040,7 @@ export const HomePage = () => {
                                   <td>{lead.id}</td>
                                   <td>{lead.description}</td>
                                   <td>{lead.caseName}</td>
-                                  <td>{lead.assignedOfficers.join(", ")}</td>
+                                  <td>{lead.assignedOfficers.map((u) => formatUserDisplay(u, userMap)).join(", ")}</td>
                                   <td style={{ textAlign: "center" }}>
                                     <button
                                       className={styles["view-btn1"]}

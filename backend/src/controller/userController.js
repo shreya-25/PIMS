@@ -14,7 +14,7 @@ const getAllUsernames = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const allowed = ["firstName", "lastName", "username", "email", "role", "agency", "ori", "badgeId", "isActive"];
+    const allowed = ["title", "firstName", "lastName", "username", "email", "role", "agency", "ori", "badgeId", "isActive"];
     const updates = {};
     for (const key of allowed) {
       if (key in req.body) updates[key] = req.body[key];

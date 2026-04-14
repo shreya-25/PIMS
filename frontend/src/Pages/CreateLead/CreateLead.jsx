@@ -92,10 +92,13 @@ useEffect(() => {
   };
 });
 
+const OFFICER_ROLES = new Set(["Detective Supervisor", "CaseManager", "Detective/Investigator"]);
+
 const filteredOfficers = React.useMemo(() => {
+  const eligible = (usernames || []).filter((u) => OFFICER_ROLES.has(u.role));
   const q = officersQuery.trim().toLowerCase();
-  if (!q) return usernames;
-  return (usernames || []).filter((u) => {
+  if (!q) return eligible;
+  return eligible.filter((u) => {
     const a = (u.username || "").toLowerCase();
     const b = (u.firstName || "").toLowerCase();
     const c = (u.lastName || "").toLowerCase();
@@ -660,16 +663,16 @@ const orderedAssignees = hasAssignees
 
       // 7) Notifications — keep primary first for display consistency
       if (orderedAssignees.length) {
-        const assignedToEntries = orderedAssignees.map((u) => ({
-          username: u,
-          role: (caseTeam.caseManagers || []).includes(u)
-            ? "Case Manager"
-            : u === caseTeam.detectiveSupervisor
-            ? "Detective Supervisor"
-            : "Investigator",
-          status: "pending",
-          unread: true,
-        }));
+        const assignedToEntries = orderedAssignees
+          .filter((u) => u !== caseTeam.detectiveSupervisor)
+          .map((u) => ({
+            username: u,
+            role: (caseTeam.caseManagers || []).includes(u)
+              ? "Case Manager"
+              : "Investigator",
+            status: "pending",
+            unread: true,
+          }));
 
         const notificationPayload = {
           notificationId: Date.now().toString(),
@@ -888,7 +891,10 @@ useEffect(() => {
 
     const displayUser = (uname) => {
   const user = usernames.find((u) => u.username === uname);
-  return user ? `${user.firstName} ${user.lastName} (${user.username})` : uname;
+  if (!user) return uname;
+  const full = `${user.firstName || ""} ${user.lastName || ""}`.trim();
+  const title = user.title ? ` (${user.title})` : "";
+  return full ? `${full}${title} (${user.username})` : user.username;
 };
 
 
@@ -1181,12 +1187,7 @@ useEffect(() => {
     {leadData.assignedOfficer.length > 0
       ? 
         leadData.assignedOfficer
-          .map((uName) => {
-            const user = usernames.find((u) => u.username === uName);
-            return user
-              ? `${user.firstName} ${user.lastName} (${user.username})`
-              : uName;
-          })
+          .map((uName) => displayUser(uName))
           .join(", ")
       : "Select Officers"}
     <span className={styles.dropdownIcon}>{dropdownOpen ? "▲" : "▼"}</span>
@@ -1298,7 +1299,7 @@ useEffect(() => {
                     }}
                   />
                   <span className={styles.invText}>
-                    {user.firstName} {user.lastName} ({user.username})
+                    {`${user.firstName || ""} ${user.lastName || ""}`.trim()}{user.title ? ` (${user.title})` : ""} ({user.username})
                   </span>
                 </label>
               );
@@ -1327,7 +1328,9 @@ useEffect(() => {
       </option>
       {assignedOfficerUsernames.map((uName) => {
         const user = usernames.find((u) => u.username === uName);
-        const label = user ? `${user.firstName} ${user.lastName} (${user.username})` : uName;
+        const full = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() : "";
+        const title = user?.title ? ` (${user.title})` : "";
+        const label = full ? `${full}${title} (${uName})` : uName;
         return (
           <option key={uName} value={uName}>{label}</option>
         );

@@ -113,6 +113,7 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
   const [closing, setClosing] = useState(false);
   const currentUser = localStorage.getItem("loggedInUser");
   const [leadData, setLeadData] = useState({});
+  const [dsSupervisors, setDsSupervisors] = useState([]);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
   const [notifyOpen, setNotifyOpen] = useState(false);
@@ -245,6 +246,13 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (Array.isArray(data) && data[0]) setLeadData(data[0]);
+
+        // Fetch DS list to exclude from notifications
+        const caseNo = selectedCase?.caseNo;
+        if (caseNo) {
+          const teamRes = await api.get(`/api/cases/${caseNo}/team`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => ({ data: {} }));
+          setDsSupervisors((teamRes.data?.detectiveSupervisors || []).map(ds => (typeof ds === 'string' ? ds : ds?.username || ds?.name || '')).filter(Boolean));
+        }
       } catch (e) {
         console.warn("lead meta fetch skipped:", e);
       }
@@ -261,6 +269,8 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
       if (!username) return;
       // Skip the current user (they're the sender)
       if (currentUserId && userId ? String(userId) === currentUserId : username === current) return;
+      // Skip Detective Supervisors
+      if (dsSupervisors.includes(username)) return;
       if (!uniq.has(username)) uniq.set(username, { username, userId: userId || undefined, role, status: "pending", unread: true });
     };
 

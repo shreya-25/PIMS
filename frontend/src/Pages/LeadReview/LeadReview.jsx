@@ -30,7 +30,7 @@ export const LeadReview = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [pendingRoute, setPendingRoute]   = useState(null);
-  const [caseTeam, setCaseTeam] = useState({ detectiveSupervisor: "", caseManagers: [], investigators: [] });
+  const [caseTeam, setCaseTeam] = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [] });
   const [originalAssigned, setOriginalAssigned] = useState([]);
   const signedInOfficer = localStorage.getItem("loggedInUser");
   const [alertOpen, setAlertOpen] = useState(false);
@@ -123,7 +123,10 @@ const [allUsers, setAllUsers] = useState([]);
   // display helper
 const displayUserAO = (uname) => {
   const u = allUsers.find((x) => x.username === uname);
-  return u ? `${u.firstName} ${u.lastName} (${u.username})` : uname;
+  if (!u) return uname;
+  const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+  const title = u.title ? ` (${u.title})` : "";
+  return full ? `${full}${title} (${u.username})` : u.username;
 };
 
 const DELETE_REASON_CHIPS = [
@@ -210,9 +213,9 @@ const DeleteReasonModal = memo(function DeleteReasonModal({ open, onCancel, onSu
       headers: { Authorization: `Bearer ${token}` }
     }).then(resp => {
       setCaseTeam({
-        detectiveSupervisor: resp.data.detectiveSupervisor,
+        detectiveSupervisors: resp.data.detectiveSupervisors || [],
         caseManagers:         resp.data.caseManagers,
-        investigators:       resp.data.investigators
+        investigators:        resp.data.investigators
       });
     }).catch(console.error);
   }, [selectedCase.caseNo]);
@@ -704,9 +707,7 @@ const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = 
       );
 
       const officers = [
-        ...(caseTeam.detectiveSupervisor
-          ? [{ name: toUsername(caseTeam.detectiveSupervisor), role: "Detective Supervisor", status: "accepted" }]
-          : []),
+        ...(caseTeam.detectiveSupervisors || []).map(ds => ({ name: toUsername(ds), role: "Detective Supervisor", status: "accepted" })),
         ...(caseTeam.caseManagers || []).map((n) => ({
           name: toUsername(n),
           role: "Case Manager",
@@ -730,18 +731,21 @@ const handleSave = async (updatedOfficers = assignedOfficers, updatedLeadData = 
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setCaseTeam({
-        detectiveSupervisor: teamResp.data.detectiveSupervisor,
+        detectiveSupervisors: teamResp.data.detectiveSupervisors || [],
         caseManagers: teamResp.data.caseManagers,
         investigators: teamResp.data.investigators,
       });
 
-      // Send lead-assignment notifications for each newly added officer
-      const assignedToEntries = newlyAdded.map((u) => ({
-        username: u,
-        role: "Investigator",
-        status: "pending",
-        unread: true,
-      }));
+      // Send lead-assignment notifications for each newly added officer (exclude DS)
+      const dsUsernames = (caseTeam.detectiveSupervisors || []).map(toUsername);
+      const assignedToEntries = newlyAdded
+        .filter((u) => !dsUsernames.includes(u))
+        .map((u) => ({
+          username: u,
+          role: "Investigator",
+          status: "pending",
+          unread: true,
+        }));
 
       const notificationPayload = {
         notificationId: Date.now().toString(),
@@ -1107,7 +1111,20 @@ console.log("SL, SC", selectedLead, selectedCase);
       try {
         const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
       const kase = selectedCase?._id || selectedCase?.id ? selectedCase : location.state?.caseDetails;
-      const kaseId = kase?._id || kase?.id;
+      let kaseId = kase?._id || kase?.id;
+
+      // Fallback: if _id is missing but caseNo is available, resolve it from the API
+      if (!kaseId && kase?.caseNo) {
+        try {
+          const token = localStorage.getItem("token");
+          const { data: caseDoc } = await api.get(`/api/cases/caseNo/${kase.caseNo}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          kaseId = caseDoc?._id;
+        } catch (e) {
+          console.error("Failed to resolve caseId from caseNo:", e);
+        }
+      }
 
       if (lead?.leadNo && lead?.leadName && kaseId) {
         const token = localStorage.getItem("token");
@@ -1348,6 +1365,7 @@ const showDecisionBlock =
   // &&(selectedCase.role !== "Case Manager" && selectedCase.role !== "Detective Supervisor");
 const isManager = ["Case Manager", "Detective Supervisor"].includes(selectedCase?.role);
 const isAssigned = !!myAssignment;
+const isReadOnly = selectedCase?.role === "Read Only";
 
 const canWorkOnReturn = isAssigned ? (myAssignment.status === "accepted") : isManager;
 
@@ -1394,7 +1412,8 @@ const declinedSet = new Set(
 // filtered users (exclude declined)
 const filteredUsersAO = React.useMemo(() => {
   const q = aoQuery.trim().toLowerCase();
-  const pool = (allUsers || []).filter(u => !declinedSet.has(u.username));
+  const OFFICER_ROLES = new Set(["Detective Supervisor", "CaseManager", "Detective/Investigator"]);
+  const pool = (allUsers || []).filter(u => OFFICER_ROLES.has(u.role) && !declinedSet.has(u.username));
   if (!q) return pool;
   return pool.filter(u => {
     const a = (u.username || "").toLowerCase();
@@ -1450,7 +1469,10 @@ const describeEvent = (ev) => {
 // === helpers (keep your fmtDT) ==============================================
 const nameOf = (uname) => {
   const u = allUsers.find((x) => x.username === uname);
-  return u ? `${u.firstName} ${u.lastName} (${u.username})` : uname;
+  if (!u) return uname;
+  const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+  const title = u.title ? ` (${u.title})` : "";
+  return full ? `${full}${title} (${u.username})` : u.username;
 };
 
 const plural = (arr, s, p) => (arr && arr.length === 1 ? s : p);
@@ -1928,7 +1950,10 @@ const assignmentHoverText = React.useMemo(() => {
 
   const display = (u) => {
     const m = allUsers.find(x => x.username === u);
-    return m ? `${m.firstName} ${m.lastName} (${m.username})` : u;
+    if (!m) return u;
+    const full = `${m.firstName || ""} ${m.lastName || ""}`.trim();
+    const title = m.title ? ` (${m.title})` : "";
+    return full ? `${full}${title} (${m.username})` : m.username;
   };
 
   // one line per officer
@@ -2016,27 +2041,29 @@ const assignmentHoverText = React.useMemo(() => {
 
           {/* Page Header */}
 
-            {canWorkOnReturn && (
+            {(canWorkOnReturn || isReadOnly) && (
               <div className={styles.topMenuNav}>
                 <div className={styles.menuItems}>
                   <span className={`${styles.menuItem} ${styles.menuItemActive}`}>Lead Information</span>
 
-                  <span className={styles.menuItem} onClick={() => {
-                    const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                    const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                    if (lead && kase) {
-                      navigate("/LRInstruction", { state: { caseDetails: kase, leadDetails: lead } });
-                    } else {
-                      setAlertMessage("Please select a case and lead first.");
-                      setAlertOpen(true);
-                    }
-                  }}>Add Lead Return</span>
+                  {!isReadOnly && (
+                    <span className={styles.menuItem} onClick={() => {
+                      const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                      const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                      if (lead && kase) {
+                        navigate("/LRInstruction", { state: { caseDetails: kase, leadDetails: lead } });
+                      } else {
+                        setAlertMessage("Please select a case and lead first.");
+                        setAlertOpen(true);
+                      }
+                    }}>Add Lead Return</span>
+                  )}
 
-                  {(selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor") && (
+                  {!isReadOnly && (selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor") && (
                     <span className={styles.menuItem} onClick={goToViewLR}>Review Lead Return</span>
                   )}
 
-                  {(["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
+                  {!isReadOnly && (["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
                     <span
                       className={styles.menuItem}
                       onClick={handleViewLeadReturn}
@@ -2047,11 +2074,11 @@ const assignmentHoverText = React.useMemo(() => {
                     </span>
                   )}
 
-                  {selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
+                  {!isReadOnly && selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
                     <span className={styles.menuItem} onClick={goToViewLR}>Submit Lead Return</span>
                   )}
 
-                  {selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
+                  {!isReadOnly && selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
                     <span className={styles.menuItem} onClick={goToViewLR}>Review Lead Return</span>
                   )}
 
@@ -2312,7 +2339,7 @@ const assignmentHoverText = React.useMemo(() => {
                       
                       />
                       <span className={styles.invText}>
-                        {user.firstName} {user.lastName} ({user.username})
+                        {`${user.firstName || ""} ${user.lastName || ""}`.trim()}{user.title ? ` (${user.title})` : ""} ({user.username})
                       </span>
                     </label>
                   );
@@ -2341,7 +2368,9 @@ const assignmentHoverText = React.useMemo(() => {
                     <option value="" disabled>{assignedOfficers.length ? 'Select Primary' : 'Assign officers first'}</option>
                     {assignedOfficers.map(uName => {
                       const user = allUsers.find(u => u.username === uName);
-                      const label = user ? `${user.firstName} ${user.lastName} (${user.username})` : uName;
+                      const full = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() : "";
+                      const title = user?.title ? ` (${user.title})` : "";
+                      const label = full ? `${full}${title} (${uName})` : uName;
                       return <option key={uName} value={uName}>{label}</option>;
                     })}
                   </select>

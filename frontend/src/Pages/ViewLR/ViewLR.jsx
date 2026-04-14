@@ -5,6 +5,7 @@ import { SideBar } from "../../components/Sidebar/Sidebar";
 import CommentBar from "../../components/CommentBar/CommentBar";
 import { CaseContext } from "../CaseContext";
 import api from "../../api";
+import { safeEncode } from "../../utils/encode";
 import styles from "./ViewLR.module.css"; 
 import { AlertModal } from "../../components/AlertModal/AlertModal";
 import { useLeadStatus } from '../../hooks/useLeadStatus';
@@ -49,11 +50,29 @@ export const ViewLR = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [openPerson, setOpenPerson] = useState(null);
   const [showComments, setShowComments] = useState(true);
+  const [allUsers, setAllUsers] = useState([]);
   const currentUser = localStorage.getItem("loggedInUser");
   const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus} = useContext(CaseContext);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    api.get("/api/users/usernames", { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => setAllUsers(Array.isArray(res.data?.users) ? res.data.users : []))
+      .catch(() => {});
+  }, []);
+
+  const displayUser = (username) => {
+    if (!username) return "Unknown";
+    const u = allUsers.find(u => u.username === username);
+    if (!u) return username;
+    const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+    const title = u.title ? ` (${u.title})` : "";
+    return full ? `${full}${title} (${username})` : username;
+  };
    const [alertOpen, setAlertOpen] = useState(false);
     const [alertMessage, setAlertMessage] = useState("");
     const [leadData, setLeadData] = useState({});
+    const [dsSupervisors, setDsSupervisors] = useState([]);
      const [confirmConfig, setConfirmConfig] = useState({
       open: false,
       title: '',
@@ -216,9 +235,26 @@ const canShowSubmit      = !isClosedOrCompleted && !isInReview && (
 
   // -------- fetch all sections (same endpoints you already use) --------
   useEffect(() => {
-    const caseId = selectedCase?._id || selectedCase?.id || location.state?.caseDetails?._id || location.state?.caseDetails?.id;
-    if (!caseId || !leadNo || !leadName) return;
-    const encLead = encodeURIComponent(leadName);
+    let caseId = selectedCase?._id || selectedCase?.id || location.state?.caseDetails?._id || location.state?.caseDetails?.id;
+    const effectiveCaseNo = selectedCase?.caseNo || location.state?.caseDetails?.caseNo;
+
+    if (!leadNo || !leadName) return;
+
+    async function resolveAndLoad() {
+      // Fallback: resolve _id from caseNo when _id is missing
+      if (!caseId && effectiveCaseNo) {
+        try {
+          const token = localStorage.getItem("token");
+          const { data: caseDoc } = await api.get(`/api/cases/caseNo/${effectiveCaseNo}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          caseId = caseDoc?._id;
+        } catch (e) {
+          console.error("Failed to resolve caseId from caseNo:", e);
+        }
+      }
+      if (!caseId) return;
+    const encLead = safeEncode(leadName);
     const token = localStorage.getItem("token");
     const headers = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -254,6 +290,15 @@ const canShowSubmit      = !isClosedOrCompleted && !isInReview && (
         const leadDoc = instrRes.data?.[0] || {};
         setInstructions(leadDoc);
         setLeadData(leadDoc);
+
+        // Fetch DS list to exclude from notifications
+        try {
+          const caseNo = selectedCase?.caseNo;
+          if (caseNo) {
+            const teamRes = await api.get(`/api/cases/${caseNo}/team`, headers).catch(() => ({ data: {} }));
+            setDsSupervisors((teamRes.data?.detectiveSupervisors || []).map(ds => (typeof ds === 'string' ? ds : ds?.username || ds?.name || '')).filter(Boolean));
+          }
+        } catch (_) { /* non-blocking */ }
         setReturns(returnsRes.data || []);
         setPersons(personsRes.data || []);
         setVehicles(vehiclesRes.data || []);
@@ -268,8 +313,10 @@ const canShowSubmit      = !isClosedOrCompleted && !isInReview && (
         setLoading(false);
       }
     }
-    loadAll();
-  }, [selectedCase?._id, selectedCase?.id, leadNo, leadName]);
+      await loadAll();
+    }
+    resolveAndLoad();
+  }, [selectedCase?._id, selectedCase?.id, selectedCase?.caseNo, leadNo, leadName]);
 
   // Group helpers — we'll try common keys: narrativeId, returnId, lrId, or fall back to _id
   const keyFor = (obj) =>
@@ -384,7 +431,7 @@ const actuallyDoSubmitReport = async () => {
         const manager    = leadData.assignedBy;                  // string username
         const managerUserId = leadData.assignedByUserId || undefined;
         const investigators = normalizeAssignees(leadData.assignedTo);
-        if (manager) {
+        if (manager && !dsSupervisors.includes(manager)) {
           const payload = {
             notificationId: Date.now().toString(),
             assignedBy:     localStorage.getItem("loggedInUser"),
@@ -650,7 +697,7 @@ const actuallyDoSubmitReport = async () => {
                               </div>
                               <div className={styles.metaItem}>
                                 <span className={styles.metaLabel}>Entered By:</span>
-                                <span className={styles.metaValue}>{toText(ret.enteredBy) || "Unknown"}</span>
+                                <span className={styles.metaValue}>{displayUser(ret.enteredBy)}</span>
                               </div>
                               <div className={styles.metaItem}>
                                 <span className={styles.metaLabel}>Date:</span>

@@ -5,6 +5,7 @@ const fs = require("fs");
 const sharp = require("sharp");
 const heicConvert = require("heic-convert");
 const { getObjectBuffer } = require("../s3");
+const User = require("../models/userModel");
 
 async function toPdfSafeBuffer(buf) {
   if (!buf || buf.length < 12) return buf;
@@ -42,19 +43,29 @@ async function toPdfSafeBuffer(buf) {
 //   return Buffer.from(mergedPdfBytes);
 // }
 
-function drawMetaBar(doc, x, y, width, entry) {
-  const rowH = 20;
+function drawMetaBar(doc, x, y, width, entry, userMap = {}) {
   const padding = 5;
   const bg = "#ffffff";
   const border = "#ccc";
+  const fontSize = 10;
 
-  const idVal  = `${entry.leadReturnId ?? "N/A"}`;
-  const byVal  = `${entry.enteredBy ?? "N/A"}`;
-  const dtVal  = `${formatDate(entry.enteredDate) || "N/A"}`;
+  // Narrow ID column; give Date enough room for label+value; By gets the rest
+  const colW1 = 105;                     // Narrative ID
+  const colW3 = 125;                     // Entered Date — label + MM/DD/YY on one line
+  const colW2 = width - colW1 - colW3;  // Entered By — gets ~282px
 
-  const colW1 = Math.round(width * 0.33);
-  const colW2 = Math.round(width * 0.34);
-  const colW3 = width - colW1 - colW2;
+  const idVal = `${entry.leadReturnId ?? "N/A"}`;
+  const rawBy = entry.enteredBy;
+  const byVal = rawBy && userMap[rawBy] ? formatFromUser(userMap[rawBy]) : (rawBy ?? "N/A");
+  const dtVal = `${formatDate(entry.enteredDate) || "N/A"}`;
+
+  const cols = [
+    { w: colW1, label: "Narrative ID:", value: idVal },
+    { w: colW2, label: "Entered By:", value: byVal },
+    { w: colW3, label: "Entered Date:", value: dtVal },
+  ];
+
+  const rowH = 22;
 
   const bottom = doc.page.height - doc.page.margins.bottom;
   if (y + rowH > bottom) {
@@ -62,29 +73,25 @@ function drawMetaBar(doc, x, y, width, entry) {
     y = doc.page.margins.top;
   }
 
-  // Draw cells
+  // Draw cell backgrounds and borders
   let cx = x;
-  [colW1, colW2, colW3].forEach((w) => {
+  cols.forEach(({ w }) => {
     doc.rect(cx, y, w, rowH).fillAndStroke(bg, border);
     cx += w;
   });
 
-  const baseY = y + 5; // same baseline you used
-
-  // Helper: label bold, value normal
-  function drawLabelValue(cellX, cellW, label, value) {
-    const maxW = cellW - 2 * padding;
-
-    doc.fillColor("#000").font("Helvetica-Bold").fontSize(11);
-    doc.text(label, cellX + padding, baseY, { continued: true });
-
-    doc.font("Helvetica").fontSize(11);
-    doc.text(` ${value}`, { width: maxW, ellipsis: true }); // continues on same line
-  }
-
-  drawLabelValue(x, colW1, "Narrative ID:", idVal);
-  drawLabelValue(x + colW1, colW2, "Entered By:", byVal);
-  drawLabelValue(x + colW1 + colW2, colW3, "Entered Date:", dtVal);
+  // Draw label bold + value normal on one line per cell
+  cx = x;
+  const textY = y + (rowH - fontSize * 1.2) / 2; // vertically centre the text
+  cols.forEach(({ w, label, value }) => {
+    const textX = cx + padding;
+    const maxW  = w - 2 * padding;
+    doc.fillColor("#000").font("Helvetica-Bold").fontSize(fontSize)
+      .text(label, textX, textY, { continued: true });
+    doc.font("Helvetica").fontSize(fontSize)
+      .text(` ${value}`, { width: maxW, lineBreak: false, ellipsis: true });
+    cx += w;
+  });
 
   doc.fillColor("black");
   return y + rowH + 10;
@@ -121,27 +128,35 @@ function formatTime(dateString) {
   });
 }
 
-function formatOfficer(off) {
+function formatFromUser(u) {
+  const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+  const title = u.title ? ` (${u.title})` : "";
+  return full ? `${full}${title} (${u.username})` : u.username || "";
+}
+
+function formatOfficer(off, userMap = {}) {
   if (!off) return "";
-  // common shapes: string, {name}, {fullName}, {displayName}, {firstName,lastName}, {user:{...}}
+  const uname = typeof off === "string" ? off : off.username;
+  if (uname && userMap[uname]) return formatFromUser(userMap[uname]);
   if (typeof off === "string") return off;
   if (off.fullName) return off.fullName;
   if (off.displayName) return off.displayName;
   if (off.name) return off.name;
   if (off.firstName || off.lastName) {
-    return [off.firstName, off.lastName].filter(Boolean).join(" ").trim();
+    const full = [off.firstName, off.lastName].filter(Boolean).join(" ").trim();
+    const title = off.title ? ` (${off.title})` : "";
+    return `${full}${title}`;
   }
-  if (off.user) return formatOfficer(off.user);
-  // fallback to something stable
+  if (off.user) return formatOfficer(off.user, userMap);
   if (off.email) return off.email;
   if (off.username) return off.username;
   return "";
 }
 
-function formatOfficerList(arr) {
+function formatOfficerList(arr, userMap = {}) {
   if (!Array.isArray(arr) || arr.length === 0) return "N/A";
   const names = arr
-    .map(formatOfficer)
+    .map(off => formatOfficer(off, userMap))
     .filter(Boolean);
 
   if (names.length === 0) return "N/A";
@@ -576,7 +591,7 @@ const formatDate = (dateString) => {
   return `${month}/${day}/${year}`;
 };
 
-function drawStructuredLeadDetails(doc, x, y, lead) {
+function drawStructuredLeadDetails(doc, x, y, lead, userMap = {}) {
   const colWidths = [130, 130, 130, 122];
   const rowHeight = 20;
   const padding = 5;
@@ -585,7 +600,7 @@ function drawStructuredLeadDetails(doc, x, y, lead) {
   const headers = ["Lead Origin:", "Assigned By","Assigned Date:", "Submitted Date:"];
   const values = [
     lead.parentLeadNo ? lead.parentLeadNo.join(", ") : "N/A",
-    lead.assignedBy ? lead.assignedBy : "N/A",
+    lead.assignedBy ? formatOfficer(lead.assignedBy, userMap) : "N/A",
     lead.assignedDate ? formatDate(lead.assignedDate) : "N/A",
     lead.submittedDate ? formatDate(lead.submittedDate) : "N/A",
   ];
@@ -605,15 +620,27 @@ function drawStructuredLeadDetails(doc, x, y, lead) {
   y += rowHeight;
   currX = x;
 
+  // Measure tallest cell to set dynamic row height
+  doc.font("Helvetica").fontSize(10);
+  const valRowH = Math.max(
+    20,
+    ...values.map((v, i) =>
+      doc.heightOfString(v, { width: colWidths[i] - 2 * padding }) + 2 * padding
+    )
+  );
+
   // Values row
   for (let i = 0; i < values.length; i++) {
-    doc.rect(currX, y, colWidths[i], rowHeight).stroke();
-    doc.font("Helvetica").fontSize(12).text(values[i], currX + padding, y + 5);
+    doc.rect(currX, y, colWidths[i], valRowH).stroke();
+    doc.font("Helvetica").fontSize(10).text(values[i], currX + padding, y + padding, {
+      width: colWidths[i] - 2 * padding,
+      lineBreak: true,
+    });
     currX += colWidths[i];
   }
 
   // Second Row - Assigned Officers
- y += rowHeight;
+  y += valRowH;
 
 const tableWidth   = colWidths.reduce((a, b) => a + b, 0);
 const labelWidth   = 130; // keep same visual as your header row
@@ -621,7 +648,7 @@ const valueWidth   = tableWidth - labelWidth;
 const labelHeight  = 20;  // min box height
 
 // Build the officers text from objects/strings
-const officersText = formatOfficerList(lead.assignedTo);
+const officersText = formatOfficerList(lead.assignedTo, userMap);
 
 // Measure the wrapped text height for the value cell
 doc.font("Helvetica").fontSize(10); // slightly smaller to fit better
@@ -965,6 +992,21 @@ async function generateReport(req, res) {
 //   }
 // });
 
+    // Build userMap for officer name formatting
+    const allUsernames = [
+      ...new Set([
+        ...(leadInstruction?.assignedTo || [])
+          .map(a => (typeof a === "string" ? a : a?.username))
+          .filter(Boolean),
+        ...(leadInstruction?.assignedBy ? [leadInstruction.assignedBy] : []),
+        ...(Array.isArray(leadReturn) ? leadReturn.map(e => e?.enteredBy).filter(Boolean) : []),
+      ]),
+    ];
+    const usersFound = await User.find({ username: { $in: allUsernames } })
+      .select("username firstName lastName title")
+      .lean();
+    const userMap = Object.fromEntries(usersFound.map(u => [u.username, u]));
+
     const headerHeight = drawHeader(doc, leadInstruction);
 
 // start content after header
@@ -976,7 +1018,7 @@ let currentY = headerHeight + 20;
     // currentY = drawTable(doc, 50, currentY, ["Lead No.", "Origin", "Assigned Date", "Due Date", "Completed Date"], [{ "Lead No.": leadInstructions?.leadNo || 'N/A', "Origin": leadInstructions?.parentLeadNo || 'N/A', "Assigned Date": formatDate(leadInstructions?.assignedDate) || 'N/A', "Due Date": formatDate(leadInstructions?.dueDate) || 'N/A', "Completed Date": "Still to add in db" }], [90, 90, 120, 120, 92]) + 20;
     // currentY = drawTable(doc, 50, currentY, ["Sub No.", "Associated Sub Nos.", "Assigned Officers", "Assigned By"], [{ "Sub No.": leadInstructions?.subNumber || 'N/A', "Associated Sub Nos.": leadInstructions?.associatedSubNumbers || 'N/A', "Assigned Officers": leadInstructions?.assignedTo|| 'N/A', "Assigned By": leadInstructions?.assignedBy || 'N/A' }], [90, 170, 170, 82]) + 20;
 
-    currentY = drawStructuredLeadDetails(doc, 50, currentY, leadInstruction);
+    currentY = drawStructuredLeadDetails(doc, 50, currentY, leadInstruction, userMap);
 
     if (includeAll || leadInstruction) {
       // if (currentY + 50 > doc.page.height - doc.page.margins.bottom) {
@@ -1031,9 +1073,7 @@ let currentY = headerHeight + 20;
       //   currentY,
       //   { width: 512 }
       // );
-      currentY = drawMetaBar(doc, 50, currentY, 512, entry);
-
-      currentY = doc.y + 10;
+      currentY = drawMetaBar(doc, 50, currentY, 512, entry, userMap);
 
       currentY = drawTextBox(doc, 50, currentY, 512,"", leadText);
 

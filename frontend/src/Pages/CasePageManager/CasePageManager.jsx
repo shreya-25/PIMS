@@ -48,24 +48,28 @@ export const CasePageManager = () => {
   });
 
   // ─── Case team state ──────────────────────────────────────────────────────
-  const [team, setTeam] = useState({ detectiveSupervisor: [], caseManagers: [], investigators: [] });
+  const [team, setTeam] = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [], readOnly: [] });
   const [allUsers, setAllUsers] = useState([]);
   const [selectedInvestigators, setSelectedInvestigators] = useState([]);
   const [selectedCaseManagers, setSelectedCaseManagers] = useState([]);
-  const [selectedDetectiveSupervisor, setSelectedDetectiveSupervisor] = useState("");
+  const [selectedDetectiveSupervisors, setSelectedDetectiveSupervisors] = useState([]);
+  const [selectedReadOnly, setSelectedReadOnly] = useState([]);
 
   // ─── Team dropdown open/search state ──────────────────────────────────────
   const [investigatorsDropdownOpen, setInvestigatorsDropdownOpen] = useState(false);
   const [caseManagersDropdownOpen, setCaseManagersDropdownOpen] = useState(false);
   const [detectiveSupervisorDropdownOpen, setDetectiveSupervisorDropdownOpen] = useState(false);
+  const [readOnlyDropdownOpen, setReadOnlyDropdownOpen] = useState(false);
   const [dsSearch, setDsSearch] = useState("");
   const [cmSearch, setCmSearch] = useState("");
   const [invSearch, setInvSearch] = useState("");
+  const [roSearch, setRoSearch] = useState("");
 
   // Refs for click-outside detection on team dropdowns
   const dsRef = useRef(null);
   const cmRef = useRef(null);
   const invRef = useRef(null);
+  const roRef = useRef(null);
 
   // ─── Collapsible section state ────────────────────────────────────────────
   const [isCaseSummaryOpen, setIsCaseSummaryOpen] = useState(true);
@@ -99,13 +103,19 @@ export const CasePageManager = () => {
   const formatUser = useCallback((username) => {
     if (!username) return "—";
     const u = allUsers.find(x => x.username === username);
-    return u ? `${u.firstName} ${u.lastName} (${u.username})` : username;
+    if (!u) return username;
+    const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+    const title = u.title ? ` (${u.title})` : "";
+    return full ? `${full}${title} (${u.username})` : u.username;
   }, [allUsers]);
 
-  /** Display "First Last (username)" for a single username */
+  /** Display "First Last (title) (username)" for a single username */
   const displayName = (uname) => {
     const u = allUsers.find(u => u.username === uname);
-    return u ? `${u.firstName} ${u.lastName} (${u.username})` : (uname || "—");
+    if (!u) return uname || "—";
+    const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+    const title = u.title ? ` (${u.title})` : "";
+    return full ? `${full}${title} (${u.username})` : u.username;
   };
 
   /** Join multiple usernames as full display names */
@@ -162,6 +172,10 @@ export const CasePageManager = () => {
         setInvestigatorsDropdownOpen(false);
         setInvSearch("");
       }
+      if (roRef.current && !roRef.current.contains(e.target)) {
+        setReadOnlyDropdownOpen(false);
+        setRoSearch("");
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -202,10 +216,13 @@ export const CasePageManager = () => {
     if (Array.isArray(team.caseManagers)) {
       setSelectedCaseManagers(team.caseManagers);
     }
-    if (team.detectiveSupervisor) {
-      setSelectedDetectiveSupervisor(team.detectiveSupervisor);
+    if (Array.isArray(team.detectiveSupervisors)) {
+      setSelectedDetectiveSupervisors([...team.detectiveSupervisors]);
     }
-  }, [team.investigators, team.caseManagers, team.detectiveSupervisor]);
+    if (Array.isArray(team.readOnly)) {
+      setSelectedReadOnly([...team.readOnly]);
+    }
+  }, [team.investigators, team.caseManagers, team.detectiveSupervisors, team.readOnly]);
 
   // ─── Effect: presence heartbeat ──────────────────────────────────────────
   useEffect(() => {
@@ -452,18 +469,20 @@ export const CasePageManager = () => {
   const saveInvestigators = async (
     overrideInvestigators = selectedInvestigators,
     overrideManagers = selectedCaseManagers,
-    overrideSupervisor = selectedDetectiveSupervisor
+    overrideSupervisors = selectedDetectiveSupervisors,
+    overrideReadOnly = selectedReadOnly
   ) => {
     try {
       const token = localStorage.getItem("token");
 
-      const prevSupervisor = team.detectiveSupervisor;
+      const prevSupervisors = team.detectiveSupervisors || [];
       const prevManagers = team.caseManagers || [];
       const prevInvestigators = team.investigators || [];
+      const prevReadOnly = team.readOnly || [];
 
       // Block removal of officers who still have open leads
       const removed = [
-        ...(prevSupervisor && prevSupervisor !== overrideSupervisor ? [{ username: prevSupervisor, role: "Detective Supervisor" }] : []),
+        ...prevSupervisors.filter(u => !overrideSupervisors.includes(u)).map(u => ({ username: u, role: "Detective Supervisor" })),
         ...prevManagers.filter(u => !overrideManagers.includes(u)).map(u => ({ username: u, role: "Case Manager" })),
         ...prevInvestigators.filter(u => !overrideInvestigators.includes(u)).map(u => ({ username: u, role: "Investigator" })),
       ];
@@ -478,15 +497,17 @@ export const CasePageManager = () => {
       }
 
       const officers = [
-        { name: overrideSupervisor, role: "Detective Supervisor", status: "accepted" },
+        ...overrideSupervisors.map(u => ({ name: u, role: "Detective Supervisor", status: "accepted" })),
         ...overrideManagers.map(u => ({ name: u, role: "Case Manager", status: "accepted" })),
         ...overrideInvestigators.map(u => ({ name: u, role: "Investigator", status: "pending" })),
+        ...overrideReadOnly.map(u => ({ name: u, role: "Read Only", status: "accepted" })),
       ];
 
       const newlyAdded = [
-        ...(overrideSupervisor && overrideSupervisor !== prevSupervisor ? [{ username: overrideSupervisor, role: "Detective Supervisor" }] : []),
+        ...overrideSupervisors.filter(u => !prevSupervisors.includes(u)).map(u => ({ username: u, role: "Detective Supervisor" })),
         ...overrideManagers.filter(u => !prevManagers.includes(u)).map(u => ({ username: u, role: "Case Manager" })),
         ...overrideInvestigators.filter(u => !prevInvestigators.includes(u)).map(u => ({ username: u, role: "Investigator" })),
+        ...overrideReadOnly.filter(u => !prevReadOnly.includes(u)).map(u => ({ username: u, role: "Read Only" })),
       ];
 
       await api.put(
@@ -496,9 +517,10 @@ export const CasePageManager = () => {
       );
 
       setTeam({
-        detectiveSupervisor: overrideSupervisor,
+        detectiveSupervisors: [...overrideSupervisors],
         caseManagers: [...overrideManagers],
         investigators: [...overrideInvestigators],
+        readOnly: [...overrideReadOnly],
       });
 
       // Notify newly added officers
@@ -914,9 +936,9 @@ export const CasePageManager = () => {
                   </thead>
                   <tbody>
 
-                    {/* Detective Supervisor */}
+                    {/* Detective Supervisor(s) */}
                     <tr>
-                      <td className={styles['case-team-td']}>Detective Supervisor</td>
+                      <td className={styles['case-team-td']}>Detective Supervisor{team.detectiveSupervisors.length > 1 ? "s" : ""}</td>
                       <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
                         {selectedCase.role === "Detective Supervisor" ? (
                           <div ref={dsRef} className={styles['custom-dropdown']}>
@@ -925,7 +947,7 @@ export const CasePageManager = () => {
                               onClick={() => setDetectiveSupervisorDropdownOpen(prev => !prev)}
                             >
                               <span className={styles['dh-text']}>
-                                {selectedDetectiveSupervisor ? displayName(selectedDetectiveSupervisor) : "Select Detective Supervisor"}
+                                {selectedDetectiveSupervisors.length > 0 ? displayNames(selectedDetectiveSupervisors) : "Select Detective Supervisor(s)"}
                               </span>
                               <span className={styles['dropdown-icon']} aria-hidden="true">
                                 <img src={detectiveSupervisorDropdownOpen ? downIcon : upIcon} className={styles['caret-icon']} alt="" />
@@ -943,22 +965,25 @@ export const CasePageManager = () => {
                                   autoFocus
                                 />
                                 {allUsers
+                                  .filter(user => user.role === "Detective Supervisor")
                                   .filter(user => !dsSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(dsSearch.toLowerCase()))
                                   .map(user => (
                                     <div key={user.username} className={styles['dropdown-item']}>
                                       <input
-                                        type="radio"
-                                        name="detectiveSupervisor"
+                                        type="checkbox"
                                         id={`ds-${user.username}`}
                                         value={user.username}
-                                        checked={selectedDetectiveSupervisor === user.username}
-                                        onChange={() => {
-                                          setSelectedDetectiveSupervisor(user.username);
-                                          saveInvestigators(selectedInvestigators, selectedCaseManagers, user.username);
+                                        checked={selectedDetectiveSupervisors.includes(user.username)}
+                                        onChange={e => {
+                                          const next = e.target.checked
+                                            ? [...selectedDetectiveSupervisors, user.username]
+                                            : selectedDetectiveSupervisors.filter(u => u !== user.username);
+                                          setSelectedDetectiveSupervisors(next);
+                                          saveInvestigators(selectedInvestigators, selectedCaseManagers, next, selectedReadOnly);
                                         }}
                                       />
                                       <label htmlFor={`ds-${user.username}`}>
-                                        {user.firstName} {user.lastName} ({user.username})
+                                        {`${user.firstName || ""} ${user.lastName || ""}`.trim()}{user.title ? ` (${user.title})` : ""} ({user.username})
                                       </label>
                                     </div>
                                   ))}
@@ -966,7 +991,7 @@ export const CasePageManager = () => {
                             )}
                           </div>
                         ) : (
-                          formatUser(team.detectiveSupervisor) || "—"
+                          displayNames(team.detectiveSupervisors) || "—"
                         )}
                       </td>
                     </tr>
@@ -1000,6 +1025,7 @@ export const CasePageManager = () => {
                                   autoFocus
                                 />
                                 {allUsers
+                                  .filter(user => user.role === "CaseManager")
                                   .filter(user => !cmSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(cmSearch.toLowerCase()))
                                   .map(user => (
                                     <div key={user.username} className={styles['dropdown-item']}>
@@ -1013,11 +1039,11 @@ export const CasePageManager = () => {
                                             ? [...selectedCaseManagers, user.username]
                                             : selectedCaseManagers.filter(u => u !== user.username);
                                           setSelectedCaseManagers(next);
-                                          saveInvestigators(selectedInvestigators, next, selectedDetectiveSupervisor);
+                                          saveInvestigators(selectedInvestigators, next, selectedDetectiveSupervisors, selectedReadOnly);
                                         }}
                                       />
                                       <label htmlFor={`cm-${user.username}`}>
-                                        {user.firstName} {user.lastName} ({user.username})
+                                        {`${user.firstName || ""} ${user.lastName || ""}`.trim()}{user.title ? ` (${user.title})` : ""} ({user.username})
                                       </label>
                                     </div>
                                   ))}
@@ -1061,6 +1087,7 @@ export const CasePageManager = () => {
                                   autoFocus
                                 />
                                 {allUsers
+                                  .filter(user => user.role === "CaseManager" || user.role === "Detective/Investigator")
                                   .filter(user => !invSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(invSearch.toLowerCase()))
                                   .map(user => (
                                     <div key={user.username} className={styles['dropdown-item']}>
@@ -1074,11 +1101,11 @@ export const CasePageManager = () => {
                                             ? [...selectedInvestigators, user.username]
                                             : selectedInvestigators.filter(u => u !== user.username);
                                           setSelectedInvestigators(next);
-                                          saveInvestigators(next, selectedCaseManagers, selectedDetectiveSupervisor);
+                                          saveInvestigators(next, selectedCaseManagers, selectedDetectiveSupervisors, selectedReadOnly);
                                         }}
                                       />
                                       <label htmlFor={`inv-${user.username}`}>
-                                        {user.firstName} {user.lastName} ({user.username})
+                                        {`${user.firstName || ""} ${user.lastName || ""}`.trim()}{user.title ? ` (${user.title})` : ""} ({user.username})
                                       </label>
                                     </div>
                                   ))}
@@ -1089,6 +1116,72 @@ export const CasePageManager = () => {
                           <div>
                             {team.investigators.length ? team.investigators.map(formatUser).join(", ") : "None assigned"}
                           </div>
+                        )}
+                      </td>
+                    </tr>
+
+                    {/* Read Only */}
+                    <tr>
+                      <td className={styles['case-team-td']}>Read Only{team.readOnly.length > 1 ? " Users" : " User"}</td>
+                      <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
+                        {(selectedCase.role === "Case Manager" || selectedCase.role === "Detective Supervisor") ? (
+                          <div ref={roRef} className={styles['custom-dropdown']}>
+                            <div
+                              className={styles['dropdown-head']}
+                              onClick={() => setReadOnlyDropdownOpen(prev => !prev)}
+                            >
+                              <span className={styles['dh-text']}>
+                                {selectedReadOnly.length > 0 ? displayNames(selectedReadOnly) : "Select Read Only User(s)"}
+                              </span>
+                              <span className={styles['dropdown-icon']} aria-hidden="true">
+                                <img src={readOnlyDropdownOpen ? downIcon : upIcon} className={styles['caret-icon']} alt="" />
+                              </span>
+                            </div>
+                            {readOnlyDropdownOpen && (
+                              <div className={styles['dropdown-options']}>
+                                <input
+                                  type="text"
+                                  className={styles['dropdown-search']}
+                                  placeholder="Search officer..."
+                                  value={roSearch}
+                                  onChange={e => setRoSearch(e.target.value)}
+                                  onClick={e => e.stopPropagation()}
+                                  autoFocus
+                                />
+                                {(() => {
+                                  const filtered = allUsers
+                                    .filter(user => user.role === "Read Only")
+                                    .filter(user => !roSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(roSearch.toLowerCase()));
+                                  return filtered.length === 0 ? (
+                                    <div className={styles['dropdown-empty']}>
+                                      {roSearch ? "No matching users found" : "No Read Only users available"}
+                                    </div>
+                                  ) : filtered.map(user => (
+                                    <div key={user.username} className={styles['dropdown-item']}>
+                                      <input
+                                        type="checkbox"
+                                        id={`ro-${user.username}`}
+                                        value={user.username}
+                                        checked={selectedReadOnly.includes(user.username)}
+                                        onChange={e => {
+                                          const next = e.target.checked
+                                            ? [...selectedReadOnly, user.username]
+                                            : selectedReadOnly.filter(u => u !== user.username);
+                                          setSelectedReadOnly(next);
+                                          saveInvestigators(selectedInvestigators, selectedCaseManagers, selectedDetectiveSupervisors, next);
+                                        }}
+                                      />
+                                      <label htmlFor={`ro-${user.username}`}>
+                                        {`${user.firstName || ""} ${user.lastName || ""}`.trim()}{user.title ? ` (${user.title})` : ""} ({user.username})
+                                      </label>
+                                    </div>
+                                  ));
+                                })()}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          (team.readOnly || []).map(formatUser).join(", ") || "—"
                         )}
                       </td>
                     </tr>
@@ -1172,7 +1265,7 @@ export const CasePageManager = () => {
                         <td>{lead.priority || ""}</td>
                         <td>{lead.leadStatus === 'Completed' ? '' : calculateRemainingDays(lead.dueDate)}</td>
                         <td style={{ wordBreak: "break-word" }}>
-                          {lead.assignedOfficers?.length > 0 ? lead.assignedOfficers.join(", ") : "None"}
+                          {lead.assignedOfficers?.length > 0 ? displayNames(lead.assignedOfficers) : "None"}
                         </td>
                         <td style={{ width: "9%", textAlign: "center" }}>
                           <button className={styles['view-btn1']} onClick={() => handleLeadClick(lead)}>
@@ -1242,7 +1335,7 @@ export const CasePageManager = () => {
                         <td>{lead.description}</td>
                         <td>{lead.priority}</td>
                         <td style={{ wordBreak: "break-word" }}>
-                          {lead.assignedOfficers?.length > 0 ? lead.assignedOfficers.join(", ") : "None"}
+                          {lead.assignedOfficers?.length > 0 ? displayNames(lead.assignedOfficers) : "None"}
                         </td>
                         <td style={{ width: "9%", textAlign: "center" }}>
                           <button
@@ -1406,7 +1499,7 @@ export const CasePageManager = () => {
                             {lead.leadStatus === "In Review" ? "Under Review" : lead.leadStatus}
                           </td>
                           <td style={{ wordBreak: "break-word" }}>
-                            {lead.assignedOfficers?.length > 0 ? lead.assignedOfficers.join(", ") : "None"}
+                            {lead.assignedOfficers?.length > 0 ? displayNames(lead.assignedOfficers) : "None"}
                           </td>
                           <td style={{ width: "13%" }}>
                             <div style={{ color: isNonNavigable ? 'inherit' : color, fontWeight: 500, lineHeight: 1.4 }}>

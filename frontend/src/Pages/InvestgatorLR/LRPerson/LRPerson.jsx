@@ -17,6 +17,7 @@ import api from '../../../api';
 import { SideBar } from '../../../components/Sidebar/Sidebar';
 import { AlertModal } from '../../../components/AlertModal/AlertModal';
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
+import { safeEncode } from '../../../utils/encode';
 
 // ─── Module-level utilities ───────────────────────────────────────────────────
 
@@ -204,7 +205,7 @@ export const LRPerson = () => {
       const token = localStorage.getItem('token');
       try {
         const { data } = await api.get(
-          `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
+          `/api/lead/lead/${selectedLead.leadNo}/${safeEncode(selectedLead.leadName)}/${caseId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (data.length > 0) {
@@ -228,7 +229,7 @@ export const LRPerson = () => {
     if (!caseId || !selectedLead?.leadNo || !selectedLead?.leadName) return;
 
     const token   = localStorage.getItem('token');
-    const encLead = encodeURIComponent(selectedLead.leadName);
+    const encLead = safeEncode(selectedLead.leadName);
 
     try {
       const { data } = await api.get(
@@ -362,7 +363,7 @@ export const LRPerson = () => {
       const headers  = { headers: { Authorization: `Bearer ${token}` } };
       const { leadNo } = lead;
       const leadName   = lead.leadName || lead.description;
-      const encLead    = encodeURIComponent(leadName);
+      const encLead    = safeEncode(leadName);
       const base       = `${leadNo}/${encLead}/${kaseId}`;
 
       // Fetch all lead data sections in parallel

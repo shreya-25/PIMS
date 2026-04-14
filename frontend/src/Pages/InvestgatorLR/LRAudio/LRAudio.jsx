@@ -16,6 +16,7 @@ import { useLeadStatus } from '../../../hooks/useLeadStatus';
 import api from '../../../api';
 import styles from './LRAudio.module.css';
 import { LRTopMenu } from '../LRTopMenu';
+import { safeEncode } from '../../../utils/encode';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -334,7 +335,7 @@ export const LRAudio = () => {
   useEffect(() => {
     if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?._id && !selectedCase?.id) return;
 
-    const encLead = encodeURIComponent(selectedLead.leadName);
+    const encLead = safeEncode(selectedLead.leadName);
     const caseId = selectedCase._id || selectedCase.id;
 
     api
@@ -358,7 +359,7 @@ export const LRAudio = () => {
     if (!selectedLead?.leadNo || !selectedLead?.leadName || !selectedCase?._id && !selectedCase?.id) return;
 
     const ac      = new AbortController();
-    const encLead = encodeURIComponent(selectedLead.leadName);
+    const encLead = safeEncode(selectedLead.leadName);
     const caseId2 = selectedCase._id || selectedCase.id;
 
     (async () => {
@@ -387,7 +388,7 @@ export const LRAudio = () => {
 
   // ── API: fetch audio records from the server ──────────────────────────────
   const fetchAudioFiles = useCallback(async () => {
-    const encLead = encodeURIComponent(selectedLead.leadName);
+    const encLead = safeEncode(selectedLead.leadName);
     const caseId3 = selectedCase._id || selectedCase.id;
 
     try {
@@ -648,7 +649,7 @@ export const LRAudio = () => {
     try {
       const token   = localStorage.getItem('token');
       const headers = { headers: { Authorization: `Bearer ${token}` } };
-      const encLead = encodeURIComponent(lead.leadName || lead.description);
+      const encLead = safeEncode(lead.leadName || lead.description);
 
       // Fetch all lead return sections in parallel; individual failures return empty arrays
       const [

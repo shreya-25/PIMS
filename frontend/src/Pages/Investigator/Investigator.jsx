@@ -124,11 +124,14 @@ export const Investigator = () => {
 
   // ─── Helpers ─────────────────────────────────────────────────────────────
 
-  /** Formats a username as "First Last (username)", falling back to the raw username. */
+  /** Formats a username as "First Last (title) (username)", falling back to the raw username. */
   const formatUser = username => {
     if (!username) return '—';
     const u = allUsers.find(x => x.username === username);
-    return u ? `${u.firstName} ${u.lastName} (${u.username})` : username;
+    if (!u) return username;
+    const full = `${u.firstName || ''} ${u.lastName || ''}`.trim();
+    const title = u.title ? ` (${u.title})` : '';
+    return full ? `${full}${title} (${u.username})` : u.username;
   };
 
   // ─── Navigation handlers ─────────────────────────────────────────────────
@@ -202,7 +205,7 @@ export const Investigator = () => {
       <td>{lead.leadStatus === 'Completed' ? '' : lead.dueDate}</td>
       <td>{lead.priority}</td>
       <td>{lead.leadStatus === 'Completed' ? '' : lead.remainingDays}</td>
-      <td>{(lead.assignedOfficers || []).join(', ')}</td>
+      <td>{(lead.assignedOfficers || []).map(formatUser).join(', ')}</td>
       <td style={{ textAlign: 'center' }}>
         <button className={styles['view-btn1']}  onClick={() => handleLeadClick(lead)}>Manage</button>
         <button className={styles['accept-btn']} onClick={() => openConfirm(lead)}>Accept</button>
@@ -217,7 +220,7 @@ export const Investigator = () => {
       <td>{lead.leadStatus === 'Completed' ? '' : lead.dueDate}</td>
       <td>{lead.priority}</td>
       <td>{lead.leadStatus === 'Completed' ? '' : lead.remainingDays}</td>
-      <td>{(lead.assignedOfficers || []).join(', ')}</td>
+      <td>{(lead.assignedOfficers || []).map(formatUser).join(', ')}</td>
       <td style={{ textAlign: 'center' }}>
         <button className={styles['view-btn1']} onClick={() => handleLeadClick(lead)}>Manage</button>
       </td>
@@ -274,7 +277,7 @@ export const Investigator = () => {
         <td style={{ color: isNonNavigable ? 'inherit' : statusColor(lead.leadStatus), fontWeight: 600 }}>
           {lead.leadStatus === 'In Review' ? 'Under Review' : lead.leadStatus}
         </td>
-        <td>{(lead.assignedOfficers || []).join(', ') || <em>None</em>}</td>
+        <td>{(lead.assignedOfficers || []).map(formatUser).join(', ') || <em>None</em>}</td>
         <td>
           <div style={{ color: isNonNavigable ? 'inherit' : color, fontWeight: 500, lineHeight: 1.4 }}>
             <div style={{ fontSize: 18 }}>{label}</div>

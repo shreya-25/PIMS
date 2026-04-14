@@ -7,6 +7,7 @@ const heicConvert = require("heic-convert");
 const { getObjectBuffer } = require("../s3");
 const { fetchCaseLeadsData } = require("../utils/caseDataFetcher");
 const Case = require("../models/case");
+const User = require("../models/userModel");
 
 async function mergeWithAnotherPDF(mainBuffer, otherPdfBuffer) {
   const mainDoc  = await PDFLibDocument.load(mainBuffer);
@@ -439,27 +440,36 @@ function drawHeaderRow(doc, startX, startY, headers, colWidths, padding = 5) {
   return startY + headerHeight;
 }
 
-function formatOfficer(off) {
+function formatFromUser(u) {
+  const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+  const title = u.title ? ` (${u.title})` : "";
+  return full ? `${full}${title} (${u.username})` : u.username || "";
+}
+
+function formatOfficer(off, userMap = {}) {
   if (!off) return "";
-  // common shapes: string, {name}, {fullName}, {displayName}, {firstName,lastName}, {user:{...}}
+  const uname = typeof off === "string" ? off : off.username;
+  if (uname && userMap[uname]) return formatFromUser(userMap[uname]);
   if (typeof off === "string") return off;
   if (off.fullName) return off.fullName;
   if (off.displayName) return off.displayName;
   if (off.name) return off.name;
   if (off.firstName || off.lastName) {
-    return [off.firstName, off.lastName].filter(Boolean).join(" ").trim();
+    const full = [off.firstName, off.lastName].filter(Boolean).join(" ").trim();
+    const title = off.title ? ` (${off.title})` : "";
+    const username = off.username ? ` (${off.username})` : "";
+    return `${full}${title}${username}`;
   }
-  if (off.user) return formatOfficer(off.user);
-  // fallback to something stable
+  if (off.user) return formatOfficer(off.user, userMap);
   if (off.email) return off.email;
   if (off.username) return off.username;
   return "";
 }
 
-function formatOfficerList(arr) {
+function formatOfficerList(arr, userMap = {}) {
   if (!Array.isArray(arr) || arr.length === 0) return "N/A";
   const names = arr
-    .map(formatOfficer)
+    .map(off => formatOfficer(off, userMap))
     .filter(Boolean);
 
   if (names.length === 0) return "N/A";
@@ -540,19 +550,22 @@ function formatDate(dateString) {
   return `${month}/${day}/${year}`;
 }
 
-function drawMetaBar(doc, x, y, width, entry) {
-  const rowH = 20;
+function drawMetaBar(doc, x, y, width, entry, userMap = {}) {
   const padding = 5;
   const bg = "#ffffff";
   const border = "#ccc";
+  const fontSize = 10;
+
+  const colW1 = 105;
+  const colW3 = 145;
+  const colW2 = width - colW1 - colW3;
 
   const idVal  = `${entry.leadReturnId ?? "N/A"}`;
-  const byVal  = `${entry.enteredBy ?? "N/A"}`;
+  const rawBy  = entry.enteredBy;
+  const byVal  = rawBy && userMap[rawBy] ? formatFromUser(userMap[rawBy]) : (rawBy ?? "N/A");
   const dtVal  = `${formatDate(entry.enteredDate) || "N/A"}`;
 
-  const colW1 = Math.round(width * 0.33);
-  const colW2 = Math.round(width * 0.34);
-  const colW3 = width - colW1 - colW2;
+  const rowH = 22;
 
   const bottom = doc.page.height - doc.page.margins.bottom;
   if (y + rowH > bottom) {
@@ -567,19 +580,19 @@ function drawMetaBar(doc, x, y, width, entry) {
     cx += w;
   });
 
-  const baseY = y + 5;
-
-  function drawLabelValue(cellX, cellW, label, value) {
-    const maxW = cellW - 2 * padding;
-    doc.fillColor("#000").font("Helvetica-Bold").fontSize(11);
-    doc.text(label, cellX + padding, baseY, { continued: true });
-    doc.font("Helvetica").fontSize(11);
-    doc.text(` ${value}`, { width: maxW, ellipsis: true });
-  }
-
-  drawLabelValue(x, colW1, "Narrative ID:", idVal);
-  drawLabelValue(x + colW1, colW2, "Entered By:", byVal);
-  drawLabelValue(x + colW1 + colW2, colW3, "Entered Date:", dtVal);
+  const textY = y + (rowH - fontSize * 1.2) / 2;
+  cx = x;
+  [
+    { w: colW1, label: "Narrative ID:", value: idVal },
+    { w: colW2, label: "Entered By:", value: byVal },
+    { w: colW3, label: "Entered Date:", value: dtVal },
+  ].forEach(({ w, label, value }) => {
+    doc.fillColor("#000").font("Helvetica-Bold").fontSize(fontSize)
+      .text(label, cx + padding, textY, { continued: true });
+    doc.font("Helvetica").fontSize(fontSize)
+      .text(` ${value}`, { width: w - 2 * padding, lineBreak: false, ellipsis: true });
+    cx += w;
+  });
 
   doc.fillColor("black");
   return y + rowH + 10;
@@ -722,7 +735,7 @@ function drawTextBox(doc, x, y, width, title, content) {
 /* ---------------------------------------
    Your "structured" lead detail drawing
 -----------------------------------------*/
-function drawStructuredLeadDetails(doc, x, y, lead, characterOfCase) {
+function drawStructuredLeadDetails(doc, x, y, lead, characterOfCase, userMap = {}) {
   const colWidths = [130, 130, 130, 122];
   const rowHeight = 20;
   const padding = 5;
@@ -796,7 +809,7 @@ function drawStructuredLeadDetails(doc, x, y, lead, characterOfCase) {
   y += charRowH;
 
   // Assigned Officers row
-  const officersText = formatOfficerList(lead.assignedTo);
+  const officersText = formatOfficerList(lead.assignedTo, userMap);
 
 // Measure the wrapped text height for the value cell
 doc.font("Helvetica").fontSize(10);
@@ -891,6 +904,21 @@ async function generateCaseReport(req, res) {
     characterOfCase = caseDoc?.characterOfCase || "";
   }
 
+  // Build userMap for officer name formatting across all leads
+  const allUsernames = [
+    ...new Set([
+      ...leadsData.flatMap(lead =>
+        (lead.assignedTo || []).map(a => (typeof a === "string" ? a : a?.username))
+      ).filter(Boolean),
+      ...leadsData.flatMap(lead =>
+        (lead.leadReturns || []).map(r => r?.enteredBy).filter(Boolean)
+      ),
+    ]),
+  ];
+  const usersFound = await User.find({ username: { $in: allUsernames } })
+    .select("username firstName lastName title")
+    .lean();
+  const userMap = Object.fromEntries(usersFound.map(u => [u.username, u]));
 
   try {
     // Create doc
@@ -982,7 +1010,7 @@ async function generateCaseReport(req, res) {
 
         // structured details
         // currentY = ensureSpace(doc, currentY, 60);
-        currentY = drawStructuredLeadDetails(doc, 50, currentY, lead, characterOfCase);
+        currentY = drawStructuredLeadDetails(doc, 50, currentY, lead, characterOfCase, userMap);
 
         const { state: leadState, reason: leadReason } = getLeadClosureInfo(lead);
 if (leadState) {
@@ -1018,7 +1046,7 @@ if (leadState) {
               currentY = ensureSpace(doc, currentY, 100);
 
               // 1) Return ID
-              currentY = drawMetaBar(doc, 50, currentY, 512, lr);
+              currentY = drawMetaBar(doc, 50, currentY, 512, lr, userMap);
               currentY = ensureSpace(doc, currentY, 100);
 
               currentY = drawTextBox(doc, 50, currentY, 512, "", lr.leadReturnResult || "") + 20;
@@ -1453,360 +1481,6 @@ if (timeline && timeline.length > 0) {
       // No leads
       doc.text("No leads data available.", 50, currentY);
     }
-
-    // ─── APPENDIX: Pre-Reopen Records ────────────────────────────────────────
-    // For any lead that was reopened, render its pre-reopen returns here so the
-    // reader can compare what was filed before the lead was reopened.
-    if (includeAll && leadsData && leadsData.length > 0) {
-      const reopenedLeads = leadsData.filter(
-        (l) => Array.isArray(l.preReopenReturns) && l.preReopenReturns.length > 0
-      );
-
-      if (reopenedLeads.length > 0) {
-        // Start the appendix on a fresh page
-        doc.addPage();
-        currentY = 50;
-
-        // ── Appendix header ──────────────────────────────────────────────────
-        const headerHeight = 40;
-        doc.rect(0, 0, doc.page.width, headerHeight).fill("#003366");
-        doc.fillColor("white").font("Helvetica-Bold").fontSize(16)
-          .text("APPENDIX — Pre-Reopen Records", 50, 10, { align: "center" });
-        currentY = headerHeight + 20;
-        doc.fillColor("black");
-
-        for (const lead of reopenedLeads) {
-          currentY = ensureSpace(doc, currentY, 60);
-
-          // Lead heading
-          doc.font("Helvetica-Bold").fontSize(12)
-            .text(`Lead No. ${lead.leadNo} — Pre-Reopen Records`, 50, currentY);
-          currentY += 16;
-
-          if (lead.reopenedDate) {
-            doc.font("Helvetica").fontSize(10).fillColor("#555")
-              .text(
-                `Note: The following records were filed before this lead was reopened on ${formatDate(lead.reopenedDate)}.`,
-                50, currentY, { width: 512 }
-              );
-            currentY = doc.y + 10;
-            doc.fillColor("black");
-          }
-
-          for (const lrRaw of lead.preReopenReturns) {
-            const lr = normalizeLeadReturn(lrRaw);
-
-            currentY = ensureSpace(doc, currentY, 100);
-
-            // Return ID bar
-            currentY = drawMetaBar(doc, 50, currentY, 512, lr);
-            currentY = ensureSpace(doc, currentY, 60);
-
-            // Narrative
-            currentY = drawTextBox(doc, 50, currentY, 512, "", lr.leadReturnResult || "") + 20;
-
-            // Person Details
-            if (lr.persons && lr.persons.length > 0) {
-              currentY = ensureSpace(doc, currentY, 60);
-              doc.font("Helvetica-Bold").fontSize(12).text("Person Details:", 50, currentY);
-              currentY += 20;
-
-              for (const person of lr.persons) {
-                if (person.photoS3Key) {
-                  try {
-                    const rawBuf = await getObjectBuffer(person.photoS3Key);
-                    const imgBuf = await toPdfSafeBuffer(rawBuf);
-                    const photoSize = 60;
-                    currentY = ensureSpace(doc, currentY, photoSize + 10);
-                    doc.image(imgBuf, 50, currentY, { width: photoSize, height: photoSize, fit: [photoSize, photoSize] });
-                    currentY += photoSize + 8;
-                  } catch (e) {
-                    console.warn("Failed to embed person photo in appendix:", e?.message);
-                  }
-                }
-                const pHeightDisplay = (person.height && (person.height.feet != null || person.height.inches != null))
-                  ? `${person.height.feet ?? 0}ft ${person.height.inches ?? 0}in` : "";
-                const pAddr = person.address || {};
-                const pFullAddress = [pAddr.street1, pAddr.city, pAddr.state, pAddr.zipCode].filter(Boolean).join(", ");
-                const personTables = [
-                  {
-                    headers: ["Last Name", "First Name", "Middle Initial", "Suffix", "Alias"],
-                    widths: [103, 102, 102, 102, 103],
-                    row: {
-                      "Last Name": person.lastName || "",
-                      "First Name": person.firstName || "",
-                      "Middle Initial": person.middleInitial || "",
-                      "Suffix": person.suffix || "",
-                      "Alias": person.alias || "",
-                    },
-                  },
-                  {
-                    headers: ["Sex", "Date Of Birth", "Address", "Phone No", "Email"],
-                    widths: [103, 102, 102, 102, 103],
-                    row: {
-                      "Sex": person.sex || "",
-                      "Date Of Birth": person.dateOfBirth ? formatDate(person.dateOfBirth) : "",
-                      "Address": pFullAddress,
-                      "Phone No": person.cellNumber || "",
-                      "Email": person.email || "",
-                    },
-                  },
-                  {
-                    headers: ["Race", "Ethnicity", "Person Type", "Condition", "Caution Type"],
-                    widths: [103, 102, 102, 102, 103],
-                    row: {
-                      "Race": person.race || "",
-                      "Ethnicity": person.ethnicity || "",
-                      "Person Type": person.personType || "",
-                      "Condition": person.condition || "",
-                      "Caution Type": person.cautionType || "",
-                    },
-                  },
-                  {
-                    headers: ["Skin Tone", "Eye Color", "Glasses", "Hair Color", "Height"],
-                    widths: [103, 102, 102, 102, 103],
-                    row: {
-                      "Skin Tone": person.skinTone || "",
-                      "Eye Color": person.eyeColor || "",
-                      "Glasses": person.glasses || "",
-                      "Hair Color": person.hairColor || "",
-                      "Height": pHeightDisplay,
-                    },
-                  },
-                  {
-                    headers: ["Weight", "Scars", "Marks", "Tattoo"],
-                    widths: [128, 128, 128, 128],
-                    row: {
-                      "Weight": person.weight != null ? person.weight.toString() : "",
-                      "Scars": person.scar || "",
-                      "Marks": person.mark || "",
-                      "Tattoo": person.tattoo || "",
-                    },
-                  },
-                  {
-                    headers: ["SSN", "Occupation", "Business Name"],
-                    widths: [171, 170, 171],
-                    row: {
-                      "SSN": person.ssn || "",
-                      "Occupation": person.occupation || "",
-                      "Business Name": person.businessName || "",
-                    },
-                  },
-                  {
-                    headers: ["Street 1", "Street 2", "Building"],
-                    widths: [171, 170, 171],
-                    row: {
-                      "Street 1": pAddr.street1 || "",
-                      "Street 2": pAddr.street2 || "",
-                      "Building": pAddr.building || "",
-                    },
-                  },
-                  {
-                    headers: ["Apartment", "City", "State", "Zip Code"],
-                    widths: [128, 128, 128, 128],
-                    row: {
-                      "Apartment": pAddr.apartment || "",
-                      "City": pAddr.city || "",
-                      "State": pAddr.state || "",
-                      "Zip Code": pAddr.zipCode || "",
-                    },
-                  },
-                ];
-                currentY = ensureSpace(doc, currentY, 60);
-                personTables.forEach((tbl) => {
-                  const rowHeight = measureRowHeight(doc, tbl.row, tbl.headers, tbl.widths);
-                  currentY = ensureSpace(doc, currentY, rowHeight + 20);
-                  currentY = drawTableWithRowSplitting(doc, 50, currentY, tbl.headers, [tbl.row], tbl.widths) + 20;
-                });
-
-                // Additional Data
-                if (Array.isArray(person.additionalData) && person.additionalData.length > 0) {
-                  currentY = ensureSpace(doc, currentY, 50);
-                  const addRows = person.additionalData.map(d => ({
-                    "Category": d.category || d.description || "",
-                    "Value":    d.value    || d.details    || "",
-                  }));
-                  currentY = drawTableWithRowSplitting(doc, 50, currentY, ["Category", "Value"], addRows, [256, 256]) + 20;
-                }
-              }
-            }
-
-            // Vehicle Details
-            if (lr.vehicles && lr.vehicles.length > 0) {
-              currentY = ensureSpace(doc, currentY, 50);
-              doc.font("Helvetica-Bold").fontSize(12).text("Vehicle Details:", 50, currentY);
-              currentY += 20;
-              for (const vehicle of lr.vehicles) {
-                const vehicleTables = [
-                  {
-                    headers: ["Date Entered", "Year", "Make", "Model", "Plate", "State"],
-                    widths: [86, 85, 85, 85, 85, 86],
-                    row: {
-                      "Date Entered": formatDate(vehicle.enteredDate),
-                      "Year": vehicle.year || "N/A",
-                      "Make": vehicle.make || "N/A",
-                      "Model": vehicle.model || "N/A",
-                      "Plate": vehicle.plate || "N/A",
-                      "State": vehicle.state || "N/A",
-                    },
-                  },
-                  {
-                    headers: ["VIN", "Category", "Type", "Primary Color", "Secondary Color"],
-                    widths: [103, 102, 102, 102, 103],
-                    row: {
-                      "VIN": vehicle.vin || "N/A",
-                      "Category": vehicle.category || "N/A",
-                      "Type": vehicle.type || "N/A",
-                      "Primary Color": vehicle.primaryColor || "N/A",
-                      "Secondary Color": vehicle.secondaryColor || "N/A",
-                    },
-                  },
-                ];
-                vehicleTables.forEach((tbl) => {
-                  const rowH = measureRowHeight(doc, tbl.row, tbl.headers, tbl.widths);
-                  currentY = ensureSpace(doc, currentY, rowH + 20);
-                  currentY = drawTableWithRowSplitting(doc, 50, currentY, tbl.headers, [tbl.row], tbl.widths) + 8;
-                });
-                currentY += 12;
-              }
-            }
-
-            // Enclosure Details
-            if (lr.enclosures && lr.enclosures.length > 0) {
-              currentY = ensureSpace(doc, currentY, 50);
-              doc.font("Helvetica-Bold").fontSize(12).text("Enclosure Details:", 50, currentY);
-              currentY += 20;
-              const encHeaders = ["Date Entered", "Type", "Description", "File / Link"];
-              const encRows = lr.enclosures.map((e) => ({
-                "Date Entered": formatDate(e.enteredDate),
-                "Type": e.type || "N/A",
-                "Description": e.enclosureDescription || "N/A",
-                "File / Link": e.isLink ? (e.link || "Link") : (e.originalName || e.filename || "N/A"),
-              }));
-              currentY = ensureSpace(doc, currentY, 60);
-              currentY = drawTable(doc, 50, currentY, encHeaders, encRows, [80, 80, 222, 130]) + 10;
-              currentY = await embedAttachments(doc, lr.enclosures, currentY, "Enclosure");
-              for (const enc of lr.enclosures) {
-                if (!enc.isLink && enc.s3Key && /\.pdf$/i.test(enc.originalName || enc.filename || "")) {
-                  pdfAttachments.push({ s3Key: enc.s3Key, filename: enc.originalName || enc.filename || "enclosure.pdf" });
-                }
-              }
-              currentY += 10;
-            }
-
-            // Evidence Details
-            if (lr.evidence && lr.evidence.length > 0) {
-              currentY = ensureSpace(doc, currentY, 50);
-              doc.font("Helvetica-Bold").fontSize(12).text("Evidence Details:", 50, currentY);
-              currentY += 20;
-              const evHeaders = ["Date Entered", "Type", "Disposed Date", "Description", "File / Link"];
-              const evRows = lr.evidence.map((ev) => ({
-                "Date Entered": formatDate(ev.enteredDate),
-                "Type": ev.type || "N/A",
-                "Disposed Date": formatDate(ev.disposedDate),
-                "Description": ev.evidenceDescription || "N/A",
-                "File / Link": ev.isLink ? (ev.link || "Link") : (ev.originalName || ev.filename || "N/A"),
-              }));
-              currentY = ensureSpace(doc, currentY, 60);
-              currentY = drawTable(doc, 50, currentY, evHeaders, evRows, [107, 65, 113, 127, 100]) + 10;
-              currentY = await embedAttachments(doc, lr.evidence, currentY, "Evidence");
-              for (const ev of lr.evidence) {
-                if (!ev.isLink && ev.s3Key && /\.pdf$/i.test(ev.originalName || ev.filename || "")) {
-                  pdfAttachments.push({ s3Key: ev.s3Key, filename: ev.originalName || ev.filename || "evidence.pdf" });
-                }
-              }
-              currentY += 10;
-            }
-
-            // Picture Details
-            if (lr.pictures && lr.pictures.length > 0) {
-              currentY = ensureSpace(doc, currentY, 50);
-              doc.font("Helvetica-Bold").fontSize(12).text("Picture Details:", 50, currentY);
-              currentY += 20;
-              const picHeaders = ["Date Entered", "Date Picture Taken", "Description", "File / Link"];
-              const picRows = lr.pictures.map((p) => ({
-                "Date Entered": formatDate(p.enteredDate),
-                "Date Picture Taken": formatDate(p.datePictureTaken),
-                "Description": p.pictureDescription || "N/A",
-                "File / Link": p.isLink ? (p.link || "Link") : (p.originalName || p.filename || "N/A"),
-              }));
-              currentY = ensureSpace(doc, currentY, 60);
-              currentY = drawTable(doc, 50, currentY, picHeaders, picRows, [80, 110, 192, 130]) + 10;
-              currentY = await embedAttachments(doc, lr.pictures, currentY, "Picture");
-              currentY += 10;
-            }
-
-            // Audio Details
-            if (lr.audio && lr.audio.length > 0) {
-              currentY = ensureSpace(doc, currentY, 50);
-              doc.font("Helvetica-Bold").fontSize(12).text("Audio Details:", 50, currentY);
-              currentY += 20;
-              const audioHeaders = ["Date Entered", "Date Recorded", "Description", "File / Link"];
-              const audioRows = lr.audio.map((a) => ({
-                "Date Entered": formatDate(a.enteredDate),
-                "Date Audio Recorded": formatDate(a.dateAudioRecorded),
-                "Description": a.audioDescription || "N/A",
-                "File / Link": a.isLink ? (a.link || "Link") : (a.originalName || a.filename || "N/A"),
-              }));
-              currentY = ensureSpace(doc, currentY, 60);
-              currentY = drawTable(doc, 50, currentY, audioHeaders, audioRows, [80, 110, 192, 130]) + 20;
-            }
-
-            // Video Details
-            if (lr.videos && lr.videos.length > 0) {
-              currentY = ensureSpace(doc, currentY, 50);
-              doc.font("Helvetica-Bold").fontSize(12).text("Video Details:", 50, currentY);
-              currentY += 20;
-              const vidHeaders = ["Date Entered", "Date Recorded", "Description", "File / Link"];
-              const vidRows = lr.videos.map((v) => ({
-                "Date Entered": formatDate(v.enteredDate),
-                "Date Video Recorded": formatDate(v.dateVideoRecorded),
-                "Description": v.videoDescription || "N/A",
-                "File / Link": v.isLink ? (v.link || "Link") : (v.originalName || v.filename || "N/A"),
-              }));
-              currentY = ensureSpace(doc, currentY, 60);
-              currentY = drawTable(doc, 50, currentY, vidHeaders, vidRows, [80, 110, 192, 130]) + 20;
-            }
-
-            // Lead Notes
-            const scratch = lr.scratchpad || lr.notes;
-            if (scratch && scratch.length > 0) {
-              currentY = ensureSpace(doc, currentY, 50);
-              doc.font("Helvetica-Bold").fontSize(12).text("Lead Notes:", 50, currentY);
-              currentY += 20;
-              const noteHeaders = ["Date Entered", "Return Id", "Description"];
-              const noteRows = scratch.map((n) => ({
-                "Date Entered": formatDate(n.enteredDate),
-                "Return Id": n.leadReturnId || n.returnId || "N/A",
-                "Description": n.text || n.description || "N/A",
-              }));
-              currentY = ensureSpace(doc, currentY, 60);
-              currentY = drawTable(doc, 50, currentY, noteHeaders, noteRows, [90, 120, 302]) + 20;
-            }
-
-            // Timeline Details
-            const tlEntries = lr.timeline || lr.timelineEntries || lr.events;
-            if (tlEntries && tlEntries.length > 0) {
-              currentY = ensureSpace(doc, currentY, 50);
-              doc.font("Helvetica-Bold").fontSize(12).text("Timeline Details:", 50, currentY);
-              currentY += 20;
-              const tlHeaders = ["Event Date", "Time Range", "Location", "Flags", "Description"];
-              const tlRows = tlEntries.map((t) => ({
-                "Event Date": formatDate(t.eventDate),
-                "Time Range":
-                  `${formatTime(t.eventStartTime) || ""}` +
-                  (t.eventEndTime ? ` – ${formatTime(t.eventEndTime)}` : ""),
-                "Location": t.eventLocation || "N/A",
-                "Flags": Array.isArray(t.timelineFlag) ? t.timelineFlag.join(", ") : (t.flags || "N/A"),
-                "Description": t.eventDescription || "N/A",
-              }));
-              currentY = ensureSpace(doc, currentY, 60);
-              currentY = drawTable(doc, 50, currentY, tlHeaders, tlRows, [80, 100, 100, 80, 152]) + 20;
-            }
-          } // end preReopenReturns loop
-        } // end reopenedLeads loop
-      } // end if reopenedLeads.length > 0
-    } // end appendix block
 
     // Finalise the PDFKit document
     doc.end();
