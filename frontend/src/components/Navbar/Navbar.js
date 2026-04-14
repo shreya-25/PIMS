@@ -9,6 +9,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [username, setUsername] = useState("");
+  const [systemRoleState, setSystemRoleState] = useState(localStorage.getItem("systemRole") || "");
   const [notifications, setNotifications] = useState(0);
   const [chats, setChats] = useState(0);
   const [emails, setEmails] = useState(0);
@@ -29,9 +30,12 @@ const Navbar = () => {
 
   const roleFromCase = selectedCase?.role?.trim();
   const roleFromStorage = localStorage.getItem("role") || "";
-  const role = roleFromStorage || roleFromCase;
   const onHome = location.pathname === "/HomePage" || location.pathname === "/";
-  const showRole = !!role && !onHome;
+  // Admin always shows their system role; on homepage show system role;
+  // elsewhere (case pages) show the case-level role
+  const isAdminUser = systemRoleState === "Admin";
+  const role = (isAdminUser || onHome) ? systemRoleState : (roleFromStorage || roleFromCase);
+  const showRole = !!role;
 
   const handleNavigation = (route) => {
     navigate(route); // Navigate to respective page
@@ -45,6 +49,18 @@ const Navbar = () => {
     const loggedInUser = localStorage.getItem("loggedInUser");
     if (loggedInUser) {
       setUsername(loggedInUser);
+    }
+
+    // Back-fill systemRole for sessions created before the systemRole key was introduced.
+    // Only safe when the stored "role" is still a system-level value
+    // (case navigation overwrites "role" with case-level values like "Case Manager").
+    const CASE_LEVEL_ROLES = new Set(["Case Manager", "Investigator"]);
+    if (!localStorage.getItem("systemRole")) {
+      const storedRole = localStorage.getItem("role");
+      if (storedRole && !CASE_LEVEL_ROLES.has(storedRole)) {
+        localStorage.setItem("systemRole", storedRole);
+        setSystemRoleState(storedRole);
+      }
     }
 
     // Sample data

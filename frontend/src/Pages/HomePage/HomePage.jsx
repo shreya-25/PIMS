@@ -41,6 +41,7 @@ export const HomePage = () => {
   const signedInOfficer = localStorage.getItem("loggedInUser");
   const signedInUserId  = localStorage.getItem("userId");
   const systemRole      = localStorage.getItem("role");
+  const isAdmin         = systemRole === ROLES.ADMIN;
   const navigate = useNavigate();
 
   const [cases, setCases] = useState([]);
@@ -103,6 +104,8 @@ export const HomePage = () => {
       role = "Case Manager";
     } else if (Array.isArray(c.investigatorUserIds) && c.investigatorUserIds.some(matchUser)) {
       role = "Investigator";
+    } else if (sysRole === ROLES.ADMIN) {
+      role = "Case Manager";
     } else if (isDetectiveSupervisor(sysRole)) {
       // DS viewing a case they aren't directly assigned to — treat as DS for navigation
       role = "Detective Supervisor";
@@ -211,15 +214,15 @@ export const HomePage = () => {
         const assignedCases = response.data
           .filter((c) => {
             if (c.status !== "ONGOING") return false;
-            // Detective Supervisors see all ongoing cases
-            if (treatAsDSLocal) return true;
+            // Admin and Detective Supervisors see all ongoing cases
+            if (isAdmin || treatAsDSLocal) return true;
             // Case Managers and Investigators only see cases they are assigned to
             const isCM = Array.isArray(c.caseManagerUserIds) && c.caseManagerUserIds.some(matchUser);
             const isInv = Array.isArray(c.investigatorUserIds) && c.investigatorUserIds.some(matchUser);
             return isCM || isInv;
           })
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-          .map((c) => mapCaseForOfficer(c, signedInOfficer, signedInUserId, treatAsDSLocal ? ROLES.DETECTIVE_SUPERVISOR : systemRole));
+          .map((c) => mapCaseForOfficer(c, signedInOfficer, signedInUserId, isAdmin ? ROLES.ADMIN : treatAsDSLocal ? ROLES.DETECTIVE_SUPERVISOR : systemRole));
 
         setCases(assignedCases);
       } catch (error) {
@@ -876,7 +879,7 @@ export const HomePage = () => {
                     className={`${styles.hoverable} ${activeTab === "cases" ? styles.active : ""}`}
                     onClick={() => setActiveTab("cases")}
                   >
-                    {treatAsDS ? `All Ongoing Cases: ${cases.length}` : `My Ongoing Cases: ${cases.length}`}
+                    {isAdmin ? `All Ongoing Cases: ${cases.length}` : treatAsDS ? `All Ongoing Cases: ${cases.length}` : `My Ongoing Cases: ${cases.length}`}
                   </span>
                   <span
                     className={`${styles.hoverable} ${activeTab === "assignedLeads" ? styles.active : ""}`}
@@ -963,6 +966,17 @@ export const HomePage = () => {
                                     >
                                       Manage
                                     </button>
+                                    {/* {isAdmin && (
+                                      <button
+                                        className={styles["case-close-btn"]}
+                                        onClick={() => {
+                                          setCaseToClose({ caseNo: c.id, caseName: c.title });
+                                          setCloseConfirmOpen(true);
+                                        }}
+                                      >
+                                        Close
+                                      </button>
+                                    )} */}
                                   </div>
                                 </td>
                               </tr>

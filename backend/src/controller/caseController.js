@@ -134,9 +134,25 @@ exports.createCase = async (req, res) => {
 };
 
 // Get all cases
+// exports.getAllCases = async (req, res) => {
+//   try {
+//     const cases = await Case.find({ isDeleted: { $ne: true }, status: "ONGOING" })
+//       .populate("caseManagerUserIds", "username firstName lastName displayName title")
+//       .populate("detectiveSupervisorUserId", "username firstName lastName displayName title")
+//       .populate("detectiveSupervisorUserIds", "username firstName lastName displayName title")
+//       .populate("investigatorUserIds", "username firstName lastName displayName title")
+//       .populate("createdByUserId", "username firstName lastName displayName")
+//       .lean();
+
+//     res.status(200).json(cases || []);
+//   } catch (err) {
+//     console.error("Error fetching cases:", err);
+//     res.status(500).json({ message: "Error fetching cases", error: err.message });
+//   }
+// };
 exports.getAllCases = async (req, res) => {
   try {
-    const cases = await Case.find({ isDeleted: { $ne: true }, status: "ONGOING" })
+    const cases = await Case.find({ isDeleted: { $ne: true } })
       .populate("caseManagerUserIds", "username firstName lastName displayName title")
       .populate("detectiveSupervisorUserId", "username firstName lastName displayName title")
       .populate("detectiveSupervisorUserIds", "username firstName lastName displayName title")

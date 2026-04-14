@@ -32,6 +32,7 @@ export function Login() {
     localStorage.setItem("userId", userId);
     localStorage.setItem("loggedInUser", name);
     localStorage.setItem("role", role);
+    localStorage.setItem("systemRole", role);
     if (role === "Admin") {
       navigate("/AdminUR");
     } else {
