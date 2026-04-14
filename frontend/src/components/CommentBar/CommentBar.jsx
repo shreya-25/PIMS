@@ -38,11 +38,31 @@ const CommentBar = forwardRef(function CommentBar(
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState(null);
+  const [userMap, setUserMap]     = useState({});
 
   const inputRef = useRef(null);
   const token    = localStorage.getItem("token");
   const enteredBy = localStorage.getItem("loggedInUser") || "Unknown";
   const currentUserId = localStorage.getItem("userId");
+
+  const displayUser = (username) => {
+    if (!username) return "Anonymous";
+    const u = userMap[username];
+    if (!u) return username;
+    const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+    const title = u.title ? ` (${u.title})` : "";
+    return full ? `${full}${title} (${username})` : username;
+  };
+
+  useEffect(() => {
+    api.get("/api/users/usernames", { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => {
+        const map = {};
+        (res.data?.users || []).forEach(u => { if (u.username) map[u.username] = u; });
+        setUserMap(map);
+      })
+      .catch(() => {});
+  }, [token]);
 
   const sendIcon = `${process.env.PUBLIC_URL}/Materials/send.png`;
 
@@ -159,12 +179,12 @@ const CommentBar = forwardRef(function CommentBar(
         {comments.map((c) => (
           <li key={c._id} className="cbar__item">
             <div className="cbar__avatar">
-              <span>{(c.enteredBy || "A").charAt(0)} </span>
+              <span>{(userMap[c.enteredBy]?.firstName || c.enteredBy || "A").charAt(0).toUpperCase()}</span>
 
               </div>
             <div className="cbar__bubble">
               <div className="cbar__meta">
-                <strong>{c.enteredBy || "Anonymous"}</strong>
+                <strong>{displayUser(c.enteredBy)}</strong>
                 <span className="cbar__dot">•</span>
                 <time dateTime={c.enteredDate}>
                   {new Date(c.enteredDate).toLocaleString()}

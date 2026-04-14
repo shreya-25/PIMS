@@ -17,7 +17,7 @@ const ROLE_LABELS = {
 
 
 const BLANK_EDIT = {
-  firstName: "", lastName: "", username: "", email: "", role: "",
+  title: "", firstName: "", lastName: "", username: "", email: "", role: "",
   agency: "", ori: "", badgeId: "", isActive: true,
 };
 
@@ -60,6 +60,7 @@ export const AdminUserList = () => {
   const openEdit = (u) => {
     setEditUser(u);
     setEditForm({
+      title:     u.title     || "",
       firstName: u.firstName || "",
       lastName:  u.lastName  || "",
       username:  u.username  || "",
@@ -212,8 +213,19 @@ export const AdminUserList = () => {
 
             {/* Form */}
             <form onSubmit={handleEditSubmit} className={styles["modal-form"]}>
-              {/* Row 1: First Name · Last Name · Username */}
+              {/* Row 1: Title · First Name · Last Name */}
               <div className={styles["modal-row-3"]}>
+                <div className={styles["modal-group"]}>
+                  <label>Title</label>
+                  <select name="title" value={editForm.title} onChange={handleEditChange}>
+                    <option value="">— None —</option>
+                    <option value="Chief">Chief</option>
+                    <option value="Lt.">Lt.</option>
+                    <option value="Det. Sergeant">Det. Sergeant</option>
+                    <option value="P.O.">P.O.</option>
+                    <option value="Det.">Det.</option>
+                  </select>
+                </div>
                 <div className={styles["modal-group"]}>
                   <label>First Name</label>
                   <input type="text" name="firstName" value={editForm.firstName} onChange={handleEditChange} placeholder="First Name" />
@@ -222,14 +234,14 @@ export const AdminUserList = () => {
                   <label>Last Name</label>
                   <input type="text" name="lastName" value={editForm.lastName} onChange={handleEditChange} placeholder="Last Name" />
                 </div>
+              </div>
+
+              {/* Row 2: Username · Email · Role */}
+              <div className={styles["modal-row-3"]}>
                 <div className={styles["modal-group"]}>
                   <label>Username</label>
                   <input type="text" name="username" value={editForm.username} onChange={handleEditChange} placeholder="Username" />
                 </div>
-              </div>
-
-              {/* Row 2: Email · Role · Badge ID */}
-              <div className={styles["modal-row-3"]}>
                 <div className={styles["modal-group"]}>
                   <label>Email</label>
                   <input type="email" name="email" value={editForm.email} onChange={handleEditChange} placeholder="Email" />
@@ -246,14 +258,14 @@ export const AdminUserList = () => {
                     <option value="Read Only">Read Only</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Row 3: Badge ID · Agency · ORI */}
+              <div className={styles["modal-row-3"]}>
                 <div className={styles["modal-group"]}>
                   <label>Badge ID</label>
                   <input type="text" name="badgeId" value={editForm.badgeId} onChange={handleEditChange} placeholder="e.g. 777" />
                 </div>
-              </div>
-
-              {/* Row 3: Agency · ORI · Account Status */}
-              <div className={styles["modal-row-3"]}>
                 <div className={styles["modal-group"]}>
                   <label>Agency</label>
                   <select name="agency" value={editForm.agency} onChange={handleEditChange}>
@@ -272,6 +284,10 @@ export const AdminUserList = () => {
                     ))}
                   </select>
                 </div>
+              </div>
+
+              {/* Row 4: Account Status */}
+              <div className={styles["modal-row-3"]}>
                 <div className={styles["modal-group"]}>
                   <label>Account Status</label>
                   <select

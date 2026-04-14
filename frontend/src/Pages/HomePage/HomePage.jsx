@@ -50,6 +50,7 @@ export const HomePage = () => {
     pendingLeads: [],
     pendingLeadReturns: [],
   });
+  const [userMap, setUserMap] = useState({});  // username → user object
 
   // Format a date string as MM/DD/YYYY
   const formatDate = (dateString) => {
@@ -60,6 +61,26 @@ export const HomePage = () => {
     const day = date.getDate().toString().padStart(2, "0");
     const year = date.getFullYear().toString();
     return `${month}/${day}/${year}`;
+  };
+
+  // Fetch all users once for name/title lookups
+  useEffect(() => {
+    api.get("/api/users/usernames")
+      .then(({ data }) => {
+        const map = {};
+        (data.users || []).forEach((u) => { if (u.username) map[u.username] = u; });
+        setUserMap(map);
+      })
+      .catch(() => {});
+  }, []);
+
+  const formatUserDisplay = (username, map) => {
+    const u = map[username];
+    if (!u) return username;
+    const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+    const title = u.title ? ` (${u.title})` : "";
+    const uname = ` (${u.username})`;
+    return full ? `${full}${title}${uname}` : u.username;
   };
 
   // Map a raw API case to the shape used in UI, resolving the officer's role
@@ -86,10 +107,10 @@ export const HomePage = () => {
 
     const getDisplayName = (u) => {
       if (!u) return "";
-      const full = u.displayName || u.name || "";
-      const uname = u.username || "";
-      if (full && uname) return `${full} (${uname})`;
-      return full || uname;
+      const full = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.displayName || u.name || "";
+      const title = u.title ? ` (${u.title})` : "";
+      const uname = u.username ? ` (${u.username})` : "";
+      return full ? `${full}${title}${uname}` : u.username || "";
     };
 
     const detectiveSupervisor = c.detectiveSupervisorUserId
@@ -296,7 +317,7 @@ export const HomePage = () => {
             dueDate: lead.dueDate ? new Date(lead.dueDate).toISOString().split("T")[0] : "N/A",
             priority: lead.priority || "Medium",
             flags: lead.associatedFlags || [],
-            assignedOfficers: lead.assignedTo,
+            assignedOfficers: (lead.assignedTo || []).map((o) => o.username),
             leadStatus: lead.leadStatus,
             caseName: lead.caseName,
             caseNo: lead.caseNo,
@@ -1007,7 +1028,7 @@ export const HomePage = () => {
                                   <td>{lead.id}</td>
                                   <td>{lead.description}</td>
                                   <td>{lead.caseName}</td>
-                                  <td>{lead.assignedOfficers.join(", ")}</td>
+                                  <td>{lead.assignedOfficers.map((u) => formatUserDisplay(u, userMap)).join(", ")}</td>
                                   <td style={{ textAlign: "center" }}>
                                     <button
                                       className={styles["view-btn1"]}

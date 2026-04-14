@@ -211,6 +211,21 @@ export const LeadsDesk = () => {
   const [leadsData, setLeadsData] = useState([]);
   const [hierarchyLeadsData, setHierarchyLeadsData] = useState([]);
   const [leadSortOrder, setLeadSortOrder] = useState("asc");
+  const [allUsers, setAllUsers] = useState([]);
+
+  useEffect(() => {
+    api.get("/api/users/usernames")
+      .then(({ data }) => setAllUsers(data.users || []))
+      .catch(() => {});
+  }, []);
+
+  const displayUser = (uname) => {
+    const u = allUsers.find((x) => x.username === uname);
+    if (!u) return uname;
+    const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+    const title = u.title ? ` (${u.title})` : "";
+    return full ? `${full}${title} (${u.username})` : u.username;
+  };
   const [hierarchyChains, setHierarchyChains] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSubCategories, setSelectedSubCategories] = useState([]);
@@ -978,7 +993,7 @@ useEffect(() => {
                     type="text"
                     value={
                       Array.isArray(lead.assignedTo) && lead.assignedTo.length
-                        ? lead.assignedTo.map((a) => a.username).join(", ")
+                        ? lead.assignedTo.map((a) => displayUser(a.username)).join(", ")
                         : ""
                     }
                     readOnly

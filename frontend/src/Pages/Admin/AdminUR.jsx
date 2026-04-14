@@ -34,6 +34,7 @@ export const AdminUR = () => {
   }, []);
 
   const [formData, setFormData] = useState({
+    title: "",
     firstName: "",
     lastName: "",
     email: "",
@@ -83,6 +84,7 @@ export const AdminUR = () => {
       const res = await api.post(
         "/api/auth/register",
         {
+          ...(formData.title ? { title: formData.title } : {}),
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
@@ -103,7 +105,7 @@ export const AdminUR = () => {
         title: "User Created",
         message: `Account created for ${formData.email}.\nUsername: ${generatedUsername}\nA setup invitation email has been sent with instructions to create their password.`,
       });
-      setFormData({ firstName: "", lastName: "", email: "", username: "", role: "", agency: "", badgeId: "", ori: "" });
+      setFormData({ title: "", firstName: "", lastName: "", email: "", username: "", role: "", agency: "", badgeId: "", ori: "" });
       setInviteMessage("");
       setExpiryEnabled(false);
       setExpiryDate("");
@@ -144,6 +146,7 @@ export const AdminUR = () => {
             </div>
 
             <form onSubmit={handleSubmit} className={styles["form-grid"]}>
+              {/* Row 1: First Name | Last Name */}
               <div className={styles["form-row"]}>
                 <div className={styles["form-group"]}>
                   <label>First Name <span className={styles["required"]}>*</span></label>
@@ -169,6 +172,36 @@ export const AdminUR = () => {
                 </div>
               </div>
 
+              {/* Row 2: Title | Username */}
+              <div className={styles["form-row"]}>
+                <div className={styles["form-group"]}>
+                  <label>Title</label>
+                  <select
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                  >
+                    <option value="">Select Title</option>
+                    <option value="Chief">Chief</option>
+                    <option value="Lt.">Lt.</option>
+                    <option value="Det. Sergeant">Det. Sergeant</option>
+                    <option value="P.O.">P.O.</option>
+                    <option value="Det.">Det.</option>
+                  </select>
+                </div>
+                <div className={styles["form-group"]}>
+                  <label>Username <span className={styles["optional"]}>(Optional — auto-generated if blank)</span></label>
+                  <input
+                    type="text"
+                    name="username"
+                    placeholder="e.g. jsmith"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Email | Role */}
               <div className={styles["form-row"]}>
                 <div className={styles["form-group"]}>
                   <label>Email ID <span className={styles["required"]}>*</span></label>
@@ -198,18 +231,6 @@ export const AdminUR = () => {
                     <option value="Read Only">Read Only</option>
                   </select>
                 </div>
-              </div>
-
-              {/* Username — optional */}
-              <div className={styles["form-group"]}>
-                <label>Username <span className={styles["optional"]}>(Optional — auto-generated from last name + badge ID if left blank)</span></label>
-                <input
-                  type="text"
-                  name="username"
-                  placeholder="e.g. jsmith"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                />
               </div>
 
               {/* Agency | ORI — both mandatory, same line */}
@@ -331,7 +352,7 @@ export const AdminUR = () => {
                     type="button"
                     className={styles["cancel-btn"]}
                     onClick={() => {
-                      setFormData({ firstName: "", lastName: "", email: "", username: "", role: "", agency: "", badgeId: "", ori: "" });
+                      setFormData({ title: "", firstName: "", lastName: "", email: "", username: "", role: "", agency: "", badgeId: "", ori: "" });
                       setInviteMessage("");
                       setExpiryEnabled(false);
                       setExpiryDate("");

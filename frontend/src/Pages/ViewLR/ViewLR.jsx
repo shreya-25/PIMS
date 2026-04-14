@@ -49,8 +49,25 @@ export const ViewLR = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [openPerson, setOpenPerson] = useState(null);
   const [showComments, setShowComments] = useState(true);
+  const [allUsers, setAllUsers] = useState([]);
   const currentUser = localStorage.getItem("loggedInUser");
   const { selectedCase, selectedLead, setSelectedLead, leadStatus, setLeadStatus} = useContext(CaseContext);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    api.get("/api/users/usernames", { headers: { Authorization: `Bearer ${token}` } })
+      .then(res => setAllUsers(Array.isArray(res.data?.users) ? res.data.users : []))
+      .catch(() => {});
+  }, []);
+
+  const displayUser = (username) => {
+    if (!username) return "Unknown";
+    const u = allUsers.find(u => u.username === username);
+    if (!u) return username;
+    const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+    const title = u.title ? ` (${u.title})` : "";
+    return full ? `${full}${title} (${username})` : username;
+  };
    const [alertOpen, setAlertOpen] = useState(false);
     const [alertMessage, setAlertMessage] = useState("");
     const [leadData, setLeadData] = useState({});
@@ -660,7 +677,7 @@ const actuallyDoSubmitReport = async () => {
                               </div>
                               <div className={styles.metaItem}>
                                 <span className={styles.metaLabel}>Entered By:</span>
-                                <span className={styles.metaValue}>{toText(ret.enteredBy) || "Unknown"}</span>
+                                <span className={styles.metaValue}>{displayUser(ret.enteredBy)}</span>
                               </div>
                               <div className={styles.metaItem}>
                                 <span className={styles.metaLabel}>Date:</span>

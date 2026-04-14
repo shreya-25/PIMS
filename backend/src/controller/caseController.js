@@ -137,10 +137,10 @@ exports.createCase = async (req, res) => {
 exports.getAllCases = async (req, res) => {
   try {
     const cases = await Case.find({ isDeleted: { $ne: true }, status: "ONGOING" })
-      .populate("caseManagerUserIds", "username firstName lastName displayName")
-      .populate("detectiveSupervisorUserId", "username firstName lastName displayName")
-      .populate("detectiveSupervisorUserIds", "username firstName lastName displayName")
-      .populate("investigatorUserIds", "username firstName lastName displayName")
+      .populate("caseManagerUserIds", "username firstName lastName displayName title")
+      .populate("detectiveSupervisorUserId", "username firstName lastName displayName title")
+      .populate("detectiveSupervisorUserIds", "username firstName lastName displayName title")
+      .populate("investigatorUserIds", "username firstName lastName displayName title")
       .populate("createdByUserId", "username firstName lastName displayName")
       .lean();
 
@@ -159,10 +159,10 @@ exports.getCaseById = async (req, res) => {
     }
 
     const caseData = await Case.findById(req.params.id)
-      .populate("caseManagerUserIds", "username firstName lastName displayName")
-      .populate("detectiveSupervisorUserId", "username firstName lastName displayName")
-      .populate("detectiveSupervisorUserIds", "username firstName lastName displayName")
-      .populate("investigatorUserIds", "username firstName lastName displayName")
+      .populate("caseManagerUserIds", "username firstName lastName displayName title")
+      .populate("detectiveSupervisorUserId", "username firstName lastName displayName title")
+      .populate("detectiveSupervisorUserIds", "username firstName lastName displayName title")
+      .populate("investigatorUserIds", "username firstName lastName displayName title")
       .lean();
 
     if (!caseData) {
@@ -181,10 +181,10 @@ exports.getCaseByNo = async (req, res) => {
     if (!caseNo) return res.status(400).json({ message: "caseNo is required" });
 
     const caseData = await Case.findOne({ caseNo })
-      .populate("caseManagerUserIds", "username firstName lastName displayName")
-      .populate("detectiveSupervisorUserId", "username firstName lastName displayName")
-      .populate("detectiveSupervisorUserIds", "username firstName lastName displayName")
-      .populate("investigatorUserIds", "username firstName lastName displayName")
+      .populate("caseManagerUserIds", "username firstName lastName displayName title")
+      .populate("detectiveSupervisorUserId", "username firstName lastName displayName title")
+      .populate("detectiveSupervisorUserIds", "username firstName lastName displayName title")
+      .populate("investigatorUserIds", "username firstName lastName displayName title")
       .lean();
 
     if (!caseData) return res.status(404).json({ message: "Case not found" });
@@ -220,10 +220,10 @@ exports.getCasesByOfficer = async (req, res) => {
         { readOnlyUserIds: user._id },
       ],
     })
-      .populate("caseManagerUserIds", "username firstName lastName displayName role")
-      .populate("detectiveSupervisorUserId", "username firstName lastName displayName role")
-      .populate("detectiveSupervisorUserIds", "username firstName lastName displayName role")
-      .populate("investigatorUserIds", "username firstName lastName displayName role")
+      .populate("caseManagerUserIds", "username firstName lastName displayName title role")
+      .populate("detectiveSupervisorUserId", "username firstName lastName displayName title role")
+      .populate("detectiveSupervisorUserIds", "username firstName lastName displayName title role")
+      .populate("investigatorUserIds", "username firstName lastName displayName title role")
       .populate("readOnlyUserIds", "username firstName lastName displayName role")
       .lean();
 
@@ -465,10 +465,10 @@ exports.getCaseTeam = async (req, res) => {
     }
 
     const c = await Case.findOne({ caseNo })
-      .populate("caseManagerUserIds", "username firstName lastName displayName")
-      .populate("detectiveSupervisorUserId", "username firstName lastName displayName")
-      .populate("detectiveSupervisorUserIds", "username firstName lastName displayName")
-      .populate("investigatorUserIds", "username firstName lastName displayName")
+      .populate("caseManagerUserIds", "username firstName lastName displayName title")
+      .populate("detectiveSupervisorUserId", "username firstName lastName displayName title")
+      .populate("detectiveSupervisorUserIds", "username firstName lastName displayName title")
+      .populate("investigatorUserIds", "username firstName lastName displayName title")
       .populate("readOnlyUserIds", "username firstName lastName displayName")
       .lean();
 

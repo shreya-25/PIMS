@@ -113,6 +113,7 @@ async function fetchLeadAllSectionsLikeViewLR({ leadNo, leadName, caseId, token 
   const [
     instrRes, returnsRes, personsRes, vehiclesRes, enclosuresRes,
     evidenceRes, picturesRes, audioRes, videosRes, notesRes, timelineRes,
+    auditRes,
   ] = await Promise.all([
     api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
     api.get(`/api/leadReturnResult/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
@@ -125,6 +126,7 @@ async function fetchLeadAllSectionsLikeViewLR({ leadNo, leadName, caseId, token 
     api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
     api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
     api.get(`/api/timeline/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
+    api.get(`/api/audit/logs`, { ...headers, params: { leadNo } }).catch(() => ({ data: { logs: [] } })),
   ]);
 
   const leadDoc    = instrRes.data?.[0] || {};
@@ -138,6 +140,7 @@ async function fetchLeadAllSectionsLikeViewLR({ leadNo, leadName, caseId, token 
   const videos     = Array.isArray(videosRes.data)     ? videosRes.data     : [];
   const notes      = Array.isArray(notesRes.data)      ? notesRes.data      : [];
   const timeline   = Array.isArray(timelineRes.data)   ? timelineRes.data   : [];
+  const auditLogs  = Array.isArray(auditRes.data?.logs) ? auditRes.data.logs : [];
 
   const buckets = groupSectionsByReturn({
     persons, vehicles, enclosures, evidence, pictures, audio, videos,
@@ -185,6 +188,7 @@ async function fetchLeadAllSectionsLikeViewLR({ leadNo, leadName, caseId, token 
     preReopenReturns,
     notes,
     timelineForLead: timeline,
+    auditLogs,
   };
 }
 
@@ -395,6 +399,21 @@ export const GenerateReport = () => {
   const [leadsData, setLeadsData] = useState([]);
   const [hierarchyLeadsData, setHierarchyLeadsData] = useState([]);
   const [hierarchyChains, setHierarchyChains] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+
+  useEffect(() => {
+    api.get("/api/users/usernames")
+      .then(({ data }) => setAllUsers(data.users || []))
+      .catch(() => {});
+  }, []);
+
+  const displayUser = (uname) => {
+    const u = allUsers.find((x) => x.username === uname);
+    if (!u) return uname;
+    const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+    const title = u.title ? ` (${u.title})` : "";
+    return full ? `${full}${title} (${u.username})` : u.username;
+  };
   const [searchTerm, setSearchTerm] = useState("");
   const [leadSortOrder, setLeadSortOrder] = useState("asc");
   const [selectedSubCategories, setSelectedSubCategories] = useState([]);
@@ -624,6 +643,10 @@ export const GenerateReport = () => {
     }
     return out;
   };
+
+  // Return leads that have been reopened (have a reopenedDate or status "Reopened")
+  const getReopenedLeads = () =>
+    (leadsData || []).filter(l => l.reopenedDate || l.leadStatus === "Reopened");
 
   // Look up the single lead object for "single lead" report mode
   const getSingleLeadForReport = () => {
@@ -857,69 +880,12 @@ export const GenerateReport = () => {
     );
   };
 
-  // ------------------ Render: Lead Cards ------------------
+  // ------------------ Render: Shared return-item renderer ------------------
 
-  const renderLeads = (leadsArray) => (leadsArray || []).map((lead, leadIndex) => {
-    const isDeleted    = isDeletedStatus(lead?.leadStatus);
-    const deletedReason = lead?.deletedReason || lead?.deletedReasonText || lead?.deleteReason || lead?.reason || "";
-
-    return (
-      <div
-        key={leadIndex}
-        className={`${styles['lead-section']} ${isDeleted ? styles['is-deleted'] : ''}`}
-        onClick={(e) => handleLeadCardClick(e, lead)}
-      >
-        <div className={styles['leads-container']}>
-
-          {/* Lead header: lead number, origin, dates, assigned officers */}
-          <table className={styles['lead-details-table']}>
-            <colgroup>
-              <col style={{ width: "15%" }} /><col style={{ width: "7%" }} />
-              <col style={{ width: "10%" }} /><col style={{ width: "13%" }} />
-              <col style={{ width: "12%" }} /><col style={{ width: "10%" }} />
-              <col style={{ width: "14%" }} /><col style={{ width: "10%" }} />
-            </colgroup>
-            <tbody>
-              <tr>
-                <td className={styles['label-cell']}>Lead Number</td>
-                <td className={styles['input-cell']}><input type="text" value={lead.leadNo} readOnly /></td>
-                <td className={styles['label-cell']}>Lead Origin</td>
-                <td className={styles['input-cell']}>
-                  <input type="text" value={Array.isArray(lead.parentLeadNo) ? lead.parentLeadNo.join(", ") : (lead.parentLeadNo || "")} readOnly />
-                </td>
-                <td className={styles['label-cell']}>Assigned Date</td>
-                <td className={styles['input-cell']}><input type="text" value={formatDate(lead.assignedDate)} readOnly /></td>
-                <td className={styles['label-cell']}>Completed Date</td>
-                <td className={styles['input-cell']}><input type="text" value={formatDate(lead.completedDate)} readOnly /></td>
-              </tr>
-              <tr>
-                <td className={styles['label-cell']}>Assigned Officers</td>
-                <td className={styles['input-cell']} colSpan={7}>
-                  <input type="text" value={Array.isArray(lead.assignedTo) && lead.assignedTo.length ? lead.assignedTo.map((a) => a.username).join(", ") : ""} readOnly />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* Lead instruction and optional deleted reason */}
-          <table className={styles['leads-table']}>
-            <tbody>
-              <tr className={styles['table-first-row']}>
-                <td style={{ textAlign: "center", fontSize: "18px" }} className={styles['input-cell']}>Lead Instruction</td>
-                <td><input type="text" value={lead.description || ""} className={styles['instruction-input']} readOnly /></td>
-              </tr>
-
-              {isDeleted && (
-                <tr className={styles['deleted-row']}>
-                  <td style={{ textAlign: "center", fontSize: "18px" }} className={styles['label-cell']}>Deleted Reason</td>
-                  <td><input type="text" value={deletedReason || "N/A"} readOnly className={styles['instruction-input']} /></td>
-                </tr>
-              )}
-
-              {/* Lead Returns */}
-              {Array.isArray(lead.leadReturns) && lead.leadReturns.length > 0 ? (
-                lead.leadReturns.map((returnItem, ri) => (
-                  <React.Fragment key={returnItem._id || returnItem.leadReturnId || ri}>
+  // Renders a single lead-return row (body text + all sub-tables).
+  // Used by both renderLeads and renderReopenedLeads to avoid duplication.
+  const renderReturnItem = (returnItem, ri, lead) => (
+    <React.Fragment key={returnItem._id || returnItem.leadReturnId || ri}>
 
                     {/* Return body text */}
                     <tr>
@@ -1223,14 +1189,277 @@ export const GenerateReport = () => {
                     )}
 
                   </React.Fragment>
-                ))
+  );
+
+  // ------------------ Render: Lead Cards ------------------
+
+  const renderLeads = (leadsArray) => (leadsArray || []).map((lead, leadIndex) => {
+    const isDeleted     = isDeletedStatus(lead?.leadStatus);
+    const deletedReason = lead?.deletedReason || lead?.deletedReasonText || lead?.deleteReason || lead?.reason || "";
+    return (
+      <div
+        key={leadIndex}
+        className={`${styles['lead-section']} ${isDeleted ? styles['is-deleted'] : ''}`}
+        onClick={(e) => handleLeadCardClick(e, lead)}
+      >
+        <div className={styles['leads-container']}>
+          <table className={styles['lead-details-table']}>
+            <colgroup>
+              <col style={{ width: "15%" }} /><col style={{ width: "7%" }} />
+              <col style={{ width: "10%" }} /><col style={{ width: "13%" }} />
+              <col style={{ width: "12%" }} /><col style={{ width: "10%" }} />
+              <col style={{ width: "14%" }} /><col style={{ width: "10%" }} />
+            </colgroup>
+            <tbody>
+              <tr>
+                <td className={styles['label-cell']}>Lead Number</td>
+                <td className={styles['input-cell']}><input type="text" value={lead.leadNo} readOnly /></td>
+                <td className={styles['label-cell']}>Lead Origin</td>
+                <td className={styles['input-cell']}>
+                  <input type="text" value={Array.isArray(lead.parentLeadNo) ? lead.parentLeadNo.join(", ") : (lead.parentLeadNo || "")} readOnly />
+                </td>
+                <td className={styles['label-cell']}>Assigned Date</td>
+                <td className={styles['input-cell']}><input type="text" value={formatDate(lead.assignedDate)} readOnly /></td>
+                <td className={styles['label-cell']}>Completed Date</td>
+                <td className={styles['input-cell']}><input type="text" value={formatDate(lead.completedDate)} readOnly /></td>
+              </tr>
+              <tr>
+                <td className={styles['label-cell']}>Assigned Officers</td>
+                <td className={styles['input-cell']} colSpan={7}>
+                  <input type="text" value={Array.isArray(lead.assignedTo) && lead.assignedTo.length ? lead.assignedTo.map((a) => displayUser(a.username)).join(", ") : ""} readOnly />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <table className={styles['leads-table']}>
+            <tbody>
+              <tr className={styles['table-first-row']}>
+                <td style={{ textAlign: "center", fontSize: "18px" }} className={styles['input-cell']}>Lead Instruction</td>
+                <td><input type="text" value={lead.description || ""} className={styles['instruction-input']} readOnly /></td>
+              </tr>
+              {isDeleted && (
+                <tr className={styles['deleted-row']}>
+                  <td style={{ textAlign: "center", fontSize: "18px" }} className={styles['label-cell']}>Deleted Reason</td>
+                  <td><input type="text" value={deletedReason || "N/A"} readOnly className={styles['instruction-input']} /></td>
+                </tr>
+              )}
+              {Array.isArray(lead.leadReturns) && lead.leadReturns.length > 0 ? (
+                lead.leadReturns.map((returnItem, ri) => renderReturnItem(returnItem, ri, lead))
               ) : (
-                <tr>
-                  <td colSpan={2} style={{ textAlign: "center" }}>No Lead Returns Available</td>
+                <tr><td colSpan={2} style={{ textAlign: "center" }}>No Lead Returns Available</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  });
+
+  // ------------------ Render: Reopened Lead Cards ------------------
+  // Shows pre-reopen returns vs post-reopen returns side by side with reopen metadata.
+
+  const renderReopenedLeads = (leadsArray) => (leadsArray || []).map((lead, leadIndex) => {
+    const isDeleted     = isDeletedStatus(lead?.leadStatus);
+    const deletedReason = lead?.deletedReason || lead?.deletedReasonText || lead?.deleteReason || lead?.reason || "";
+
+    const preReopenKeys = new Set(
+      (lead.preReopenReturns || []).map(r => String(lrKeyFor(r) || "")).filter(Boolean)
+    );
+    const preReopenReturns  = lead.preReopenReturns || [];
+    const postReopenReturns = (lead.leadReturns || []).filter(r => {
+      const k = String(lrKeyFor(r) || "");
+      return k && !preReopenKeys.has(k);
+    });
+
+    return (
+      <div
+        key={leadIndex}
+        className={`${styles['lead-section']} ${isDeleted ? styles['is-deleted'] : ''}`}
+        onClick={(e) => handleLeadCardClick(e, lead)}
+      >
+        <div className={styles['leads-container']}>
+          {/* Lead header */}
+          <table className={styles['lead-details-table']}>
+            <colgroup>
+              <col style={{ width: "15%" }} /><col style={{ width: "7%" }} />
+              <col style={{ width: "10%" }} /><col style={{ width: "13%" }} />
+              <col style={{ width: "12%" }} /><col style={{ width: "10%" }} />
+              <col style={{ width: "14%" }} /><col style={{ width: "10%" }} />
+            </colgroup>
+            <tbody>
+              <tr>
+                <td className={styles['label-cell']}>Lead Number</td>
+                <td className={styles['input-cell']}><input type="text" value={lead.leadNo} readOnly /></td>
+                <td className={styles['label-cell']}>Lead Origin</td>
+                <td className={styles['input-cell']}>
+                  <input type="text" value={Array.isArray(lead.parentLeadNo) ? lead.parentLeadNo.join(", ") : (lead.parentLeadNo || "")} readOnly />
+                </td>
+                <td className={styles['label-cell']}>Assigned Date</td>
+                <td className={styles['input-cell']}><input type="text" value={formatDate(lead.assignedDate)} readOnly /></td>
+                <td className={styles['label-cell']}>Completed Date</td>
+                <td className={styles['input-cell']}><input type="text" value={formatDate(lead.completedDate)} readOnly /></td>
+              </tr>
+              <tr>
+                <td className={styles['label-cell']}>Assigned Officers</td>
+                <td className={styles['input-cell']} colSpan={7}>
+                  <input type="text" value={Array.isArray(lead.assignedTo) && lead.assignedTo.length ? lead.assignedTo.map((a) => displayUser(a.username)).join(", ") : ""} readOnly />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* Lead instruction */}
+          <table className={styles['leads-table']}>
+            <tbody>
+              <tr className={styles['table-first-row']}>
+                <td style={{ textAlign: "center", fontSize: "18px" }} className={styles['input-cell']}>Lead Instruction</td>
+                <td><input type="text" value={lead.description || ""} className={styles['instruction-input']} readOnly /></td>
+              </tr>
+              {isDeleted && (
+                <tr className={styles['deleted-row']}>
+                  <td style={{ textAlign: "center", fontSize: "18px" }} className={styles['label-cell']}>Deleted Reason</td>
+                  <td><input type="text" value={deletedReason || "N/A"} readOnly className={styles['instruction-input']} /></td>
                 </tr>
               )}
             </tbody>
           </table>
+
+          {/* Reopen metadata banner */}
+          <div style={{ margin: "10px 0", padding: "10px 14px", background: "#fff7ed", border: "1px solid #fb923c", borderRadius: 6, fontSize: 15, display: "flex", gap: 24, flexWrap: "wrap" }}>
+            <span><strong>Status:</strong> {lead.leadStatus || "N/A"}</span>
+            <span><strong>Reopened Date:</strong> {formatDate(lead.reopenedDate) || "N/A"}</span>
+            {lead.reopenedBy && <span><strong>Reopened By:</strong> {lead.reopenedBy}</span>}
+            {lead.reopenReason && <span><strong>Reopen Reason:</strong> {lead.reopenReason}</span>}
+          </div>
+
+          {/* Chain of Custody */}
+          {(() => {
+            const EVENT_LABELS = {
+              "assigned":           "Lead Assigned",
+              "accepted":           "Assignment Accepted",
+              "declined":           "Assignment Declined",
+              "reassigned-added":   "Officer Added",
+              "reassigned-removed": "Officer Removed",
+              "pi-submitted":       "Submitted for Review",
+              "cm-approved":        "Approved",
+              "cm-returned":        "Returned to Investigator",
+              "cm-closed":          "Closed",
+              "cm-reopened":        "Reopened",
+              "cm-deleted":         "Deleted",
+            };
+            const ENTITY_LABELS = {
+              LeadReturnResult: "Narrative",
+              LeadReturn:       "Lead Return",
+              LRPerson:         "Person",
+              LRVehicle:        "Vehicle",
+              LREnclosure:      "Enclosure",
+              LREvidence:       "Evidence",
+              LRPicture:        "Picture",
+              LRAudio:          "Audio",
+              LRVideo:          "Video",
+              LRScratchpad:     "Note",
+              LRTimeline:       "Timeline Entry",
+            };
+
+            // Build unified timeline from lead.events + auditLogs
+            const statusEvents = (lead.events || []).map(e => ({
+              kind:      "status",
+              timestamp: e.at ? new Date(e.at) : null,
+              action:    EVENT_LABELS[e.type] || e.type,
+              by:        e.by || "—",
+              to:        Array.isArray(e.to) && e.to.length ? e.to.join(", ") : null,
+              detail:    e.reason || null,
+              statusAfter: e.statusAfter || null,
+            }));
+
+            const entityEvents = (lead.auditLogs || []).map(a => ({
+              kind:      "entity",
+              timestamp: a.timestamp ? new Date(a.timestamp) : null,
+              action:    `${a.action} ${ENTITY_LABELS[a.entityType] || a.entityType}`,
+              by:        a.performedBy?.username || "—",
+              to:        null,
+              detail:    a.metadata?.reason || a.metadata?.notes || null,
+              statusAfter: null,
+            }));
+
+            const allEvents = [...statusEvents, ...entityEvents]
+              .filter(e => e.timestamp)
+              .sort((a, b) => a.timestamp - b.timestamp);
+
+            return (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontWeight: 700, fontSize: 16, padding: "6px 10px", background: "#f3e8ff", borderLeft: "4px solid #7c3aed", marginBottom: 4 }}>
+                  Chain of Custody — Actions Performed ({allEvents.length})
+                </div>
+                {allEvents.length > 0 ? (
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+                    <thead>
+                      <tr style={{ background: "#ede9fe" }}>
+                        <th style={{ padding: "6px 8px", border: "1px solid #c4b5fd", width: "13%" }}>Date &amp; Time</th>
+                        <th style={{ padding: "6px 8px", border: "1px solid #c4b5fd", width: "22%" }}>Action</th>
+                        <th style={{ padding: "6px 8px", border: "1px solid #c4b5fd", width: "14%" }}>Performed By</th>
+                        <th style={{ padding: "6px 8px", border: "1px solid #c4b5fd", width: "16%" }}>Assigned To</th>
+                        <th style={{ padding: "6px 8px", border: "1px solid #c4b5fd", width: "14%" }}>Status After</th>
+                        <th style={{ padding: "6px 8px", border: "1px solid #c4b5fd" }}>Notes / Reason</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allEvents.map((e, i) => (
+                        <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#f9f5ff" }}>
+                          <td style={{ padding: "5px 8px", border: "1px solid #ddd", whiteSpace: "nowrap" }}>
+                            {e.timestamp.toLocaleDateString()} {e.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </td>
+                          <td style={{ padding: "5px 8px", border: "1px solid #ddd", fontWeight: e.kind === "status" ? 600 : 400 }}>
+                            {e.action}
+                          </td>
+                          <td style={{ padding: "5px 8px", border: "1px solid #ddd" }}>{e.by}</td>
+                          <td style={{ padding: "5px 8px", border: "1px solid #ddd", color: "#555" }}>{e.to || "—"}</td>
+                          <td style={{ padding: "5px 8px", border: "1px solid #ddd", color: "#555" }}>{e.statusAfter || "—"}</td>
+                          <td style={{ padding: "5px 8px", border: "1px solid #ddd", color: "#555", whiteSpace: "pre-wrap" }}>{e.detail || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div style={{ padding: "8px 12px", color: "#888", fontSize: 14 }}>No actions recorded for this lead.</div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* Pre-reopen returns */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontWeight: 700, fontSize: 16, padding: "6px 10px", background: "#e0f2fe", borderLeft: "4px solid #0284c7", marginBottom: 4 }}>
+              Pre-Reopen Returns ({preReopenReturns.length})
+              <span style={{ fontWeight: 400, fontSize: 13, marginLeft: 10, color: "#555" }}>— returns that existed before the lead was reopened</span>
+            </div>
+            <table className={styles['leads-table']}>
+              <tbody>
+                {preReopenReturns.length > 0 ? (
+                  preReopenReturns.map((returnItem, ri) => renderReturnItem(returnItem, ri, lead))
+                ) : (
+                  <tr><td colSpan={2} style={{ textAlign: "center", color: "#888" }}>No returns before reopen</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Post-reopen returns */}
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 16, padding: "6px 10px", background: "#dcfce7", borderLeft: "4px solid #16a34a", marginBottom: 4 }}>
+              Post-Reopen Returns ({postReopenReturns.length})
+              <span style={{ fontWeight: 400, fontSize: 13, marginLeft: 10, color: "#555" }}>— new returns added after the lead was reopened</span>
+            </div>
+            <table className={styles['leads-table']}>
+              <tbody>
+                {postReopenReturns.length > 0 ? (
+                  postReopenReturns.map((returnItem, ri) => renderReturnItem(returnItem, ri, lead))
+                ) : (
+                  <tr><td colSpan={2} style={{ textAlign: "center", color: "#888" }}>No new returns after reopen</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     );
@@ -1291,6 +1520,7 @@ export const GenerateReport = () => {
                       { value: 'hierarchy', label: 'Lead hierarchy' },
                       { value: 'timeline',  label: 'Timeline leads' },
                       { value: 'flagged',   label: 'Flagged leads' },
+                      { value: 'reopened',  label: 'Reopened leads' },
                     ].map(({ value, label }) => (
                       <label key={value} className={styles.summaryOption1}>
                         <input
@@ -1595,6 +1825,36 @@ export const GenerateReport = () => {
                     </>
                   )}
 
+                  {/* Reopened leads */}
+                  {reportType === 'reopened' && (() => {
+                    const reopenedLeads = getReopenedLeads();
+                    return (
+                      <>
+                        <p className={styles['hierarchy-filter__hint']} style={{ marginTop: 8 }}>
+                          Generate a report that includes <strong>only reopened leads</strong>. Each lead shows returns that existed
+                          before the reopen and any new returns added after the reopen.
+                          {reopenedLeads.length > 0
+                            ? <> <strong>{reopenedLeads.length}</strong> reopened lead{reopenedLeads.length !== 1 ? 's' : ''} found.</>
+                            : <> No reopened leads found for this case.</>}
+                        </p>
+                        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <button
+                            type="button"
+                            className={`${styles.btn} ${styles['btn-primary']}`}
+                            disabled={isGeneratingReport || !reopenedLeads.length}
+                            onClick={() => {
+                              if (!reopenedLeads.length) { showAlert("No reopened leads found."); return; }
+                              handleRunReportWithSummary(reopenedLeads);
+                            }}
+                          >
+                            Run reopened leads report
+                          </button>
+                          {isGeneratingReport && <span style={{ fontSize: 14, color: '#555', fontStyle: 'italic' }}>Generating report...</span>}
+                        </div>
+                      </>
+                    );
+                  })()}
+
                 </CollapsibleSection>
 
                 {/* ===== Search bar ===== */}
@@ -1633,7 +1893,10 @@ export const GenerateReport = () => {
                 {/* ===== Sort / Filter toolbar ===== */}
                 {(() => {
                   const allSubCategories = [...new Set(leadsData.flatMap((l) => l.subCategory || []))].sort();
-                  const activeLeads = hierarchyLeadsData.length > 0 ? hierarchyLeadsData : leadsData;
+                  const baseLeads = reportType === 'reopened'
+                    ? getReopenedLeads()
+                    : (hierarchyLeadsData.length > 0 ? hierarchyLeadsData : leadsData);
+                  const activeLeads = baseLeads;
                   const displayLeads = [...activeLeads]
                     .filter((lead) => {
                       if (selectedSubCategories.length === 0) return true;
@@ -1741,10 +2004,10 @@ export const GenerateReport = () => {
                               )}
                             </div>
                           </div>
-                          {renderLeads(displayLeads)}
+                          {reportType === 'reopened' ? renderReopenedLeads(displayLeads) : renderLeads(displayLeads)}
                         </>
                       ) : (
-                        renderLeads(displayLeads)
+                        reportType === 'reopened' ? renderReopenedLeads(displayLeads) : renderLeads(displayLeads)
                       )}
                     </>
                   );

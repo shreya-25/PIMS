@@ -103,13 +103,19 @@ export const CasePageManager = () => {
   const formatUser = useCallback((username) => {
     if (!username) return "—";
     const u = allUsers.find(x => x.username === username);
-    return u ? `${u.firstName} ${u.lastName} (${u.username})` : username;
+    if (!u) return username;
+    const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+    const title = u.title ? ` (${u.title})` : "";
+    return full ? `${full}${title} (${u.username})` : u.username;
   }, [allUsers]);
 
-  /** Display "First Last (username)" for a single username */
+  /** Display "First Last (title) (username)" for a single username */
   const displayName = (uname) => {
     const u = allUsers.find(u => u.username === uname);
-    return u ? `${u.firstName} ${u.lastName} (${u.username})` : (uname || "—");
+    if (!u) return uname || "—";
+    const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+    const title = u.title ? ` (${u.title})` : "";
+    return full ? `${full}${title} (${u.username})` : u.username;
   };
 
   /** Join multiple usernames as full display names */
@@ -977,7 +983,7 @@ export const CasePageManager = () => {
                                         }}
                                       />
                                       <label htmlFor={`ds-${user.username}`}>
-                                        {user.firstName} {user.lastName} ({user.username})
+                                        {`${user.firstName || ""} ${user.lastName || ""}`.trim()}{user.title ? ` (${user.title})` : ""} ({user.username})
                                       </label>
                                     </div>
                                   ))}
@@ -1037,7 +1043,7 @@ export const CasePageManager = () => {
                                         }}
                                       />
                                       <label htmlFor={`cm-${user.username}`}>
-                                        {user.firstName} {user.lastName} ({user.username})
+                                        {`${user.firstName || ""} ${user.lastName || ""}`.trim()}{user.title ? ` (${user.title})` : ""} ({user.username})
                                       </label>
                                     </div>
                                   ))}
@@ -1081,6 +1087,7 @@ export const CasePageManager = () => {
                                   autoFocus
                                 />
                                 {allUsers
+                                  .filter(user => user.role === "CaseManager" || user.role === "Detective/Investigator")
                                   .filter(user => !invSearch || `${user.firstName} ${user.lastName} ${user.username}`.toLowerCase().includes(invSearch.toLowerCase()))
                                   .map(user => (
                                     <div key={user.username} className={styles['dropdown-item']}>
@@ -1098,7 +1105,7 @@ export const CasePageManager = () => {
                                         }}
                                       />
                                       <label htmlFor={`inv-${user.username}`}>
-                                        {user.firstName} {user.lastName} ({user.username})
+                                        {`${user.firstName || ""} ${user.lastName || ""}`.trim()}{user.title ? ` (${user.title})` : ""} ({user.username})
                                       </label>
                                     </div>
                                   ))}
@@ -1165,7 +1172,7 @@ export const CasePageManager = () => {
                                         }}
                                       />
                                       <label htmlFor={`ro-${user.username}`}>
-                                        {user.firstName} {user.lastName} ({user.username})
+                                        {`${user.firstName || ""} ${user.lastName || ""}`.trim()}{user.title ? ` (${user.title})` : ""} ({user.username})
                                       </label>
                                     </div>
                                   ));
@@ -1258,7 +1265,7 @@ export const CasePageManager = () => {
                         <td>{lead.priority || ""}</td>
                         <td>{lead.leadStatus === 'Completed' ? '' : calculateRemainingDays(lead.dueDate)}</td>
                         <td style={{ wordBreak: "break-word" }}>
-                          {lead.assignedOfficers?.length > 0 ? lead.assignedOfficers.join(", ") : "None"}
+                          {lead.assignedOfficers?.length > 0 ? displayNames(lead.assignedOfficers) : "None"}
                         </td>
                         <td style={{ width: "9%", textAlign: "center" }}>
                           <button className={styles['view-btn1']} onClick={() => handleLeadClick(lead)}>
@@ -1328,7 +1335,7 @@ export const CasePageManager = () => {
                         <td>{lead.description}</td>
                         <td>{lead.priority}</td>
                         <td style={{ wordBreak: "break-word" }}>
-                          {lead.assignedOfficers?.length > 0 ? lead.assignedOfficers.join(", ") : "None"}
+                          {lead.assignedOfficers?.length > 0 ? displayNames(lead.assignedOfficers) : "None"}
                         </td>
                         <td style={{ width: "9%", textAlign: "center" }}>
                           <button
@@ -1492,7 +1499,7 @@ export const CasePageManager = () => {
                             {lead.leadStatus === "In Review" ? "Under Review" : lead.leadStatus}
                           </td>
                           <td style={{ wordBreak: "break-word" }}>
-                            {lead.assignedOfficers?.length > 0 ? lead.assignedOfficers.join(", ") : "None"}
+                            {lead.assignedOfficers?.length > 0 ? displayNames(lead.assignedOfficers) : "None"}
                           </td>
                           <td style={{ width: "13%" }}>
                             <div style={{ color: isNonNavigable ? 'inherit' : color, fontWeight: 500, lineHeight: 1.4 }}>

@@ -23,7 +23,9 @@ const formatDate = (dateStr) => {
 const getDisplayName = (u) => {
   if (!u) return null;
   const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
-  return full || u.username || null;
+  const title = u.title ? ` (${u.title})` : "";
+  const username = u.username ? ` (${u.username})` : "";
+  return full ? `${full}${title}${username}` : u.username || null;
 };
 
 const mapCase = (c) => {

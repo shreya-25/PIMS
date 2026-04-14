@@ -1,11 +1,11 @@
 /* Slide bar styling */
 .slide-bar {
   position: fixed;
-  top: 0;
+  top: var(--nav-h, 90px);
   right: 0;
-  width: 500px; /* Increased width */
-  height: 100%;
-  background-color: #f4f4f4; /* Light grey */
+  width: 500px;
+  height: calc(100% - var(--nav-h, 90px));
+  background-color: #f4f4f4;
   box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
   padding: 20px;
   overflow-y: auto;

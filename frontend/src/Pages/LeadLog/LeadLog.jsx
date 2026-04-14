@@ -47,7 +47,22 @@ export const LeadLog = () => {
 
   const navigate = useNavigate(); // Initialize the navigate function
 
-  const loggedInOfficer =  localStorage.getItem("loggedInUser");
+  const loggedInOfficer = localStorage.getItem("loggedInUser");
+  const [allUsers, setAllUsers] = useState([]);
+
+  useEffect(() => {
+    api.get("/api/users/usernames")
+      .then(({ data }) => setAllUsers(data.users || []))
+      .catch(() => {});
+  }, []);
+
+  const displayUser = (uname) => {
+    const u = allUsers.find((x) => x.username === uname);
+    if (!u) return uname;
+    const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
+    const title = u.title ? ` (${u.title})` : "";
+    return full ? `${full}${title} (${u.username})` : u.username;
+  };
   console.log(loggedInOfficer);
   const token = localStorage.getItem('token') || '';
 
@@ -464,8 +479,8 @@ const formatDate = (dateString) => {
       // Handle assignedTo array
       if (Array.isArray(lead.assignedTo)) {
         lead.assignedTo.forEach(officer => {
-          const name = officer.username || officer;
-          if (name) map.assignedTo.add(name);
+          const uname = officer.username || officer;
+          if (uname) map.assignedTo.add(displayUser(uname));
         });
       }
 
@@ -476,7 +491,7 @@ const formatDate = (dateString) => {
     return Object.fromEntries(
       Object.entries(map).map(([key, set]) => [key, [...set].filter(v => v !== "")])
     );
-  }, [leadLogData]);
+  }, [leadLogData, allUsers]);
 
   // Filter and sort handlers
   const sortColumn = (dataKey, direction) => {
@@ -528,7 +543,7 @@ const formatDate = (dateString) => {
 
         if (field === "assignedTo") {
           const officers = Array.isArray(lead.assignedTo)
-            ? lead.assignedTo.map(o => o.username || o)
+            ? lead.assignedTo.map(o => displayUser(o.username || o))
             : [];
           return officers.some(o => selected.includes(o));
         } else if (field === "assignedDate" || field === "submittedDate" || field === "approvedDate") {
@@ -784,7 +799,7 @@ const formatDate = (dateString) => {
                   <td>{formatDate(entry.assignedDate)}</td>
                   <td>{entry.leadStatus}</td>
                   <td className={styles['assigned-to-cell']}>
-                    {entry.assignedTo?.map(o => o.username).join(", ") || "None"}
+                    {entry.assignedTo?.map(o => displayUser(o.username || o)).join(", ") || "None"}
                   </td>
                   <td>{formatDate(entry.submittedDate)}</td>
                   <td>{formatDate(entry.approvedDate)}</td> 

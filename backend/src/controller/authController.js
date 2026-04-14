@@ -62,7 +62,7 @@ async function generateUsername(lastName, badgeId) {
 // POST /api/auth/register
 const register = async (req, res) => {
   try {
-    const { firstName, lastName, role, email, agency, badgeId, ori, inviteMessage, accessExpiresAt, username: requestedUsername } = req.body;
+    const { title, firstName, lastName, role, email, agency, badgeId, ori, inviteMessage, accessExpiresAt, username: requestedUsername } = req.body;
 
     if (!firstName || !lastName || !role || !email) {
       return res.status(400).json({ message: "firstName, lastName, role & email are required" });
@@ -98,6 +98,7 @@ const register = async (req, res) => {
     const setupTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
     const newUser = new User({
+      title: title ? String(title).trim() : "",
       firstName,
       lastName,
       username,
