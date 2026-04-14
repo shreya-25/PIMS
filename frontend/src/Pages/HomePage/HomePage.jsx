@@ -308,7 +308,7 @@ export const HomePage = () => {
           .filter((c) => c.status === "ONGOING")
           .map((c) => ({ caseNo: c.caseNo, caseName: c.caseName }));
 
-        const assignedLeads = leadsResponse.data
+        const allOfficerLeads = leadsResponse.data
           .filter(
             (lead) =>
               Array.isArray(lead.assignedTo) &&
@@ -331,8 +331,9 @@ export const HomePage = () => {
             caseNo: lead.caseNo,
           }));
 
-        const pendingLeads = assignedLeads.filter((lead) => lead.leadStatus === "Pending");
-        setLeads((prev) => ({ ...prev, assignedLeads, pendingLeads }));
+        const pendingLeads = allOfficerLeads.filter((lead) => lead.leadStatus === "Pending");
+        // Only update pendingLeads here; assignedLeads is managed by fetchAssignedLeads
+        setLeads((prev) => ({ ...prev, pendingLeads }));
       } catch (error) {
         console.error("Error fetching assigned leads:", error.response?.data || error);
       }
@@ -453,7 +454,9 @@ export const HomePage = () => {
       console.error("Failed to fetch case role:", err);
     }
 
-    const caseDetails = { caseNo: lead.caseNo, caseName: lead.caseName, role };
+    // Look up _id from the cases already in state so LeadReview can build its API URL
+    const matchedCase = cases.find((c) => c.id === lead.caseNo);
+    const caseDetails = { _id: matchedCase?._id, caseNo: lead.caseNo, caseName: lead.caseName, role };
     setSelectedCase(caseDetails);
     setSelectedLead({ leadNo: lead.id, leadName: lead.description });
     localStorage.setItem("role", role);
@@ -516,7 +519,8 @@ export const HomePage = () => {
       console.error("Failed to fetch case role:", err);
     }
 
-    const caseDetails = { caseNo: lead.caseNo, caseName: lead.caseName, role };
+    const matchedCase = cases.find((c) => c.id === lead.caseNo);
+    const caseDetails = { _id: matchedCase?._id, caseNo: lead.caseNo, caseName: lead.caseName, role };
     const leadDetails = { leadNo: lead.id, leadName: lead.description };
     setSelectedCase(caseDetails);
     setSelectedLead(leadDetails);

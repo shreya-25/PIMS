@@ -16,6 +16,7 @@ import Pagination from "../../components/Pagination/Pagination";
 import { jsPDF } from "jspdf"; // if still used elsewhere
 import html2canvas from "html2canvas";
 import api from "../../api"; // adjust the path as needed
+import { safeEncode } from "../../utils/encode";
 
 
 import styles from "./LeadsDesk.module.css";
@@ -103,7 +104,7 @@ const fetchSingleLeadFullDetails = async (leadNo, caseId, token) => {
     }
     const lead = leadData[0];
     const { data: returnsData } = await api.get(
-      `/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`,
+      `/api/leadReturnResult/${lead.leadNo}/${safeEncode(lead.description)}/${caseId}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     const leadReturns = await Promise.all(
@@ -112,7 +113,7 @@ const fetchSingleLeadFullDetails = async (leadNo, caseId, token) => {
         let vehicles = [];
         try {
           const { data: personsData } = await api.get(
-            `/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}/${lr.leadReturnId}`,
+            `/api/lrperson/lrperson/${lead.leadNo}/${safeEncode(lead.description)}/${caseId}/${lr.leadReturnId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           persons = personsData;
@@ -121,7 +122,7 @@ const fetchSingleLeadFullDetails = async (leadNo, caseId, token) => {
         }
         try {
           const { data: vehiclesData } = await api.get(
-            `/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}/${lr.leadReturnId}`,
+            `/api/lrvehicle/lrvehicle/${lead.leadNo}/${safeEncode(lead.description)}/${caseId}/${lr.leadReturnId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           vehicles = vehiclesData;
@@ -554,7 +555,7 @@ const toggleLeadForReport = (leadNo) => {
             let leadReturns = [];
             try {
               const { data: returnsData } = await api.get(
-                `/api/leadReturnResult/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`,
+                `/api/leadReturnResult/${lead.leadNo}/${safeEncode(lead.description)}/${caseId}`,
                 { headers: { Authorization: `Bearer ${token}` } }
               );
               leadReturns = await Promise.all(
@@ -563,7 +564,7 @@ const toggleLeadForReport = (leadNo) => {
                   let vehicles = [];
                   try {
                     const { data: personsData } = await api.get(
-                      `/api/lrperson/lrperson/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}/${leadReturn.leadReturnId}`,
+                      `/api/lrperson/lrperson/${lead.leadNo}/${safeEncode(lead.description)}/${caseId}/${leadReturn.leadReturnId}`,
                       { headers: { Authorization: `Bearer ${token}` } }
                     );
                     persons = personsData;
@@ -572,7 +573,7 @@ const toggleLeadForReport = (leadNo) => {
                   }
                   try {
                     const { data: vehiclesData } = await api.get(
-                      `/api/lrvehicle/lrvehicle/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}/${leadReturn.leadReturnId}`,
+                      `/api/lrvehicle/lrvehicle/${lead.leadNo}/${safeEncode(lead.description)}/${caseId}/${leadReturn.leadReturnId}`,
                       { headers: { Authorization: `Bearer ${token}` } }
                     );
                     vehicles = vehiclesData;
@@ -587,13 +588,13 @@ const toggleLeadForReport = (leadNo) => {
             }
             let enclosures = [], evidence = [], pictures = [], audio = [], videos = [], timeline = [], notes = [];
             const [encRes, evRes, picRes, audRes, vidRes, tlRes, notesRes] = await Promise.allSettled([
-              api.get(`/api/lrenclosure/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
-              api.get(`/api/lrevidence/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
-              api.get(`/api/lrpicture/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
-              api.get(`/api/lraudio/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
-              api.get(`/api/lrvideo/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
-              api.get(`/api/timeline/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
-              api.get(`/api/scratchpad/${lead.leadNo}/${encodeURIComponent(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/lrenclosure/${lead.leadNo}/${safeEncode(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/lrevidence/${lead.leadNo}/${safeEncode(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/lrpicture/${lead.leadNo}/${safeEncode(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/lraudio/${lead.leadNo}/${safeEncode(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/lrvideo/${lead.leadNo}/${safeEncode(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/timeline/${lead.leadNo}/${safeEncode(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
+              api.get(`/api/scratchpad/${lead.leadNo}/${safeEncode(lead.description)}/${caseId}`, { headers: { Authorization: `Bearer ${token}` } }),
             ]);
             if (encRes.status === "fulfilled") enclosures = encRes.value.data;
             if (evRes.status === "fulfilled") evidence = evRes.value.data;

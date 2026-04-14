@@ -19,6 +19,7 @@ import styles from './LRInstruction.module.css';
 import { LRTopMenu } from '../LRTopMenu';
 import { CaseContext } from '../../CaseContext';
 import api from '../../../api';
+import { safeEncode } from '../../../utils/encode';
 import { SideBar } from '../../../components/Sidebar/Sidebar';
 import { AlertModal } from '../../../components/AlertModal/AlertModal';
 
@@ -361,7 +362,21 @@ export const LRInstruction = () => {
   const handleViewLeadReturn = useCallback(async () => {
     const { lead, kase } = resolveLeadAndCase(selectedLead, selectedCase, location.state);
 
-    const kaseId = kase?._id || kase?.id;
+    let kaseId = kase?._id || kase?.id;
+
+    // Fallback: resolve _id from caseNo if not present
+    if (!kaseId && kase?.caseNo) {
+      try {
+        const token = localStorage.getItem('token');
+        const { data: caseDoc } = await api.get(`/api/cases/caseNo/${kase.caseNo}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        kaseId = caseDoc?._id;
+      } catch (e) {
+        console.error('Failed to resolve caseId from caseNo:', e);
+      }
+    }
+
     if (!lead?.leadNo || !(lead.leadName || lead.description) || !kaseId) {
       showAlert('Please select a case and lead first.');
       return;
@@ -376,7 +391,7 @@ export const LRInstruction = () => {
 
       const { leadNo } = lead;
       const leadName   = lead.leadName || lead.description;
-      const encLead    = encodeURIComponent(leadName);
+      const encLead    = safeEncode(leadName);
       const base       = `${leadNo}/${encLead}/${kaseId}`;
 
       // Fetch all lead sections in parallel for performance
@@ -504,7 +519,20 @@ export const LRInstruction = () => {
         selectedCase?._id || selectedCase?.id ? selectedCase :
         caseDetails?._id  || caseDetails?.id  ? caseDetails  :
         selectedCase;
-      const kaseId = kase?._id || kase?.id;
+      let kaseId = kase?._id || kase?.id;
+
+      // Fallback: resolve _id from caseNo if not present
+      if (!kaseId && kase?.caseNo) {
+        try {
+          const token = localStorage.getItem('token');
+          const { data: caseDoc } = await api.get(`/api/cases/caseNo/${kase.caseNo}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          kaseId = caseDoc?._id;
+        } catch (e) {
+          console.error('Failed to resolve caseId from caseNo:', e);
+        }
+      }
 
       if (!lead?.leadNo || !kaseId) return;
 

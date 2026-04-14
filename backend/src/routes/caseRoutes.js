@@ -178,6 +178,7 @@ router.get("/:id/subCategories", async (req, res) => {
     }
   });
 
+  router.get("/caseNo/:caseNo", verifyToken, caseController.getCaseByNo);
   router.get("/:caseNo/team", verifyToken, caseController.getCaseTeam);
 
 // Timeline flags for a case

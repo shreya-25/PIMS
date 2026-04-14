@@ -30,6 +30,7 @@ import { formatDate, normalizeId, alphabetToNumber } from '../lrUtils';
 import lrStyles    from '../LR.module.css';
 import localStyles from './LRTimeline.module.css';
 import { LRTopMenu } from '../LRTopMenu';
+import { safeEncode } from '../../../utils/encode';
 
 const styles = { ...lrStyles, ...localStyles };
 
@@ -221,7 +222,7 @@ export const LRTimeline = () => {
     const token = localStorage.getItem('token');
     api
       .get(
-        `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
+        `/api/lead/lead/${selectedLead.leadNo}/${safeEncode(selectedLead.leadName)}/${caseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       .then(({ data }) => {
@@ -246,7 +247,7 @@ export const LRTimeline = () => {
     (async () => {
       try {
         const token   = localStorage.getItem('token');
-        const encLead = encodeURIComponent(selectedLead.leadName);
+        const encLead = safeEncode(selectedLead.leadName);
 
         const { data } = await api.get(
           `/api/leadReturnResult/${selectedLead.leadNo}/${encLead}/${caseId}`,
@@ -319,7 +320,7 @@ export const LRTimeline = () => {
   const fetchTimelineEntries = useCallback(async () => {
     const caseId  = selectedCase?._id || selectedCase?.id;
     const token   = localStorage.getItem('token');
-    const encLead = encodeURIComponent(selectedLead.leadName);
+    const encLead = safeEncode(selectedLead.leadName);
 
     try {
       const { data } = await api.get(

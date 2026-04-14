@@ -8,6 +8,7 @@ import { AlertModal } from "../../components/AlertModal/AlertModal";
 import styles from './ChainOfCustody.module.css';
 import { LRTopMenu } from '../InvestgatorLR/LRTopMenu';
 import { VersionHistoryButton } from '../../components/VersionHistoryButton/VersionHistoryButton';
+import { safeEncode } from '../../utils/encode';
 
 
 export const ChainOfCustody = () => {
@@ -82,7 +83,7 @@ const isPrimaryInvestigator =
     const token = localStorage.getItem("token");
     api
       .get(
-        `/api/lead/lead/${lead.leadNo}/${encodeURIComponent(
+        `/api/lead/lead/${lead.leadNo}/${safeEncode(
           lead.leadName || lead.description
         )}/${kaseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -289,7 +290,7 @@ const tone = (t) =>
     const { leadNo } = lead;
     const leadName = lead.leadName || lead.description;
     const caseId = kase._id || kase.id;
-    const encLead = encodeURIComponent(leadName);
+    const encLead = safeEncode(leadName);
 
     // fetch everything we need for the report (same endpoints you use on LRFinish)
     const [

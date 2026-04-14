@@ -5,6 +5,7 @@ import { SideBar } from "../../components/Sidebar/Sidebar";
 import CommentBar from "../../components/CommentBar/CommentBar";
 import { CaseContext } from "../CaseContext";
 import api from "../../api";
+import { safeEncode } from "../../utils/encode";
 import styles from "./ViewLR.module.css"; 
 import { AlertModal } from "../../components/AlertModal/AlertModal";
 import { useLeadStatus } from '../../hooks/useLeadStatus';
@@ -234,9 +235,26 @@ const canShowSubmit      = !isClosedOrCompleted && !isInReview && (
 
   // -------- fetch all sections (same endpoints you already use) --------
   useEffect(() => {
-    const caseId = selectedCase?._id || selectedCase?.id || location.state?.caseDetails?._id || location.state?.caseDetails?.id;
-    if (!caseId || !leadNo || !leadName) return;
-    const encLead = encodeURIComponent(leadName);
+    let caseId = selectedCase?._id || selectedCase?.id || location.state?.caseDetails?._id || location.state?.caseDetails?.id;
+    const effectiveCaseNo = selectedCase?.caseNo || location.state?.caseDetails?.caseNo;
+
+    if (!leadNo || !leadName) return;
+
+    async function resolveAndLoad() {
+      // Fallback: resolve _id from caseNo when _id is missing
+      if (!caseId && effectiveCaseNo) {
+        try {
+          const token = localStorage.getItem("token");
+          const { data: caseDoc } = await api.get(`/api/cases/caseNo/${effectiveCaseNo}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          caseId = caseDoc?._id;
+        } catch (e) {
+          console.error("Failed to resolve caseId from caseNo:", e);
+        }
+      }
+      if (!caseId) return;
+    const encLead = safeEncode(leadName);
     const token = localStorage.getItem("token");
     const headers = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -295,8 +313,10 @@ const canShowSubmit      = !isClosedOrCompleted && !isInReview && (
         setLoading(false);
       }
     }
-    loadAll();
-  }, [selectedCase?._id, selectedCase?.id, leadNo, leadName]);
+      await loadAll();
+    }
+    resolveAndLoad();
+  }, [selectedCase?._id, selectedCase?.id, selectedCase?.caseNo, leadNo, leadName]);
 
   // Group helpers — we'll try common keys: narrativeId, returnId, lrId, or fall back to _id
   const keyFor = (obj) =>

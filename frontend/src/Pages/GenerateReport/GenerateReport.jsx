@@ -8,6 +8,7 @@ import VehicleModal from "../../components/VehicleModal/VehicleModal";
 import Pagination from "../../components/Pagination/Pagination";
 import { AlertModal } from "../../components/AlertModal/AlertModal";
 import api from "../../api";
+import { safeEncode } from "../../utils/encode";
 import styles from "./GenerateReport.module.css";
 
 // ===== DATE / TIME HELPERS =====
@@ -108,7 +109,7 @@ const buildTimelineOrderedLeads = (entries, allLeads) => {
 // Fetch all sections for one lead (persons, vehicles, evidence, etc.) — mirrors ViewLR
 async function fetchLeadAllSectionsLikeViewLR({ leadNo, leadName, caseId, token }) {
   const headers = { headers: { Authorization: `Bearer ${token}` } };
-  const encLead = encodeURIComponent(leadName || "");
+  const encLead = safeEncode(leadName || "");
 
   const [
     instrRes, returnsRes, personsRes, vehiclesRes, enclosuresRes,

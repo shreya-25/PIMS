@@ -9,6 +9,7 @@
  */
 
 import api from "../../api";
+import { safeEncode } from "../../utils/encode";
 
 // ─── ID Normalization ─────────────────────────────────────────────────────────
 
@@ -71,7 +72,7 @@ export const alphabetToNumber = (str = "") => {
  * @returns {string}
  */
 export const buildLeadCasePath = (leadNo, leadName, caseNo, caseName) =>
-  `${leadNo}/${encodeURIComponent(leadName)}/${caseNo}/${encodeURIComponent(caseName)}`;
+  `${leadNo}/${safeEncode(leadName)}/${caseNo}/${safeEncode(caseName)}`;
 
 /**
  * Builds the path segment used by LR API endpoints when looking up by caseId:
@@ -83,7 +84,7 @@ export const buildLeadCasePath = (leadNo, leadName, caseNo, caseName) =>
  * @returns {string}
  */
 export const buildLeadCaseIdPath = (leadNo, leadName, caseId) =>
-  `${leadNo}/${encodeURIComponent(leadName)}/${caseId}`;
+  `${leadNo}/${safeEncode(leadName)}/${caseId}`;
 
 // ─── File Attachment Helper ────────────────────────────────────────────────────
 

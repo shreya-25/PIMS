@@ -16,6 +16,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api";
 import { attachFiles } from "./lrUtils";
+import { safeEncode } from "../../utils/encode";
 
 /**
  * @param {Object} params
@@ -62,7 +63,7 @@ export const useLeadReport = ({
       const authHdr  = { headers: { Authorization: `Bearer ${token}` } };
       const leadName = lead.leadName || lead.description;
       const { leadNo } = lead;
-      const base = `${leadNo}/${encodeURIComponent(leadName)}/${kaseId}`;
+      const base = `${leadNo}/${safeEncode(leadName)}/${kaseId}`;
 
       // Fetch all LR sections in parallel; each call is allowed to fail gracefully
       const [

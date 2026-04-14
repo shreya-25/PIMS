@@ -18,6 +18,7 @@ import api from '../../../api';
 import { SideBar } from '../../../components/Sidebar/Sidebar';
 import { AlertModal } from '../../../components/AlertModal/AlertModal';
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
+import { safeEncode } from '../../../utils/encode';
 
 // ─── Module-level constants ──────────────────────────────────────────────────
 
@@ -287,7 +288,7 @@ export const LREnclosures = () => {
 
     api
       .get(
-        `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
+        `/api/lead/lead/${selectedLead.leadNo}/${safeEncode(selectedLead.leadName)}/${caseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       .then(({ data }) => {
@@ -369,7 +370,7 @@ export const LREnclosures = () => {
       const token = localStorage.getItem('token');
 
       const response = await api.get(
-        `/api/leadReturnResult/${leadNo}/${encodeURIComponent(leadName)}/${caseId}`,
+        `/api/leadReturnResult/${leadNo}/${safeEncode(leadName)}/${caseId}`,
         {
           signal: controller.signal,
           headers: { Authorization: `Bearer ${token}` },
@@ -454,7 +455,7 @@ export const LREnclosures = () => {
   const fetchEnclosures = async () => {
   const token = localStorage.getItem('token');
   const leadNo = selectedLead?.leadNo ?? leadDetails?.leadNo;
-  const leadName = encodeURIComponent(
+  const leadName = safeEncode(
     selectedLead?.leadName ??
     selectedLead?.description ??
     leadDetails?.leadName ??
@@ -571,7 +572,7 @@ export const LREnclosures = () => {
         // UPDATE — put to existing enclosure URL
         const url =
           `/api/lrenclosure/${selectedLead.leadNo}/` +
-          `${encodeURIComponent(selectedLead.leadName)}/` +
+          `${safeEncode(selectedLead.leadName)}/` +
           `${selectedCase._id || selectedCase.id}/` +
           `${enclosureData.returnId}/`;
 
@@ -645,7 +646,7 @@ export const LREnclosures = () => {
     try {
       const url =
         `/api/lrenclosure/${selectedLead.leadNo}/` +
-        `${encodeURIComponent(selectedLead.leadName)}/` +
+        `${safeEncode(selectedLead.leadName)}/` +
         `${selectedCase._id || selectedCase.id}/` +
         `${enc.returnId}/`;
 
@@ -669,7 +670,7 @@ export const LREnclosures = () => {
     try {
       const url =
         `/api/lrenclosure/${selectedLead.leadNo}/` +
-        `${encodeURIComponent(selectedLead.leadName)}/` +
+        `${safeEncode(selectedLead.leadName)}/` +
         `${selectedCase._id || selectedCase.id}/` +
         `${enc.returnId}/`;
 
@@ -710,7 +711,7 @@ export const LREnclosures = () => {
     const headers  = { headers: { Authorization: `Bearer ${token}` } };
     const { leadNo } = lead;
     const leadName   = lead.leadName || lead.description;
-    const encLead  = encodeURIComponent(leadName);
+    const encLead  = safeEncode(leadName);
 
     try {
       // Fetch all lead return sections in parallel

@@ -18,6 +18,7 @@ import api from '../../../api';
 import { SideBar } from '../../../components/Sidebar/Sidebar';
 import { AlertModal } from '../../../components/AlertModal/AlertModal';
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
+import { safeEncode } from '../../../utils/encode';
 
 // ─── Module-level constants ──────────────────────────────────────────────────
 
@@ -276,7 +277,7 @@ export const LRVehicle = () => {
 
     api
       .get(
-        `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
+        `/api/lead/lead/${selectedLead.leadNo}/${safeEncode(selectedLead.leadName)}/${caseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       .then(({ data }) => {
@@ -307,7 +308,7 @@ export const LRVehicle = () => {
     (async () => {
       try {
         const { data } = await api.get(
-          `/api/leadReturnResult/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
+          `/api/leadReturnResult/${selectedLead.leadNo}/${safeEncode(selectedLead.leadName)}/${caseId}`,
           { signal: ac.signal, headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -345,7 +346,7 @@ export const LRVehicle = () => {
     const token = localStorage.getItem('token');
     try {
       const { data } = await api.get(
-        `/api/lrvehicle/lrvehicle/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
+        `/api/lrvehicle/lrvehicle/${selectedLead.leadNo}/${safeEncode(selectedLead.leadName)}/${caseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setRawVehicles(data);
@@ -570,7 +571,7 @@ export const LRVehicle = () => {
     const headers  = { headers: { Authorization: `Bearer ${token}` } };
     const { leadNo } = lead;
     const leadName   = lead.leadName || lead.description;
-    const encLead    = encodeURIComponent(leadName);
+    const encLead    = safeEncode(leadName);
     const base       = `${leadNo}/${encLead}/${kaseId}`;
 
     try {

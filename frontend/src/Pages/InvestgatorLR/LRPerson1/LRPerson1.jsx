@@ -15,6 +15,7 @@ import { CaseContext } from '../../CaseContext';
 import api from '../../../api';
 import { SideBar } from '../../../components/Sidebar/Sidebar';
 import { AlertModal } from '../../../components/AlertModal/AlertModal';
+import { safeEncode } from '../../../utils/encode';
 
 // ─── Session-storage keys for form persistence across in-page navigation ─────
 const FORM_KEY = 'LRPerson1:form';
@@ -303,7 +304,7 @@ export const LRPerson1 = () => {
       try {
         const token = localStorage.getItem('token');
         const { data } = await api.get(
-          `/api/leadReturnResult/${leadNo}/${encodeURIComponent(leadName)}/${caseNo}/${encodeURIComponent(caseName)}`,
+          `/api/leadReturnResult/${leadNo}/${safeEncode(leadName)}/${caseNo}/${safeEncode(caseName)}`,
           { signal: controller.signal, headers: { Authorization: `Bearer ${token}` } }
         );
         const ids = [...new Set((data ?? []).map((r) => r?.leadReturnId).filter(Boolean))];
@@ -330,7 +331,7 @@ export const LRPerson1 = () => {
       try {
         const token = localStorage.getItem('token');
         const { data } = await api.get(
-          `/api/lead/lead/${leadNo}/${encodeURIComponent(leadName)}/${caseNo}/${encodeURIComponent(caseName)}`,
+          `/api/lead/lead/${leadNo}/${safeEncode(leadName)}/${caseNo}/${safeEncode(caseName)}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (data.length > 0) {
@@ -440,7 +441,7 @@ export const LRPerson1 = () => {
       const headers = { headers: { Authorization: `Bearer ${token}` } };
       const { leadNo } = lead;
       const leadName = lead.leadName || lead.description;
-      const encLead = encodeURIComponent(leadName);
+      const encLead = safeEncode(leadName);
       const base = `${leadNo}/${encLead}/${kaseId}`;
 
       // Fetch all report sections in parallel

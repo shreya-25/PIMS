@@ -17,6 +17,7 @@ import { SideBar } from '../../../components/Sidebar/Sidebar';
 import { AlertModal } from '../../../components/AlertModal/AlertModal';
 import { pickHigherStatus } from '../../../utils/status';
 import { useLeadStatus } from '../../../hooks/useLeadStatus';
+import { safeEncode } from '../../../utils/encode';
 
 // ─── Module-level utilities ───────────────────────────────────────────────────
 
@@ -702,7 +703,7 @@ useEffect(() => {
       const headers  = { headers: { Authorization: `Bearer ${token}` } };
       const { leadNo } = lead;
       const leadName   = lead.leadName || lead.description;
-      const encLead    = encodeURIComponent(leadName);
+      const encLead    = safeEncode(leadName);
 
       // Fetch all lead sections in parallel
       const [

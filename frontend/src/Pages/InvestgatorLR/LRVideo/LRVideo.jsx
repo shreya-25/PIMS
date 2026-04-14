@@ -27,6 +27,7 @@ import { formatDate, normalizeId, alphabetToNumber, isHttpUrl } from '../lrUtils
 // All visual styles are shared — import from the single LR stylesheet
 import styles from '../LR.module.css';
 import { LRTopMenu } from '../LRTopMenu';
+import { safeEncode } from '../../../utils/encode';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -187,7 +188,7 @@ export const LRVideo = () => {
     const token = localStorage.getItem('token');
     api
       .get(
-        `/api/lead/lead/${selectedLead.leadNo}/${encodeURIComponent(selectedLead.leadName)}/${caseId}`,
+        `/api/lead/lead/${selectedLead.leadNo}/${safeEncode(selectedLead.leadName)}/${caseId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       .then(({ data }) => {
@@ -212,7 +213,7 @@ export const LRVideo = () => {
     (async () => {
       try {
         const token   = localStorage.getItem('token');
-        const encLead = encodeURIComponent(selectedLead.leadName);
+        const encLead = safeEncode(selectedLead.leadName);
 
         const { data } = await api.get(
           `/api/leadReturnResult/${selectedLead.leadNo}/${encLead}/${caseId}`,
@@ -248,7 +249,7 @@ export const LRVideo = () => {
 
   const fetchVideos = useCallback(async () => {
     const caseId  = selectedCase?._id || selectedCase?.id;
-    const encLead = encodeURIComponent(selectedLead?.leadName);
+    const encLead = safeEncode(selectedLead?.leadName);
 
     try {
       const { data } = await api.get(

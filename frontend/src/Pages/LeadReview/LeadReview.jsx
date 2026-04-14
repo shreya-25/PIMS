@@ -1111,7 +1111,20 @@ console.log("SL, SC", selectedLead, selectedCase);
       try {
         const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
       const kase = selectedCase?._id || selectedCase?.id ? selectedCase : location.state?.caseDetails;
-      const kaseId = kase?._id || kase?.id;
+      let kaseId = kase?._id || kase?.id;
+
+      // Fallback: if _id is missing but caseNo is available, resolve it from the API
+      if (!kaseId && kase?.caseNo) {
+        try {
+          const token = localStorage.getItem("token");
+          const { data: caseDoc } = await api.get(`/api/cases/caseNo/${kase.caseNo}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          kaseId = caseDoc?._id;
+        } catch (e) {
+          console.error("Failed to resolve caseId from caseNo:", e);
+        }
+      }
 
       if (lead?.leadNo && lead?.leadName && kaseId) {
         const token = localStorage.getItem("token");
