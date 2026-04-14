@@ -94,7 +94,10 @@ export const HomePage = () => {
         : u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name);
 
     let role = "";
-    if (c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId)) {
+    if (
+      (c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId)) ||
+      (Array.isArray(c.detectiveSupervisorUserIds) && c.detectiveSupervisorUserIds.some(matchUser))
+    ) {
       role = "Detective Supervisor";
     } else if (Array.isArray(c.caseManagerUserIds) && c.caseManagerUserIds.some(matchUser)) {
       role = "Case Manager";
@@ -156,7 +159,9 @@ export const HomePage = () => {
           u && (uid ? String(u._id || u.id || "") === uid
             : u.username?.toLowerCase() === name || u.displayName?.toLowerCase() === name);
         const isCaseLevelDS = (data || []).some(
-          (c) => c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId)
+          (c) =>
+            (c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId)) ||
+            (Array.isArray(c.detectiveSupervisorUserIds) && c.detectiveSupervisorUserIds.some(matchUser))
         );
         setTreatAsDS(isCaseLevelDS);
       } catch { /* silent */ }
@@ -196,7 +201,9 @@ export const HomePage = () => {
 
         // Treat user as DS if their system role is DS OR they are the DS in any ongoing case
         const isCaseLevelDS = response.data.some(
-          (c) => c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId)
+          (c) =>
+            (c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId)) ||
+            (Array.isArray(c.detectiveSupervisorUserIds) && c.detectiveSupervisorUserIds.some(matchUser))
         );
         const treatAsDSLocal = isDetectiveSupervisor(systemRole) || isCaseLevelDS;
         setTreatAsDS(treatAsDSLocal);
@@ -204,11 +211,12 @@ export const HomePage = () => {
         const assignedCases = response.data
           .filter((c) => {
             if (c.status !== "ONGOING") return false;
+            // Detective Supervisors see all ongoing cases
             if (treatAsDSLocal) return true;
-            const isDS = c.detectiveSupervisorUserId && matchUser(c.detectiveSupervisorUserId);
+            // Case Managers and Investigators only see cases they are assigned to
             const isCM = Array.isArray(c.caseManagerUserIds) && c.caseManagerUserIds.some(matchUser);
             const isInv = Array.isArray(c.investigatorUserIds) && c.investigatorUserIds.some(matchUser);
-            return isDS || isCM || isInv;
+            return isCM || isInv;
           })
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
           .map((c) => mapCaseForOfficer(c, signedInOfficer, signedInUserId, treatAsDSLocal ? ROLES.DETECTIVE_SUPERVISOR : systemRole));
