@@ -5,19 +5,17 @@ import { useNavigate, useLocation } from 'react-router-dom';
  * Shared top-level navigation bar for all LR-related pages.
  *
  * Props:
- *   activePage          – 'addLeadReturn' | 'chainOfCustody'
- *   selectedCase        – case context object
- *   selectedLead        – lead context object
- *   isPrimaryInvestigator – boolean
- *   isGenerating        – boolean (PDF being generated)
- *   onManageLeadReturn  – handler that generates & opens the PDF report
- *   styles              – CSS module from the consuming page
+ *   activePage            – 'leadInfo' | 'addLeadReturn' | 'chainOfCustody'
+ *   selectedCase          – case context object
+ *   selectedLead          – lead context object
+ *   isGenerating          – boolean (PDF being generated)
+ *   onManageLeadReturn    – handler that generates & opens the PDF report
+ *   styles                – CSS module from the consuming page
  */
 export const LRTopMenu = ({
   activePage,
   selectedCase,
   selectedLead,
-  isPrimaryInvestigator,
   isGenerating = false,
   onManageLeadReturn,
   styles,
@@ -37,7 +35,6 @@ export const LRTopMenu = ({
   };
 
   const isCaseManager = selectedCase?.role === 'Case Manager' || selectedCase?.role === 'Detective Supervisor';
-  const isInvestigator = selectedCase?.role === 'Investigator';
 
   const isActive = (page) => activePage === page;
 
@@ -47,7 +44,7 @@ export const LRTopMenu = ({
 
         <span
           className={`${styles.menuItem}${isActive('leadInfo') ? ` ${styles.menuItemActive}` : ''}`}
-          onClick={() => goTo('/LeadReview')}
+          onClick={!isActive('leadInfo') ? () => goTo('/LeadReview') : undefined}
         >
           Lead Information
         </span>
@@ -60,12 +57,6 @@ export const LRTopMenu = ({
         </span>
 
         {isCaseManager && (
-          <span className={styles.menuItem} onClick={() => goTo('/viewLR')}>
-            Review Lead Return
-          </span>
-        )}
-
-        {isCaseManager && (
           <span
             className={styles.menuItem}
             onClick={isGenerating ? undefined : onManageLeadReturn}
@@ -73,12 +64,6 @@ export const LRTopMenu = ({
             style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? 'none' : 'auto' }}
           >
             Manage Lead Return
-          </span>
-        )}
-
-        {isInvestigator && (
-          <span className={styles.menuItem} onClick={() => goTo('/viewLR')}>
-            {isPrimaryInvestigator ? 'Submit Lead Return' : 'Review Lead Return'}
           </span>
         )}
 

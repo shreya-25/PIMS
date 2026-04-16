@@ -642,6 +642,12 @@ export const LREvidence = () => {
                   {label}
                 </span>
               ))}
+              <span
+                className={styles.menuItem}
+                onClick={() => navigate('/viewLR', { state: { caseDetails: selectedCase, leadDetails: selectedLead } })}
+                >
+                  Submit
+                </span>
             </div>
           </div>
 

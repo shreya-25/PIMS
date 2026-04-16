@@ -541,72 +541,65 @@ const actuallyDoSubmitReport = async () => {
        <div className={styles.cont}>
                   <div className={`${styles.lrsec} ${styles.singleCol} ${!showComments ? styles.lrsecFull : ""}`}>
 
-                         <div className={styles.topMenuBar}>
+                         {/* ── Top menu row ── */}
+                     <div className={styles.topMenuBar}>
         <div className={styles.menuItems}>
-                <span className={styles.menuItem} onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/LeadReview", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } }} > Lead Information</span>
-
-           <span className={styles.menuItem} onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-
-                  if (lead && kase) {
-                    navigate("/LRInstruction", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } else {
-                    // alert("Please select a case and lead first.");
-                    //  setAlertMessage("Please select a case and lead first.");
-                    //  setAlertOpen(true);
-                  }
-                }}>Add Lead Return</span>
-  <span
-    className={`${styles.menuItem} ${styles.menuItemActive}`}
-    title={isCaseManager ? "Review Lead Return" : isPrimaryInvestigator ? "Submit Lead Return" : "Review Lead Return"}
-  >
-    {isCaseManager ? "Review Lead Return" : isPrimaryInvestigator ? "Submit Lead Return" : "Review Lead Return"}
-  </span>
-  {isCaseManager && (
-    <span
-      className={styles.menuItem}
-      onClick={handleManageLeadReturn}
-      title={isGenerating ? "Preparing report…" : "Manage Lead Return"}
-      style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
-    >
-      Manage Lead Return
-    </span>
-  )}
           <span className={styles.menuItem} onClick={() => {
-                  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                  const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+            const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+            const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+            if (lead && kase) navigate("/LeadReview", { state: { caseDetails: kase, leadDetails: lead } });
+          }}>Lead Information</span>
 
-                  if (lead && kase) {
-                    navigate("/ChainOfCustody", {
-                      state: {
-                        caseDetails: kase,
-                        leadDetails: lead
-                      }
-                    });
-                  } else {
-                    // alert("Please select a case and lead first.");
-                    //  setAlertMessage("Please select a case and lead first.");
-                    //  setAlertOpen(true);
-                  }
-                }}>Lead Chain of Custody</span>
-          
+          <span className={`${styles.menuItem} ${styles.menuItemActive}`}>Add Lead Return</span>
+
+          {isCaseManager && (
+            <span
+              className={styles.menuItem}
+              onClick={handleManageLeadReturn}
+              title={isGenerating ? "Preparing report…" : "Manage Lead Return"}
+              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
+            >
+              Manage Lead Return
+            </span>
+          )}
+
+          <span className={styles.menuItem} onClick={() => {
+            const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+            const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+            if (lead && kase) navigate("/ChainOfCustody", { state: { caseDetails: kase, leadDetails: lead } });
+          }}>Lead Chain of Custody</span>
+        </div>
+      </div>
+
+                     {/* ── Section tabs row ── */}
+                     <div className={styles.sectionTabBar}>
+        <div className={styles.menuItems} style={{ gap: '0' }}>
+          {[
+            { label: 'Instructions', route: '/LRInstruction' },
+            { label: 'Narrative',    route: '/LRReturn' },
+            { label: 'Person',       route: '/LRPerson' },
+            { label: 'Vehicles',     route: '/LRVehicle' },
+            { label: 'Enclosures',   route: '/LREnclosures' },
+            { label: 'Evidence',     route: '/LREvidence' },
+            { label: 'Pictures',     route: '/LRPictures' },
+            { label: 'Audio',        route: '/LRAudio' },
+            { label: 'Videos',       route: '/LRVideo' },
+            { label: 'Notes',        route: '/LRScratchpad' },
+            { label: 'Timeline',     route: '/LRTimeline' },
+          ].map(({ label, route }) => (
+            <span
+              key={route}
+              className={styles.sectionTabItem}
+              onClick={() => {
+                const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                if (lead && kase) navigate(route, { state: { caseDetails: kase, leadDetails: lead } });
+              }}
+            >
+              {label}
+            </span>
+          ))}
+          <span className={`${styles.sectionTabItem} ${styles.sectionTabItemActive}`}>Submit</span>
         </div>
       </div>
 

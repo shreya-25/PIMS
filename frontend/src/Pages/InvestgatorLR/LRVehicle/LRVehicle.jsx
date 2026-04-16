@@ -29,7 +29,7 @@ const READONLY_STATUSES = ['Completed', 'Closed'];
 
 const REQUIRED_FIELDS = [
   { key: 'leadReturnId', label: 'Narrative Id' },
-  { key: 'enteredDate',  label: 'Entered Date' },
+  { key: 'enteredDate',  label: 'Date Entered' },
 ];
 
 const EMPTY_VEHICLE_FORM = {
@@ -728,6 +728,12 @@ export const LRVehicle = () => {
                   {label}
                 </span>
               ))}
+              <span
+                className={styles.menuItem}
+                onClick={() => navigate('/viewLR', { state: { caseDetails: selectedCase, leadDetails: selectedLead } })}
+                >
+                  Submit
+                </span>
             </div>
           </div>
 
@@ -790,7 +796,7 @@ export const LRVehicle = () => {
                       </select>
                     </div>
                     <div className={styles.formRow4}>
-                      <label>Entered Date*</label>
+                      <label>Date Entered*</label>
                       <input
                         type="date"
                         value={vehicleData.enteredDate || todayISO}

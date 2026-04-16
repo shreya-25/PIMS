@@ -136,6 +136,12 @@ const SectionTabBar = ({ activeRoute, onNavigate }) => (
           {label}
         </span>
       ))}
+      <span
+        className={styles.menuItem}
+        onClick={() => onNavigate('/viewLR')}
+      >
+        Submit
+      </span>
     </div>
   </div>
 );

@@ -709,6 +709,12 @@ export const LRPerson1 = () => {
                   {label}
                 </span>
               ))}
+              <span
+                className={styles.menuItem}
+                onClick={() => navigate('/viewLR', { state: { caseDetails: selectedCase, leadDetails: selectedLead } })}
+                >
+                  Submit
+                </span>
             </div>
           </nav>
 

@@ -844,6 +844,12 @@ useEffect(() => {
                   {label}
                 </span>
               ))}
+              <span
+                className={styles.menuItem}
+                onClick={() => navigate('/viewLR', { state: { caseDetails: effectiveCase, leadDetails: effectiveLead } })}
+              >
+                Submit
+              </span>
             </div>
           </div>
 

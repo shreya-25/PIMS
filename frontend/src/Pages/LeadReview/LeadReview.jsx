@@ -2059,10 +2059,6 @@ const assignmentHoverText = React.useMemo(() => {
                     }}>Add Lead Return</span>
                   )}
 
-                  {!isReadOnly && (selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor") && (
-                    <span className={styles.menuItem} onClick={goToViewLR}>Review Lead Return</span>
-                  )}
-
                   {!isReadOnly && (["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
                     <span
                       className={styles.menuItem}
@@ -2072,14 +2068,6 @@ const assignmentHoverText = React.useMemo(() => {
                     >
                       Manage Lead Return
                     </span>
-                  )}
-
-                  {!isReadOnly && selectedCase?.role === "Investigator" && isPrimaryInvestigator && (
-                    <span className={styles.menuItem} onClick={goToViewLR}>Submit Lead Return</span>
-                  )}
-
-                  {!isReadOnly && selectedCase?.role === "Investigator" && !isPrimaryInvestigator && (
-                    <span className={styles.menuItem} onClick={goToViewLR}>Review Lead Return</span>
                   )}
 
                   <span className={styles.menuItem} onClick={() => {
