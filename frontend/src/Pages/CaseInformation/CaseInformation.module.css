@@ -734,15 +734,15 @@
 /* ─── More button (persons table) ────────────────────────────────────── */
 .more-btn {
   padding: 4px 14px;
-  background: #fff;
-  color: #292d8b;
+  background: transparent;
+  color: #000;
   border: 1.5px solid #292d8b;
-  border-radius: 999px;
+  border-radius: 4px;
   font-size: 15px;
   font-weight: 600;
   font-family: Arial, sans-serif;
   cursor: pointer;
-  transition: background 0.18s, color 0.18s;
+  transition: background 0.18s;
   white-space: nowrap;
 }
 

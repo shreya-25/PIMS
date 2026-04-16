@@ -548,6 +548,30 @@
   font-size: 18px;
   color: #1a1a2e;
   font-family: Arial, sans-serif;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  max-width: 0;
+}
+
+.simpleTable td a {
+  color: #4040a8;
+  text-decoration: underline;
+  word-break: break-all;
+}
+
+.moreBtn {
+  background-color: transparent;
+  color: #000;
+  border: 1.5px solid #4040a8;
+  border-radius: 4px;
+  padding: 5px 12px;
+  font-size: 15px;
+  font-family: Arial, sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.moreBtn:hover {
+  background-color: #f0f0fa;
 }
 
 .simpleTable tbody tr:last-child td {

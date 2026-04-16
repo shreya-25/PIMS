@@ -10,6 +10,7 @@ import styles from "./ViewLR.module.css";
 import { AlertModal } from "../../components/AlertModal/AlertModal";
 import { useLeadStatus } from '../../hooks/useLeadStatus';
 import PersonModal from "../../components/PersonModal/PersonModel";
+import VehicleModal from "../../components/VehicleModal/VehicleModal";
 
 
 
@@ -49,6 +50,7 @@ export const ViewLR = () => {
   const [loading, setLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [openPerson, setOpenPerson] = useState(null);
+  const [openVehicle, setOpenVehicle] = useState(null);
   const [showComments, setShowComments] = useState(true);
   const [allUsers, setAllUsers] = useState([]);
   const currentUser = localStorage.getItem("loggedInUser");
@@ -65,9 +67,10 @@ export const ViewLR = () => {
     if (!username) return "Unknown";
     const u = allUsers.find(u => u.username === username);
     if (!u) return username;
-    const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
-    const title = u.title ? ` (${u.title})` : "";
-    return full ? `${full}${title} (${username})` : username;
+    const last  = (u.lastName  || "").trim();
+    const first = (u.firstName || "").trim();
+    const name  = last && first ? `${last}, ${first}` : last || first || "";
+    return name ? `${name} (${username})` : username;
   };
    const [alertOpen, setAlertOpen] = useState(false);
     const [alertMessage, setAlertMessage] = useState("");
@@ -758,27 +761,21 @@ const actuallyDoSubmitReport = async () => {
                                 <table className={styles.simpleTable}>
                                 <thead>
                                     <tr>
-                                    <th>Date </th>
+                                    <th>Date</th>
                                     <th>Name</th>
                                     <th>Phone</th>
                                     <th>Address</th>
+                                    <th style={{ width: "8%" }}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {grouped.persons.map((p) => (
-                                    <tr
-                                        key={p._id}
-                                        className={styles.clickRow}
-                                        role="button"
-                                        tabIndex={0}
-                                        onClick={() => openPersonSheet(p)}
-                                        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && openPersonSheet(p)}
-                                        title="Click to view full person details"
-                                    >
+                                    <tr key={p._id}>
                                         <td>{p.enteredDate ? new Date(p.enteredDate).toLocaleDateString() : "—"}</td>
                                         <td>{[p.firstName, p.middleInitial, p.lastName].filter(Boolean).join(' ') || '—'}</td>
                                         <td>{toText(p.cellNumber)}</td>
                                         <td>{p.address?.street1 ? [p.address.street1, p.address.street2, p.address.building, p.address.apartment].filter(Boolean).join(' • ') + (p.address.city || p.address.state || p.address.zipCode ? ` • ${[p.address.city, p.address.state, p.address.zipCode].filter(Boolean).join(', ')}` : '') : '—'}</td>
+                                        <td><button className={styles.moreBtn} onClick={() => setOpenPerson(p)}>More</button></td>
                                     </tr>
                                     ))}
                                 </tbody>
@@ -810,6 +807,7 @@ const actuallyDoSubmitReport = async () => {
                                     <th>Make/Model</th>
                                     <th>VIN</th>
                                     <th>Color</th>
+                                    <th style={{ width: "8%" }}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -824,6 +822,7 @@ const actuallyDoSubmitReport = async () => {
                                         </td>
                                          <td>{toText(v.vin)}</td>
                                         <td>{toText(v.primaryColor)}</td>
+                                        <td><button className={styles.moreBtn} onClick={() => setOpenVehicle(v)}>More</button></td>
                                     </tr>
                                     ))}
                                 </tbody>
@@ -857,9 +856,11 @@ const actuallyDoSubmitReport = async () => {
                                 </thead>
                                 <tbody>
                                 {grouped.enclosures.map((e) => {
-                                    const fileCell = e.isLink
-                                    ? (e.link ? <a href={e.link} target="_blank" rel="noreferrer">Open link</a> : "—")
-                                    : (e.originalName || e.filename || e.filePath || "—");
+                                    const href = e?.isLink && e?.link ? e.link : e?.signedUrl ? e.signedUrl : "";
+                                    const fileLabel = e?.isLink ? (e?.originalName || e?.link || "") : (e?.originalName || e?.filename || "");
+                                    const fileCell = href
+                                      ? <a href={href} target="_blank" rel="noreferrer">{fileLabel || "View file"}</a>
+                                      : (fileLabel || "—");
 
                                     return (
                                     <tr key={e._id}>
@@ -963,10 +964,11 @@ const actuallyDoSubmitReport = async () => {
                                 </thead>
                                 <tbody>
                                 {grouped.evidence.map((e) => {
-                                    // decide what to show as the "file" cell
-                                    const fileCell = e.isLink
-                                    ? (e.link ? <a href={e.link} target="_blank" rel="noreferrer">Open link</a> : "—")
-                                    : (e.originalName || e.filename || e.filePath || "—");
+                                    const href = e?.isLink && e?.link ? e.link : e?.signedUrl ? e.signedUrl : "";
+                                    const fileLabel = e?.isLink ? (e?.originalName || e?.link || "") : (e?.originalName || e?.filename || "");
+                                    const fileCell = href
+                                      ? <a href={href} target="_blank" rel="noreferrer">{fileLabel || "View file"}</a>
+                                      : (fileLabel || "—");
 
                                     return (
                                     <tr key={e._id}>
@@ -975,7 +977,7 @@ const actuallyDoSubmitReport = async () => {
                                         <td>{e.collectionDate ? new Date(e.collectionDate).toLocaleDateString() : "—"}</td>
                                         <td>{e.disposedDate ? new Date(e.disposedDate).toLocaleDateString() : "—"}</td>
                                         <td>{fileCell}</td>
-                                      
+
                                     </tr>
                                     );
                                 })}
@@ -1012,16 +1014,18 @@ const actuallyDoSubmitReport = async () => {
                                 </thead>
                                 <tbody>
                                 {grouped.pictures.map((p) => {
-                                    const fileCell = p.isLink
-                                    ? (p.link ? <a href={p.link} target="_blank" rel="noreferrer">Open link</a> : "—")
-                                    : (p.originalName || p.filename || p.filePath || "—");
+                                    const href = p?.isLink && p?.link ? p.link : p?.signedUrl ? p.signedUrl : "";
+                                    const fileLabel = p?.isLink ? (p?.originalName || p?.link || "") : (p?.originalName || p?.filename || "");
+                                    const fileCell = href
+                                      ? <a href={href} target="_blank" rel="noreferrer">{fileLabel || "View file"}</a>
+                                      : (fileLabel || "—");
 
                                     return (
                                     <tr key={p._id}>
                                         <td>{toText(p.pictureDescription || p.description)}</td>
                                         <td>{p.datePictureTaken ? new Date(p.datePictureTaken).toLocaleDateString() : "—"}</td>
                                         <td>{fileCell}</td>
-                                       
+
                                     </tr>
                                     );
                                 })}
@@ -1059,8 +1063,8 @@ const actuallyDoSubmitReport = async () => {
                                 {grouped.audio.map((a) => {
                                     const href =
                                     a?.isLink && a?.link ? a.link :
-                                    a?.filePath ? a.filePath : "";          // keep generic; prefix if your API serves static files
-                                    const fileLabel = a?.originalName || a?.filename || (a?.isLink ? "Open link" : "View");
+                                    a?.signedUrl ? a.signedUrl : "";
+                                    const fileLabel = a?.isLink ? (a?.originalName || a?.link || "") : (a?.originalName || a?.filename || "");
 
                                     return (
                                     <tr key={a._id}>
@@ -1073,10 +1077,10 @@ const actuallyDoSubmitReport = async () => {
                                         <td>
                                         {href ? (
                                             <a href={href} target="_blank" rel="noreferrer">
-                                            {toText(fileLabel)}
+                                            {toText(fileLabel) || "View file"}
                                             </a>
                                         ) : (
-                                            "—"
+                                            toText(fileLabel) || "—"
                                         )}
                                         </td>
                                     </tr>
@@ -1106,8 +1110,8 @@ const actuallyDoSubmitReport = async () => {
                                 {grouped.videos.map((v) => {
                                     const href =
                                     v?.isLink && v?.link ? v.link :
-                                    v?.filePath ? v.filePath : "";
-                                    const fileLabel = v?.originalName || v?.filename || (v?.isLink ? "Open link" : "View");
+                                    v?.signedUrl ? v.signedUrl : "";
+                                    const fileLabel = v?.isLink ? (v?.originalName || v?.link || "") : (v?.originalName || v?.filename || "");
 
                                     return (
                                     <tr key={v._id}>
@@ -1120,10 +1124,10 @@ const actuallyDoSubmitReport = async () => {
                                         <td>
                                         {href ? (
                                             <a href={href} target="_blank" rel="noreferrer">
-                                            {toText(fileLabel)}
+                                            {toText(fileLabel) || "View file"}
                                             </a>
                                         ) : (
-                                            "—"
+                                            toText(fileLabel) || "—"
                                         )}
                                         </td>
                                     </tr>
@@ -1190,9 +1194,17 @@ const actuallyDoSubmitReport = async () => {
 
               <PersonModal
                 isOpen={!!openPerson}
-                onClose={closePersonSheet}
+                onClose={() => setOpenPerson(null)}
                 personData={openPerson}
                 caseName={caseName}
+                leadNo={leadNo}
+              />
+              <VehicleModal
+                isOpen={!!openVehicle}
+                onClose={() => setOpenVehicle(null)}
+                vehicleData={openVehicle}
+                caseName={caseName}
+                caseNo={caseNo}
                 leadNo={leadNo}
               />
             </>

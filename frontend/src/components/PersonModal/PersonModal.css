@@ -84,8 +84,6 @@
   color: #444 !important;
   text-align: left !important;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .person-group-table td {
@@ -95,9 +93,8 @@
   vertical-align: middle !important;
   color: #222 !important;
   background: #fff !important;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Photo section */

@@ -72,6 +72,9 @@ const PersonModal = ({
           // Derived display values
           const fullAddress = [
             person.address?.street1,
+            person.address?.street2,
+            person.address?.building,
+            person.address?.apartment,
             person.address?.city,
             person.address?.state,
             person.address?.zipCode,
