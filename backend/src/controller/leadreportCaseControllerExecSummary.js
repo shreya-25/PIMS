@@ -1899,7 +1899,10 @@ function formatOfficer(off) {
   if (off.displayName) return off.displayName;
   if (off.name) return off.name;
   if (off.firstName || off.lastName) {
-    return [off.firstName, off.lastName].filter(Boolean).join(" ").trim();
+    const last  = (off.lastName  || "").trim();
+    const first = (off.firstName || "").trim();
+    if (last && first) return `${last}, ${first}`;
+    return last || first;
   }
   if (off.user) return formatOfficer(off.user);
   // fallback to something stable

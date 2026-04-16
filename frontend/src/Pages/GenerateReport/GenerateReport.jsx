@@ -411,9 +411,10 @@ export const GenerateReport = () => {
   const displayUser = (uname) => {
     const u = allUsers.find((x) => x.username === uname);
     if (!u) return uname;
-    const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
-    const title = u.title ? ` (${u.title})` : "";
-    return full ? `${full}${title} (${u.username})` : u.username;
+    const last  = (u.lastName  || "").trim();
+    const first = (u.firstName || "").trim();
+    const name  = last && first ? `${last}, ${first}` : last || first || "";
+    return name ? `${name} (${u.username})` : u.username;
   };
   const [searchTerm, setSearchTerm] = useState("");
   const [leadSortOrder, setLeadSortOrder] = useState("asc");

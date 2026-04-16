@@ -124,14 +124,16 @@ export const Investigator = () => {
 
   // ─── Helpers ─────────────────────────────────────────────────────────────
 
-  /** Formats a username as "First Last (title) (username)", falling back to the raw username. */
+  /** Formats a username as "Last, First (username)", falling back to the raw username. */
   const formatUser = username => {
     if (!username) return '—';
     const u = allUsers.find(x => x.username === username);
     if (!u) return username;
-    const full = `${u.firstName || ''} ${u.lastName || ''}`.trim();
-    const title = u.title ? ` (${u.title})` : '';
-    return full ? `${full}${title} (${u.username})` : u.username;
+    const last  = (u.lastName  || '').trim();
+    const first = (u.firstName || '').trim();
+    const name  = last && first ? `${last}, ${first}` : last || first || '';
+    const uname = u.username ? ` (${u.username})` : '';
+    return name ? `${name}${uname}` : u.username;
   };
 
   // ─── Navigation handlers ─────────────────────────────────────────────────

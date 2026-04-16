@@ -892,9 +892,12 @@ useEffect(() => {
     const displayUser = (uname) => {
   const user = usernames.find((u) => u.username === uname);
   if (!user) return uname;
-  const full = `${user.firstName || ""} ${user.lastName || ""}`.trim();
+  const last  = (user.lastName  || "").trim();
+  const first = (user.firstName || "").trim();
+  const name  = last && first ? `${last}, ${first}` : last || first || "";
+  const uname2 = user.username ? ` (${user.username})` : "";
   const title = user.title ? ` (${user.title})` : "";
-  return full ? `${full}${title} (${user.username})` : user.username;
+  return name ? `${name}${uname2}${title}` : user.username;
 };
 
 
@@ -1217,7 +1220,13 @@ useEffect(() => {
 
             />
             <label htmlFor={user.username}>
-              {user.firstName} {user.lastName} ({user.username})
+              {(() => {
+                const last  = (user.lastName  || "").trim();
+                const first = (user.firstName || "").trim();
+                const name  = last && first ? `${last}, ${first}` : last || first || user.username;
+                const title = user.title ? ` (${user.title})` : "";
+                return `${name} (${user.username})${title}`;
+              })()}
             </label>
           </div>
         ))
@@ -1299,7 +1308,13 @@ useEffect(() => {
                     }}
                   />
                   <span className={styles.invText}>
-                    {`${user.firstName || ""} ${user.lastName || ""}`.trim()}{user.title ? ` (${user.title})` : ""} ({user.username})
+                    {(() => {
+                      const last  = (user.lastName  || "").trim();
+                      const first = (user.firstName || "").trim();
+                      const name  = last && first ? `${last}, ${first}` : last || first || user.username;
+                      const title = user.title ? ` (${user.title})` : "";
+                      return `${name} (${user.username})${title}`;
+                    })()}
                   </span>
                 </label>
               );
@@ -1328,9 +1343,11 @@ useEffect(() => {
       </option>
       {assignedOfficerUsernames.map((uName) => {
         const user = usernames.find((u) => u.username === uName);
-        const full = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() : "";
+        const last  = user ? (user.lastName  || "").trim() : "";
+        const first = user ? (user.firstName || "").trim() : "";
+        const name  = last && first ? `${last}, ${first}` : last || first || "";
         const title = user?.title ? ` (${user.title})` : "";
-        const label = full ? `${full}${title} (${uName})` : uName;
+        const label = name ? `${name} (${uName})${title}` : uName;
         return (
           <option key={uName} value={uName}>{label}</option>
         );

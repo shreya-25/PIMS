@@ -113,10 +113,11 @@ export const HomePage = () => {
 
     const getDisplayName = (u) => {
       if (!u) return "";
-      const full = `${u.firstName || ""} ${u.lastName || ""}`.trim() || u.displayName || u.name || "";
-      const title = u.title ? ` (${u.title})` : "";
+      const last  = (u.lastName  || "").trim();
+      const first = (u.firstName || "").trim();
+      const name  = last && first ? `${last}, ${first}` : last || first || u.displayName || u.name || "";
       const uname = u.username ? ` (${u.username})` : "";
-      return full ? `${full}${title}${uname}` : u.username || "";
+      return name ? `${name}${uname}` : u.username || "";
     };
 
     const detectiveSupervisor = c.detectiveSupervisorUserId

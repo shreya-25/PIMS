@@ -129,9 +129,13 @@ function formatTime(dateString) {
 }
 
 function formatFromUser(u) {
-  const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
-  const title = u.title ? ` (${u.title})` : "";
-  return full ? `${full}${title} (${u.username})` : u.username || "";
+  if (u.lastName || u.firstName) {
+    const last  = (u.lastName  || "").trim();
+    const first = (u.firstName || "").trim();
+    if (last && first) return `${last}, ${first}`;
+    return last || first;
+  }
+  return u.username || "";
 }
 
 function formatOfficer(off, userMap = {}) {
@@ -143,9 +147,10 @@ function formatOfficer(off, userMap = {}) {
   if (off.displayName) return off.displayName;
   if (off.name) return off.name;
   if (off.firstName || off.lastName) {
-    const full = [off.firstName, off.lastName].filter(Boolean).join(" ").trim();
-    const title = off.title ? ` (${off.title})` : "";
-    return `${full}${title}`;
+    const last  = (off.lastName  || "").trim();
+    const first = (off.firstName || "").trim();
+    if (last && first) return `${last}, ${first}`;
+    return last || first;
   }
   if (off.user) return formatOfficer(off.user, userMap);
   if (off.email) return off.email;

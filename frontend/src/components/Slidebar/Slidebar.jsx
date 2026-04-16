@@ -50,10 +50,12 @@ const investigatorsSearchRef = useRef(null);
 const supervisorSearchRef = useRef(null);
 
 const toDisplay = (u) => {
-  const full = `${u.firstName || ""} ${u.lastName || ""}`.replace(/\s+/g, " ").trim();
-  const title = u.title ? ` (${u.title})` : "";
-  const username = u.username ? ` (${u.username})` : "";
-  return full ? `${full}${title}${username}` : u.username || "";
+  const last  = (u.lastName  || "").trim();
+  const first = (u.firstName || "").trim();
+  const name  = last && first ? `${last}, ${first}` : last || first || "";
+  const uname = u.username ? ` (${u.username})` : "";
+  const title = u.title    ? ` (${u.title})`    : "";
+  return name ? `${name}${uname}${title}` : u.username || "";
 };
 
 const matches = (u, q) =>

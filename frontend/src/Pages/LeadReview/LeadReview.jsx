@@ -120,13 +120,28 @@ const [allUsers, setAllUsers] = useState([]);
     window.scrollTo(0, 0);
   }, []);
 
-  // display helper
+  // display helper — "Last, First (username) (title)" — used in dropdowns
+const fmtUser = (u) => {
+  if (!u) return "";
+  const last  = (u.lastName  || "").trim();
+  const first = (u.firstName || "").trim();
+  const name  = last && first ? `${last}, ${first}` : last || first || "";
+  const uname = u.username ? ` (${u.username})` : "";
+  const title = u.title    ? ` (${u.title})`    : "";
+  return name ? `${name}${uname}${title}` : u.username || "";
+};
+// display helper — "Last, First (username)" — used for on-screen officer display
+const fmtUserDisplay = (u) => {
+  if (!u) return "";
+  const last  = (u.lastName  || "").trim();
+  const first = (u.firstName || "").trim();
+  const name  = last && first ? `${last}, ${first}` : last || first || "";
+  const uname = u.username ? ` (${u.username})` : "";
+  return name ? `${name}${uname}` : u.username || "";
+};
 const displayUserAO = (uname) => {
   const u = allUsers.find((x) => x.username === uname);
-  if (!u) return uname;
-  const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
-  const title = u.title ? ` (${u.title})` : "";
-  return full ? `${full}${title} (${u.username})` : u.username;
+  return u ? fmtUserDisplay(u) : (uname || "");
 };
 
 const DELETE_REASON_CHIPS = [
@@ -1469,10 +1484,7 @@ const describeEvent = (ev) => {
 // === helpers (keep your fmtDT) ==============================================
 const nameOf = (uname) => {
   const u = allUsers.find((x) => x.username === uname);
-  if (!u) return uname;
-  const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
-  const title = u.title ? ` (${u.title})` : "";
-  return full ? `${full}${title} (${u.username})` : u.username;
+  return u ? fmtUser(u) : (uname || "");
 };
 
 const plural = (arr, s, p) => (arr && arr.length === 1 ? s : p);
@@ -2327,7 +2339,7 @@ const assignmentHoverText = React.useMemo(() => {
                       
                       />
                       <span className={styles.invText}>
-                        {`${user.firstName || ""} ${user.lastName || ""}`.trim()}{user.title ? ` (${user.title})` : ""} ({user.username})
+                        {fmtUser(user)}
                       </span>
                     </label>
                   );
@@ -2356,9 +2368,7 @@ const assignmentHoverText = React.useMemo(() => {
                     <option value="" disabled>{assignedOfficers.length ? 'Select Primary' : 'Assign officers first'}</option>
                     {assignedOfficers.map(uName => {
                       const user = allUsers.find(u => u.username === uName);
-                      const full = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() : "";
-                      const title = user?.title ? ` (${user.title})` : "";
-                      const label = full ? `${full}${title} (${uName})` : uName;
+                      const label = user ? fmtUser(user) : uName;
                       return <option key={uName} value={uName}>{label}</option>;
                     })}
                   </select>

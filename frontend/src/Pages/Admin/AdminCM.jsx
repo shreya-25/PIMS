@@ -22,10 +22,11 @@ const formatDate = (dateStr) => {
 
 const getDisplayName = (u) => {
   if (!u) return null;
-  const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
-  const title = u.title ? ` (${u.title})` : "";
+  const last  = (u.lastName  || "").trim();
+  const first = (u.firstName || "").trim();
+  const name  = last && first ? `${last}, ${first}` : last || first || "";
   const username = u.username ? ` (${u.username})` : "";
-  return full ? `${full}${title}${username}` : u.username || null;
+  return name ? `${name}${username}` : u.username || null;
 };
 
 const mapCase = (c) => {

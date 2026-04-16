@@ -30,6 +30,7 @@ export const CasePageManager = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isSupervisor = selectedCase?.role === "Detective Supervisor";
+  const isAdmin = (localStorage.getItem("systemRole") || localStorage.getItem("role") || "") === "Admin";
   const signedInOfficer = localStorage.getItem("loggedInUser");
   const signedInUserId  = localStorage.getItem("userId");
 
@@ -95,31 +96,54 @@ export const CasePageManager = () => {
   const beatTimerRef = useRef(null);
 
   // ─── Helpers: user display name ───────────────────────────────────────────
+  /** "Last, First" from a user object, or fallback to username */
+  const fmtName = (u) => {
+    if (!u) return "";
+    const last  = (u.lastName  || "").trim();
+    const first = (u.firstName || "").trim();
+    const name  = last && first ? `${last}, ${first}` : last || first || "";
+    const uname = u.username ? ` (${u.username})` : "";
+    const title = u.title    ? ` (${u.title})`    : "";
+    return name ? `${name}${uname}${title}` : u.username || "";
+  };
+
   const fullNameFor = useCallback((uname) => {
     const u = allUsers.find(x => x.username === uname);
-    return u ? `${u.firstName} ${u.lastName}` : uname;
+    if (!u) return uname;
+    const last  = (u.lastName  || "").trim();
+    const first = (u.firstName || "").trim();
+    return last && first ? `${last}, ${first}` : last || first || uname;
   }, [allUsers]);
 
   const formatUser = useCallback((username) => {
     if (!username) return "—";
     const u = allUsers.find(x => x.username === username);
-    if (!u) return username;
-    const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
-    const title = u.title ? ` (${u.title})` : "";
-    return full ? `${full}${title} (${u.username})` : u.username;
+    return u ? fmtName(u) : username;
   }, [allUsers]);
 
-  /** Display "First Last (title) (username)" for a single username */
+  /** Display "Last, First (username) (title)" for a single username */
   const displayName = (uname) => {
     const u = allUsers.find(u => u.username === uname);
-    if (!u) return uname || "—";
-    const full = `${u.firstName || ""} ${u.lastName || ""}`.trim();
-    const title = u.title ? ` (${u.title})` : "";
-    return full ? `${full}${title} (${u.username})` : u.username;
+    return u ? fmtName(u) : (uname || "—");
   };
 
   /** Join multiple usernames as full display names */
   const displayNames = (usernames = []) => usernames.map(displayName).join(", ");
+
+  /** "Last, First (username)" — no title — for on-screen DS display */
+  const fmtNameNoTitle = (u) => {
+    if (!u) return "";
+    const last  = (u.lastName  || "").trim();
+    const first = (u.firstName || "").trim();
+    const name  = last && first ? `${last}, ${first}` : last || first || "";
+    const uname = u.username ? ` (${u.username})` : "";
+    return name ? `${name}${uname}` : u.username || "";
+  };
+  const displayNameNoTitle = (uname) => {
+    const u = allUsers.find(x => x.username === uname);
+    return u ? fmtNameNoTitle(u) : (uname || "—");
+  };
+  const displayNamesNoTitle = (usernames = []) => usernames.map(displayNameNoTitle).join(", ");
 
   const toTitleCase = (s = "") =>
     s.replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase());
@@ -940,14 +964,14 @@ export const CasePageManager = () => {
                     <tr>
                       <td className={styles['case-team-td']}>Detective Supervisor{team.detectiveSupervisors.length > 1 ? "s" : ""}</td>
                       <td className={`${styles['name-cell']} ${styles['case-team-td']}`}>
-                        {selectedCase.role === "Detective Supervisor" ? (
+                        {(selectedCase.role === "Detective Supervisor" || isAdmin) ? (
                           <div ref={dsRef} className={styles['custom-dropdown']}>
                             <div
                               className={styles['dropdown-head']}
                               onClick={() => setDetectiveSupervisorDropdownOpen(prev => !prev)}
                             >
                               <span className={styles['dh-text']}>
-                                {selectedDetectiveSupervisors.length > 0 ? displayNames(selectedDetectiveSupervisors) : "Select Detective Supervisor(s)"}
+                                {selectedDetectiveSupervisors.length > 0 ? displayNamesNoTitle(selectedDetectiveSupervisors) : "Select Detective Supervisor(s)"}
                               </span>
                               <span className={styles['dropdown-icon']} aria-hidden="true">
                                 <img src={detectiveSupervisorDropdownOpen ? downIcon : upIcon} className={styles['caret-icon']} alt="" />
@@ -983,7 +1007,7 @@ export const CasePageManager = () => {
                                         }}
                                       />
                                       <label htmlFor={`ds-${user.username}`}>
-                                        {`${user.firstName || ""} ${user.lastName || ""}`.trim()}{user.title ? ` (${user.title})` : ""} ({user.username})
+                                        {fmtName(user)}
                                       </label>
                                     </div>
                                   ))}
@@ -991,7 +1015,7 @@ export const CasePageManager = () => {
                             )}
                           </div>
                         ) : (
-                          displayNames(team.detectiveSupervisors) || "—"
+                          displayNamesNoTitle(team.detectiveSupervisors) || "—"
                         )}
                       </td>
                     </tr>
@@ -1007,7 +1031,7 @@ export const CasePageManager = () => {
                               onClick={() => setCaseManagersDropdownOpen(prev => !prev)}
                             >
                               <span className={styles['dh-text']}>
-                                {selectedCaseManagers.length > 0 ? displayNames(selectedCaseManagers) : "Select Case Manager(s)"}
+                                {selectedCaseManagers.length > 0 ? displayNamesNoTitle(selectedCaseManagers) : "Select Case Manager(s)"}
                               </span>
                               <span className={styles['dropdown-icon']} aria-hidden="true">
                                 <img src={caseManagersDropdownOpen ? downIcon : upIcon} className={styles['caret-icon']} alt="" />
@@ -1043,7 +1067,7 @@ export const CasePageManager = () => {
                                         }}
                                       />
                                       <label htmlFor={`cm-${user.username}`}>
-                                        {`${user.firstName || ""} ${user.lastName || ""}`.trim()}{user.title ? ` (${user.title})` : ""} ({user.username})
+                                        {fmtName(user)}
                                       </label>
                                     </div>
                                   ))}
@@ -1051,7 +1075,7 @@ export const CasePageManager = () => {
                             )}
                           </div>
                         ) : (
-                          (team.caseManagers || []).map(formatUser).join(", ") || "—"
+                          displayNamesNoTitle(team.caseManagers) || "—"
                         )}
                       </td>
                     </tr>
@@ -1069,7 +1093,7 @@ export const CasePageManager = () => {
                               onClick={() => setInvestigatorsDropdownOpen(prev => !prev)}
                             >
                               <span className={styles['dh-text']}>
-                                {selectedInvestigators.length ? displayNames(selectedInvestigators) : "Select Investigators"}
+                                {selectedInvestigators.length ? displayNamesNoTitle(selectedInvestigators) : "Select Investigators"}
                               </span>
                               <span className={styles['dropdown-icon']} aria-hidden="true">
                                 <img src={investigatorsDropdownOpen ? downIcon : upIcon} className={styles['caret-icon']} alt="" />
@@ -1105,7 +1129,7 @@ export const CasePageManager = () => {
                                         }}
                                       />
                                       <label htmlFor={`inv-${user.username}`}>
-                                        {`${user.firstName || ""} ${user.lastName || ""}`.trim()}{user.title ? ` (${user.title})` : ""} ({user.username})
+                                        {fmtName(user)}
                                       </label>
                                     </div>
                                   ))}
@@ -1114,7 +1138,7 @@ export const CasePageManager = () => {
                           </div>
                         ) : (
                           <div>
-                            {team.investigators.length ? team.investigators.map(formatUser).join(", ") : "None assigned"}
+                            {team.investigators.length ? displayNamesNoTitle(team.investigators) : "None assigned"}
                           </div>
                         )}
                       </td>
@@ -1265,7 +1289,7 @@ export const CasePageManager = () => {
                         <td>{lead.priority || ""}</td>
                         <td>{lead.leadStatus === 'Completed' ? '' : calculateRemainingDays(lead.dueDate)}</td>
                         <td style={{ wordBreak: "break-word" }}>
-                          {lead.assignedOfficers?.length > 0 ? displayNames(lead.assignedOfficers) : "None"}
+                          {lead.assignedOfficers?.length > 0 ? displayNamesNoTitle(lead.assignedOfficers) : "None"}
                         </td>
                         <td style={{ width: "9%", textAlign: "center" }}>
                           <button className={styles['view-btn1']} onClick={() => handleLeadClick(lead)}>
@@ -1335,7 +1359,7 @@ export const CasePageManager = () => {
                         <td>{lead.description}</td>
                         <td>{lead.priority}</td>
                         <td style={{ wordBreak: "break-word" }}>
-                          {lead.assignedOfficers?.length > 0 ? displayNames(lead.assignedOfficers) : "None"}
+                          {lead.assignedOfficers?.length > 0 ? displayNamesNoTitle(lead.assignedOfficers) : "None"}
                         </td>
                         <td style={{ width: "9%", textAlign: "center" }}>
                           <button
@@ -1499,7 +1523,7 @@ export const CasePageManager = () => {
                             {lead.leadStatus === "In Review" ? "Under Review" : lead.leadStatus}
                           </td>
                           <td style={{ wordBreak: "break-word" }}>
-                            {lead.assignedOfficers?.length > 0 ? displayNames(lead.assignedOfficers) : "None"}
+                            {lead.assignedOfficers?.length > 0 ? displayNamesNoTitle(lead.assignedOfficers) : "None"}
                           </td>
                           <td style={{ width: "13%" }}>
                             <div style={{ color: isNonNavigable ? 'inherit' : color, fontWeight: 500, lineHeight: 1.4 }}>
