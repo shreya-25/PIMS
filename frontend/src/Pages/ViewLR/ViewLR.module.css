@@ -739,6 +739,13 @@
   transition: background 0.15s;
 }
 
-.approveBtnLr:hover {
+.approveBtnLr:hover:not(:disabled) {
   background: rgba(25, 58, 73, 0.459);
+}
+
+.approveBtnLr:disabled {
+  background: #b0b0b0;
+  color: #e0e0e0;
+  cursor: not-allowed;
+  opacity: 0.6;
 }

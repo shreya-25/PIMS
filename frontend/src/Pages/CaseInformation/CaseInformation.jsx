@@ -54,7 +54,7 @@ export const CaseInformation = () => {
   const [openVehicles, setOpenVehicles] = useState(true);
 
   // ── Active file tab ───────────────────────────────────────────────────────
-  const [fileTab, setFileTab] = useState('evidence');
+  const [fileTab, setFileTab] = useState('enclosures');
 
   // ── Expanded rows (description toggle) ───────────────────────────────────
   const [expandedRows, setExpandedRows] = useState(new Set());
@@ -766,8 +766,8 @@ export const CaseInformation = () => {
                 {/* Tab bar */}
                 <div className={styles['tab-bar']}>
                   {[
-                    { key: 'evidence', label: 'Evidence', count: evCount, icon: '' },
                     { key: 'enclosures', label: 'Enclosures', count: enCount, icon: '' },
+                    { key: 'evidence', label: 'Evidence', count: evCount, icon: '' },
                     { key: 'pictures', label: 'Pictures', count: picCount, icon: '' },
                     { key: 'audio', label: 'Audio', count: audCount, icon: '' },
                     { key: 'video', label: 'Video', count: vidCount, icon: '' },

@@ -231,25 +231,16 @@ export const SideBar = ({
 
   // Admin variant
   if (variant === "admin") {
-    const adminItems = [
-      { label: "User Registration",   route: "/AdminUR" },
-      { label: "Registered Users",    route: "/AdminUserList" },
-      { label: "Agency Management",   route: "/AdminAgencies" },
-      { label: "Case Management",     route: "/AdminCM" },
-    ];
     return (
       <aside className="sidebar">
         <ul className="sidebar-list">
-          {adminItems.map(({ label, route }) => (
-            <li
-              key={route}
-              className={`sidebar-item ${location.pathname === route ? "active" : ""}`}
-              onClick={() => navigate(route)}
-            >
-              <img src={folderIcon} className="sidebar-icon" alt="" />
-              <span>{label}</span>
-            </li>
-          ))}
+          <li
+            className={`sidebar-item ${location.pathname === "/AdminCM" ? "active" : ""}`}
+            onClick={() => navigate("/AdminCM")}
+          >
+            <img src={folderIcon} className="sidebar-icon" alt="" />
+            <span>Case Management</span>
+          </li>
           {systemRole !== "Investigator" && (
             <li
               className="sidebar-item"
@@ -260,6 +251,27 @@ export const SideBar = ({
               <span>Add Case</span>
             </li>
           )}
+          <li
+            className={`sidebar-item ${location.pathname === "/AdminUR" ? "active" : ""}`}
+            onClick={() => navigate("/AdminUR")}
+          >
+            <img src={folderIcon} className="sidebar-icon" alt="" />
+            <span>User Registration</span>
+          </li>
+          <li
+            className={`sidebar-item ${location.pathname === "/AdminUserList" ? "active" : ""}`}
+            onClick={() => navigate("/AdminUserList")}
+          >
+            <img src={folderIcon} className="sidebar-icon" alt="" />
+            <span>Registered Users</span>
+          </li>
+          <li
+            className={`sidebar-item ${location.pathname === "/AdminAgencies" ? "active" : ""}`}
+            onClick={() => navigate("/AdminAgencies")}
+          >
+            <img src={folderIcon} className="sidebar-icon" alt="" />
+            <span>Agency Management</span>
+          </li>
         </ul>
       </aside>
     );
@@ -323,8 +335,12 @@ export const SideBar = ({
       <ul className="sidebar-list">
         {!isReadOnlyRole && (
           <li
-            className={`sidebar-item ${activePage === "HomePage" ? "active" : ""}`}
-            onClick={() => navigate("/HomePage", { state: { caseDetails, activeTab: "cases" } })}
+            className={`sidebar-item ${activePage === "HomePage" || activePage === "AdminCM" ? "active" : ""}`}
+            onClick={() =>
+              systemRole === "Admin"
+                ? navigate("/AdminCM")
+                : navigate("/HomePage", { state: { caseDetails, activeTab: "cases" } })
+            }
           >
             <img src={homeIcon} className="sidebar-icon" alt="" />
             <span>PIMS Home</span>
@@ -424,14 +440,14 @@ export const SideBar = ({
         )}
 
         {/* Other Ongoing Cases */}
-        {!isReadOnlyRole && (
+        {!isReadOnlyRole && systemRole !== "Admin" && (
           <li className="sidebar-item" onClick={() => setCaseDropdownOpen((o) => !o)}>
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Other Ongoing Cases {caseDropdownOpen ? "▲" : "▼"}</span>
           </li>
         )}
 
-        {!isReadOnlyRole && caseDropdownOpen && (
+        {!isReadOnlyRole && systemRole !== "Admin" && caseDropdownOpen && (
           <ul className="dropdown-list1">
             {caseList
               .filter((c) => String(c._id) !== String(selectedCase?._id || selectedCase?.id))

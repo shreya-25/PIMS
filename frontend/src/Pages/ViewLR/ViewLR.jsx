@@ -115,8 +115,8 @@ const isInvestigator     = !isCaseManager;
 
 const canShowCMButtons   = isCaseManager && !isClosedOrCompleted;
 
-
- 
+const systemRole = localStorage.getItem("systemRole") || localStorage.getItem("role") || "";
+const isAdmin = systemRole === "Admin";
 
 const publicThreadKey = `${caseNo}:${caseName}::${leadNo}:${leadName}`;
 const investigatorUsernames = (Array.isArray(leadData?.assignedTo)
@@ -132,10 +132,19 @@ const primaryUsername =
  const isPrimaryInvestigator = !!currentUser && currentUser === primaryUsername;
 
 const isAssignedAsInvestigator = investigatorUsernames.includes(currentUser);
-const canShowSubmit      = !isClosedOrCompleted && !isInReview && (
-  (isInvestigator && (isPrimaryInvestigator || (!primaryUsername && isAssignedAsInvestigator))) ||
-  (isCaseManager && isAssignedAsInvestigator)
-);
+
+// Admin, DS, Case Manager, or Primary Investigator may submit
+const isAuthorizedToSubmit = isAdmin || isCaseManager || isPrimaryInvestigator;
+
+const canShowSubmit = !isClosedOrCompleted && !isInReview && isAuthorizedToSubmit;
+
+const submitDisabledReason = isClosedOrCompleted
+  ? "This lead is closed or completed — submissions are no longer allowed"
+  : isInReview
+  ? "Lead return already submitted and is under review"
+  : !isAuthorizedToSubmit
+  ? "You are not authorized to submit this lead return"
+  : "";
 
 
   const handleNavigation = (route) => {
@@ -629,11 +638,14 @@ const actuallyDoSubmitReport = async () => {
                                      Lead Return Review
                                    </div>
           <div>
-              {canShowSubmit && (
-                    <button className={styles.approveBtnLr} onClick={handleSubmitReport}>
-                      Submit
-                    </button>
-                  )}
+              <button
+                className={styles.approveBtnLr}
+                onClick={canShowSubmit ? handleSubmitReport : undefined}
+                disabled={!canShowSubmit}
+                title={!canShowSubmit ? submitDisabledReason : "Submit lead return for review"}
+              >
+                Submit
+              </button>
       </div>
         </header>
                         <div className={styles.lrRow}>
