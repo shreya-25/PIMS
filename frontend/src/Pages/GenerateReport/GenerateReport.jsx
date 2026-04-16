@@ -429,6 +429,28 @@ export const GenerateReport = () => {
   const [selectStartLead1, setSelectStartLead1] = useState("");
   const [selectEndLead2, setSelectEndLead2] = useState("");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [reportProgress, setReportProgress] = useState(0);
+  const progressIntervalRef = React.useRef(null);
+
+  const startProgress = () => {
+    setReportProgress(0);
+    clearInterval(progressIntervalRef.current);
+    progressIntervalRef.current = setInterval(() => {
+      setReportProgress(prev => {
+        if (prev >= 88) { clearInterval(progressIntervalRef.current); return prev; }
+        return Math.min(88, prev + Math.random() * 7 + 2);
+      });
+    }, 350);
+  };
+
+  const completeProgress = () => {
+    clearInterval(progressIntervalRef.current);
+    setReportProgress(100);
+    setTimeout(() => {
+      completeProgress();
+      setReportProgress(0);
+    }, 700);
+  };
 
   // Timeline & flags
   const [timelineEntries, setTimelineEntries] = useState([]);
@@ -701,6 +723,7 @@ export const GenerateReport = () => {
     }
 
     setIsGeneratingReport(true);
+    startProgress();
 
     const isAllReport   = String(reportType).toLowerCase() === "all";
     const hasWebSummary = Boolean(useWebpageSummary && typedSummary?.trim());
@@ -723,7 +746,7 @@ export const GenerateReport = () => {
           responseType: "blob",
         });
         openPdfBlob(response.data);
-        setIsGeneratingReport(false);
+        completeProgress();
         return;
       }
 
@@ -744,7 +767,7 @@ export const GenerateReport = () => {
           { headers: { Authorization: `Bearer ${token}` }, responseType: "blob" }
         );
         openPdfBlob(response.data);
-        setIsGeneratingReport(false);
+        completeProgress();
         return;
       }
 
@@ -762,11 +785,11 @@ export const GenerateReport = () => {
         responseType: "blob",
       });
       openPdfBlob(response.data);
-      setIsGeneratingReport(false);
+      completeProgress();
     } catch (error) {
       console.error("Failed to generate report", error);
       showAlert("Error generating PDF");
-      setIsGeneratingReport(false);
+      completeProgress();
     }
   };
 
@@ -1564,7 +1587,14 @@ export const GenerateReport = () => {
                         >
                           Run report
                         </button>
-                        {isGeneratingReport && <span style={{ fontSize: 14, color: '#555', fontStyle: 'italic' }}>Generating report...</span>}
+                        {isGeneratingReport && (
+                          <div className={styles.progressWrap}>
+                            <div className={styles.progressBar}>
+                              <div className={styles.progressFill} style={{ width: `${reportProgress}%` }} />
+                            </div>
+                            <span className={styles.progressLabel}>{Math.round(reportProgress)}%</span>
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
@@ -1601,7 +1631,7 @@ export const GenerateReport = () => {
                         </div>
                       </div>
 
-                      <div style={{ marginTop: 8 }}>
+                      <div style={{ margin: '8px 0 0', display: 'flex', alignItems: 'center', gap: 12 }}>
                         <button
                           type="button"
                           className={`${styles.btn} ${styles['btn-primary']}`}
@@ -1614,7 +1644,14 @@ export const GenerateReport = () => {
                         >
                           Run report
                         </button>
-                        {isGeneratingReport && <span style={{ fontSize: 14, color: '#555', fontStyle: 'italic', marginLeft: 12 }}>Generating report...</span>}
+                        {isGeneratingReport && (
+                          <div className={styles.progressWrap}>
+                            <div className={styles.progressBar}>
+                              <div className={styles.progressFill} style={{ width: `${reportProgress}%` }} />
+                            </div>
+                            <span className={styles.progressLabel}>{Math.round(reportProgress)}%</span>
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
@@ -1674,7 +1711,14 @@ export const GenerateReport = () => {
                         >
                           Run report
                         </button>
-                        {isGeneratingReport && <span style={{ fontSize: 14, color: '#555', fontStyle: 'italic' }}>Generating report...</span>}
+                        {isGeneratingReport && (
+                          <div className={styles.progressWrap}>
+                            <div className={styles.progressBar}>
+                              <div className={styles.progressFill} style={{ width: `${reportProgress}%` }} />
+                            </div>
+                            <span className={styles.progressLabel}>{Math.round(reportProgress)}%</span>
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
@@ -1694,6 +1738,7 @@ export const GenerateReport = () => {
                             onClick={async () => {
                               if (!selectedCase?.caseNo) return;
                               setIsGeneratingReport(true);
+                              startProgress();
                               try {
                                 const token = localStorage.getItem("token");
                                 const response = await api.post(
@@ -1706,7 +1751,7 @@ export const GenerateReport = () => {
                                 console.error("Timeline report error:", err);
                                 showAlert("Failed to generate timeline report.");
                               } finally {
-                                setIsGeneratingReport(false);
+                                completeProgress();
                               }
                             }}
                           >
@@ -1722,7 +1767,14 @@ export const GenerateReport = () => {
                             Run full report (ascending timeline order)
                           </button>
 
-                        {isGeneratingReport && <span style={{ fontSize: 14, color: '#555', fontStyle: 'italic' }}>Generating report...</span>}
+                        {isGeneratingReport && (
+                          <div className={styles.progressWrap}>
+                            <div className={styles.progressBar}>
+                              <div className={styles.progressFill} style={{ width: `${reportProgress}%` }} />
+                            </div>
+                            <span className={styles.progressLabel}>{Math.round(reportProgress)}%</span>
+                          </div>
+                        )}
                         {!timelineOrderedLeads.length && (
                           <div style={{ fontSize: 13, opacity: 0.8 }}>No timeline-linked leads found yet for this case.</div>
                         )}
@@ -1769,7 +1821,14 @@ export const GenerateReport = () => {
                         >
                           Run report
                         </button>
-                        {isGeneratingReport && <span style={{ fontSize: 14, color: '#555', fontStyle: 'italic' }}>Generating report...</span>}
+                        {isGeneratingReport && (
+                          <div className={styles.progressWrap}>
+                            <div className={styles.progressBar}>
+                              <div className={styles.progressFill} style={{ width: `${reportProgress}%` }} />
+                            </div>
+                            <span className={styles.progressLabel}>{Math.round(reportProgress)}%</span>
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
@@ -1822,7 +1881,14 @@ export const GenerateReport = () => {
                         >
                           Run report
                         </button>
-                        {isGeneratingReport && <span style={{ fontSize: 14, color: '#555', fontStyle: 'italic' }}>Generating report...</span>}
+                        {isGeneratingReport && (
+                          <div className={styles.progressWrap}>
+                            <div className={styles.progressBar}>
+                              <div className={styles.progressFill} style={{ width: `${reportProgress}%` }} />
+                            </div>
+                            <span className={styles.progressLabel}>{Math.round(reportProgress)}%</span>
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
@@ -1851,7 +1917,14 @@ export const GenerateReport = () => {
                           >
                             Run reopened leads report
                           </button>
-                          {isGeneratingReport && <span style={{ fontSize: 14, color: '#555', fontStyle: 'italic' }}>Generating report...</span>}
+                          {isGeneratingReport && (
+                          <div className={styles.progressWrap}>
+                            <div className={styles.progressBar}>
+                              <div className={styles.progressFill} style={{ width: `${reportProgress}%` }} />
+                            </div>
+                            <span className={styles.progressLabel}>{Math.round(reportProgress)}%</span>
+                          </div>
+                        )}
                         </div>
                       </>
                     );

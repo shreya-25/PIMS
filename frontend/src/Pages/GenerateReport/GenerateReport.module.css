@@ -466,6 +466,38 @@
 }
 
 /* ===== Utility / misc ===== */
+/* ── Report progress bar ───────────────────────────────────────────── */
+.progressWrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+  min-width: 220px;
+}
+
+.progressBar {
+  flex: 1;
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #4040a8, #6366f1);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.progressLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4040a8;
+  min-width: 36px;
+  text-align: right;
+}
+
 .download-btn {
   background-color: #fff;
   color: #333;
