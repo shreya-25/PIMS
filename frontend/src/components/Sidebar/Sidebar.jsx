@@ -87,6 +87,7 @@ export const SideBar = ({
         const { data } = await api.get("/api/cases/cases-by-officer", {
           headers: { Authorization: `Bearer ${token}` },
           params: { officerName: signedInOfficer },
+          suppressGlobalError: true,
         });
 
         const ongoing = (data || [])
@@ -118,6 +119,7 @@ export const SideBar = ({
         const token = localStorage.getItem("token");
         const { data } = await api.get("/api/lead/assignedTo-leads", {
           headers: { Authorization: `Bearer ${token}` },
+          suppressGlobalError: true,
         });
 
         const caseIds = new Set(caseList.map((c) => String(c._id)));
@@ -168,6 +170,7 @@ export const SideBar = ({
               const isCMorDS = c.role === "Case Manager" || c.role === "Detective Supervisor";
               const { data } = await api.get(`/api/lead/case/${c._id}`, {
                 headers: { Authorization: `Bearer ${token}` },
+                suppressGlobalError: true,
               });
 
               const arr = Array.isArray(data?.leads)
@@ -272,6 +275,13 @@ export const SideBar = ({
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Agency Management</span>
           </li>
+          <li
+            className={`sidebar-item ${location.pathname === "/AdminTeam" ? "active" : ""}`}
+            onClick={() => navigate("/AdminTeam")}
+          >
+            <img src={folderIcon} className="sidebar-icon" alt="" />
+            <span>Team Management</span>
+          </li>
         </ul>
       </aside>
     );
@@ -299,7 +309,7 @@ export const SideBar = ({
             <span>Case Management</span>
           </li>
 
-          {systemRole !== ROLES.INVESTIGATOR && (
+          {systemRole !== ROLES.INVESTIGATOR && systemRole !== ROLES.READ_ONLY && (
             <li
               className="sidebar-item"
               style={{ paddingLeft: 32 }}
@@ -313,7 +323,7 @@ export const SideBar = ({
             </li>
           )}
 
-          {showArchivedTab && (
+          {showArchivedTab && systemRole !== ROLES.READ_ONLY && (
             <li
               className={`sidebar-item ${activeTab === "archived" ? "active" : ""}`}
               onClick={() => navigate("/ClosedCase")}

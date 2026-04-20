@@ -1,0 +1,186 @@
+/* ── Action button group ── */
+.btnGroup {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+/* Shared base for all action buttons */
+.approveBtn,
+.returnBtn,
+.closeBtn,
+.reopenBtn {
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 18px;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.approveBtn {
+  background: #fff;
+  color: #166534;
+  border: 2px solid #166534;
+}
+.approveBtn:hover:not(:disabled) { background: #f0fdf4; }
+
+.returnBtn {
+  background: #fff;
+  color: rgba(122, 12, 12, 0.9);
+  border: 2px solid rgba(122, 12, 12, 0.9);
+}
+.returnBtn:hover:not(:disabled) { background: #fff5f5; }
+
+.closeBtn {
+  background: #fff;
+  color: #1a1a2e;
+  border: 2px solid #1a1a2e;
+}
+.closeBtn:hover:not(:disabled) { background: #f0f0f8; }
+
+.reopenBtn {
+  background: rgba(25, 58, 73, 0.8);
+  color: #fff;
+  border: 2px solid transparent;
+}
+.reopenBtn:hover:not(:disabled) { background: rgba(25, 58, 73, 0.6); }
+
+.approveBtn:disabled,
+.returnBtn:disabled,
+.closeBtn:disabled,
+.reopenBtn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+/* ── Close Lead Modal ── */
+.clModalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clModalBox {
+  background: #fff;
+  border-radius: 10px;
+  width: 780px;
+  max-width: 97vw;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.22);
+  font-family: Arial, sans-serif;
+  overflow: hidden;
+}
+
+.clModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 32px 18px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.clModalTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #000;
+}
+
+.clModalClose {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: #aaa;
+  line-height: 1;
+  padding: 2px 6px;
+}
+
+.clModalBody {
+  padding: 22px 32px 28px;
+}
+
+.clModalSubtitle {
+  font-size: 18px;
+  color: #000;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.clChipGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.clChip {
+  padding: 10px 20px;
+  font-size: 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: Arial, sans-serif;
+  font-weight: 500;
+  background: #fff;
+  color: #1a1a2e;
+  border: 1.5px solid #000;
+  transition: border-color 0.15s, color 0.15s;
+}
+.clChip:hover { border-color: #c0392b; color: #c0392b; }
+.clChipActive { color: #c0392b; border: 2px solid #c0392b; }
+
+.clModalTextarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px 14px;
+  font-size: 18px;
+  border: 1.5px solid #c8cad8;
+  border-radius: 6px;
+  box-sizing: border-box;
+  resize: vertical;
+  font-family: Arial, sans-serif;
+  outline: none;
+  color: #333;
+}
+.clModalTextarea:focus { border-color: #29298b; }
+
+.clModalActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  justify-content: flex-end;
+}
+
+.clModalCancelBtn {
+  padding: 10px 28px;
+  font-size: 18px;
+  border-radius: 6px;
+  border: 2px solid #ccc;
+  background: #f0f0f0;
+  color: #333;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+}
+
+.clModalSubmitBtn {
+  padding: 10px 28px;
+  font-size: 18px;
+  border-radius: 6px;
+  border: none;
+  background: #c0392b;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+  transition: background 0.15s;
+}
+.clModalSubmitBtn:hover { background: #a93226; }
+.clModalSubmitBtnDisabled { background: #e8a0a0; cursor: not-allowed; }

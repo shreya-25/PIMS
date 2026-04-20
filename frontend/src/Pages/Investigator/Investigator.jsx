@@ -60,6 +60,7 @@ export const Investigator = () => {
   const activeCaseId = selectedCase?._id || selectedCase?.id || caseDetails?._id;
 
   const signedInOfficer = localStorage.getItem('loggedInUser');
+  const isReadOnly = (selectedCase?.role || caseDetails?.role) === 'Read Only';
 
   // ─── UI state ────────────────────────────────────────────────────────────
   const [activeTab,          setActiveTab]          = useState('allLeads');
@@ -72,7 +73,7 @@ export const Investigator = () => {
 
   // ─── Case info state ─────────────────────────────────────────────────────
   const [summary,  setSummary]  = useState('');
-  const [team,     setTeam]     = useState({ detectiveSupervisor: '', caseManagers: [], investigators: [] });
+  const [team,     setTeam]     = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [] });
   const [allUsers, setAllUsers] = useState([]);
 
   // ─── Data hooks ───────────────────────────────────────────────────────────
@@ -208,10 +209,12 @@ export const Investigator = () => {
       <td>{lead.priority}</td>
       <td>{lead.leadStatus === 'Completed' ? '' : lead.remainingDays}</td>
       <td>{(lead.assignedOfficers || []).map(formatUser).join(', ')}</td>
-      <td style={{ textAlign: 'center' }}>
-        <button className={styles['view-btn1']}  onClick={() => handleLeadClick(lead)}>Manage</button>
-        <button className={styles['accept-btn']} onClick={() => openConfirm(lead)}>Accept</button>
-      </td>
+      {!isReadOnly && (
+        <td style={{ textAlign: 'center' }}>
+          <button className={styles['view-btn1']}  onClick={() => handleLeadClick(lead)}>Manage</button>
+          <button className={styles['accept-btn']} onClick={() => openConfirm(lead)}>Accept</button>
+        </td>
+      )}
     </tr>
   );
 
@@ -223,9 +226,11 @@ export const Investigator = () => {
       <td>{lead.priority}</td>
       <td>{lead.leadStatus === 'Completed' ? '' : lead.remainingDays}</td>
       <td>{(lead.assignedOfficers || []).map(formatUser).join(', ')}</td>
-      <td style={{ textAlign: 'center' }}>
-        <button className={styles['view-btn1']} onClick={() => handleLeadClick(lead)}>Manage</button>
-      </td>
+      {!isReadOnly && (
+        <td style={{ textAlign: 'center' }}>
+          <button className={styles['view-btn1']} onClick={() => handleLeadClick(lead)}>Manage</button>
+        </td>
+      )}
     </tr>
   );
 
@@ -286,6 +291,7 @@ export const Investigator = () => {
             {sub && <div style={{ fontSize: 18 }}>{sub}</div>}
           </div>
         </td>
+      {!isReadOnly && (
         <td style={{ textAlign: 'center' }}>
           <button
             className={isNonNavigable ? styles['manage-btn-terminated'] : styles['view-btn1']}
@@ -295,6 +301,7 @@ export const Investigator = () => {
             Manage
           </button>
         </td>
+      )}
       </tr>
     );
   };
@@ -349,8 +356,8 @@ export const Investigator = () => {
                 </thead>
                 <tbody>
                   <tr>
-                    <td>Detective Supervisor</td>
-                    <td>{formatUser(team.detectiveSupervisor)}</td>
+                    <td>Detective Supervisor{(team.detectiveSupervisors || []).length > 1 ? 's' : ''}</td>
+                    <td>{(team.detectiveSupervisors || []).map(formatUser).join(', ') || '—'}</td>
                   </tr>
                   <tr>
                     <td>Case Manager</td>
@@ -372,10 +379,12 @@ export const Investigator = () => {
           {/* Tab bar showing lead counts per category */}
           <div className={styles['stats-bar']}>
             {[
-              { tab: 'allLeads',           label: 'My Leads',               count: leads.allLeads.length },
-              { tab: 'assignedLeads',      label: 'Assigned Leads',         count: leads.assignedLeads.length },
-              { tab: 'pendingLeads',       label: 'Accepted Leads',         count: leads.pendingLeads.length },
-              { tab: 'pendingLeadReturns', label: 'Lead Returns In Review', count: leads.pendingLeadReturns.length },
+              { tab: 'allLeads',           label: isReadOnly ? 'All Leads' : 'My Leads', count: leads.allLeads.length },
+              ...(!isReadOnly ? [
+                { tab: 'assignedLeads',      label: 'Assigned Leads',         count: leads.assignedLeads.length },
+                { tab: 'pendingLeads',       label: 'Accepted Leads',         count: leads.pendingLeads.length },
+                { tab: 'pendingLeadReturns', label: 'Lead Returns In Review', count: leads.pendingLeadReturns.length },
+              ] : []),
             ].map(({ tab, label, count }) => (
               <span
                 key={tab}
@@ -398,6 +407,7 @@ export const Investigator = () => {
                 filter={assignedFilter}
                 renderRow={renderAssignedRow}
                 emptyMessage="No assigned leads available"
+                showActions={!isReadOnly}
               />
             )}
 
@@ -410,6 +420,7 @@ export const Investigator = () => {
                 filter={pendingFilter}
                 renderRow={renderPendingRow}
                 emptyMessage="No accepted leads available"
+                showActions={!isReadOnly}
               />
             )}
 
@@ -422,6 +433,7 @@ export const Investigator = () => {
                 filter={pendingLRFilter}
                 renderRow={renderPendingLRRow}
                 emptyMessage="No pending lead returns available"
+                showActions={!isReadOnly}
               />
             )}
 
@@ -434,6 +446,7 @@ export const Investigator = () => {
                 filter={allFilter}
                 renderRow={renderAllRow}
                 emptyMessage="No leads available"
+                showActions={!isReadOnly}
               />
             )}
 

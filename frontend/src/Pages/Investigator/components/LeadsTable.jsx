@@ -29,6 +29,7 @@ export function LeadsTable({
   emptyMessage,
   actionsLabel = 'Actions',
   actionsWidth  = '11%',
+  showActions   = true,
 }) {
   const {
     popupRefs,
@@ -90,7 +91,7 @@ export function LeadsTable({
                 </th>
               );
             })}
-            <th style={{ width: actionsWidth, textAlign: 'center' }}>{actionsLabel}</th>
+            {showActions && <th style={{ width: actionsWidth, textAlign: 'center' }}>{actionsLabel}</th>}
           </tr>
         </thead>
 
@@ -99,7 +100,7 @@ export function LeadsTable({
             ? rows.map(renderRow)
             : (
               <tr>
-                <td colSpan={columns.length + 1} style={{ textAlign: 'center', padding: '8px' }}>
+                <td colSpan={columns.length + (showActions ? 1 : 0)} style={{ textAlign: 'center', padding: '8px' }}>
                   {emptyMessage}
                 </td>
               </tr>

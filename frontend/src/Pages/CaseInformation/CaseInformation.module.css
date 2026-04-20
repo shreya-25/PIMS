@@ -119,6 +119,42 @@
   color: #fca5a5;
   border-color: #fca5a5;
   cursor: not-allowed;
+  background: #fff;
+}
+
+.close-case-btn:disabled:hover {
+  background: #fff;
+}
+
+/* ─── Reopen Case button ──────────────────────────────────────────────────── */
+.reopen-case-btn {
+  padding: 6px 16px;
+  background: #fff;
+  color: #16a34a;
+  border: 1.5px solid #16a34a;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.reopen-case-btn:hover {
+  background: #dcfce7;
+}
+
+.reopen-case-btn:disabled {
+  color: #86efac;
+  border-color: #86efac;
+  cursor: not-allowed;
+  background: #fff;
+}
+
+.reopen-case-btn:disabled:hover {
+  background: #fff;
 }
 
 /* ─── Edit button (white + border, pushed right via margin-left: auto) ── */

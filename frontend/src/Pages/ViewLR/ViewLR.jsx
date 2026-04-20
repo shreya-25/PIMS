@@ -45,10 +45,8 @@ export const ViewLR = () => {
   const [pictures, setPictures] = useState([]);
   const [audio, setAudio] = useState([]);
   const [videos, setVideos] = useState([]);
-  const [notes, setNotes] = useState([]);
   const [timeline, setTimeline] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [openPerson, setOpenPerson] = useState(null);
   const [openVehicle, setOpenVehicle] = useState(null);
   const [showComments, setShowComments] = useState(true);
@@ -154,97 +152,6 @@ const submitDisabledReason = isClosedOrCompleted
     navigate(route); // Navigate to respective page
   };
 
-  const attachFiles = async (items, idFieldName, filesEndpoint) => {
-    const token = localStorage.getItem("token");
-    return Promise.all(
-      (items || []).map(async (item) => {
-        const realId = item[idFieldName];
-        if (!realId) return { ...item, files: [] };
-        try {
-          const { data: filesArray } = await api.get(
-            `${filesEndpoint}/${realId}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          return { ...item, files: filesArray };
-        } catch {
-          return { ...item, files: [] };
-        }
-      })
-    );
-  };
-
-  const handleManageLeadReturn = async () => {
-    if (isGenerating) return;
-    // Guard: don't generate if lead data failed to load (backend was down or data missing)
-    if (!instructions || !instructions.leadNo) {
-      setAlertMessage("Lead data has not loaded yet. Please wait a moment and try again, or refresh the page.");
-      setAlertOpen(true);
-      return;
-    }
-    try {
-      setIsGenerating(true);
-      const token = localStorage.getItem("token");
-
-      const [enclosuresWithFiles, evidenceWithFiles, picturesWithFiles, audioWithFiles, videosWithFiles] =
-        await Promise.all([
-          attachFiles(enclosures, "_id", "/api/lrenclosures/files"),
-          attachFiles(evidence,   "_id", "/api/lrevidences/files"),
-          attachFiles(pictures,   "pictureId", "/api/lrpictures/files"),
-          attachFiles(audio,      "audioId",   "/api/lraudio/files"),
-          attachFiles(videos,     "videoId",   "/api/lrvideo/files"),
-        ]);
-
-      const selectedReports = {
-        FullReport: true, leadInstruction: true, leadReturn: true,
-        leadPersons: true, leadVehicles: true, leadEnclosures: true,
-        leadEvidence: true, leadPictures: true, leadAudio: true,
-        leadVideos: true, leadScratchpad: true, leadTimeline: true,
-      };
-
-      const body = {
-        user: currentUser || "",
-        reportTimestamp: new Date().toISOString(),
-        leadInstruction: instructions,
-        leadReturn:      returns,
-        leadReturns:     returns,
-        leadInstructions: instructions,
-        leadPersons:     persons,
-        leadVehicles:    vehicles,
-        leadEnclosures:  enclosuresWithFiles,
-        leadEvidence:    evidenceWithFiles,
-        leadPictures:    picturesWithFiles,
-        leadAudio:       audioWithFiles,
-        leadVideos:      videosWithFiles,
-        leadScratchpad:  notes,
-        leadTimeline:    timeline,
-        selectedReports,
-      };
-
-      const resp = await api.post("/api/report/generate", body, {
-        responseType: "blob",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      navigate("/DocumentReview", {
-        state: {
-          pdfBlob: new Blob([resp.data], { type: "application/pdf" }),
-          filename: `Lead_${leadNo || "report"}.pdf`,
-        },
-      });
-    } catch (err) {
-      if (err?.response?.data instanceof Blob) {
-        const text = await err.response.data.text();
-        setAlertMessage("Error generating PDF:\n" + text);
-      } else {
-        setAlertMessage("Error generating PDF:\n" + (err.message || "Unknown error"));
-      }
-      setAlertOpen(true);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-
   // -------- fetch all sections (same endpoints you already use) --------
   useEffect(() => {
     let caseId = selectedCase?._id || selectedCase?.id || location.state?.caseDetails?._id || location.state?.caseDetails?.id;
@@ -283,7 +190,6 @@ const submitDisabledReason = isClosedOrCompleted
           picturesRes,
           audioRes,
           videosRes,
-          notesRes,
           timelineRes,
         ] = await Promise.all([
           api.get(`/api/lead/lead/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
@@ -295,7 +201,6 @@ const submitDisabledReason = isClosedOrCompleted
           api.get(`/api/lrpicture/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
           api.get(`/api/lraudio/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
           api.get(`/api/lrvideo/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
-          api.get(`/api/scratchpad/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
           api.get(`/api/timeline/${leadNo}/${encLead}/${caseId}`, headers).catch(() => ({ data: [] })),
         ]);
 
@@ -319,7 +224,6 @@ const submitDisabledReason = isClosedOrCompleted
         setPictures(picturesRes.data || []);
         setAudio(audioRes.data || []);
         setVideos(videosRes.data || []);
-        setNotes(notesRes.data || []);
         setTimeline(timelineRes.data || []);
       } finally {
         setLoading(false);
@@ -558,9 +462,12 @@ const actuallyDoSubmitReport = async () => {
           {isCaseManager && (
             <span
               className={styles.menuItem}
-              onClick={handleManageLeadReturn}
-              title={isGenerating ? "Preparing report…" : "Manage Lead Return"}
-              style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
+              onClick={() => {
+                const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                if (lead && kase) navigate("/ManageLeadReturn", { state: { caseDetails: kase, leadDetails: lead } });
+              }}
+              title="Manage Lead Return"
             >
               Manage Lead Return
             </span>
@@ -631,7 +538,7 @@ const actuallyDoSubmitReport = async () => {
                                      <span className="sep">{" >> "}</span>
                                      <span className="crumb-current" aria-current="page">Review Lead Return</span>
                                    </div> */}
-                                     Lead Return Review
+                                     Review Lead Return
                                    </div>
           <div>
               <button

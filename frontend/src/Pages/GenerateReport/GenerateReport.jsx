@@ -90,6 +90,8 @@ const openInNewTab = (url) => window.open(url, "_blank", "noopener,noreferrer");
 
 // Check if a lead's status is "deleted"
 const isDeletedStatus = (s) => String(s ?? "").trim().toLowerCase() === "deleted";
+// Check if a lead's status is "closed"
+const isClosedStatus = (s) => String(s ?? "").trim().toLowerCase() === "closed";
 
 // Build ordered list of unique leads from timeline entries (ascending)
 const buildTimelineOrderedLeads = (entries, allLeads) => {
@@ -1220,11 +1222,13 @@ export const GenerateReport = () => {
 
   const renderLeads = (leadsArray) => (leadsArray || []).map((lead, leadIndex) => {
     const isDeleted     = isDeletedStatus(lead?.leadStatus);
+    const isClosed      = isClosedStatus(lead?.leadStatus);
     const deletedReason = lead?.deletedReason || lead?.deletedReasonText || lead?.deleteReason || lead?.reason || "";
+    const closedReason  = lead?.closedReason  || lead?.closeReason  || lead?.reason || "";
     return (
       <div
         key={leadIndex}
-        className={`${styles['lead-section']} ${isDeleted ? styles['is-deleted'] : ''}`}
+        className={`${styles['lead-section']} ${isDeleted ? styles['is-deleted'] : ''} ${isClosed ? styles['is-closed'] : ''}`}
         onClick={(e) => handleLeadCardClick(e, lead)}
       >
         <div className={styles['leads-container']}>
@@ -1268,6 +1272,12 @@ export const GenerateReport = () => {
                   <td><input type="text" value={deletedReason || "N/A"} readOnly className={styles['instruction-input']} /></td>
                 </tr>
               )}
+              {isClosed && (
+                <tr className={styles['closed-row']}>
+                  <td style={{ textAlign: "center", fontSize: "18px" }} className={styles['label-cell']}>Closed Reason</td>
+                  <td><input type="text" value={closedReason || "N/A"} readOnly className={styles['instruction-input']} /></td>
+                </tr>
+              )}
               {Array.isArray(lead.leadReturns) && lead.leadReturns.length > 0 ? (
                 lead.leadReturns.map((returnItem, ri) => renderReturnItem(returnItem, ri, lead))
               ) : (
@@ -1285,7 +1295,9 @@ export const GenerateReport = () => {
 
   const renderReopenedLeads = (leadsArray) => (leadsArray || []).map((lead, leadIndex) => {
     const isDeleted     = isDeletedStatus(lead?.leadStatus);
+    const isClosed      = isClosedStatus(lead?.leadStatus);
     const deletedReason = lead?.deletedReason || lead?.deletedReasonText || lead?.deleteReason || lead?.reason || "";
+    const closedReason  = lead?.closedReason  || lead?.closeReason  || lead?.reason || "";
 
     const preReopenKeys = new Set(
       (lead.preReopenReturns || []).map(r => String(lrKeyFor(r) || "")).filter(Boolean)
@@ -1299,7 +1311,7 @@ export const GenerateReport = () => {
     return (
       <div
         key={leadIndex}
-        className={`${styles['lead-section']} ${isDeleted ? styles['is-deleted'] : ''}`}
+        className={`${styles['lead-section']} ${isDeleted ? styles['is-deleted'] : ''} ${isClosed ? styles['is-closed'] : ''}`}
         onClick={(e) => handleLeadCardClick(e, lead)}
       >
         <div className={styles['leads-container']}>
@@ -1344,6 +1356,12 @@ export const GenerateReport = () => {
                 <tr className={styles['deleted-row']}>
                   <td style={{ textAlign: "center", fontSize: "18px" }} className={styles['label-cell']}>Deleted Reason</td>
                   <td><input type="text" value={deletedReason || "N/A"} readOnly className={styles['instruction-input']} /></td>
+                </tr>
+              )}
+              {isClosed && (
+                <tr className={styles['closed-row']}>
+                  <td style={{ textAlign: "center", fontSize: "18px" }} className={styles['label-cell']}>Closed Reason</td>
+                  <td><input type="text" value={closedReason || "N/A"} readOnly className={styles['instruction-input']} /></td>
                 </tr>
               )}
             </tbody>

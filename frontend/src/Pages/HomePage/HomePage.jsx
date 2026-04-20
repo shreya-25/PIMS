@@ -104,6 +104,8 @@ export const HomePage = () => {
       role = "Case Manager";
     } else if (Array.isArray(c.investigatorUserIds) && c.investigatorUserIds.some(matchUser)) {
       role = "Investigator";
+    } else if (Array.isArray(c.readOnlyUserIds) && c.readOnlyUserIds.some(matchUser)) {
+      role = "Read Only";
     } else if (sysRole === ROLES.ADMIN) {
       role = "Case Manager";
     } else if (isDetectiveSupervisor(sysRole)) {
@@ -220,7 +222,8 @@ export const HomePage = () => {
             // Case Managers and Investigators only see cases they are assigned to
             const isCM = Array.isArray(c.caseManagerUserIds) && c.caseManagerUserIds.some(matchUser);
             const isInv = Array.isArray(c.investigatorUserIds) && c.investigatorUserIds.some(matchUser);
-            return isCM || isInv;
+            const isRO = Array.isArray(c.readOnlyUserIds) && c.readOnlyUserIds.some(matchUser);
+            return isCM || isInv || isRO;
           })
           .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
           .map((c) => mapCaseForOfficer(c, signedInOfficer, signedInUserId, isAdmin ? ROLES.ADMIN : treatAsDSLocal ? ROLES.DETECTIVE_SUPERVISOR : systemRole));
@@ -480,8 +483,8 @@ export const HomePage = () => {
     };
     setSelectedCase(caseObj);
 
-    if (caseDetails.role === "Investigator") {
-      localStorage.setItem("role", "Investigator");
+    if (caseDetails.role === "Investigator" || caseDetails.role === "Read Only") {
+      localStorage.setItem("role", caseDetails.role);
       navigate("/Investigator", { state: { caseDetails } });
     } else if (
       caseDetails.role === "Case Manager" ||
@@ -575,6 +578,14 @@ export const HomePage = () => {
   // Add a newly created case to local state (avoids duplicates)
   const addCase = (serverCase) => {
     if (serverCase.status !== "ONGOING") return;
+    // Admins and Detective Supervisors see all cases
+    if (isAdmin || treatAsDS) {
+      const roleForMap = isAdmin ? ROLES.ADMIN : ROLES.DETECTIVE_SUPERVISOR;
+      const mapped = mapCaseForOfficer(serverCase, signedInOfficer, signedInUserId, roleForMap);
+      setCases((prev) => [mapped, ...prev.filter((c) => c.id !== mapped.id)]);
+      return;
+    }
+    // Other roles only see cases they are assigned to
     const name = signedInOfficer?.toLowerCase?.() ?? "";
     const uid  = signedInUserId ?? "";
     const matchUser = (u) =>

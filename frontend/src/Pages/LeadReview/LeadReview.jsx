@@ -43,6 +43,7 @@ export const LeadReview = () => {
 
   const [deleteOpen, setDeleteOpen] = useState(false);
 const [deleteReason, setDeleteReason] = useState("");
+const [showCloseLeadModal, setShowCloseLeadModal] = useState(false);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 const [confirmTitle, setConfirmTitle] = useState("Confirm");
@@ -151,6 +152,65 @@ const DELETE_REASON_CHIPS = [
   "Merged with another lead",
   "Case closed",
 ];
+
+const CLOSE_REASON_CHIPS = [
+  "Investigation completed - all leads exhausted",
+  "Insufficient evidence to proceed",
+  "Case resolved through other means",
+  "Duplicate of another lead",
+  "No longer relevant to case objectives",
+];
+
+const CloseReasonModal = memo(function CloseReasonModal({ open, onCancel, onSubmit }) {
+  const [text, setText] = useState("");
+  useEffect(() => { if (open) setText(""); }, [open]);
+  if (!open) return null;
+  const canSubmit = (text || "").trim().length >= 5;
+  const body = (
+    <div className={styles.modalBackdrop} onClick={onCancel}>
+      <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <h3 className={styles.modalTitle}>Close Lead</h3>
+          <button onClick={onCancel} aria-label="Close" className={styles.modalClose}>✕</button>
+        </div>
+        <div className={styles.modalBody}>
+          <div className={styles.modalSubtitle}>Please provide a reason for closing</div>
+          <div className={styles.chipGroup}>
+            {CLOSE_REASON_CHIPS.map((chip) => {
+              const active = text === chip;
+              return (
+                <button
+                  key={chip}
+                  onClick={() => setText(active ? "" : chip)}
+                  className={`${styles.chip} ${active ? styles.chipActive : ""}`}
+                >
+                  {chip}
+                </button>
+              );
+            })}
+          </div>
+          <textarea
+            className={styles.modalTextarea}
+            placeholder="Type a brief reason for closing this lead (required)…"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+          <div className={styles.modalActions}>
+            <button onClick={onCancel} className={styles.modalCancelBtn}>Cancel</button>
+            <button
+              onClick={() => { const r = text.trim(); if (r.length >= 5) onSubmit(r); }}
+              disabled={!canSubmit}
+              className={`${styles.modalDeleteBtn} ${!canSubmit ? styles.modalDeleteBtnDisabled : ""}`}
+            >
+              Close Lead
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+  return createPortal(body, document.getElementById("modal-root") || document.body);
+});
 
 const DeleteReasonModal = memo(function DeleteReasonModal({ open, onCancel, onSubmit }) {
   const [text, setText] = useState("");
@@ -1251,8 +1311,8 @@ useEffect(() => {
       const token = localStorage.getItem("token");
       // use the route your backend exposes; adjust if different
       const { data } = await api.get(
-        `/api/cases/${selectedCase.caseNo}/subCategories`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        `/api/cases/${selectedCase._id || selectedCase.id}/subCategories`,
+        { headers: { Authorization: `Bearer ${token}` }, suppressGlobalError: true }
       );
       // normalize + dedupe
       const subs = Array.from(new Set(data?.subCategories || []));
@@ -1951,6 +2011,40 @@ const submitDeleteWithReason = async (reason) => {
   }
 };
 
+const handleCloseLead = async (reason) => {
+  const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+  const kase = selectedCase?._id || selectedCase?.id ? selectedCase : location.state?.caseDetails;
+  const kaseId = kase?._id || kase?.id;
+
+  setShowCloseLeadModal(false);
+
+  try {
+    setLoading(true);
+    const token = localStorage.getItem("token");
+    await api.put(
+      `/api/lead/lead/status/close`,
+      {
+        leadNo:      lead.leadNo,
+        description: lead.leadName || lead.description,
+        caseId:      kaseId,
+        reason,
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    setLeadStatus("Closed");
+    setSelectedLead((prev) => ({ ...prev, leadStatus: "Closed" }));
+
+    const route = selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager";
+    navigate(route, { state: { caseDetails: kase } });
+  } catch (err) {
+    console.error("Close lead failed:", err?.response?.data || err);
+    setAlertMessage("Failed to close lead. Please try again.");
+    setAlertOpen(true);
+  } finally {
+    setLoading(false);
+  }
+};
+
 const assignmentHoverText = React.useMemo(() => {
   const list = normalizeAssignedTo(leadData?.assignedTo);
   if (!list.length) return "No officers assigned.";
@@ -1992,6 +2086,12 @@ const assignmentHoverText = React.useMemo(() => {
   open={deleteOpen}
   onCancel={() => setDeleteOpen(false)}
   onSubmit={submitDeleteWithReason}
+/>
+
+<CloseReasonModal
+  open={showCloseLeadModal}
+  onCancel={() => setShowCloseLeadModal(false)}
+  onSubmit={handleCloseLead}
 />
 
             <AlertModal
@@ -2074,9 +2174,12 @@ const assignmentHoverText = React.useMemo(() => {
                   {!isReadOnly && (["Case Manager", "Detective Supervisor"].includes(selectedCase?.role)) && (
                     <span
                       className={styles.menuItem}
-                      onClick={handleViewLeadReturn}
-                      title={isGenerating ? "Preparing report…" : "View Lead Return"}
-                      style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? "none" : "auto" }}
+                      onClick={() => {
+                        const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                        const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                        if (lead && kase) navigate("/ManageLeadReturn", { state: { caseDetails: kase, leadDetails: lead } });
+                      }}
+                      title="Manage Lead Return"
                     >
                       Manage Lead Return
                     </span>
@@ -2195,9 +2298,9 @@ const assignmentHoverText = React.useMemo(() => {
                 </h1>
               </div>
               {(selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor") && (
-                <button className={styles.deleteBtn} onClick={handleDeleteLead} title="Delete this lead">
-                  <span className={styles.deleteBtnIcon}>🗑</span>
-                  Delete Lead
+                <button className={styles.deleteBtn} onClick={() => setShowCloseLeadModal(true)} title="Close this lead">
+                  <span className={styles.deleteBtnIcon}>✕</span>
+                  Close Lead
                 </button>
               )}
             </div>

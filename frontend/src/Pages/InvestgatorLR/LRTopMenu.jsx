@@ -5,19 +5,15 @@ import { useNavigate, useLocation } from 'react-router-dom';
  * Shared top-level navigation bar for all LR-related pages.
  *
  * Props:
- *   activePage            – 'leadInfo' | 'addLeadReturn' | 'chainOfCustody'
- *   selectedCase          – case context object
- *   selectedLead          – lead context object
- *   isGenerating          – boolean (PDF being generated)
- *   onManageLeadReturn    – handler that generates & opens the PDF report
- *   styles                – CSS module from the consuming page
+ *   activePage   – 'leadInfo' | 'addLeadReturn' | 'manageLeadReturn' | 'chainOfCustody'
+ *   selectedCase – case context object
+ *   selectedLead – lead context object
+ *   styles       – CSS module from the consuming page
  */
 export const LRTopMenu = ({
   activePage,
   selectedCase,
   selectedLead,
-  isGenerating = false,
-  onManageLeadReturn,
   styles,
 }) => {
   const navigate = useNavigate();
@@ -58,10 +54,9 @@ export const LRTopMenu = ({
 
         {isCaseManager && (
           <span
-            className={styles.menuItem}
-            onClick={isGenerating ? undefined : onManageLeadReturn}
-            title={isGenerating ? 'Preparing report…' : 'Manage Lead Return'}
-            style={{ opacity: isGenerating ? 0.6 : 1, pointerEvents: isGenerating ? 'none' : 'auto' }}
+            className={`${styles.menuItem}${isActive('manageLeadReturn') ? ` ${styles.menuItemActive}` : ''}`}
+            onClick={!isActive('manageLeadReturn') ? () => goTo('/ManageLeadReturn') : undefined}
+            title="Manage Lead Return"
           >
             Manage Lead Return
           </span>

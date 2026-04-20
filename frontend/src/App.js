@@ -32,10 +32,12 @@ import { FlaggedLead } from './Pages/FlaggedLead/FlaggedLead';
 import { SearchLead } from './Pages/SearchLead/SearchLead';
 import { ViewTimeline } from './Pages/ViewTimeline/ViewTimeline';
 import { ViewLR } from './Pages/ViewLR/ViewLR';
+import { ManageLeadReturn } from './Pages/ManageLeadReturn/ManageLeadReturn';
 import { AdminUR } from './Pages/Admin/AdminUR';
 import { AdminUserList } from './Pages/Admin/AdminUserList';
 import { AdminAgencies } from './Pages/Admin/AdminAgencies';
 import { AdminCM } from './Pages/Admin/AdminCM';
+import { AdminTeam } from './Pages/Admin/AdminTeam';
 import {LeadReview} from './Pages/LeadReview/LeadReview';
 import { LeadsDesk } from './Pages/LeadsDesk/LeadsDesk';
 import { ChainOfCustody } from './Pages/ChainOfCustody/ChainOfCustody';
@@ -108,7 +110,9 @@ const { showExpiryWarning, dismissWarning } = useTokenExpiryRedirect(token);
         <Route path="/AdminUserList" element={<ProtectedLayout> <AdminUserList /> </ProtectedLayout>} />
         <Route path="/AdminAgencies" element={<ProtectedLayout> <AdminAgencies /> </ProtectedLayout>} />
         <Route path="/AdminCM" element={<ProtectedLayout> <AdminCM /> </ProtectedLayout>} />
+        <Route path="/AdminTeam" element={<ProtectedLayout> <AdminTeam /> </ProtectedLayout>} />
         <Route path="/ViewLR" element={<ProtectedLayout> <ViewLR /> </ProtectedLayout>} />
+        <Route path="/ManageLeadReturn" element={<ProtectedLayout> <ManageLeadReturn /> </ProtectedLayout>} />
         <Route path="/LeadReview" element = {<ProtectedLayout> <LeadReview /> </ProtectedLayout> } />
         <Route path="/LeadsDesk" element= {<ProtectedLayout>  <LeadsDesk /> </ProtectedLayout> } />
         <Route path="/LeadsDeskTestExecSummary" element= {<ProtectedLayout>  <GenerateReport /> </ProtectedLayout> } />

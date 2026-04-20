@@ -152,11 +152,30 @@ exports.createCase = async (req, res) => {
 // };
 exports.getAllCases = async (req, res) => {
   try {
-    const cases = await Case.find({ isDeleted: { $ne: true } })
+    const { userId, role } = req.user;
+
+    // Admins and Detective Supervisors (system-level) see all cases
+    const isPrivileged = role === "Admin" || role === "Detective Supervisor";
+
+    const query = { isDeleted: { $ne: true } };
+
+    if (!isPrivileged && userId) {
+      const uid = new mongoose.Types.ObjectId(userId);
+      query.$or = [
+        { caseManagerUserIds: uid },
+        { detectiveSupervisorUserId: uid },
+        { detectiveSupervisorUserIds: uid },
+        { investigatorUserIds: uid },
+        { readOnlyUserIds: uid },
+      ];
+    }
+
+    const cases = await Case.find(query)
       .populate("caseManagerUserIds", "username firstName lastName displayName title")
       .populate("detectiveSupervisorUserId", "username firstName lastName displayName title")
       .populate("detectiveSupervisorUserIds", "username firstName lastName displayName title")
       .populate("investigatorUserIds", "username firstName lastName displayName title")
+      .populate("readOnlyUserIds", "username firstName lastName displayName title")
       .populate("createdByUserId", "username firstName lastName displayName")
       .lean();
 
@@ -244,7 +263,7 @@ exports.getCasesByOfficer = async (req, res) => {
       .lean();
 
     if (!cases || cases.length === 0) {
-      return res.status(404).json({ message: "No cases assigned to this officer" });
+      return res.status(200).json([]);
     }
 
     // Format response to include the officer's role per case
@@ -442,6 +461,30 @@ exports.closeCase = async (req, res) => {
     return res.status(200).json({ message: "Case closed successfully", data: updated });
   } catch (err) {
     console.error("Error closing case:", err);
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+exports.reopenCase = async (req, res) => {
+  try {
+    const { caseNo } = req.params;
+    if (!caseNo) {
+      return res.status(400).json({ message: "caseNo is required" });
+    }
+
+    const updated = await Case.findOneAndUpdate(
+      { caseNo },
+      { status: "ONGOING", $unset: { archivedAt: "" } },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Case not found" });
+    }
+
+    return res.status(200).json({ message: "Case reopened successfully", data: updated });
+  } catch (err) {
+    console.error("Error reopening case:", err);
     return res.status(500).json({ message: "Server error", error: err.message });
   }
 };

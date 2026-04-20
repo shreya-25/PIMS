@@ -342,6 +342,14 @@
   background-color: #fff0f0;
 }
 
+.is-closed {
+  opacity: 0.7;
+}
+
+.closed-row td {
+  background-color: #fff5f5;
+}
+
 .leads-container {
   padding: 15px;
   background-color: rgba(41, 41, 139, 0.034);

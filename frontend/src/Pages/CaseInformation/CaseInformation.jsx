@@ -257,11 +257,30 @@ export const CaseInformation = () => {
     setClosingCase(true);
     try {
       await api.put(`/api/cases/${caseNo}/close`);
+      setCaseDoc((prev) => ({ ...prev, status: 'COMPLETED' }));
       setSelectedCase((prev) => ({ ...prev, status: 'COMPLETED' }));
     } catch (err) {
       showAlert(err?.response?.data?.message || 'Failed to close case.');
     } finally {
       setClosingCase(false);
+    }
+  };
+
+  // ── Reopen case confirmation ──────────────────────────────────────────────
+  const [confirmReopenOpen, setConfirmReopenOpen] = useState(false);
+  const [reopeningCase, setReopeningCase] = useState(false);
+
+  const handleReopenCase = async () => {
+    setConfirmReopenOpen(false);
+    setReopeningCase(true);
+    try {
+      await api.put(`/api/cases/${caseNo}/reopen`);
+      setCaseDoc((prev) => ({ ...prev, status: 'ONGOING' }));
+      setSelectedCase((prev) => ({ ...prev, status: 'ONGOING' }));
+    } catch (err) {
+      showAlert(err?.response?.data?.message || 'Failed to reopen case.');
+    } finally {
+      setReopeningCase(false);
     }
   };
 
@@ -670,9 +689,17 @@ export const CaseInformation = () => {
           <div className={styles['ci-card']}>
             <div className={styles['ci-card-header']}>
               <h3>Case #{caseNo}: {caseName}</h3>
-              <span className={`${styles.chip} ${styles['chip-status']} ${styles[(selectedCase?.status || 'ongoing').toLowerCase()]}`}>
-                {selectedCase?.status || 'ONGOING'}
-              </span>
+              {(() => {
+                const st = caseDoc?.status || selectedCase?.status || 'ONGOING';
+                const isCompleted = st === 'COMPLETED';
+                const cssKey = isCompleted ? 'archived' : st.toLowerCase();
+                const label  = isCompleted ? 'ARCHIVED' : st;
+                return (
+                  <span className={`${styles.chip} ${styles['chip-status']} ${styles[cssKey]}`}>
+                    {label}
+                  </span>
+                );
+              })()}
             </div>
             <div className={styles['ci-card-counters']}>
               <span className={`${styles.counter} ${styles.base}`}>Leads {leads.length}</span>
@@ -693,15 +720,54 @@ export const CaseInformation = () => {
                   Edit Case
                 </button>
               )}
-              {isDS && (selectedCase?.status || 'ONGOING') === 'ONGOING' && (
-                <button
-                  className={styles['close-case-btn']}
-                  onClick={() => setConfirmCloseOpen(true)}
-                  disabled={closingCase}
-                >
-                  {closingCase ? 'Closing…' : 'Close Case'}
-                </button>
-              )}
+              {(() => {
+                const caseStatus = caseDoc?.status || selectedCase?.status || 'ONGOING';
+                const isOngoing = caseStatus === 'ONGOING';
+
+                // ── Close Case button (visible to all roles) ──────────────
+                let closeDisabled = closingCase;
+                let closeTitle = '';
+                if (!isDS) {
+                  closeDisabled = true;
+                  closeTitle = role === 'Case Manager'
+                    ? 'Case Managers cannot close cases — only Detective Supervisors and Admins can'
+                    : role === 'Investigator'
+                    ? 'Investigators cannot close cases — only Detective Supervisors and Admins can'
+                    : 'Only Detective Supervisors and Admins can close cases';
+                } else if (!isOngoing) {
+                  closeDisabled = true;
+                  closeTitle = 'Case is already closed';
+                }
+
+                // ── Reopen Case button (visible to DS/Admin only) ─────────
+                const reopenDisabled = reopeningCase || isOngoing;
+                const reopenTitle = isOngoing
+                  ? 'Case is still ongoing — close it first before reopening'
+                  : '';
+
+                return (
+                  <>
+                    <button
+                      className={styles['close-case-btn']}
+                      onClick={() => { if (!closeDisabled) setConfirmCloseOpen(true); }}
+                      disabled={closeDisabled}
+                      title={closeTitle}
+                    >
+                      {closingCase ? 'Closing…' : 'Close Case'}
+                    </button>
+                    {isDS && (
+                      <button
+                        className={styles['reopen-case-btn']}
+                        onClick={() => { if (!reopenDisabled) setConfirmReopenOpen(true); }}
+                        disabled={reopenDisabled}
+                        title={reopenTitle}
+                      >
+                        {reopeningCase ? 'Reopening…' : 'Reopen Case'}
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
 
@@ -1088,6 +1154,13 @@ export const CaseInformation = () => {
         message={`Are you sure you want to close case "${caseNo} — ${caseName}"? This will mark it as COMPLETED.`}
         onConfirm={handleCloseCase}
         onClose={() => setConfirmCloseOpen(false)}
+      />
+      <AlertModal
+        isOpen={confirmReopenOpen}
+        title="Reopen Case"
+        message={`Are you sure you want to reopen case "${caseNo} — ${caseName}"? This will mark it as ONGOING again.`}
+        onConfirm={handleReopenCase}
+        onClose={() => setConfirmReopenOpen(false)}
       />
     </div>
   );
