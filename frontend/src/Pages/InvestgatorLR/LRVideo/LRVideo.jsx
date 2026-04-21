@@ -560,7 +560,7 @@ export const LRVideo = () => {
                 className={styles.menuItem}
                 onClick={() => navigate('/viewLR', { state: { caseDetails: selectedCase, leadDetails: selectedLead } })}
                 >
-                  Submit
+                  Finish
                 </span>
             </div>
           </div>

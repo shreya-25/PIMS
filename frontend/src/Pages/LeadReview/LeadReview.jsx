@@ -171,7 +171,7 @@ const CloseReasonModal = memo(function CloseReasonModal({ open, onCancel, onSubm
       <div className={styles.modalBox} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h3 className={styles.modalTitle}>Close Lead</h3>
-          <button onClick={onCancel} aria-label="Close" className={styles.modalClose}>✕</button>
+          <button onClick={onCancel} aria-label="Close" className={styles.modalClose}></button>
         </div>
         <div className={styles.modalBody}>
           <div className={styles.modalSubtitle}>Please provide a reason for closing</div>
@@ -2299,7 +2299,6 @@ const assignmentHoverText = React.useMemo(() => {
               </div>
               {(selectedCase?.role === "Case Manager" || selectedCase?.role === "Detective Supervisor") && (
                 <button className={styles.deleteBtn} onClick={() => setShowCloseLeadModal(true)} title="Close this lead">
-                  <span className={styles.deleteBtnIcon}>✕</span>
                   Close Lead
                 </button>
               )}

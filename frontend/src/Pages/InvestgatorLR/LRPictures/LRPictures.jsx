@@ -641,7 +641,7 @@ export const LRPictures = () => {
                 className={styles.menuItem}
                 onClick={() => navigate('/viewLR', { state: { caseDetails: selectedCase, leadDetails: selectedLead } })}
                 >
-                  Submit
+                  Finish
                 </span>
             </div>
           </div>

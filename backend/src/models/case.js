@@ -67,6 +67,15 @@ const caseSchema = new mongoose.Schema(
       },
     ],
 
+    // Users whose access has been revoked by admin — they remain in the role arrays
+    // but cannot open the case or view its leads.
+    blockedUserIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+
     createdByUserId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

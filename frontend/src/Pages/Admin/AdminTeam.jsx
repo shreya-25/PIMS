@@ -58,13 +58,18 @@ const USER_ROLE_FILTER = {
   detectiveSupervisors: (u) => u.role === "Detective Supervisor",
   caseManagers:         (u) => u.role === "CaseManager",
   investigators:        (u) => u.role === "CaseManager" || u.role === "Detective/Investigator",
-  readOnly:             (u) => u.role === "Read Only",
+  // Admin can grant read-only access to any officer regardless of system role
+  readOnly:             (u) => u.role !== "Admin",
 };
+
+// Roles the admin cannot add new members to (but CAN remove existing members)
+const NO_ADD_ROLES = new Set(["detectiveSupervisors", "caseManagers", "investigators"]);
 
 // ─── Team Management Modal ─────────────────────────────────────────────────────
 
 const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
   const [team, setTeam]       = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [], readOnly: [] });
+  const [blocked, setBlocked] = useState(new Set()); // usernames whose access is revoked
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [search, setSearch]   = useState({ detectiveSupervisors: "", caseManagers: "", investigators: "", readOnly: "" });
@@ -85,6 +90,7 @@ const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
           investigators:        data.investigators || [],
           readOnly:             data.readOnly || [],
         });
+        setBlocked(new Set(data.blocked || []));
       } catch {
         setAlertMsg("Failed to load team data.");
       } finally {
@@ -107,8 +113,14 @@ const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const revoke = (roleKey, username) => {
-    setTeam((prev) => ({ ...prev, [roleKey]: prev[roleKey].filter((u) => u !== username) }));
+  // Toggle block: officer stays in team but access is revoked / restored
+  const toggleBlock = (username) => {
+    setBlocked((prev) => {
+      const next = new Set(prev);
+      if (next.has(username)) next.delete(username);
+      else next.add(username);
+      return next;
+    });
   };
 
   const add = (roleKey, username) => {
@@ -116,6 +128,8 @@ const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
       if (prev[roleKey].includes(username)) return prev;
       return { ...prev, [roleKey]: [...prev[roleKey], username] };
     });
+    // Adding a previously blocked user restores their access
+    setBlocked((prev) => { const next = new Set(prev); next.delete(username); return next; });
     setDropOpen((prev) => ({ ...prev, [roleKey]: false }));
     setSearch((prev) => ({ ...prev, [roleKey]: "" }));
   };
@@ -125,14 +139,14 @@ const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
     try {
       const token = localStorage.getItem("token");
       const officers = [
-        ...team.detectiveSupervisors.map((u) => ({ name: u, role: "Detective Supervisor", status: "accepted" })),
-        ...team.caseManagers.map((u)         => ({ name: u, role: "Case Manager",         status: "accepted" })),
-        ...team.investigators.map((u)         => ({ name: u, role: "Investigator",         status: "pending"  })),
-        ...team.readOnly.map((u)              => ({ name: u, role: "Read Only",            status: "accepted" })),
+        ...team.detectiveSupervisors.map((u) => ({ name: u, role: "Detective Supervisor" })),
+        ...team.caseManagers.map((u)          => ({ name: u, role: "Case Manager"        })),
+        ...team.investigators.map((u)          => ({ name: u, role: "Investigator"        })),
+        ...team.readOnly.map((u)               => ({ name: u, role: "Read Only"           })),
       ];
       await api.put(
         `/api/cases/${caseData.caseNo}/${encodeURIComponent(caseData.caseName)}/officers`,
-        { officers },
+        { officers, blockedUsernames: [...blocked] },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       onSaved(caseData.caseNo, team);
@@ -163,7 +177,7 @@ const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
         <div className={styles.modalHeader}>
           <div>
             <div className={styles.modalTitle}>Manage Team</div>
-            <div className={styles.modalSub}>{caseData.caseNo} — {caseData.caseName}</div>
+            <div className={styles.modalSub}>Case #{caseData.caseNo}: {caseData.caseName}</div>
           </div>
           <button className={styles.modalClose} onClick={onClose}>✕</button>
         </div>
@@ -171,83 +185,100 @@ const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
         {loading ? (
           <div className={styles.modalLoading}>Loading team…</div>
         ) : (
-          <div className={styles.modalBody}>
-            {ROLE_KEYS.map((roleKey) => {
-              const eligible = allUsers.filter(USER_ROLE_FILTER[roleKey]);
-              const filtered = eligible.filter((u) => {
-                const q = search[roleKey].toLowerCase();
-                return !q || `${u.firstName} ${u.lastName} ${u.username}`.toLowerCase().includes(q);
-              });
-              const members = team[roleKey];
+          <>
+            <div className={styles.modalBody}>
+              {ROLE_KEYS.map((roleKey) => {
+                const canAdd = !NO_ADD_ROLES.has(roleKey);
+                const eligible = allUsers.filter(USER_ROLE_FILTER[roleKey]);
+                const filtered = eligible.filter((u) => {
+                  const q = search[roleKey].toLowerCase();
+                  return !q || `${u.firstName} ${u.lastName} ${u.username}`.toLowerCase().includes(q);
+                });
+                const members = team[roleKey];
 
-              return (
-                <div key={roleKey} className={styles.roleSection}>
-                  <div className={styles.roleLabel}>{ROLE_LABELS[roleKey]}</div>
+                return (
+                  <div key={roleKey} className={styles.roleSection}>
+                    <div className={styles.roleLabel}>
+                      {ROLE_LABELS[roleKey]}
+                      {!canAdd && (
+                        <span className={styles.viewOnlyBadge}>remove only</span>
+                      )}
+                    </div>
 
-                  {/* Current members */}
-                  <div className={styles.memberList}>
-                    {members.length === 0 ? (
-                      <span className={styles.noMembers}>None assigned</span>
-                    ) : (
-                      members.map((uname) => (
-                        <div key={uname} className={styles.memberChip}>
-                          <span>{resolveDisplay(uname)}</span>
-                          <button
-                            className={styles.revokeBtn}
-                            onClick={() => revoke(roleKey, uname)}
-                            title="Revoke access"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  {/* Add member dropdown */}
-                  <div
-                    className={styles.addDropWrap}
-                    ref={(el) => (dropRefs.current[roleKey] = el)}
-                  >
-                    <button
-                      className={styles.addBtn}
-                      onClick={() => setDropOpen((prev) => ({ ...prev, [roleKey]: !prev[roleKey] }))}
-                    >
-                      + Add {ROLE_LABELS[roleKey].replace(/s$/, "")}
-                    </button>
-                    {dropOpen[roleKey] && (
-                      <div className={styles.addDropdown}>
-                        <input
-                          autoFocus
-                          type="text"
-                          className={styles.addSearch}
-                          placeholder="Search officer…"
-                          value={search[roleKey]}
-                          onChange={(e) => setSearch((prev) => ({ ...prev, [roleKey]: e.target.value }))}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <div className={styles.addList}>
-                          {filtered.length === 0 ? (
-                            <div className={styles.addEmpty}>No matches</div>
-                          ) : (
-                            filtered.map((u) => (
-                              <div
-                                key={u.username}
-                                className={`${styles.addItem} ${members.includes(u.username) ? styles.addItemActive : ""}`}
-                                onClick={() => add(roleKey, u.username)}
+                    {/* Current members — click ✕ to revoke access, click ↺ to restore */}
+                    <div className={styles.memberList}>
+                      {members.length === 0 ? (
+                        <span className={styles.noMembers}>None assigned</span>
+                      ) : (
+                        members.map((uname) => {
+                          const isBlocked = blocked.has(uname);
+                          return (
+                            <div
+                              key={uname}
+                              className={`${styles.memberChip} ${isBlocked ? styles.memberChipBlocked : ""}`}
+                              title={isBlocked ? "Access revoked — click ↺ to restore" : ""}
+                            >
+                              <span>{resolveDisplay(uname)}</span>
+                              <button
+                                className={isBlocked ? styles.restoreBtn : styles.revokeBtn}
+                                onClick={() => toggleBlock(uname)}
+                                title={isBlocked ? "Restore access" : "Revoke access"}
                               >
-                                {fmtUser(u)}
-                                {members.includes(u.username) && <span className={styles.checkMark}>✓</span>}
-                              </div>
-                            ))
-                          )}
-                        </div>
+                                {isBlocked ? "↺" : "✕"}
+                              </button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Add member dropdown — only for investigators and readOnly */}
+                    {canAdd && (
+                      <div
+                        className={styles.addDropWrap}
+                        ref={(el) => (dropRefs.current[roleKey] = el)}
+                      >
+                        <button
+                          className={styles.addBtn}
+                          onClick={() => setDropOpen((prev) => ({ ...prev, [roleKey]: !prev[roleKey] }))}
+                        >
+                          + Add {ROLE_LABELS[roleKey].replace(/s$/, "")}
+                        </button>
+                        {dropOpen[roleKey] && (
+                          <div className={styles.addDropdown}>
+                            <input
+                              autoFocus
+                              type="text"
+                              className={styles.addSearch}
+                              placeholder="Search officer…"
+                              value={search[roleKey]}
+                              onChange={(e) => setSearch((prev) => ({ ...prev, [roleKey]: e.target.value }))}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                            <div className={styles.addList}>
+                              {filtered.length === 0 ? (
+                                <div className={styles.addEmpty}>No matches</div>
+                              ) : (
+                                filtered.map((u) => (
+                                  <div
+                                    key={u.username}
+                                    className={`${styles.addItem} ${members.includes(u.username) ? styles.addItemActive : ""}`}
+                                    onClick={() => add(roleKey, u.username)}
+                                  >
+                                    {fmtUser(u)}
+                                    {members.includes(u.username) && <span className={styles.checkMark}>✓</span>}
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
 
             <div className={styles.modalFooter}>
               <button className={styles.cancelBtn} onClick={onClose}>Cancel</button>
@@ -255,7 +286,7 @@ const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
                 {saving ? "Saving…" : "Save Changes"}
               </button>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>
@@ -437,11 +468,11 @@ export const AdminTeam = () => {
   };
 
   const COL_WIDTHS = {
-    "Case No.":      "13%",
-    "Case Name":     "32%",
-    "Created At":    "14%",
-    "Closed At":     "14%",
-    "Case Managers": "27%",
+    "Case No.":      "12%",
+    "Case Name":     "27%",
+    "Created At":    "12%",
+    "Closed At":     "12%",
+    "Case Managers": "15%",
   };
 
   const tabs = [
@@ -528,7 +559,7 @@ export const AdminTeam = () => {
                               </th>
                             );
                           })}
-                          <th style={{ width: "15%", textAlign: "center" }}>Actions</th>
+                          <th style={{ width: "21%", textAlign: "center" }}>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -550,19 +581,20 @@ export const AdminTeam = () => {
                               <td style={{ textAlign: "center" }}>
                                 <div className={styles["action-btns"]}>
                                   <button
-                                    className={styles["open-case-btn"]}
-                                    onClick={() => handleOpenCase(c)}
-                                  >
-                                    Open Case
-                                  </button>
-                                  <button
                                     className={styles["manage-btn"]}
                                     onClick={() => setManagingCase({ _id: c._id, caseNo: c.caseNo, caseName: c.caseName })}
                                   >
                                     Manage Team
                                   </button>
+                                  <button
+                                    className={styles["open-case-btn"]}
+                                    onClick={() => handleOpenCase(c)}
+                                  >
+                                    Open Case
+                                  </button>
                                 </div>
                               </td>
+
                             </tr>
                           ))
                         )}

@@ -241,6 +241,17 @@ const getLRForCM = async (req, res) => {
 const getLeadsByCase = async (req, res) => {
     try {
       const caseId = await resolveCaseId(req.params.caseId);
+
+      // Block users whose access has been revoked by admin
+      const { userId, role } = req.user || {};
+      if (userId && role !== "Admin") {
+        const uid = new mongoose.Types.ObjectId(userId);
+        const caseDoc = await Case.findById(caseId).select("blockedUserIds").lean();
+        if (caseDoc && (caseDoc.blockedUserIds || []).some(id => id.equals(uid))) {
+          return res.status(403).json({ message: "Your access to this case has been revoked." });
+        }
+      }
+
       const leads = await Lead.find({ caseId }).select("-events").lean();
       res.status(200).json(leads);
     } catch (err) {

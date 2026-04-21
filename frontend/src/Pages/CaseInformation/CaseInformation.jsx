@@ -286,14 +286,12 @@ export const CaseInformation = () => {
 
   // ── Fetch case document ───────────────────────────────────────────────────
   useEffect(() => {
-    if (!caseNo) return;
-    api.get(`/api/cases/${caseNo}`)
-      .then((r) => {
-        // try by caseNo (ID route may return by _id; fallback to team route for name)
-        setCaseDoc(r.data);
-      })
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (!caseId) return;
+    api.get(`/api/cases/${caseId}`)
+      .then((r) => setCaseDoc(r.data))
       .catch(() => {});
-  }, [caseNo]);
+  }, [selectedCase?._id, selectedCase?.id]);
 
   // ── Fetch all leads (needed for access level resolution) ──────────────────
   useEffect(() => {

@@ -168,6 +168,8 @@ exports.getAllCases = async (req, res) => {
         { investigatorUserIds: uid },
         { readOnlyUserIds: uid },
       ];
+      // Exclude cases where this user's access has been revoked by admin
+      query.blockedUserIds = { $ne: uid };
     }
 
     const cases = await Case.find(query)
@@ -247,6 +249,8 @@ exports.getCasesByOfficer = async (req, res) => {
     const cases = await Case.find({
       isDeleted: { $ne: true },
       status: statusFilter,
+      // Exclude cases where this officer's access has been revoked by admin
+      blockedUserIds: { $ne: user._id },
       $or: [
         { caseManagerUserIds: user._id },
         { detectiveSupervisorUserId: user._id },
@@ -529,6 +533,7 @@ exports.getCaseTeam = async (req, res) => {
       .populate("detectiveSupervisorUserIds", "username firstName lastName displayName title")
       .populate("investigatorUserIds", "username firstName lastName displayName title")
       .populate("readOnlyUserIds", "username firstName lastName displayName")
+      .populate("blockedUserIds", "username")
       .lean();
 
     if (!c) {
@@ -539,8 +544,9 @@ exports.getCaseTeam = async (req, res) => {
     const caseManagers = (c.caseManagerUserIds || []).map(u => u.username);
     const investigators = [...new Set((c.investigatorUserIds || []).map(u => u.username))];
     const readOnly = (c.readOnlyUserIds || []).map(u => u.username);
+    const blocked = (c.blockedUserIds || []).map(u => u.username).filter(Boolean);
 
-    return res.json({ detectiveSupervisors, caseManagers, investigators, readOnly });
+    return res.json({ detectiveSupervisors, caseManagers, investigators, readOnly, blocked });
   } catch (err) {
     console.error("Error in getCaseTeam:", err);
     return res.status(500).json({ message: "Server error", error: err.message });
@@ -576,7 +582,9 @@ exports.addOfficerToCase = async (req, res) => {
 exports.updateCaseOfficers = async (req, res) => {
   try {
     const { caseNo } = req.params;
-    const { officers } = req.body;
+    // blockedUsernames is intentionally not defaulted — undefined means "caller didn't send it,
+    // so preserve whatever is already stored" (e.g. CasePageManager team updates).
+    const { officers, blockedUsernames } = req.body;
 
     if (!caseNo || !Array.isArray(officers)) {
       return res.status(400).json({ message: "caseNo and an array of officers are required" });
@@ -617,7 +625,21 @@ exports.updateCaseOfficers = async (req, res) => {
       caseDoc.detectiveSupervisorUserId = null;
     }
     caseDoc.investigatorUserIds = [...new Map(investigatorIds.map(id => [id.toString(), id])).values()];
-    caseDoc.readOnlyUserIds = [...new Map(readOnlyIds.map(id => [id.toString(), id])).values()];
+    caseDoc.readOnlyUserIds     = [...new Map(readOnlyIds.map(id => [id.toString(), id])).values()];
+
+    // Only overwrite blockedUserIds when the admin explicitly sends the list.
+    // Callers that don't send blockedUsernames (e.g. CasePageManager) leave the
+    // existing block list untouched so revoked access is never accidentally restored.
+    if (Array.isArray(blockedUsernames)) {
+      const blockedIds = [];
+      for (const uname of blockedUsernames) {
+        if (typeof uname !== "string") continue;
+        const user = await findUserByUsername(uname);
+        if (user) blockedIds.push(user._id);
+      }
+      caseDoc.blockedUserIds = [...new Map(blockedIds.map(id => [id.toString(), id])).values()];
+    }
+
     await caseDoc.save();
 
     return res.status(200).json({ message: "Assigned officers updated successfully", data: caseDoc });

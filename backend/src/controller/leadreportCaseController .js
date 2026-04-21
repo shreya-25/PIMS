@@ -8,6 +8,7 @@ const { getObjectBuffer } = require("../s3");
 const { fetchCaseLeadsData } = require("../utils/caseDataFetcher");
 const Case = require("../models/case");
 const User = require("../models/userModel");
+const LRPicture = require("../models/LRPicture");
 
 async function mergeWithAnotherPDF(mainBuffer, otherPdfBuffer) {
   const mainDoc  = await PDFLibDocument.load(mainBuffer);
@@ -302,10 +303,19 @@ async function embedAttachments(doc, items, currentY, fileLabel = "File") {
       continue;
     }
 
-    if (!item.s3Key) continue;
+    if (!item.s3Key) {
+      // No file stored — show a note so the user knows the attachment exists but has no file
+      const label = item.originalName || item.filename || "(no filename)";
+      currentY = ensureSpace(doc, currentY, 20);
+      doc.font("Helvetica-Oblique").fontSize(9).fillColor("#888")
+         .text(`(No file stored for: ${label})`, 50, currentY);
+      doc.fillColor("#000");
+      currentY += 16;
+      continue;
+    }
 
     const fname = (item.originalName || item.filename || "").toLowerCase();
-    const isImage = /\.(jpe?g|png|heic|heif|webp)$/i.test(fname);
+    const isImage = /\.(jpe?g|png|heic|heif|webp|gif|bmp|tiff?|avif)$/i.test(fname);
 
     if (isImage) {
       try {
@@ -924,6 +934,42 @@ async function generateCaseReport(req, res) {
     .lean();
   const userMap = Object.fromEntries(usersFound.map(u => [u.username, u]));
 
+  // Always re-fetch pictures from DB so s3Key is guaranteed to be present.
+  // The frontend may omit or have stale picture data; the DB is the source of truth.
+  try {
+    const pictureCaseId = caseIdParam || String(leadsData[0]?.caseId || "");
+    if (pictureCaseId) {
+      const allLeadNos = leadsData
+        .map(l => Number(l.leadNo))
+        .filter(n => Number.isFinite(n));
+
+      const dbPictures = await LRPicture.find({
+        caseId: pictureCaseId,
+        leadNo: { $in: allLeadNos },
+        isDeleted: { $ne: true },
+      }).lean();
+
+      // Group by "leadNo|leadReturnId"
+      const picMap = new Map();
+      for (const pic of dbPictures) {
+        const key = `${pic.leadNo}|${pic.leadReturnId}`;
+        if (!picMap.has(key)) picMap.set(key, []);
+        picMap.get(key).push(pic);
+      }
+
+      // Inject fresh picture data into each lead return
+      for (const lead of leadsData) {
+        for (const lr of (lead.leadReturns || [])) {
+          const key = `${Number(lead.leadNo)}|${lr.leadReturnId}`;
+          const fresh = picMap.get(key);
+          if (fresh !== undefined) lr.pictures = fresh;
+        }
+      }
+    }
+  } catch (picErr) {
+    console.warn("Could not re-fetch pictures from DB for report; using frontend data:", picErr.message);
+  }
+
   try {
     // Create doc
     const doc = new PDFDocument({ size: "LETTER", margin: 50 });
@@ -1389,6 +1435,13 @@ if (lr.pictures && lr.pictures.length > 0) {
 
   // Embed actual images from S3
   currentY = await embedAttachments(doc, lr.pictures, currentY, "Picture");
+
+  // Queue PDF files for end-of-report merging
+  for (const pic of lr.pictures) {
+    if (!pic.isLink && pic.s3Key && /\.pdf$/i.test(pic.originalName || pic.filename || "")) {
+      pdfAttachments.push({ s3Key: pic.s3Key, filename: pic.originalName || pic.filename || "picture.pdf" });
+    }
+  }
   currentY += 10;
 }
 

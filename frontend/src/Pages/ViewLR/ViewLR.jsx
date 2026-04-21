@@ -509,7 +509,7 @@ const actuallyDoSubmitReport = async () => {
               {label}
             </span>
           ))}
-          <span className={`${styles.sectionTabItem} ${styles.sectionTabItemActive}`}>Submit</span>
+          <span className={`${styles.sectionTabItem} ${styles.sectionTabItemActive}`}>Finish</span>
         </div>
       </div>
 
