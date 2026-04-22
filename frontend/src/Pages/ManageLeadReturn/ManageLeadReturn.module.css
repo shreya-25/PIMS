@@ -57,6 +57,118 @@
   cursor: not-allowed;
 }
 
+/* ── View as PDF button (inline with heading) ── */
+.viewPdfBtn {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 14px;
+  padding: 5px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: Arial, sans-serif;
+  border-radius: 6px;
+  border: 1.5px solid #29298b;
+  background: #fff;
+  color: #29298b;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: background 0.15s, color 0.15s;
+}
+.viewPdfBtn:hover { background: #eef; }
+
+/* ── PDF generation progress modal ── */
+.pdfModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pdfModalBox {
+  background: #fff;
+  border-radius: 16px;
+  width: 480px;
+  max-width: 92vw;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+}
+
+.pdfModalHeader {
+  position: relative;
+  padding: 18px 28px 14px;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  color: #1a1a1a;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.pdfModalCloseBtn {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #aaa;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+}
+.pdfModalCloseBtn:hover { color: #333; }
+
+.pdfModalBody {
+  padding: 20px 28px 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.pdfModalMessage {
+  font-size: 15px;
+  text-align: center;
+  color: #444;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.pdfModalProgressWrap {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pdfModalProgressBar {
+  flex: 1;
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.pdfModalProgressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #1d4ed8, #3b82f6);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.pdfModalPercent {
+  font-size: 15px;
+  font-weight: 700;
+  color: #29298b;
+  min-width: 42px;
+  text-align: right;
+}
+
+
 /* ── Close Lead Modal ── */
 .clModalBackdrop {
   position: fixed;

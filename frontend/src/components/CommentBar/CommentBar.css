@@ -119,11 +119,11 @@
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-/* This optional inner span corrects subpixel font offset on some browsers */
 .cbar__avatar span {
-  position: relative;
-  top: -2px; 
-  font-size: larger;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 /* Hover animation */

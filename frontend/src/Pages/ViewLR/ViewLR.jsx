@@ -551,6 +551,11 @@ const actuallyDoSubmitReport = async () => {
               </button>
       </div>
         </header>
+                  </section>
+
+                  <div className={styles.scrollOnly}>
+
+                        <section className={styles.block}>
                         <div className={styles.lrRow}>
                             <div className={styles.rowLabel}>Lead Log Summary</div>
                             <div className={styles.rowContent}>
@@ -559,27 +564,21 @@ const actuallyDoSubmitReport = async () => {
                                 </div>
                             </div>
                         </div>
-
                         <div className={styles.lrRow}>
-                            {/* <div className={styles.rowLabel}><a href ="." >Lead Instructions </a></div> */}
                             <Link
-  className={styles.rowLabel}
-  to="/LRInstruction"
-  // optional: pass along context for that page
-  state={{ caseDetails: selectedCase, leadDetails: selectedLead }}
->
-  Lead Instructions
-</Link>
+                              className={styles.rowLabel}
+                              to="/LRInstruction"
+                              state={{ caseDetails: selectedCase, leadDetails: selectedLead }}
+                            >
+                              Lead Instructions
+                            </Link>
                             <div className={styles.rowContent}>
                                 <div className={styles.textBox}>
                                    {leadInstructionText ? toText(leadInstructionText) : "—"}
                                 </div>
                             </div>
                         </div>
-
-                  </section>
-
-                  <div className={styles.scrollOnly}>
+                        </section>
 
                   {/* Lead Returns */}
                   <section className={styles.block}>

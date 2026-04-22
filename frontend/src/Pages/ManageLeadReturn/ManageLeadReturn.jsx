@@ -11,6 +11,7 @@ import { AlertModal } from "../../components/AlertModal/AlertModal";
 import { useLeadStatus } from "../../hooks/useLeadStatus";
 import PersonModal from "../../components/PersonModal/PersonModel";
 import VehicleModal from "../../components/VehicleModal/VehicleModal";
+import { attachFiles } from "../InvestgatorLR/lrUtils";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const formatAddress = (addr) => {
@@ -62,6 +63,103 @@ export const ManageLeadReturn = () => {
 
   const currentUser = localStorage.getItem("loggedInUser");
   const { selectedCase, selectedLead, setSelectedLead, setLeadStatus } = useContext(CaseContext);
+
+  // ── PDF generation state ──
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [pdfProgress,  setPdfProgress]  = useState(0);
+  const pdfAbortRef = React.useRef(null);
+  const pdfIntervalRef = React.useRef(null);
+
+  const handleViewAsPdf = async () => {
+    const controller = new AbortController();
+    pdfAbortRef.current = controller;
+
+    setShowPdfModal(true);
+    setPdfProgress(0);
+
+    pdfIntervalRef.current = setInterval(() => {
+      setPdfProgress((prev) => {
+        if (prev >= 90) { clearInterval(pdfIntervalRef.current); return prev; }
+        return prev + (90 - prev) * 0.07;
+      });
+    }, 200);
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const [enclosuresWithFiles, evidenceWithFiles, picturesWithFiles, audioWithFiles, videosWithFiles] =
+        await Promise.all([
+          attachFiles(enclosures, "_id",       "/api/lrenclosures/files"),
+          attachFiles(evidence,   "_id",       "/api/lrevidences/files"),
+          attachFiles(pictures,   "pictureId", "/api/lrpictures/files"),
+          attachFiles(audio,      "audioId",   "/api/lraudio/files"),
+          attachFiles(videos,     "videoId",   "/api/lrvideo/files"),
+        ]);
+
+      const reportBody = {
+        user:            localStorage.getItem("loggedInUser") || "",
+        reportTimestamp: new Date().toISOString(),
+        selectedReports: {
+          FullReport: true, leadInstruction: true, leadReturn: true,
+          leadPersons: true, leadVehicles: true, leadEnclosures: true,
+          leadEvidence: true, leadPictures: true, leadAudio: true,
+          leadVideos: true, leadScratchpad: true, leadTimeline: true,
+        },
+        leadInstruction:  instructions,
+        leadInstructions: instructions,
+        leadReturn:       returns,
+        leadReturns:      returns,
+        leadPersons:      persons,
+        leadVehicles:     vehicles,
+        leadEnclosures:   enclosuresWithFiles,
+        leadEvidence:     evidenceWithFiles,
+        leadPictures:     picturesWithFiles,
+        leadAudio:        audioWithFiles,
+        leadVideos:       videosWithFiles,
+        leadScratchpad:   notes,
+        leadTimeline:     timeline,
+      };
+
+      const resp = await api.post("/api/report/generate", reportBody, {
+        responseType: "blob",
+        headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal,
+      });
+
+      clearInterval(pdfIntervalRef.current);
+      setPdfProgress(100);
+
+      setTimeout(() => {
+        setShowPdfModal(false);
+        navigate("/DocumentReview", {
+          state: {
+            pdfBlob: new Blob([resp.data], { type: "application/pdf" }),
+            filename: `Lead_${leadNo || "report"}.pdf`,
+          },
+        });
+      }, 350);
+    } catch (err) {
+      clearInterval(pdfIntervalRef.current);
+      setShowPdfModal(false);
+      setPdfProgress(0);
+      if (err?.name === "CanceledError" || err?.name === "AbortError" || err?.code === "ERR_CANCELED") return;
+      let msg = "Error generating PDF: ";
+      if (err?.response?.data instanceof Blob) {
+        msg += await err.response.data.text();
+      } else {
+        msg += err.message || "Unknown error";
+      }
+      setAlertMessage(msg);
+      setAlertOpen(true);
+    }
+  };
+
+  const handleCancelPdf = () => {
+    pdfAbortRef.current?.abort();
+    clearInterval(pdfIntervalRef.current);
+    setShowPdfModal(false);
+    setPdfProgress(0);
+  };
 
   // ── lead status hook ──
   const { status, setLocalStatus } = useLeadStatus({
@@ -430,10 +528,45 @@ export const ManageLeadReturn = () => {
                     </div>
                   </div>
 
+                  {/* ── PDF generation progress modal ── */}
+                  {showPdfModal && (
+                    <div className={s.pdfModalOverlay}>
+                      <div className={s.pdfModalBox}>
+                        <div className={s.pdfModalHeader}>
+                          Generating PDF
+                          <button className={s.pdfModalCloseBtn} onClick={handleCancelPdf} aria-label="Close">✕</button>
+                        </div>
+                        <div className={s.pdfModalBody}>
+                          <p className={s.pdfModalMessage}>
+                            Please wait while the lead return report is being generated.
+                          </p>
+                          <div className={s.pdfModalProgressWrap}>
+                            <div className={s.pdfModalProgressBar}>
+                              <div
+                                className={s.pdfModalProgressFill}
+                                style={{ width: `${pdfProgress}%` }}
+                              />
+                            </div>
+                            <span className={s.pdfModalPercent}>{Math.round(pdfProgress)}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* ── Instructions block ── */}
                   <section className={styles.block}>
                     <header className={styles.drToolbar}>
-                      <div className={styles.drTitle}>Manage Lead Return</div>
+                      <div className={styles.drTitle}>
+                        Manage Lead Return
+                        <button
+                          className={s.viewPdfBtn}
+                          onClick={handleViewAsPdf}
+                          title="Generate and view the full lead return as a PDF"
+                        >
+                          View as PDF
+                        </button>
+                      </div>
 
                       {/* ── Action buttons ── */}
                       <div className={s.btnGroup}>
@@ -464,33 +597,36 @@ export const ManageLeadReturn = () => {
                       </div>
                     </header>
 
-                    <div className={styles.lrRow}>
-                      <div className={styles.rowLabel}>Lead Log Summary</div>
-                      <div className={styles.rowContent}>
-                        <div className={styles.textBox}>
-                          {instructions.description ? toText(instructions.description) : "—"}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className={styles.lrRow}>
-                      <Link
-                        className={styles.rowLabel}
-                        to="/LRInstruction"
-                        state={{ caseDetails: selectedCase, leadDetails: selectedLead }}
-                      >
-                        Lead Instructions
-                      </Link>
-                      <div className={styles.rowContent}>
-                        <div className={styles.textBox}>
-                          {instructions.summary ? toText(instructions.summary) : "—"}
-                        </div>
-                      </div>
-                    </div>
                   </section>
 
                   {/* ── Lead Returns ── */}
                   <div className={styles.scrollOnly}>
+
+                    <section className={styles.block}>
+                      <div className={styles.lrRow}>
+                        <div className={styles.rowLabel}>Lead Log Summary</div>
+                        <div className={styles.rowContent}>
+                          <div className={styles.textBox}>
+                            {instructions.description ? toText(instructions.description) : "—"}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={styles.lrRow}>
+                        <Link
+                          className={styles.rowLabel}
+                          to="/LRInstruction"
+                          state={{ caseDetails: selectedCase, leadDetails: selectedLead }}
+                        >
+                          Lead Instructions
+                        </Link>
+                        <div className={styles.rowContent}>
+                          <div className={styles.textBox}>
+                            {instructions.summary ? toText(instructions.summary) : "—"}
+                          </div>
+                        </div>
+                      </div>
+                    </section>
                     <section className={styles.block}>
                       <div className={styles.returnHead}>
                         <h3>Lead Returns</h3>

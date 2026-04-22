@@ -868,9 +868,9 @@ function drawHeader(doc, leadInstruction) {
   const leadLine = `Lead: ${leadInstruction?.leadNo || 'N/A'} | ${leadInstruction?.description || 'N/A'}`;
 
   // Measure to compute needed header height
-  doc.font("Helvetica-Bold").fontSize(14);
+  doc.font("Helvetica-Bold").fontSize(11);
   const caseH = doc.heightOfString(caseLine, { width: textW });
-  doc.fontSize(12);
+  doc.fontSize(10);
   const leadH = doc.heightOfString(leadLine, { width: textW });
   const textBlockH = caseH + 5 + leadH;
 
@@ -886,10 +886,10 @@ function drawHeader(doc, leadInstruction) {
 
   // Titles (never overlap the logo because they live in [textX, textX + textW])
   let y = padY + (headerH - 2 * padY - textBlockH) / 2; // vertical centering within header
-  doc.fillColor("white").font("Helvetica-Bold").fontSize(14)
-     .text(caseLine, textX, y, { width: textW, align: "center" }); // or "center" to center within the box
+  doc.fillColor("white").font("Helvetica-Bold").fontSize(11)
+     .text(caseLine, textX, y, { width: textW, align: "center" });
   y = doc.y + 5;
-  doc.fontSize(12)
+  doc.fontSize(10)
      .text(leadLine, textX, y, { width: textW, align: "center" });
 
   doc.fillColor("black");
