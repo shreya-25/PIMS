@@ -606,7 +606,7 @@ export const HomePage = () => {
 
   // ─── Cases table: columns, filter/sort ───────────────────────────────────
 
-  const columnWidths = { "Case No.": "6%", "Case Name": "17%", "Created At": "6%", "Case Managers": "13%" };
+  const columnWidths = { "Case No.": "6%", "Case Name": "17%", "Created At": "6%", "Case Managers": "10%" };
   const colKey = { "Case No.": "id", "Case Name": "title", "Created At": "createdAt", "Case Managers": "caseManagers" };
 
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });

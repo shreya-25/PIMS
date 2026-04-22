@@ -114,8 +114,7 @@
 /* Horizontally scrollable table wrapper — only scroll zone on the page */
 .table-scroll-container {
   width: 100%;
-  flex: 1;
-  min-height: 0;
+  max-height: calc(100dvh - 340px);
   overflow-x: auto;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
