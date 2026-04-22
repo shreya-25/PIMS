@@ -5,6 +5,7 @@ const verifyToken = require("../middleware/authMiddleware"); // Import the middl
 const { addOfficerToCase } = require("../controller/caseController");
 const { updateCaseOfficers } = require("../controller/caseController");
 const { getCasesByOfficer } = require("../controller/caseController");
+const Case = require("../models/case");
 
 
 // Case Routes
@@ -180,7 +181,7 @@ router.put("/:id/reject", verifyToken, async (req, res) => {
   });
 
   // GET all subcategories for a given case by its ID
-router.get("/:id/subCategories", async (req, res) => {
+router.get("/:id/subCategories", verifyToken, async (req, res) => {
     try {
       const caseDoc = await Case.findById(req.params.id);
       if (!caseDoc) {
@@ -188,7 +189,8 @@ router.get("/:id/subCategories", async (req, res) => {
       }
       res.status(200).json({ subCategories: caseDoc.subCategories });
     } catch (err) {
-      res.status(500).json({ message: "Error fetching subcategories" });
+      console.error("Error fetching subcategories:", err);
+      res.status(500).json({ message: "Error fetching subcategories", error: err.message });
     }
   });
 

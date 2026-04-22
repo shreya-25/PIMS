@@ -27,9 +27,7 @@ export const LeadReview = () => {
   const { caseDetails } = location.state || {};
   const { leadId, leadDescription } = location.state || {};
   const leadEntries = location.state?.leadEntries || [];
-  const [loading, setLoading] = useState(true);
-  const [loadingProgress, setLoadingProgress] = useState(0);
-  const loadingProgressIntervalRef = useRef(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pendingRoute, setPendingRoute]   = useState(null);
   const [caseTeam, setCaseTeam] = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [] });
@@ -1444,24 +1442,6 @@ const isManager = ["Case Manager", "Detective Supervisor"].includes(selectedCase
 const isAssigned = !!myAssignment;
 const isReadOnly = selectedCase?.role === "Read Only";
 
-// Simulate loading progress bar
-useEffect(() => {
-  if (loading) {
-    setLoadingProgress(0);
-    loadingProgressIntervalRef.current = setInterval(() => {
-      setLoadingProgress(prev => {
-        if (prev >= 90) { clearInterval(loadingProgressIntervalRef.current); return prev; }
-        return prev + (90 - prev) * 0.07;
-      });
-    }, 200);
-  } else {
-    clearInterval(loadingProgressIntervalRef.current);
-    setLoadingProgress(100);
-    const reset = setTimeout(() => setLoadingProgress(0), 400);
-    return () => clearTimeout(reset);
-  }
-  return () => clearInterval(loadingProgressIntervalRef.current);
-}, [loading]);
 
 const canWorkOnReturn = isAssigned ? (myAssignment.status === "accepted") : isManager;
 
@@ -2093,25 +2073,6 @@ const assignmentHoverText = React.useMemo(() => {
 
   return (
     <div className={styles.personPage}>
-      {/* Loading progress modal */}
-      {loading && (
-        <div className={styles.reportModalOverlay}>
-          <div className={styles.reportModalBox}>
-            <div className={styles.reportModalHeader}>Loading</div>
-            <div className={styles.reportModalBody}>
-              <p className={styles.reportModalMessage}>
-                Please wait while the lead data is loading.
-              </p>
-              <div className={styles.reportModalProgressWrap}>
-                <div className={styles.reportModalProgressBar}>
-                  <div className={styles.reportModalProgressFill} style={{ width: `${loadingProgress}%` }} />
-                </div>
-                <span className={styles.reportModalPercent}>{Math.round(loadingProgress)}%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Navbar */}
       <Navbar />
@@ -2223,6 +2184,20 @@ const assignmentHoverText = React.useMemo(() => {
                       title="Manage Lead Return"
                     >
                       Manage Lead Return
+                    </span>
+                  )}
+
+                  {isReadOnly && (
+                    <span
+                      className={styles.menuItem}
+                      onClick={() => {
+                        const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                        const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                        if (lead && kase) navigate("/ManageLeadReturn", { state: { caseDetails: kase, leadDetails: lead } });
+                      }}
+                      title="View Lead Return"
+                    >
+                      View Lead Return
                     </span>
                   )}
 

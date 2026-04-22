@@ -390,7 +390,7 @@ export function DocumentReview({ pdfUrl = "/test1.pdf" }) {
               <Link to="/HomePage" className="crumb">PIMS Home</Link>
               <span className="sep">{" >> "}</span>
               <Link
-                to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+                to={["Admin", "Case Manager", "Detective Supervisor"].includes(selectedCase?.role) ? "/CasePageManager" : "/Investigator"}
                 state={{ caseDetails: selectedCase }}
                 className="crumb"
               >

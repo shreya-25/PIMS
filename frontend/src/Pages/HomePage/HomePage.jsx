@@ -606,7 +606,7 @@ export const HomePage = () => {
 
   // ─── Cases table: columns, filter/sort ───────────────────────────────────
 
-  const columnWidths = { "Case No.": "7%", "Case Name": "21%", "Created At": "7%", "Case Managers": "16%" };
+  const columnWidths = { "Case No.": "6%", "Case Name": "17%", "Created At": "6%", "Case Managers": "13%" };
   const colKey = { "Case No.": "id", "Case Name": "title", "Created At": "createdAt", "Case Managers": "caseManagers" };
 
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
@@ -685,10 +685,10 @@ export const HomePage = () => {
     "Assigned Officers": "assignedOfficers",
   };
   const assignedColWidths = {
-    "Lead No.": "7%",
-    "Lead Name": "22%",
-    "Case Name": "18%",
-    "Assigned Officers": "15%",
+    "Lead No.": "6%",
+    "Lead Name": "18%",
+    "Case Name": "14%",
+    "Assigned Officers": "12%",
   };
 
   const [assignedFilterConfig, setAssignedFilterConfig] = useState({
@@ -959,7 +959,7 @@ export const HomePage = () => {
                                 </th>
                               );
                             })}
-                            <th style={{ width: "6%", textAlign: "left" }}>Actions</th>
+                            <th style={{ width: "5%", textAlign: "left" }}>Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1062,7 +1062,7 @@ export const HomePage = () => {
                                   </th>
                                 );
                               })}
-                              <th style={{ width: "8%", textAlign: "center" }}>Actions</th>
+                              <th style={{ width: "6%", textAlign: "center" }}>Actions</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1105,10 +1105,10 @@ export const HomePage = () => {
                       <div className={styles["table-scroll-container"]}>
                         <table className={styles["leads-table"]} style={{ minWidth: "1000px" }}>
                           <colgroup>
+                            <col style={{ width: "6%" }} />
+                            <col style={{ width: "28%" }} />
+                            <col style={{ width: "24%" }} />
                             <col style={{ width: "8%" }} />
-                            <col style={{ width: "35%" }} />
-                            <col style={{ width: "30%" }} />
-                            <col style={{ width: "10%" }} />
                           </colgroup>
                           <thead>
                             <tr>
@@ -1182,7 +1182,7 @@ export const HomePage = () => {
                                   </th>
                                 );
                               })}
-                              <th style={{ width: "8%", textAlign: "center" }}>Actions</th>
+                              <th style={{ width: "6%", textAlign: "center" }}>Actions</th>
                             </tr>
                           </thead>
                           <tbody>

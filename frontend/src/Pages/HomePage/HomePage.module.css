@@ -105,8 +105,6 @@
   padding: 8px;
   width: 95%;
   margin: 0 auto;
-  flex: 1;
-  min-height: 0;
   display: flex;
   flex-direction: column;
 }

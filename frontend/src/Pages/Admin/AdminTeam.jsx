@@ -166,7 +166,7 @@ const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
               notificationId: `${Date.now()}-${username}`,
               assignedBy:     adminUsername,
               assignedTo:     [{ username, role: "Read Only", status: "pending", unread: true }],
-              action1:        "has been granted Read Only access to the case",
+              action1:        "has granted you Read Only access to the case",
               post1:          `${caseData.caseNo}: ${caseData.caseName}`,
               caseId:         caseData._id || undefined,
               caseNo:         caseData.caseNo,

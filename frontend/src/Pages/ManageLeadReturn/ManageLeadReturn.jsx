@@ -11,7 +11,6 @@ import { AlertModal } from "../../components/AlertModal/AlertModal";
 import { useLeadStatus } from "../../hooks/useLeadStatus";
 import PersonModal from "../../components/PersonModal/PersonModel";
 import VehicleModal from "../../components/VehicleModal/VehicleModal";
-import { attachFiles } from "../InvestgatorLR/lrUtils";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const formatAddress = (addr) => {
@@ -87,15 +86,8 @@ export const ManageLeadReturn = () => {
     try {
       const token = localStorage.getItem("token");
 
-      const [enclosuresWithFiles, evidenceWithFiles, picturesWithFiles, audioWithFiles, videosWithFiles] =
-        await Promise.all([
-          attachFiles(enclosures, "_id",       "/api/lrenclosures/files"),
-          attachFiles(evidence,   "_id",       "/api/lrevidences/files"),
-          attachFiles(pictures,   "pictureId", "/api/lrpictures/files"),
-          attachFiles(audio,      "audioId",   "/api/lraudio/files"),
-          attachFiles(videos,     "videoId",   "/api/lrvideo/files"),
-        ]);
-
+      // Data fetched in useEffect already has signedUrl attached by the backend,
+      // so no secondary /files/:id fetch is needed.
       const reportBody = {
         user:            localStorage.getItem("loggedInUser") || "",
         reportTimestamp: new Date().toISOString(),
@@ -111,11 +103,11 @@ export const ManageLeadReturn = () => {
         leadReturns:      returns,
         leadPersons:      persons,
         leadVehicles:     vehicles,
-        leadEnclosures:   enclosuresWithFiles,
-        leadEvidence:     evidenceWithFiles,
-        leadPictures:     picturesWithFiles,
-        leadAudio:        audioWithFiles,
-        leadVideos:       videosWithFiles,
+        leadEnclosures:   enclosures,
+        leadEvidence:     evidence,
+        leadPictures:     pictures,
+        leadAudio:        audio,
+        leadVideos:       videos,
         leadScratchpad:   notes,
         leadTimeline:     timeline,
       };
@@ -175,6 +167,9 @@ export const ManageLeadReturn = () => {
   const leadNo   = selectedLead?.leadNo   || location.state?.leadDetails?.leadNo;
   const leadName = selectedLead?.leadName || location.state?.leadDetails?.leadName;
 
+  // ── role flags ──
+  const isReadOnly = selectedCase?.role === "Read Only";
+
   // ── status flags ──
   const normStatus       = String(status || "").toLowerCase();
   const isInReview       = normStatus === "in review";
@@ -184,18 +179,30 @@ export const ManageLeadReturn = () => {
   const isClosedOrCompleted = isCompleted || isClosed;
 
   // ── button enable / disable ──
-  const canApprove = isInReview;
-  const approveDisabledReason = isClosedOrCompleted
+  const canApprove = isInReview && !isReadOnly;
+  const approveDisabledReason = isReadOnly
+    ? "Read-only access"
+    : isClosedOrCompleted
     ? "Lead is already completed or closed"
     : "Lead must be submitted (In Review) to approve";
 
-  const canReturn = isInReview;
-  const returnDisabledReason = isClosedOrCompleted
+  const canReturn = isInReview && !isReadOnly;
+  const returnDisabledReason = isReadOnly
+    ? "Read-only access"
+    : isClosedOrCompleted
     ? "Lead is already completed or closed"
     : "Lead must be In Review to return for changes";
 
-  const canReopen = isClosedOrCompleted;
-  const reopenDisabledReason = "Lead must be Completed or Closed to reopen";
+  const canReopen = isClosedOrCompleted && !isReadOnly;
+  const reopenDisabledReason = isReadOnly
+    ? "Read-only access"
+    : "Lead must be Completed or Closed to reopen";
+
+  // ── read-only link helper — renders a plain span instead of navigating ──
+  const SectionLink = ({ className, to, state: linkState, children }) =>
+    isReadOnly
+      ? <span className={className} style={{ cursor: "default" }}>{children}</span>
+      : <Link className={className} to={to} state={linkState}>{children}</Link>;
 
   // ── helpers ──
   const getCasePageRoute = () => {
@@ -500,19 +507,21 @@ export const ManageLeadReturn = () => {
                         Lead Information
                       </span>
 
-                      <span
-                        className={styles.menuItem}
-                        onClick={() => {
-                          const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
-                          const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
-                          if (lead && kase) navigate("/ViewLR", { state: { caseDetails: kase, leadDetails: lead } });
-                        }}
-                      >
-                        Add Lead Return
-                      </span>
+                      {!isReadOnly && (
+                        <span
+                          className={styles.menuItem}
+                          onClick={() => {
+                            const lead = selectedLead?.leadNo ? selectedLead : location.state?.leadDetails;
+                            const kase = selectedCase?.caseNo ? selectedCase : location.state?.caseDetails;
+                            if (lead && kase) navigate("/ViewLR", { state: { caseDetails: kase, leadDetails: lead } });
+                          }}
+                        >
+                          Add Lead Return
+                        </span>
+                      )}
 
                       <span className={`${styles.menuItem} ${styles.menuItemActive}`}>
-                        Manage Lead Return
+                        {isReadOnly ? "View Lead Return" : "Manage Lead Return"}
                       </span>
 
                       <span
@@ -613,13 +622,13 @@ export const ManageLeadReturn = () => {
                       </div>
 
                       <div className={styles.lrRow}>
-                        <Link
+                        <SectionLink
                           className={styles.rowLabel}
                           to="/LRInstruction"
                           state={{ caseDetails: selectedCase, leadDetails: selectedLead }}
                         >
                           Lead Instructions
-                        </Link>
+                        </SectionLink>
                         <div className={styles.rowContent}>
                           <div className={styles.textBox}>
                             {instructions.summary ? toText(instructions.summary) : "—"}
@@ -672,13 +681,13 @@ export const ManageLeadReturn = () => {
 
                             {/* Narrative */}
                             <div className={styles.lrRow}>
-                              <Link
+                              <SectionLink
                                 className={styles.rowLabel}
                                 to="/LRReturn"
                                 state={{ caseDetails: selectedCase, leadDetails: selectedLead }}
                               >
                                 Narrative
-                              </Link>
+                              </SectionLink>
                               <div className={styles.rowContent}>
                                 {ret.narrative || ret.comment || ret.leadReturnResult ? (
                                   <div className={styles.textBox}>
@@ -696,9 +705,9 @@ export const ManageLeadReturn = () => {
 
                               if (grouped.persons.length) sections.push(
                                 <div key="persons" className={styles.tableBlock}>
-                                  <Link className={styles.tableHeader} to="/LRPerson" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>
+                                  <SectionLink className={styles.tableHeader} to="/LRPerson" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>
                                     Person Details
-                                  </Link>
+                                  </SectionLink>
                                   <table className={styles.simpleTable}>
                                     <thead><tr><th>Date</th><th>Name</th><th>Phone</th><th>Address</th><th style={{ width: "8%" }}>Actions</th></tr></thead>
                                     <tbody>
@@ -718,9 +727,9 @@ export const ManageLeadReturn = () => {
 
                               if (grouped.vehicles.length) sections.push(
                                 <div key="vehicles" className={styles.tableBlock}>
-                                  <Link className={styles.tableHeader} to="/LRVehicle" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>
+                                  <SectionLink className={styles.tableHeader} to="/LRVehicle" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>
                                     Vehicle Details
-                                  </Link>
+                                  </SectionLink>
                                   <table className={styles.simpleTable}>
                                     <thead><tr><th>Plate</th><th>State</th><th>Make/Model</th><th>VIN</th><th>Color</th><th style={{ width: "8%" }}>Actions</th></tr></thead>
                                     <tbody>
@@ -741,9 +750,9 @@ export const ManageLeadReturn = () => {
 
                               if (grouped.enclosures.length) sections.push(
                                 <div key="enclosures" className={styles.tableBlock}>
-                                  <Link className={styles.tableHeader} to="/LREnclosures" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>
+                                  <SectionLink className={styles.tableHeader} to="/LREnclosures" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>
                                     Enclosure Details
-                                  </Link>
+                                  </SectionLink>
                                   <table className={styles.simpleTable}>
                                     <thead><tr><th>Type</th><th>Description</th><th>File / Link</th></tr></thead>
                                     <tbody>
@@ -765,9 +774,9 @@ export const ManageLeadReturn = () => {
 
                               if (timeline.length) sections.push(
                                 <div key="timeline" className={styles.tableBlock}>
-                                  <Link className={styles.tableHeader} to="/LRTimeline" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>
+                                  <SectionLink className={styles.tableHeader} to="/LRTimeline" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>
                                     Timeline Details
-                                  </Link>
+                                  </SectionLink>
                                   <table className={styles.simpleTable}>
                                     <thead><tr><th>Event Date</th><th>Start</th><th>End</th><th>Location</th><th>Description</th></tr></thead>
                                     <tbody>
@@ -787,9 +796,9 @@ export const ManageLeadReturn = () => {
 
                               if (grouped.evidence.length) sections.push(
                                 <div key="evidence" className={styles.tableBlock}>
-                                  <Link className={styles.tableHeader} to="/LREvidences" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>
+                                  <SectionLink className={styles.tableHeader} to="/LREvidences" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>
                                     Evidence Details
-                                  </Link>
+                                  </SectionLink>
                                   <table className={styles.simpleTable}>
                                     <thead><tr><th>Type</th><th>Description</th><th>Collected</th><th>Disposed</th><th>File / Link</th></tr></thead>
                                     <tbody>
@@ -813,9 +822,9 @@ export const ManageLeadReturn = () => {
 
                               if (grouped.pictures.length) sections.push(
                                 <div key="pictures" className={styles.tableBlock}>
-                                  <Link className={styles.tableHeader} to="/LRPictures" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>
+                                  <SectionLink className={styles.tableHeader} to="/LRPictures" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>
                                     Picture Details
-                                  </Link>
+                                  </SectionLink>
                                   <table className={styles.simpleTable}>
                                     <thead><tr><th>Description</th><th>Taken On</th><th>File / Link</th></tr></thead>
                                     <tbody>
@@ -837,9 +846,9 @@ export const ManageLeadReturn = () => {
 
                               if (grouped.audio.length) sections.push(
                                 <div key="audio" className={styles.tableBlock}>
-                                  <Link className={styles.tableHeader} to="/LRAudio" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>
+                                  <SectionLink className={styles.tableHeader} to="/LRAudio" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>
                                     Audio Details
-                                  </Link>
+                                  </SectionLink>
                                   <table className={styles.simpleTable}>
                                     <thead><tr><th>Recorded On</th><th>Description</th><th>File / Link</th></tr></thead>
                                     <tbody>
@@ -861,9 +870,9 @@ export const ManageLeadReturn = () => {
 
                               if (grouped.videos.length) sections.push(
                                 <div key="videos" className={styles.tableBlock}>
-                                  <Link className={styles.tableHeader} to="/LRVideo" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>
+                                  <SectionLink className={styles.tableHeader} to="/LRVideo" state={{ caseDetails: selectedCase, leadDetails: selectedLead }}>
                                     Video Details
-                                  </Link>
+                                  </SectionLink>
                                   <table className={styles.simpleTable}>
                                     <thead><tr><th>Recorded On</th><th>Description</th><th>File / Link</th></tr></thead>
                                     <tbody>

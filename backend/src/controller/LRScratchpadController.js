@@ -52,8 +52,6 @@ const getLRScratchpadByDetails = async (req, res) => {
         const leadName = decodeParam(req.params.leadName);
         const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
         const scratchpads = await LRScratchpad.find(query);
-
-        if (scratchpads.length === 0) return res.status(404).json({ message: "No scratchpad entries found." });
         res.status(200).json(scratchpads);
     } catch (err) {
         console.error("Error fetching LRScratchpad records:", err.message);
@@ -67,8 +65,6 @@ const getLRScratchpadByDetailsAndId = async (req, res) => {
         const leadName = decodeParam(req.params.leadName);
         const query = { leadNo: Number(leadNo), description: leadName, caseId, leadReturnId: id, isDeleted: { $ne: true } };
         const scratchpads = await LRScratchpad.find(query);
-
-        if (scratchpads.length === 0) return res.status(404).json({ message: "No scratchpad entries found for the given return ID." });
         res.status(200).json(scratchpads);
     } catch (err) {
         console.error("Error fetching LRScratchpad by ID:", err.message);

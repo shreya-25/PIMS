@@ -65,6 +65,16 @@ export const LRTopMenu = ({
           </span>
         )}
 
+        {isReadOnly && (
+          <span
+            className={`${styles.menuItem}${isActive('manageLeadReturn') ? ` ${styles.menuItemActive}` : ''}`}
+            onClick={!isActive('manageLeadReturn') ? () => goTo('/ManageLeadReturn') : undefined}
+            title="View Lead Return"
+          >
+            View Lead Return
+          </span>
+        )}
+
         <span
           className={`${styles.menuItem}${isActive('chainOfCustody') ? ` ${styles.menuItemActive}` : ''}`}
           onClick={!isActive('chainOfCustody') ? () => goTo('/ChainOfCustody') : undefined}
