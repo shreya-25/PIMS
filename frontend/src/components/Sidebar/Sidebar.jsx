@@ -337,35 +337,29 @@ export const SideBar = ({
     );
   }
 
-  const isReadOnlyRole = selectedCase?.role === "Read Only";
-
   // Default variant
   return (
     <aside className="sidebar">
       <ul className="sidebar-list">
-        {!isReadOnlyRole && (
-          <li
-            className={`sidebar-item ${activePage === "HomePage" || activePage === "AdminCM" ? "active" : ""}`}
-            onClick={() =>
-              systemRole === "Admin"
-                ? navigate("/AdminCM")
-                : navigate("/HomePage", { state: { caseDetails, activeTab: "cases" } })
-            }
-          >
-            <img src={homeIcon} className="sidebar-icon" alt="" />
-            <span>PIMS Home</span>
-          </li>
-        )}
+        <li
+          className={`sidebar-item ${activePage === "HomePage" || activePage === "AdminCM" ? "active" : ""}`}
+          onClick={() =>
+            systemRole === "Admin"
+              ? navigate("/AdminCM")
+              : navigate("/HomePage", { state: { caseDetails, activeTab: "cases" } })
+          }
+        >
+          <img src={homeIcon} className="sidebar-icon" alt="" />
+          <span>PIMS Home</span>
+        </li>
 
-        {!isReadOnlyRole && (
-          <li
-            className={`sidebar-item ${["CasePageManager", "Investigator"].includes(activePage) ? "active" : ""}`}
-            onClick={goToCasePage}
-          >
-            <img src={folderIcon} className="sidebar-icon" alt="" />
-            <span>Case: {selectedCase?.caseNo || "-"}</span>
-          </li>
-        )}
+        <li
+          className={`sidebar-item ${["CasePageManager", "Investigator"].includes(activePage) ? "active" : ""}`}
+          onClick={goToCasePage}
+        >
+          <img src={folderIcon} className="sidebar-icon" alt="" />
+          <span>Case: {selectedCase?.caseNo || "-"}</span>
+        </li>
 
         {["Case Manager", "Detective Supervisor"].includes(selectedCase?.role) && (
           <li
@@ -378,7 +372,7 @@ export const SideBar = ({
           </li>
         )}
 
-        {!isReadOnlyRole && selectedLead && LEAD_CRUMB_PAGES.has(activePage) && (
+        {selectedLead && LEAD_CRUMB_PAGES.has(activePage) && (
           <li
             className={`sidebar-item ${LEAD_CRUMB_PAGES.has(activePage) ? "active" : ""}`}
             style={{ paddingLeft: 30 }}
@@ -394,16 +388,14 @@ export const SideBar = ({
           </li>
         )}
 
-        {!isReadOnlyRole && (
-          <li
-            className={`sidebar-item ${activePage === "CaseInformation" ? "active" : ""}`}
-            style={{ paddingLeft: 30 }}
-            onClick={() => navigate("/CaseInformation", { state: { caseDetails } })}
-          >
-            <img src={folderIcon1} className="sidebar-icon" alt="" />
-            <span>Case Information</span>
-          </li>
-        )}
+        <li
+          className={`sidebar-item ${activePage === "CaseInformation" ? "active" : ""}`}
+          style={{ paddingLeft: 30 }}
+          onClick={() => navigate("/CaseInformation", { state: { caseDetails } })}
+        >
+          <img src={folderIcon1} className="sidebar-icon" alt="" />
+          <span>Case Information</span>
+        </li>
 
         {/* Leads Desk — visible to all roles */}
         <li
@@ -417,29 +409,25 @@ export const SideBar = ({
           </div>
         </li>
 
-        {!isReadOnlyRole && (
-          <li
-            className={`sidebar-item ${activePage === "GenerateReport" ? "active" : ""}`}
-            style={{ paddingLeft: 30 }}
-            onClick={() => navigate("/GenerateReport", { state: { caseDetails } })}
-          >
-            <img src={printIcon} className="sidebar-icon" alt="" />
-            <span>Generate Report</span>
-          </li>
-        )}
+        <li
+          className={`sidebar-item ${activePage === "GenerateReport" ? "active" : ""}`}
+          style={{ paddingLeft: 30 }}
+          onClick={() => navigate("/GenerateReport", { state: { caseDetails } })}
+        >
+          <img src={printIcon} className="sidebar-icon" alt="" />
+          <span>Generate Report</span>
+        </li>
 
-        {!isReadOnlyRole && (
-          <li
-            className={`sidebar-item ${activePage === "LeadLog" ? "active" : ""}`}
-            style={{ paddingLeft: 30 }}
-            onClick={() => navigate("/LeadLog", { state: { caseDetails } })}
-          >
-            <img src={logIcon} className="sidebar-icon" alt="" />
-            <span>Case Log</span>
-          </li>
-        )}
+        <li
+          className={`sidebar-item ${activePage === "LeadLog" ? "active" : ""}`}
+          style={{ paddingLeft: 30 }}
+          onClick={() => navigate("/LeadLog", { state: { caseDetails } })}
+        >
+          <img src={logIcon} className="sidebar-icon" alt="" />
+          <span>Case Log</span>
+        </li>
 
-        {!isReadOnlyRole && (
+        {selectedCase?.role !== "Read Only" && (
           <li
             className={`sidebar-item ${activePage === "SearchLead" ? "active" : ""}`}
             onClick={() => navigate("/SearchLead", { state: { caseDetails } })}
@@ -450,14 +438,14 @@ export const SideBar = ({
         )}
 
         {/* Other Ongoing Cases */}
-        {!isReadOnlyRole && systemRole !== "Admin" && (
+        {systemRole !== "Admin" && (
           <li className="sidebar-item" onClick={() => setCaseDropdownOpen((o) => !o)}>
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Other Ongoing Cases {caseDropdownOpen ? "▲" : "▼"}</span>
           </li>
         )}
 
-        {!isReadOnlyRole && systemRole !== "Admin" && caseDropdownOpen && (
+        {systemRole !== "Admin" && caseDropdownOpen && (
           <ul className="dropdown-list1">
             {caseList
               .filter((c) => String(c._id) !== String(selectedCase?._id || selectedCase?.id))
@@ -480,7 +468,7 @@ export const SideBar = ({
           </ul>
         )}
 
-        {!isReadOnlyRole && isUserDS && (
+        {isUserDS && (
           <li className="sidebar-item" onClick={() => navigate("/ClosedCase")}>
             <img src={folderIcon} className="sidebar-icon" alt="" />
             <span>Archived Cases</span>

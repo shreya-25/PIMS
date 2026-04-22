@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const LRPerson = require("../models/LRPerson");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const fs = require("fs");
@@ -105,6 +106,10 @@ const getLRPersonByDetails = async (req, res) => {
     try {
         const { leadNo, caseId } = req.params;
         const leadName = decodeParam(req.params.leadName);
+        if (!mongoose.Types.ObjectId.isValid(caseId)) {
+            console.error(`getLRPersonByDetails: invalid caseId param "${caseId}" — likely a routing mismatch`);
+            return res.status(200).json([]);
+        }
         const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
         const lrPersons = await LRPerson.find(query);
 
@@ -133,6 +138,10 @@ const getLRPersonByDetailsandid = async (req, res) => {
     try {
         const { leadNo, caseId, id } = req.params;
         const leadName = decodeParam(req.params.leadName);
+        if (!mongoose.Types.ObjectId.isValid(caseId)) {
+            console.error(`getLRPersonByDetailsandid: invalid caseId param "${caseId}" — likely a routing mismatch`);
+            return res.status(200).json([]);
+        }
         const query = { leadNo: Number(leadNo), description: leadName, caseId, leadReturnId: id, isDeleted: { $ne: true } };
         const lrPersons = await LRPerson.find(query);
 

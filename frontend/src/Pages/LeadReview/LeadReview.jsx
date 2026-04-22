@@ -28,6 +28,8 @@ export const LeadReview = () => {
   const { leadId, leadDescription } = location.state || {};
   const leadEntries = location.state?.leadEntries || [];
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const loadingProgressIntervalRef = useRef(null);
   const [error, setError] = useState("");
   const [pendingRoute, setPendingRoute]   = useState(null);
   const [caseTeam, setCaseTeam] = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [] });
@@ -1442,6 +1444,25 @@ const isManager = ["Case Manager", "Detective Supervisor"].includes(selectedCase
 const isAssigned = !!myAssignment;
 const isReadOnly = selectedCase?.role === "Read Only";
 
+// Simulate loading progress bar
+useEffect(() => {
+  if (loading) {
+    setLoadingProgress(0);
+    loadingProgressIntervalRef.current = setInterval(() => {
+      setLoadingProgress(prev => {
+        if (prev >= 90) { clearInterval(loadingProgressIntervalRef.current); return prev; }
+        return prev + (90 - prev) * 0.07;
+      });
+    }, 200);
+  } else {
+    clearInterval(loadingProgressIntervalRef.current);
+    setLoadingProgress(100);
+    const reset = setTimeout(() => setLoadingProgress(0), 400);
+    return () => clearTimeout(reset);
+  }
+  return () => clearInterval(loadingProgressIntervalRef.current);
+}, [loading]);
+
 const canWorkOnReturn = isAssigned ? (myAssignment.status === "accepted") : isManager;
 
 
@@ -2072,6 +2093,26 @@ const assignmentHoverText = React.useMemo(() => {
 
   return (
     <div className={styles.personPage}>
+      {/* Loading progress modal */}
+      {loading && (
+        <div className={styles.reportModalOverlay}>
+          <div className={styles.reportModalBox}>
+            <div className={styles.reportModalHeader}>Loading</div>
+            <div className={styles.reportModalBody}>
+              <p className={styles.reportModalMessage}>
+                Please wait while the lead data is loading.
+              </p>
+              <div className={styles.reportModalProgressWrap}>
+                <div className={styles.reportModalProgressBar}>
+                  <div className={styles.reportModalProgressFill} style={{ width: `${loadingProgress}%` }} />
+                </div>
+                <span className={styles.reportModalPercent}>{Math.round(loadingProgress)}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Navbar */}
       <Navbar />
        <AlertModal
@@ -2149,7 +2190,7 @@ const assignmentHoverText = React.useMemo(() => {
        <SideBar  activePage="LeadReview" />
 
         {/* Content Area */}
-        <div className={`${styles.leftContentLI} ${canWorkOnReturn ? styles.hasMenu : ""}`}>
+        <div className={`${styles.leftContentLI} ${(canWorkOnReturn || isReadOnly) ? styles.hasMenu : ""}`}>
 
           {/* Page Header */}
 
@@ -2571,7 +2612,7 @@ const assignmentHoverText = React.useMemo(() => {
             
             )} */}
 
-            {canWorkOnReturn && (
+            {(canWorkOnReturn || isReadOnly) && (
   <div className={styles.trackerContainer}>
     <div className={styles.trackerTitle}>Lead Progress</div>
     {statuses.map((status, idx) => {
@@ -2580,7 +2621,7 @@ const assignmentHoverText = React.useMemo(() => {
       const isCompleted = idx < currentStatusIndex;
       const isHighlighted = idx === currentStatusIndex;
       const isLast = idx === statuses.length - 1;
-      const isClickable = status === "Lead Return Submitted" || status === "Lead Created";
+      const isClickable = false;
 
       const circleClass = [
         styles.statusCircle,
@@ -2632,13 +2673,7 @@ const assignmentHoverText = React.useMemo(() => {
               {status}
             </div>
           ) : (
-            <div
-              className={boxClass}
-              onClick={() => {
-                if (status === "Lead Return Submitted") handleNavigation("/LRInstruction");
-                if (status === "Lead Created") setEventsModalOpen(true);
-              }}
-            >
+            <div className={boxClass}>
               {status}
             </div>
           )}

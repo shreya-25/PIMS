@@ -11,10 +11,11 @@ router.get("/case/:caseNo", verifyToken, getVehiclesByCaseNo);
 // Create a new vehicle entry
 router.post("/lrvehicle", verifyToken, createLRVehicle);
 
-// Get vehicle records by lead details
-router.get("/lrvehicle/:leadNo/:leadName(*)/:caseId", verifyToken, getLRVehicleByDetails);
-
+// More-specific route (4 params) must come before the wildcard 3-param route,
+// otherwise the greedy (*) in leadName swallows the caseId segment on 4-param URLs.
 router.get("/lrvehicle/:leadNo/:leadName(*)/:caseId/:id", verifyToken, getLRVehicleByDetailsandid);
+
+router.get("/lrvehicle/:leadNo/:leadName(*)/:caseId", verifyToken, getLRVehicleByDetails);
 
 // PUT   /api/lrvehicle/:leadNo/:caseId/:leadReturnId/:vin
 router.put(

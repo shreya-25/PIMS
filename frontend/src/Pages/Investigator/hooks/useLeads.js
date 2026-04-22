@@ -53,7 +53,7 @@ const EMPTY_LEADS = {
  * @param {string} signedInOfficer - Username of the logged-in investigator.
  * @returns {{ leads, acceptLead }} - Lead buckets and an accept action.
  */
-export function useLeads(caseId, signedInOfficer) {
+export function useLeads(caseId, signedInOfficer, isReadOnly = false) {
   const [leads, setLeads] = useState(EMPTY_LEADS);
   const signedInUserId = localStorage.getItem('userId');
 
@@ -69,22 +69,24 @@ export function useLeads(caseId, signedInOfficer) {
 
         const raw = Array.isArray(data) ? data : [];
 
-        // Only show leads assigned to the current officer (prefer userId comparison)
-        const mine = raw.filter(l =>
-          l.assignedTo?.some(o =>
-            signedInUserId && o.userId
-              ? String(o.userId) === signedInUserId
-              : o.username === signedInOfficer
-          )
-        );
+        // Read Only users see all leads in the case; others see only their assigned leads
+        const visible = isReadOnly
+          ? raw
+          : raw.filter(l =>
+              l.assignedTo?.some(o =>
+                signedInUserId && o.userId
+                  ? String(o.userId) === signedInUserId
+                  : o.username === signedInOfficer
+              )
+            );
 
-        const allLeads = mine.map(mapLead).sort((a, b) => b.id - a.id);
+        const allLeads = visible.map(mapLead).sort((a, b) => b.id - a.id);
 
         setLeads({
           allLeads,
-          assignedLeads:      mine.filter(l => l.leadStatus === 'Assigned').map(mapLead),
-          pendingLeads:       mine.filter(l => l.leadStatus === 'Accepted').map(mapLead),
-          pendingLeadReturns: mine.filter(l => l.leadStatus === 'In Review').map(mapLead),
+          assignedLeads:      visible.filter(l => l.leadStatus === 'Assigned').map(mapLead),
+          pendingLeads:       visible.filter(l => l.leadStatus === 'Accepted').map(mapLead),
+          pendingLeadReturns: visible.filter(l => l.leadStatus === 'In Review').map(mapLead),
         });
       } catch (err) {
         console.error('Error fetching leads:', err);
@@ -94,7 +96,7 @@ export function useLeads(caseId, signedInOfficer) {
     fetchLeads();
     const intervalId = setInterval(fetchLeads, POLL_INTERVAL_MS);
     return () => clearInterval(intervalId);
-  }, [caseId, signedInOfficer]);
+  }, [caseId, signedInOfficer, isReadOnly]);
 
   /**
    * Accepts an assigned lead: calls the API then optimistically updates local state.

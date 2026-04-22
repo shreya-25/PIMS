@@ -14,9 +14,11 @@ router.get('/case/:caseNo', verifyToken, getPersonsByCaseNo);
 
 router.post("/lrperson", verifyToken, createLRPerson);
 
-router.get("/lrperson/:leadNo/:leadName(*)/:caseId", verifyToken, getLRPersonByDetails);
-
+// More-specific route (4 params) must come before the wildcard 3-param route,
+// otherwise the greedy (*) in leadName swallows the caseId segment on 4-param URLs.
 router.get("/lrperson/:leadNo/:leadName(*)/:caseId/:id", verifyToken, getLRPersonByDetailsandid);
+
+router.get("/lrperson/:leadNo/:leadName(*)/:caseId", verifyToken, getLRPersonByDetails);
 
 router.put(
     '/:leadNo/:caseId/:leadReturnId/:firstName',

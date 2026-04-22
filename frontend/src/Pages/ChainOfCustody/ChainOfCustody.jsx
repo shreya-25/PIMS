@@ -415,6 +415,7 @@ const tone = (t) =>
             isPrimaryInvestigator={isPrimaryInvestigator}
             isGenerating={isGenerating}
             onManageLeadReturn={handleViewLeadReturn}
+            isReadOnly={selectedCase?.role === "Read Only"}
             styles={styles}
           />
 

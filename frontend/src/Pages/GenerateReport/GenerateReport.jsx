@@ -17,7 +17,7 @@ export const GenerateReport = () => {
 
   const {
     // data
-    leadsData, hierarchyLeadsData, hierarchyChains, leadsLoading, displayUser,
+    leadsData, hierarchyLeadsData, hierarchyChains, leadsLoading, leadsLoadingProgress, displayUser,
     // search / sort / filter
     searchTerm, setSearchTerm,
     leadSortOrder, setLeadSortOrder,
@@ -29,7 +29,7 @@ export const GenerateReport = () => {
     selectedSingleLeadNo, setSelectedSingleLeadNo,
     selectStartLead1, setSelectStartLead1,
     selectEndLead2,   setSelectEndLead2,
-    isGeneratingReport, reportProgress,
+    isGeneratingReport, reportProgress, cancelReport,
     // timeline & flags
     timelineEntries, timelineOrderedLeads,
     availableFlags, selectedFlags, setSelectedFlags,
@@ -75,11 +75,36 @@ export const GenerateReport = () => {
 
   return (
     <>
+      {/* Leads-loading modal overlay */}
+      {leadsLoading && (
+        <div className={styles.reportModalOverlay}>
+          <div className={styles.reportModalBox}>
+            <div className={styles.reportModalHeader}>Loading Leads</div>
+            <div className={styles.reportModalBody}>
+              <p className={styles.reportModalMessage}>
+                Please wait while leads are loading.
+              </p>
+              <div className={styles.reportModalProgressWrap}>
+                <div className={styles.reportModalProgressBar}>
+                  <div className={styles.reportModalProgressFill} style={{ width: `${leadsLoadingProgress}%` }} />
+                </div>
+                <span className={styles.reportModalPercent}>{Math.round(leadsLoadingProgress)}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Generating-report modal overlay */}
       {isGeneratingReport && (
         <div className={styles.reportModalOverlay}>
           <div className={styles.reportModalBox}>
-            <div className={styles.reportModalHeader}>Generating Report</div>
+            <div className={styles.reportModalHeader}>
+              Generating Report
+              <button className={styles.reportModalCloseBtn} onClick={cancelReport} aria-label="Cancel report">
+                &times;
+              </button>
+            </div>
             <div className={styles.reportModalBody}>
               <p className={styles.reportModalMessage}>
                 Your report is being compiled. Please remain on this page until the process is complete.
@@ -106,7 +131,7 @@ export const GenerateReport = () => {
               <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
               <span className={styles.sep}>{" >> "}</span>
               <Link
-                to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+                to={["Admin", "Case Manager", "Detective Supervisor"].includes(selectedCase?.role) ? "/CasePageManager" : "/Investigator"}
                 state={{ caseDetails: selectedCase }}
                 className={styles.crumb}
               >

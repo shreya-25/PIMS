@@ -208,7 +208,11 @@ export const LeadsDesk = () => {
   const { persons } = useDataContext();
       const location = useLocation();
 
+  const leadsProgressIntervalRef = useRef(null);
+
   // ------------------ State ------------------
+  const [leadsLoading,         setLeadsLoading]         = useState(false);
+  const [leadsLoadingProgress, setLeadsLoadingProgress] = useState(0);
   const [leadsData, setLeadsData] = useState([]);
   const [hierarchyLeadsData, setHierarchyLeadsData] = useState([]);
   const [leadSortOrder, setLeadSortOrder] = useState("asc");
@@ -540,12 +544,35 @@ const toggleLeadForReport = (leadNo) => {
         },
       ]);
 
+  // ------------------ Leads-loading progress simulation ------------------
+  useEffect(() => {
+    if (leadsLoading) {
+      setLeadsLoadingProgress(0);
+      leadsProgressIntervalRef.current = setInterval(() => {
+        setLeadsLoadingProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(leadsProgressIntervalRef.current);
+            return prev;
+          }
+          return prev + (90 - prev) * 0.07;
+        });
+      }, 200);
+    } else {
+      clearInterval(leadsProgressIntervalRef.current);
+      setLeadsLoadingProgress(100);
+      const reset = setTimeout(() => setLeadsLoadingProgress(0), 400);
+      return () => clearTimeout(reset);
+    }
+    return () => clearInterval(leadsProgressIntervalRef.current);
+  }, [leadsLoading]);
+
   // ------------------ Fetch All Leads on Load ------------------
   useEffect(() => {
     const fetchLeadsReturnsAndPersons = async () => {
       const caseId = selectedCase?._id || selectedCase?.id;
       if (!caseId) return;
       const token = localStorage.getItem("token");
+      setLeadsLoading(true);
       try {
         const { data: leads } = await api.get(
           `/api/lead/case/${caseId}`,
@@ -612,6 +639,8 @@ const toggleLeadForReport = (leadNo) => {
         setHierarchyLeadsData([]);
       } catch (err) {
         console.error("Error fetching leads:", err);
+      } finally {
+        setLeadsLoading(false);
       }
     };
     fetchLeadsReturnsAndPersons();
@@ -1522,7 +1551,28 @@ useEffect(() => {
   const pagedLeads = sortedLeads.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div ref={pdfRef} className={styles["lead-desk-page"]}>
+    <>
+      {/* Leads-loading modal overlay */}
+      {leadsLoading && (
+        <div className={styles.reportModalOverlay}>
+          <div className={styles.reportModalBox}>
+            <div className={styles.reportModalHeader}>Loading Leads</div>
+            <div className={styles.reportModalBody}>
+              <p className={styles.reportModalMessage}>
+                Please wait while leads are loading.
+              </p>
+              <div className={styles.reportModalProgressWrap}>
+                <div className={styles.reportModalProgressBar}>
+                  <div className={styles.reportModalProgressFill} style={{ width: `${leadsLoadingProgress}%` }} />
+                </div>
+                <span className={styles.reportModalPercent}>{Math.round(leadsLoadingProgress)}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div ref={pdfRef} className={styles["lead-desk-page"]}>
       <Navbar />
 
       <div className={styles["main-content-ld-ExecSummary"]}>
@@ -1549,7 +1599,7 @@ useEffect(() => {
   <Link to="/HomePage" className={styles.crumb}>PIMS Home</Link>
   <span className={styles.sep}>{" >> "}</span>
   <Link
-    to={selectedCase?.role === "Investigator" ? "/Investigator" : "/CasePageManager"}
+    to={["Admin", "Case Manager", "Detective Supervisor"].includes(selectedCase?.role) ? "/CasePageManager" : "/Investigator"}
     state={{ caseDetails: selectedCase }}
     className={styles.crumb}
   >
@@ -2084,6 +2134,7 @@ useEffect(() => {
         onSelectOption={handleExecSummaryOptionSelect}
       />
     </div>
+    </>
   );
 };
 

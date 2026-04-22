@@ -140,7 +140,7 @@ const SectionTabBar = ({ activeRoute, onNavigate }) => (
         className={styles.menuItem}
         onClick={() => onNavigate('/viewLR')}
       >
-        Finish
+        Review
       </span>
     </div>
   </div>

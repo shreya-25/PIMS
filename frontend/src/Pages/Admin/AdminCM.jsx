@@ -49,11 +49,11 @@ const mapCase = (c) => {
 
 const ONGOING_COLS   = ["Case No.", "Case Name", "Created At", "Case Managers"];
 const ONGOING_KEY    = { "Case No.": "caseNo", "Case Name": "caseName", "Created At": "createdAtFmt", "Case Managers": "caseManagers" };
-const ONGOING_WIDTHS = { "Case No.": "12%", "Case Name": "33%", "Created At": "18%", "Case Managers": "27%" };
+const ONGOING_WIDTHS = { "Case No.": "12%", "Case Name": "33%", "Created At": "12%", "Case Managers": "22%" };
 
 const ARCHIVED_COLS   = ["Case No.", "Case Name", "Closed At", "Case Managers"];
 const ARCHIVED_KEY    = { "Case No.": "caseNo", "Case Name": "caseName", "Closed At": "closedAtFmt", "Case Managers": "caseManagers" };
-const ARCHIVED_WIDTHS = { "Case No.": "12%", "Case Name": "33%", "Closed At": "18%", "Case Managers": "27%" };
+const ARCHIVED_WIDTHS = { "Case No.": "12%", "Case Name": "33%", "Closed At": "12%", "Case Managers": "22%" };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 

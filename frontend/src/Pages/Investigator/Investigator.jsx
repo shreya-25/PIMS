@@ -77,7 +77,7 @@ export const Investigator = () => {
   const [allUsers, setAllUsers] = useState([]);
 
   // ─── Data hooks ───────────────────────────────────────────────────────────
-  const { leads, acceptLead } = useLeads(activeCaseId, signedInOfficer);
+  const { leads, acceptLead } = useLeads(activeCaseId, signedInOfficer, isReadOnly);
 
   // ─── One-time setup ───────────────────────────────────────────────────────
   useEffect(() => { window.scrollTo(0, 0); }, []);
@@ -209,12 +209,14 @@ export const Investigator = () => {
       <td>{lead.priority}</td>
       <td>{lead.leadStatus === 'Completed' ? '' : lead.remainingDays}</td>
       <td>{(lead.assignedOfficers || []).map(formatUser).join(', ')}</td>
-      {!isReadOnly && (
-        <td style={{ textAlign: 'center' }}>
-          <button className={styles['view-btn1']}  onClick={() => handleLeadClick(lead)}>Manage</button>
+      <td style={{ textAlign: 'center' }}>
+        <button className={styles['view-btn1']} onClick={() => handleLeadClick(lead)}>
+          {isReadOnly ? 'View' : 'Manage'}
+        </button>
+        {!isReadOnly && (
           <button className={styles['accept-btn']} onClick={() => openConfirm(lead)}>Accept</button>
-        </td>
-      )}
+        )}
+      </td>
     </tr>
   );
 
@@ -226,11 +228,11 @@ export const Investigator = () => {
       <td>{lead.priority}</td>
       <td>{lead.leadStatus === 'Completed' ? '' : lead.remainingDays}</td>
       <td>{(lead.assignedOfficers || []).map(formatUser).join(', ')}</td>
-      {!isReadOnly && (
-        <td style={{ textAlign: 'center' }}>
-          <button className={styles['view-btn1']} onClick={() => handleLeadClick(lead)}>Manage</button>
-        </td>
-      )}
+      <td style={{ textAlign: 'center' }}>
+        <button className={styles['view-btn1']} onClick={() => handleLeadClick(lead)}>
+          {isReadOnly ? 'View' : 'Manage'}
+        </button>
+      </td>
     </tr>
   );
 
@@ -291,17 +293,15 @@ export const Investigator = () => {
             {sub && <div style={{ fontSize: 18 }}>{sub}</div>}
           </div>
         </td>
-      {!isReadOnly && (
-        <td style={{ textAlign: 'center' }}>
-          <button
-            className={isNonNavigable ? styles['manage-btn-terminated'] : styles['view-btn1']}
-            onClick={() => !isNonNavigable && handleLeadClick(lead)}
-            disabled={isNonNavigable}
-          >
-            Manage
-          </button>
-        </td>
-      )}
+      <td style={{ textAlign: 'center' }}>
+        <button
+          className={isNonNavigable ? styles['manage-btn-terminated'] : styles['view-btn1']}
+          onClick={() => !isNonNavigable && handleLeadClick(lead)}
+          disabled={isNonNavigable}
+        >
+          {isReadOnly ? 'View' : 'Manage'}
+        </button>
+      </td>
       </tr>
     );
   };
@@ -407,7 +407,7 @@ export const Investigator = () => {
                 filter={assignedFilter}
                 renderRow={renderAssignedRow}
                 emptyMessage="No assigned leads available"
-                showActions={!isReadOnly}
+                showActions={true}
               />
             )}
 
@@ -420,7 +420,7 @@ export const Investigator = () => {
                 filter={pendingFilter}
                 renderRow={renderPendingRow}
                 emptyMessage="No accepted leads available"
-                showActions={!isReadOnly}
+                showActions={true}
               />
             )}
 
@@ -433,7 +433,7 @@ export const Investigator = () => {
                 filter={pendingLRFilter}
                 renderRow={renderPendingLRRow}
                 emptyMessage="No pending lead returns available"
-                showActions={!isReadOnly}
+                showActions={true}
               />
             )}
 
@@ -446,7 +446,7 @@ export const Investigator = () => {
                 filter={allFilter}
                 renderRow={renderAllRow}
                 emptyMessage="No leads available"
-                showActions={!isReadOnly}
+                showActions={true}
               />
             )}
 

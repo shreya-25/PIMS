@@ -530,6 +530,7 @@
 }
 
 .reportModalHeader {
+  position: relative;
   padding: 16px 24px 8px;
   font-size: 20px;
   font-weight: 600;
@@ -581,6 +582,38 @@
   color: rgb(41, 41, 139);
   min-width: 40px;
   text-align: right;
+}
+
+@keyframes indeterminate {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+.reportModalProgressIndeterminate {
+  height: 100%;
+  width: 40%;
+  background: linear-gradient(90deg, #1d4ed8, #3b82f6);
+  border-radius: 999px;
+  animation: indeterminate 1.4s ease-in-out infinite;
+}
+
+.reportModalCloseBtn {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+.reportModalCloseBtn:hover {
+  color: #b91c1c;
+  background: #fee2e2;
 }
 
 .download-btn {

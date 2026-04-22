@@ -15,6 +15,7 @@ export const LRTopMenu = ({
   selectedCase,
   selectedLead,
   styles,
+  isReadOnly = false,
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,12 +46,14 @@ export const LRTopMenu = ({
           Lead Information
         </span>
 
-        <span
-          className={`${styles.menuItem}${isActive('addLeadReturn') ? ` ${styles.menuItemActive}` : ''}`}
-          onClick={!isActive('addLeadReturn') ? () => goTo('/LRInstruction') : undefined}
-        >
-          Add Lead Return
-        </span>
+        {!isReadOnly && (
+          <span
+            className={`${styles.menuItem}${isActive('addLeadReturn') ? ` ${styles.menuItemActive}` : ''}`}
+            onClick={!isActive('addLeadReturn') ? () => goTo('/LRInstruction') : undefined}
+          >
+            Add Lead Return
+          </span>
+        )}
 
         {isCaseManager && (
           <span

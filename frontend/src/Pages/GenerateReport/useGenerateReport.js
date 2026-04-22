@@ -5,15 +5,18 @@ import { convert12To24, toNum, toArray, buildTimelineOrderedLeads } from "./gene
 import { fetchSingleLeadFullDetails, fetchLeadHierarchyFullDetails, cleanLeadRecord } from "./generateReportApi";
 
 export function useGenerateReport(selectedCase) {
-  const saveTimeout         = useRef(null);
-  const progressIntervalRef = useRef(null);
+  const saveTimeout              = useRef(null);
+  const progressIntervalRef      = useRef(null);
+  const leadsProgressIntervalRef = useRef(null);
+  const abortControllerRef       = useRef(null);
 
   // Lead data
   const [leadsData,          setLeadsData]          = useState([]);
   const [hierarchyLeadsData, setHierarchyLeadsData] = useState([]);
   const [hierarchyChains,    setHierarchyChains]    = useState([]);
   const [allUsers,           setAllUsers]           = useState([]);
-  const [leadsLoading,       setLeadsLoading]       = useState(false);
+  const [leadsLoading,         setLeadsLoading]         = useState(false);
+  const [leadsLoadingProgress, setLeadsLoadingProgress] = useState(0);
 
   // Search / sort / filter
   const [searchTerm,              setSearchTerm]              = useState("");
@@ -81,6 +84,13 @@ export function useGenerateReport(selectedCase) {
     }, 700);
   };
 
+  const cancelReport = () => {
+    abortControllerRef.current?.abort();
+    clearInterval(progressIntervalRef.current);
+    setIsGeneratingReport(false);
+    setReportProgress(0);
+  };
+
   // ===== Effects =====
 
   useEffect(() => {
@@ -88,6 +98,28 @@ export function useGenerateReport(selectedCase) {
       .then(({ data }) => setAllUsers(data.users || []))
       .catch(() => {});
   }, []);
+
+  // Simulate leads-loading progress bar
+  useEffect(() => {
+    if (leadsLoading) {
+      setLeadsLoadingProgress(0);
+      leadsProgressIntervalRef.current = setInterval(() => {
+        setLeadsLoadingProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(leadsProgressIntervalRef.current);
+            return prev;
+          }
+          return prev + (90 - prev) * 0.07;
+        });
+      }, 200);
+    } else {
+      clearInterval(leadsProgressIntervalRef.current);
+      setLeadsLoadingProgress(100);
+      const reset = setTimeout(() => setLeadsLoadingProgress(0), 400);
+      return () => clearTimeout(reset);
+    }
+    return () => clearInterval(leadsProgressIntervalRef.current);
+  }, [leadsLoading]);
 
   // Fetch all leads with deep section hydration
   useEffect(() => {
@@ -316,7 +348,7 @@ export function useGenerateReport(selectedCase) {
 
   const handleRunReportWithSummary = async (explicitLeads = null) => {
     if (leadsLoading) {
-      showAlert("Please wait — leads are still loading. Try again once loading is complete.");
+      showAlert("Please wait. Leads are still loading. Try again once loading is complete.");
       return;
     }
 
@@ -328,6 +360,9 @@ export function useGenerateReport(selectedCase) {
       showAlert("No leads selected to include.");
       return;
     }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     setIsGeneratingReport(true);
     startProgress();
@@ -351,6 +386,7 @@ export function useGenerateReport(selectedCase) {
         const response = await api.post("/api/report/generateCase", payload, {
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
           responseType: "blob",
+          signal: controller.signal,
         });
         openPdfBlob(response.data);
         completeProgress();
@@ -371,7 +407,7 @@ export function useGenerateReport(selectedCase) {
         const response = await axios.post(
           "http://localhost:5000/api/report/generateCaseExecSummary",
           formData,
-          { headers: { Authorization: `Bearer ${token}` }, responseType: "blob" }
+          { headers: { Authorization: `Bearer ${token}` }, responseType: "blob", signal: controller.signal }
         );
         openPdfBlob(response.data);
         completeProgress();
@@ -390,10 +426,12 @@ export function useGenerateReport(selectedCase) {
       const response = await api.post("/api/report/generateCase", payload, {
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         responseType: "blob",
+        signal: controller.signal,
       });
       openPdfBlob(response.data);
       completeProgress();
     } catch (error) {
+      if (axios.isCancel(error) || error.name === "CanceledError" || error.name === "AbortError") return;
       console.error("Failed to generate report", error);
       showAlert("Error generating PDF");
       completeProgress();
@@ -403,13 +441,17 @@ export function useGenerateReport(selectedCase) {
   const handleRunTimelineOnlyReport = async () => {
     if (!selectedCase?.caseNo) return;
     if (leadsLoading) {
-      showAlert("Please wait — leads are still loading. Try again once loading is complete.");
+      showAlert("Please wait. Leads are still loading. Try again once loading is complete.");
       return;
     }
     if (!timelineEntries.length) {
       showAlert("No timeline entries found for this case. Add timeline entries to leads before generating a timeline report.");
       return;
     }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setIsGeneratingReport(true);
     startProgress();
     try {
@@ -417,13 +459,14 @@ export function useGenerateReport(selectedCase) {
       const response = await api.post(
         "/api/report/generateTimeline",
         { caseNo: selectedCase.caseNo, caseName: selectedCase.caseName, user: localStorage.getItem("loggedInUser") || "Unknown" },
-        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, responseType: "blob" }
+        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, responseType: "blob", signal: controller.signal }
       );
       openPdfBlob(response.data);
+      completeProgress();
     } catch (err) {
+      if (axios.isCancel(err) || err.name === "CanceledError" || err.name === "AbortError") return;
       console.error("Timeline report error:", err);
       showAlert("Failed to generate timeline report. Please try again.");
-    } finally {
       completeProgress();
     }
   };
@@ -506,7 +549,7 @@ export function useGenerateReport(selectedCase) {
   return {
     // data
     leadsData, hierarchyLeadsData, hierarchyChains,
-    leadsLoading, displayUser,
+    leadsLoading, leadsLoadingProgress, displayUser,
     // search / sort / filter
     searchTerm, setSearchTerm,
     leadSortOrder, setLeadSortOrder,
@@ -538,6 +581,7 @@ export function useGenerateReport(selectedCase) {
     getReopenedLeads, getSingleLeadForReport, getLeadsForSelectedFlags,
     // handlers
     handleRunReportWithSummary, handleRunTimelineOnlyReport,
+    cancelReport,
     handleSearch, handleShowSingleLead, handleShowHierarchy,
     handleShowAllLeads, handleShowLeadsInRange,
     handleExecSummaryFileChange, handleLeadCardClick,

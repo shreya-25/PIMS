@@ -15,7 +15,9 @@ import { ROLES, isDetectiveSupervisor } from "../../constants/roles";
 
 export const HomePage = () => {
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState(location.state?.activeTab || "notifications");
+  const systemRoleInit = localStorage.getItem("role");
+  const isReadOnlyUser = systemRoleInit === "Read Only";
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || (isReadOnlyUser ? "cases" : "notifications"));
   const isCaseMgmt = activeTab !== "notifications";
 
   // Refs for filter button anchor positioning
@@ -893,18 +895,22 @@ export const HomePage = () => {
                   >
                     {isAdmin ? `All Ongoing Cases: ${cases.length}` : treatAsDS ? `All Ongoing Cases: ${cases.length}` : `My Ongoing Cases: ${cases.length}`}
                   </span>
-                  <span
-                    className={`${styles.hoverable} ${activeTab === "assignedLeads" ? styles.active : ""}`}
-                    onClick={() => setActiveTab("assignedLeads")}
-                  >
-                    Assigned Leads: {leads.assignedLeads.length}
-                  </span>
-                  <span
-                    className={`${styles.hoverable} ${activeTab === "pendingLeadReturns" ? styles.active : ""}`}
-                    onClick={() => setActiveTab("pendingLeadReturns")}
-                  >
-                    Lead Returns for Review: {leads.pendingLeadReturns.length}
-                  </span>
+                  {!isReadOnlyUser && (
+                    <span
+                      className={`${styles.hoverable} ${activeTab === "assignedLeads" ? styles.active : ""}`}
+                      onClick={() => setActiveTab("assignedLeads")}
+                    >
+                      Assigned Leads: {leads.assignedLeads.length}
+                    </span>
+                  )}
+                  {!isReadOnlyUser && (
+                    <span
+                      className={`${styles.hoverable} ${activeTab === "pendingLeadReturns" ? styles.active : ""}`}
+                      onClick={() => setActiveTab("pendingLeadReturns")}
+                    >
+                      Lead Returns for Review: {leads.pendingLeadReturns.length}
+                    </span>
+                  )}
                 </div>
 
                 <div className={styles["content-section"]}>

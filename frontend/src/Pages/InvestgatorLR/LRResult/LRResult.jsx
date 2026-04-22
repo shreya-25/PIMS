@@ -205,6 +205,7 @@ useEffect(() => {
   const [confirmOpen,   setConfirmOpen]   = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const [isGenerating,  setIsGenerating]  = useState(false);
+  const [showNarrativePopup, setShowNarrativePopup] = useState(false);
 
   /**
    * Refs that suppress the first sessionStorage write that fires
@@ -848,7 +849,7 @@ useEffect(() => {
                 className={styles.menuItem}
                 onClick={() => navigate('/viewLR', { state: { caseDetails: effectiveCase, leadDetails: effectiveLead } })}
               >
-                Finish
+                Review
               </span>
             </div>
           </div>
@@ -925,7 +926,10 @@ useEffect(() => {
                         selectedLead?.leadStatus === 'Closed' ||
                         isReadOnly
                       }
-                      onClick={handleAddOrUpdateReturn}
+                      onClick={() => {
+                        handleAddOrUpdateReturn();
+                        if (!editMode) setShowNarrativePopup(true);
+                      }}
                     >
                       {editMode ? 'Update' : 'Add Narrative'}
                     </button>
@@ -1040,6 +1044,31 @@ useEffect(() => {
 
         </div>
       </div>
+
+      {/* Narrative-submit reminder popup */}
+      {showNarrativePopup && (
+        <div className={styles.narrativePopup}>
+          <button
+            className={styles.narrativePopupClose}
+            onClick={() => setShowNarrativePopup(false)}
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
+          <p className={styles.narrativePopupText}>
+            To submit this lead return for Case Manager approval, go to the {' '}
+            <Link
+              to="/viewLR"
+              state={{ caseDetails: effectiveCase, leadDetails: effectiveLead }}
+              className={styles.narrativePopupLink}
+            >
+              Review
+            </Link>{' '}
+            page.
+          </p>
+        </div>
+      )}
+
     </div>
   );
 };

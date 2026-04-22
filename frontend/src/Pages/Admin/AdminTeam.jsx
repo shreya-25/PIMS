@@ -68,13 +68,14 @@ const NO_ADD_ROLES = new Set(["detectiveSupervisors", "caseManagers", "investiga
 // ─── Team Management Modal ─────────────────────────────────────────────────────
 
 const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
-  const [team, setTeam]       = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [], readOnly: [] });
-  const [blocked, setBlocked] = useState(new Set()); // usernames whose access is revoked
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving]   = useState(false);
-  const [search, setSearch]   = useState({ detectiveSupervisors: "", caseManagers: "", investigators: "", readOnly: "" });
-  const [dropOpen, setDropOpen] = useState({ detectiveSupervisors: false, caseManagers: false, investigators: false, readOnly: false });
-  const [alertMsg, setAlertMsg] = useState("");
+  const [team, setTeam]             = useState({ detectiveSupervisors: [], caseManagers: [], investigators: [], readOnly: [] });
+  const [initialReadOnly, setInitialReadOnly] = useState([]);
+  const [blocked, setBlocked]       = useState(new Set()); // usernames whose access is revoked
+  const [loading, setLoading]       = useState(true);
+  const [saving, setSaving]         = useState(false);
+  const [search, setSearch]         = useState({ detectiveSupervisors: "", caseManagers: "", investigators: "", readOnly: "" });
+  const [dropOpen, setDropOpen]     = useState({ detectiveSupervisors: false, caseManagers: false, investigators: false, readOnly: false });
+  const [alertMsg, setAlertMsg]     = useState("");
   const dropRefs = useRef({});
 
   useEffect(() => {
@@ -84,12 +85,14 @@ const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
         const { data } = await api.get(`/api/cases/${caseData.caseNo}/team`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        const ro = data.readOnly || [];
         setTeam({
           detectiveSupervisors: data.detectiveSupervisors || [],
           caseManagers:         data.caseManagers || [],
           investigators:        data.investigators || [],
-          readOnly:             data.readOnly || [],
+          readOnly:             ro,
         });
+        setInitialReadOnly(ro);
         setBlocked(new Set(data.blocked || []));
       } catch {
         setAlertMsg("Failed to load team data.");
@@ -137,18 +140,47 @@ const TeamModal = ({ caseData, allUsers, onClose, onSaved }) => {
   const save = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem("token");
+      const token        = localStorage.getItem("token");
+      const adminUsername = localStorage.getItem("loggedInUser") || "Admin";
+
       const officers = [
         ...team.detectiveSupervisors.map((u) => ({ name: u, role: "Detective Supervisor" })),
         ...team.caseManagers.map((u)          => ({ name: u, role: "Case Manager"        })),
         ...team.investigators.map((u)          => ({ name: u, role: "Investigator"        })),
         ...team.readOnly.map((u)               => ({ name: u, role: "Read Only"           })),
       ];
+
       await api.put(
         `/api/cases/${caseData.caseNo}/${encodeURIComponent(caseData.caseName)}/officers`,
         { officers, blockedUsernames: [...blocked] },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      // Send a notification to every Read Only user that was just added
+      const newReadOnly = team.readOnly.filter((u) => !initialReadOnly.includes(u));
+      await Promise.allSettled(
+        newReadOnly.map((username) =>
+          api.post(
+            "/api/notifications",
+            {
+              notificationId: `${Date.now()}-${username}`,
+              assignedBy:     adminUsername,
+              assignedTo:     [{ username, role: "Read Only", status: "pending", unread: true }],
+              action1:        "has been granted Read Only access to the case",
+              post1:          `${caseData.caseNo}: ${caseData.caseName}`,
+              caseId:         caseData._id || undefined,
+              caseNo:         caseData.caseNo,
+              caseName:       caseData.caseName,
+              caseStatus:     "Open",
+              unread:         true,
+              type:           "Case",
+              time:           new Date().toISOString(),
+            },
+            { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
+          )
+        )
+      );
+
       onSaved(caseData.caseNo, team);
       onClose();
     } catch {

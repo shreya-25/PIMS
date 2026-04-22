@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const LRVehicle = require("../models/LRVehicle");
 const { createAuditLog, sanitizeForAudit } = require("../services/auditService");
 const { resolveLeadReturnRefs, resolveCaseNo } = require("../utils/resolveRefs");
@@ -55,6 +56,10 @@ const getLRVehicleByDetails = async (req, res) => {
     try {
         const { leadNo, caseId } = req.params;
         const leadName = decodeParam(req.params.leadName);
+        if (!mongoose.Types.ObjectId.isValid(caseId)) {
+            console.error(`getLRVehicleByDetails: invalid caseId param "${caseId}" — likely a routing mismatch`);
+            return res.status(200).json([]);
+        }
         const query = { leadNo: Number(leadNo), description: leadName, caseId, isDeleted: { $ne: true } };
         const lrVehicles = await LRVehicle.find(query);
         res.status(200).json(lrVehicles);
@@ -68,6 +73,10 @@ const getLRVehicleByDetailsandid = async (req, res) => {
     try {
         const { leadNo, caseId, id } = req.params;
         const leadName = decodeParam(req.params.leadName);
+        if (!mongoose.Types.ObjectId.isValid(caseId)) {
+            console.error(`getLRVehicleByDetailsandid: invalid caseId param "${caseId}" — likely a routing mismatch`);
+            return res.status(200).json([]);
+        }
         const query = { leadNo: Number(leadNo), description: leadName, caseId, leadReturnId: id, isDeleted: { $ne: true } };
         const lrVehicles = await LRVehicle.find(query);
         res.status(200).json(lrVehicles);
