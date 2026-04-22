@@ -168,7 +168,7 @@ function formatOfficerList(arr, userMap = {}) {
   // de-dupe while preserving order
   const seen = new Set();
   const deduped = names.filter(n => (seen.has(n) ? false : (seen.add(n), true)));
-  return deduped.join(", ");
+  return deduped.join("; ");
 }
 
 // front table 
