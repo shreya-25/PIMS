@@ -41,12 +41,14 @@ export const GenerateReport = () => {
     // hierarchy ui
     hierarchyLeadInput, setHierarchyLeadInput,
     visibleChainsCount, setVisibleChainsCount,
+    hierarchyOrder, setHierarchyOrder,
     // pagination
     currentPage, setCurrentPage, pageSize, setPageSize, totalEntries,
     // derived
     getReopenedLeads, getSingleLeadForReport, getLeadsForSelectedFlags,
     // handlers
     handleRunReportWithSummary, handleRunTimelineOnlyReport,
+    handleRegenerateReport,
     handleSearch, handleShowSingleLead, handleShowHierarchy,
     handleShowAllLeads, handleShowLeadsInRange,
     handleExecSummaryFileChange, handleLeadCardClick,
@@ -59,6 +61,13 @@ export const GenerateReport = () => {
     ? getReopenedLeads()
     : (hierarchyLeadsData.length > 0 ? hierarchyLeadsData : leadsData);
 
+  // For the hierarchy report type use the hierarchy-specific order toggle;
+  // everywhere else use the general leadSortOrder.
+  const activeSortOrder =
+    reportType === "hierarchy" && hierarchyLeadsData.length > 0
+      ? hierarchyOrder
+      : leadSortOrder;
+
   const displayLeads = [...baseLeads]
     .filter((lead) => {
       if (selectedSubCategories.length === 0) return true;
@@ -66,7 +75,7 @@ export const GenerateReport = () => {
       return selectedSubCategories.every((sc) => cats.includes(sc));
     })
     .sort((a, b) =>
-      leadSortOrder === "asc"
+      activeSortOrder === "asc"
         ? Number(a.leadNo) - Number(b.leadNo)
         : Number(b.leadNo) - Number(a.leadNo)
     );
@@ -166,6 +175,7 @@ export const GenerateReport = () => {
                     handleExecSummaryFileChange={handleExecSummaryFileChange}
                     isGeneratingReport={isGeneratingReport}
                     handleRunReportWithSummary={handleRunReportWithSummary}
+                    handleRegenerateReport={handleRegenerateReport}
                     setReportScope={setReportScope}
                     selectStartLead1={selectStartLead1} setSelectStartLead1={setSelectStartLead1}
                     selectEndLead2={selectEndLead2}     setSelectEndLead2={setSelectEndLead2}
@@ -188,6 +198,7 @@ export const GenerateReport = () => {
                     handleShowHierarchy={handleShowHierarchy}
                     handleShowAllLeads={handleShowAllLeads}
                     hierarchyLeadsData={hierarchyLeadsData}
+                    hierarchyOrder={hierarchyOrder} setHierarchyOrder={setHierarchyOrder}
                     handleShowLeadsInRange={handleShowLeadsInRange}
                     getReopenedLeads={getReopenedLeads}
                   />

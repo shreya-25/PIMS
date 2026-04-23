@@ -19,6 +19,7 @@ export default function ReportControlsSection({
   handleExecSummaryFileChange,
   isGeneratingReport,
   handleRunReportWithSummary,
+  handleRegenerateReport,
   setReportScope,
   // single lead
   selectStartLead1, setSelectStartLead1,
@@ -43,6 +44,7 @@ export default function ReportControlsSection({
   handleShowHierarchy,
   handleShowAllLeads,
   hierarchyLeadsData,
+  hierarchyOrder, setHierarchyOrder,
   // selected range
   handleShowLeadsInRange,
   // reopened
@@ -92,7 +94,16 @@ export default function ReportControlsSection({
               disabled={isGeneratingReport}
               onClick={() => { setReportScope("all"); handleRunReportWithSummary(); }}
             >
-              Run report
+              {isGeneratingReport ? "Generating…" : "Run report"}
+            </button>
+            <button
+              type="button"
+              className={`${styles.btn} ${styles["btn-secondary"]}`}
+              disabled={isGeneratingReport}
+              onClick={() => { setReportScope("all"); handleRegenerateReport(); }}
+              title="Clear the cached report and generate a fresh one"
+            >
+              Regenerate
             </button>
           </div>
         </>
@@ -268,12 +279,40 @@ export default function ReportControlsSection({
             </form>
           </div>
 
+          {/* Order toggle */}
+          <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 16 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "#1e293b" }}>Report order:</span>
+            {[
+              { value: "asc",  label: "Ascending (oldest → newest)" },
+              { value: "desc", label: "Descending (newest → oldest)" },
+            ].map(({ value, label }) => (
+              <label key={value} className={styles.summaryOption2} style={{ cursor: "pointer" }}>
+                <input
+                  type="radio"
+                  name="hierarchy-order"
+                  value={value}
+                  checked={hierarchyOrder === value}
+                  onChange={() => setHierarchyOrder(value)}
+                />
+                <span className={styles.summaryOptionText2}>{label}</span>
+              </label>
+            ))}
+          </div>
+
           <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 12 }}>
             <button
               type="button"
               className={`${styles.btn} ${styles["btn-primary"]}`}
-              disabled={isGeneratingReport}
-              onClick={() => { setReportScope("visible"); handleRunReportWithSummary(hierarchyLeadsData); }}
+              disabled={isGeneratingReport || !hierarchyLeadsData.length}
+              onClick={() => {
+                const sorted = [...hierarchyLeadsData].sort((a, b) =>
+                  hierarchyOrder === "asc"
+                    ? Number(a.leadNo) - Number(b.leadNo)
+                    : Number(b.leadNo) - Number(a.leadNo)
+                );
+                setReportScope("visible");
+                handleRunReportWithSummary(sorted);
+              }}
             >
               Run report
             </button>

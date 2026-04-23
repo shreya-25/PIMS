@@ -18,6 +18,47 @@ async function mergeWithAnotherPDF(mainBuffer, otherPdfBuffer) {
   return Buffer.from(await mainDoc.save());
 }
 
+/**
+ * Scale every page of a PDF so its content fits within maxContentW × maxContentH
+ * on a Letter page, left-aligned with a 50 pt top margin.
+ * Pages that already fit are never upscaled.
+ *
+ * isPicture = true  → smaller box so images don't overwhelm the report
+ * isPicture = false → near-full page so documents remain readable
+ */
+async function scalePdfPagesToFit(pdfBuffer, { isPicture = false } = {}) {
+  const PAGE_W = 612;
+  const PAGE_H = 792;
+  const MARGIN = 50;
+
+  // Pictures get a contained box; documents get nearly the full page
+  const maxContentW = isPicture ? 420 : PAGE_W  - 2 * MARGIN;
+  const maxContentH = isPicture ? 315 : PAGE_H  - 2 * MARGIN;
+
+  const srcDoc = await PDFLibDocument.load(pdfBuffer);
+  const dstDoc = await PDFLibDocument.create();
+
+  for (let i = 0; i < srcDoc.getPageCount(); i++) {
+    const [embedded] = await dstDoc.embedPages([srcDoc.getPage(i)]);
+    const srcW = embedded.width;
+    const srcH = embedded.height;
+
+    const scale = Math.min(maxContentW / srcW, maxContentH / srcH, 1);
+    const dW    = srcW * scale;
+    const dH    = srcH * scale;
+
+    const page = dstDoc.addPage([PAGE_W, PAGE_H]);
+    page.drawPage(embedded, {
+      x:      MARGIN,                   // left-aligned
+      y:      PAGE_H - MARGIN - dH,    // top-aligned
+      width:  dW,
+      height: dH,
+    });
+  }
+
+  return Buffer.from(await dstDoc.save());
+}
+
 // Convert image buffer to a format PDFKit understands (PNG or JPEG).
 // Handles HEIC (iPhone), WebP, and other formats; passes PNG/JPEG as-is.
 async function toPdfSafeBuffer(buf) {
@@ -262,15 +303,22 @@ async function embedImagesFromS3List(doc, items, currentY, labelGetter = (x) => 
     try {
       const rawBuf = await getObjectBuffer(item.s3Key);
       const buf = await toPdfSafeBuffer(rawBuf);
-      const maxH = 300;
+      let renderedH = 300;
+      try {
+        const meta = await sharp(buf).metadata();
+        const srcW = meta.width || 300;
+        const srcH = meta.height || 300;
+        const scale = Math.min(300 / srcW, 300 / srcH, 1);
+        renderedH = Math.round(srcH * scale);
+      } catch (_) { /* use default */ }
       const bottom = doc.page.height - doc.page.margins.bottom;
-      if (currentY + maxH > bottom) {
+      if (currentY + renderedH > bottom) {
         doc.addPage();
         currentY = doc.page.margins.top;
       }
 
       doc.image(buf, 50, currentY, { fit: [300, 300] });
-      currentY += 310;
+      currentY += renderedH + 10;
       doc.font("Helvetica").fontSize(9).fillColor("#555")
          .text(labelGetter(item), 50, currentY, { width: 300, align: "left" });
       doc.fillColor("black");
@@ -321,10 +369,18 @@ async function embedAttachments(doc, items, currentY, fileLabel = "File") {
       try {
         const rawBuf = await getObjectBuffer(item.s3Key);
         const buf = await toPdfSafeBuffer(rawBuf);
-        const maxH = 300;
-        currentY = ensureSpace(doc, currentY, maxH + 30);
+        // Calculate actual rendered height so currentY advances correctly
+        let renderedH = 300;
+        try {
+          const meta = await sharp(buf).metadata();
+          const srcW = meta.width || 300;
+          const srcH = meta.height || 300;
+          const scale = Math.min(300 / srcW, 300 / srcH, 1);
+          renderedH = Math.round(srcH * scale);
+        } catch (_) { /* use default */ }
+        currentY = ensureSpace(doc, currentY, renderedH + 30);
         doc.image(buf, 50, currentY, { fit: [300, 300] });
-        currentY += 310;
+        currentY += renderedH + 10;
         doc.font("Helvetica").fontSize(9).fillColor("#555")
            .text(item.originalName || item.filename || "Image", 50, currentY, { width: 300 });
         doc.fillColor("#000");
@@ -866,8 +922,543 @@ return y + rowH + 20;
 
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Per-lead PDF building helpers
+   ─────────────────────────────────────────────────────────────────────────
+   buildHeaderBuffer  – generates the blue-header cover page (+ exec summary)
+   buildLeadBuffer    – generates one lead's content as a standalone PDF
+   buildCaseReportBufferPerLead – orchestrates: header + per-lead merge
+═══════════════════════════════════════════════════════════════════════════ */
+
+async function buildHeaderBuffer({
+  user, reportTimestamp, caseNo, caseName, reportTitle,
+  showExecSummary, caseSummary, shouldWatermark,
+}) {
+  const WM = { text: "DRAFT", opacity: 0.08, angle: -35, fontSize: 100 };
+  const doc = new PDFDocument({ size: "LETTER", margin: 50 });
+
+  if (shouldWatermark) {
+    drawWatermark(doc, WM);
+    doc.on("pageAdded", () => drawWatermark(doc, WM));
+  }
+
+  const pdfChunks = [];
+  doc.on("data", (c) => pdfChunks.push(c));
+  const docEnd = new Promise((resolve, reject) => {
+    doc.on("end", resolve);
+    doc.on("error", reject);
+  });
+
+  const headerHeight = 80;
+  doc.rect(0, 0, doc.page.width, headerHeight).fill("#003366");
+
+  const rightBlockX = doc.page.width - 210;
+  const rightBlockW = 200;
+  doc.fillColor("white").font("Helvetica").fontSize(8);
+  doc.text(`Generated by: ${user}`, rightBlockX, headerHeight - 24, { width: rightBlockW, align: "right" });
+  doc.text(reportTimestamp, rightBlockX, headerHeight - 12, { width: rightBlockW, align: "right" });
+
+  const logoHeight = 70;
+  const logoPath = path.join(__dirname, "../assets/newpolicelogo.png");
+  if (fs.existsSync(logoPath)) {
+    doc.image(logoPath, 10, (headerHeight - logoHeight) / 2, { width: 70, height: 70 });
+  }
+
+  const titleX = 180;
+  const titleW = rightBlockX - titleX - 10;
+  const caseLabel = `Case: ${caseNo}: ${caseName}`;
+  const lineGap = 4;
+
+  doc.font("Helvetica-Bold").fontSize(14);
+  const titleH = doc.heightOfString(reportTitle, { width: titleW });
+  doc.font("Helvetica").fontSize(10);
+  const caseH = doc.currentLineHeight(true);
+  const blockH = titleH + lineGap + caseH;
+  const titleStartY = Math.round((headerHeight - blockH) / 2);
+
+  const titleCenter = titleX + titleW / 2;
+  const caseLabelW = doc.widthOfString(caseLabel);
+  const caseLabelX = Math.max(85, titleCenter - caseLabelW / 2);
+
+  doc.fillColor("white").font("Helvetica-Bold").fontSize(14);
+  doc.text(reportTitle, titleX, titleStartY, { width: titleW, align: "center" });
+  doc.fillColor("white").font("Helvetica").fontSize(10);
+  doc.text(caseLabel, caseLabelX, titleStartY + titleH + lineGap, { lineBreak: false });
+
+  let currentY = headerHeight + 10;
+  doc.fillColor("black");
+
+  if (showExecSummary && caseSummary && caseSummary.trim()) {
+    doc.font("Helvetica-Bold").fontSize(11).text("Executive Case Summary:", 50, currentY);
+    currentY += 20;
+    drawTextBox(doc, 50, currentY, 512, "", caseSummary);
+  }
+
+  doc.end();
+  await docEnd;
+  return Buffer.concat(pdfChunks);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// buildLeadBuffer – renders a single lead into its own PDFKit document.
+// Returns { buffer, pdfAttachments } where pdfAttachments is a list of
+// { s3Key, filename } records for PDF files that should be appended after
+// this lead's pages.
+// ─────────────────────────────────────────────────────────────────────────────
+async function buildLeadBuffer(lead, { includeAll, characterOfCase, userMap, shouldWatermark }) {
+  const WM = { text: "DRAFT", opacity: 0.08, angle: -35, fontSize: 100 };
+  const doc = new PDFDocument({ size: "LETTER", margin: 50 });
+
+  if (shouldWatermark) {
+    drawWatermark(doc, WM);
+    doc.on("pageAdded", () => drawWatermark(doc, WM));
+  }
+
+  const pdfChunks = [];
+  doc.on("data", (c) => pdfChunks.push(c));
+  const docEnd = new Promise((resolve, reject) => {
+    doc.on("end", resolve);
+    doc.on("error", reject);
+  });
+
+  const pdfAttachments = [];
+  let currentY = doc.page.margins.top;
+
+  // ── Lead header ──────────────────────────────────────────────────────────
+  doc.font("Helvetica-Bold").fontSize(12).text(`LEAD NO. ${lead.leadNo} DETAILS:`, 50, currentY);
+  currentY += 20;
+
+  currentY = drawStructuredLeadDetails(doc, 50, currentY, lead, characterOfCase, userMap);
+
+  const { state: leadState, reason: leadReason } = getLeadClosureInfo(lead);
+  if (leadState) {
+    const value = leadReason ? `${leadState} — ${leadReason}` : leadState;
+    currentY = ensureSpace(doc, currentY, 40);
+    currentY = drawLabelValueRow(doc, 50, currentY, "Lead Status:", value, 512) + 20;
+  }
+
+  if (includeAll && lead.description) {
+    currentY = ensureSpace(doc, currentY, 60);
+    doc.font("Helvetica-Bold").fontSize(11).text("Lead Log Summary:", 50, currentY);
+    currentY += 20;
+    currentY = drawTextBox(doc, 50, currentY, 512, "", lead.description);
+  }
+
+  if (includeAll && lead.summary) {
+    currentY = ensureSpace(doc, currentY, 60);
+    doc.font("Helvetica-Bold").fontSize(11).text("Lead Instruction:", 50, currentY);
+    currentY += 20;
+    currentY = drawTextBox(doc, 50, currentY, 512, "", lead.summary);
+  }
+
+  // ── Lead returns ─────────────────────────────────────────────────────────
+  if (includeAll) {
+    if (lead.leadReturns && lead.leadReturns.length > 0) {
+      for (const lrRaw of lead.leadReturns) {
+        const lr = normalizeLeadReturn(lrRaw);
+        currentY = ensureSpace(doc, currentY, 100);
+
+        currentY = drawMetaBar(doc, 50, currentY, 512, lr, userMap);
+        currentY = ensureSpace(doc, currentY, 100);
+        currentY = drawTextBox(doc, 50, currentY, 512, "", lr.leadReturnResult || "") + 20;
+
+        // Person Details
+        if (lr.persons && lr.persons.length > 0) {
+          currentY = ensureSpace(doc, currentY, 60);
+          doc.font("Helvetica-Bold").fontSize(12).text("Person Details:", 50, currentY);
+          currentY += 20;
+
+          for (let pIdx = 0; pIdx < lr.persons.length; pIdx++) {
+            const person = lr.persons[pIdx];
+            if (person.photoS3Key) {
+              try {
+                const rawBuf = await getObjectBuffer(person.photoS3Key);
+                const imgBuf = await toPdfSafeBuffer(rawBuf);
+                const photoSize = 60;
+                currentY = ensureSpace(doc, currentY, photoSize + 10);
+                doc.image(imgBuf, 50, currentY, { width: photoSize, height: photoSize, fit: [photoSize, photoSize] });
+                currentY += photoSize + 8;
+              } catch (e) {
+                console.warn("Failed to embed person photo:", e?.message);
+              }
+            }
+
+            const heightDisplay = person.height
+              ? `${person.height.feet || 0}'${person.height.inches || 0}"`
+              : "";
+            const fullAddress = person.address
+              ? [
+                  person.address.building,
+                  person.address.apartment && `Apt ${person.address.apartment}`,
+                  person.address.street1,
+                  person.address.street2,
+                  person.address.city,
+                  person.address.state,
+                  person.address.zipCode,
+                ].filter(Boolean).join(", ")
+              : "";
+
+            const personFieldMap = {
+              "Last Name":         person.lastName       || "",
+              "First Name":        person.firstName      || "",
+              "Middle Initial":    person.middleInitial  || "",
+              "Suffix":            person.suffix         || "",
+              "Alias":             person.alias          || "",
+              "Sex":               person.sex            || "",
+              "Date of Birth":     person.dateOfBirth ? formatDate(person.dateOfBirth) : "",
+              "Address":           fullAddress,
+              "Phone No":          person.cellNumber     || "",
+              "Email":             person.email          || "",
+              "Race":              person.race           || "",
+              "Ethnicity":         person.ethnicity      || "",
+              "Person Type":       person.personType     || "",
+              "Condition":         person.condition      || "",
+              "Caution Type":      person.cautionType    || "",
+              "Skin Tone":         person.skinTone       || "",
+              "Eye Color":         person.eyeColor       || "",
+              "Glasses":           person.glasses        || "",
+              "Hair Color":        person.hairColor      || "",
+              "Height":            heightDisplay,
+              "Weight":            person.weight != null && person.weight !== "" ? `${person.weight} lbs` : "",
+              "Scars":             person.scar           || "",
+              "Marks":             person.mark           || "",
+              "Tattoo":            person.tattoo         || "",
+              "SSN":               person.ssn            || "",
+              "Driver License ID": person.driverLicenseId || "",
+              "Occupation":        person.occupation     || "",
+              "Business Name":     person.businessName   || "",
+            };
+
+            const addressSubFields = new Set(["Street 1", "Street 2", "Building", "Apartment", "City", "State", "Zip Code"]);
+            const filledFields = Object.keys(personFieldMap).filter((h) => {
+              if (fullAddress && addressSubFields.has(h)) return false;
+              const val = personFieldMap[h];
+              return val !== "" && val !== null && val !== undefined;
+            });
+
+            currentY = ensureSpace(doc, currentY, 60);
+            const personLabel = [`Person ${pIdx + 1}`, [person.firstName, person.lastName].filter(Boolean).join(" ")].filter(Boolean).join(" – ");
+            doc.font("Helvetica-Bold").fontSize(11).text(personLabel, 50, currentY);
+            currentY += 20;
+
+            const allEntries = filledFields.map((h) => ({ header: h, value: personFieldMap[h] }));
+            if (Array.isArray(person.additionalData)) {
+              person.additionalData.forEach((d) => {
+                const cat = d.category || d.description || "";
+                const val = d.value || d.details || "";
+                if (cat && val) allEntries.push({ header: cat, value: val });
+              });
+            }
+
+            const COLS_PER_ROW = 4;
+            const COL_WIDTH = 128;
+            for (let i = 0; i < allEntries.length; i += COLS_PER_ROW) {
+              const chunk = allEntries.slice(i, i + COLS_PER_ROW);
+              const remaining = COLS_PER_ROW - chunk.length;
+              const headers = chunk.map((e) => e.header);
+              const row = {};
+              chunk.forEach((e) => { row[e.header] = e.value; });
+              const colWidths = chunk.map(() => COL_WIDTH);
+              if (remaining > 0) { headers.push(""); row[""] = ""; colWidths.push(remaining * COL_WIDTH); }
+              const rowHeight = measureRowHeight(doc, row, headers, colWidths);
+              currentY = ensureSpace(doc, currentY, rowHeight + 20);
+              currentY = drawTableWithRowSplitting(doc, 50, currentY, headers, [row], colWidths);
+            }
+            currentY += 20;
+          }
+        }
+
+        // Vehicle Details
+        if (lr.vehicles && lr.vehicles.length > 0) {
+          currentY = ensureSpace(doc, currentY, 50);
+          doc.font("Helvetica-Bold").fontSize(12).text("Vehicle Details:", 50, currentY);
+          currentY += 20;
+
+          for (const vehicle of lr.vehicles) {
+            const vehicleTables = [
+              {
+                headers: ["Date Entered", "Year", "Make", "Model", "Plate", "State"],
+                widths: [86, 85, 85, 85, 85, 86],
+                row: {
+                  "Date Entered": formatDate(vehicle.enteredDate),
+                  "Year":  vehicle.year  || "N/A",
+                  "Make":  vehicle.make  || "N/A",
+                  "Model": vehicle.model || "N/A",
+                  "Plate": vehicle.plate || "N/A",
+                  "State": vehicle.state || "N/A",
+                },
+              },
+              {
+                headers: ["VIN", "Category", "Type", "Primary Color", "Secondary Color"],
+                widths: [103, 102, 102, 102, 103],
+                row: {
+                  "VIN":             vehicle.vin            || "N/A",
+                  "Category":        vehicle.category       || "N/A",
+                  "Type":            vehicle.type           || "N/A",
+                  "Primary Color":   vehicle.primaryColor   || "N/A",
+                  "Secondary Color": vehicle.secondaryColor || "N/A",
+                },
+              },
+            ];
+            if (vehicle.information || vehicle.additionalData) {
+              vehicleTables.push({
+                headers: ["Additional Information"],
+                widths: [512],
+                row: { "Additional Information": vehicle.information || vehicle.additionalData || "N/A" },
+              });
+            }
+            vehicleTables.forEach((tbl) => {
+              const rowH = measureRowHeight(doc, tbl.row, tbl.headers, tbl.widths);
+              currentY = ensureSpace(doc, currentY, rowH + 20);
+              currentY = drawTableWithRowSplitting(doc, 50, currentY, tbl.headers, [tbl.row], tbl.widths) + 8;
+            });
+            currentY += 12;
+          }
+        }
+
+        // Enclosure Details
+        if (lr.enclosures && lr.enclosures.length > 0) {
+          currentY = ensureSpace(doc, currentY, 50);
+          doc.font("Helvetica-Bold").fontSize(12).text("Enclosure Details:", 50, currentY);
+          currentY += 20;
+
+          const encHeaders = ["Date Entered", "Type", "Description", "File / Link"];
+          const encRows = lr.enclosures.map((e) => ({
+            "Date Entered": formatDate(e.enteredDate),
+            "Type":         e.type || "N/A",
+            "Description":  e.enclosureDescription || "N/A",
+            "File / Link":  e.isLink ? (e.link || "Link") : (e.originalName || e.filename || "N/A"),
+          }));
+          currentY = ensureSpace(doc, currentY, 60);
+          currentY = drawTable(doc, 50, currentY, encHeaders, encRows, [80, 80, 222, 130]) + 10;
+          currentY = await embedAttachments(doc, lr.enclosures, currentY, "Enclosure");
+
+          for (const enc of lr.enclosures) {
+            if (!enc.isLink && enc.s3Key && /\.pdf$/i.test(enc.originalName || enc.filename || "")) {
+              pdfAttachments.push({ s3Key: enc.s3Key, filename: enc.originalName || enc.filename || "enclosure.pdf", type: "enclosure" });
+            }
+          }
+          currentY += 10;
+        }
+
+        // Evidence Details
+        if (lr.evidence && lr.evidence.length > 0) {
+          currentY = ensureSpace(doc, currentY, 50);
+          doc.font("Helvetica-Bold").fontSize(12).text("Evidence Details:", 50, currentY);
+          currentY += 20;
+
+          const evHeaders = ["Date Entered", "Type", "Disposed Date", "Description", "File / Link"];
+          const evRows = lr.evidence.map((ev) => ({
+            "Date Entered":  formatDate(ev.enteredDate),
+            "Type":          ev.type || "N/A",
+            "Disposed Date": formatDate(ev.disposedDate),
+            "Description":   ev.evidenceDescription || "N/A",
+            "File / Link":   ev.isLink ? (ev.link || "Link") : (ev.originalName || ev.filename || "N/A"),
+          }));
+          currentY = ensureSpace(doc, currentY, 60);
+          currentY = drawTable(doc, 50, currentY, evHeaders, evRows, [107, 65, 113, 127, 100]) + 10;
+          currentY = await embedAttachments(doc, lr.evidence, currentY, "Evidence");
+
+          for (const ev of lr.evidence) {
+            if (!ev.isLink && ev.s3Key && /\.pdf$/i.test(ev.originalName || ev.filename || "")) {
+              pdfAttachments.push({ s3Key: ev.s3Key, filename: ev.originalName || ev.filename || "evidence.pdf", type: "evidence" });
+            }
+          }
+          currentY += 10;
+        }
+
+        // Picture Details
+        if (lr.pictures && lr.pictures.length > 0) {
+          currentY = ensureSpace(doc, currentY, 50);
+          doc.font("Helvetica-Bold").fontSize(12).text("Picture Details:", 50, currentY);
+          currentY += 20;
+
+          const picHeaders = ["Date Entered", "Date Picture Taken", "Description", "File / Link"];
+          const picRows = lr.pictures.map((p) => ({
+            "Date Entered":       formatDate(p.enteredDate),
+            "Date Picture Taken": formatDate(p.datePictureTaken),
+            "Description":        p.pictureDescription || "N/A",
+            "File / Link":        p.isLink ? (p.link || "Link") : (p.originalName || p.filename || "N/A"),
+          }));
+          currentY = ensureSpace(doc, currentY, 60);
+          currentY = drawTable(doc, 50, currentY, picHeaders, picRows, [80, 110, 192, 130]) + 10;
+          currentY = await embedAttachments(doc, lr.pictures, currentY, "Picture");
+
+          for (const pic of lr.pictures) {
+            if (!pic.isLink && pic.s3Key && /\.pdf$/i.test(pic.originalName || pic.filename || "")) {
+              pdfAttachments.push({ s3Key: pic.s3Key, filename: pic.originalName || pic.filename || "picture.pdf", type: "picture" });
+            }
+          }
+          currentY += 10;
+        }
+
+        // Audio Details
+        if (lr.audio && lr.audio.length > 0) {
+          currentY = ensureSpace(doc, currentY, 50);
+          doc.font("Helvetica-Bold").fontSize(12).text("Audio Details:", 50, currentY);
+          currentY += 20;
+
+          const audioHeaders = ["Date Entered", "Date Recorded", "Description", "File / Link"];
+          const audioRows = lr.audio.map((a) => ({
+            "Date Entered":        formatDate(a.enteredDate),
+            "Date Audio Recorded": formatDate(a.dateAudioRecorded),
+            "Description":         a.audioDescription || "N/A",
+            "File / Link":         a.isLink ? (a.link || "Link") : (a.originalName || a.filename || "N/A"),
+          }));
+          currentY = ensureSpace(doc, currentY, 60);
+          currentY = drawTable(doc, 50, currentY, audioHeaders, audioRows, [80, 110, 192, 130]) + 20;
+        }
+
+        // Video Details
+        if (lr.videos && lr.videos.length > 0) {
+          currentY = ensureSpace(doc, currentY, 50);
+          doc.font("Helvetica-Bold").fontSize(12).text("Video Details:", 50, currentY);
+          currentY += 20;
+
+          const vidHeaders = ["Date Entered", "Date Recorded", "Description", "File / Link"];
+          const vidRows = lr.videos.map((v) => ({
+            "Date Entered":        formatDate(v.enteredDate),
+            "Date Video Recorded": formatDate(v.dateVideoRecorded),
+            "Description":         v.videoDescription || "N/A",
+            "File / Link":         v.isLink ? (v.link || "Link") : (v.originalName || v.filename || "N/A"),
+          }));
+          currentY = ensureSpace(doc, currentY, 60);
+          currentY = drawTable(doc, 50, currentY, vidHeaders, vidRows, [80, 110, 192, 130]) + 20;
+        }
+
+        // Lead Notes (Scratchpad)
+        const scratch = lr.scratchpad || lr.notes;
+        if (scratch && scratch.length > 0) {
+          currentY = ensureSpace(doc, currentY, 50);
+          doc.font("Helvetica-Bold").fontSize(12).text("Lead Notes:", 50, currentY);
+          currentY += 20;
+
+          const noteHeaders = ["Date Entered", "Return Id", "Description"];
+          const noteRows = scratch.map((n) => ({
+            "Date Entered": formatDate(n.enteredDate),
+            "Return Id":    n.leadReturnId || n.returnId || "N/A",
+            "Description":  n.text || n.description || "N/A",
+          }));
+          currentY = ensureSpace(doc, currentY, 60);
+          currentY = drawTable(doc, 50, currentY, noteHeaders, noteRows, [90, 120, 302]) + 20;
+        }
+
+        // Timeline Details
+        const timeline = lr.timeline || lr.timelineEntries || lr.events;
+        if (timeline && timeline.length > 0) {
+          currentY = ensureSpace(doc, currentY, 50);
+          doc.font("Helvetica-Bold").fontSize(12).text("Timeline Details:", 50, currentY);
+          currentY += 20;
+
+          const tlHeaders = ["Event Date", "Time Range", "Location", "Flags", "Description"];
+          const tlRows = timeline.map((t) => ({
+            "Event Date":  formatDate(t.eventDate),
+            "Time Range":
+              `${formatTime(t.eventStartTime) || ""}` +
+              (t.eventEndTime ? ` – ${formatTime(t.eventEndTime)}` : ""),
+            "Location":    t.eventLocation || "N/A",
+            "Flags":       Array.isArray(t.timelineFlag) ? t.timelineFlag.join(", ") : (t.flags || "N/A"),
+            "Description": t.eventDescription || "N/A",
+          }));
+          currentY = ensureSpace(doc, currentY, 60);
+          currentY = drawTable(doc, 50, currentY, tlHeaders, tlRows, [80, 100, 100, 80, 152]) + 20;
+        }
+      }
+    } else {
+      currentY = ensureSpace(doc, currentY, 60);
+      doc.font("Helvetica-Bold").fontSize(11).text("Lead Return:", 50, currentY);
+      currentY += 20;
+      drawTextBox(doc, 50, currentY, 512, "", "No Lead Returns Available");
+    }
+  }
+
+  doc.end();
+  await docEnd;
+  return { buffer: Buffer.concat(pdfChunks), pdfAttachments };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// buildCaseReportBufferPerLead
+// Generates the full case report as a Buffer using per-lead mini-PDFs so that
+// each lead's content is immediately followed by that lead's PDF attachments
+// (enclosures, evidence, pictures). Returns the merged PDF Buffer.
+// ─────────────────────────────────────────────────────────────────────────────
+async function buildCaseReportBufferPerLead({
+  leadsData,
+  user,
+  reportTimestamp,
+  caseSummary,
+  summaryMode,
+  caseNo,
+  caseName,
+  characterOfCase,
+  userMap,
+  includeAll,
+}) {
+  const showExecSummary =
+    summaryMode !== "none" &&
+    typeof caseSummary === "string" &&
+    caseSummary.trim().length > 0;
+
+  const reportTitle    = showExecSummary ? "Final Case Report" : "Preliminary Case Report";
+  const shouldWatermark = !showExecSummary;
+
+  // 1. Cover page (header + optional exec summary)
+  let finalBuffer = await buildHeaderBuffer({
+    user,
+    reportTimestamp,
+    caseNo,
+    caseName,
+    reportTitle,
+    showExecSummary,
+    caseSummary,
+    shouldWatermark,
+  });
+
+  // Preserve the order the caller provides — for "all leads" the DB already
+  // returns ascending; for hierarchy the frontend sorts per user selection.
+  const sortedLeads = leadsData;
+
+  if (sortedLeads.length === 0) {
+    const emptyDoc = new PDFDocument({ size: "LETTER", margin: 50 });
+    if (shouldWatermark) drawWatermark(emptyDoc, { text: "DRAFT", opacity: 0.08, angle: -35, fontSize: 100 });
+    const ec = [];
+    emptyDoc.on("data", (c) => ec.push(c));
+    const ee = new Promise((res, rej) => { emptyDoc.on("end", res); emptyDoc.on("error", rej); });
+    emptyDoc.font("Helvetica").fontSize(12).text("No leads data available.", 50, 50);
+    emptyDoc.end();
+    await ee;
+    return mergeWithAnotherPDF(finalBuffer, Buffer.concat(ec));
+  }
+
+  // 2. For each lead: lead mini-PDF immediately followed by that lead's PDFs
+  for (const lead of sortedLeads) {
+    const { buffer: leadBuf, pdfAttachments } = await buildLeadBuffer(lead, {
+      includeAll,
+      characterOfCase,
+      userMap,
+      shouldWatermark,
+    });
+
+    finalBuffer = await mergeWithAnotherPDF(finalBuffer, leadBuf);
+
+    for (const att of pdfAttachments) {
+      try {
+        const rawBuf    = await getObjectBuffer(att.s3Key);
+        const scaledBuf = await scalePdfPagesToFit(rawBuf, { isPicture: att.type === "picture" });
+        finalBuffer     = await mergeWithAnotherPDF(finalBuffer, scaledBuf);
+      } catch (e) {
+        console.warn(`Could not merge PDF attachment "${att.filename}":`, e?.message);
+      }
+    }
+  }
+
+  return finalBuffer;
+}
+
 /* ---------------------------------------
-   The main generation function
+   The main generation function (legacy – streams directly to HTTP response)
+   New callers should use buildCaseReportBufferPerLead + reportSaveController.
 -----------------------------------------*/
 async function generateCaseReport(req, res) {
   const {
@@ -1069,8 +1660,8 @@ async function generateCaseReport(req, res) {
     }
 
     // ---------- Iterate Over Leads ----------
+    // Order is determined by the caller (frontend sends pre-sorted array).
     if (leadsData && leadsData.length > 0) {
-      leadsData.sort((a, b) => (parseInt(a.leadNo) || 0) - (parseInt(b.leadNo) || 0));
       for (const lead of leadsData) {
         // Page check
         currentY = ensureSpace(doc, currentY, 60);
@@ -1402,7 +1993,7 @@ if (lr.enclosures && lr.enclosures.length > 0) {
   // Queue PDF files for end-of-report merging
   for (const enc of lr.enclosures) {
     if (!enc.isLink && enc.s3Key && /\.pdf$/i.test(enc.originalName || enc.filename || "")) {
-      pdfAttachments.push({ s3Key: enc.s3Key, filename: enc.originalName || enc.filename || "enclosure.pdf" });
+      pdfAttachments.push({ s3Key: enc.s3Key, filename: enc.originalName || enc.filename || "enclosure.pdf", type: "enclosure" });
     }
   }
   currentY += 10;
@@ -1432,7 +2023,7 @@ if (lr.evidence && lr.evidence.length > 0) {
   // Queue PDF files for end-of-report merging
   for (const ev of lr.evidence) {
     if (!ev.isLink && ev.s3Key && /\.pdf$/i.test(ev.originalName || ev.filename || "")) {
-      pdfAttachments.push({ s3Key: ev.s3Key, filename: ev.originalName || ev.filename || "evidence.pdf" });
+      pdfAttachments.push({ s3Key: ev.s3Key, filename: ev.originalName || ev.filename || "evidence.pdf", type: "evidence" });
     }
   }
   currentY += 10;
@@ -1460,7 +2051,7 @@ if (lr.pictures && lr.pictures.length > 0) {
   // Queue PDF files for end-of-report merging
   for (const pic of lr.pictures) {
     if (!pic.isLink && pic.s3Key && /\.pdf$/i.test(pic.originalName || pic.filename || "")) {
-      pdfAttachments.push({ s3Key: pic.s3Key, filename: pic.originalName || pic.filename || "picture.pdf" });
+      pdfAttachments.push({ s3Key: pic.s3Key, filename: pic.originalName || pic.filename || "picture.pdf", type: "picture" });
     }
   }
   currentY += 10;
@@ -1564,12 +2155,13 @@ if (timeline && timeline.length > 0) {
     doc.end();
     await docEndPromise;
 
-    // Merge any queued PDF attachments (enclosures / evidence)
+    // Merge any queued PDF attachments (enclosures / evidence), scaled to fit
     let finalBuffer = Buffer.concat(pdfChunks);
     for (const att of pdfAttachments) {
       try {
-        const attBuf = await getObjectBuffer(att.s3Key);
-        finalBuffer = await mergeWithAnotherPDF(finalBuffer, attBuf);
+        const rawBuf    = await getObjectBuffer(att.s3Key);
+        const scaledBuf = await scalePdfPagesToFit(rawBuf, { isPicture: att.type === "picture" });
+        finalBuffer     = await mergeWithAnotherPDF(finalBuffer, scaledBuf);
       } catch (e) {
         console.warn(`Failed to merge PDF attachment "${att.filename}":`, e?.message);
       }
@@ -1767,4 +2359,4 @@ async function generateTimelineOnlyReport(req, res) {
   }
 }
 
-module.exports = { generateCaseReport, generateTimelineOnlyReport };
+module.exports = { generateCaseReport, generateTimelineOnlyReport, buildCaseReportBufferPerLead };
