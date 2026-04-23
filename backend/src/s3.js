@@ -104,9 +104,20 @@ const getObjectBuffer = async (key) => {
   });
 };
 
+// Upload an in-memory Buffer directly to Azure (no temp file needed)
+const uploadBufferToS3 = async ({ buffer, prefix = "reports", mimetype = "application/pdf" }) => {
+  const key = `${prefix}/${uuid()}`;
+  const blockBlobClient = containerClient.getBlockBlobClient(key);
+  await blockBlobClient.uploadData(buffer, {
+    blobHTTPHeaders: { blobContentType: mimetype },
+  });
+  return { key };
+};
+
 module.exports = {
   blobServiceClient,
   uploadToS3,
+  uploadBufferToS3,
   deleteFromS3,
   getFileFromS3,
   getObjectBuffer,

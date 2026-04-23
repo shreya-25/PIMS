@@ -4,11 +4,15 @@ import api from "../../api";
 import { convert12To24, toNum, toArray, buildTimelineOrderedLeads } from "./generateReportUtils";
 import { fetchSingleLeadFullDetails, fetchLeadHierarchyFullDetails, cleanLeadRecord } from "./generateReportApi";
 
+// How often to poll for report status (ms)
+const POLL_INTERVAL_MS = 4000;
+
 export function useGenerateReport(selectedCase) {
   const saveTimeout              = useRef(null);
   const progressIntervalRef      = useRef(null);
   const leadsProgressIntervalRef = useRef(null);
   const abortControllerRef       = useRef(null);
+  const pollIntervalRef          = useRef(null);
 
   // Lead data
   const [leadsData,          setLeadsData]          = useState([]);
@@ -56,6 +60,7 @@ export function useGenerateReport(selectedCase) {
   // Hierarchy UI
   const [hierarchyLeadInput,  setHierarchyLeadInput]  = useState("");
   const [visibleChainsCount,  setVisibleChainsCount]  = useState(2);
+  const [hierarchyOrder,      setHierarchyOrder]      = useState("asc"); // "asc" | "desc"
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -87,6 +92,7 @@ export function useGenerateReport(selectedCase) {
   const cancelReport = () => {
     abortControllerRef.current?.abort();
     clearInterval(progressIntervalRef.current);
+    stopPolling();
     setIsGeneratingReport(false);
     setReportProgress(0);
   };
@@ -336,6 +342,7 @@ export function useGenerateReport(selectedCase) {
 
   // ===== API handlers =====
 
+  // Open a PDF from a raw Blob (used by timeline report which still streams directly)
   const openPdfBlob = (blobData) => {
     const url = URL.createObjectURL(new Blob([blobData], { type: "application/pdf" }));
     const a   = document.createElement("a");
@@ -346,57 +353,162 @@ export function useGenerateReport(selectedCase) {
     setTimeout(() => URL.revokeObjectURL(url), 10000);
   };
 
+  // Open a PDF from a signed URL (Azure SAS)
+  const openPdfUrl = (url) => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  // Stop any in-flight status poll
+  const stopPolling = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  };
+
+  // Poll GET /api/report/status/:reportId until ready or failed
+  const startPolling = (reportId) => {
+    stopPolling();
+    const token = localStorage.getItem("token");
+
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const { data: statusData } = await api.get(
+          `/api/report/status/${reportId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (statusData.status === "ready") {
+          stopPolling();
+          const { data: urlData } = await api.get(
+            `/api/report/url/${reportId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          openPdfUrl(urlData.url);
+          completeProgress();
+        } else if (statusData.status === "failed") {
+          stopPolling();
+          showAlert("Report generation failed. Please try again.");
+          completeProgress();
+        }
+        // "generating" → keep polling
+      } catch (err) {
+        console.error("Polling error:", err);
+        stopPolling();
+        showAlert("Lost connection while waiting for report. Please try again.");
+        completeProgress();
+      }
+    }, POLL_INTERVAL_MS);
+  };
+
+  // Force-clear a cached report for this case then re-trigger
+  const handleRegenerateReport = async () => {
+    const caseId = selectedCase?._id || selectedCase?.id;
+    if (!caseId) return;
+    const token = localStorage.getItem("token");
+    try {
+      await api.delete(`/api/report/savedReport/${caseId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (err) {
+      console.error("Failed to clear saved report:", err);
+    }
+    handleRunReportWithSummary();
+  };
+
+  /**
+   * Main "Generate Report" handler.
+   *
+   * "All leads" report type → Azure save/cache flow:
+   *   1. POST /api/report/triggerSave  → { status, reportId }
+   *   2a. status "ready"      → GET /api/report/url/:id  → open signed URL (instant)
+   *   2b. status "generating" → poll GET /api/report/status/:id until ready
+   *
+   * All other report types (single, selected, flagged, hierarchy, reopened) →
+   *   stream directly via POST /api/report/generateCase (old behaviour, always fresh).
+   */
   const handleRunReportWithSummary = async (explicitLeads = null) => {
     if (leadsLoading) {
       showAlert("Please wait. Leads are still loading. Try again once loading is complete.");
       return;
     }
 
-    const token          = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
     const computed       = computeLeadsForReport();
-    const leadsForReport = Array.isArray(explicitLeads) && explicitLeads.length ? explicitLeads : computed;
+    const leadsForReport = Array.isArray(explicitLeads) && explicitLeads.length
+      ? explicitLeads
+      : computed;
 
     if (!leadsForReport || leadsForReport.length === 0) {
       showAlert("No leads selected to include.");
       return;
     }
 
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    setIsGeneratingReport(true);
-    startProgress();
-
     const isAllReport    = String(reportType).toLowerCase() === "all";
     const hasWebSummary  = Boolean(useWebpageSummary && typedSummary?.trim());
     const hasFileSummary = Boolean(useFileUpload && execSummaryFile);
     const includeExec    = isAllReport && (hasWebSummary || hasFileSummary);
 
-    try {
-      // Path 1: typed executive summary
-      if (includeExec && hasWebSummary) {
-        const payload = {
-          user:            localStorage.getItem("loggedInUser"),
-          reportTimestamp: new Date().toLocaleString(),
-          leadsData:       leadsForReport,
-          caseSummary:     typedSummary,
-          selectedReports: { FullReport: true },
-          summaryMode:     "web",
-        };
-        const response = await api.post("/api/report/generateCase", payload, {
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          responseType: "blob",
-          signal: controller.signal,
-        });
-        openPdfBlob(response.data);
-        completeProgress();
-        return;
-      }
+    setIsGeneratingReport(true);
+    startProgress();
 
-      // Path 2: attached executive summary file
+    // ── "All leads" → save to Azure and fetch on next click ─────────────────
+    if (isAllReport) {
+      const caseId = selectedCase?._id || selectedCase?.id;
+      if (!caseId) { showAlert("No case selected."); completeProgress(); return; }
+
+      const resolvedSummaryMode = includeExec && hasWebSummary  ? "web"
+                                : includeExec && hasFileSummary ? "file"
+                                : "none";
+      const resolvedSummary = (includeExec && hasWebSummary) ? typedSummary : "";
+
+      try {
+        const { data } = await api.post(
+          "/api/report/triggerSave",
+          {
+            caseId,
+            summaryMode:     resolvedSummaryMode,
+            caseSummary:     resolvedSummary,
+            user:            localStorage.getItem("loggedInUser") || "Unknown",
+            reportTimestamp: new Date().toLocaleString(),
+          },
+          { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } }
+        );
+
+        if (data.status === "ready") {
+          const { data: urlData } = await api.get(
+            `/api/report/url/${data.reportId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          openPdfUrl(urlData.url);
+          completeProgress();
+        } else {
+          startPolling(data.reportId);
+        }
+      } catch (error) {
+        if (axios.isCancel(error) || error.name === "CanceledError" || error.name === "AbortError") return;
+        console.error("Failed to trigger report generation", error);
+        showAlert("Error starting report generation. Please try again.");
+        completeProgress();
+      }
+      return;
+    }
+
+    // ── All other report types → stream directly (always fresh) ─────────────
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      // File-upload exec summary path (only for "all" type, kept for safety)
       if (includeExec && hasFileSummary) {
         const formData = new FormData();
-        formData.append("user",            localStorage.getItem("loggedInUser") || "Officer 916");
+        formData.append("user",            localStorage.getItem("loggedInUser") || "Unknown");
         formData.append("reportTimestamp", new Date().toLocaleString());
         formData.append("caseNo",          selectedCase.caseNo);
         formData.append("caseName",        selectedCase.caseName);
@@ -405,7 +517,7 @@ export function useGenerateReport(selectedCase) {
         formData.append("execSummaryFile", execSummaryFile);
         formData.append("summaryMode",     "file");
         const response = await axios.post(
-          "http://localhost:5000/api/report/generateCaseExecSummary",
+          `${api.defaults.baseURL || ""}/api/report/generateCaseExecSummary`,
           formData,
           { headers: { Authorization: `Bearer ${token}` }, responseType: "blob", signal: controller.signal }
         );
@@ -414,9 +526,9 @@ export function useGenerateReport(selectedCase) {
         return;
       }
 
-      // Path 3: no executive summary
+      // Standard streaming path
       const payload = {
-        user:            localStorage.getItem("loggedInUser"),
+        user:            localStorage.getItem("loggedInUser") || "Unknown",
         reportTimestamp: new Date().toLocaleString(),
         leadsData:       leadsForReport,
         caseSummary:     "",
@@ -433,7 +545,7 @@ export function useGenerateReport(selectedCase) {
     } catch (error) {
       if (axios.isCancel(error) || error.name === "CanceledError" || error.name === "AbortError") return;
       console.error("Failed to generate report", error);
-      showAlert("Error generating PDF");
+      showAlert("Error generating PDF. Please try again.");
       completeProgress();
     }
   };
@@ -575,12 +687,14 @@ export function useGenerateReport(selectedCase) {
     // hierarchy ui
     hierarchyLeadInput, setHierarchyLeadInput,
     visibleChainsCount, setVisibleChainsCount,
+    hierarchyOrder, setHierarchyOrder,
     // pagination
     currentPage, setCurrentPage, pageSize, setPageSize, totalEntries,
     // derived
     getReopenedLeads, getSingleLeadForReport, getLeadsForSelectedFlags,
     // handlers
     handleRunReportWithSummary, handleRunTimelineOnlyReport,
+    handleRegenerateReport,
     cancelReport,
     handleSearch, handleShowSingleLead, handleShowHierarchy,
     handleShowAllLeads, handleShowLeadsInRange,
